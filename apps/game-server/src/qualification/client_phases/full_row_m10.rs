@@ -42,13 +42,20 @@ impl Row {
     fn finish(self) {
         let pass = self.step == 5 && self.error.is_none();
         if let Some(error) = &self.error {
-            evidence(&format!("M10_CHECK step={} FAIL observed={error}", self.step + 1));
+            evidence(&format!(
+                "M10_CHECK step={} FAIL observed={error}",
+                self.step + 1
+            ));
         }
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=M10.full status={} seconds={:.3} evidence={}",
             if pass { "PASS" } else { "FAIL" },
             self.started.elapsed().as_secs_f64(),
-            if pass { "observed-all-five-native-steps" } else { "see-M10_CHECK" },
+            if pass {
+                "observed-all-five-native-steps"
+            } else {
+                "see-M10_CHECK"
+            },
         ));
     }
 }
@@ -59,7 +66,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         step: 0,
         error: None,
     };
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     row.error = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),
@@ -88,12 +95,17 @@ async fn wait_damage(client: &mut DevClientSession, before: u32) -> TestResult<u
             }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("timeout: no ActorVitals damage delta; vitals={:?}", client.actor_vitals()).into());
+            return Err(format!(
+                "timeout: no ActorVitals damage delta; vitals={:?}",
+                client.actor_vitals()
+            )
+            .into());
         }
     }
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -103,6 +115,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x9a).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let start = tile(client.world_spatial().actor_position)?;
     let mut path = route(world, start, |at| is_underwater(world, at))
         .ok_or("no reachable authored underwater ground in player movement window")?;
@@ -171,7 +185,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("logout after dry exit was refused".into());
     }
-    client = connect_world(clients, 0x9b).await?;
+    row_needs_logout_0 = false;
+    client = connect_world(clients, 0x9b).await?; row_needs_logout_0 = true;
     if client.join_snapshot().game_session_id == old_session
         || client.world_spatial().actor_position != saved_position
         || client.actor_vitals().is_none_or(|v| v.health != saved_vitals.health)
@@ -179,6 +194,30 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh admission lost durable position/health: position={:?} vitals={:?}", client.world_spatial().actor_position, client.actor_vitals()).into());
     }
     row.pass(5, "fresh admission retained dry position and damaged health");
-    let _ = client.session_mut().logout().await?;
+    row_logout(&mut client).await?; row_needs_logout_0 = false;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_ground_is_not_underwater() -> TestResult {
+        let world = row_helper_world()?;
+        assert!(!is_underwater(
+            &world,
+            TilePos {
+                x: u16::MAX,
+                y: u16::MAX,
+                floor: 0
+            }
+        ));
+        Ok(())
+    }
 }

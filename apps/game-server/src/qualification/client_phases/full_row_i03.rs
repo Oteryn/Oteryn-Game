@@ -40,7 +40,9 @@ async fn look(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut client = connect_world(clients, 0xb3).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let entities = client
         .world_entities()
         .ok_or("step-1: own actor view missing")?;
@@ -110,11 +112,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "step-4 readable sign/book/spellbook acquisition incomplete after real LOOK attempts; observed_readable={readable:?}; need ordinary reachable content/NPC offers for a sign, document and spellbook"
     )
     .into())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let evidence_text = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),

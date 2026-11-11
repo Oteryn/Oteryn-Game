@@ -6,13 +6,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -36,7 +36,8 @@ async fn command(
     if response.status != CommandStatus::Accepted {
         return Err(format!("market transport status {:?}", response.status).into());
     }
-    let reply = wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
+    let reply =
+        wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
     Ok((reply, response.payload))
 }
 
@@ -61,6 +62,7 @@ async fn at_market(client: &mut DevClientSession, world: &BundleWorld) -> TestRe
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -70,79 +72,104 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x37, 1).await?;
-    at_market(&mut client, world).await?;
-    let (wares, wares_bytes) = command(&mut client, request(1, 0, [0; 16])).await?;
-    let ware = wares.rows.first().cloned().ok_or("wares advertised nothing")?;
-    if wares.code != 1 || wares.action != 1 || ware.definition == 0 {
-        return Err(format!("wares reply {wares:?}").into());
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        at_market(&mut client, world).await?;
+        let (wares, wares_bytes) = command(&mut client, request(1, 0, [0; 16])).await?;
+        let ware = wares
+            .rows
+            .first()
+            .cloned()
+            .ok_or("wares advertised nothing")?;
+        if wares.code != 1 || wares.action != 1 || ware.definition == 0 {
+            return Err(format!("wares reply {wares:?}").into());
+        }
+        let (book, book_bytes) = command(&mut client, request(2, ware.definition, [0; 16])).await?;
+        if book.code != 1
+            || book.action != 2
+            || book.rows.iter().any(|r| r.definition != ware.definition)
+        {
+            return Err(format!("book reply {book:?}").into());
+        }
+        let advertised: Vec<u32> = wares.rows.iter().map(|r| r.definition).collect();
+        let invalid = (1..=u32::MAX)
+            .rev()
+            .find(|definition| !advertised.contains(definition))
+            .ok_or("no unadvertised definition")?;
+        let (refusal, refusal_bytes) = command(&mut client, request(2, invalid, [0; 16])).await?;
+        if refusal.code != 14 {
+            return Err(format!("expected refusal 14, observed {refusal:?}").into());
+        }
+        let (created, _) = command(&mut client, request(5, ware.definition, [0; 16])).await?;
+        if created.code != 1 || created.offer == [0; 16] {
+            return Err(format!(
+                "create refused code={}; needs premium-current and bank gold",
+                created.code
+            )
+            .into());
+        }
+        let offer = created.offer;
+        let (cancelled, _) = command(&mut client, request(7, 0, offer)).await?;
+        if cancelled.code != 1 {
+            return Err(format!("cancel code {}", cancelled.code).into());
+        }
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("logout refused".into());
+        }
+        row_needs_logout_0 = false;
+        let mut client = connect_character(clients, 0x38, 1).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            at_market(&mut client, world).await?;
+            let (own, own_bytes) = command(&mut client, request(3, 0, [0; 16])).await?;
+            let (history, history_bytes) = command(&mut client, request(4, 0, [0; 16])).await?;
+            let ended = history
+                .rows
+                .iter()
+                .find(|row| row.offer == offer)
+                .cloned()
+                .ok_or("cancelled offer absent from fresh-admission History")?;
+            if own.rows.iter().any(|row| row.offer == offer) {
+                return Err("cancelled offer active after fresh admission".into());
+            }
+            let expected = format!(
+                "definition={}\noffer={}\nrefusal=14\nfresh_own={}\nhistory_state={}\n",
+                ware.definition,
+                hex(&offer),
+                own.rows.len(),
+                ended.state
+            );
+            capture("e06-wares.bin", &wares_bytes)?;
+            capture("e06-book.bin", &book_bytes)?;
+            capture("e06-refused.bin", &refusal_bytes)?;
+            capture("e06-own.bin", &own_bytes)?;
+            capture("e06-history.bin", &history_bytes)?;
+            capture("e06-expected.txt", expected.as_bytes())?;
+            row_logout(&mut client).await?;
+            row_needs_logout_1 = false;
+            Ok(format!(
+                "definition={} refusal=14 history_state={} expiry=MISSING-SERVER",
+                ware.definition, ended.state
+            ))
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut client).await?;
+        }
+        row_result
     }
-    let (book, book_bytes) = command(&mut client, request(2, ware.definition, [0; 16])).await?;
-    if book.code != 1 || book.action != 2 || book.rows.iter().any(|r| r.definition != ware.definition)
-    {
-        return Err(format!("book reply {book:?}").into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
     }
-    let advertised: Vec<u32> = wares.rows.iter().map(|r| r.definition).collect();
-    let invalid = (1..=u32::MAX)
-        .rev()
-        .find(|definition| !advertised.contains(definition))
-        .ok_or("no unadvertised definition")?;
-    let (refusal, refusal_bytes) = command(&mut client, request(2, invalid, [0; 16])).await?;
-    if refusal.code != 14 {
-        return Err(format!("expected refusal 14, observed {refusal:?}").into());
-    }
-    let (created, _) = command(&mut client, request(5, ware.definition, [0; 16])).await?;
-    if created.code != 1 || created.offer == [0; 16] {
-        return Err(format!(
-            "create refused code={}; needs premium-current and bank gold",
-            created.code
-        )
-        .into());
-    }
-    let offer = created.offer;
-    let (cancelled, _) = command(&mut client, request(7, 0, offer)).await?;
-    if cancelled.code != 1 {
-        return Err(format!("cancel code {}", cancelled.code).into());
-    }
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout refused".into());
-    }
-    let mut client = connect_character(clients, 0x38, 1).await?;
-    at_market(&mut client, world).await?;
-    let (own, own_bytes) = command(&mut client, request(3, 0, [0; 16])).await?;
-    let (history, history_bytes) = command(&mut client, request(4, 0, [0; 16])).await?;
-    let ended = history
-        .rows
-        .iter()
-        .find(|row| row.offer == offer)
-        .cloned()
-        .ok_or("cancelled offer absent from fresh-admission History")?;
-    if own.rows.iter().any(|row| row.offer == offer) {
-        return Err("cancelled offer active after fresh admission".into());
-    }
-    let expected = format!(
-        "definition={}\noffer={}\nrefusal=14\nfresh_own={}\nhistory_state={}\n",
-        ware.definition,
-        hex(&offer),
-        own.rows.len(),
-        ended.state
-    );
-    capture("e06-wares.bin", &wares_bytes);
-    capture("e06-book.bin", &book_bytes);
-    capture("e06-refused.bin", &refusal_bytes);
-    capture("e06-own.bin", &own_bytes);
-    capture("e06-history.bin", &history_bytes);
-    capture("e06-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
-    Ok(format!(
-        "definition={} refusal=14 history_state={} expiry=MISSING-SERVER",
-        ware.definition, ended.state
-    ))
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(150), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E06.client status=CAPTURED evidence={observed}"
         )),
@@ -151,5 +178,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E06.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
     }
 }

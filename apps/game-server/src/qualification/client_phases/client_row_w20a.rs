@@ -8,17 +8,19 @@ use oteryn_protocol_oteryn::world_clock::{
     CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK, decode_world_clock,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W20A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0x96).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client.selected_capabilities().contains(&CAPABILITY_WORLD_LIGHT_V1) {
         return Err("step=admission world light capability 19 not selected".into());
     }
@@ -45,7 +47,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         if delta.base_revision != previous || delta.new_revision == previous || clock.light_color != 215 || clock.tibian_minute >= 1_440 {
             return Err(format!("step=delta{step} base={} new={} clock={clock:?}", delta.base_revision, delta.new_revision).into());
         }
-        capture(&format!("w20a-delta{step}.bin"), &delta.payload);
+        capture(&format!("w20a-delta{step}.bin"), &delta.payload)?;
         expected.push_str(&format!(
             "delta{step}={}:{}:{}\ndelta{step}_sequence={}\ndelta{step}_base={}\ndelta{step}_new={}\n",
             clock.tibian_minute, clock.light_level, clock.light_color, delta.server_sequence, delta.base_revision, delta.new_revision
@@ -53,15 +55,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         previous = delta.new_revision;
         last = clock;
     }
-    capture("w20a-snapshot.bin", &snapshot_payload);
-    capture("w20a-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("w20a-snapshot.bin", &snapshot_payload)?;
+    capture("w20a-expected.txt", expected.as_bytes())?;
+
     Ok(format!("minute={}..{} light={}", first.tibian_minute, last.tibian_minute, last.light_level))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20a.client status=CAPTURED evidence={observed}")),
+    match row_complete(journey(clients)).await {
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=W20a.client status=CAPTURED evidence={observed}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W20a.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")

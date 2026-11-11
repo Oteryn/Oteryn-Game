@@ -131,10 +131,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if (row.0, row.1, row.2, row.3, row.4) != expected || row.5 != at.x || row.6 != at.y {
         return Err(format!("step=durable observed={row:?};needed={expected:?}").into());
     }
-    let refused = report(&mut client, &request(wire::MAX_BUG_CATEGORY + 1, (0, 0, 0))).await;
-    // The shared client rejects an unknown category before sending; either an `Invalid` reply or
-    // an encode refusal proves the negative path, but a stored row never does.
-    if let Ok(reply) = &refused {
+    let refused = report(&mut client, &request(wire::MAX_BUG_CATEGORY + 1, (0, 0, 0))).await?;
+    {
+        let reply = &refused;
         let refusal = matches!(
             reply.code,
             wire::PlayerReportCode::Invalid | wire::PlayerReportCode::RateLimited

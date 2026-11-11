@@ -8,13 +8,13 @@ use oteryn_protocol_oteryn::item_forge::{
 };
 use std::num::NonZeroU64;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P18_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn occurrence(session: oteryn_protocol_oteryn::GameSessionId, ordinal: u8) -> [u8; 16] {
@@ -74,49 +74,60 @@ async fn forge(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x44).await?;
-    let session = client.join_snapshot().game_session_id;
-    let pair = carried_pair(&client)?;
-    let mut expected = String::new();
-    let (history_bytes, history) = forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    let rows = history.as_array().ok_or("HISTORY payload was not an array")?;
-    capture("p18-history.bin", &history_bytes);
-    expected.push_str(&format!("history_rows={}\n", rows.len()));
-    for (ordinal, (name, operation)) in [
-        ("fusion", Operation::Fusion),
-        ("dust_to_slivers", Operation::DustToSlivers),
-        ("dust_limit", Operation::DustLimit),
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let pair = operation.requires_pair().then_some(pair);
-        let (bytes, body) = forge(
-            &mut client,
-            operation,
-            occurrence(session, u8::try_from(ordinal + 1)?),
-            pair,
-            0,
-        )
-        .await?;
-        let succeeded = body["succeeded"].as_bool().ok_or("reply lacks succeeded")?;
-        let applied = body["applied"].as_bool().unwrap_or(succeeded);
-        let reason = body["reason"].as_str().unwrap_or("");
-        if !applied && reason.is_empty() && operation != Operation::DustLimit {
-            return Err(format!("{name} refusal lacked a reason: {body}").into());
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let session = client.join_snapshot().game_session_id;
+        let pair = carried_pair(&client)?;
+        let mut expected = String::new();
+        let (history_bytes, history) =
+            forge(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
+        let rows = history
+            .as_array()
+            .ok_or("HISTORY payload was not an array")?;
+        capture("p18-history.bin", &history_bytes)?;
+        expected.push_str(&format!("history_rows={}\n", rows.len()));
+        for (ordinal, (name, operation)) in [
+            ("fusion", Operation::Fusion),
+            ("dust_to_slivers", Operation::DustToSlivers),
+            ("dust_limit", Operation::DustLimit),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let pair = operation.requires_pair().then_some(pair);
+            let (bytes, body) = forge(
+                &mut client,
+                operation,
+                occurrence(session, u8::try_from(ordinal + 1)?),
+                pair,
+                0,
+            )
+            .await?;
+            let succeeded = body["succeeded"].as_bool().ok_or("reply lacks succeeded")?;
+            let applied = body["applied"].as_bool().unwrap_or(succeeded);
+            let reason = body["reason"].as_str().unwrap_or("");
+            if !applied && reason.is_empty() && operation != Operation::DustLimit {
+                return Err(format!("{name} refusal lacked a reason: {body}").into());
+            }
+            capture(&format!("p18-{}.bin", name.replace('_', "-")), &bytes)?;
+            expected.push_str(&format!(
+                "{name}.succeeded={succeeded}\n{name}.applied={applied}\n{name}.reason={reason}\n"
+            ));
         }
-        capture(&format!("p18-{}.bin", name.replace('_', "-")), &bytes);
-        expected.push_str(&format!(
-            "{name}.succeeded={succeeded}\n{name}.applied={applied}\n{name}.reason={reason}\n"
-        ));
-    }
-    capture("p18-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";"))
+        capture("p18-expected.txt", expected.as_bytes())?;
+
+        Ok(expected.replace('\n', ";"))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P18.client status=CAPTURED evidence={expected}"
         )),
@@ -124,5 +135,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P18.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P18.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn forge_occurrences_are_fenced_by_session_and_ordinal() -> TestResult {
+        let session = oteryn_protocol_oteryn::GameSessionId::decode(&v7(1, 2))?;
+        let first = occurrence(session, 0);
+        assert_ne!(first, occurrence(session, 1));
+        assert_ne!(
+            first,
+            occurrence(oteryn_protocol_oteryn::GameSessionId::decode(&v7(1, 3))?, 0)
+        );
+        assert_eq!(first[6] >> 4, 7);
+        assert_eq!(first[8] >> 6, 2);
+        Ok(())
     }
 }

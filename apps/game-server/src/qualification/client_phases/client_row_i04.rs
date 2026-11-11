@@ -12,7 +12,7 @@ const WRITTEN: u32 = 2834;
 const REWRITABLE: u32 = 2817;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result.unwrap_or_else(|_| Err("I04 client capture timed out".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=I04.client status=PASS evidence=mail-write-once-too-long-and-rewrite",
@@ -24,7 +24,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 fn units(client: &DevClientSession, definition: NonZeroU32) -> u64 {
-    client.inventory().map_or(0, |inventory| {
+    units_from(client.inventory(), definition)
+}
+
+fn units_from(
+    input: Option<&oteryn_dev_client::CharacterInventory>,
+    definition: NonZeroU32,
+) -> u64 {
+    input.map_or(0, |inventory| {
         inventory
             .entries
             .iter()
@@ -159,18 +166,17 @@ async fn write(client: &mut DevClientSession, handle: u64, text: String) -> Test
     Ok(reply.payload)
 }
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&path).join(name), bytes) {
-        evidence(&format!(
-            "I04_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
+    std::fs::write(Path::new(&path).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -185,6 +191,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let written = provisioning::item_reference(&definitions, WRITTEN)?;
     let rewrite = provisioning::item_reference(&definitions, REWRITABLE)?;
     let mut client = connect_world(clients, 0x04).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     acquire(&mut client, world, &metadata.npcs, once).await?;
     acquire(&mut client, world, &metadata.npcs, rewrite).await?;
     let once_item = client
@@ -240,8 +247,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ("i04-rewrite-first.bin", &rewrite_first),
         ("i04-rewrite-second.bin", &rewrite_second),
     ] {
-        capture(name, payload);
+        capture(name, payload)?;
     }
-    capture("i04-expected.txt", expected.as_bytes());
+    capture("i04-expected.txt", expected.as_bytes())?;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert_eq!(units_from(None, std::num::NonZeroU32::MIN), 0);
+    }
 }

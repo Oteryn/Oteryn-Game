@@ -8,16 +8,17 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    if let Err(error) = capture(clients).await {
+    if let Err(error) = capture(clients).await.inspect(|line| evidence(line)) {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C12.client status=FAIL evidence={error}"
         ));
     }
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_protocol_oteryn::actor_spell_catalog as catalog;
     let mut client = connect_world(clients, 0xc2).await?;
+    let row_result: TestResult<_> = async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
@@ -45,8 +46,8 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let result_payload = actor_spell::encode_spell_cast_result(outcome.disposition);
     let vitals_payload = actor_spell::encode_actor_vitals(&vitals)
         .map_err(|error| format!("C12 actor-vitals encoding failed: {error:?}"))?;
-    write_capture("c12-cast-result.bin", &result_payload);
-    write_capture("c12-actor-vitals.bin", &vitals_payload);
+    write_capture("c12-cast-result.bin", &result_payload)?;
+    write_capture("c12-actor-vitals.bin", &vitals_payload)?;
     write_capture(
         "c12-expected.txt",
         format!(
@@ -60,21 +61,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             u8::from(vitals.serene)
         )
         .as_bytes(),
-    );
-    evidence(&format!(
+    )?;
+    let verdict = format!(
         "SEAM_EVIDENCE e2e_all scenario=C12.client status=PASS evidence=spell-index-{}-vitals-{vitals:?}",
         spell.cast_index
-    ));
-    Ok(())
+    );
+    Ok(verdict)
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
-fn write_capture(name: &str, bytes: &[u8]) {
+fn write_capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(std::path::Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C12.client status=CAPTURE-WRITE-ERROR evidence={name}:{error}"
-        ));
-    }
+    std::fs::write(std::path::Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }

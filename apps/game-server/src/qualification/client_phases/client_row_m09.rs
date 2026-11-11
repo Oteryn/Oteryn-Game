@@ -70,7 +70,7 @@ struct MapObject {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
+    let result = row_complete(journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step deadline: M09 journey exceeded 600s; last server reply unavailable".into())
@@ -332,25 +332,30 @@ async fn buy(
     Err(format!("step 1 no reachable served NPC offer for {key}").into())
 }
 
-fn capture_inventory(client: &mut DevClientSession) {
+fn capture_inventory(client: &mut DevClientSession) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    let inventory = client.take_events().into_iter().rev().find_map(|event| match event {
-        oteryn_dev_client::SessionEvent::Inventory(delta) => Some(delta.value),
-        _ => None,
-    });
+    let inventory = client
+        .take_events()
+        .into_iter()
+        .rev()
+        .find_map(|event| match event {
+            oteryn_dev_client::SessionEvent::Inventory(delta) => Some(delta.value),
+            _ => None,
+        });
     let Some(inventory) = inventory else {
-        evidence("M09_CLIENT_CAPTURE write-error=no inventory delta followed committed fishing");
-        return;
+        return Err("M09 no inventory delta followed committed fishing".into());
     };
-    let payload = match oteryn_protocol_oteryn::item_view::encode_character_inventory(&inventory) {
-        Ok(payload) => payload,
-        Err(error) => {
-            evidence(&format!("M09_CLIENT_CAPTURE write-error=encode {error:?}"));
-            return;
-        }
-    };
+    let payload =
+        match oteryn_protocol_oteryn::item_view::encode_character_inventory_with_equip_drop(
+            &inventory, true,
+        ) {
+            Ok(payload) => payload,
+            Err(error) => {
+                return Err(format!("M09 inventory encode: {error:?}").into());
+            }
+        };
     let expected = inventory
         .entries
         .iter()
@@ -361,13 +366,13 @@ fn capture_inventory(client: &mut DevClientSession) {
         std::fs::write(root.join("m09-inventory.bin"), payload),
         std::fs::write(root.join("m09-expected.txt"), expected),
     ] {
-        if let Err(error) = result {
-            evidence(&format!("M09_CLIENT_CAPTURE write-error={error}"));
-        }
+        result?;
     }
+    Ok(())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(600);
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -378,6 +383,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let index = provisioning::item_index()?;
     let mut client = connect_world(clients, 0xb9).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
     let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 40).await?;
     let fish_ref = reference(&index, 3578)?;
@@ -435,7 +441,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step 2 committed fishing consumed rod".into());
     }
     row.pass("fishing-replies-and-deltas", committed);
-    capture_inventory(&mut client);
+    capture_inventory(&mut client)?;
 
     while units(&client, worm_ref) > 0 {
         let reply = use_on(
@@ -466,4 +472,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("no-bait-refusal", refusal);
 
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn world_scan_rejects_malformed_bundle() {
+        assert!(objects(&[]).is_err());
+        assert!(objects(&[255; 8]).is_err());
+    }
 }

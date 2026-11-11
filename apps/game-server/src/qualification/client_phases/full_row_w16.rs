@@ -25,7 +25,7 @@ const NPCS: [&str; 2] = ["oteryn:npc.mayor_pocaro", "oteryn:npc.wayland_smythers
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -44,81 +44,104 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let mut client = connect_world(clients, 0xb6).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        // The first mechanic command is deliberately local and must produce the same real delta as
+        // every other player walk.  It prevents a missing remote route from becoming a probe-only row.
+        let before = client.world_spatial().actor_position;
+        let step = client.step_retrying(StepDirection::East).await?;
+        if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() {
+            return Err(format!("step=initial-step observed={step:?}").into());
+        }
+        if client.world_spatial().actor_position == before {
+            return Err("step=initial-step observed=accepted-without-position-delta".into());
+        }
 
-    // The first mechanic command is deliberately local and must produce the same real delta as
-    // every other player walk.  It prevents a missing remote route from becoming a probe-only row.
-    let before = client.world_spatial().actor_position;
-    let step = client.step_retrying(StepDirection::East).await?;
-    if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() {
-        return Err(format!("step=initial-step observed={step:?}").into());
-    }
-    if client.world_spatial().actor_position == before {
-        return Err("step=initial-step observed=accepted-without-position-delta".into());
-    }
+        let mut reached = 0usize;
+        for key in NPCS {
+            let npc = metadata
+                .npcs
+                .npcs
+                .iter()
+                .find(|npc| npc.key == key)
+                .ok_or_else(|| format!("step=compiled-placement observed=missing-{key}"))?;
+            for placement in &npc.placements {
+                client.take_events();
+                let target = ActorPosition {
+                    x: i32::from(placement.x),
+                    y: i32::from(placement.y),
+                    floor: -i16::from(placement.floor),
+                };
+                let reply = client.session_mut().target_walk(target).await?;
+                if reply.status != CommandStatus::Accepted {
+                    return Err(format!(
+                        "step=target-walk-{key} observed=status-{:?}-payload-{:?}",
+                        reply.status, reply.payload
+                    )
+                    .into());
+                }
+                wait_for_destination(&mut client, target, key).await?;
+                reached += 1;
+                talk(&mut client, key, target).await?;
+            }
+        }
+        if reached != 3 {
+            return Err(
+                format!("step=summer-placements observed=reached-{reached}-expected-3").into(),
+            );
+        }
 
-    let mut reached = 0usize;
-    for key in NPCS {
-        let npc = metadata
-            .npcs
-            .npcs
-            .iter()
-            .find(|npc| npc.key == key)
-            .ok_or_else(|| format!("step=compiled-placement observed=missing-{key}"))?;
-        for placement in &npc.placements {
-            client.take_events();
-            let target = ActorPosition {
-                x: i32::from(placement.x),
-                y: i32::from(placement.y),
-                floor: -i16::from(placement.floor),
-            };
-            let reply = client.session_mut().target_walk(target).await?;
-            if reply.status != CommandStatus::Accepted {
+        let saved = client.world_spatial().actor_position;
+        client.take_events();
+        let refused = client
+            .session_mut()
+            .target_walk(ActorPosition { floor: 16, ..saved })
+            .await?;
+        if refused.status != CommandStatus::Rejected {
+            return Err(format!("step=invalid-floor-refusal observed={refused:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        if client.world_spatial().actor_position != saved {
+            return Err("step=invalid-floor-refusal observed=position-changed".into());
+        }
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("step=logout observed=refused".into());
+        }
+        row_needs_logout_0 = false;
+        if row_needs_logout_0 {
+            row_logout(&mut client).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut fresh = connect_world(clients, 0xb7).await?;
+        let row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            if fresh.world_spatial().actor_position != saved {
                 return Err(format!(
-                    "step=target-walk-{key} observed=status-{:?}-payload-{:?}",
-                    reply.status, reply.payload
+                    "step=fresh-admission observed={:?}-expected={saved:?}",
+                    fresh.world_spatial().actor_position
                 )
                 .into());
             }
-            wait_for_destination(&mut client, target, key).await?;
-            reached += 1;
-            talk(&mut client, key, target).await?;
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut fresh).await?;
         }
+        row_result
     }
-    if reached != 3 {
-        return Err(format!("step=summer-placements observed=reached-{reached}-expected-3").into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
     }
-
-    let saved = client.world_spatial().actor_position;
-    client.take_events();
-    let refused = client
-        .session_mut()
-        .target_walk(ActorPosition { floor: 16, ..saved })
-        .await?;
-    if refused.status != CommandStatus::Rejected {
-        return Err(format!("step=invalid-floor-refusal observed={refused:?}").into());
-    }
-    client.service_liveness(Duration::from_millis(50)).await?;
-    if client.world_spatial().actor_position != saved {
-        return Err("step=invalid-floor-refusal observed=position-changed".into());
-    }
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
-    }
-    drop(client);
-    let fresh = connect_world(clients, 0xb7).await?;
-    if fresh.world_spatial().actor_position != saved {
-        return Err(format!(
-            "step=fresh-admission observed={:?}-expected={saved:?}",
-            fresh.world_spatial().actor_position
-        )
-        .into());
-    }
-    Ok(())
+    row_result
 }
 
 async fn wait_for_destination(

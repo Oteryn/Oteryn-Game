@@ -86,3 +86,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     logout(&mut client).await?;
     Err(format!("achievements-defence-rows:{rows}-blessings:{owned}-proven;step=quest-tracker observed=no-started-quest-for-the-character;needed:started-quest-and-title-route").into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn evidence_tokens_cover_empty_and_whitespace() {
+        assert_eq!(token(""), "");
+        assert!(!token("a b\tc\nd").chars().any(char::is_whitespace));
+        assert_eq!(token("source:path.rs:12"), "source:path.rs:12");
+    }
+}

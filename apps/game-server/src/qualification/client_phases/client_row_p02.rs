@@ -8,13 +8,13 @@ use oteryn_protocol_oteryn::bosstiary_slots::{
     BossSlotReply, BossSlotRequest, COMMAND_TYPE_BOSSTIARY_SLOTS,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn slots(
@@ -34,12 +34,14 @@ async fn slots(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("slots {request:?} status={:?}", reply.status).into());
     }
-    capture(name, &reply.payload);
+    capture(name, &reply.payload)?;
     BossSlotReply::decode(&reply.payload).ok_or_else(|| "malformed slot reply".into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x22).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let query = boss_encounter::query_taints("").ok_or("cooldown encoder")?;
     let reply = client
         .session_mut()
@@ -48,7 +50,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("cooldown query status={:?}", reply.status).into());
     }
-    capture("p02-cooldowns.bin", &reply.payload);
+    capture("p02-cooldowns.bin", &reply.payload)?;
     let snapshot = boss_encounter::decode(&reply.payload).ok_or("malformed cooldown snapshot")?;
     let slot_state = slots(&mut client, BossSlotRequest::Query, "p02-slots.bin").await?;
     let refused = slots(
@@ -88,12 +90,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         slot_state.bosses[1],
         refused.status
     );
-    capture("p02-expected.txt", expected.as_bytes());
+    capture("p02-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P02.client status=CAPTURED evidence={expected}"
         )),

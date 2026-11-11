@@ -157,11 +157,14 @@ async fn journey(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let book = spell_book()?;
     let ordinary = index(&book, "exura")?;
     let primary_peer = index(&book, "exura gran")?;
     let aggressive = index(&book, "exevo vis lux")?;
     let mut client = connect_world(clients, 0xc4).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
 
     let before = mana(&client)?;
     let pz = cast(&mut client, aggressive).await?;
@@ -350,7 +353,10 @@ async fn journey(
     {
         return Err("LOGOUT refused after cast lifecycle".into());
     }
+    row_needs_logout_0 = false;
     let mut fresh = connect_world(clients, 0xc5).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if mana(&fresh)? != durable_mana
         || conditions(&mut fresh)
             .await?
@@ -370,6 +376,16 @@ async fn journey(
     }
     row.pass(7, (&post, durable_mana));
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -384,12 +400,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        tokio::time::timeout(
-            Duration::from_secs(120),
-            journey(&mut row, clients, world, &metadata.spawns),
-        )
-        .await
-        .map_err(|_| "C04 journey deadline after real player commands")?
+        row_complete(journey(&mut row, clients, world, &metadata.spawns))
+            .await
+            .map_err(|_| "C04 journey deadline after real player commands")?
     }
     .await;
     row.finish(result);

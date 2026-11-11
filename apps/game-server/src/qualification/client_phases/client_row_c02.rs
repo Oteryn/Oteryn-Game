@@ -5,18 +5,16 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::item_view;
 
-fn write_capture(name: &str, bytes: &[u8]) {
+fn write_capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C02.client capture={name} error={error}"
-        ));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -27,6 +25,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc2).await?;
+    let row_result: TestResult<_> = async {
     travel_to_spawn(
         &mut client,
         world,
@@ -63,7 +62,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("C02 session has no inventory state")?;
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
         match item_view::encode_character_inventory_with_equip_drop(inventory, true) {
-            Ok(payload) => write_capture("c02-inventory.bin", &payload),
+            Ok(payload) => write_capture("c02-inventory.bin", &payload)?,
             Err(error) => evidence(&format!(
                 "SEAM_EVIDENCE e2e_all scenario=C02.client capture=c02-inventory.bin error={error:?}"
             )),
@@ -79,9 +78,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 )
             })
             .collect::<String>();
-        write_capture("c02-expected.txt", expected.as_bytes());
+        write_capture("c02-expected.txt", expected.as_bytes())?;
     }
-    evidence(&format!(
+    let verdict = format!(
         "SEAM_EVIDENCE e2e_all scenario=C02.client status=CAPTURED attack={:?} ammo={}",
         reply.disposition,
         inventory
@@ -90,12 +89,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .filter(|item| item.slot == item_view::EquipmentSlot::Ammo)
             .map(|item| u64::from(item.item.count.get()))
             .sum::<u64>()
-    ));
-    Ok(())
+    );
+    Ok(verdict)
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = journey(clients).await {
+    if let Err(error) = journey(clients).await.inspect(|line| evidence(line)) {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C02.client status=FAIL evidence={}",
             error.to_string().replace(' ', "-")

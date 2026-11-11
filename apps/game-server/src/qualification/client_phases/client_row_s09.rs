@@ -6,52 +6,75 @@
 use super::*;
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S09_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_character(clients, 0x43, 0).await?;
-    let position = client.world_spatial().actor_position;
-    let session = client.join_snapshot().game_session_id;
-    let outcome = client.session_mut().logout().await?;
-    if outcome.status != CommandStatus::Accepted || outcome.result != Some(LogoutResult::Accepted)
-    {
-        return Err(format!("step=logout observed {outcome:?}").into());
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let position = client.world_spatial().actor_position;
+        let session = client.join_snapshot().game_session_id;
+        let outcome = client.session_mut().logout().await?;
+        if outcome.status != CommandStatus::Accepted
+            || outcome.result != Some(LogoutResult::Accepted)
+        {
+            return Err(format!("step=logout observed {outcome:?}").into());
+        }
+        if row_needs_logout_0 {
+            row_logout(&mut client).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut fresh = connect_character(clients, 0x46, 0).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            let retained = fresh.world_spatial().actor_position == position
+                && fresh.join_snapshot().game_session_id != session;
+            row_logout(&mut fresh).await?;
+            row_needs_logout_1 = false;
+            if !retained {
+                return Err(format!(
+                    "step=relog position {:?} expected {position:?} or session not renewed",
+                    fresh.world_spatial().actor_position
+                )
+                .into());
+            }
+            capture(
+                "s09-expected.txt",
+                format!(
+                    "logout\tstatus={:?}\tresult={:?}\n",
+                    outcome.status, outcome.result
+                )
+                .as_bytes(),
+            )?;
+            Ok(format!("logout=Accepted relog_position={position:?}"))
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut fresh).await?;
+        }
+        row_result
     }
-    drop(client);
-    let mut fresh = connect_character(clients, 0x46, 0).await?;
-    let retained = fresh.world_spatial().actor_position == position
-        && fresh.join_snapshot().game_session_id != session;
-    let _ = fresh.session_mut().logout().await;
-    if !retained {
-        return Err(format!(
-            "step=relog position {:?} expected {position:?} or session not renewed",
-            fresh.world_spatial().actor_position
-        )
-        .into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
     }
-    capture(
-        "s09-expected.txt",
-        format!(
-            "logout\tstatus={:?}\tresult={:?}\n",
-            outcome.status, outcome.result
-        )
-        .as_bytes(),
-    );
-    Ok(format!("logout=Accepted relog_position={position:?}"))
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S09.client status=CAPTURED evidence={observed}"
         )),

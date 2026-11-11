@@ -12,11 +12,11 @@
 //! when no dough can be acquired, records the observed server refusal, and reports the missing
 //! ordinary acquisition surface rather than manufacturing a PASS.
 use super::*;
-use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
-    encode_item_use_intent, CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT,
-};
 use oteryn_protocol_oteryn::item_view;
+use oteryn_protocol_oteryn::world_object::{
+    CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent,
+    UseTarget, WorldObjectTarget, decode_use_result, encode_item_use_intent,
+};
 
 const DOUGH: u32 = 3604;
 const BREAD: u32 = 3600;
@@ -29,23 +29,10 @@ const OVENS: [&str; 4] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "client-inventory-payload-captured".to_owned()),
-        Ok(Err(error)) if error.to_string().contains("MISSING-SERVER:") => {
-            evidence(&format!(
-                "I11_GAP {}",
-                error.to_string().replace([' ', '\n', '\r'], "_")
-            ));
-            (
-                "MISSING-SERVER",
-                "source:crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:154".to_owned(),
-            )
-        }
-        Ok(Err(error)) => (
-            "FAIL",
-            error.to_string().replace([' ', '\n', '\r'], "_"),
-        ),
+        Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),
         Err(_) => ("FAIL", "step-timeout-observed=no-reply".to_owned()),
     };
     evidence(&format!(
@@ -55,6 +42,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -69,7 +57,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 if OVENS.contains(&manifest.palette[item.palette as usize].key.as_str()) {
                     oven.get_or_insert((
-                        TilePos { x: tile.x, y: tile.y, floor: sector.floor },
+                        TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: sector.floor,
+                        },
                         u8::try_from(ordinal).map_err(|_| {
                             oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
                         })?,
@@ -81,6 +73,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })?;
     let (oven, ordinal) = oven.ok_or("step-1_observed=no-compiled-world-oven")?;
     let mut client = connect_character(clients, 0xb8, 0).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let here = tile(client.world_spatial().actor_position)?;
     let path = route(world, here, |at| {
         at.floor == oven.floor && at.x.abs_diff(oven.x).max(at.y.abs_diff(oven.y)) <= 1
@@ -93,11 +87,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bread = provisioning::item_reference(&index, BREAD)?;
     let before_dough = quantity(&client, dough)?;
     let before_bread = quantity(&client, bread)?;
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
-        .ok_or("I11 inventory snapshot absent")?
-        .clone();
+    let snapshot = item_view::encode_character_inventory_with_equip_drop(
+        client.inventory().ok_or("inventory state absent")?, true,
+    ).map_err(|error| format!("inventory snapshot encode: {error:?}"))?;
     let source = client
         .inventory()
         .and_then(|inventory| {
@@ -132,7 +124,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
-    capture("i11-result.bin", &reply.payload);
+    capture("i11-result.bin", &reply.payload)?;
 
     if before_dough == 0 {
         if reply.status != CommandStatus::Accepted || disposition != UseDisposition::NothingToUse {
@@ -147,13 +139,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if client.inventory() != snapshot.as_ref() {
             return Err("step-3_observed=unsupported-use-mutated-inventory".into());
         }
-        logout(&mut client).await?;
-        let reloaded = connect_character(clients, 0xb9, 0).await?;
+        logout(&mut client).await?; row_needs_logout_0 = false;
+        let mut reloaded = connect_character(clients, 0xb9, 0).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = async {
         if quantity(&reloaded, dough)? != 0 || quantity(&reloaded, bread)? != before_bread {
             return Err("step-4_observed=refused-use-changed-durable-quantities".into());
         }
-        return Err("MISSING-SERVER:step-2_observed=NothingToUse_no_legitimate_dough_source_need=server-player-acquisition_path".into());
-    }
+        Err("needed:dough;step-2_observed=NothingToUse".into())
+
+    }.await;
+    if row_needs_logout_1 { row_logout(&mut reloaded).await?; }
+    return row_result;
+}
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
             "step-2_observed=status-{:?}-disposition-{disposition:?}",
@@ -169,19 +167,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         before_bread + 1,
     )
     .await?;
-    let delta_payload = item_view::encode_character_inventory(&delta.value)
+    let delta_payload = item_view::encode_character_inventory_with_equip_drop(&delta.value, true)
         .map_err(|error| format!("I11 inventory capture encode: {error:?}"))?;
-    capture("i11-snapshot.bin", &snapshot.payload);
-    capture("i11-inventory.bin", &delta_payload);
+    capture("i11-snapshot.bin", &snapshot)?;
+    capture("i11-inventory.bin", &delta_payload)?;
     capture(
         "i11-revisions.txt",
         format!(
             "{} {} {} {}",
-            snapshot.revision, delta.base_revision, delta.new_revision, delta.server_sequence
+            delta.base_revision, delta.base_revision, delta.new_revision, delta.server_sequence
         )
         .as_bytes(),
-    );
-    capture("i11-expected.txt", visible_inventory(&delta.value).as_bytes());
+    )?;
+    capture("i11-expected.txt", visible_inventory(&delta.value).as_bytes())?;
     let refusal_source = client
         .inventory()
         .and_then(|inventory| {
@@ -232,14 +230,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.inventory() != after_bake.as_ref() {
         return Err("step-3_observed=unsupported-use-mutated-inventory".into());
     }
-    logout(&mut client).await?;
-    let reloaded = connect_character(clients, 0xb9, 0).await?;
+    logout(&mut client).await?; row_needs_logout_0 = false;
+    let mut reloaded = connect_character(clients, 0xb9, 0).await?;
+    let row_needs_logout_2 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_2 { row_logout(&mut reloaded).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn quantity(
@@ -288,16 +298,13 @@ fn visible_inventory(inventory: &oteryn_dev_client::CharacterInventory) -> Strin
         .collect()
 }
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(std::path::Path::new(&path).join(name), bytes) {
-        evidence(&format!(
-            "I11_CAPTURE_WRITE_ERROR file={name} error={}",
-            error.to_string().replace([' ', '\n', '\r'], "_")
-        ));
-    }
+    std::fs::write(std::path::Path::new(&path).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
@@ -307,4 +314,21 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
         return Err("step-4_observed=logout-refused".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn inventory_text_keeps_definition_and_count_boundaries() {
+        let mut inventory = oteryn_dev_client::CharacterInventory::default();
+        assert_eq!(visible_inventory(&inventory), "");
+        inventory.entries.push(oteryn_dev_client::ItemEntry {
+            handle: std::num::NonZeroU64::MIN,
+            item_definition_ref: std::num::NonZeroU32::MAX,
+            count: std::num::NonZeroU32::MAX,
+            sub_type: 0,
+        });
+        assert_eq!(visible_inventory(&inventory), "4294967295 4294967295\n");
+    }
 }

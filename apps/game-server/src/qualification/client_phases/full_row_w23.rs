@@ -14,8 +14,7 @@ use super::*;
 use oteryn_dev_client::{ChatLine, DevClientSession, SessionEvent};
 
 const SVARGROND_UNIQUE: u16 = 9066;
-const REFUSAL: &str =
-    "You first need to absolve the Barbarian Test Quest to become citizen!";
+const REFUSAL: &str = "You first need to absolve the Barbarian Test Quest to become citizen!";
 
 #[derive(Clone, Copy, Debug)]
 struct CitizenTile {
@@ -26,10 +25,12 @@ struct CitizenTile {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-after-240s need=reachable-citizen-route".into()),
+        Err(_) => {
+            Err("step=journey observed=timeout-after-240s need=reachable-citizen-route".into())
+        }
     };
     if let Err(error) = &result {
         evidence(&format!("W23_GAP {error}"));
@@ -48,15 +49,35 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 fn evidence_token(value: &str) -> String {
     value
         .chars()
-        .map(|character| if character.is_ascii_alphanumeric() || "-_:./".contains(character) { character } else { '-' })
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || "-_:./".contains(character) {
+                character
+            } else {
+                '-'
+            }
+        })
         .collect()
 }
 
 fn town_for(unique: u16) -> Option<u32> {
     Some(match unique {
-        9056 => 6, 9057 => 8, 9058 => 9, 9059 => 5, 9060 => 7, 9061 => 13,
-        9062 => 10, 9063 => 11, 9064 => 14, 9065 => 15, 9066 => 16, 9067 => 17,
-        9068 => 12, 9240 => 18, 9500 => 21, 9510 => 20, 9515 => 22,
+        9056 => 6,
+        9057 => 8,
+        9058 => 9,
+        9059 => 5,
+        9060 => 7,
+        9061 => 13,
+        9062 => 10,
+        9063 => 11,
+        9064 => 14,
+        9065 => 15,
+        9066 => 16,
+        9067 => 17,
+        9068 => 12,
+        9240 => 18,
+        9500 => 21,
+        9510 => 20,
+        9515 => 22,
         _ => return None,
     })
 }
@@ -70,7 +91,11 @@ fn citizen_tiles(bytes: &[u8]) -> TestResult<Vec<CitizenTile>> {
                     && let Some(town) = town_for(unique)
                 {
                     found.push(CitizenTile {
-                        at: TilePos { x: tile.x, y: tile.y, floor: sector.floor },
+                        at: TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: sector.floor,
+                        },
                         unique,
                         town,
                     });
@@ -88,8 +113,15 @@ fn approach(
     from: TilePos,
     target: TilePos,
 ) -> Option<(Vec<StepDirection>, StepDirection)> {
-    for direction in [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West] {
-        let path = route(world, from, |at| destination(world, at, direction) == Some(target));
+    for direction in [
+        StepDirection::North,
+        StepDirection::East,
+        StepDirection::South,
+        StepDirection::West,
+    ] {
+        let path = route(world, from, |at| {
+            destination(world, at, direction) == Some(target)
+        });
         if let Some(path) = path {
             return Some((path, direction));
         }
@@ -97,10 +129,7 @@ fn approach(
     None
 }
 
-async fn messages_until(
-    client: &mut DevClientSession,
-    expected: &str,
-) -> TestResult {
+async fn messages_until(client: &mut DevClientSession, expected: &str) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
         for event in client.take_events() {
@@ -113,7 +142,10 @@ async fn messages_until(
             }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=server-message observed=timeout expected={expected:?} need=Game-chat-delta").into());
+            return Err(format!(
+                "step=server-message observed=timeout expected={expected:?} need=Game-chat-delta"
+            )
+            .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
@@ -125,12 +157,16 @@ async fn step_onto(
 ) -> TestResult<oteryn_dev_client::StepOutcome> {
     let outcome = client.step_retrying(direction).await?;
     if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
-        return Err(format!("step=citizen-step observed={outcome:?} need=moved-reply-and-spatial-delta").into());
+        return Err(format!(
+            "step=citizen-step observed={outcome:?} need=moved-reply-and-spatial-delta"
+        )
+        .into());
     }
     Ok(outcome)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -141,6 +177,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let tiles = citizen_tiles(&bytes)?;
     let mut client = connect_world(clients, 0xd8).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
 
     let from = tile(client.world_spatial().actor_position)?;
     let (selected, path, direction) = tiles.iter()
@@ -166,8 +204,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?} need=accepted").into());
     }
-    drop(client);
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xd9).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.world_spatial().actor_position != expected_position {
         return Err(format!("step=fresh-admission observed={:?} need=durable-home-temple-{expected_position:?}", fresh.world_spatial().actor_position).into());
     }
@@ -188,12 +228,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence(&format!("W23_CHECK refusal PASS reply={outcome:?} position={before:?}"));
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn evidence_is_one_report_token() {
-        assert_eq!(super::evidence_token("step=x observed=a b"), "step-x-observed-a-b");
+        assert_eq!(
+            super::evidence_token("step=x observed=a b"),
+            "step-x-observed-a-b"
+        );
     }
 }

@@ -12,13 +12,13 @@ use prey::prey as wire;
 const RAT: &str = "oteryn:creature.rat";
 const NOT_A_CREATURE: &str = "oteryn:creature.not_a_creature";
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W22B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -26,23 +26,34 @@ async fn send(
     request: wire::Request,
 ) -> TestResult<(prey::PreyResponse, wire::Reply, Option<wire::Reply>)> {
     let response = prey::send(client.session_mut(), &request).await?;
-    if !matches!(response.status, CommandStatus::Accepted | CommandStatus::DuplicateReplay) {
+    if !matches!(
+        response.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
         return Err(format!("{request:?} status={:?}", response.status).into());
     }
-    let receipt = wire::decode_reply(&response.payload).map_err(|error| format!("{request:?} receipt {error:?}"))?;
+    let receipt = wire::decode_reply(&response.payload)
+        .map_err(|error| format!("{request:?} receipt {error:?}"))?;
     let current = match &response.current {
-        Some(bytes) => Some(wire::decode_reply(bytes).map_err(|error| format!("{request:?} current {error:?}"))?),
+        Some(bytes) => Some(
+            wire::decode_reply(bytes).map_err(|error| format!("{request:?} current {error:?}"))?,
+        ),
         None => None,
     };
     Ok((response, receipt, current))
 }
 
 fn active(reply: &wire::Reply) -> Option<&wire::Slot> {
-    reply.slots.iter().find(|slot| slot.selected == RAT && slot.bonus != 0)
+    reply
+        .slots
+        .iter()
+        .find(|slot| slot.selected == RAT && slot.bonus != 0)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x99).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client.selected_capabilities().contains(&wire::CAPABILITY_PREY_V1) {
         return Err("step=admission Prey capability 140 not selected".into());
     }
@@ -68,7 +79,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let slot = active(&receipt)
         .ok_or("step=select no active rat loot bonus slot")?
         .clone();
-    capture("w22b-active.bin", &response.payload);
+    capture("w22b-active.bin", &response.payload)?;
     let (refused, refusal, refused_current) = send(
         &mut client,
         wire::Request::SelectAny { slot: slot.slot, creature: NOT_A_CREATURE.into() },
@@ -79,26 +90,51 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refusal.status == 0 || after != &slot {
         return Err(format!("step=refusal non-offered SelectAny not refused or slot changed: {refusal:?}").into());
     }
-    capture("w22b-refused.bin", &refused.payload);
+    capture("w22b-refused.bin", &refused.payload)?;
     capture(
         "w22b-refused-current.bin",
         refused.current.as_deref().ok_or("step=refusal current payload absent")?,
-    );
+    )?;
     let expected = format!(
         "slot={}\nstate={}\nselected={}\nbonus={}\ngrade={}\npercent={}\nselection_epoch={}\nrefusal_status={}\n",
         slot.slot, slot.state, slot.selected, slot.bonus, slot.grade, slot.percent, slot.selection_epoch, refusal.status
     );
-    capture("w22b-expected.txt", expected.as_bytes());
+    capture("w22b-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
-        Ok(Ok(expected)) => evidence(&format!("e2e_all scenario=W22b.client status=CAPTURED evidence={expected}")),
+    match row_complete(journey(clients)).await {
+        Ok(Ok(expected)) => evidence(&format!(
+            "e2e_all scenario=W22b.client status=CAPTURED evidence={expected}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W22b.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W22b.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn empty_prey_state_is_not_an_active_or_selected_slot() {
+        let reply = wire::Reply {
+            status: 0,
+            wildcard_balance: 0,
+            slots: vec![],
+            list_size: 0,
+            expansion_owned: false,
+            offered_today: vec![],
+            offered_next: String::new(),
+        };
+        assert!(active(&reply).is_none());
     }
 }

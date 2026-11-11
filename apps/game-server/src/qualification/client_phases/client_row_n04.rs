@@ -9,13 +9,13 @@ use oteryn_protocol_oteryn::player_report as wire;
 
 const COMMENT: &str = "N04 bug report: the depot chest closed by itself";
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N04_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn report(
@@ -39,7 +39,9 @@ async fn report(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0xae).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let request = wire::PlayerReportRequest {
         kind: wire::KIND_BUG,
         category: 3,
@@ -70,19 +72,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
          second_wait={}\n",
         first.code, first.report, second.code, second.report, second.wait_seconds
     );
-    capture("n04-request.bin", &payload);
-    capture("n04-first.bin", &first_bytes);
-    capture("n04-second.bin", &second_bytes);
-    capture("n04-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("n04-request.bin", &payload)?;
+    capture("n04-first.bin", &first_bytes)?;
+    capture("n04-second.bin", &second_bytes)?;
+    capture("n04-expected.txt", expected.as_bytes())?;
+
     Ok(format!(
         "first={:?}#{}|second={:?}#{}wait{}",
         first.code, first.report, second.code, second.report, second.wait_seconds
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N04.client status=CAPTURED evidence={observed}"
         )),

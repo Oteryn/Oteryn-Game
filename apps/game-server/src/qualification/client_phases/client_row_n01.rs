@@ -14,13 +14,13 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -33,8 +33,12 @@ async fn send(
         .await?)
 }
 
-async fn first_page(client: &mut DevClientSession, world: [u8; 16]) -> TestResult<(house::Page, Vec<u8>)> {
-    let request = house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
+async fn first_page(
+    client: &mut DevClientSession,
+    world: [u8; 16],
+) -> TestResult<(house::Page, Vec<u8>)> {
+    let request =
+        house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
     let reply = send(client, request).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("catalogue status {:?}", reply.status).into());
@@ -67,6 +71,7 @@ fn entrance(key: &str) -> TestResult<TilePos> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world_id = WorldId::decode(&clients.world)?;
@@ -74,6 +79,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world_bytes = *world_id.as_bytes();
     // Character 0 owns the house; S05 uses character 1 and the first private house of the page.
     let mut client = connect_character(clients, 0xab, 0).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let (initial, _) = first_page(&mut client, world_bytes).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let mut chosen = None;
@@ -135,20 +141,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         hex(&guest),
         current.acl_revision,
     );
-    capture("n01-page.bin", &page_bytes);
-    capture("n01-acl-request.bin", &acl_request);
-    capture("n01-acl.bin", &acl_reply.payload);
-    capture("n01-stale.bin", &stale_reply.payload);
-    capture("n01-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("n01-page.bin", &page_bytes)?;
+    capture("n01-acl-request.bin", &acl_request)?;
+    capture("n01-acl.bin", &acl_reply.payload)?;
+    capture("n01-stale.bin", &stale_reply.payload)?;
+    capture("n01-expected.txt", expected.as_bytes())?;
+
     Ok(format!(
         "house={}|acl_revision={}->{acl_revision}|stale={stale_disposition}",
         private.house, current.acl_revision
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(150), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N01.client status=CAPTURED evidence={}",
             observed.replace(' ', "_")
@@ -158,5 +169,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=N01.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
     }
 }

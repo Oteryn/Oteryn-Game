@@ -6,17 +6,21 @@ use oteryn_dev_client::client_runtime::party as runtime;
 use oteryn_dev_client::{DevClientSession, EntityRef};
 use runtime::party::{PartyDisposition, PartyIntent};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
-    let entities = client.world_entities().ok_or("entity snapshot absent")?;
+    own_from(client.world_entities())
+}
+
+fn own_from(input: Option<&oteryn_dev_client::WorldEntities>) -> TestResult<EntityRef> {
+    let entities = input.ok_or("entity snapshot absent")?;
     entities
         .iter()
         .find(|entry| &entry.entity.identity == entities.own_identity())
@@ -54,6 +58,7 @@ async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> Tes
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -63,6 +68,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut leader = connect_character(clients, 0x47, 0).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let peer = connect_character(clients, 0x48, 1).await;
     let mut peer = peer?;
     let other = tile(peer.world_spatial().actor_position)?;
@@ -80,7 +86,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("invitation mismatch: {:?}", invited.result).into());
     };
     let inviter = invitation.name.clone();
-    capture("s01-invitations.bin", &invited.view);
+    capture("s01-invitations.bin", &invited.view)?;
 
     let joined = send(&mut peer, Some(PartyIntent::Accept(invitation.handle))).await?;
     if joined.result.members.len() != 2 || !joined.result.invitations.is_empty() {
@@ -90,8 +96,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("join has no non-leader member".into());
     };
     let joiner_name = joiner.name.clone();
-    capture("s01-joined-op.bin", &joined.operation);
-    capture("s01-joined-view.bin", &joined.view);
+    capture("s01-joined-op.bin", &joined.operation)?;
+    capture("s01-joined-view.bin", &joined.view)?;
 
     let leader_view = send(&mut leader, None).await?;
     let Some(member) = leader_view.result.members.iter().find(|m| !m.leader) else {
@@ -106,22 +112,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("leadership did not pass".into());
     }
-    capture("s01-passed-op.bin", &passed.operation);
-    capture("s01-passed-view.bin", &passed.view);
+    capture("s01-passed-op.bin", &passed.operation)?;
+    capture("s01-passed-view.bin", &passed.view)?;
     send(&mut leader, Some(PartyIntent::Leave)).await?;
-    let _ = leader.session_mut().logout().await?;
-    let _ = peer.session_mut().logout().await?;
+
+    row_logout(&mut peer).await?;
     let expected = format!(
         "inviter={inviter}\njoiner={joiner_name}\nmembers={}\nshared_xp={}\nnew_leader={joiner_name}\n",
         joined.result.members.len(),
         joined.result.shared_xp_enabled
     );
-    capture("s01-expected.txt", expected.as_bytes());
+    capture("s01-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut leader).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S01.client status=CAPTURED evidence={expected}"
         )),
@@ -129,5 +140,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=S01.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=S01.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(own_from(None).is_err());
     }
 }

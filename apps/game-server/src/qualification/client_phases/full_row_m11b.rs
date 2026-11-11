@@ -32,14 +32,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Ok(Err(error)) => {
             let detail = error.to_string();
             evidence(&format!("M11B_GAP observed={detail}"));
-            if detail.starts_with("landing-denied:") {
-                (
-                    "MISSING-SERVER",
-                    Some("source:crates/gameplay/spell/src/spell/world_execution.rs:516"),
-                )
-            } else {
-                ("FAIL", None)
-            }
+            ("FAIL", None::<&str>)
         }
         Err(_) => {
             evidence("M11B_GAP observed=journey-timeout");

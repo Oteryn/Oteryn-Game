@@ -3,8 +3,8 @@
 //! The real C20b journey runs immediately before this packet and buys/equips/consumes an Amulet
 //! of Loss before losing the replacement backpack without it. A fresh admission after those
 //! server-observed
-//! actions supplies the exact inventory snapshot bytes consumed by
-//! `crates/session/src/snapshot_state.rs::SnapshotState::install_domains`; subsequent inventory
+//! actions supplies installed inventory state, re-encoded with the production codec for replay.
+//! `crates/session/src/snapshot_state.rs::SnapshotState::install_domains` consumes it; inventory
 //! deltas are consumed by `crates/session/src/domain_dispatch.rs::Session::apply_state_delta`,
 //! and `crates/session/src/session_access.rs::Session::inventory` exposes the resulting state.
 
@@ -15,28 +15,39 @@ mod journey {
 
     pub(super) async fn run_and_capture(clients: &SeamClients<'_>) -> TestResult {
         let mut client = super::super::connect_character(clients, 0xcb, 0).await?;
-        let snapshot = client
-            .session_mut()
-            .gated_snapshot(oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
-            .ok_or("C20b fresh admission omitted the inventory snapshot")?
-            .clone();
-        let inventory = client
-            .inventory()
-            .ok_or("C20b fresh admission did not install inventory")?;
-        if inventory.main_backpack.is_some() || !inventory.entries.is_empty() {
-            return Err("C20b final server-observed inventory retained backpack custody".into());
+        let row_result: TestResult<_> = async {
+            // Re-encode the installed core store. Revision 1 below is the replay peer's
+            // local baseline, not a revision invented for the live server.
+            let snapshot =
+                oteryn_protocol_oteryn::item_view::encode_character_inventory_with_equip_drop(
+                    client.inventory().ok_or("inventory state absent")?,
+                    true,
+                )
+                .map_err(|error| format!("inventory snapshot encode: {error:?}"))?;
+            let inventory = client
+                .inventory()
+                .ok_or("C20b fresh admission did not install inventory")?;
+            if inventory.main_backpack.is_some() || !inventory.entries.is_empty() {
+                return Err(
+                    "C20b final server-observed inventory retained backpack custody".into(),
+                );
+            }
+            capture(1, &snapshot, inventory)?;
+            Ok(())
         }
-        capture(snapshot.revision, &snapshot.payload, inventory);
-        Ok(())
+        .await;
+        let logout_result = row_logout(&mut client).await;
+        logout_result?;
+        row_result
     }
 
     fn capture(
         revision: u64,
         payload: &[u8],
         inventory: &oteryn_dev_client::CharacterInventory,
-    ) {
+    ) -> TestResult {
         let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-            return;
+            return Ok(());
         };
         let directory = std::path::Path::new(&directory);
         let expected = format!(
@@ -49,12 +60,10 @@ mod journey {
             ("c20b-inventory.bin", payload),
             ("c20b-expected.txt", expected.as_bytes()),
         ] {
-            if let Err(error) = std::fs::write(directory.join(name), bytes) {
-                evidence(&format!(
-                    "SEAM_EVIDENCE e2e_all scenario=C20b.client status=CAPTURE-WRITE-ERROR evidence=file={name};error={error}"
-                ));
-            }
+            std::fs::write(directory.join(name), bytes)?;
         }
+
+        Ok(())
     }
 }
 
@@ -63,13 +72,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         return;
     }
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(
-        Duration::from_secs(480),
-        journey::run_and_capture(clients),
-    )
-    .await
-    .map_err(|_| "C20b client capture timed out".into())
-    .and_then(|result| result);
+    let result = tokio::time::timeout(Duration::from_secs(480), journey::run_and_capture(clients))
+        .await
+        .map_err(|_| "C20b client capture timed out".into())
+        .and_then(|result| result);
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=C20b.client status={} seconds={:.3} evidence=real-C20b-actions-and-fresh-inventory-snapshot",
         if result.is_ok() { "PASS" } else { "FAIL" },

@@ -27,15 +27,16 @@ fn token(value: &str) -> String {
 }
 
 fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
+    let inventory = client.inventory().ok_or("inventory snapshot absent")?;
+    Ok(inventory_quantities(inventory))
+}
+
+fn inventory_quantities(inventory: &oteryn_dev_client::CharacterInventory) -> BTreeMap<u32, u64> {
     let mut values = BTreeMap::new();
-    for item in &client
-        .inventory()
-        .ok_or("inventory snapshot absent")?
-        .entries
-    {
+    for item in &inventory.entries {
         *values.entry(item.item_definition_ref.get()).or_default() += u64::from(item.count.get());
     }
-    Ok(values)
+    values
 }
 
 fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
@@ -266,9 +267,55 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if quantity(&client, definition)? < u64::from(count.get()) {
         return Err("step=restore observed=backpack-count-not-restored".into());
     }
+    let restored = quantities(&client)?;
     logout(&mut client).await?;
+    let mut fresh = connect_world(clients, 0xf1).await?;
+    let durable = quantities(&fresh)?;
+    logout(&mut fresh).await?;
+    if durable != restored {
+        return Err("step=fresh-admission observed=inventory-custody-lost".into());
+    }
     Ok(format!(
         "too-far-then-opened-with-item-entries={}",
         view.entries.len()
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn evidence_tokens_cover_empty_and_whitespace() {
+        assert_eq!(token(""), "");
+        assert!(!token("a b\tc\nd").chars().any(char::is_whitespace));
+        assert_eq!(token("source:path.rs:12"), "source:path.rs:12");
+    }
+
+    #[test]
+    fn container_reply_accepts_empty_views_and_rejects_malformed_payload() {
+        assert!(view_of(&[]).is_ok_and(|views| views.views.is_empty()));
+        assert!(view_of(&[255]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod quantity_tests {
+    use super::*;
+    #[test]
+    fn totals_do_not_wrap_at_the_wire_count_limit() {
+        let mut inventory = oteryn_dev_client::CharacterInventory::default();
+        assert!(inventory_quantities(&inventory).is_empty());
+        let item = oteryn_dev_client::ItemEntry {
+            handle: std::num::NonZeroU64::MIN,
+            item_definition_ref: std::num::NonZeroU32::MIN,
+            count: std::num::NonZeroU32::MAX,
+            sub_type: 0,
+        };
+        inventory.entries = vec![item, item];
+        assert_eq!(
+            inventory_quantities(&inventory).get(&1),
+            Some(&(2 * u64::from(u32::MAX)))
+        );
+    }
 }

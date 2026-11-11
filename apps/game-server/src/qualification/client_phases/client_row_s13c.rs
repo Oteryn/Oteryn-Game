@@ -41,13 +41,13 @@ fn vitals_line(vitals: &oteryn_protocol_oteryn::actor_spell::ActorVitals) -> Str
     )
 }
 
-pub(super) fn capture(name: &str, bytes: &[u8]) {
+pub(super) fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S13_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn party(
@@ -69,7 +69,11 @@ async fn party(
         parties::decode_party_result(&reply.payload).map_err(|e| format!("party decode: {e:?}"))?;
     if reply.status != CommandStatus::Accepted || state.disposition != parties::PartyDisposition::Ok
     {
-        return Err(format!("step=party status={:?} disposition={:?}", reply.status, state.disposition).into());
+        return Err(format!(
+            "step=party status={:?} disposition={:?}",
+            reply.status, state.disposition
+        )
+        .into());
     }
     Ok(state)
 }
@@ -147,6 +151,7 @@ async fn cast_through_cooldown(
 }
 
 async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -156,121 +161,161 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut caster = connect_character(clients, 0x65, 1).await?;
-    let mut peer = connect_character(clients, 0x66, 0).await?;
-    for client in [&mut caster, &mut peer] {
-        if !party(client, None).await?.members.is_empty() {
-            party(client, Some(parties::PartyIntent::Leave)).await?;
+    let row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let mut peer = connect_character(clients, 0x66, 0).await?;
+        let row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            for client in [&mut caster, &mut peer] {
+                if !party(client, None).await?.members.is_empty() {
+                    party(client, Some(parties::PartyIntent::Leave)).await?;
+                }
+            }
+            let ranking = oteryn_dev_client::client_runtime::highscores::command(
+                oteryn_dev_client::client_runtime::highscores::wire::HighscoresQuery {
+                    world: None,
+                    details: false,
+                    category: 1,
+                    vocation: 0,
+                    page: 1,
+                    snapshot_id: 0,
+                },
+            )
+            .map_err(|e| format!("ranking input: {e:?}"))?;
+            let reply = caster
+                .session_mut()
+                .gated_command(ranking.capability, ranking.command_type, &ranking.payload)
+                .await?;
+            let page =
+                oteryn_dev_client::client_runtime::highscores::wire::decode_highscores_result(
+                    &reply.payload,
+                )
+                .map_err(|e| format!("ranking result: {e:?}"))?;
+            let own = page.own_row.ok_or("step=vocation no own ranking row")?;
+            let (words, slot) =
+                match oteryn_gameplay_progression::wheel::base_vocation(&own.vocation) {
+                    Some("knight") => ("utito mas sio", 0),
+                    Some("paladin") => ("utamo mas sio", 1),
+                    Some("sorcerer") => ("utori mas sio", 2),
+                    Some("druid") => ("utura mas sio", 3),
+                    Some("monk") => ("utevo mas sio", 4),
+                    _ => {
+                        return Err(
+                            format!("step=vocation {} has no party spell", own.vocation).into()
+                        );
+                    }
+                };
+            let index = spell_index(words)?;
+
+            // The party gate: the same spell cast while solo must not be cast.
+            let vitals = caster
+                .actor_vitals()
+                .copied()
+                .ok_or("caster vitals absent")?;
+            let solo = cast_through_cooldown(&mut caster, index).await?;
+            if solo.disposition == casts::SpellCastDisposition::Cast
+                || caster.actor_vitals().copied() != Some(vitals)
+            {
+                return Err(format!(
+                    "step=solo-gate observed {solo:?}, expected a refusal without a vitals change"
+                )
+                .into());
+            }
+
+            let caster_start = tile(caster.world_spatial().actor_position)?;
+            let peer_start = tile(peer.world_spatial().actor_position)?;
+            let path = route(world, caster_start, |at| {
+                at != peer_start
+                    && at.floor == peer_start.floor
+                    && at.x.abs_diff(peer_start.x).max(at.y.abs_diff(peer_start.y)) <= 1
+            })
+            .ok_or("step=walk no route beside the member")?;
+            for direction in path {
+                let (moved, serviced) = join(
+                    walk(&mut caster, world, &[direction]),
+                    peer.service_liveness(Duration::from_millis(10)),
+                )
+                .await;
+                moved?;
+                serviced?;
+                caster.take_events();
+                peer.take_events();
+            }
+            caster.service_liveness(Duration::from_millis(100)).await?;
+            peer.service_liveness(Duration::from_millis(100)).await?;
+            party(
+                &mut caster,
+                Some(parties::PartyIntent::Invite(own_ref(&peer)?)),
+            )
+            .await?;
+            let invitation = party(&mut peer, None)
+                .await?
+                .invitations
+                .first()
+                .ok_or("step=invite no invitation")?
+                .handle;
+            party(&mut peer, Some(parties::PartyIntent::Accept(invitation))).await?;
+
+            let before = caster
+                .actor_vitals()
+                .copied()
+                .ok_or("caster vitals absent")?;
+            let cast = cast_through_cooldown(&mut caster, index).await?;
+            let after = caster.actor_vitals().copied().ok_or("caster vitals lost")?;
+            if cast.disposition != casts::SpellCastDisposition::Cast || after.mana >= before.mana {
+                return Err(format!(
+                    "step=cast observed {cast:?} before={before:?} after={after:?}"
+                )
+                .into());
+            }
+            let caster_effects = effects(&mut caster).await?;
+            let member_effects = effects(&mut peer).await?;
+            let refused_vitals = caster.actor_vitals().copied();
+            let refused = caster
+                .cast_spell(index, casts::SpellTarget::None, false)
+                .await?;
+            if refused.disposition != casts::SpellCastDisposition::CoolingDown
+                || caster.actor_vitals().copied() != refused_vitals
+            {
+                return Err(format!("step=cooldown observed {refused:?}").into());
+            }
+            for client in [&mut peer, &mut caster] {
+                party(client, Some(parties::PartyIntent::Leave)).await?;
+            }
+            Ok(Observed {
+                words,
+                slot,
+                solo_disposition: solo.disposition,
+                solo_status: solo.status,
+                mana_before: before.mana,
+                mana_after: after.mana,
+                vitals_before: vitals_line(&before),
+                vitals_after: vitals_line(&after),
+                caster_effects,
+                member_effects,
+                refusal_disposition: refused.disposition,
+                refusal_status: refused.status,
+            })
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut peer).await?;
         }
+        row_result
     }
-    let ranking = oteryn_dev_client::client_runtime::highscores::command(
-        oteryn_dev_client::client_runtime::highscores::wire::HighscoresQuery {
-            world: None,
-            details: false,
-            category: 1,
-            vocation: 0,
-            page: 1,
-            snapshot_id: 0,
-        },
-    )
-    .map_err(|e| format!("ranking input: {e:?}"))?;
-    let reply = caster
-        .session_mut()
-        .gated_command(ranking.capability, ranking.command_type, &ranking.payload)
-        .await?;
-    let page = oteryn_dev_client::client_runtime::highscores::wire::decode_highscores_result(
-        &reply.payload,
-    )
-    .map_err(|e| format!("ranking result: {e:?}"))?;
-    let own = page.own_row.ok_or("step=vocation no own ranking row")?;
-    let (words, slot) = match oteryn_gameplay_progression::wheel::base_vocation(&own.vocation) {
-        Some("knight") => ("utito mas sio", 0),
-        Some("paladin") => ("utamo mas sio", 1),
-        Some("sorcerer") => ("utori mas sio", 2),
-        Some("druid") => ("utura mas sio", 3),
-        Some("monk") => ("utevo mas sio", 4),
-        _ => return Err(format!("step=vocation {} has no party spell", own.vocation).into()),
-    };
-    let index = spell_index(words)?;
-
-    // The party gate: the same spell cast while solo must not be cast.
-    let vitals = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
-    let solo = cast_through_cooldown(&mut caster, index).await?;
-    if solo.disposition == casts::SpellCastDisposition::Cast
-        || caster.actor_vitals().copied() != Some(vitals)
-    {
-        return Err(format!("step=solo-gate observed {solo:?}, expected a refusal without a vitals change").into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut caster).await?;
     }
-
-    let caster_start = tile(caster.world_spatial().actor_position)?;
-    let peer_start = tile(peer.world_spatial().actor_position)?;
-    let path = route(world, caster_start, |at| {
-        at != peer_start
-            && at.floor == peer_start.floor
-            && at.x.abs_diff(peer_start.x).max(at.y.abs_diff(peer_start.y)) <= 1
-    })
-    .ok_or("step=walk no route beside the member")?;
-    for direction in path {
-        let (moved, serviced) = join(
-            walk(&mut caster, world, &[direction]),
-            peer.service_liveness(Duration::from_millis(10)),
-        )
-        .await;
-        moved?;
-        serviced?;
-        caster.take_events();
-        peer.take_events();
-    }
-    caster.service_liveness(Duration::from_millis(100)).await?;
-    peer.service_liveness(Duration::from_millis(100)).await?;
-    party(&mut caster, Some(parties::PartyIntent::Invite(own_ref(&peer)?))).await?;
-    let invitation = party(&mut peer, None)
-        .await?
-        .invitations
-        .first()
-        .ok_or("step=invite no invitation")?
-        .handle;
-    party(&mut peer, Some(parties::PartyIntent::Accept(invitation))).await?;
-
-    let before = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
-    let cast = cast_through_cooldown(&mut caster, index).await?;
-    let after = caster.actor_vitals().copied().ok_or("caster vitals lost")?;
-    if cast.disposition != casts::SpellCastDisposition::Cast || after.mana >= before.mana {
-        return Err(format!("step=cast observed {cast:?} before={before:?} after={after:?}").into());
-    }
-    let caster_effects = effects(&mut caster).await?;
-    let member_effects = effects(&mut peer).await?;
-    let refused_vitals = caster.actor_vitals().copied();
-    let refused = caster.cast_spell(index, casts::SpellTarget::None, false).await?;
-    if refused.disposition != casts::SpellCastDisposition::CoolingDown
-        || caster.actor_vitals().copied() != refused_vitals
-    {
-        return Err(format!("step=cooldown observed {refused:?}").into());
-    }
-    for client in [&mut peer, &mut caster] {
-        party(client, Some(parties::PartyIntent::Leave)).await?;
-        let _ = client.session_mut().logout().await;
-    }
-    Ok(Observed {
-        words,
-        slot,
-        solo_disposition: solo.disposition,
-        solo_status: solo.status,
-        mana_before: before.mana,
-        mana_after: after.mana,
-        vitals_before: vitals_line(&before),
-        vitals_after: vitals_line(&after),
-        caster_effects,
-        member_effects,
-        refusal_disposition: refused.disposition,
-        refusal_status: refused.status,
-    })
+    row_result
 }
 
 /// The shared observation, computed at most once per process.
 pub(super) async fn observed(clients: &SeamClients<'_>) -> &'static Result<Observed, String> {
     OBSERVED
         .get_or_init(|| async {
-            match tokio::time::timeout(Duration::from_secs(420), flow(clients)).await {
+            match row_complete(flow(clients)).await {
                 Ok(Ok(value)) => Ok(value),
                 Ok(Err(error)) => Err(error.to_string().replace(' ', "_")),
                 Err(_) => Err("timeout".to_owned()),
@@ -279,7 +324,11 @@ pub(super) async fn observed(clients: &SeamClients<'_>) -> &'static Result<Obser
         .await
 }
 
-pub(super) fn report(row: &str, observed: &Result<Observed, String>, detail: impl FnOnce(&Observed) -> String) {
+pub(super) fn report(
+    row: &str,
+    observed: &Result<Observed, String>,
+    detail: impl FnOnce(&Observed) -> String,
+) {
     match observed {
         Ok(value) => evidence(&format!(
             "e2e_all scenario={row}.client status=CAPTURED evidence={}",
@@ -297,14 +346,41 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
     let observed = observed(clients).await;
     if let Ok(value) = observed {
-        capture("s13c-caster-effects.bin", &value.caster_effects);
-        capture("s13c-member-effects.bin", &value.member_effects);
-        capture(
-            "s13c-expected.txt",
-            format!("slot={}\nwords={}\n", value.slot, value.words).as_bytes(),
-        );
+        let written = (|| -> TestResult {
+            capture("s13c-caster-effects.bin", &value.caster_effects)?;
+            capture("s13c-member-effects.bin", &value.member_effects)?;
+            capture(
+                "s13c-expected.txt",
+                format!("slot={}\nwords={}\n", value.slot, value.words).as_bytes(),
+            )?;
+            Ok(())
+        })();
+        if let Err(error) = written {
+            evidence(&format!(
+                "e2e_all scenario=S13C.client status=FAIL evidence=capture-write:{error}"
+            ));
+            return;
+        }
     }
     report("S13c", observed, |value| {
         format!("slot={} words={}", value.slot, value.words)
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn vitals_text_preserves_boundaries_and_boolean() {
+        let vitals = oteryn_protocol_oteryn::actor_spell::ActorVitals {
+            health: 0,
+            max_health: u32::MAX,
+            mana: 1,
+            max_mana: 2,
+            soul: 3,
+            harmony: 4,
+            serene: true,
+        };
+        assert_eq!(vitals_line(&vitals), "0 4294967295 1 2 3 4 1");
+    }
 }

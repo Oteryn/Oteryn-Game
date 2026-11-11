@@ -50,7 +50,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 1,
     };
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!(
@@ -146,7 +146,12 @@ fn antidote(client: &mut DevClientSession) -> TestResult<(NonZeroU32, u32)> {
         .session_mut()
         .gated_snapshot(wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
         .ok_or("step dispel: served spell catalogue snapshot absent")?;
-    let entries = wire::decode_catalog(&snapshot.payload)
+    antidote_from(&snapshot.payload)
+}
+
+fn antidote_from(payload: &[u8]) -> TestResult<(NonZeroU32, u32)> {
+    use oteryn_protocol_oteryn::actor_spell_catalog as wire;
+    let entries = wire::decode_catalog(payload)
         .map_err(|error| format!("step dispel: catalogue decode: {error:?}"))?;
     let entry = entries
         .iter()
@@ -159,6 +164,7 @@ fn antidote(client: &mut DevClientSession) -> TestResult<(NonZeroU32, u32)> {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -169,105 +175,143 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc8).await?;
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
-    )
-    .await?;
-    let damage = poison(&mut client).await?;
-    row.pass(damage);
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        travel_to_spawn(
+            &mut client,
+            world,
+            &metadata.spawns,
+            "oteryn:creature.poison_spider",
+        )
+        .await?;
+        let damage = poison(&mut client).await?;
+        row.pass(damage);
 
-    let (spell, mana_cost) = antidote(&mut client)?;
-    let mana = client
-        .actor_vitals()
-        .ok_or("step dispel: vitals absent")?
-        .mana;
-    let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
-    if cast.disposition != SpellCastDisposition::Cast {
-        return Err(format!("step dispel: exana pox reply={cast:?}").into());
-    }
-    let mana_after = client
-        .actor_vitals()
-        .ok_or("step dispel: post-cast vitals absent")?
-        .mana;
-    if mana_after.checked_add(mana_cost) != Some(mana) {
-        return Err(format!(
+        let (spell, mana_cost) = antidote(&mut client)?;
+        let mana = client
+            .actor_vitals()
+            .ok_or("step dispel: vitals absent")?
+            .mana;
+        let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
+        if cast.disposition != SpellCastDisposition::Cast {
+            return Err(format!("step dispel: exana pox reply={cast:?}").into());
+        }
+        let mana_after = client
+            .actor_vitals()
+            .ok_or("step dispel: post-cast vitals absent")?
+            .mana;
+        if mana_after.checked_add(mana_cost) != Some(mana) {
+            return Err(format!(
             "step dispel: accepted reply missing mana delta {mana}->{mana_after} cost={mana_cost}"
         )
         .into());
-    }
-    let health_after = client
-        .actor_vitals()
-        .ok_or("step dispel: post-cast vitals absent")?
-        .health;
-    assert_health_unchanged(&mut client, health_after, 15).await?;
-    row.pass((cast.disposition, mana, mana_after, health_after));
-
-    let before_refusal = *client.actor_vitals().ok_or("step refusal: vitals absent")?;
-    let refusal = client.session_mut().logout().await?;
-    if !matches!(
-        refusal.result,
-        Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
-    ) || client.actor_vitals() != Some(&before_refusal)
-    {
-        return Err(format!(
-            "step refusal: combat logout was not an unchanged InFight refusal: {refusal:?}"
-        )
-        .into());
-    }
-    row.pass(refusal.result);
-
-    let damaged = client
-        .actor_vitals()
-        .ok_or("step regeneration: vitals absent")?
-        .health;
-    let regenerated = next_health_change(&mut client, damaged, 45).await?;
-    if regenerated <= damaged {
-        return Err(format!(
-            "step regeneration: expected positive health delta, got {damaged}->{regenerated}"
-        )
-        .into());
-    }
-    row.pass((damaged, regenerated));
-
-    let second = poison(&mut client).await?;
-    let old_session = client.join_snapshot().game_session_id;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => break,
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. }) => {}
-            _ => return Err(format!("step persistence: unexpected logout reply={reply:?}").into()),
         }
-        if tokio::time::Instant::now() >= deadline {
+        let health_after = client
+            .actor_vitals()
+            .ok_or("step dispel: post-cast vitals absent")?
+            .health;
+        assert_health_unchanged(&mut client, health_after, 15).await?;
+        row.pass((cast.disposition, mana, mana_after, health_after));
+
+        let before_refusal = *client.actor_vitals().ok_or("step refusal: vitals absent")?;
+        let refusal = client.session_mut().logout().await?;
+        if !matches!(
+            refusal.result,
+            Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
+        ) || client.actor_vitals() != Some(&before_refusal)
+        {
             return Err(format!(
-                "step persistence: logout remained refused after poison, last={reply:?}"
+                "step refusal: combat logout was not an unchanged InFight refusal: {refusal:?}"
             )
             .into());
         }
-        client.service_liveness(Duration::from_millis(250)).await?;
-        client.take_events();
-    }
-    drop(client);
-    let mut client = connect_world(clients, 0xc9).await?;
-    if client.join_snapshot().game_session_id == old_session {
-        return Err("step persistence: fresh admission reused game session".into());
-    }
-    let admitted = client
-        .actor_vitals()
-        .ok_or("step persistence: admitted vitals absent")?
-        .health;
-    let tick = next_health_change(&mut client, admitted, 15).await?;
-    if tick >= admitted {
-        return Err(format!(
+        row.pass(refusal.result);
+
+        let damaged = client
+            .actor_vitals()
+            .ok_or("step regeneration: vitals absent")?
+            .health;
+        let regenerated = next_health_change(&mut client, damaged, 45).await?;
+        if regenerated <= damaged {
+            return Err(format!(
+                "step regeneration: expected positive health delta, got {damaged}->{regenerated}"
+            )
+            .into());
+        }
+        row.pass((damaged, regenerated));
+
+        let second = poison(&mut client).await?;
+        let old_session = client.join_snapshot().game_session_id;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        loop {
+            let reply = client.session_mut().logout().await?;
+            match reply.result {
+                Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => {
+                    row_needs_logout_0 = false;
+                    break;
+                }
+                Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. }) => {}
+                _ => {
+                    return Err(
+                        format!("step persistence: unexpected logout reply={reply:?}").into(),
+                    );
+                }
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "step persistence: logout remained refused after poison, last={reply:?}"
+                )
+                .into());
+            }
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+        }
+        if row_needs_logout_0 {
+            row_logout(&mut client).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut client = connect_world(clients, 0xc9).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            if client.join_snapshot().game_session_id == old_session {
+                return Err("step persistence: fresh admission reused game session".into());
+            }
+            let admitted = client
+                .actor_vitals()
+                .ok_or("step persistence: admitted vitals absent")?
+                .health;
+            let tick = next_health_change(&mut client, admitted, 15).await?;
+            if tick >= admitted {
+                return Err(format!(
             "step persistence: first fresh-admission delta was not durable DoT: {admitted}->{tick}"
         )
         .into());
+            }
+            row.pass((second, admitted, tick));
+            row_logout(&mut client).await?;
+            row_needs_logout_1 = false;
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut client).await?;
+        }
+        row_result
     }
-    row.pass((second, admitted, tick));
-    let _ = client.session_mut().logout().await?;
-    Ok(())
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn missing_or_malformed_spell_catalogue_cannot_supply_an_antidote() {
+        assert!(antidote_from(&[]).is_err());
+        assert!(antidote_from(&[255]).is_err());
+    }
 }

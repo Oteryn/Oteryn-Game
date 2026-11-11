@@ -25,67 +25,69 @@ async fn look(
     Ok((reply.status, reply.payload, decoded))
 }
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&directory).join(name), bytes) {
-        evidence(&format!(
-            "e2e_all scenario=I03.client status=CAPTURE-WRITE-ERROR evidence={name}:{error}"
-        ));
-    }
-}
+    std::fs::write(Path::new(&directory).join(name), bytes)?;
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x03).await?;
-    let entities = client.world_entities().ok_or("I03.client own actor view missing")?;
-    let own = entities
-        .iter()
-        .find(|entry| entry.entity.identity == *entities.own_identity())
-        .ok_or("I03.client own actor missing")?
-        .entity;
-    let backpack = client
-        .inventory()
-        .and_then(|inventory| inventory.main_backpack)
-        .ok_or("I03.client starter backpack missing")?;
-
-    let own_reply = look(&mut client, wire::ItemLookTarget::Creature(own)).await?;
-    let item_reply = look(
-        &mut client,
-        wire::ItemLookTarget::Item(backpack.handle),
-    )
-    .await?;
-    let absent = NonZeroU64::new(u64::MAX).ok_or("I03.client invalid absent handle")?;
-    let refusal_reply = look(&mut client, wire::ItemLookTarget::Item(absent)).await?;
-    if own_reply.0 != CommandStatus::Accepted
-        || item_reply.0 != CommandStatus::Accepted
-        || refusal_reply.0 != CommandStatus::Accepted
-    {
-        return Err("I03.client LOOK command was not accepted".into());
-    }
-    let (wire::ItemLookResult::Text(own_text), wire::ItemLookResult::Text(item_text)) =
-        (&own_reply.2, &item_reply.2)
-    else {
-        return Err("I03.client positive LOOK did not return text".into());
-    };
-    if refusal_reply.2
-        != wire::ItemLookResult::Refused(wire::ItemLookRefusal::NotAvailable)
-    {
-        return Err("I03.client absent item did not return NotAvailable".into());
-    }
-
-    capture("i03-self.bin", &own_reply.1);
-    capture("i03-item.bin", &item_reply.1);
-    capture("i03-refusal.bin", &refusal_reply.1);
-    capture(
-        "i03-expected.txt",
-        format!("self={own_text:?}\nitem={item_text:?}\nrefusal=Look refused\n").as_bytes(),
-    );
     Ok(())
 }
 
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    let mut client = connect_world(clients, 0x03).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let entities = client
+            .world_entities()
+            .ok_or("I03.client own actor view missing")?;
+        let own = entities
+            .iter()
+            .find(|entry| entry.entity.identity == *entities.own_identity())
+            .ok_or("I03.client own actor missing")?
+            .entity;
+        let backpack = client
+            .inventory()
+            .and_then(|inventory| inventory.main_backpack)
+            .ok_or("I03.client starter backpack missing")?;
+
+        let own_reply = look(&mut client, wire::ItemLookTarget::Creature(own)).await?;
+        let item_reply = look(&mut client, wire::ItemLookTarget::Item(backpack.handle)).await?;
+        let absent = NonZeroU64::new(u64::MAX).ok_or("I03.client invalid absent handle")?;
+        let refusal_reply = look(&mut client, wire::ItemLookTarget::Item(absent)).await?;
+        if own_reply.0 != CommandStatus::Accepted
+            || item_reply.0 != CommandStatus::Accepted
+            || refusal_reply.0 != CommandStatus::Accepted
+        {
+            return Err("I03.client LOOK command was not accepted".into());
+        }
+        let (wire::ItemLookResult::Text(own_text), wire::ItemLookResult::Text(item_text)) =
+            (&own_reply.2, &item_reply.2)
+        else {
+            return Err("I03.client positive LOOK did not return text".into());
+        };
+        if refusal_reply.2 != wire::ItemLookResult::Refused(wire::ItemLookRefusal::NotAvailable) {
+            return Err("I03.client absent item did not return NotAvailable".into());
+        }
+
+        capture("i03-self.bin", &own_reply.1)?;
+        capture("i03-item.bin", &item_reply.1)?;
+        capture("i03-refusal.bin", &refusal_reply.1)?;
+        capture(
+            "i03-expected.txt",
+            format!("self={own_text:?}\nitem={item_text:?}\nrefusal=Look refused\n").as_bytes(),
+        )?;
+        Ok(())
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence("e2e_all scenario=I03.client status=PASS"),
         Ok(Err(error)) => evidence(&format!(

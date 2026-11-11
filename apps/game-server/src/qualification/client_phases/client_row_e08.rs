@@ -6,13 +6,13 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn search_command(
@@ -31,7 +31,8 @@ async fn search_command(
     if response.status != CommandStatus::Accepted {
         return Err(format!("depot search status {:?}", response.status).into());
     }
-    let reply = wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
+    let reply =
+        wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
     Ok((reply, response.payload))
 }
 
@@ -43,7 +44,11 @@ async fn depot_intent(
         depot::encode_depot_intent(intent).map_err(|error| format!("depot encode {error:?}"))?;
     let response = client
         .session_mut()
-        .gated_command(depot::CAPABILITY_DEPOT_V1, depot::COMMAND_TYPE_DEPOT_INTENT, &payload)
+        .gated_command(
+            depot::CAPABILITY_DEPOT_V1,
+            depot::COMMAND_TYPE_DEPOT_INTENT,
+            &payload,
+        )
         .await?;
     if response.status != CommandStatus::Accepted {
         return Err(format!("depot status {:?}", response.status).into());
@@ -53,7 +58,11 @@ async fn depot_intent(
 }
 
 fn carried(client: &DevClientSession, handle: ItemHandle) -> bool {
-    client.inventory().is_some_and(|inventory| {
+    carried_from(client.inventory(), handle)
+}
+
+fn carried_from(input: Option<&oteryn_dev_client::CharacterInventory>, handle: ItemHandle) -> bool {
+    input.is_some_and(|inventory| {
         inventory
             .main_backpack
             .iter()
@@ -63,7 +72,11 @@ fn carried(client: &DevClientSession, handle: ItemHandle) -> bool {
     })
 }
 
-async fn wait_carried(client: &mut DevClientSession, handle: ItemHandle, expected: bool) -> TestResult {
+async fn wait_carried(
+    client: &mut DevClientSession,
+    handle: ItemHandle,
+    expected: bool,
+) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     while carried(client, handle) != expected {
         if tokio::time::Instant::now() >= deadline {
@@ -76,6 +89,7 @@ async fn wait_carried(client: &mut DevClientSession, handle: ItemHandle, expecte
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -86,6 +100,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let definitions = provisioning::item_index()?;
     let mut client = connect_character(clients, 0x3b, 1).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         near_locker(world, at)
     })
@@ -192,17 +207,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         empty.outcome,
         empty.retrieved
     );
-    capture("e08-search.bin", &found_bytes);
-    capture("e08-detail.bin", &detail_bytes);
-    capture("e08-retrieve.bin", &retrieved_bytes);
-    capture("e08-empty.bin", &empty_bytes);
-    capture("e08-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("e08-search.bin", &found_bytes)?;
+    capture("e08-detail.bin", &detail_bytes)?;
+    capture("e08-retrieve.bin", &retrieved_bytes)?;
+    capture("e08-empty.bin", &empty_bytes)?;
+    capture("e08-expected.txt", expected.as_bytes())?;
+
     Ok(format!("item={client_id} depot={} retrieved={}", first.depot, retrieved.retrieved))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(150), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E08.client status=CAPTURED evidence={observed}"
         )),
@@ -211,5 +231,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E08.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(!carried_from(None, std::num::NonZeroU64::MIN));
     }
 }

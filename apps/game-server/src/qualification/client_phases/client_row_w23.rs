@@ -15,20 +15,33 @@ struct CitizenTile {
     town: u32,
 }
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W23_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn town_for(unique: u16) -> Option<u32> {
     Some(match unique {
-        9056 => 6, 9057 => 8, 9058 => 9, 9059 => 5, 9060 => 7, 9061 => 13,
-        9062 => 10, 9063 => 11, 9064 => 14, 9065 => 15, 9067 => 17,
-        9068 => 12, 9240 => 18, 9500 => 21, 9510 => 20, 9515 => 22,
+        9056 => 6,
+        9057 => 8,
+        9058 => 9,
+        9059 => 5,
+        9060 => 7,
+        9061 => 13,
+        9062 => 10,
+        9063 => 11,
+        9064 => 14,
+        9065 => 15,
+        9067 => 17,
+        9068 => 12,
+        9240 => 18,
+        9500 => 21,
+        9510 => 20,
+        9515 => 22,
         _ => return None,
     })
 }
@@ -42,7 +55,14 @@ fn citizen_tiles(bytes: &[u8]) -> TestResult<Vec<CitizenTile>> {
                     && unique != SVARGROND_UNIQUE
                     && let Some(town) = town_for(unique)
                 {
-                    found.push(CitizenTile { at: TilePos { x: tile.x, y: tile.y, floor: sector.floor }, town });
+                    found.push(CitizenTile {
+                        at: TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: sector.floor,
+                        },
+                        town,
+                    });
                 }
             }
         }
@@ -71,44 +91,93 @@ async fn game_line(client: &mut DevClientSession, wanted: &str) -> TestResult<Ch
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let tiles = citizen_tiles(&bytes)?;
     let mut client = connect_character(clients, 0x9c, 1).await?;
-    let from = tile(client.world_spatial().actor_position)?;
-    let mut best: Option<(CitizenTile, Vec<StepDirection>, StepDirection)> = None;
-    for entry in &tiles {
-        for direction in [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West] {
-            if let Some(path) = route(world, from, |at| destination(world, at, direction) == Some(entry.at))
-                && best.as_ref().is_none_or(|(_, shortest, _)| path.len() < shortest.len())
-            {
-                best = Some((*entry, path, direction));
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let from = tile(client.world_spatial().actor_position)?;
+        let mut best: Option<(CitizenTile, Vec<StepDirection>, StepDirection)> = None;
+        for entry in &tiles {
+            for direction in [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ] {
+                if let Some(path) = route(world, from, |at| {
+                    destination(world, at, direction) == Some(entry.at)
+                }) && best
+                    .as_ref()
+                    .is_none_or(|(_, shortest, _)| path.len() < shortest.len())
+                {
+                    best = Some((*entry, path, direction));
+                }
             }
         }
-    }
-    let (selected, path, direction) = best.ok_or("step=route no walking route to a shipped citizen tile")?;
-    walk(&mut client, world, &path).await?;
-    client.take_events();
-    let reply = client.step_retrying(direction).await?;
-    if reply.disposition != StepDisposition::Moved {
-        return Err(format!("step=citizen-step disposition={:?}", reply.disposition).into());
-    }
-    let area = world.base().subareas.town(selected.town).ok_or("step=town selected town absent")?;
-    let wanted = format!("You are now a citizen of {}.", area.name);
-    let line = game_line(&mut client, &wanted).await?;
-    let payload = chat::encode_chat_line(&line).map_err(|error| format!("step=encode {error:?}"))?;
-    capture("w23-line.bin", &payload);
-    capture("w23-expected.txt", format!("speaker=Game\ntext={wanted}\n").as_bytes());
-    let _ = client.session_mut().logout().await;
-    Ok(format!("town={}", selected.town))
+        let (selected, path, direction) =
+            best.ok_or("step=route no walking route to a shipped citizen tile")?;
+        walk(&mut client, world, &path).await?;
+        client.take_events();
+        let reply = client.step_retrying(direction).await?;
+        if reply.disposition != StepDisposition::Moved {
+            return Err(format!("step=citizen-step disposition={:?}", reply.disposition).into());
+        }
+        let area = world
+            .base()
+            .subareas
+            .town(selected.town)
+            .ok_or("step=town selected town absent")?;
+        let wanted = format!("You are now a citizen of {}.", area.name);
+        let line = game_line(&mut client, &wanted).await?;
+        let payload =
+            chat::encode_chat_line(&line).map_err(|error| format!("step=encode {error:?}"))?;
+        capture("w23-line.bin", &payload)?;
+        capture(
+            "w23-expected.txt",
+            format!("speaker=Game\ntext={wanted}\n").as_bytes(),
+        )?;
+
+        Ok(format!("town={}", selected.town))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match tokio::time::timeout(Duration::from_secs(240), journey(clients, world)).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W23.client status=CAPTURED evidence={observed}")),
+    match row_complete(journey(clients, world)).await {
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=W23.client status=CAPTURED evidence={observed}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W23.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W23.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn world_scan_rejects_malformed_bundle() {
+        assert!(citizen_tiles(&[]).is_err());
+        assert!(citizen_tiles(&[255; 8]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod more_helper_tests {
+    use super::*;
+    #[test]
+    fn citizenship_mapping_rejects_unknown_ids() {
+        assert_eq!(town_for(0), None);
+        assert_eq!(town_for(u16::MAX), None);
+        assert_eq!(town_for(9056), Some(6));
+        assert_eq!(town_for(9515), Some(22));
     }
 }

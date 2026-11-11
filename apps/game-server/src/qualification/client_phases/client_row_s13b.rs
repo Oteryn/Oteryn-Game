@@ -10,16 +10,26 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
     let observed = super::client_row_s13c::observed(clients).await;
     if let Ok(value) = observed {
-        super::client_row_s13c::capture(
-            "s13b-expected.txt",
-            format!(
-                "{}\n{}\n",
-                value.vitals_before, value.vitals_after
-            )
-            .as_bytes(),
-        );
+        let written = (|| -> TestResult {
+            super::client_row_s13c::capture(
+                "s13b-expected.txt",
+                format!("{}\n{}\n", value.vitals_before, value.vitals_after).as_bytes(),
+            )?;
+            Ok(())
+        })();
+        if let Err(error) = written {
+            evidence(&format!(
+                "e2e_all scenario=S13B.client status=FAIL evidence=capture-write:{error}"
+            ));
+            return;
+        }
     }
     super::client_row_s13c::report("S13b", observed, |value| {
-        format!("mana={}->{} spent={}", value.mana_before, value.mana_after, value.mana_before - value.mana_after)
+        format!(
+            "mana={}->{} spent={}",
+            value.mana_before,
+            value.mana_after,
+            value.mana_before - value.mana_after
+        )
     });
 }

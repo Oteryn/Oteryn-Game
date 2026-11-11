@@ -168,7 +168,9 @@ async fn exchange(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(45);
     let mut client = connect_character(clients, 0xc8, 1).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&house_wire::CAPABILITY_HOUSE_V1)
@@ -279,11 +281,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         auction.key, disposition
     )
     .into())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(45), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let failure = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),

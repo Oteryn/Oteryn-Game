@@ -92,7 +92,10 @@ async fn send_line(client: &mut DevClientSession, room: ChatRoom, text: &str) ->
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_character(clients, 0xc4, 0).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     for room in ROOMS {
         open(&mut client, room).await?;
     }
@@ -166,8 +169,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 6 logout: server refused native logout".into());
     }
-    drop(client);
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut client = connect_character(clients, 0xc5, 0).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if client.join_snapshot().game_session_id == old_session
         || !client
             .chat_log()
@@ -189,11 +195,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     require_no_line(&mut client, ChatRoom::World, text).await?;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut client).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=S04c.full status=PASS seconds={:.3}",

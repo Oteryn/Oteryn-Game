@@ -21,7 +21,11 @@ fn spell_book() -> TestResult<crate::spell::SpellBook> {
 }
 
 fn index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::num::NonZeroU32> {
-    let key = &book.spoken(words).ok_or("C04 client spell absent")?.spell.key;
+    let key = &book
+        .spoken(words)
+        .ok_or("C04 client spell absent")?
+        .spell
+        .key;
     (1..=book.source_len())
         .filter_map(|value| {
             u32::try_from(value)
@@ -32,12 +36,10 @@ fn index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::num::No
         .ok_or_else(|| "C04 client spell index absent".into())
 }
 
-fn capture(path: &Path, name: &str, bytes: &[u8]) {
-    if let Err(error) = std::fs::write(path.join(name), bytes) {
-        evidence(&format!(
-            "C04_CLIENT_CAPTURE_WRITE name={name} error={error}"
-        ));
-    }
+fn capture(path: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::write(path.join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -48,7 +50,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let book = spell_book()?;
     let ordinary = index(&book, "exura")?;
     let aggressive = index(&book, "exevo vis lux")?;
-    let source = book.indexed(ordinary).ok_or("C04 client indexed spell absent")?;
+    let source = book
+        .indexed(ordinary)
+        .ok_or("C04 client indexed spell absent")?;
     let authored_groups: serde_json::Value = serde_json::from_slice(&std::fs::read(
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../tools/content-schema/spell-authoring/cooldown-groups.json"),
@@ -71,6 +75,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .collect::<Result<Vec<_>, _>>()?;
     let mut client = connect_world(clients, 0xc6).await?;
+    let row_result: TestResult<_> = async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(20)
@@ -127,8 +132,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .map(|entry| entry.expires_at_ms.saturating_sub(cooldowns.server_now_ms))
         .max()
         .unwrap_or(0);
-    capture(capture_dir, "c04-snapshot.bin", &snapshot);
-    capture(capture_dir, "c04-cooldowns.bin", &payload);
+    capture(capture_dir, "c04-snapshot.bin", &snapshot)?;
+    capture(capture_dir, "c04-cooldowns.bin", &payload)?;
     capture(
         capture_dir,
         "c04-expected.txt",
@@ -139,11 +144,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             remaining
         )
         .as_bytes(),
-    );
+    )?;
     evidence(&format!(
         "e2e_all scenario=C04.client status=PASS evidence=cooldown-payload;spell={ordinary};remaining_ms={remaining}"
     ));
     Ok(())
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -151,5 +161,17 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         evidence(&format!(
             "e2e_all scenario=C04.client status=FAIL evidence={error}"
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unknown_spell_has_no_wire_index() -> TestResult {
+        let book = spell_book()?;
+        assert!(index(&book, "not an authored spell").is_err());
+        assert!(index(&book, "").is_err());
+        Ok(())
     }
 }

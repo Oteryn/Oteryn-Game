@@ -7,13 +7,13 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::vip::vip as wire;
 use oteryn_protocol_oteryn::CommandStatus;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S04A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn request(operation: wire::Operation, number: u64, text: &str) -> wire::Request {
@@ -64,8 +64,13 @@ fn peer_name(client: &DevClientSession, peer: &DevClientSession) -> TestResult<S
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut watcher = connect_character(clients, 0x4b, 0).await?;
-    let mut target = connect_character(clients, 0x4c, 1).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let mut target = connect_character(clients, 0x4c, 1).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     watcher.service_liveness(Duration::from_millis(100)).await?;
     target.service_liveness(Duration::from_millis(100)).await?;
     let name = peer_name(&watcher, &target)?;
@@ -74,7 +79,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if added.code != 1 || added.number == 0 {
         return Err(format!("Add reply mismatch: {added:?}").into());
     }
-    capture("s04a-added.bin", &added_bytes);
+    capture("s04a-added.bin", &added_bytes)?;
     let entry = added.number;
     let (_, group) = raw(
         &mut watcher,
@@ -129,26 +134,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if listed.code != 1 || !entry_ok || !group_ok {
         return Err(format!("Query view mismatch: {view}").into());
     }
-    capture("s04a-listed.bin", &listed_bytes);
+    capture("s04a-listed.bin", &listed_bytes)?;
 
     let (duplicate_bytes, duplicate) =
         raw(&mut watcher, &request(wire::Operation::Add, 0, &name)).await?;
     if duplicate.code != 3 || duplicate.revision != listed.revision {
         return Err(format!("duplicate Add mismatch: {duplicate:?}").into());
     }
-    capture("s04a-duplicate.bin", &duplicate_bytes);
+    capture("s04a-duplicate.bin", &duplicate_bytes)?;
     let expected = format!(
         "name={name}\nentry={entry}\ngroup={}\nrevision={}\nadded_revision={}\nduplicate_code={}\n",
         group.number, listed.revision, added.revision, duplicate.code
     );
-    capture("s04a-expected.txt", expected.as_bytes());
-    let _ = watcher.session_mut().logout().await?;
-    let _ = target.session_mut().logout().await?;
+    capture("s04a-expected.txt", expected.as_bytes())?;
+    row_logout(&mut watcher).await?; row_needs_logout_0 = false;
+    row_logout(&mut target).await?; row_needs_logout_1 = false;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut target).await?;
+        }
+        row_result
+    }
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut watcher).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S04a.client status=CAPTURED evidence={expected}"
         )),
@@ -156,5 +173,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=S04a.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=S04a.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn vip_request_preserves_text_and_large_number() {
+        let value = request(wire::Operation::FriendsQuery, u64::MAX, "friend");
+        assert_eq!(value.number, u64::MAX);
+        assert_eq!(value.text, "friend");
+        assert!(value.groups.is_empty());
+        assert!(!value.notify);
     }
 }

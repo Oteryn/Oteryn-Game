@@ -8,28 +8,28 @@ use super::*;
 use oteryn_dev_client::{EntityDetail, EntityKind, SessionEvent, WorldSpatialEntitiesDelta};
 use oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&directory).join(name), bytes) {
-        evidence(&format!("I06_CAPTURE_WRITE name={name} error={error}"));
-    }
+    std::fs::write(Path::new(&directory).join(name), bytes)?;
+
+    Ok(())
 }
 
-fn capture_delta(name: &str, delta: &WorldSpatialEntitiesDelta) {
-    match encode_world_spatial_entities_delta(delta) {
-        Ok(payload) => capture(name, &payload),
-        Err(error) => evidence(&format!("I06_CAPTURE_ENCODE name={name} error={error:?}")),
-    }
+fn capture_delta(name: &str, delta: &WorldSpatialEntitiesDelta) -> TestResult {
+    let payload = encode_world_spatial_entities_delta(delta)
+        .map_err(|error| format!("delta encode: {error:?}"))?;
+    capture(name, &payload)
 }
 
 fn identity_text(identity: &[u8; 16]) -> String {
     identity.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xc6).await?;
+    let row_result: TestResult<_> = async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -114,24 +114,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err("I06 corpse did not retire before 75s".into());
         }
     };
-    capture_delta("i06-corpse.bin", &introduced);
-    capture_delta("i06-decay.bin", &retired);
+    capture_delta("i06-corpse.bin", &introduced)?;
+    capture_delta("i06-decay.bin", &retired)?;
     capture(
         "i06-expected.txt",
         format!("{} {}\n", identity_text(&corpse.entity.identity), remaining).as_bytes(),
-    );
-    evidence(&format!(
+    )?;
+    let verdict = format!(
         "SEAM_EVIDENCE e2e_all scenario=I06.client status=PASS corpse={} remaining_loot={remaining}",
         identity_text(&corpse.entity.identity)
-    ));
-    Ok(())
+    );
+    Ok(verdict)
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = journey(clients).await {
+    if let Err(error) = journey(clients).await.inspect(|line| evidence(line)) {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=I06.client status=FAIL evidence={}",
             error.to_string().replace([' ', '\n'], "_")
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn identity_text_preserves_full_identity_width() {
+        assert_eq!(identity_text(&[0; 16]), "00".repeat(16));
+        assert_eq!(identity_text(&[255; 16]), "ff".repeat(16));
     }
 }

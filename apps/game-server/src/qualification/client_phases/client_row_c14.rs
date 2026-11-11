@@ -10,7 +10,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     };
     if let Err(error) = capture(clients, Path::new(&path)).await {
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence={}",
+            "SEAM_EVIDENCE e2e_all scenario=C14.client status=FAIL evidence={}",
             error.to_string().replace(['\n', '\r'], " ")
         ));
     }
@@ -26,37 +26,43 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
     }
 
     let mut client = connect_character(clients, 0xc1, 0).await?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            skill_display::CAPABILITY_SKILL_DISPLAY_V1,
-            skill_display::COMMAND_TYPE_SKILL_DISPLAY_QUERY,
-            &[],
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("C14 skill-display reply was {reply:?}").into());
-    }
-    let display = skill_display::SkillDisplay::decode(&reply.payload)
-        .ok_or("C14 skill-display payload was malformed")?;
-    let catalog = client
-        .session_mut()
-        .spell_catalog()?
-        .ok_or("C14 spell catalog was absent")?;
-    let catalog_payload = client
-        .session_mut()
-        .gated_snapshot(actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
-        .ok_or("C14 raw spell-catalog snapshot was absent")?
-        .payload
-        .clone();
+    let row_result: TestResult<_> = async {
+        let reply = client
+            .session_mut()
+            .gated_command(
+                skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+                skill_display::COMMAND_TYPE_SKILL_DISPLAY_QUERY,
+                &[],
+            )
+            .await?;
+        if reply.status != CommandStatus::Accepted {
+            return Err(format!("C14 skill-display reply was {reply:?}").into());
+        }
+        let display = skill_display::SkillDisplay::decode(&reply.payload)
+            .ok_or("C14 skill-display payload was malformed")?;
+        let catalog = client
+            .session_mut()
+            .spell_catalog()?
+            .ok_or("C14 spell catalog was absent")?;
+        let catalog_payload = client
+            .session_mut()
+            .gated_snapshot(actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+            .ok_or("C14 raw spell-catalog snapshot was absent")?
+            .payload
+            .clone();
 
-    std::fs::write(path.join("c14-skill-display.bin"), &reply.payload)?;
-    std::fs::write(path.join("c14-spell-catalog.bin"), catalog_payload)?;
-    std::fs::write(
-        path.join("c14-expected.txt"),
-        expected(&display, &catalog.entries),
-    )?;
-    Ok(())
+        std::fs::write(path.join("c14-skill-display.bin"), &reply.payload)?;
+        std::fs::write(path.join("c14-spell-catalog.bin"), catalog_payload)?;
+        std::fs::write(
+            path.join("c14-expected.txt"),
+            expected(&display, &catalog.entries),
+        )?;
+        Ok(())
+    }
+    .await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 fn expected(
@@ -85,4 +91,20 @@ fn expected(
         "level={} experience={} level_percent={} skills={} learned={}\n",
         display.level, display.experience, display.level_percent, skills, learned
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn skill_evidence_keeps_full_level_and_experience() {
+        let display = skill_display::SkillDisplay {
+            level: u32::MAX,
+            experience: u64::MAX,
+            ..Default::default()
+        };
+        let text = expected(&display, &[]);
+        assert!(text.starts_with("level=4294967295 experience=18446744073709551615 "));
+        assert!(text.ends_with("learned=\n"));
+    }
 }

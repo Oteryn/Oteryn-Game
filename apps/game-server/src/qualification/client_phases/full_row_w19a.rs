@@ -23,8 +23,14 @@ const OWNER_GAP: &str =
     "source:crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:167";
 
 fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
+    quantities_from(client.inventory())
+}
+
+fn quantities_from(
+    input: Option<&oteryn_dev_client::CharacterInventory>,
+) -> TestResult<BTreeMap<u32, u64>> {
     let mut result = BTreeMap::new();
-    for entry in &client.inventory().ok_or("W19a inventory absent")?.entries {
+    for entry in &input.ok_or("W19a inventory absent")?.entries {
         *result.entry(entry.item_definition_ref.get()).or_default() += u64::from(entry.count.get());
     }
     Ok(result)
@@ -242,6 +248,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin: serde_json::Value =
@@ -253,6 +260,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa9).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     earn_price(&mut client, world, &metadata.spawns).await?;
     let purchase_sequence = acquire(&mut client, world).await?;
     let before_refusal = quantities(&client)?;
@@ -334,8 +343,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 5: LOGOUT refused".into());
     }
-    drop(client);
-    let client = connect_world(clients, 0xaa).await?;
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    let mut client = connect_world(clients, 0xaa).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if client.join_snapshot().game_session_id == old_session || quantities(&client)? != saved {
         return Err(format!(
             "step 5: fresh admission lost durable outcome; observed={:?}",
@@ -348,11 +360,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         refused.2, committed.result_server_sequence
     ));
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut client).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W19a.full status=PASS seconds={:.3}",
@@ -361,16 +383,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Ok(Err(error)) => {
             let detail = error.to_string();
             evidence(&format!("W19A_FAIL {detail}"));
-            let status = if detail.contains(OWNER_GAP) {
-                "MISSING-SERVER"
-            } else {
-                "FAIL"
-            };
-            let suffix = if status == "MISSING-SERVER" {
-                format!(" evidence={OWNER_GAP}")
-            } else {
-                String::new()
-            };
+            let status = "FAIL";
+            let suffix = String::new();
             evidence(&format!(
                 "SEAM_EVIDENCE e2e_all scenario=W19a.full status={status} seconds={:.3}{suffix}",
                 started.elapsed().as_secs_f64()
@@ -380,5 +394,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "SEAM_EVIDENCE e2e_all scenario=W19a.full status=FAIL seconds={:.3}",
             started.elapsed().as_secs_f64()
         )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(quantities_from(None).is_err());
+        assert!(
+            quantities_from(Some(&oteryn_dev_client::CharacterInventory::default()))
+                .is_ok_and(|values| values.is_empty())
+        );
     }
 }

@@ -55,7 +55,7 @@ const LEVERS: &[TilePos] = &[
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W02.full status=PASS seconds={:.3} evidence=lever-instance-defeat-cooldown-participation-reward-fresh-admission",
@@ -108,7 +108,10 @@ async fn cooldowns(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let mut client = connect_world(clients, 0xb2).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let before = cooldowns(&mut client).await?;
     if contains_key(&before, BOSS) {
         return Err(
@@ -149,7 +152,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         wire::BossActivityReply::Refused(reason) => {
             // This is a real server decision after the native command, not a
             // source-derived verdict. Preserve the exact typed refusal in evidence.
-            let _ = client.session_mut().logout().await;
+            row_logout(&mut client).await?; row_needs_logout_0 = false;
             return Err(format!(
                 "step-2-lever-entry:observed-status={:?},refusal={reason:?};need=reachable-authored-lever-and-legitimate-level-250-party",
                 lever.status
@@ -307,8 +310,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if logout.status != CommandStatus::Accepted {
         return Err(format!("step-6-logout:observed={logout:?};need=accepted-logout").into());
     }
-    drop(client);
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xb3).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.join_snapshot().game_session_id == old_session {
         return Err("step-6-fresh-admission:observed=reused-session;need=new-session".into());
     }
@@ -324,6 +329,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("W02_CHECK step=6 status=PASS observed=durable-state-after-fresh-admission");
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn contains_key(payload: &[u8], key: &str) -> bool {

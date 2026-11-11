@@ -13,14 +13,16 @@
 //! 5. Log the target out, freshly admit it with a different game session, list the
 //!    durable setting, and re-cast to prove denial and no-cost refusal survived.
 use super::*;
-use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent};
+use oteryn_dev_client::{
+    ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent,
+};
 use oteryn_protocol_oteryn::exiva;
 
 const ACTIONS: &[&str] = &["allow", "locate", "deny", "refusal", "fresh-admission"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline: observed timeout while awaiting C05 server reply".into()),
@@ -32,36 +34,60 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "SEAM_EVIDENCE e2e_all scenario=C05.full status={} seconds={:.3} evidence={}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
-        if result.is_ok() { "observed-all-required-actions" } else { "observed-runtime-failure-see-C05_GAP" },
+        if result.is_ok() {
+            "observed-all-required-actions"
+        } else {
+            "observed-runtime-failure-see-C05_GAP"
+        },
     ));
 }
 
 async fn setting(client: &mut DevClientSession, payload: &[u8]) -> TestResult<Vec<u8>> {
-    let reply = client.session_mut().gated_command(
-        exiva::CAPABILITY_EXIVA_SETTINGS_V1,
-        exiva::COMMAND_TYPE_EXIVA_SETTINGS,
-        payload,
-    ).await?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            exiva::CAPABILITY_EXIVA_SETTINGS_V1,
+            exiva::COMMAND_TYPE_EXIVA_SETTINGS,
+            payload,
+        )
+        .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("settings step refused: status={:?} payload={:?}", reply.status, reply.payload).into());
+        return Err(format!(
+            "settings step refused: status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into());
     }
     Ok(reply.payload)
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
-    let entities = client.world_entities().ok_or("name step missing entity snapshot")?;
-    entities.iter().find(|entry| entry.entity.identity == *entities.own_identity())
-        .and_then(|entry| entry.display_name)
-        .ok_or("name step missing own display name")?
-        .as_str().map(str::to_owned).map_err(|error| format!("name step invalid UTF-8: {error:?}").into())
+    own_name_from(client.world_entities())
 }
 
-async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn_dev_client::ChatOutcome, Vec<String>)> {
+fn own_name_from(input: Option<&oteryn_dev_client::WorldEntities>) -> TestResult<String> {
+    let entities = input.ok_or("name step missing entity snapshot")?;
+    entities
+        .iter()
+        .find(|entry| entry.entity.identity == *entities.own_identity())
+        .and_then(|entry| entry.display_name)
+        .ok_or("name step missing own display name")?
+        .as_str()
+        .map(str::to_owned)
+        .map_err(|error| format!("name step invalid UTF-8: {error:?}").into())
+}
+
+async fn cast(
+    client: &mut DevClientSession,
+    target: &str,
+) -> TestResult<(oteryn_dev_client::ChatOutcome, Vec<String>)> {
     client.take_events();
-    let reply = client.chat(&ChatIntent::Say {
-        mode: ChatSpeechMode::Say,
-        text: format!("exiva \"{target}\""),
-    }).await?;
+    let reply = client
+        .chat(&ChatIntent::Say {
+            mode: ChatSpeechMode::Say,
+            text: format!("exiva \"{target}\""),
+        })
+        .await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut messages = Vec::new();
     loop {
@@ -69,17 +95,26 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
             if let SessionEvent::ChatLine(delta) = event
                 && let ChatLine::Private { speaker_name, text } = delta.value
                 && speaker_name == "Game"
-            { messages.push(text); }
+            {
+                messages.push(text);
+            }
         }
-        if !messages.is_empty() || tokio::time::Instant::now() >= deadline { break; }
+        if !messages.is_empty() || tokio::time::Instant::now() >= deadline {
+            break;
+        }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
     Ok((reply, messages))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut caster = connect_character(clients, 0xc5, 0).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let mut target = connect_character(clients, 0xc6, 1).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = async {
     let target_name = own_name(&target)?;
     if setting(&mut target, &[0, 1]).await? != [1] { return Err("allow step missing committed [1] reply".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("allow step invalid settings list")?;
@@ -108,8 +143,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let old_session = target.join_snapshot().game_session_id;
     if target.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
-    drop(target);
+    row_needs_logout_1 = false;
+    if row_needs_logout_1 { row_logout(&mut target).await?; row_needs_logout_1 = false; }
     let mut target = connect_character(clients, 0xc7, 1).await?;
+    let mut row_needs_logout_2 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if target.join_snapshot().game_session_id == old_session { return Err("fresh-admission step reused game session".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("fresh-admission step invalid settings list")?;
     if list.modes != 0 { return Err(format!("fresh-admission step observed modes={}", list.modes).into()); }
@@ -119,7 +157,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh-admission refusal observed disposition={:?} replies={messages:?}", refused.disposition).into());
     }
     evidence(&format!("C05_CHECK {} PASS durable-denial", ACTIONS[4]));
-    let _ = caster.session_mut().logout().await;
-    let _ = target.session_mut().logout().await;
+    row_logout(&mut caster).await?; row_needs_logout_0 = false;
+    row_logout(&mut target).await?; row_needs_logout_2 = false;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_2 { row_logout(&mut target).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_1 { row_logout(&mut target).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut caster).await?;
+    }
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(own_name_from(None).is_err());
+    }
 }

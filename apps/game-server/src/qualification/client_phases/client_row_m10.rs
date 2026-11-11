@@ -14,11 +14,17 @@ const UNDERWATER: [u16; 12] = [
 ];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
-        Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=M10.client status=PASS evidence=real-drowning-ActorVitals-payload-captured"),
-        Ok(Err(error)) => evidence(&format!("SEAM_EVIDENCE e2e_all scenario=M10.client status=FAIL evidence={error}")),
-        Err(_) => evidence("SEAM_EVIDENCE e2e_all scenario=M10.client status=FAIL evidence=timeout-waiting-for-drowning-payload"),
+        Ok(Ok(())) => evidence(
+            "SEAM_EVIDENCE e2e_all scenario=M10.client status=PASS evidence=real-drowning-ActorVitals-payload-captured",
+        ),
+        Ok(Err(error)) => evidence(&format!(
+            "SEAM_EVIDENCE e2e_all scenario=M10.client status=FAIL evidence={error}"
+        )),
+        Err(_) => evidence(
+            "SEAM_EVIDENCE e2e_all scenario=M10.client status=FAIL evidence=timeout-waiting-for-drowning-payload",
+        ),
     }
 }
 
@@ -30,14 +36,21 @@ fn is_underwater(world: &BundleWorld, at: TilePos) -> bool {
     })
 }
 
-async fn drown_delta(client: &mut DevClientSession, before: u32) -> TestResult<oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::actor_spell::ActorVitals>> {
+async fn drown_delta(
+    client: &mut DevClientSession,
+    before: u32,
+) -> TestResult<oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::actor_spell::ActorVitals>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
     loop {
         client.service_liveness(Duration::from_millis(100)).await?;
-        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
-            SessionEvent::ActorVitals(delta) if delta.value.health < before => Some(delta),
-            _ => None,
-        }) {
+        if let Some(delta) = client
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::ActorVitals(delta) if delta.value.health < before => Some(delta),
+                _ => None,
+            })
+        {
             return Ok(delta);
         }
         if tokio::time::Instant::now() >= deadline {
@@ -46,42 +59,101 @@ async fn drown_delta(client: &mut DevClientSession, before: u32) -> TestResult<o
     }
 }
 
-fn capture(initial: &oteryn_protocol_oteryn::actor_spell::ActorVitals, delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::actor_spell::ActorVitals>) {
+fn capture(
+    initial: &oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::actor_spell::ActorVitals>,
+) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     let result = (|| -> TestResult {
         let path = Path::new(&path);
-        std::fs::write(path.join("m10-snapshot.bin"), oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(initial).map_err(|error| format!("M10 snapshot codec: {error:?}"))?)?;
-        std::fs::write(path.join("m10-drown.bin"), oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&delta.value).map_err(|error| format!("M10 delta codec: {error:?}"))?)?;
-        std::fs::write(path.join("m10-expected.txt"), format!("{} {} {} {} {} {}\n", initial.health, delta.value.health, delta.value.mana, delta.base_revision, delta.new_revision, delta.server_sequence))?;
+        std::fs::write(
+            path.join("m10-snapshot.bin"),
+            oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(initial)
+                .map_err(|error| format!("M10 snapshot codec: {error:?}"))?,
+        )?;
+        std::fs::write(
+            path.join("m10-drown.bin"),
+            oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&delta.value)
+                .map_err(|error| format!("M10 delta codec: {error:?}"))?,
+        )?;
+        std::fs::write(
+            path.join("m10-expected.txt"),
+            format!(
+                "{} {} {} {} {} {}\n",
+                initial.health,
+                delta.value.health,
+                delta.value.mana,
+                delta.base_revision,
+                delta.new_revision,
+                delta.server_sequence
+            ),
+        )?;
         Ok(())
     })();
-    if let Err(error) = result {
-        evidence(&format!("M10_CAPTURE_WRITE_ERROR {error}"));
-    }
+    result?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0xa0).await?;
-    let start = tile(client.world_spatial().actor_position)?;
-    let mut path = route(world, start, |at| is_underwater(world, at))
-        .ok_or("no reachable underwater tile for M10 client capture")?;
-    let enter = path.pop().ok_or("M10 client capture started underwater")?;
-    walk(&mut client, world, &path).await?;
-    let initial = *client.actor_vitals().ok_or("M10 initial ActorVitals absent")?;
-    let moved = client.step_retrying(enter).await?;
-    if moved.disposition != StepDisposition::Moved || moved.world_spatial_delta.is_none() {
-        return Err("M10 underwater entry did not move with a spatial delta".into());
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let start = tile(client.world_spatial().actor_position)?;
+        let mut path = route(world, start, |at| is_underwater(world, at))
+            .ok_or("no reachable underwater tile for M10 client capture")?;
+        let enter = path.pop().ok_or("M10 client capture started underwater")?;
+        walk(&mut client, world, &path).await?;
+        let initial = *client
+            .actor_vitals()
+            .ok_or("M10 initial ActorVitals absent")?;
+        let moved = client.step_retrying(enter).await?;
+        if moved.disposition != StepDisposition::Moved || moved.world_spatial_delta.is_none() {
+            return Err("M10 underwater entry did not move with a spatial delta".into());
+        }
+        let delta = drown_delta(&mut client, initial.health).await?;
+        if initial.health.saturating_sub(delta.value.health) != 20 {
+            return Err(format!(
+                "M10 drowning damage was not 20: {initial:?} -> {:?}",
+                delta.value
+            )
+            .into());
+        }
+        capture(&initial, &delta)?;
+
+        Ok(())
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_ground_is_not_underwater() -> TestResult {
+        let world = row_helper_world()?;
+        assert!(!is_underwater(
+            &world,
+            TilePos {
+                x: u16::MAX,
+                y: u16::MAX,
+                floor: 0
+            }
+        ));
+        Ok(())
     }
-    let delta = drown_delta(&mut client, initial.health).await?;
-    if initial.health.saturating_sub(delta.value.health) != 20 {
-        return Err(format!("M10 drowning damage was not 20: {initial:?} -> {:?}", delta.value).into());
-    }
-    capture(&initial, &delta);
-    let _ = client.session_mut().logout().await?;
-    Ok(())
 }

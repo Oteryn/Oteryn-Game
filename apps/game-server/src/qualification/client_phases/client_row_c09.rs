@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, Spe
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(
             "e2e_all scenario=C09.client status=PASS evidence=food-funded-HP-mana-payloads",
@@ -20,7 +20,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> u64 {
-    client.inventory().map_or(0, |inventory| {
+    quantity_from(client.inventory(), reference)
+}
+
+fn quantity_from(
+    input: Option<&oteryn_dev_client::CharacterInventory>,
+    reference: std::num::NonZeroU32,
+) -> u64 {
+    input.map_or(0, |inventory| {
         inventory
             .entries
             .iter()
@@ -149,9 +156,9 @@ async fn acquire_meat(
     Ok(reference)
 }
 
-fn capture(before: ActorVitals, after: ActorVitals) {
+fn capture(before: ActorVitals, after: ActorVitals) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     let write = || -> TestResult {
         let path = Path::new(&path);
@@ -180,12 +187,13 @@ fn capture(before: ActorVitals, after: ActorVitals) {
         )?;
         Ok(())
     };
-    if let Err(error) = write() {
-        evidence(&format!("C09_CAPTURE_WRITE_ERROR {error}"));
-    }
+    write()?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -196,78 +204,97 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc9).await?;
-    let meat = acquire_meat(&mut client, world).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let full = *client.actor_vitals().ok_or("C09 initial vitals absent")?;
-    for _ in 0..3 {
-        client_hunt::hunt(&mut client)
-            .await
-            .map_err(|error| format!("C09 combat: {error}"))?;
-        if client
-            .actor_vitals()
-            .is_some_and(|v| v.health < full.health)
-        {
-            break;
-        }
-    }
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(
-            oteryn_protocol_oteryn::actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
-        )
-        .ok_or("spell catalogue absent")?;
-    let spell = oteryn_protocol_oteryn::actor_spell_catalog::decode_catalog(&snapshot.payload)
-        .map_err(|error| format!("spell catalogue: {error:?}"))?
-        .into_iter()
-        .find(|spell| {
-            spell.available && spell.words == "utevo lux" && !spell.mana_percent && spell.mana > 0
-        })
-        .ok_or("no mana-costing learned spell")?;
-    let cast = client
-        .cast_spell(
-            std::num::NonZeroU32::new(spell.cast_index).ok_or("zero spell index")?,
-            SpellTarget::None,
-            false,
-        )
-        .await?;
-    if cast.disposition != SpellCastDisposition::Cast {
-        return Err(format!("mana deficit cast={cast:?}").into());
-    }
-    let before = *client.actor_vitals().ok_or("deficit vitals absent")?;
-    if before.health >= full.health || before.mana >= full.mana {
-        return Err(format!("HP/mana deficits missing full={full:?} before={before:?}").into());
-    }
-    let handle = client
-        .inventory()
-        .and_then(|inventory| {
-            inventory
-                .entries
-                .iter()
-                .find(|item| item.item_definition_ref == meat)
-        })
-        .map(|item| item.handle)
-        .ok_or("meat handle absent")?;
-    if client.use_item(handle).await?.disposition != UseDisposition::Committed {
-        return Err("food use was not committed".into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health > before.health
-                && delta.value.mana > before.mana
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let meat = acquire_meat(&mut client, world).await?;
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        let full = *client.actor_vitals().ok_or("C09 initial vitals absent")?;
+        for _ in 0..3 {
+            client_hunt::hunt(&mut client)
+                .await
+                .map_err(|error| format!("C09 combat: {error}"))?;
+            if client
+                .actor_vitals()
+                .is_some_and(|v| v.health < full.health)
             {
-                capture(before, delta.value);
-                return Ok(());
+                break;
             }
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "food regeneration timeout before={before:?} current={:?}",
-                client.actor_vitals()
+        let snapshot = client
+            .session_mut()
+            .gated_snapshot(
+                oteryn_protocol_oteryn::actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
             )
-            .into());
+            .ok_or("spell catalogue absent")?;
+        let spell = oteryn_protocol_oteryn::actor_spell_catalog::decode_catalog(&snapshot.payload)
+            .map_err(|error| format!("spell catalogue: {error:?}"))?
+            .into_iter()
+            .find(|spell| {
+                spell.available
+                    && spell.words == "utevo lux"
+                    && !spell.mana_percent
+                    && spell.mana > 0
+            })
+            .ok_or("no mana-costing learned spell")?;
+        let cast = client
+            .cast_spell(
+                std::num::NonZeroU32::new(spell.cast_index).ok_or("zero spell index")?,
+                SpellTarget::None,
+                false,
+            )
+            .await?;
+        if cast.disposition != SpellCastDisposition::Cast {
+            return Err(format!("mana deficit cast={cast:?}").into());
         }
+        let before = *client.actor_vitals().ok_or("deficit vitals absent")?;
+        if before.health >= full.health || before.mana >= full.mana {
+            return Err(format!("HP/mana deficits missing full={full:?} before={before:?}").into());
+        }
+        let handle = client
+            .inventory()
+            .and_then(|inventory| {
+                inventory
+                    .entries
+                    .iter()
+                    .find(|item| item.item_definition_ref == meat)
+            })
+            .map(|item| item.handle)
+            .ok_or("meat handle absent")?;
+        if client.use_item(handle).await?.disposition != UseDisposition::Committed {
+            return Err("food use was not committed".into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            client.service_liveness(Duration::from_millis(50)).await?;
+            for event in client.take_events() {
+                if let SessionEvent::ActorVitals(delta) = event
+                    && delta.value.health > before.health
+                    && delta.value.mana > before.mana
+                {
+                    capture(before, delta.value)?;
+                    return Ok(());
+                }
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "food regeneration timeout before={before:?} current={:?}",
+                    client.actor_vitals()
+                )
+                .into());
+            }
+        }
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert_eq!(quantity_from(None, std::num::NonZeroU32::MIN), 0);
     }
 }

@@ -35,7 +35,7 @@ fn c06_real_payloads_replay_into_client_inventory_and_vitals() -> Result<(), Tes
             )
         };
     let body = snapshot_body(&inventory_payload, &vitals_payload)?;
-    let state = SnapshotState::decode(&body, 41, &[4], None, None)?;
+    let state = SnapshotState::decode(&body, 41, &[4, 12], None, None)?;
     let values = expected
         .split_whitespace()
         .map(str::parse::<u32>)
@@ -64,7 +64,7 @@ fn c06_real_payloads_replay_into_client_inventory_and_vitals() -> Result<(), Tes
     let mut invalid = vitals_payload;
     invalid.push(0);
     let invalid_body = snapshot_body(&inventory_payload, &invalid)?;
-    assert!(SnapshotState::decode(&invalid_body, 42, &[4], None, Some(&state)).is_err());
+    assert!(SnapshotState::decode(&invalid_body, 42, &[4, 12], None, Some(&state)).is_err());
     assert_eq!(retained.actor_vitals, state.actor_vitals);
     assert_eq!(retained.inventory, state.inventory);
     Ok(())

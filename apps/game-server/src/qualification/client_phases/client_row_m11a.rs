@@ -13,51 +13,60 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb3).await?;
-    let mut captures = Vec::new();
-    for (name, words) in [("up", "exani hur up"), ("down", "exani hur down")] {
-        client.take_events();
-        let reply = client
-            .chat(&ChatIntent::Say {
-                mode: ChatSpeechMode::Say,
-                text: words.into(),
-            })
-            .await?;
-        client.service_liveness(Duration::from_millis(100)).await?;
-        let events = client.take_events();
-        let spatial = events.iter().find_map(|event| match event {
-            SessionEvent::WorldSpatial(delta) => Some(delta.value),
-            SessionEvent::WorldSpatialEntities(delta) => Some(world_spatial::WorldSpatialObservation {
-                content_generation: delta.value.content_generation,
-                actor_position: delta.value.actor_position,
-            }),
-            _ => None,
-        });
-        let vitals = events.iter().find_map(|event| match event {
-            SessionEvent::ActorVitals(delta) => Some(delta.value),
-            _ => None,
-        });
-        captures.push((name, reply.status, spatial, vitals));
-        let deadline = tokio::time::Instant::now() + Duration::from_millis(2_100);
-        while tokio::time::Instant::now() < deadline {
-            client.service_liveness(Duration::from_millis(100)).await?;
+    let row_result: TestResult<_> = async {
+        let mut captures = Vec::new();
+        for (name, words) in [("up", "exani hur up"), ("down", "exani hur down")] {
             client.take_events();
+            let reply = client
+                .chat(&ChatIntent::Say {
+                    mode: ChatSpeechMode::Say,
+                    text: words.into(),
+                })
+                .await?;
+            client.service_liveness(Duration::from_millis(100)).await?;
+            let events = client.take_events();
+            let spatial = events.iter().find_map(|event| match event {
+                SessionEvent::WorldSpatial(delta) => Some(delta.value),
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    Some(world_spatial::WorldSpatialObservation {
+                        content_generation: delta.value.content_generation,
+                        actor_position: delta.value.actor_position,
+                    })
+                }
+                _ => None,
+            });
+            let vitals = events.iter().find_map(|event| match event {
+                SessionEvent::ActorVitals(delta) => Some(delta.value),
+                _ => None,
+            });
+            captures.push((name, reply.status, spatial, vitals));
+            let deadline = tokio::time::Instant::now() + Duration::from_millis(2_100);
+            while tokio::time::Instant::now() < deadline {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                client.take_events();
+            }
         }
-    }
 
-    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let write_result = write_captures(Path::new(&directory), &captures);
-        if let Err(error) = write_result {
-            evidence(&format!(
-                "SEAM_EVIDENCE e2e_all scenario=M11a.client status=CAPTURE-WRITE-ERROR evidence={error}"
-            ));
+        if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            let write_result = write_captures(Path::new(&directory), &captures);
+            write_result?;
         }
+        Ok(())
     }
-    Ok(())
+    .await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 fn write_captures(
     directory: &Path,
-    captures: &[(&str, CommandStatus, Option<world_spatial::WorldSpatialObservation>, Option<actor_spell::ActorVitals>)],
+    captures: &[(
+        &str,
+        CommandStatus,
+        Option<world_spatial::WorldSpatialObservation>,
+        Option<actor_spell::ActorVitals>,
+    )],
 ) -> TestResult {
     let mut expected = String::new();
     for (name, status, spatial, vitals) in captures {

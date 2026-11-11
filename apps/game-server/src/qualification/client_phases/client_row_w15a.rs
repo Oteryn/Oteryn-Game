@@ -7,17 +7,19 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::quest_log as journal;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W15A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn escape(text: &str) -> String {
-    text.replace('\\', "\\\\").replace('\n', "\\n").replace('\t', "\\t")
+    text.replace('\\', "\\\\")
+        .replace('\n', "\\n")
+        .replace('\t', "\\t")
 }
 
 fn line_text(prefix: &str, line: &journal::QuestLine) -> String {
@@ -80,7 +82,9 @@ async fn query(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0x86).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
@@ -150,17 +154,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     expected.push_str(&line_text("line", &line));
     expected.push_str(&line_text("tracked", tracked_line));
     expected.push_str(&format!("invalid={invalid}\nrefused={:?}\n", refused.status));
-    capture("w15a-snapshot.bin", &snapshot.payload);
-    capture("w15a-list.bin", &listed.payload);
-    capture("w15a-line.bin", &lined.payload);
-    capture("w15a-track.bin", &tracked.payload);
-    capture("w15a-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("w15a-snapshot.bin", &snapshot.payload)?;
+    capture("w15a-list.bin", &listed.payload)?;
+    capture("w15a-line.bin", &lined.payload)?;
+    capture("w15a-track.bin", &tracked.payload)?;
+    capture("w15a-expected.txt", expected.as_bytes())?;
+
     Ok(format!("quests={} line={index} missions={}", list.len(), line.missions.len()))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W15a.client status=CAPTURED evidence={observed}"
         )),
@@ -169,5 +178,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W15a.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn evidence_escapes_delimiters_without_losing_backslashes() {
+        assert_eq!(escape(""), "");
+        assert_eq!(escape("\\\n\t"), "\\\\\\n\\t");
     }
 }

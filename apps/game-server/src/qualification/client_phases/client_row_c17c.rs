@@ -1,20 +1,20 @@
 //! C17c client replay capture: casting Creature Illusion (`utevo res ina "rat"`) as a player
 //! changes the caster's own appearance binding. Client owner: `AppearanceState` in
 //! `crates/session` (`Session::visible_appearances`). The raw appearance join snapshot is the
-//! server payload; the Mappings delta is session-owned and re-encoded with the production encoder.
+//! server payload; the Mappings payload is read directly from the server.
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatSpeechMode, DevClientSession};
 use oteryn_protocol_oteryn::appearance::{self, Look};
 
 const WORDS: &str = "utevo res ina \"rat\"";
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("C17C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn outfit(look: &Look) -> TestResult<String> {
@@ -36,7 +36,9 @@ fn hex(bytes: &[u8; 16]) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client: DevClientSession = connect_world(clients, 0x31).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let own = *client
         .world_entities()
         .ok_or("C17c entities absent")?
@@ -68,36 +70,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    // The applied look is read from the session's own visible appearance; the Mappings delta that
-    // carries it is session-owned, so it is re-encoded with the production encoder.
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    let look = loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        let seen = client
-            .session_mut()
-            .visible_appearances()
-            .into_iter()
-            .find(|entry| entry.entity.entity.identity == own)
-            .and_then(|entry| entry.look);
-        if let Some(look) = seen
-            && look != baseline.look
-        {
-            break look;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("own visible look did not change after the cast".into());
-        }
-    };
-    let mut binding = baseline.clone();
-    binding.root_revision = binding.root_revision.saturating_add(1);
-    binding.look = look;
-    let mapping_payload = appearance::Mappings {
-        context: decoded.catalogue.context,
-        upserts: vec![binding.clone()],
-        forgets: Vec::new(),
+    // Read the actual Mappings payload, including the server's root revision.
+    let delta = client.session_mut().read_gated_delta(
+        appearance::STATE_DOMAIN_APPEARANCE,
+        appearance::DELTA_TYPE_APPEARANCE_MAPPINGS,
+    ).await?;
+    let mappings = appearance::Mappings::decode(&delta.payload)
+        .map_err(|error| format!("mapping decode: {error:?}"))?;
+    let binding = mappings.upserts.iter().find(|entry| entry.entity.identity == own)
+        .ok_or("own mapping absent")?;
+    if binding.look == baseline.look || binding.root_revision <= baseline.root_revision {
+        return Err("illusion did not advance the own appearance mapping".into());
     }
-    .encode()
-    .map_err(|error| format!("mapping encode: {error:?}"))?;
+    let mapping_payload = delta.payload;
     let sequence = cast.result_server_sequence;
     let expected = format!(
         "revision={}\nidentity={}\ngeneration={}\nref={}\nbaseline={}\nlook={}\n",
@@ -108,15 +93,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         outfit(&baseline.look)?,
         outfit(&binding.look)?
     );
-    capture("c17c-snapshot.bin", &snapshot.payload);
-    capture("c17c-mapping.bin", &mapping_payload);
-    capture("c17c-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("c17c-snapshot.bin", &snapshot.payload)?;
+    capture("c17c-mapping.bin", &mapping_payload)?;
+    capture("c17c-expected.txt", expected.as_bytes())?;
+
     Ok(format!("look={} sequence={sequence}", outfit(&binding.look)?))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=C17c.client status=CAPTURED evidence={observed}"
         )),
@@ -125,5 +115,35 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=C17c.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_full_identity_width() {
+        assert_eq!(hex(&[0; 16]), "00".repeat(16));
+        assert_eq!(hex(&[255; 16]), "ff".repeat(16));
+    }
+}
+
+#[cfg(test)]
+mod data_tests {
+    use super::*;
+    #[test]
+    fn outfits_reject_non_outfits_and_keep_colour_width() -> TestResult {
+        assert!(outfit(&Look::EmptyOutfit).is_err());
+        assert!(outfit(&Look::Item { definition_ref: 1 }).is_err());
+        assert_eq!(
+            outfit(&Look::Outfit {
+                look_type: u32::MAX,
+                colours: [0, 255, 256, u16::MAX],
+                addons: 3
+            })?,
+            "4294967295 0 255 256 65535 3"
+        );
+        Ok(())
     }
 }

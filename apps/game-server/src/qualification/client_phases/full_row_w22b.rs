@@ -19,8 +19,8 @@
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
-use oteryn_protocol_oteryn::{charm_progression as charm, daily_boost, prey};
 use oteryn_protocol_oteryn::attack as attacks;
+use oteryn_protocol_oteryn::{charm_progression as charm, daily_boost, prey};
 use std::collections::BTreeSet;
 
 const STEPS: &[u8] = &[1, 2, 3, 4, 5, 6, 7];
@@ -34,59 +34,141 @@ struct Row {
 
 impl Row {
     fn new() -> Self {
-        Self { ran: BTreeSet::new(), passed: BTreeSet::new(), failures: Vec::new(), started: std::time::Instant::now() }
+        Self {
+            ran: BTreeSet::new(),
+            passed: BTreeSet::new(),
+            failures: Vec::new(),
+            started: std::time::Instant::now(),
+        }
     }
     fn observed(&mut self, step: u8, result: TestResult) {
         self.ran.insert(step);
         match result {
-            Ok(()) => { self.passed.insert(step); evidence(&format!("W22B_CHECK step={step} PASS")); }
-            Err(error) => { self.failures.push(format!("step-{step}:{error}")); evidence(&format!("W22B_CHECK step={step} FAIL observed={error}")); }
+            Ok(()) => {
+                self.passed.insert(step);
+                evidence(&format!("W22B_CHECK step={step} PASS"));
+            }
+            Err(error) => {
+                self.failures.push(format!("step-{step}:{error}"));
+                evidence(&format!("W22B_CHECK step={step} FAIL observed={error}"));
+            }
         }
     }
     fn finish(self) {
-        let complete = STEPS.iter().all(|step| self.ran.contains(step) && self.passed.contains(step));
-        let executed = self.ran.iter().map(u8::to_string).collect::<Vec<_>>().join(",");
-        let detail = if complete { format!("steps={executed}") } else { format!("steps={executed};{}", self.failures.join("|")) };
-        evidence(&format!("e2e_all scenario=W22b.full status={} seconds={:.3} evidence={}", if complete { "PASS" } else { "FAIL" }, self.started.elapsed().as_secs_f64(), sanitize(&detail)));
+        let complete = STEPS
+            .iter()
+            .all(|step| self.ran.contains(step) && self.passed.contains(step));
+        let executed = self
+            .ran
+            .iter()
+            .map(u8::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        let detail = if complete {
+            format!("steps={executed}")
+        } else {
+            format!("steps={executed};{}", self.failures.join("|"))
+        };
+        evidence(&format!(
+            "e2e_all scenario=W22b.full status={} seconds={:.3} evidence={}",
+            if complete { "PASS" } else { "FAIL" },
+            self.started.elapsed().as_secs_f64(),
+            sanitize(&detail)
+        ));
     }
 }
 
-fn sanitize(value: &str) -> String { value.chars().map(|c| if c.is_whitespace() { '_' } else { c }).collect() }
+fn sanitize(value: &str) -> String {
+    value
+        .chars()
+        .map(|c| if c.is_whitespace() { '_' } else { c })
+        .collect()
+}
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     match result {
-        Err(_) => row.failures.push("packet-timeout:remaining-steps-not-executed".into()),
+        Err(_) => row
+            .failures
+            .push("packet-timeout:remaining-steps-not-executed".into()),
         Ok(Err(error)) => row.failures.push(format!("admission:{error}")),
         Ok(Ok(())) => {}
     }
     row.finish();
 }
 
-async fn command(client: &mut DevClientSession, capability: u32, kind: u32, payload: &[u8]) -> TestResult<oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse> {
-    Ok(client.session_mut().gated_command(capability, kind, payload).await?)
+async fn command(
+    client: &mut DevClientSession,
+    capability: u32,
+    kind: u32,
+    payload: &[u8],
+) -> TestResult<oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse> {
+    Ok(client
+        .session_mut()
+        .gated_command(capability, kind, payload)
+        .await?)
 }
 
-async fn prey_request(client: &mut DevClientSession, request: &prey::Request) -> TestResult<prey::Reply> {
+async fn prey_request(
+    client: &mut DevClientSession,
+    request: &prey::Request,
+) -> TestResult<prey::Reply> {
     let payload = prey::encode_request(request).map_err(|e| format!("prey encode:{e:?}"))?;
-    let reply = command(client, prey::CAPABILITY_PREY_V1, prey::COMMAND_TYPE_PREY, &payload).await?;
-    if reply.status != CommandStatus::Accepted { return Err(format!("prey transport status={:?} payload={:?}", reply.status, reply.payload).into()); }
+    let reply = command(
+        client,
+        prey::CAPABILITY_PREY_V1,
+        prey::COMMAND_TYPE_PREY,
+        &payload,
+    )
+    .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "prey transport status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into());
+    }
     prey::decode_reply(&reply.payload).map_err(|e| format!("prey reply:{e:?}").into())
 }
 
-async fn charm_request(client: &mut DevClientSession, action: charm::CharmProgressionAction) -> TestResult<charm::CharmProgressionReply> {
-    let payload = charm::encode_charm_progression_request(&action).map_err(|e| format!("charm encode:{e:?}"))?;
-    let reply = command(client, charm::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1, charm::COMMAND_TYPE_CHARM_PROGRESSION, &payload).await?;
-    if reply.status != CommandStatus::Accepted { return Err(format!("charm transport status={:?} payload={:?}", reply.status, reply.payload).into()); }
-    charm::decode_charm_progression_reply(&reply.payload).map_err(|e| format!("charm reply:{e:?}").into())
+async fn charm_request(
+    client: &mut DevClientSession,
+    action: charm::CharmProgressionAction,
+) -> TestResult<charm::CharmProgressionReply> {
+    let payload = charm::encode_charm_progression_request(&action)
+        .map_err(|e| format!("charm encode:{e:?}"))?;
+    let reply = command(
+        client,
+        charm::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1,
+        charm::COMMAND_TYPE_CHARM_PROGRESSION,
+        &payload,
+    )
+    .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "charm transport status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into());
+    }
+    charm::decode_charm_progression_reply(&reply.payload)
+        .map_err(|e| format!("charm reply:{e:?}").into())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_character(clients, 0xd2, 1).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
 
     let mut selected = None;
     let step1 = async {
@@ -135,49 +217,183 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let step6 = async { let stamina = stamina(&mut client).await?; let count = hunt_rat(&mut client, world).await?; if stamina > 840 { return Err(format!("low-stamina kill executed at served stamina={stamina}, corpse_entries={count}; need <=840 obtained through ordinary hunting").into()); } else if count != 0 { return Err(format!("low-stamina corpse was not empty: stamina={stamina} entries={count}").into()); } Ok(()) }.await;
     row.observed(6, step6);
 
-    let step7 = async { let prey_before = prey_request(&mut client, &prey::Request::Query).await?; let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_before = stamina(&mut client).await?; release(&mut client).await?; client = connect_character(clients, 0xd3, 1).await?; let prey_after = prey_request(&mut client, &prey::Request::Query).await?; let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_after = stamina(&mut client).await?; if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after { return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after}", prey_before != prey_after, charm_before != charm_after).into()); } Ok(()) }.await;
+    let step7 = async { let prey_before = prey_request(&mut client, &prey::Request::Query).await?; let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_before = stamina(&mut client).await?; release(&mut client).await?; row_needs_logout_0 = false; client = connect_character(clients, 0xd3, 1).await?; row_needs_logout_0 = true; let prey_after = prey_request(&mut client, &prey::Request::Query).await?; let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_after = stamina(&mut client).await?; if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after { return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after}", prey_before != prey_after, charm_before != charm_after).into()); } Ok(()) }.await;
     row.observed(7, step7);
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn decode_boosted_creature(payload: &[u8]) -> TestResult<String> {
-    let len = usize::from(*payload.get(8).ok_or("daily boost reply missing creature length")?);
-    Ok(std::str::from_utf8(payload.get(9..9 + len).ok_or("daily boost creature truncated")?)?.to_owned())
+    let len = usize::from(
+        *payload
+            .get(8)
+            .ok_or("daily boost reply missing creature length")?,
+    );
+    Ok(std::str::from_utf8(
+        payload
+            .get(9..9 + len)
+            .ok_or("daily boost creature truncated")?,
+    )?
+    .to_owned())
 }
 
 async fn stamina(client: &mut DevClientSession) -> TestResult<u16> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let reply = command(client, wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 50]).await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() < 43 { return Err(format!("stamina tab status={:?} bytes={}", reply.status, reply.payload.len()).into()); }
-    Ok(u16::from_be_bytes([reply.payload[41], reply.payload[42]]))
+    let reply = command(
+        client,
+        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+        &[1, 0, 0, 50],
+    )
+    .await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.len() != 42 {
+        return Err(format!(
+            "stamina tab status={:?} bytes={}",
+            reply.status,
+            reply.payload.len()
+        )
+        .into());
+    }
+    stamina_from_stats(&reply.payload)
 }
 
 async fn hunt_rat(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<usize> {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|t| !t.protection_zone()) && client.world_entities().is_some_and(|entities| entities.iter().any(|e| e.kind == EntityKind::Creature && e.position.floor == -i16::from(at.floor) && e.position.x.abs_diff(i32::from(at.x)).max(e.position.y.abs_diff(i32::from(at.y))) <= 1))).ok_or("no reachable visible rat")?;
+    let path = route(world, from, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|t| !t.protection_zone())
+            && client.world_entities().is_some_and(|entities| {
+                entities.iter().any(|e| {
+                    e.kind == EntityKind::Creature
+                        && e.position.floor == -i16::from(at.floor)
+                        && e.position
+                            .x
+                            .abs_diff(i32::from(at.x))
+                            .max(e.position.y.abs_diff(i32::from(at.y)))
+                            <= 1
+                })
+            })
+    })
+    .ok_or("no reachable visible rat")?;
     walk(client, world, &path).await?;
     let at = client.world_spatial().actor_position;
-    let target = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == EntityKind::Creature && e.position.floor == at.floor && e.position.x.abs_diff(at.x).max(e.position.y.abs_diff(at.y)) <= 1)).copied().ok_or("no adjacent creature after walk")?;
-    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
-    if attack.disposition != attacks::AttackIntentDisposition::Ok { return Err(format!("attack refusal:{attack:?}").into()); }
+    let target = client
+        .world_entities()
+        .and_then(|es| {
+            es.iter().find(|e| {
+                e.kind == EntityKind::Creature
+                    && e.position.floor == at.floor
+                    && e.position.x.abs_diff(at.x).max(e.position.y.abs_diff(at.y)) <= 1
+            })
+        })
+        .copied()
+        .ok_or("no adjacent creature after walk")?;
+    let attack = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
+    if attack.disposition != attacks::AttackIntentDisposition::Ok {
+        return Err(format!("attack refusal:{attack:?}").into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
-    loop { client.service_liveness(Duration::from_millis(50)).await?; client.take_events(); if !client.world_entities().is_some_and(|es| es.iter().any(|e| e.entity == target.entity)) { break; } else if tokio::time::Instant::now() >= deadline { return Err("kill timeout after accepted attack".into()); } }
+    loop {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+        if !client
+            .world_entities()
+            .is_some_and(|es| es.iter().any(|e| e.entity == target.entity))
+        {
+            break;
+        } else if tokio::time::Instant::now() >= deadline {
+            return Err("kill timeout after accepted attack".into());
+        }
+    }
     client.session_mut().attack_target(None).await?;
-    let corpse = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == EntityKind::Corpse && e.position == target.position)).and_then(|e| match e.detail { EntityDetail::Object { item_handle, .. } => item_handle, _ => None }).ok_or("death emitted no corpse handle")?;
+    let corpse = client
+        .world_entities()
+        .and_then(|es| {
+            es.iter()
+                .find(|e| e.kind == EntityKind::Corpse && e.position == target.position)
+        })
+        .and_then(|e| match e.detail {
+            EntityDetail::Object { item_handle, .. } => item_handle,
+            _ => None,
+        })
+        .ok_or("death emitted no corpse handle")?;
     client.use_item(corpse).await?;
-    Ok(client.open_container().ok_or("corpse USE emitted no container frame")?.entries.len())
+    Ok(client
+        .open_container()
+        .ok_or("corpse USE emitted no container frame")?
+        .entries
+        .len())
 }
 
 async fn release(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop { let reply = client.session_mut().logout().await?; if reply.status == CommandStatus::Accepted { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("logout refusal:{reply:?}").into()); } client.service_liveness(Duration::from_millis(250)).await?; }
+    loop {
+        let reply = client.session_mut().logout().await?;
+        if reply.status == CommandStatus::Accepted {
+            return Ok(());
+        } else if tokio::time::Instant::now() >= deadline {
+            return Err(format!("logout refusal:{reply:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn pass_requires_every_executed_step() { let mut row = Row::new(); row.ran.extend([1, 2, 3, 4, 7]); row.passed.extend([1, 2, 3, 4, 7]); assert!(!STEPS.iter().all(|s| row.ran.contains(s) && row.passed.contains(s))); }
+    fn pass_requires_every_executed_step() {
+        let mut row = Row::new();
+        row.ran.extend([1, 2, 3, 4, 7]);
+        row.passed.extend([1, 2, 3, 4, 7]);
+        assert!(
+            !STEPS
+                .iter()
+                .all(|s| row.ran.contains(s) && row.passed.contains(s))
+        );
+    }
     #[test]
-    fn boost_creature_decoder_is_bounded() -> TestResult { let mut p = 7_u64.to_be_bytes().to_vec(); p.extend_from_slice(&[3, b'r', b'a', b't']); assert_eq!(decode_boosted_creature(&p)?, "rat"); assert!(decode_boosted_creature(&p[..10]).is_err()); Ok(()) }
+    fn boost_creature_decoder_is_bounded() -> TestResult {
+        let mut p = 7_u64.to_be_bytes().to_vec();
+        p.extend_from_slice(&[3, b'r', b'a', b't']);
+        assert_eq!(decode_boosted_creature(&p)?, "rat");
+        assert!(decode_boosted_creature(&p[..10]).is_err());
+        Ok(())
+    }
+}
+
+fn stamina_from_stats(payload: &[u8]) -> TestResult<u16> {
+    if payload.len() != 42 || payload.first() != Some(&0) {
+        return Err("malformed GeneralStats reply".into());
+    }
+    Ok(u16::from_le_bytes([payload[29], payload[30]]))
+}
+
+#[cfg(test)]
+mod stamina_tests {
+    use super::*;
+    #[test]
+    fn general_stats_stamina_uses_the_wire_offset_and_endianness() -> TestResult {
+        assert!(stamina_from_stats(&[]).is_err());
+        assert!(stamina_from_stats(&[0; 41]).is_err());
+        assert!(stamina_from_stats(&[0; 43]).is_err());
+        let mut payload = [0; 42];
+        payload[29..31].copy_from_slice(&2520_u16.to_le_bytes());
+        assert_eq!(stamina_from_stats(&payload)?, 2520);
+        payload[29..31].copy_from_slice(&0_u16.to_le_bytes());
+        assert_eq!(stamina_from_stats(&payload)?, 0);
+        payload[0] = 1;
+        assert!(stamina_from_stats(&payload).is_err());
+        Ok(())
+    }
 }

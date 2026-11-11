@@ -6,13 +6,13 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_ui::stash as ui;
 use oteryn_protocol_oteryn::stash;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E07_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 /// Sends the panel's own command and returns the decoded reply and the raw payload.
@@ -50,6 +50,7 @@ fn total(panel: &ui::StashPanel) -> u64 {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -60,6 +61,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let definitions = provisioning::item_index()?;
     let mut client = connect_character(clients, 0x39, 1).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         near_locker(world, at)
     })
@@ -124,21 +126,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "key={key}\nrevision={revision}\nstowed={}\nopen_total={before}\nafter_stow={after_stow}\nafter_withdraw={after_withdraw}\n",
         item.count.get()
     );
-    capture("e07-open.bin", &open_bytes);
-    capture("e07-stow.bin", &stow_bytes);
-    capture("e07-browse.bin", &browse_bytes);
-    capture("e07-withdraw.bin", &withdraw_bytes);
-    capture("e07-after.bin", &after_bytes);
-    capture("e07-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("e07-open.bin", &open_bytes)?;
+    capture("e07-stow.bin", &stow_bytes)?;
+    capture("e07-browse.bin", &browse_bytes)?;
+    capture("e07-withdraw.bin", &withdraw_bytes)?;
+    capture("e07-after.bin", &after_bytes)?;
+    capture("e07-expected.txt", expected.as_bytes())?;
+
     Ok(format!(
         "key={key} stowed={} after_stow={after_stow} after_withdraw={after_withdraw}",
         item.count.get()
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(150), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E07.client status=CAPTURED evidence={observed}"
         )),
@@ -147,5 +154,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E07.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn stash_totals_use_wide_arithmetic() {
+        let mut panel = ui::StashPanel::default();
+        assert_eq!(total(&panel), 0);
+        let row = stash::StashRow {
+            handle: [1; 16],
+            definition_key: "item".into(),
+            definition_revision: "1".into(),
+            quantity: u32::MAX,
+            migration_required: false,
+        };
+        panel.rows = vec![row.clone(), row];
+        assert_eq!(total(&panel), 2 * u64::from(u32::MAX));
     }
 }

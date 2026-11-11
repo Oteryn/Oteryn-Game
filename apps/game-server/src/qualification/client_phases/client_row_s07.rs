@@ -12,16 +12,24 @@ use oteryn_protocol_oteryn::world_object::{
     CAPABILITY_ITEM_USE_V1, UseDisposition, decode_use_result,
 };
 
-const BED: ActorPosition = ActorPosition { x: 32311, y: 32804, floor: 7 };
-const APPROACH: ActorPosition = ActorPosition { x: 32312, y: 32804, floor: 7 };
+const BED: ActorPosition = ActorPosition {
+    x: 32311,
+    y: 32804,
+    floor: 7,
+};
+const APPROACH: ActorPosition = ActorPosition {
+    x: 32312,
+    y: 32804,
+    floor: 7,
+};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S07_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn travel(client: &mut DevClientSession) -> TestResult {
@@ -32,7 +40,11 @@ async fn travel(client: &mut DevClientSession) -> TestResult {
     if reply.status != CommandStatus::Accepted
         || reply.disposition != Some(WalkDisposition::Accepted)
     {
-        return Err(format!("step=walk status={:?} disposition={:?}", reply.status, reply.disposition).into());
+        return Err(format!(
+            "step=walk status={:?} disposition={:?}",
+            reply.status, reply.disposition
+        )
+        .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     while tokio::time::Instant::now() < deadline {
@@ -50,7 +62,11 @@ fn bed_handle(client: &mut DevClientSession) -> TestResult<ItemHandle> {
         .session_mut()
         .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
         .ok_or("step=bed-handle missing world map")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
+    bed_handle_from(&snapshot.payload)
+}
+
+fn bed_handle_from(payload: &[u8]) -> TestResult<ItemHandle> {
+    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(payload)
         .map_err(|error| format!("step=bed-handle decode {error:?}"))?;
     map.tiles
         .iter()
@@ -73,7 +89,11 @@ async fn sleep(client: &mut DevClientSession) -> TestResult<(Vec<u8>, UseDisposi
     payload.extend([0x10, 6]);
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_BED_SLEEP_INTENT, &payload)
+        .gated_command(
+            CAPABILITY_ITEM_USE_V1,
+            COMMAND_TYPE_BED_SLEEP_INTENT,
+            &payload,
+        )
         .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=sleep status={:?}", reply.status).into());
@@ -84,36 +104,68 @@ async fn sleep(client: &mut DevClientSession) -> TestResult<(Vec<u8>, UseDisposi
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut sleeper = connect_character(clients, 0x60, 1).await?;
-    travel(&mut sleeper).await?;
-    let (sleep_payload, slept) = sleep(&mut sleeper).await?;
-    if slept != UseDisposition::OfflineTraining {
-        return Err(format!("step=sleep observed {slept:?}, expected OfflineTraining").into());
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        travel(&mut sleeper).await?;
+        let (sleep_payload, slept) = sleep(&mut sleeper).await?;
+        if slept != UseDisposition::OfflineTraining {
+            return Err(format!("step=sleep observed {slept:?}, expected OfflineTraining").into());
+        }
+        // OfflineTraining is a terminal server-owned session transition.
+        row_needs_logout_0 = false;
+        let mut peer = connect_character(clients, 0x61, 0).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = async {
+            travel(&mut peer).await?;
+            let (occupied_payload, occupied) = sleep(&mut peer).await?;
+            row_logout(&mut peer).await?;
+            row_needs_logout_1 = false;
+            if occupied != UseDisposition::BedOccupied {
+                return Err(
+                    format!("step=occupied observed {occupied:?}, expected BedOccupied").into(),
+                );
+            }
+            // Wake the sleeper through an ordinary fresh admission.
+            let mut woke = connect_character(clients, 0x62, 1).await?;
+            let mut row_needs_logout_2 = true;
+            let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+                row_logout(&mut woke).await?;
+                row_needs_logout_2 = false;
+                capture("s07-sleep.bin", &sleep_payload)?;
+                capture("s07-occupied.bin", &occupied_payload)?;
+                capture(
+                    "s07-expected.txt",
+                    format!("sleep={slept:?}\noccupied={occupied:?}\n").as_bytes(),
+                )?;
+                Ok(format!("sleep={slept:?} occupied={occupied:?}"))
+            })
+            .await
+            .unwrap_or_else(|error| Err(error.into()));
+            if row_needs_logout_2 {
+                row_logout(&mut woke).await?;
+            }
+            row_result
+        }
+        .await;
+        if row_needs_logout_1 {
+            row_logout(&mut peer).await?;
+        }
+        row_result
     }
-    let mut peer = connect_character(clients, 0x61, 0).await?;
-    travel(&mut peer).await?;
-    let (occupied_payload, occupied) = sleep(&mut peer).await?;
-    let _ = peer.session_mut().logout().await;
-    if occupied != UseDisposition::BedOccupied {
-        return Err(format!("step=occupied observed {occupied:?}, expected BedOccupied").into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut sleeper).await?;
     }
-    // Wake the sleeper through an ordinary fresh admission.
-    let mut woke = connect_character(clients, 0x62, 1).await?;
-    let _ = woke.session_mut().logout().await;
-    capture("s07-sleep.bin", &sleep_payload);
-    capture("s07-occupied.bin", &occupied_payload);
-    capture(
-        "s07-expected.txt",
-        format!("sleep={slept:?}\noccupied={occupied:?}\n").as_bytes(),
-    );
-    Ok(format!("sleep={slept:?} occupied={occupied:?}"))
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(180), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S07.client status=CAPTURED evidence={observed}"
         )),
@@ -122,5 +174,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=S07.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn malformed_map_snapshot_has_no_bed_handle() {
+        assert!(bed_handle_from(&[]).is_err());
+        assert!(bed_handle_from(&[255]).is_err());
     }
 }

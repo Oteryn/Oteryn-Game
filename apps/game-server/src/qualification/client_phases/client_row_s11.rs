@@ -7,20 +7,21 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::highscores::{self, wire};
 use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn exchange(
     client: &mut DevClientSession,
     query: wire::HighscoresQuery,
 ) -> TestResult<ServerMechanicResponse> {
-    let command = highscores::command(query).map_err(|error| format!("ranking input: {error:?}"))?;
+    let command =
+        highscores::command(query).map_err(|error| format!("ranking input: {error:?}"))?;
     Ok(client
         .session_mut()
         .gated_command(command.capability, command.command_type, &command.payload)
@@ -35,7 +36,9 @@ fn row_text(row: &wire::HighscoreRow) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0x40).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let query = wire::HighscoresQuery {
         world: None,
         details: false,
@@ -97,19 +100,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         page.own_row.as_ref().map_or_else(|| "none".into(), row_text),
         refused.status
     ));
-    capture("s11-page1.bin", &accepted.payload);
-    capture("s11-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("s11-page1.bin", &accepted.payload)?;
+    capture("s11-expected.txt", expected.as_bytes())?;
+
     Ok(format!(
         "snapshot={} rows={} own={}",
         page.snapshot_id,
         page.rows.len(),
         page.own_row.is_some()
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S11.client status=CAPTURED evidence={observed}"
         )),
@@ -118,5 +126,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=S11.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn ranking_evidence_keeps_full_numeric_width() {
+        let row = wire::HighscoreRow {
+            rank: u64::MAX,
+            name: "name".into(),
+            vocation: "knight".into(),
+            level: u32::MAX,
+            value: 0,
+        };
+        assert_eq!(
+            row_text(&row),
+            "18446744073709551615|name|knight|4294967295|0"
+        );
     }
 }

@@ -7,13 +7,13 @@ use oteryn_protocol_oteryn::task_board::{
     decode_task_board_reply, encode_task_board_request,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P23C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -36,40 +36,48 @@ async fn send(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_character(clients, 0x45, 1).await?;
-    let (query_bytes, query) = send(&mut client, 0, 0).await?;
-    if query.refused || query.tasks.is_empty() {
-        return Err(format!("query refused or without tasks: {query:?}").into());
-    }
-    capture("p23c-query.bin", &query_bytes);
-    let (select_bytes, select) = send(&mut client, 1, 1).await?;
-    capture("p23c-select.bin", &select_bytes);
-    let mut expected = format!(
-        "points={}\nbounty_points={}\ntask_count={}\n",
-        query.points,
-        query.bounty_points,
-        query.tasks.len()
-    );
-    for (index, task) in query.tasks.iter().enumerate() {
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let (query_bytes, query) = send(&mut client, 0, 0).await?;
+        if query.refused || query.tasks.is_empty() {
+            return Err(format!("query refused or without tasks: {query:?}").into());
+        }
+        capture("p23c-query.bin", &query_bytes)?;
+        let (select_bytes, select) = send(&mut client, 1, 1).await?;
+        capture("p23c-select.bin", &select_bytes)?;
+        let mut expected = format!(
+            "points={}\nbounty_points={}\ntask_count={}\n",
+            query.points,
+            query.bounty_points,
+            query.tasks.len()
+        );
+        for (index, task) in query.tasks.iter().enumerate() {
+            expected.push_str(&format!(
+                "task_{}={},{},{}\n",
+                index + 1,
+                task.race,
+                task.required,
+                task.claimed_at_unix
+            ));
+        }
         expected.push_str(&format!(
-            "task_{}={},{},{}\n",
-            index + 1,
-            task.race,
-            task.required,
-            task.claimed_at_unix
+            "select_refused={}\nselect_selected={}\nselect_kills={}\nselect_points={}\n",
+            select.refused, select.selected, select.kills, select.points
         ));
-    }
-    expected.push_str(&format!(
-        "select_refused={}\nselect_selected={}\nselect_kills={}\nselect_points={}\n",
-        select.refused, select.selected, select.kills, select.points
-    ));
-    capture("p23c-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";").replace(' ', "_"))
+        capture("p23c-expected.txt", expected.as_bytes())?;
+
+        Ok(expected.replace('\n', ";").replace(' ', "_"))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P23c.client status=CAPTURED evidence={expected}"
         )),

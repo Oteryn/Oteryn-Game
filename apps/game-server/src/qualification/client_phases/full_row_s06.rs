@@ -77,7 +77,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -229,7 +229,10 @@ async fn taming_attempt(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0xb6).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     if !client
         .selected_capabilities()
         .contains(&appearance::CAPABILITY_APPEARANCE_V1)
@@ -286,7 +289,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=fresh-admission observed=logout-refused".into());
     }
+    row_needs_logout_0 = false;
     let mut fresh = connect_world(clients, 0xb7).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let persisted = snapshot(&mut fresh)?;
     let persisted_binding = own_binding(&fresh, &persisted)?;
     if persisted.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&mounted)
@@ -303,6 +309,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         format!("selected-outfit-addon-mount-and-unlock-persisted root_revision={committed} selected_revision={selected_revision}"),
     );
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]

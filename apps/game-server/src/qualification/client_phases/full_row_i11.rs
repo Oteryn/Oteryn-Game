@@ -13,8 +13,8 @@
 //! ordinary acquisition surface rather than manufacturing a PASS.
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
-    encode_item_use_intent, CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT,
+    CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent,
+    UseTarget, WorldObjectTarget, decode_use_result, encode_item_use_intent,
 };
 
 const DOUGH: u32 = 3604;
@@ -28,23 +28,10 @@ const OVENS: [&str; 4] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "baked-refused-and-reloaded".to_owned()),
-        Ok(Err(error)) if error.to_string().contains("MISSING-SERVER:") => {
-            evidence(&format!(
-                "I11_GAP {}",
-                error.to_string().replace([' ', '\n', '\r'], "_")
-            ));
-            (
-                "MISSING-SERVER",
-                "source:crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:154".to_owned(),
-            )
-        }
-        Ok(Err(error)) => (
-            "FAIL",
-            error.to_string().replace([' ', '\n', '\r'], "_"),
-        ),
+        Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),
         Err(_) => ("FAIL", "step-timeout-observed=no-reply".to_owned()),
     };
     evidence(&format!(
@@ -54,6 +41,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -68,7 +56,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 if OVENS.contains(&manifest.palette[item.palette as usize].key.as_str()) {
                     oven.get_or_insert((
-                        TilePos { x: tile.x, y: tile.y, floor: sector.floor },
+                        TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: sector.floor,
+                        },
                         u8::try_from(ordinal).map_err(|_| {
                             oteryn_world_bundle::Error::Limit("I11 oven ordinal".into())
                         })?,
@@ -80,6 +72,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })?;
     let (oven, ordinal) = oven.ok_or("step-1_observed=no-compiled-world-oven")?;
     let mut client = connect_character(clients, 0xb8, 0).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let here = tile(client.world_spatial().actor_position)?;
     let path = route(world, here, |at| {
         at.floor == oven.floor && at.x.abs_diff(oven.x).max(at.y.abs_diff(oven.y)) <= 1
@@ -140,13 +134,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if client.inventory() != snapshot.as_ref() {
             return Err("step-3_observed=unsupported-use-mutated-inventory".into());
         }
-        logout(&mut client).await?;
-        let reloaded = connect_character(clients, 0xb9, 0).await?;
+        logout(&mut client).await?; row_needs_logout_0 = false;
+        let mut reloaded = connect_character(clients, 0xb9, 0).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = async {
         if quantity(&reloaded, dough)? != 0 || quantity(&reloaded, bread)? != before_bread {
             return Err("step-4_observed=refused-use-changed-durable-quantities".into());
         }
-        return Err("MISSING-SERVER:step-2_observed=NothingToUse_no_legitimate_dough_source_need=server-player-acquisition_path".into());
-    }
+        Err("needed:dough;step-2_observed=NothingToUse".into())
+
+    }.await;
+    if row_needs_logout_1 { row_logout(&mut reloaded).await?; }
+    return row_result;
+}
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!(
             "step-2_observed=status-{:?}-disposition-{disposition:?}",
@@ -205,22 +205,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.inventory() != after_bake.as_ref() {
         return Err("step-3_observed=unsupported-use-mutated-inventory".into());
     }
-    logout(&mut client).await?;
-    let reloaded = connect_character(clients, 0xb9, 0).await?;
+    logout(&mut client).await?; row_needs_logout_0 = false;
+    let mut reloaded = connect_character(clients, 0xb9, 0).await?;
+    let row_needs_logout_2 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if quantity(&reloaded, dough)? != before_dough - 1
         || quantity(&reloaded, bread)? != before_bread + 1
     {
         return Err("step-4_observed=baked-quantities-not-durable".into());
     }
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_2 { row_logout(&mut reloaded).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn quantity(
     client: &oteryn_dev_client::DevClientSession,
     reference: std::num::NonZeroU32,
 ) -> TestResult<u64> {
-    Ok(client
-        .inventory()
+    quantity_from(client.inventory(), reference)
+}
+
+fn quantity_from(
+    input: Option<&oteryn_dev_client::CharacterInventory>,
+    reference: std::num::NonZeroU32,
+) -> TestResult<u64> {
+    Ok(input
         .ok_or("I11 inventory frame absent")?
         .entries
         .iter()
@@ -238,7 +256,9 @@ async fn wait_quantities(
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if quantity(client, first)? == first_expected && quantity(client, second)? == second_expected {
+        if quantity(client, first)? == first_expected
+            && quantity(client, second)? == second_expected
+        {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
@@ -256,4 +276,13 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
         return Err("step-4_observed=logout-refused".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(quantity_from(None, std::num::NonZeroU32::MIN).is_err());
+    }
 }

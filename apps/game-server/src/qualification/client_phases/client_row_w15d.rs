@@ -11,16 +11,20 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::quest_log as journal;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-const SHRINE: TilePos = TilePos { x: 32454, y: 32292, floor: -7 };
+const SHRINE: TilePos = TilePos {
+    x: 32454,
+    y: 32292,
+    floor: -7,
+};
 const APPEARANCE: u16 = 50242;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W15D_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 struct Listed {
@@ -98,7 +102,9 @@ fn shrine_placement(world: &BundleWorld) -> TestResult<(Vec<u8>, u64)> {
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut client = connect_world(clients, 0x88).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
@@ -137,16 +143,21 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         after.new,
         after.sequence,
     );
-    capture("w15d-snapshot.bin", &snapshot.payload);
-    capture("w15d-before.bin", &before.payload);
-    capture("w15d-after.bin", &after.payload);
-    capture("w15d-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("w15d-snapshot.bin", &snapshot.payload)?;
+    capture("w15d-before.bin", &before.payload)?;
+    capture("w15d-after.bin", &after.payload)?;
+    capture("w15d-expected.txt", expected.as_bytes())?;
+
     Ok(format!("use={outcome} before={} after={}", list_text(&before.entries), list_text(&after.entries)))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match tokio::time::timeout(Duration::from_secs(180), journey(clients, world)).await {
+    match row_complete(journey(clients, world)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W15d.client status=CAPTURED evidence={observed}"
         )),
@@ -155,5 +166,30 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W15d.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn quest_list_text_keeps_completion_and_identity() {
+        assert_eq!(list_text(&[]), "");
+        let entry = journal::QuestListEntry {
+            quest_index: u32::MAX,
+            completed: true,
+        };
+        assert_eq!(list_text(&[entry]), "4294967295:1");
+    }
+}
+
+#[cfg(test)]
+mod world_helper_tests {
+    use super::*;
+    #[test]
+    fn absent_guidance_shrine_has_no_invented_placement() -> TestResult {
+        let world = row_helper_world()?;
+        assert!(shrine_placement(&world).is_err());
+        Ok(())
     }
 }

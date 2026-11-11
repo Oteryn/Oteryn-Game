@@ -8,13 +8,13 @@ use prey::prey as wire;
 
 const NOT_A_CREATURE: &str = "oteryn:creature.not_a_creature";
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -29,12 +29,12 @@ async fn send(
     ) {
         return Err(format!("{request:?} status={:?}", response.status).into());
     }
-    capture(&format!("p03-{name}.bin"), &response.payload);
+    capture(&format!("p03-{name}.bin"), &response.payload)?;
     let receipt = wire::decode_reply(&response.payload)
         .map_err(|error| format!("{request:?} receipt: {error:?}"))?;
     let current = match &response.current {
         Some(bytes) => {
-            capture(&format!("p03-{name}-current.bin"), bytes);
+            capture(&format!("p03-{name}-current.bin"), bytes)?;
             Some(
                 wire::decode_reply(bytes)
                     .map_err(|error| format!("{request:?} current: {error:?}"))?,
@@ -54,7 +54,9 @@ fn slot(reply: &wire::Reply, number: u8) -> TestResult<&wire::Slot> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x23).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client.selected_capabilities().contains(&wire::CAPABILITY_PREY_V1) {
         return Err("admission omitted Prey capability 140".into());
     }
@@ -100,12 +102,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         current.wildcard_balance,
         refusal.status
     );
-    capture("p03-expected.txt", expected.as_bytes());
+    capture("p03-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P03.client status=CAPTURED evidence={expected}"
         )),
@@ -113,5 +120,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P03.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P03.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn empty_prey_state_is_not_an_active_or_selected_slot() {
+        let reply = wire::Reply {
+            status: 0,
+            wildcard_balance: 0,
+            slots: vec![],
+            list_size: 0,
+            expansion_owned: false,
+            offered_today: vec![],
+            offered_next: String::new(),
+        };
+        assert!(slot(&reply, 1).is_err());
+        assert!(slot(&reply, 255).is_err());
     }
 }

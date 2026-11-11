@@ -1204,7 +1204,7 @@ pub(super) async fn acquire_rune(
     let expected = before
         .checked_add(u64::from(offer.count) * 2)
         .ok_or("rune quantity overflow")?;
-    let sequence = inventory_quantity(client, reference, expected).await?;
+    let sequence = inventory_quantity(client, reference, expected, None).await?;
     Ok((reference, sequence))
 }
 
@@ -1212,10 +1212,17 @@ async fn inventory_quantity(
     client: &mut DevClientSession,
     reference: std::num::NonZeroU32,
     expected: u64,
+    capture_companion: Option<oteryn_dev_client::EntityRef>,
 ) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        for event in client.take_events() {
+        let events = client.take_events();
+        if let Some(target) = capture_companion {
+            for event in &events {
+                capture_c16c_event(event, target)?;
+            }
+        }
+        for event in events {
             if let SessionEvent::Inventory(delta) = event
                 && delta
                     .value
@@ -2929,10 +2936,17 @@ async fn companion_payment(
     before: oteryn_protocol_oteryn::actor_spell::ActorVitals,
     mana: u32,
     soul: u32,
+    capture_companion: Option<oteryn_dev_client::EntityRef>,
 ) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        for event in client.take_events() {
+        let events = client.take_events();
+        if let Some(target) = capture_companion {
+            for event in &events {
+                capture_c16c_event(event, target)?;
+            }
+        }
+        for event in events {
             if let SessionEvent::ActorVitals(delta) = event
                 && before.mana.checked_sub(mana) == Some(delta.value.mana)
                 && before.soul.checked_sub(soul) == Some(delta.value.soul)
@@ -3017,7 +3031,7 @@ async fn summon_rat(
         client.take_events();
         let reply = say(client, words).await?;
         if reply.status == CommandStatus::Accepted && reply.disposition == ChatDisposition::Ok {
-            let sequence = companion_payment(client, vitals, mana, spell.soul).await?;
+            let sequence = companion_payment(client, vitals, mana, spell.soul, None).await?;
             let (entity, _) = companion_spawn(
                 client,
                 &before,
@@ -3686,9 +3700,10 @@ async fn convince_rat(
         .copied()
         .ok_or("convince vitals absent")?;
     client.take_events();
+    capture_c16c_before(client, "convince")?;
     let (_, remaining) = cast_rune(client, spell, reference, Some(target.entity), None).await
         .map_err(|error| format!("{error}; Convince Creature additionally requires current creature mana={mana}; observed_mana={}", before.mana))?;
-    let sequence = companion_payment(client, before, mana, spell.soul).await?;
+    let sequence = companion_payment(client, before, mana, spell.soul, Some(target.entity)).await?;
     inventory_quantity_or_applied(client, reference, remaining).await?;
     creature(client, target.entity)?;
     // Conversion retains the existing generation; follow/attack proves master.
@@ -3789,10 +3804,11 @@ async fn animate_corpse(
         .copied()
         .ok_or("animate vitals absent")?;
     client.take_events();
+    capture_c16c_before(client, "animate")?;
     let (_, remaining) = cast_rune(client, spell, reference, None, Some(corpse.position)).await?;
     // A zero-mana rune need not emit an unchanged vitals delta. The charge
     // delta and exact corpse removal/creature spawn are still mandatory.
-    let sequence = inventory_quantity(client, reference, remaining).await?;
+    let sequence = inventory_quantity(client, reference, remaining, Some(corpse.entity)).await?;
     level(client).await?;
     if client
         .actor_vitals()
@@ -4355,7 +4371,7 @@ async fn tile_items(
         .copied()
         .ok_or("C16d empty tile vitals absent")?;
     let (_, remaining) = cast_rune(client, disintegrate, disintegrate_ref, None, Some(at)).await?;
-    let sequence = inventory_quantity(client, disintegrate_ref, remaining).await?;
+    let sequence = inventory_quantity(client, disintegrate_ref, remaining, None).await?;
     paid_rune(client, disintegrate_ref, remaining, before, disintegrate).await?;
     let empty_sequence = sequence;
     quantities[1].1 = remaining;
@@ -4429,4 +4445,66 @@ mod tile_item_tests {
         assert!(tile_item_duration(book.rune(3197).ok_or("Disintegrate absent")?).is_err());
         Ok(())
     }
+}
+
+// Re-encode only values installed from real visibility frames. Replay uses its own
+// Foundation revision baseline; no identity, position or companion outcome is fabricated.
+fn capture_c16c_before(client: &DevClientSession, stage: &str) -> TestResult {
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let entities = client.world_entities().ok_or("C16c visibility absent")?;
+    let payload =
+        oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_snapshot_with_fields(
+            &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesSnapshot {
+                content_generation: client.world_spatial().content_generation,
+                actor_position: client.world_spatial().actor_position,
+                own_identity: *entities.own_identity(),
+                entities: entities.iter().copied().collect(),
+            },
+            oteryn_protocol_oteryn::world_spatial_entities::EntityFields::selected(&[6, 286]),
+            &oteryn_protocol_oteryn::world_spatial_entities::EntityLights::new(),
+)
+        .map_err(|error| format!("C16c snapshot encode: {error:?}"))?;
+    std::fs::write(
+        Path::new(&root).join(format!("c16c-{stage}-before.bin")),
+        payload,
+    )?;
+    Ok(())
+}
+
+fn capture_c16c_event(event: &SessionEvent, target: oteryn_dev_client::EntityRef) -> TestResult {
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let SessionEvent::WorldSpatialEntities(delta) = event else {
+        return Ok(());
+    };
+    let stage = if delta
+        .value
+        .update
+        .iter()
+        .any(|entity| entity.entity == target && named(entity, "Rat"))
+    {
+        "convince"
+    } else if delta
+        .value
+        .enter
+        .iter()
+        .any(|entity| named(entity, "Skeleton"))
+        && delta.value.leave.contains(&target)
+    {
+        "animate"
+    } else {
+        return Ok(());
+    };
+    let payload =
+        oteryn_protocol_oteryn::world_spatial_entities::encode_world_spatial_entities_delta_with_fields(
+            &delta.value,
+            oteryn_protocol_oteryn::world_spatial_entities::EntityFields::selected(&[6, 286]),
+            &oteryn_protocol_oteryn::world_spatial_entities::EntityLights::new(),
+)
+        .map_err(|error| format!("C16c delta encode: {error:?}"))?;
+    std::fs::write(Path::new(&root).join(format!("c16c-{stage}.bin")), payload)?;
+    Ok(())
 }

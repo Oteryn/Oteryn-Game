@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::character_info_panel as info;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N07A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -41,18 +41,24 @@ fn titles(bytes: &[u8]) -> TestResult<(Vec<u8>, u8)> {
 }
 
 fn ids(values: &[u8]) -> String {
-    values.iter().map(u8::to_string).collect::<Vec<_>>().join(",")
+    values
+        .iter()
+        .map(u8::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0xf7).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     // The page the titles selector requests (offset 0, limit 1).
     let page = info::PageRequest::new(0, 1).ok_or("page")?;
     let query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
     if query.status != CommandStatus::Accepted {
         return Err(format!("QuerySelf status={:?}", query.status).into());
     }
-    capture("n07a-query.bin", &query.payload);
+    capture("n07a-query.bin", &query.payload)?;
     let (earned, selected_before) = titles(&query.payload)?;
     let chosen = earned.first().copied().unwrap_or(0);
     let operation = info::CharacterInfoOperation::Select(info::CharacterTitle::from_id(chosen));
@@ -63,7 +69,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("Select {chosen} reply {select:?}").into());
     }
-    capture("n07a-select.bin", &select.payload);
+    capture("n07a-select.bin", &select.payload)?;
     let revision = u64::from_le_bytes(select.payload[1..9].try_into()?);
     let unearned = (1..=u8::try_from(info::TITLE_COUNT)?)
         .filter(|id| !earned.contains(id))
@@ -77,7 +83,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if after.status != CommandStatus::Accepted {
         return Err(format!("follow-up QuerySelf status={:?}", after.status).into());
     }
-    capture("n07a-query-after.bin", &after.payload);
+    capture("n07a-query-after.bin", &after.payload)?;
     let (earned_after, selected_after) = titles(&after.payload)?;
     if earned_after != earned || selected_after != chosen {
         return Err(format!(
@@ -90,12 +96,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ids(&earned),
         unearned.id()
     );
-    capture("n07a-expected.txt", expected.as_bytes());
+    capture("n07a-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=N07a.client status=CAPTURED evidence={expected}"
         )),
@@ -103,5 +114,25 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=N07a.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=N07a.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn titles_checks_count_and_selected_boundary() -> TestResult {
+        assert!(titles(&[]).is_err());
+        let mut payload = vec![0; 71];
+        assert_eq!(titles(&payload)?, (vec![], 0));
+        payload[69] = 1;
+        assert!(titles(&payload).is_err());
+        payload.push(7);
+        payload[70] = 3;
+        assert_eq!(titles(&payload)?, (vec![3], 7));
+        payload.push(0);
+        assert!(titles(&payload).is_err());
+        Ok(())
     }
 }

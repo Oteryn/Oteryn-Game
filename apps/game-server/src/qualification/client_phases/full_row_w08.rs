@@ -93,7 +93,7 @@ fn evidence_token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     match result {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("journey", error),
@@ -132,7 +132,10 @@ async fn page(client: &mut DevClientSession) -> TestResult<wire::AnimusMasteries
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0xc8).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let before = page(&mut client).await?;
     row.pass("initial-query", (&before.total, &before.keys));
 
@@ -166,7 +169,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.fail("fresh-admission-persistence", "logout-reply-not-accepted");
         return Ok(());
     }
+    row_needs_logout_0 = false;
     let mut fresh = connect_world(clients, 0xc9).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let durable = page(&mut fresh).await?;
     if durable != before {
         row.fail(
@@ -191,6 +197,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ),
     );
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]

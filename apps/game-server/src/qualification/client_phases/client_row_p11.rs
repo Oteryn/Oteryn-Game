@@ -6,17 +6,19 @@ use oteryn_protocol_oteryn::account_achievements::{
     self as wire, AccountAchievementsQuery, COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x2f).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let query = wire::encode_account_achievements_query(AccountAchievementsQuery { page: 0 });
     let reply = client
         .session_mut()
@@ -25,7 +27,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if reply.status != CommandStatus::Accepted || reply.payload.is_empty() {
         return Err(format!("page query observed={reply:?}").into());
     }
-    capture("p11-page.bin", &reply.payload);
+    capture("p11-page.bin", &reply.payload)?;
     let page = wire::decode_account_achievements_result(&reply.payload)
         .map_err(|error| format!("page decode: {error:?}"))?;
     let refused = client
@@ -48,12 +50,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         page.has_more,
         rows.join("|")
     );
-    capture("p11-expected.txt", expected.as_bytes());
+    capture("p11-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P11.client status=CAPTURED evidence={expected}"
         )),

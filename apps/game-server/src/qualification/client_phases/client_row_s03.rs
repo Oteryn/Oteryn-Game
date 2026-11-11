@@ -9,17 +9,21 @@ use oteryn_protocol_oteryn::CommandStatus;
 
 const GUILD_NAME: &str = "Qualification Guard";
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
-    let entities = client.world_entities().ok_or("world entities missing")?;
+    own_name_from(client.world_entities())
+}
+
+fn own_name_from(input: Option<&oteryn_dev_client::WorldEntities>) -> TestResult<String> {
+    let entities = input.ok_or("world entities missing")?;
     entities
         .iter()
         .find(|entity| entity.entity.identity == *entities.own_identity())
@@ -30,11 +34,7 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
         .map_err(|e| format!("invalid display name: {e:?}").into())
 }
 
-async fn raw(
-    client: &mut DevClientSession,
-    kind: u32,
-    payload: Vec<u8>,
-) -> TestResult<Vec<u8>> {
+async fn raw(client: &mut DevClientSession, kind: u32, payload: Vec<u8>) -> TestResult<Vec<u8>> {
     let reply = client
         .session_mut()
         .gated_command(wire::CAPABILITY_GUILD_V1, kind, &payload)
@@ -68,8 +68,13 @@ async fn query(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut founder = connect_character(clients, 0x4f, 0).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let mut invitee = connect_character(clients, 0x50, 1).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let founder_name = own_name(&founder)?;
     let invitee_name = own_name(&invitee)?;
 
@@ -83,7 +88,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if found.code != 1 {
         return Err(format!("Found refused: {found:?}").into());
     }
-    capture("s03-found.bin", &found_bytes);
+    capture("s03-found.bin", &found_bytes)?;
     let (own_bytes, own) = query(&mut founder, &wire::GuildQuery::Own).await?;
     let wire::GuildQueryResult::Own(Some(summary)) = own else {
         return Err("own guild summary absent after Found".into());
@@ -91,7 +96,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if summary.name != GUILD_NAME || summary.guild != found.guild {
         return Err(format!("own summary mismatch: {summary:?}").into());
     }
-    capture("s03-own.bin", &own_bytes);
+    capture("s03-own.bin", &own_bytes)?;
     let (roster_bytes, roster) = query(
         &mut founder,
         &wire::GuildQuery::Roster {
@@ -109,7 +114,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if member.name != founder_name {
         return Err(format!("roster member {} is not the founder", member.name).into());
     }
-    capture("s03-roster.bin", &roster_bytes);
+    capture("s03-roster.bin", &roster_bytes)?;
     let (_, invite) = intent(
         &mut founder,
         &wire::GuildIntent::Invite {
@@ -131,23 +136,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if invitation.name != GUILD_NAME {
         return Err(format!("invitation names {}", invitation.name).into());
     }
-    capture("s03-invitations.bin", &invitations_bytes);
+    capture("s03-invitations.bin", &invitations_bytes)?;
     let expected = format!(
         "guild_name={GUILD_NAME}\nfounder={founder_name}\nrank_count={}\nown_rank={}\nroster_level={}\ninvitee={invitee_name}\n",
         summary.ranks.len(),
         summary.own_rank,
         member.level
     );
-    capture("s03-expected.txt", expected.as_bytes());
+    capture("s03-expected.txt", expected.as_bytes())?;
     // Best-effort cleanup so the founder does not stay in a guild for later rows.
-    let _ = intent(&mut founder, &wire::GuildIntent::Leave { guild: found.guild }).await;
-    let _ = founder.session_mut().logout().await?;
-    let _ = invitee.session_mut().logout().await?;
+    let (_, left) = intent(&mut founder, &wire::GuildIntent::Leave { guild: found.guild }).await?;
+    if left.code != 1 {
+        return Err(format!("guild restoration refused: {left:?}").into());
+    }
+    row_logout(&mut founder).await?; row_needs_logout_0 = false;
+    row_logout(&mut invitee).await?; row_needs_logout_1 = false;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut invitee).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut founder).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S03.client status=CAPTURED evidence={expected}"
         )),
@@ -155,5 +173,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=S03.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=S03.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(own_name_from(None).is_err());
     }
 }

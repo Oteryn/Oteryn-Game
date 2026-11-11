@@ -88,13 +88,10 @@ impl Attempt {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut attempt = Attempt::new();
-    let result = tokio::time::timeout(
-        Duration::from_secs(180),
-        journey(&mut attempt, clients),
-    )
-    .await
-    .map_err(|_| "journey-timeout-needs-server-reply".into())
-    .and_then(|result| result);
+    let result = row_complete(journey(&mut attempt, clients))
+        .await
+        .map_err(|_| "journey-timeout-needs-server-reply".into())
+        .and_then(|result| result);
     attempt.finish(result);
 }
 
@@ -113,10 +110,7 @@ fn spell_book() -> TestResult<crate::spell::SpellBook> {
     Ok(catalog.into_spell_book_with_selections(&selections)?)
 }
 
-fn spell_index(
-    book: &crate::spell::SpellBook,
-    words: &str,
-) -> TestResult<std::num::NonZeroU32> {
+fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::num::NonZeroU32> {
     let key = &book
         .spoken(words)
         .ok_or_else(|| format!("served-catalogue-missing-{words}"))?
@@ -133,8 +127,8 @@ fn spell_index(
 }
 
 async fn ready(client: &mut DevClientSession, micros: u64) -> TestResult {
-    let deadline = tokio::time::Instant::now()
-        + Duration::from_micros(micros.saturating_add(200_000));
+    let deadline =
+        tokio::time::Instant::now() + Duration::from_micros(micros.saturating_add(200_000));
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
@@ -142,12 +136,7 @@ async fn ready(client: &mut DevClientSession, micros: u64) -> TestResult {
     Ok(())
 }
 
-fn cast_payment(
-    outcome: &CastOutcome,
-    before: ActorVitals,
-    mana: u32,
-    soul: u32,
-) -> bool {
+fn cast_payment(outcome: &CastOutcome, before: ActorVitals, mana: u32, soul: u32) -> bool {
     outcome.actor_vitals_delta.as_ref().is_some_and(|delta| {
         delta.server_sequence > outcome.result_server_sequence
             && before.mana.checked_sub(mana) == Some(delta.value.mana)
@@ -156,6 +145,7 @@ fn cast_payment(
 }
 
 async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -166,33 +156,80 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     )?;
     let book = spell_book()?;
     let mut client = connect_character(clients, 0xc8, 1).await?;
-    attempt.observed(client.join_snapshot().game_session_id);
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        attempt.observed(client.join_snapshot().game_session_id);
 
-    attempt.at("walk-out-of-pz");
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-    })
-    .ok_or("needs-reachable-non-pz-tile")?;
-    walk(&mut client, world, &path).await?;
-    attempt.observed(client.world_spatial().actor_position);
+        attempt.at("walk-out-of-pz");
+        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+        })
+        .ok_or("needs-reachable-non-pz-tile")?;
+        walk(&mut client, world, &path).await?;
+        attempt.observed(client.world_spatial().actor_position);
 
-    let here = client.world_spatial().actor_position;
-    let target = SpellTarget::Position(SpellTargetPosition {
-        x: here.x.saturating_add(1),
-        y: here.y,
-        floor: here.floor,
-    });
-    let mut successful = None;
-    let mut refusals = Vec::new();
-    for words in SPELLS {
-        attempt.at("crosshair-position-casts");
-        let spell = book
-            .spoken(words)
-            .ok_or_else(|| format!("served-catalogue-missing-{words}"))?
-            .spell;
+        let here = client.world_spatial().actor_position;
+        let target = SpellTarget::Position(SpellTargetPosition {
+            x: here.x.saturating_add(1),
+            y: here.y,
+            floor: here.floor,
+        });
+        let mut successful = None;
+        let mut refusals = Vec::new();
+        for words in SPELLS {
+            attempt.at("crosshair-position-casts");
+            let spell = book
+                .spoken(words)
+                .ok_or_else(|| format!("served-catalogue-missing-{words}"))?
+                .spell;
+            ready(
+                &mut client,
+                spell
+                    .groups
+                    .iter()
+                    .map(|group| group.cooldown_micros)
+                    .max()
+                    .unwrap_or(0)
+                    .max(spell.cooldown_micros),
+            )
+            .await?;
+            let before = client
+                .actor_vitals()
+                .copied()
+                .ok_or("actor-vitals-absent")?;
+            let outcome = client
+                .cast_spell(spell_index(&book, words)?, target, false)
+                .await?;
+            attempt.observed((words, outcome.status, outcome.disposition));
+            if outcome.status != CommandStatus::Accepted {
+                return Err(format!("needs-accepted-native-command-frame-for-{words}").into());
+            }
+            if outcome.disposition == SpellCastDisposition::Cast {
+                let crate::spell::ManaCost::Fixed(mana) = spell.mana else {
+                    return Err("needs-fixed-cost-for-payment-assertion".into());
+                };
+                if !cast_payment(&outcome, before, mana, spell.soul) {
+                    return Err(format!("needs-exact-vitals-delta-for-{words}").into());
+                }
+                successful.get_or_insert((spell, spell_index(&book, words)?));
+            } else {
+                if outcome.actor_vitals_delta.is_some() {
+                    return Err(format!("refused-{words}-changed-vitals").into());
+                }
+                refusals.push(format!("{words}:{:?}", outcome.disposition));
+            }
+        }
+        let Some((spell, index)) = successful else {
+            attempt.observed(refusals);
+            return Err(
+                "server-must-provide-legitimate-player-progression-to-one-crosshair-spell".into(),
+            );
+        };
+
+        attempt.at("out-of-range-refusal");
         ready(
             &mut client,
             spell
@@ -204,86 +241,66 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
                 .max(spell.cooldown_micros),
         )
         .await?;
-        let before = client.actor_vitals().copied().ok_or("actor-vitals-absent")?;
-        let outcome = client
-            .cast_spell(spell_index(&book, words)?, target, false)
+        let refused = client
+            .cast_spell(
+                index,
+                SpellTarget::Position(SpellTargetPosition {
+                    x: here.x.saturating_add(100),
+                    y: here.y,
+                    floor: here.floor,
+                }),
+                false,
+            )
             .await?;
-        attempt.observed((words, outcome.status, outcome.disposition));
-        if outcome.status != CommandStatus::Accepted {
-            return Err(format!("needs-accepted-native-command-frame-for-{words}").into());
+        attempt.observed((refused.status, refused.disposition));
+        if refused.status != CommandStatus::Accepted
+            || refused.disposition != SpellCastDisposition::TargetIllegal
+            || refused.actor_vitals_delta.is_some()
+        {
+            return Err("needs-target-illegal-without-vitals-delta".into());
         }
-        if outcome.disposition == SpellCastDisposition::Cast {
-            let crate::spell::ManaCost::Fixed(mana) = spell.mana else {
-                return Err("needs-fixed-cost-for-payment-assertion".into());
-            };
-            if !cast_payment(&outcome, before, mana, spell.soul) {
-                return Err(format!("needs-exact-vitals-delta-for-{words}").into());
-            }
-            successful.get_or_insert((spell, spell_index(&book, words)?));
-        } else {
-            if outcome.actor_vitals_delta.is_some() {
-                return Err(format!("refused-{words}-changed-vitals").into());
-            }
-            refusals.push(format!("{words}:{:?}", outcome.disposition));
+
+        attempt.at("fresh-admission");
+        let retained_position = client.world_spatial().actor_position;
+        let retained_vitals = client
+            .actor_vitals()
+            .copied()
+            .ok_or("actor-vitals-absent")?;
+        let old_session = client.join_snapshot().game_session_id;
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("logout-refused".into());
         }
+        row_needs_logout_0 = false;
+        if row_needs_logout_0 {
+            row_logout(&mut client).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut client = connect_character(clients, 0xc9, 1).await?;
+        let row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            attempt.observed(client.join_snapshot().game_session_id);
+            if client.join_snapshot().game_session_id == old_session
+                || client.world_spatial().actor_position != retained_position
+                || client.actor_vitals().copied() != Some(retained_vitals)
+            {
+                return Err("needs-new-session-with-retained-position-and-vitals".into());
+            }
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut client).await?;
+        }
+        row_result
     }
-    let Some((spell, index)) = successful else {
-        attempt.observed(refusals);
-        return Err(
-            "server-must-provide-legitimate-player-progression-to-one-crosshair-spell".into(),
-        );
-    };
-
-    attempt.at("out-of-range-refusal");
-    ready(
-        &mut client,
-        spell
-            .groups
-            .iter()
-            .map(|group| group.cooldown_micros)
-            .max()
-            .unwrap_or(0)
-            .max(spell.cooldown_micros),
-    )
-    .await?;
-    let refused = client
-        .cast_spell(
-            index,
-            SpellTarget::Position(SpellTargetPosition {
-                x: here.x.saturating_add(100),
-                y: here.y,
-                floor: here.floor,
-            }),
-            false,
-        )
-        .await?;
-    attempt.observed((refused.status, refused.disposition));
-    if refused.status != CommandStatus::Accepted
-        || refused.disposition != SpellCastDisposition::TargetIllegal
-        || refused.actor_vitals_delta.is_some()
-    {
-        return Err("needs-target-illegal-without-vitals-delta".into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
     }
-
-    attempt.at("fresh-admission");
-    let retained_position = client.world_spatial().actor_position;
-    let retained_vitals = client.actor_vitals().copied().ok_or("actor-vitals-absent")?;
-    let old_session = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout-refused".into());
-    }
-    drop(client);
-    let client = connect_character(clients, 0xc9, 1).await?;
-    attempt.observed(client.join_snapshot().game_session_id);
-    if client.join_snapshot().game_session_id == old_session
-        || client.world_spatial().actor_position != retained_position
-        || client.actor_vitals().copied() != Some(retained_vitals)
-    {
-        return Err("needs-new-session-with-retained-position-and-vitals".into());
-    }
-    Ok(())
+    row_result
 }
 
 #[cfg(test)]

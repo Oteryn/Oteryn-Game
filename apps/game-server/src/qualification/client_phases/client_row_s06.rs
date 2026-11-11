@@ -50,6 +50,10 @@ fn content_revision() -> TestResult<String> {
         .join("../..")
         .join("content/cosmetics/outfits/authoring.json");
     let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+    content_revision_from(&value)
+}
+
+fn content_revision_from(value: &serde_json::Value) -> TestResult<String> {
     value["document"]["content_revision"]
         .as_str()
         .map(str::to_owned)
@@ -57,7 +61,9 @@ fn content_revision() -> TestResult<String> {
 }
 
 async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x69).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&appearance::CAPABILITY_APPEARANCE_V1)
@@ -122,7 +128,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         "outfit={}\naddons=0\ncolours={head},{body},{legs},{feet}\ncommitted={committed}\ncontent_revision={revision}\n",
         selection.outfit_key
     );
-    let _ = client.session_mut().logout().await;
+
     Ok(Observed {
         before: before_bytes,
         after: after_bytes,
@@ -130,13 +136,18 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         refusal: refused,
         expected,
     })
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(120), flow(clients)).await {
+    match row_complete(flow(clients)).await {
         Ok(Ok(observed)) => {
             if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
                 let root = Path::new(&root);
@@ -148,7 +159,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                     ("s06-expected.txt", observed.expected.as_bytes()),
                 ] {
                     if let Err(error) = std::fs::write(root.join(name), bytes) {
-                        evidence(&format!("S06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+                        evidence(&format!(
+                            "e2e_all scenario=S06.client status=FAIL evidence=capture-write:{error}"
+                        ));
+                        return;
                     }
                 }
             }
@@ -163,5 +177,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=S06.client status=FAIL evidence=timeout_120s"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn content_revision_requires_a_string_in_the_document() -> TestResult {
+        assert!(content_revision_from(&serde_json::Value::Null).is_err());
+        assert!(
+            content_revision_from(&serde_json::json!({"document": {"content_revision": 1}}))
+                .is_err()
+        );
+        assert_eq!(
+            content_revision_from(&serde_json::json!({"document": {"content_revision": "v1"}}))?,
+            "v1"
+        );
+        Ok(())
     }
 }

@@ -149,7 +149,7 @@ def results(text):
             raise ValueError(f"missing source/content evidence: {scenario}")
         if status == "SKIPPED" and not re.fullmatch(r"content:[A-Za-z0-9:_./-]+", evidence):
             raise ValueError(f"missing exact content id: {scenario}")
-        if status == "MISSING-SERVER" and not re.fullmatch(r"source:[A-Za-z0-9_./-]+:\d+", evidence):
+        if status in {"MISSING-SERVER", "MISSING-CLIENT"} and not re.fullmatch(r"source:[A-Za-z0-9_./-]+:\d+", evidence):
             raise ValueError(f"missing file:line source evidence: {scenario}")
         found[scenario] = (status, seconds, evidence)
     for scenario, result in combat_results(text).items():

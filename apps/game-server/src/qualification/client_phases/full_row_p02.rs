@@ -62,7 +62,7 @@ impl Row {
 }
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let r = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients)).await;
+    let r = row_complete(journey(&mut row, clients)).await;
     row.finish(match r {
         Ok(v) => v,
         Err(_) => Err("step deadline: no server reply within 600s".into()),
@@ -170,6 +170,7 @@ async fn kill(
     }
 }
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(600);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -180,116 +181,139 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut c = connect_world(clients, 0xb2).await?;
-    let mut before = snapshot(&mut c).await?;
-    let initial_slot = slot(&mut c, BossSlotRequest::Query).await?;
-    row.pass(
-        "initial-query",
-        (&before.progress, before.points, &initial_slot),
-    );
-    let catalog = bosses()?;
-    let spawned: Vec<_> = catalog
-        .iter()
-        .filter(|b| {
-            meta.spawns.sources.iter().any(|src| {
-                src.points.iter().any(|p| {
-                    meta.spawns
-                        .creatures
-                        .get(p.creature as usize)
-                        .is_some_and(|x| x.key == b.key)
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let mut before = snapshot(&mut c).await?;
+        let initial_slot = slot(&mut c, BossSlotRequest::Query).await?;
+        row.pass(
+            "initial-query",
+            (&before.progress, before.points, &initial_slot),
+        );
+        let catalog = bosses()?;
+        let spawned: Vec<_> = catalog
+            .iter()
+            .filter(|b| {
+                meta.spawns.sources.iter().any(|src| {
+                    src.points.iter().any(|p| {
+                        meta.spawns
+                            .creatures
+                            .get(p.creature as usize)
+                            .is_some_and(|x| x.key == b.key)
+                    })
                 })
             })
-        })
-        .collect();
-    let mut ordinary = None;
-    let mut boosted = None;
-    for b in spawned {
-        kill(&mut c, world, &meta.spawns, &b.key).await?;
-        let after = snapshot(&mut c).await?;
-        let d = counts(&after)
-            .get(&b.key)
-            .copied()
-            .unwrap_or(0)
-            .saturating_sub(counts(&before).get(&b.key).copied().unwrap_or(0));
-        match d {
-            1 => ordinary = Some((b.key.clone(), b.category.clone(), after.clone())),
-            3 => boosted = Some((b.key.clone(), after.clone())),
-            _ => {
-                return Err(format!(
-                    "step boss-kill {}: progress delta={d}, reply={after:?}",
-                    b.key
-                )
-                .into());
+            .collect();
+        let mut ordinary = None;
+        let mut boosted = None;
+        for b in spawned {
+            kill(&mut c, world, &meta.spawns, &b.key).await?;
+            let after = snapshot(&mut c).await?;
+            let d = counts(&after)
+                .get(&b.key)
+                .copied()
+                .unwrap_or(0)
+                .saturating_sub(counts(&before).get(&b.key).copied().unwrap_or(0));
+            match d {
+                1 => ordinary = Some((b.key.clone(), b.category.clone(), after.clone())),
+                3 => boosted = Some((b.key.clone(), after.clone())),
+                _ => {
+                    return Err(format!(
+                        "step boss-kill {}: progress delta={d}, reply={after:?}",
+                        b.key
+                    )
+                    .into());
+                }
+            }
+            before = after;
+            if ordinary.is_some() && boosted.is_some() {
+                break;
             }
         }
-        before = after;
-        if ordinary.is_some() && boosted.is_some() {
-            break;
+        let (boss, category, after) = ordinary
+            .ok_or("step boss-kill: no reachable compiled Bosstiary boss produced delta=1")?;
+        row.pass("boss-kill-progress", (&boss, &after.progress, after.points));
+        if category != "nemesis" {
+            return Err(format!(
+                "step slot-equip: boss={boss} category={category} has not earned prowess"
+            )
+            .into());
         }
-    }
-    let (boss, category, after) =
-        ordinary.ok_or("step boss-kill: no reachable compiled Bosstiary boss produced delta=1")?;
-    row.pass("boss-kill-progress", (&boss, &after.progress, after.points));
-    if category != "nemesis" {
-        return Err(format!(
-            "step slot-equip: boss={boss} category={category} has not earned prowess"
+        let equipped = slot(
+            &mut c,
+            BossSlotRequest::Equip {
+                slot: 1,
+                boss: boss.clone(),
+            },
         )
-        .into());
+        .await?;
+        if equipped.status != 0 || equipped.unlocked & 1 == 0 || equipped.bosses[0] != boss {
+            return Err(format!("step slot-equip: reply={equipped:?}").into());
+        }
+        row.pass("slot-equip", &equipped);
+        let refused = slot(
+            &mut c,
+            BossSlotRequest::Equip {
+                slot: 1,
+                boss: boss.clone(),
+            },
+        )
+        .await?;
+        if refused.status == 0 || refused.bosses != equipped.bosses {
+            return Err(format!("step slot-refusal: reply={refused:?}").into());
+        }
+        row.pass("slot-refusal", &refused);
+        let (boosted_key, boosted_state) =
+            boosted.ok_or("step boosted-kill: no reachable boss produced delta=3")?;
+        let br = slot(
+            &mut c,
+            BossSlotRequest::Equip {
+                slot: 2,
+                boss: boosted_key.clone(),
+            },
+        )
+        .await?;
+        if br.status == 0 {
+            return Err(format!("step boosted-kill: slot accepted reply={br:?}").into());
+        }
+        row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
+        if c.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("step fresh-admission: logout refused".into());
+        }
+        row_needs_logout_0 = false;
+        if row_needs_logout_0 {
+            row_logout(&mut c).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut c = connect_world(clients, 0xb3).await?;
+        let row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            let durable = snapshot(&mut c).await?;
+            let ds = slot(&mut c, BossSlotRequest::Query).await?;
+            if durable.progress != before.progress
+                || durable.points != before.points
+                || ds.bosses != equipped.bosses
+            {
+                return Err(
+                    format!("step fresh-admission: progress={durable:?}, slot={ds:?}").into(),
+                );
+            }
+            row.pass("fresh-admission", (&durable.progress, durable.points, &ds));
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut c).await?;
+        }
+        row_result
     }
-    let equipped = slot(
-        &mut c,
-        BossSlotRequest::Equip {
-            slot: 1,
-            boss: boss.clone(),
-        },
-    )
-    .await?;
-    if equipped.status != 0 || equipped.unlocked & 1 == 0 || equipped.bosses[0] != boss {
-        return Err(format!("step slot-equip: reply={equipped:?}").into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut c).await?;
     }
-    row.pass("slot-equip", &equipped);
-    let refused = slot(
-        &mut c,
-        BossSlotRequest::Equip {
-            slot: 1,
-            boss: boss.clone(),
-        },
-    )
-    .await?;
-    if refused.status == 0 || refused.bosses != equipped.bosses {
-        return Err(format!("step slot-refusal: reply={refused:?}").into());
-    }
-    row.pass("slot-refusal", &refused);
-    let (boosted_key, boosted_state) =
-        boosted.ok_or("step boosted-kill: no reachable boss produced delta=3")?;
-    let br = slot(
-        &mut c,
-        BossSlotRequest::Equip {
-            slot: 2,
-            boss: boosted_key.clone(),
-        },
-    )
-    .await?;
-    if br.status == 0 {
-        return Err(format!("step boosted-kill: slot accepted reply={br:?}").into());
-    }
-    row.pass("boosted-kill", (&boosted_key, &boosted_state.progress, &br));
-    if c.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step fresh-admission: logout refused".into());
-    }
-    drop(c);
-    let mut c = connect_world(clients, 0xb3).await?;
-    let durable = snapshot(&mut c).await?;
-    let ds = slot(&mut c, BossSlotRequest::Query).await?;
-    if durable.progress != before.progress
-        || durable.points != before.points
-        || ds.bosses != equipped.bosses
-    {
-        return Err(format!("step fresh-admission: progress={durable:?}, slot={ds:?}").into());
-    }
-    row.pass("fresh-admission", (&durable.progress, durable.points, &ds));
-    Ok(())
+    row_result
 }
 #[cfg(test)]
 mod tests {

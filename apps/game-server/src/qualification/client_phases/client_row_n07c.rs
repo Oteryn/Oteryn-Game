@@ -7,13 +7,13 @@ use super::*;
 use oteryn_dev_client::client_runtime::analyser::{AnalyserFact, AnalyserImpact};
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N07C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn collect(client: &mut DevClientSession, facts: &mut Vec<AnalyserFact>) {
@@ -33,7 +33,12 @@ async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
                     && entry.position.floor == here.floor
-                    && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(here.x)
+                        .max(entry.position.y.abs_diff(here.y))
+                        <= 1
             })
         })
         .copied()
@@ -47,7 +52,10 @@ async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
     }
     let mut facts = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    while !facts.iter().any(|fact| matches!(fact, AnalyserFact::Kill { .. })) {
+    while !facts
+        .iter()
+        .any(|fact| matches!(fact, AnalyserFact::Kill { .. }))
+    {
         client.service_liveness(Duration::from_millis(100)).await?;
         collect(client, &mut facts);
         if tokio::time::Instant::now() >= deadline {
@@ -70,7 +78,10 @@ fn line(fact: &AnalyserFact) -> String {
             corpse_items, gold, ..
         } => format!(
             "loot {gold} {}",
-            corpse_items.iter().map(|item| u64::from(item.count.get())).sum::<u64>()
+            corpse_items
+                .iter()
+                .map(|item| u64::from(item.count.get()))
+                .sum::<u64>()
         ),
         AnalyserFact::SupplyUsed(item) => format!("supply {}", item.count.get()),
         AnalyserFact::Impact(AnalyserImpact::Damage { value, .. }) => format!("damage {value}"),
@@ -81,6 +92,7 @@ fn line(fact: &AnalyserFact) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -91,6 +103,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x35).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client.selected_capabilities().contains(&10) {
         return Err("analyser capability 10 not selected".into());
     }
@@ -123,12 +136,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "kills={kills}\nraw_xp={raw}\ngained_xp={gained}\ngold={gold}\nloot_items={items}\nfacts={}\n",
         lines.join("|")
     );
-    capture("n07c-expected.txt", expected.as_bytes());
+    capture("n07c-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(300), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N07c.client status=CAPTURED evidence=raw-delta-not-retained-by-dev-client;{observed}"
         )),
@@ -136,5 +154,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=N07c.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=N07c.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn experience_evidence_keeps_wide_values() {
+        assert_eq!(
+            line(&AnalyserFact::Experience {
+                raw: u64::MAX,
+                gained: 0
+            }),
+            "xp 18446744073709551615 0"
+        );
     }
 }

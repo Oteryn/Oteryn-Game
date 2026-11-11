@@ -10,13 +10,13 @@ use oteryn_dev_client::client_runtime::quest_log as journal;
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W15B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 /// `reference:count` of every carried item (backpack, loose entries, equipment), sorted.
@@ -132,11 +132,17 @@ fn adjacent(a: TilePos, b: TilePos) -> bool {
 }
 
 async fn use_chest(client: &mut DevClientSession, chest: &Chest) -> TestResult<UseDisposition> {
-    Ok(client.session_mut().use_object(&chest.placement, 0).await?.disposition)
+    Ok(client
+        .session_mut()
+        .use_object(&chest.placement, 0)
+        .await?
+        .disposition)
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut client = connect_character(clients, 0x87, 0).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let snapshot = client
         .session_mut()
         .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG)
@@ -144,7 +150,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         .clone();
     let inventory_payload = |client: &DevClientSession| -> TestResult<Vec<u8>> {
         let inventory = client.inventory().ok_or("inventory snapshot missing")?;
-        item_view::encode_character_inventory(inventory)
+        item_view::encode_character_inventory_with_equip_drop(inventory, true)
             .map_err(|error| format!("inventory encode: {error:?}").into())
     };
     let before_units = units(&client)?;
@@ -200,18 +206,23 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         after.new,
         after.sequence,
     );
-    capture("w15b-quest-snapshot.bin", &snapshot.payload);
-    capture("w15b-quest-before.bin", &before.payload);
-    capture("w15b-quest-after.bin", &after.payload);
-    capture("w15b-inventory-before.bin", &before_payload);
-    capture("w15b-inventory-after.bin", &after_payload);
-    capture("w15b-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("w15b-quest-snapshot.bin", &snapshot.payload)?;
+    capture("w15b-quest-before.bin", &before.payload)?;
+    capture("w15b-quest-after.bin", &after.payload)?;
+    capture("w15b-inventory-before.bin", &before_payload)?;
+    capture("w15b-inventory-after.bin", &after_payload)?;
+    capture("w15b-expected.txt", expected.as_bytes())?;
+
     Ok(format!("claim={} before={before_units} after={after_units}", chest.claim))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match tokio::time::timeout(Duration::from_secs(180), journey(clients, world)).await {
+    match row_complete(journey(clients, world)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W15b.client status=CAPTURED evidence={observed}"
         )),
@@ -220,5 +231,43 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W15b.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adjacency_requires_same_floor_and_one_tile() {
+        let a = TilePos {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        assert!(adjacent(
+            a,
+            TilePos {
+                x: 101,
+                y: 101,
+                ..a
+            }
+        ));
+        assert!(!adjacent(a, TilePos { x: 102, ..a }));
+        assert!(!adjacent(a, TilePos { floor: 8, ..a }));
+    }
+}
+
+#[cfg(test)]
+mod more_helper_tests {
+    use super::*;
+    #[test]
+    fn quest_list_text_keeps_completion_and_identity() {
+        assert_eq!(list_text(&[]), "");
+        let entry = journal::QuestListEntry {
+            quest_index: u32::MAX,
+            completed: true,
+        };
+        assert_eq!(list_text(&[entry]), "4294967295:1");
     }
 }

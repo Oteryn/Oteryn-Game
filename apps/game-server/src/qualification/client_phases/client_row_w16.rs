@@ -15,13 +15,13 @@ const STEPS: [(&str, &str); 4] = [
     ("bye", "do be careful"),
 ];
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W16_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn talk(
@@ -76,11 +76,15 @@ async fn talk(
     if !conversation.lines.iter().any(|line| line.contains(needle)) {
         return Err(format!("step={text} lines {:?} lack {needle:?}", conversation.lines).into());
     }
-    capture(&format!("w16-{text}-conversation.bin"), &delta.payload);
+    capture(&format!("w16-{text}-conversation.bin"), &delta.payload)?;
     let open = conversation.open.map_or_else(
         || "-".to_owned(),
         |(actor, _)| {
-            let identity: String = actor.identity.iter().map(|byte| format!("{byte:02x}")).collect();
+            let identity: String = actor
+                .identity
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect();
             format!("{identity}:{}", actor.generation)
         },
     );
@@ -95,6 +99,7 @@ async fn talk(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let npc = metadata
@@ -103,58 +108,69 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .find(|npc| npc.key == NPC)
         .ok_or("W16 client capture: Wayland Smythers absent from the bundle")?;
-    let placement = npc.placements.first().ok_or("W16 client capture: no placement")?;
+    let placement = npc
+        .placements
+        .first()
+        .ok_or("W16 client capture: no placement")?;
     let target = ActorPosition {
         x: i32::from(placement.x),
         y: i32::from(placement.y),
         floor: -i16::from(placement.floor),
     };
     let mut client = connect_world(clients, 0x89).await?;
-    let walk = client.session_mut().target_walk(target).await?;
-    if walk.status != CommandStatus::Accepted {
-        return Err(format!("step=target-walk status={:?}", walk.status).into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop {
-        let at = client.world_spatial().actor_position;
-        if at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3 {
-            break;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let walk = client.session_mut().target_walk(target).await?;
+        if walk.status != CommandStatus::Accepted {
+            return Err(format!("step=target-walk status={:?}", walk.status).into());
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=target-walk timeout at {at:?}").into());
-        }
-        client.service_liveness(Duration::from_millis(25)).await?;
-    }
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .find(|entry| entry.kind == EntityKind::Npc && entry.position == target)
-        })
-        .map(|entry| entry.entity)
-        .ok_or("W16 client capture: Wayland Smythers not visible")?;
-    let mut expected = String::new();
-    let mut failure = None;
-    for step in STEPS {
-        match talk(&mut client, actor, step).await {
-            Ok(line) => expected.push_str(&line),
-            Err(error) => {
-                failure = Some(error);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            let at = client.world_spatial().actor_position;
+            if at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
+            {
                 break;
             }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("step=target-walk timeout at {at:?}").into());
+            }
+            client.service_liveness(Duration::from_millis(25)).await?;
         }
-    }
-    let _ = client.session_mut().logout().await;
-    if let Some(error) = failure {
-        return Err(error);
-    }
-    capture("w16-expected.txt", expected.as_bytes());
-    Ok(format!("frames={}", STEPS.len()))
+        let actor = client
+            .world_entities()
+            .and_then(|entities| {
+                entities
+                    .iter()
+                    .find(|entry| entry.kind == EntityKind::Npc && entry.position == target)
+            })
+            .map(|entry| entry.entity)
+            .ok_or("W16 client capture: Wayland Smythers not visible")?;
+        let mut expected = String::new();
+        let mut failure = None;
+        for step in STEPS {
+            match talk(&mut client, actor, step).await {
+                Ok(line) => expected.push_str(&line),
+                Err(error) => {
+                    failure = Some(error);
+                    break;
+                }
+            }
+        }
+
+        if let Some(error) = failure {
+            return Err(error);
+        }
+        capture("w16-expected.txt", expected.as_bytes())?;
+        Ok(format!("frames={}", STEPS.len()))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W16.client status=CAPTURED evidence={observed}"
         )),

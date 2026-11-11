@@ -28,10 +28,7 @@ struct Row {
 
 impl Row {
     fn fail(self, observed: impl std::fmt::Display) {
-        evidence(&format!(
-            "W15D_FAIL step={} observed={observed}",
-            self.step
-        ));
+        evidence(&format!("W15D_FAIL step={} observed={observed}", self.step));
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15d.full status=FAIL seconds={:.3}",
             self.started.elapsed().as_secs_f64()
@@ -78,7 +75,8 @@ async fn quest_list(
         .await?;
     let log = journal::decode_quest_log(&delta.payload)
         .map_err(|error| format!("quest list delta: {error:?}"))?;
-    let journal::QuestLogView::List(entries) = log.view.ok_or("quest list delta has no view")? else {
+    let journal::QuestLogView::List(entries) = log.view.ok_or("quest list delta has no view")?
+    else {
         return Err("quest list delta is not a list".into());
     };
     Ok(entries)
@@ -184,4 +182,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("fresh admission logout refused".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_guidance_shrine_has_no_invented_placement() -> TestResult {
+        let world = row_helper_world()?;
+        assert!(shrine_target(&world).is_err());
+        Ok(())
+    }
 }

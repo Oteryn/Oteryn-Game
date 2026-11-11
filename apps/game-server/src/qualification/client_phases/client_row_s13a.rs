@@ -11,19 +11,31 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
     let observed = super::client_row_s13c::observed(clients).await;
     if let Ok(value) = observed {
-        super::client_row_s13c::capture(
-            "s13a-expected.txt",
-            format!(
-                "solo\tstatus={:?}\tdisposition={:?}\nrefusal\tstatus={:?}\tdisposition={:?}\n",
-                value.solo_status,
-                value.solo_disposition,
-                value.refusal_status,
-                value.refusal_disposition
-            )
-            .as_bytes(),
-        );
+        let written = (|| -> TestResult {
+            super::client_row_s13c::capture(
+                "s13a-expected.txt",
+                format!(
+                    "solo\tstatus={:?}\tdisposition={:?}\nrefusal\tstatus={:?}\tdisposition={:?}\n",
+                    value.solo_status,
+                    value.solo_disposition,
+                    value.refusal_status,
+                    value.refusal_disposition
+                )
+                .as_bytes(),
+            )?;
+            Ok(())
+        })();
+        if let Err(error) = written {
+            evidence(&format!(
+                "e2e_all scenario=S13A.client status=FAIL evidence=capture-write:{error}"
+            ));
+            return;
+        }
     }
     super::client_row_s13c::report("S13a", observed, |value| {
-        format!("solo={:?} refusal={:?}", value.solo_disposition, value.refusal_disposition)
+        format!(
+            "solo={:?} refusal={:?}",
+            value.solo_disposition, value.refusal_disposition
+        )
     });
 }

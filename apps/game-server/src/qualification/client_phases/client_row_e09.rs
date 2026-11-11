@@ -6,13 +6,13 @@ use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::{item_view, mail, npc_service};
 use std::num::NonZeroU32;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E09_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 /// Sends one MAIL command and returns the status and the single raw outcome byte payload.
@@ -33,7 +33,14 @@ async fn mail_command(
 }
 
 fn units(client: &DevClientSession, definition: NonZeroU32) -> u64 {
-    client.inventory().map_or(0, |inventory| {
+    units_from(client.inventory(), definition)
+}
+
+fn units_from(
+    input: Option<&oteryn_dev_client::CharacterInventory>,
+    definition: NonZeroU32,
+) -> u64 {
+    input.map_or(0, |inventory| {
         inventory
             .entries
             .iter()
@@ -272,6 +279,7 @@ fn visible_mailbox_handle(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -284,6 +292,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let definitions = provisioning::item_index()?;
     let letter = provisioning::item_reference(&definitions, 3505)?;
     let mut client = connect_world(clients, 0x3a).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let entities = client.world_entities().ok_or("own entities absent")?;
     let own_identity = *entities.own_identity();
     let own_name = entities
@@ -362,16 +371,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "write_payload={}\npost_payload={}\nunknown_payload={}\nwrite=Item text saved\npost=Mail posted\nunknown=Unknown recipient\n",
         written[0], posted[0], unknown[0]
     );
-    capture("e09-write.bin", &written);
-    capture("e09-post.bin", &posted);
-    capture("e09-unknown.bin", &unknown);
-    capture("e09-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("e09-write.bin", &written)?;
+    capture("e09-post.bin", &posted)?;
+    capture("e09-unknown.bin", &unknown)?;
+    capture("e09-expected.txt", expected.as_bytes())?;
+
     Ok("write=2 post=1 unknown=4".into())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(300), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E09.client status=CAPTURED evidence={observed}"
         )),
@@ -380,5 +394,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E09.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert_eq!(units_from(None, std::num::NonZeroU32::MIN), 0);
     }
 }

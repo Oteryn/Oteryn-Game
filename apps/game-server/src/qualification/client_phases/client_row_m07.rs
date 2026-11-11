@@ -9,7 +9,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
     let result = capture(clients).await;
     if let Err(error) = result {
-        evidence(&format!("M07_CLIENT_CAPTURE_ERROR {error}"));
+        evidence(&format!(
+            "e2e_all scenario=M07.client status=FAIL evidence={error}"
+        ));
     }
 }
 
@@ -58,6 +60,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     })?;
     let mut client = connect_world(clients, 0xa7).await?;
+    let row_result: TestResult<_> = async {
     let from = tile(client.world_spatial().actor_position)?;
     let (spot, ordinal, path) = spots
         .into_iter()
@@ -145,10 +148,12 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         &std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory disappeared")?,
     )
     .to_path_buf();
-    if let Err(error) = std::fs::write(path.join("m07-spatial.bin"), bytes)
-        .and_then(|()| std::fs::write(path.join("m07-expected.txt"), expected))
-    {
-        evidence(&format!("M07_CLIENT_CAPTURE_WRITE_ERROR {error}"));
-    }
+    std::fs::write(path.join("m07-spatial.bin"), bytes)?;
+    std::fs::write(path.join("m07-expected.txt"), expected)?;
     Ok(())
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }

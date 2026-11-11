@@ -5,20 +5,22 @@
 //! the view at the segment start. The consumer is `Session::apply_state_delta` and
 //! `Session::world_entities` in `crates/session`.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity};
+use oteryn_dev_client::{
+    DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity,
+};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::world_spatial_entities::{
     WorldSpatialEntitiesSnapshot, encode_world_spatial_entities_delta,
     encode_world_spatial_entities_snapshot,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W01B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
@@ -70,11 +72,7 @@ struct Segment {
 }
 
 impl Segment {
-    fn begin(
-        client: &DevClientSession,
-        name: &'static str,
-        target: EntityRef,
-    ) -> TestResult<Self> {
+    fn begin(client: &DevClientSession, name: &'static str, target: EntityRef) -> TestResult<Self> {
         let view = client.world_entities().ok_or("entity view absent")?;
         let observation = client.world_spatial();
         let snapshot = encode_world_spatial_entities_snapshot(&WorldSpatialEntitiesSnapshot {
@@ -123,10 +121,10 @@ impl Segment {
         Ok(())
     }
 
-    fn write(&self, expected: &mut String) {
-        capture(&format!("w01b-{}-snapshot.bin", self.name), &self.snapshot);
+    fn write(&self, expected: &mut String) -> TestResult {
+        capture(&format!("w01b-{}-snapshot.bin", self.name), &self.snapshot)?;
         for (index, bytes) in self.deltas.iter().enumerate() {
-            capture(&format!("w01b-{}-delta{index}.bin", self.name), bytes);
+            capture(&format!("w01b-{}-delta{index}.bin", self.name), bytes)?;
         }
         expected.push_str(&format!(
             "{n}.target={}:{}\n{n}.initial={}\n{n}.trace={}\n",
@@ -136,6 +134,7 @@ impl Segment {
             self.trace.join(";"),
             n = self.name
         ));
+        Ok(())
     }
 }
 
@@ -167,6 +166,7 @@ fn creature_at(client: &DevClientSession, at: TilePos) -> Option<WorldSpatialEnt
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -177,6 +177,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x0c).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let here = client.world_spatial().actor_position;
     let target = client
@@ -296,10 +297,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W01b client capture: killed actor returned".into());
     }
     let respawn = Segment::begin(&client, "respawn", replacement.entity)?;
-    capture("w01b-respawn-snapshot.bin", &respawn.snapshot);
+    capture("w01b-respawn-snapshot.bin", &respawn.snapshot)?;
 
     let mut expected = String::new();
-    kill.write(&mut expected);
+    kill.write(&mut expected)?;
     expected.push_str(&format!(
         "corpse={}:{}\ncorpse.position={},{},{}\nspawn={},{},{}\nreplacement={}:{}\nreplacement.position={},{},{}\nkilled.absent=true\n",
         hex(&corpse.entity.identity),
@@ -316,15 +317,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         replacement.position.y,
         replacement.position.floor,
     ));
-    capture("w01b-expected.txt", expected.as_bytes());
+    capture("w01b-expected.txt", expected.as_bytes())?;
     Ok(expected)
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(420), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W01b.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")
@@ -333,5 +339,27 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=W01b.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=W01b.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
+    }
+
+    #[test]
+    fn distance_handles_signed_coordinate_boundaries() {
+        let a = ActorPosition {
+            x: i32::MIN,
+            y: 0,
+            floor: 0,
+        };
+        assert_eq!(distance(a, a), 0);
+        assert_eq!(distance(a, ActorPosition { x: i32::MAX, ..a }), u32::MAX);
     }
 }

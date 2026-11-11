@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::character_info_panel as info;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P12A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -53,47 +53,59 @@ fn summary(bytes: &[u8]) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x30).await?;
-    let page = info::PageRequest::new(0, 50).ok_or("page")?;
-    let query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
-    if query.status != CommandStatus::Accepted {
-        return Err(format!("QuerySelf status={:?}", query.status).into());
-    }
-    capture("p12a-query.bin", &query.payload);
-    let before = summary(&query.payload)?;
-    let earned: Vec<u8> = before
-        .lines()
-        .find_map(|line| line.strip_prefix("earned="))
-        .unwrap_or("")
-        .split(',')
-        .filter_map(|id| id.parse().ok())
-        .collect();
-    let unearned = (1..=u8::try_from(info::TITLE_COUNT)?)
-        .filter(|id| !earned.contains(id))
-        .find_map(info::CharacterTitle::from_id)
-        .ok_or("every title is earned")?;
-    let refused = send(&mut client, info::CharacterInfoOperation::Select(Some(unearned))).await?;
-    if refused.status != CommandStatus::Rejected {
-        return Err(format!("unearned Select was not rejected: {refused:?}").into());
-    }
-    if !refused.payload.is_empty() {
-        capture("p12a-refused.bin", &refused.payload);
-    }
-    let after = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
-    if after.status != CommandStatus::Accepted || after.payload != query.payload {
-        return Err("unearned Select changed the earned or selected title".into());
-    }
-    capture("p12a-query-after.bin", &after.payload);
-    let expected = format!(
-        "{before}refused_title={}\nrefused_status=Rejected\n",
-        unearned.id()
-    );
-    capture("p12a-expected.txt", expected.as_bytes());
-    Ok(expected.replace('\n', ";"))
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let page = info::PageRequest::new(0, 50).ok_or("page")?;
+        let query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
+        if query.status != CommandStatus::Accepted {
+            return Err(format!("QuerySelf status={:?}", query.status).into());
+        }
+        capture("p12a-query.bin", &query.payload)?;
+        let before = summary(&query.payload)?;
+        let earned: Vec<u8> = before
+            .lines()
+            .find_map(|line| line.strip_prefix("earned="))
+            .unwrap_or("")
+            .split(',')
+            .filter_map(|id| id.parse().ok())
+            .collect();
+        let unearned = (1..=u8::try_from(info::TITLE_COUNT)?)
+            .filter(|id| !earned.contains(id))
+            .find_map(info::CharacterTitle::from_id)
+            .ok_or("every title is earned")?;
+        let refused = send(
+            &mut client,
+            info::CharacterInfoOperation::Select(Some(unearned)),
+        )
+        .await?;
+        if refused.status != CommandStatus::Rejected {
+            return Err(format!("unearned Select was not rejected: {refused:?}").into());
+        }
+        if !refused.payload.is_empty() {
+            capture("p12a-refused.bin", &refused.payload)?;
+        }
+        let after = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
+        if after.status != CommandStatus::Accepted || after.payload != query.payload {
+            return Err("unearned Select changed the earned or selected title".into());
+        }
+        capture("p12a-query-after.bin", &after.payload)?;
+        let expected = format!(
+            "{before}refused_title={}\nrefused_status=Rejected\n",
+            unearned.id()
+        );
+        capture("p12a-expected.txt", expected.as_bytes())?;
+        Ok(expected.replace('\n', ";"))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P12a.client status=CAPTURED evidence={expected}"
         )),
@@ -101,5 +113,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P12a.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P12a.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn summary_rejects_truncated_or_extra_title_data() {
+        assert!(summary(&[]).is_err());
+        let mut payload = vec![0; 71];
+        assert!(summary(&payload).is_ok());
+        payload[69] = 1;
+        assert!(summary(&payload).is_err());
+        payload.push(0);
+        assert!(summary(&payload).is_ok());
+        payload.push(0);
+        assert!(summary(&payload).is_err());
     }
 }

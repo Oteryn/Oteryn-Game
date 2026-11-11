@@ -8,17 +8,21 @@ use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, DevClientSession,
 use oteryn_protocol_oteryn::chat::{self, private_channel as wire};
 use wire::{ChatChannelList, PrivateChannelIntent};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S04B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
-    let entities = client.world_entities().ok_or("world entities missing")?;
+    own_name_from(client.world_entities())
+}
+
+fn own_name_from(input: Option<&oteryn_dev_client::WorldEntities>) -> TestResult<String> {
+    let entities = input.ok_or("world entities missing")?;
     entities
         .iter()
         .find(|entity| entity.entity.identity == *entities.own_identity())
@@ -29,10 +33,7 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
         .map_err(|e| format!("invalid display name: {e:?}").into())
 }
 
-async fn chat(
-    client: &mut DevClientSession,
-    intent: ChatIntent,
-) -> TestResult<ChatDisposition> {
+async fn chat(client: &mut DevClientSession, intent: ChatIntent) -> TestResult<ChatDisposition> {
     for attempt in 0..=2 {
         let reply = client.chat(&intent).await?;
         if !matches!(
@@ -72,8 +73,13 @@ async fn channel_list(client: &mut DevClientSession) -> TestResult<ChatChannelLi
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut a = connect_character(clients, 0x4d, 0).await?;
-    let mut b = connect_character(clients, 0x4e, 1).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let mut b = connect_character(clients, 0x4e, 1).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let a_name = own_name(&a)?;
     let b_name = own_name(&b)?;
     if a_name == b_name {
@@ -98,7 +104,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture(
         "s04b-invited-list.bin",
         &wire::encode_channel_list(&invited).map_err(|e| format!("encode list: {e:?}"))?,
-    );
+    )?;
     accepted(&mut b, PrivateChannelIntent::Join { channel_id }).await?;
 
     let text = "s04b-channel-line";
@@ -129,7 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture(
         "s04b-line.bin",
         &chat::encode_chat_line(&line).map_err(|e| format!("encode line: {e:?}"))?,
-    );
+    )?;
 
     accepted(&mut a, PrivateChannelIntent::Exclude { name: b_name.clone() }).await?;
     let refusal = chat(
@@ -147,15 +153,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "owner={a_name}\nchannel={channel_id}\ntext={text}\nselected={}\nrefusal=NotInvited\n",
         selected.join(",")
     );
-    capture("s04b-expected.txt", expected.as_bytes());
+    capture("s04b-expected.txt", expected.as_bytes())?;
     accepted(&mut a, PrivateChannelIntent::Leave { channel_id }).await?;
-    let _ = a.session_mut().logout().await?;
-    let _ = b.session_mut().logout().await?;
+    row_logout(&mut a).await?; row_needs_logout_0 = false;
+    row_logout(&mut b).await?; row_needs_logout_1 = false;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut b).await?;
+        }
+        row_result
+    }
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut a).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S04b.client status=CAPTURED evidence={expected}"
         )),
@@ -163,5 +181,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=S04b.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=S04b.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(own_name_from(None).is_err());
     }
 }

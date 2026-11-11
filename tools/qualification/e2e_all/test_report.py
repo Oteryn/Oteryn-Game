@@ -145,9 +145,14 @@ class ReportTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 matrix_rows(invalid)
 
+    def test_missing_client_requires_a_source_citation(self):
+        for evidence in ["no-reducer", "source:path.rs", "source:path.rs:line"]:
+            with self.subTest(evidence=evidence), self.assertRaises(ValueError):
+                results(f"SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0 evidence={evidence}")
+
     def test_missing_client_needs_evidence_and_never_qualifies(self):
         found = results(
-            "SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0.000 evidence=no-reducer"
+            "SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0.000 evidence=source:crates/session/src/domain_dispatch.rs:346"
         )
         self.assertEqual(found["P19.client"][0], "MISSING-CLIENT")
         self.assertFalse(summary([("P19", "Outfits")], found)[1])

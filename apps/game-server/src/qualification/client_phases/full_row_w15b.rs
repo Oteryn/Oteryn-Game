@@ -24,7 +24,9 @@ use std::time::{Duration, Instant};
 struct Custody(BTreeMap<(u8, u32, u32), u64>);
 
 fn custody(client: &DevClientSession) -> TestResult<Custody> {
-    let inventory = client.inventory().ok_or("step-1: inventory snapshot missing")?;
+    let inventory = client
+        .inventory()
+        .ok_or("step-1: inventory snapshot missing")?;
     let mut held = BTreeMap::new();
     let mut record = |slot, item: &oteryn_protocol_oteryn::item_view::ItemEntry| {
         *held
@@ -126,6 +128,7 @@ async fn fresh_admission(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -135,56 +138,85 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0xb5, 1).await?;
-    let before_quests = query_quest_journal(&mut client, false).await?;
-    let before_items = custody(&client)?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let before_quests = query_quest_journal(&mut client, false).await?;
+        let before_items = custody(&client)?;
 
-    let (chest, path) = select_route(world, tile(client.world_spatial().actor_position)?)?;
-    walk(&mut client, world, &path)
-        .await
-        .map_err(|error| format!("step-2: walking to {} failed: {error}", chest.claim))?;
-    let first = use_chest(&mut client, &chest).await?;
-    if first != UseDisposition::Committed {
-        return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());
-    }
-    let awarded = custody(&client)?;
-    if awarded == before_items {
-        return Err(format!("step-3: USE committed but inventory delta missing claim={}", chest.claim).into());
-    }
-    let advanced = query_quest_journal(&mut client, false).await?;
-    if advanced == before_quests {
-        return Err(format!("step-3: USE committed but quest-list delta missing claim={}", chest.claim).into());
-    }
+        let (chest, path) = select_route(world, tile(client.world_spatial().actor_position)?)?;
+        walk(&mut client, world, &path)
+            .await
+            .map_err(|error| format!("step-2: walking to {} failed: {error}", chest.claim))?;
+        let first = use_chest(&mut client, &chest).await?;
+        if first != UseDisposition::Committed {
+            return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());
+        }
+        let awarded = custody(&client)?;
+        if awarded == before_items {
+            return Err(format!(
+                "step-3: USE committed but inventory delta missing claim={}",
+                chest.claim
+            )
+            .into());
+        }
+        let advanced = query_quest_journal(&mut client, false).await?;
+        if advanced == before_quests {
+            return Err(format!(
+                "step-3: USE committed but quest-list delta missing claim={}",
+                chest.claim
+            )
+            .into());
+        }
 
-    let second = use_chest(&mut client, &chest).await?;
-    if second != UseDisposition::NothingToUse {
-        return Err(format!("step-4: duplicate USE reply={second:?} claim={}", chest.claim).into());
-    }
-    if custody(&client)? != awarded || query_quest_journal(&mut client, false).await? != advanced {
-        return Err("step-4: refused duplicate changed inventory or quest state".into());
-    }
+        let second = use_chest(&mut client, &chest).await?;
+        if second != UseDisposition::NothingToUse {
+            return Err(format!(
+                "step-4: duplicate USE reply={second:?} claim={}",
+                chest.claim
+            )
+            .into());
+        }
+        if custody(&client)? != awarded
+            || query_quest_journal(&mut client, false).await? != advanced
+        {
+            return Err("step-4: refused duplicate changed inventory or quest state".into());
+        }
 
-    let mut fresh = fresh_admission(&mut client, clients).await?;
-    if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
-        return Err("step-5: reward custody or quest advance did not survive fresh admission".into());
-    }
-    let back = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
-        adjacent(at, chest.at)
+        client = fresh_admission(&mut client, clients).await?;
+        if custody(&client)? != awarded
+            || query_quest_journal(&mut client, false).await? != advanced
+        {
+            return Err(
+                "step-5: reward custody or quest advance did not survive fresh admission".into(),
+            );
+        }
+        let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            adjacent(at, chest.at)
+        })
+        .ok_or("step-5: no player route back to claimed chest")?;
+        walk(&mut client, world, &back).await?;
+        let after_relog = use_chest(&mut client, &chest).await?;
+        if after_relog != UseDisposition::NothingToUse {
+            return Err(format!("step-5: post-relog duplicate USE reply={after_relog:?}").into());
+        }
+        if custody(&client)? != awarded
+            || query_quest_journal(&mut client, false).await? != advanced
+        {
+            return Err(
+                "step-5: post-relog refusal changed durable inventory or quest state".into(),
+            );
+        }
+        Ok(format!("claim={} reward-and-quest-durable", chest.claim))
     })
-    .ok_or("step-5: no player route back to claimed chest")?;
-    walk(&mut fresh, world, &back).await?;
-    let after_relog = use_chest(&mut fresh, &chest).await?;
-    if after_relog != UseDisposition::NothingToUse {
-        return Err(format!("step-5: post-relog duplicate USE reply={after_relog:?}").into());
-    }
-    if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
-        return Err("step-5: post-relog refusal changed durable inventory or quest state".into());
-    }
-    Ok(format!("claim={} reward-and-quest-durable", chest.claim))
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(detail)) => evidence(&format!(
             "e2e_all scenario=W15b.full status=PASS seconds={:.3} evidence={detail}",
@@ -208,9 +240,34 @@ mod tests {
 
     #[test]
     fn adjacency_is_same_floor_and_chebyshev_one() {
-        let chest = TilePos { x: 10, y: 10, floor: -7 };
-        assert!(adjacent(chest, TilePos { x: 9, y: 11, floor: -7 }));
-        assert!(!adjacent(chest, TilePos { x: 8, y: 10, floor: -7 }));
-        assert!(!adjacent(chest, TilePos { x: 10, y: 10, floor: -6 }));
+        let chest = TilePos {
+            x: 10,
+            y: 10,
+            floor: -7,
+        };
+        assert!(adjacent(
+            chest,
+            TilePos {
+                x: 9,
+                y: 11,
+                floor: -7
+            }
+        ));
+        assert!(!adjacent(
+            chest,
+            TilePos {
+                x: 8,
+                y: 10,
+                floor: -7
+            }
+        ));
+        assert!(!adjacent(
+            chest,
+            TilePos {
+                x: 10,
+                y: 10,
+                floor: -6
+            }
+        ));
     }
 }

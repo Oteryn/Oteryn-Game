@@ -29,7 +29,7 @@ fn position(at: TilePos) -> ActorPosition {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("M04.client capture timed out".into()),
@@ -56,6 +56,7 @@ fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::WorldSpatialE
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin: serde_json::Value =
         serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -66,118 +67,150 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut pusher = connect_character(clients, 0x94, 0).await?;
-    let mut target = connect_character(clients, 0x95, 0).await?;
-    let pusher_at = tile(pusher.world_spatial().actor_position)?;
-    let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
-        distance(at, pusher_at) == 1
-            && DIRECTIONS.into_iter().any(|direction| {
-                destination(world, at, direction)
-                    .is_some_and(|next| next != pusher_at && distance(next, pusher_at) == 1)
+    let row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let mut target = connect_character(clients, 0x95, 0).await?;
+        let row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            let pusher_at = tile(pusher.world_spatial().actor_position)?;
+            let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
+                distance(at, pusher_at) == 1
+                    && DIRECTIONS.into_iter().any(|direction| {
+                        destination(world, at, direction)
+                            .is_some_and(|next| next != pusher_at && distance(next, pusher_at) == 1)
+                    })
             })
-    })
-    .ok_or("M04 no adjacent player push lane")?;
-    walk(&mut target, world, &path).await?;
-    let before = tile(target.world_spatial().actor_position)?;
-    let reference = own(&target)?.entity;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while !pusher
-        .world_entities()
-        .and_then(|entities| entities.get(&reference))
-        .is_some_and(|entity| entity.position == position(before))
-    {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("M04 pushing client did not observe adjacent player".into());
-        }
-        pusher.service_liveness(Duration::from_millis(25)).await?;
-        target.service_liveness(Duration::from_millis(25)).await?;
-    }
-    pusher.take_events();
-    let blocked_intent = encode_creature_push_intent(&CreaturePushIntent {
-        target: reference,
-        destination: position(pusher_at),
-    })
-    .map_err(|error| format!("M04 blocked push encode: {error:?}"))?;
-    let blocked = pusher
-        .session_mut()
-        .gated_command(
-            CAPABILITY_CREATURE_PUSH_V1,
-            COMMAND_TYPE_CREATURE_PUSH_INTENT,
-            &blocked_intent,
-        )
-        .await?;
-    if blocked.status != CommandStatus::Accepted || blocked.payload != [8, 5] {
-        return Err(format!("M04 occupied destination reply: {blocked:?}").into());
-    }
-    if pusher
-        .world_entities()
-        .and_then(|entities| entities.get(&reference))
-        .is_none_or(|entity| entity.position != position(before))
-    {
-        return Err("M04 occupied push changed the visible player".into());
-    }
-    let landing = DIRECTIONS
-        .into_iter()
-        .filter_map(|direction| destination(world, before, direction))
-        .find(|at| *at != pusher_at && distance(*at, pusher_at) == 1)
-        .ok_or("M04 no free push landing")?;
-    let intent = encode_creature_push_intent(&CreaturePushIntent {
-        target: reference,
-        destination: position(landing),
-    })
-    .map_err(|error| format!("M04 push encode: {error:?}"))?;
-    let reply = pusher
-        .session_mut()
-        .gated_command(
-            CAPABILITY_CREATURE_PUSH_V1,
-            COMMAND_TYPE_CREATURE_PUSH_INTENT,
-            &intent,
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted || reply.payload != [8, 1] {
-        return Err(format!("M04 push reply: {reply:?}").into());
-    }
-    let delta = pusher
-        .session_mut()
-        .read_gated_delta(
-            oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
-        )
-        .await?;
-    let decoded = decode_world_spatial_entities_delta(&delta.payload)
-        .map_err(|error| format!("M04 spatial payload: {error:?}"))?;
-    let moved = decoded
-        .update
-        .iter()
-        .find(|entity| entity.entity == reference)
-        .ok_or("M04 spatial payload omitted pushed player")?;
-    if moved.position != position(landing) {
-        return Err("M04 pushed player delta has wrong landing".into());
-    }
-    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let directory = Path::new(&directory);
-        let expected = format!(
-            "{} {} {} {} {} {} {} {}\n",
-            delta.base_revision,
-            delta.new_revision,
-            delta.server_sequence,
-            reference
-                .identity
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>(),
-            reference.generation,
-            moved.position.x,
-            moved.position.y,
-            moved.position.floor
-        );
-        for (name, contents) in [
-            ("m04-spatial.bin", delta.payload.as_slice()),
-            ("m04-expected.txt", expected.as_bytes()),
-        ] {
-            if let Err(error) = std::fs::write(directory.join(name), contents) {
-                evidence(&format!("M04_CAPTURE_WRITE_ERROR file={name} error={error}"));
+            .ok_or("M04 no adjacent player push lane")?;
+            walk(&mut target, world, &path).await?;
+            let before = tile(target.world_spatial().actor_position)?;
+            let reference = own(&target)?.entity;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while !pusher
+                .world_entities()
+                .and_then(|entities| entities.get(&reference))
+                .is_some_and(|entity| entity.position == position(before))
+            {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("M04 pushing client did not observe adjacent player".into());
+                }
+                pusher.service_liveness(Duration::from_millis(25)).await?;
+                target.service_liveness(Duration::from_millis(25)).await?;
             }
+            pusher.take_events();
+            let blocked_intent = encode_creature_push_intent(&CreaturePushIntent {
+                target: reference,
+                destination: position(pusher_at),
+            })
+            .map_err(|error| format!("M04 blocked push encode: {error:?}"))?;
+            let blocked = pusher
+                .session_mut()
+                .gated_command(
+                    CAPABILITY_CREATURE_PUSH_V1,
+                    COMMAND_TYPE_CREATURE_PUSH_INTENT,
+                    &blocked_intent,
+                )
+                .await?;
+            if blocked.status != CommandStatus::Accepted || blocked.payload != [8, 5] {
+                return Err(format!("M04 occupied destination reply: {blocked:?}").into());
+            }
+            if pusher
+                .world_entities()
+                .and_then(|entities| entities.get(&reference))
+                .is_none_or(|entity| entity.position != position(before))
+            {
+                return Err("M04 occupied push changed the visible player".into());
+            }
+            let landing = DIRECTIONS
+                .into_iter()
+                .filter_map(|direction| destination(world, before, direction))
+                .find(|at| *at != pusher_at && distance(*at, pusher_at) == 1)
+                .ok_or("M04 no free push landing")?;
+            let intent = encode_creature_push_intent(&CreaturePushIntent {
+                target: reference,
+                destination: position(landing),
+            })
+            .map_err(|error| format!("M04 push encode: {error:?}"))?;
+            let reply = pusher
+                .session_mut()
+                .gated_command(
+                    CAPABILITY_CREATURE_PUSH_V1,
+                    COMMAND_TYPE_CREATURE_PUSH_INTENT,
+                    &intent,
+                )
+                .await?;
+            if reply.status != CommandStatus::Accepted || reply.payload != [8, 1] {
+                return Err(format!("M04 push reply: {reply:?}").into());
+            }
+            let delta = pusher
+                .session_mut()
+                .read_gated_delta(
+                    oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                )
+                .await?;
+            let decoded = decode_world_spatial_entities_delta(&delta.payload)
+                .map_err(|error| format!("M04 spatial payload: {error:?}"))?;
+            let moved = decoded
+                .update
+                .iter()
+                .find(|entity| entity.entity == reference)
+                .ok_or("M04 spatial payload omitted pushed player")?;
+            if moved.position != position(landing) {
+                return Err("M04 pushed player delta has wrong landing".into());
+            }
+            if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+                let directory = Path::new(&directory);
+                let expected = format!(
+                    "{} {} {} {} {} {} {} {}\n",
+                    delta.base_revision,
+                    delta.new_revision,
+                    delta.server_sequence,
+                    reference
+                        .identity
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>(),
+                    reference.generation,
+                    moved.position.x,
+                    moved.position.y,
+                    moved.position.floor
+                );
+                for (name, contents) in [
+                    ("m04-spatial.bin", delta.payload.as_slice()),
+                    ("m04-expected.txt", expected.as_bytes()),
+                ] {
+                    std::fs::write(directory.join(name), contents)?;
+                }
+            }
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut target).await?;
         }
+        row_result
     }
-    Ok(())
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut pusher).await?;
+    }
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn distance_handles_boundaries_and_floors() {
+        let a = TilePos {
+            x: 0,
+            y: 0,
+            floor: 7,
+        };
+        assert_eq!(distance(a, a), 0);
+        assert_eq!(distance(a, TilePos { x: u16::MAX, ..a }), u16::MAX);
+        assert_eq!(distance(a, TilePos { floor: 8, ..a }), u16::MAX);
+    }
 }

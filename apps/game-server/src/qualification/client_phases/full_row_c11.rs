@@ -361,3 +361,15 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unknown_spell_has_no_wire_index() -> TestResult {
+        let book = spell_book()?;
+        assert!(spell_index(&book, "not an authored spell").is_err());
+        assert!(spell_index(&book, "").is_err());
+        Ok(())
+    }
+}

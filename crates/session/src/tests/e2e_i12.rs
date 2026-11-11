@@ -31,7 +31,7 @@ fn pick_refining_replays_real_inventory_payload() -> Result<(), BoxError> {
             join_peer_with(
                 &mut server,
                 CLIENT_SUPPORTED_CAPABILITIES,
-                &[4, 6],
+                &[4, 6, 12],
                 &[],
                 item_snapshot(vec![])?,
                 &[(

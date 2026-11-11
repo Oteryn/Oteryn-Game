@@ -9,13 +9,13 @@ use oteryn_protocol_oteryn::wheel;
 
 const CORE_SLOT: usize = 20;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P06_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -32,14 +32,14 @@ async fn send(
     ) {
         return Err(format!("{name} status={:?}", response.status).into());
     }
-    capture(&format!("p06-{name}-receipt.bin"), &response.payload);
+    capture(&format!("p06-{name}-receipt.bin"), &response.payload)?;
     for (suffix, frame) in [
         ("wheel", &response.wheel),
         ("atelier", &response.atelier),
         ("resources", &response.resources),
     ] {
         if let Some(bytes) = frame {
-            capture(&format!("p06-{name}-{suffix}.bin"), bytes);
+            capture(&format!("p06-{name}-{suffix}.bin"), bytes)?;
         }
     }
     let current = response
@@ -52,7 +52,9 @@ async fn send(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x28).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
@@ -90,12 +92,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         receipt.refused,
         after.revision
     );
-    capture("p06-expected.txt", expected.as_bytes());
+    capture("p06-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P06.client status=CAPTURED evidence={expected}"
         )),

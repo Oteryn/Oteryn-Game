@@ -202,7 +202,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row {
         completed: BTreeSet::new(),
     };
-    let result: TestResult = tokio::time::timeout(Duration::from_secs(90), async {
+    let mut active_client = None;
+    let mut result: TestResult = tokio::time::timeout(Duration::from_secs(90), async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -212,30 +213,31 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        let mut client = connect_world(clients, 0xd0).await?;
+        active_client = Some(connect_world(clients, 0xd0).await?);
+        let client = active_client.as_mut().ok_or("row admission absent")?;
         let result: TestResult = async {
-            let npc = approach_king(&mut client, world, &metadata.npcs).await?;
-            let greeting = talk(&mut client, npc, "hi").await?;
+            let npc = approach_king(&mut *client, world, &metadata.npcs).await?;
+            let greeting = talk(&mut *client, npc, "hi").await?;
             if greeting.is_empty() {
                 return Err("step-3 hi produced an empty conversation delta".into());
             }
-            let unpromoted = vocation(&mut client).await?;
+            let unpromoted = vocation(&mut *client).await?;
             let uncharged = client
                 .inventory()
                 .ok_or("step-3 inventory observation absent")?
                 .clone();
-            let quote = talk(&mut client, npc, "promotion").await?;
+            let quote = talk(&mut *client, npc, "promotion").await?;
             if quote != ["Do you want to be promoted for 20000 gold coins?"] {
                 return Err(format!("step-3 promotion quote observed={quote:?}").into());
             }
-            let confirmation = talk(&mut client, npc, "yes").await?;
+            let confirmation = talk(&mut *client, npc, "yes").await?;
             if confirmation != ["You are now promoted."] {
                 return Err(format!(
                     "step-3 promotion attempt quote={quote:?} confirmation={confirmation:?}; need=a player-reachable Premium entitlement and level/gold prerequisites before the positive promotion path"
                 )
                 .into());
             }
-            let promoted = vocation(&mut client).await?;
+            let promoted = vocation(&mut *client).await?;
             let inventory = client
                 .inventory()
                 .ok_or("step-4 inventory observation absent")?
@@ -250,9 +252,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 "P20_CHECK step-3 FAIL observed=quote-{quote:?}-confirmation-{confirmation:?}-vocation-{promoted:?}-inventory-{inventory:?}; native level-20 rat hunt and 20000-gold loot actions did not run"
             ));
 
-            let duplicate_quote = talk(&mut client, npc, "promotion").await?;
-            let duplicate = talk(&mut client, npc, "yes").await?;
-            let duplicate_vocation = vocation(&mut client).await?;
+            let duplicate_quote = talk(&mut *client, npc, "promotion").await?;
+            let duplicate = talk(&mut *client, npc, "yes").await?;
+            let duplicate_vocation = vocation(&mut *client).await?;
             if duplicate != ["You already have this blessing."]
                 || duplicate_vocation != promoted
                 || client.inventory() != Some(&inventory)
@@ -268,16 +270,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 (&duplicate_quote, &duplicate, &duplicate_vocation),
             );
 
-            let build = progress(&mut client).await?;
+            let build = progress(&mut *client).await?;
             let before = client.world_spatial().actor_position;
             let old_session = client.join_snapshot().game_session_id;
-            logout(&mut client).await?;
-            client = connect_world(clients, 0xd1).await?;
+            logout(&mut *client).await?;
+            *client = connect_world(clients, 0xd1).await?;
             if client.join_snapshot().game_session_id == old_session {
                 return Err("step-5 fresh admission reused the old game session".into());
             }
-            let fresh_build = progress(&mut client).await?;
-            let fresh_vocation = vocation(&mut client).await?;
+            let fresh_build = progress(&mut *client).await?;
+            let fresh_vocation = vocation(&mut *client).await?;
             if fresh_build != build
                 || fresh_vocation != promoted
                 || client.inventory() != Some(&inventory)
@@ -309,12 +311,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             Ok(())
         }
         .await;
-        let _ = logout(&mut client).await;
         result
     })
     .await
     .unwrap_or_else(|_| Err("P20 journey deadline after native mechanic commands".into()));
 
+    if let Some(client) = active_client.as_mut() {
+        let cleanup = logout(client).await;
+        result = result.and(cleanup);
+    }
     let status = row.finish(&result);
     let evidence_text = if result.is_ok() {
         "observed-all-required-actions"

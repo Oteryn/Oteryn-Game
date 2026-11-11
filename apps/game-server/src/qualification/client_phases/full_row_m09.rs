@@ -88,7 +88,7 @@ struct MapObject {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
+    let result = row_complete(journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step deadline: M09 journey exceeded 600s; last server reply unavailable".into())
@@ -351,6 +351,7 @@ async fn buy(
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(600);
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -361,6 +362,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let index = provisioning::item_index()?;
     let mut client = connect_world(clients, 0xb9).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
     let worm_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3492", 40).await?;
     let fish_ref = reference(&index, 3578)?;
@@ -527,8 +530,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 5 logout refused".into());
     }
-    drop(client);
-    let fresh = connect_world(clients, 0xba).await?;
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
+    let mut fresh = connect_world(clients, 0xba).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.join_snapshot().game_session_id == old_session
         || inventory_signature(&fresh)? != durable
     {
@@ -541,6 +547,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(error.into());
     }
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn inventory_signature(client: &DevClientSession) -> TestResult<Vec<(u32, u32, u32)>> {

@@ -40,7 +40,7 @@ const CASES: [(&str, u32, u16, u16); 6] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(300), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-after-300s need=responsive-server".into()),
@@ -318,9 +318,11 @@ fn contains_placement_tile_delta(events: &[SessionEvent], object: Object) -> boo
             .tiles
             .iter()
             .any(|tile| tile_at(tile, object.at)),
-        SessionEvent::WorldMapSnapshot(delta) => {
-            delta.value.tiles.iter().any(|tile| tile_at(tile, object.at))
-        }
+        SessionEvent::WorldMapSnapshot(delta) => delta
+            .value
+            .tiles
+            .iter()
+            .any(|tile| tile_at(tile, object.at)),
         _ => false,
     })
 }
@@ -385,6 +387,7 @@ async fn use_tool(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -396,6 +399,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let objects = objects(&bytes)?;
     let mut client = connect_world(clients, 0xd8).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let mut completed = BTreeSet::new();
     let mut pick = None;
     for (name, id, before, after) in CASES {
@@ -462,8 +467,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=logout observed=refused need=accepted".into());
     }
-    drop(client);
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xd9).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let _ = approach(&mut fresh, world, &[pick], 7200).await?;
     let snapshot = fresh
         .session_mut()
@@ -480,6 +488,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("M08_CHECK relog-persistence PASS appearance=7236");
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]

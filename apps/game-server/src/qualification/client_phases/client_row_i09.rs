@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::world_object::{
 const BEFORE: &str = "oteryn:item.tibia.i2358";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(
             "SEAM_EVIDENCE e2e_all scenario=I09.client status=PASS evidence=domain-17-furniture-rotation-replay-captured",
@@ -32,18 +32,17 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&directory).join(name), bytes) {
-        evidence(&format!(
-            "I09_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
+    std::fs::write(Path::new(&directory).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -74,6 +73,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })?;
     let (at, ordinal) = furniture.ok_or("no compiled fixed chair 2358")?;
     let mut client = connect_world(clients, 0xc9).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let path = route(
         world,
         tile(client.world_spatial().actor_position)?,
@@ -111,7 +111,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("rotation refused: {:?}", reply.status).into());
     }
-    capture("i09-result.bin", &reply.payload);
+    capture("i09-result.bin", &reply.payload)?;
     client.service_liveness(Duration::from_millis(100)).await?;
     let delta = client
         .take_events()
@@ -143,7 +143,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &delta.value,
     )
     .map_err(|error| format!("I09 capture encode: {error:?}"))?;
-    capture("i09-map-delta.bin", &payload);
+    capture("i09-map-delta.bin", &payload)?;
     capture(
         "i09-expected.txt",
         format!(
@@ -155,7 +155,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             item.appearance_id
         )
         .as_bytes(),
-    );
+    )?;
     let stale = client
         .session_mut()
         .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &intent(0)?)
@@ -166,4 +166,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("stale rotation was not refused".into());
     }
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }

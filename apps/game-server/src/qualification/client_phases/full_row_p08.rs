@@ -114,6 +114,7 @@ async fn modify(
 }
 
 async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -124,6 +125,8 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa2).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let initial_session = client.join_snapshot().game_session_id;
     let catalogue = catalogue(&mut client).await?;
     let before = browse(&mut client).await?;
@@ -307,8 +310,11 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
     {
         return Err("step-logout:refused".into());
     }
-    drop(client);
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xa3).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     observed.require(
         "fresh-session",
         fresh.join_snapshot().game_session_id != initial_session,
@@ -324,15 +330,24 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         false,
         "fresh browse matches XP/selections, but exposes neither shaped slots nor catalyst inventory consumption",
     );
-    let _ = fresh.session_mut().logout().await;
+    row_logout(&mut fresh).await?; row_needs_logout_1 = false;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut observed = Observations::default();
-    let result =
-        tokio::time::timeout(Duration::from_secs(240), journey(clients, &mut observed)).await;
+    let result = row_complete(journey(clients, &mut observed)).await;
     match result {
         Ok(Err(error)) => observed.failures.push(error.to_string()),
         Err(_) => observed.failures.push("step-deadline:timeout".into()),

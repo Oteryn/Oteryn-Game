@@ -6,13 +6,16 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = capture(clients).await {
-        evidence(&format!("SEAM_EVIDENCE e2e_all scenario=I14.client status=FAIL evidence={error}"));
+    if let Err(error) = capture(clients).await.inspect(|line| evidence(line)) {
+        evidence(&format!(
+            "SEAM_EVIDENCE e2e_all scenario=I14.client status=FAIL evidence={error}"
+        ));
     }
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xb4).await?;
+    let row_result: TestResult<_> = async {
     let index = provisioning::item_index()?;
     let meat = provisioning::item_reference(&index, 3577)?;
     let before = client.inventory().ok_or("I14 client inventory absent")?.clone();
@@ -72,15 +75,18 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             ("i14-expected.txt", expected.into_bytes()),
         ];
         for (name, bytes) in writes {
-            if let Err(error) = std::fs::write(path.join(name), bytes) {
-                evidence(&format!("I14_CAPTURE_WRITE_ERROR file={name} error={error}"));
-            }
+            std::fs::write(path.join(name), bytes)?;
         }
     }
-    evidence(&format!(
+    let verdict = format!(
         "SEAM_EVIDENCE e2e_all scenario=I14.client status=PASS evidence=inventory-before-{}-after-{}",
         visible(&before),
         visible(after)
-    ));
-    Ok(())
+    );
+    Ok(verdict)
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }

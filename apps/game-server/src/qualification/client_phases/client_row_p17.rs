@@ -8,13 +8,13 @@ use oteryn_protocol_oteryn::exiva::{
     CAPABILITY_EXIVA_SETTINGS_V1, COMMAND_TYPE_EXIVA_SETTINGS, PlayerList,
 };
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn settings(
@@ -47,7 +47,11 @@ async fn list(client: &mut DevClientSession) -> TestResult<(Vec<u8>, PlayerList)
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
-    let entities = client.world_entities().ok_or("entity snapshot absent")?;
+    own_name_from(client.world_entities())
+}
+
+fn own_name_from(input: Option<&oteryn_dev_client::WorldEntities>) -> TestResult<String> {
+    let entities = input.ok_or("entity snapshot absent")?;
     entities
         .iter()
         .find(|entry| entry.entity.identity == *entities.own_identity())
@@ -59,11 +63,16 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut caster = connect_character(clients, 0x43, 1).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let caster_name = own_name(&caster)?;
-    let _ = caster.session_mut().logout().await?;
-    drop(caster);
+    row_logout(&mut caster).await?; row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut caster).await?; row_needs_logout_0 = false; }
     let mut target = connect_character(clients, 0x42, 0).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let (_, initial) = list(&mut target).await?;
 
     if accepted(&mut target, &[0, 0]).await? != [1] {
@@ -73,7 +82,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if denied.modes != 0 || !denied.players.is_empty() {
         return Err(format!("deny-all List mismatch: {denied:?}").into());
     }
-    capture("p17-denied.bin", &denied_bytes);
+    capture("p17-denied.bin", &denied_bytes)?;
 
     let mut add = vec![6];
     add.extend(caster_name.as_bytes());
@@ -87,7 +96,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if allowed.modes != 2 || listed_name != &caster_name {
         return Err(format!("allow List mismatch: {allowed:?}").into());
     }
-    capture("p17-allowed.bin", &allowed_bytes);
+    capture("p17-allowed.bin", &allowed_bytes)?;
 
     let (status, refused) = settings(&mut target, &[0, 32]).await?;
     if status != CommandStatus::Rejected || !refused.is_empty() {
@@ -107,7 +116,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if removed.modes != 2 || !removed.players.is_empty() {
         return Err(format!("removal List mismatch: {removed:?}").into());
     }
-    capture("p17-removed.bin", &removed_bytes);
+    capture("p17-removed.bin", &removed_bytes)?;
     // Leave the target's permissions as found.
     accepted(&mut target, &[0, initial.modes]).await?;
     let id_hex: String = caster_id.iter().map(|byte| format!("{byte:02x}")).collect();
@@ -115,13 +124,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "denied_modes={}\nallowed_modes={}\nplayer={id_hex} {caster_name}\nremoved_modes={}\nrefused_status=Rejected\n",
         denied.modes, allowed.modes, removed.modes
     );
-    capture("p17-expected.txt", expected.as_bytes());
-    let _ = target.session_mut().logout().await?;
+    capture("p17-expected.txt", expected.as_bytes())?;
+    row_logout(&mut target).await?; row_needs_logout_1 = false;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut target).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut caster).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P17.client status=CAPTURED evidence={expected}"
         )),
@@ -129,5 +148,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P17.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P17.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(own_name_from(None).is_err());
     }
 }

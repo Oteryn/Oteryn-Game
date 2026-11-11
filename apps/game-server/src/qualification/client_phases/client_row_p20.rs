@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::npc_service as wire;
 
-pub(super) fn capture(row: &str, name: &str, bytes: &[u8]) {
+pub(super) fn capture(_row: &str, name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("{row}_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 /// Walks next to the authored NPC `key` and returns its visible actor.
@@ -87,7 +87,11 @@ pub(super) async fn talk(
         if conversation.open.map(|(actor, _)| actor) != Some(npc) {
             return Err(format!("{text} delta belonged to another NPC").into());
         }
-        if conversation.lines.iter().any(|line| line.contains(['|', '\n'])) {
+        if conversation
+            .lines
+            .iter()
+            .any(|line| line.contains(['|', '\n']))
+        {
             return Err("conversation line contains a reserved separator".into());
         }
         return Ok((delta.payload, conversation.lines));
@@ -99,6 +103,7 @@ pub(super) fn hex(bytes: &[u8]) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -109,34 +114,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x52, 0).await?;
-    let npc = approach_npc(&mut client, world, &metadata.npcs, "oteryn:npc.king_tibianus").await?;
-    let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
-    if greeting.is_empty() {
-        return Err("hi produced an empty conversation".into());
-    }
-    capture("P20", "p20-greeting.bin", &greeting_bytes);
-    let (quote_bytes, quote) = talk(&mut client, npc, "promotion").await?;
-    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
-        return Err(format!("promotion quote observed={quote:?}").into());
-    }
-    capture("P20", "p20-quote.bin", &quote_bytes);
-    let (confirm_bytes, confirm) = talk(&mut client, npc, "yes").await?;
-    capture("P20", "p20-confirm.bin", &confirm_bytes);
-    let expected = format!(
-        "npc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nconfirm={}\n",
-        hex(&npc.identity),
-        npc.generation,
-        greeting.join("|"),
-        quote.join("|"),
-        confirm.join("|")
-    );
-    capture("P20", "p20-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
-    Ok(expected.replace('\n', ";").replace(' ', "_"))
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let npc = approach_npc(
+            &mut client,
+            world,
+            &metadata.npcs,
+            "oteryn:npc.king_tibianus",
+        )
+        .await?;
+        let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
+        if greeting.is_empty() {
+            return Err("hi produced an empty conversation".into());
+        }
+        capture("P20", "p20-greeting.bin", &greeting_bytes)?;
+        let (quote_bytes, quote) = talk(&mut client, npc, "promotion").await?;
+        if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+            return Err(format!("promotion quote observed={quote:?}").into());
+        }
+        capture("P20", "p20-quote.bin", &quote_bytes)?;
+        let (confirm_bytes, confirm) = talk(&mut client, npc, "yes").await?;
+        capture("P20", "p20-confirm.bin", &confirm_bytes)?;
+        let expected = format!(
+            "npc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nconfirm={}\n",
+            hex(&npc.identity),
+            npc.generation,
+            greeting.join("|"),
+            quote.join("|"),
+            confirm.join("|")
+        );
+        capture("P20", "p20-expected.txt", expected.as_bytes())?;
+
+        Ok(expected.replace('\n', ";").replace(' ', "_"))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P20.client status=CAPTURED evidence={expected}"
         )),

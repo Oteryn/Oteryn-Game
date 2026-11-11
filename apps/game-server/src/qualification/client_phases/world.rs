@@ -992,6 +992,9 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         client_row_c16b::run_packet(clients, world).await;
         release_row_characters(clients).await;
     }
+    if e2e_row_selected(231) || e2e_row_selected(103) || e2e_row_selected(104) {
+        full_e2ef5::run(clients, world).await;
+    }
     if e2e_row_selected(103) {
         client_row_c16c::run_packet(clients, world).await;
         release_row_characters(clients).await;
@@ -1022,6 +1025,10 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     }
     if e2e_row_selected(228) {
         client_row_c20a::run_packet(clients, world, &metadata.spawns).await;
+        release_row_characters(clients).await;
+    }
+    if e2e_row_selected(230) || e2e_row_selected(110) || e2e_row_selected(111) {
+        include!("full_e2ef6_mount.rs");
         release_row_characters(clients).await;
     }
     if e2e_row_selected(110) {
@@ -1495,13 +1502,6 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if e2e_row_selected(226) {
         client_row_n07d::run_packet(clients).await;
         release_row_characters(clients).await;
-    }
-    if e2e_row_selected(230) {
-        include!("full_e2ef6_mount.rs");
-        release_row_characters(clients).await;
-    }
-    if e2e_row_selected(231) {
-        full_e2ef5::run(clients, world).await;
     }
     for index in 0..clients.accounts.len() {
         wait_character_released(clients, index).await?;
@@ -2269,4 +2269,37 @@ fn qualification_nbfix_fresh_grants_for_reconnects_and_colliding_tags() -> TestR
         assert_eq!(attempt[8] >> 6, 2);
     }
     Ok(())
+}
+
+// Every row uses the decoded logout result: InFight and Busy keep the session alive.
+async fn row_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("row logout refused: {:?}", reply.result).into());
+    }
+    Ok(())
+}
+
+// The row itself owns its deadline so it can await logout after cancellation.
+// Keep the existing packet's outcome shape while cleanup errors remain failures.
+async fn row_complete<F: std::future::Future>(
+    future: F,
+) -> Result<F::Output, tokio::time::error::Elapsed> {
+    Ok(future.await)
+}
+
+#[cfg(test)]
+fn row_helper_world() -> TestResult<BundleWorld> {
+    use crate::map::boot::{
+        boot,
+        tests::{floor_bundle, floor_items, floor_pins},
+    };
+    let (bytes, pins) = floor_bundle();
+    Ok(boot(
+        &bytes,
+        &floor_pins(pins),
+        WorldId::decode(&v7(1, 2))?,
+        ChannelId::decode(&v7(1, 3))?,
+        floor_items,
+    )?)
 }

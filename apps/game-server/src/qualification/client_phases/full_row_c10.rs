@@ -44,7 +44,11 @@ struct Row {
 
 impl Row {
     fn new() -> Self {
-        Self { passed: BTreeSet::new(), invalid: false, started: std::time::Instant::now() }
+        Self {
+            passed: BTreeSet::new(),
+            invalid: false,
+            started: std::time::Instant::now(),
+        }
     }
     fn pass(&mut self, step: &'static str, observed: impl std::fmt::Debug) {
         if !STEPS.contains(&step) || !self.passed.insert(step) {
@@ -64,7 +68,11 @@ impl Row {
         }
         evidence(&format!(
             "e2e_all scenario=C10.full status={} seconds={:.3}",
-            if result.is_ok() && !self.invalid && STEPS.iter().all(|s| self.passed.contains(s)) { "PASS" } else { "FAIL" },
+            if result.is_ok() && !self.invalid && STEPS.iter().all(|s| self.passed.contains(s)) {
+                "PASS"
+            } else {
+                "FAIL"
+            },
             self.started.elapsed().as_secs_f64()
         ));
     }
@@ -72,9 +80,11 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients))
+    let result = row_complete(journey(&mut row, clients))
         .await
-        .unwrap_or_else(|_| Err("step deadline: C10 journey timed out waiting for a server reply/delta".into()));
+        .unwrap_or_else(|_| {
+            Err("step deadline: C10 journey timed out waiting for a server reply/delta".into())
+        });
     row.finish(result);
 }
 
@@ -88,35 +98,61 @@ fn bed_payload(handle: ItemHandle, skill: u8) -> Vec<u8> {
     payload
 }
 
-async fn bed_command(client: &mut DevClientSession, handle: ItemHandle) -> TestResult<UseDisposition> {
-    let reply = client.session_mut().gated_command(
-        CAPABILITY_WORLD_INTERACTION_V1,
-        COMMAND_TYPE_BED_SLEEP_INTENT,
-        &bed_payload(handle, 6),
-    ).await?;
+async fn bed_command(
+    client: &mut DevClientSession,
+    handle: ItemHandle,
+) -> TestResult<UseDisposition> {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            CAPABILITY_WORLD_INTERACTION_V1,
+            COMMAND_TYPE_BED_SLEEP_INTENT,
+            &bed_payload(handle, 6),
+        )
+        .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step bed command: transport status={:?} payload={:?}", reply.status, reply.payload).into());
+        return Err(format!(
+            "step bed command: transport status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into());
     }
-    oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
-        .map_err(|error| format!("step bed command: malformed reply={error:?} bytes={:?}", reply.payload).into())
+    oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload).map_err(|error| {
+        format!(
+            "step bed command: malformed reply={error:?} bytes={:?}",
+            reply.payload
+        )
+        .into()
+    })
 }
 
 async fn soul_spell(client: &mut DevClientSession) -> TestResult<spell_wire::SpellCatalogEntry> {
-    let snapshot = client.session_mut().gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
         .ok_or("step soul debit: admitted spell catalogue missing")?;
     spell_wire::decode_catalog(&snapshot.payload)
         .map_err(|e| format!("step soul debit: catalogue reply={e:?}"))?
         .into_iter()
         .find(|spell| spell.available && spell.rune_item.is_none() && spell.soul > 0)
-        .ok_or_else(|| "step soul debit: no available player-earned soul spell in server catalogue".into())
+        .ok_or_else(|| {
+            "step soul debit: no available player-earned soul spell in server catalogue".into()
+        })
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0xca).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let spell = soul_spell(&mut client).await?;
     let before = client.actor_vitals().copied().ok_or("step soul debit: vitals absent")?;
     let cast = client.cast_spell(NonZeroU32::new(spell.cast_index).ok_or("step soul debit: zero cast index")?, SpellTarget::None, false).await?;
@@ -175,47 +211,99 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
     Err("step bed sleep: all actual visible item handles returned non-bed refusal; server needs a reachable ACL-authorized bed in node-boot content".into())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
-async fn wait_soul(client: &mut DevClientSession, from: u32, wanted: impl Fn(u32) -> bool, step: &str, duration: Duration) -> TestResult<u32> {
+async fn wait_soul(
+    client: &mut DevClientSession,
+    from: u32,
+    wanted: impl Fn(u32) -> bool,
+    step: &str,
+    duration: Duration,
+) -> TestResult<u32> {
     let deadline = tokio::time::Instant::now() + duration;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             if let SessionEvent::ActorVitals(delta) = event {
                 if delta.value.soul < from && step.contains("regeneration") {
-                    return Err(format!("step {step}: unexpected soul delta {from}->{}", delta.value.soul).into());
+                    return Err(format!(
+                        "step {step}: unexpected soul delta {from}->{}",
+                        delta.value.soul
+                    )
+                    .into());
                 }
-                if wanted(delta.value.soul) { return Ok(delta.value.soul); }
+                if wanted(delta.value.soul) {
+                    return Ok(delta.value.soul);
+                }
             }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step {step}: timeout; last vitals={:?}", client.actor_vitals()).into());
+            return Err(format!(
+                "step {step}: timeout; last vitals={:?}",
+                client.actor_vitals()
+            )
+            .into());
         }
     }
 }
 
 async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let reply = client.session_mut().gated_command(
-        wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
-        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
-        &[1, 0, 0, 1],
-    ).await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() != 42 || reply.payload[0] != 1 {
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[1, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.len() != 42 || reply.payload[0] != 1
+    {
         return Err(format!("step kill window: progression reply={reply:?}").into());
     }
-    Ok((u64::from_le_bytes(reply.payload[1..9].try_into()?), u32::from_le_bytes(reply.payload[9..13].try_into()?)))
+    Ok((
+        u64::from_le_bytes(reply.payload[1..9].try_into()?),
+        u32::from_le_bytes(reply.payload[9..13].try_into()?),
+    ))
 }
 
-async fn fresh_admission(row: &mut Row, clients: &SeamClients<'_>, prior: crate::foundation::GameSessionId, soul: u32, before: oteryn_protocol_oteryn::actor_spell::ActorVitals) -> TestResult {
-    let client = connect_world(clients, 0xcb).await?;
-    let after = client.actor_vitals().ok_or("step saved rest: fresh-admission vitals absent")?;
-    if client.join_snapshot().game_session_id == prior || after.soul < soul || after.health < before.health || after.mana < before.mana {
-        return Err(format!("step saved rest: prior={prior:?} admitted={:?} before={before:?} after={after:?}", client.join_snapshot().game_session_id).into());
+async fn fresh_admission(
+    row: &mut Row,
+    clients: &SeamClients<'_>,
+    prior: crate::foundation::GameSessionId,
+    soul: u32,
+    before: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+) -> TestResult {
+    let mut client = connect_world(clients, 0xcb).await?;
+    let row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let after = client
+            .actor_vitals()
+            .ok_or("step saved rest: fresh-admission vitals absent")?;
+        if client.join_snapshot().game_session_id == prior
+            || after.soul < soul
+            || after.health < before.health
+            || after.mana < before.mana
+        {
+            return Err(format!(
+                "step saved rest: prior={prior:?} admitted={:?} before={before:?} after={after:?}",
+                client.join_snapshot().game_session_id
+            )
+            .into());
+        }
+        row.pass("fresh-admission-saved-rest", after);
+        Ok(())
     }
-    row.pass("fresh-admission-saved-rest", after);
-    Ok(())
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]
@@ -226,13 +314,18 @@ mod tests {
         let target = NonZeroU64::new(99).ok_or("handle")?;
         let decoded = oteryn_protocol_oteryn::bed::decode_bed_sleep_intent(&bed_payload(target, 6))
             .map_err(|error| format!("{error:?}"))?;
-        assert_eq!(decoded, oteryn_protocol_oteryn::bed::BedSleepIntent { target, skill: 6 });
+        assert_eq!(
+            decoded,
+            oteryn_protocol_oteryn::bed::BedSleepIntent { target, skill: 6 }
+        );
         Ok(())
     }
     #[test]
     fn row_needs_every_lifecycle_step_once() {
         let mut row = Row::new();
-        for step in STEPS { row.pass(step, ()); }
+        for step in STEPS {
+            row.pass(step, ());
+        }
         assert!(!row.invalid && STEPS.iter().all(|step| row.passed.contains(step)));
         row.pass(STEPS[0], ());
         assert!(row.invalid);

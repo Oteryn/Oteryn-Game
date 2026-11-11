@@ -45,7 +45,7 @@ struct Observation {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -68,34 +68,46 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0xb1).await?;
-    let levitate = levitate_entry(&mut client)?;
-    let player_level = observed_level(&mut client).await?;
-    let initial_session = client.join_snapshot().game_session_id;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let levitate = levitate_entry(&mut client)?;
+        let player_level = observed_level(&mut client).await?;
+        let initial_session = client.join_snapshot().game_session_id;
 
-    // Send every mechanic command even when the admitted character is not yet
-    // eligible or a particular bundle tile refuses relocation.  This preserves
-    // the observed server replies needed to diagnose a real row failure.
-    let up = observe_speech(&mut client, WORDS_UP).await?;
-    settle_support_cooldown(&mut client).await?;
-    let down = observe_speech(&mut client, WORDS_DOWN).await?;
-    settle_support_cooldown(&mut client).await?;
-    let refusal = observe_speech(&mut client, WORDS_REFUSAL).await?;
+        // Send every mechanic command even when the admitted character is not yet
+        // eligible or a particular bundle tile refuses relocation.  This preserves
+        // the observed server replies needed to diagnose a real row failure.
+        let up = observe_speech(&mut client, WORDS_UP).await?;
+        settle_support_cooldown(&mut client).await?;
+        let down = observe_speech(&mut client, WORDS_DOWN).await?;
+        settle_support_cooldown(&mut client).await?;
+        let refusal = observe_speech(&mut client, WORDS_REFUSAL).await?;
 
-    let before_logout_position = client.world_spatial().actor_position;
-    let before_logout_vitals = client.actor_vitals().copied().ok_or(
-        "step=5 observed=missing-vitals-before-logout server-needed=actor-vitals-snapshot",
-    )?;
-    logout(&mut client).await?;
-    client = connect_world(clients, 0xb2).await?;
-    let after_entry = levitate_entry(&mut client)?;
-    let durable = client.join_snapshot().game_session_id != initial_session
-        && client.world_spatial().actor_position == before_logout_position
-        && client.actor_vitals() == Some(&before_logout_vitals)
-        && after_entry == levitate;
+        let before_logout_position = client.world_spatial().actor_position;
+        let before_logout_vitals = client.actor_vitals().copied().ok_or(
+            "step=5 observed=missing-vitals-before-logout server-needed=actor-vitals-snapshot",
+        )?;
+        logout(&mut client).await?;
+        row_needs_logout_0 = false;
+        client = connect_world(clients, 0xb2).await?;
+        row_needs_logout_0 = true;
+        let after_entry = levitate_entry(&mut client)?;
+        let durable = client.join_snapshot().game_session_id != initial_session
+            && client.world_spatial().actor_position == before_logout_position
+            && client.actor_vitals() == Some(&before_logout_vitals)
+            && after_entry == levitate;
 
-    validate_success(&up, &down, &refusal, durable, &levitate, player_level)?;
-    Ok("up-down-refusal-and-fresh-admission-frames-validated")
+        validate_success(&up, &down, &refusal, durable, &levitate, player_level)?;
+        Ok("up-down-refusal-and-fresh-admission-frames-validated")
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn levitate_entry(client: &mut DevClientSession) -> TestResult<catalog::SpellCatalogEntry> {
@@ -249,11 +261,7 @@ fn validate_success(
         && up.after_position.y == up.before_position.y)
         || (up.after_position.y.abs_diff(up.before_position.y) == 1
             && up.after_position.x == up.before_position.x);
-    if player_level < levitate.level
-        || !levitate.available
-        || !one_floor
-        || !one_tile
-    {
+    if player_level < levitate.level || !levitate.available || !one_floor || !one_tile {
         return Err(format!(
             "step=2-up command={} observed={up:?} player_level={player_level} required_level={} catalog_available={} server-needed=eligible-cast-moving-exactly-one-floor-and-one-forward-tile",
             up.command, levitate.level, levitate.available

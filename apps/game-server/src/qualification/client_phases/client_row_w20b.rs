@@ -12,13 +12,13 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 
 const WORDS: &str = "utevo lux";
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W20B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn hex(bytes: &[u8; 16]) -> String {
@@ -30,7 +30,9 @@ fn hex_bytes(bytes: &[u8]) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_world(clients, 0x97).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let own = *client.world_entities().ok_or("step=entities absent")?.own_identity();
     let before = client
         .session_mut()
@@ -79,7 +81,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &EntityLights::from([(own, EntityLight { level: light.0, color: light.1 })]),
     )
     .map_err(|error| format!("step=encode {error:?}"))?;
-    capture("w20b-entities.bin", &payload);
+    capture("w20b-entities.bin", &payload)?;
     capture(
         "w20b-expected.txt",
         format!(
@@ -91,18 +93,42 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             hex_bytes(&client.world_spatial().content_generation)
         )
         .as_bytes(),
-    );
-    let _ = client.session_mut().logout().await;
+    )?;
+
     Ok(format!("light={}:{}", light.0, light.1))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20b.client status=CAPTURED evidence={observed}")),
+    match row_complete(journey(clients)).await {
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=W20b.client status=CAPTURED evidence={observed}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W20b.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W20b.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_full_identity_width() {
+        assert_eq!(hex(&[0; 16]), "00".repeat(16));
+        assert_eq!(hex(&[255; 16]), "ff".repeat(16));
+    }
+
+    #[test]
+    fn hex_bytes_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex_bytes(&[]), "");
+        assert_eq!(hex_bytes(&[0, 15, 128, 255]), "000f80ff");
     }
 }

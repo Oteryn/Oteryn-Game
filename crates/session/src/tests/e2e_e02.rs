@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::{encode_state_delta, item_view};
 const SELECTED: &[u32] = &[
     item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
+    item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
 ];
 
 struct Capture {

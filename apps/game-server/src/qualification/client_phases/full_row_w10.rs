@@ -37,7 +37,10 @@ fn failed(step: u8, observed: impl std::fmt::Display, need: &'static str) -> Ste
     }
 }
 
-async fn command(client: &mut DevClientSession, selection: Option<u8>) -> TestResult<(CommandStatus, Vec<u8>)> {
+async fn command(
+    client: &mut DevClientSession,
+    selection: Option<u8>,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let payload = selection.map_or_else(Vec::new, |level| vec![level]);
     let reply = client
         .session_mut()
@@ -105,6 +108,8 @@ fn primal_positions(bytes: &[u8]) -> TestResult<Vec<TilePos>> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> StepResult {
+    let mut active_client = None;
+    let result: StepResult = tokio::time::timeout(Duration::from_secs(150), async {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE").map_err(|error| {
         failed(1, error, "the node-boot compiled world bundle")
     })?)
@@ -124,27 +129,28 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed(1, error, "a valid channel id"))?,
     )
     .map_err(|error| failed(1, error, "the production world loader to accept the bundle"))?;
-    let mut client = connect_world(clients, 0xd0)
+    active_client = Some(connect_world(clients, 0xd0)
         .await
-        .map_err(|error| failed(1, error, "fresh native admission"))?;
+        .map_err(|error| failed(1, error, "fresh native admission"))?);
+    let client = active_client.as_mut().ok_or_else(|| failed(1, "admission absent", "native admission"))?;
 
     accepted(
         1,
-        command(&mut client, None)
+        command(&mut *client, None)
             .await
             .map_err(|error| failed(1, error, "a Hazard query reply"))?,
         [1, 1],
     )?;
     accepted(
         2,
-        command(&mut client, Some(1))
+        command(&mut *client, Some(1))
             .await
             .map_err(|error| failed(2, error, "a Hazard selection reply"))?,
         [1, 1],
     )?;
     rejected(
         2,
-        command(&mut client, Some(2))
+        command(&mut *client, Some(2))
             .await
             .map_err(|error| failed(2, error, "a locked-level refusal"))?,
     )?;
@@ -166,7 +172,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             "an ordinary walkable route from admission to the authored Primal Ordeal encounter",
         )
     })?;
-    walk(&mut client, world, &path)
+    walk(&mut *client, world, &path)
         .await
         .map_err(|error| failed(3, error, "accepted STEP replies to the Primal encounter"))?;
     let at = client.world_spatial().actor_position;
@@ -224,14 +230,14 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
 
     accepted(
         4,
-        command(&mut client, None)
+        command(&mut *client, None)
             .await
             .map_err(|error| failed(4, error, "the post-kill Hazard unlock delta"))?,
         [2, 1],
     )?;
     accepted(
         4,
-        command(&mut client, Some(2))
+        command(&mut *client, Some(2))
             .await
             .map_err(|error| failed(4, error, "the level-2 Hazard selection delta"))?,
         [2, 2],
@@ -323,8 +329,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     {
         return Err(failed(5, "logout_refused", "an accepted logout reply"));
     }
-    drop(client);
-    let mut client = connect_world(clients, 0xd1)
+    *client = connect_world(clients, 0xd1)
         .await
         .map_err(|error| failed(5, error, "fresh native readmission"))?;
     if client.join_snapshot().game_session_id == old_session {
@@ -332,7 +337,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     }
     accepted(
         5,
-        command(&mut client, None)
+        command(&mut *client, None)
             .await
             .map_err(|error| failed(5, error, "the reloaded Hazard state"))?,
         [2, 2],
@@ -346,16 +351,24 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     }
     rejected(
         5,
-        command(&mut client, Some(3))
+        command(&mut *client, Some(3))
             .await
             .map_err(|error| failed(5, error, "the reloaded locked-level refusal"))?,
     )?;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(failed(5, error, "journey deadline")));
+    if let Some(client) = active_client.as_mut() {
+        row_logout(client)
+            .await
+            .map_err(|error| failed(5, error, "accepted terminal logout"))?;
+    }
+    result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W10.full status=PASS seconds={:.3}",

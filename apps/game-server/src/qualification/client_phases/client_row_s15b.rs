@@ -9,16 +9,17 @@ use oteryn_dev_client::EntityKind;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S15B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -29,60 +30,79 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x64, 1).await?;
-    super::travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let here = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == here.floor
-                    && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
+    let row_needs_logout_0 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        super::travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        let here = client.world_spatial().actor_position;
+        let target = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entry| {
+                    entry.kind == EntityKind::Creature
+                        && entry.position.floor == here.floor
+                        && entry
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entry.position.y.abs_diff(here.y))
+                            <= 1
+                })
             })
-        })
-        .copied()
-        .ok_or("step=attack no adjacent creature after walking")?;
-    client.take_events();
-    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
-    if attack.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("step=attack reply={attack:?}").into());
-    }
-    let refused = client.session_mut().logout().await?;
-    let Some(LogoutResult::InFight { retry_after_ms }) = refused.result else {
-        return Err(format!("step=logout-refusal observed {refused:?}, expected InFight").into());
-    };
-    if retry_after_ms == 0 {
-        return Err("step=logout-refusal InFight carried no retry wait".into());
-    }
-    let mut expected = format!(
-        "logout-refusal\tstatus={:?}\tresult=InFight\tretry_after_ms={retry_after_ms}\n",
-        refused.status
-    );
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    let accepted = loop {
-        client.session_mut().attack_target(None).await?;
-        client.service_liveness(Duration::from_millis(250)).await?;
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(LogoutResult::Accepted) => break reply,
-            Some(LogoutResult::InFight { .. } | LogoutResult::Busy)
-                if tokio::time::Instant::now() < deadline => {}
-            _ => return Err(format!("step=logout-retry observed {reply:?}").into()),
+            .copied()
+            .ok_or("step=attack no adjacent creature after walking")?;
+        client.take_events();
+        let attack = client
+            .session_mut()
+            .attack_target(Some(&target.entity))
+            .await?;
+        if attack.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("step=attack reply={attack:?}").into());
         }
-    };
-    expected.push_str(&format!(
-        "logout-accepted\tstatus={:?}\tresult=Accepted\n",
-        accepted.status
-    ));
-    capture("s15b-expected.txt", expected.as_bytes());
-    Ok(format!("refused_retry_after_ms={retry_after_ms}"))
+        let refused = client.session_mut().logout().await?;
+        let Some(LogoutResult::InFight { retry_after_ms }) = refused.result else {
+            return Err(
+                format!("step=logout-refusal observed {refused:?}, expected InFight").into(),
+            );
+        };
+        if retry_after_ms == 0 {
+            return Err("step=logout-refusal InFight carried no retry wait".into());
+        }
+        let mut expected = format!(
+            "logout-refusal\tstatus={:?}\tresult=InFight\tretry_after_ms={retry_after_ms}\n",
+            refused.status
+        );
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+        let accepted = loop {
+            client.session_mut().attack_target(None).await?;
+            client.service_liveness(Duration::from_millis(250)).await?;
+            let reply = client.session_mut().logout().await?;
+            match reply.result {
+                Some(LogoutResult::Accepted) => break reply,
+                Some(LogoutResult::InFight { .. } | LogoutResult::Busy)
+                    if tokio::time::Instant::now() < deadline => {}
+                _ => return Err(format!("step=logout-retry observed {reply:?}").into()),
+            }
+        };
+        expected.push_str(&format!(
+            "logout-accepted\tstatus={:?}\tresult=Accepted\n",
+            accepted.status
+        ));
+        capture("s15b-expected.txt", expected.as_bytes())?;
+        Ok(format!("refused_retry_after_ms={retry_after_ms}"))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(240), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S15b.client status=CAPTURED evidence={observed}"
         )),

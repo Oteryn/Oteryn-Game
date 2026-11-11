@@ -212,3 +212,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started.elapsed().as_secs_f64()
     ));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn missing_shrine_is_a_precondition_failure() -> TestResult {
+        let world = row_helper_world()?;
+        assert!(
+            shrine_tile(
+                &world,
+                TilePos {
+                    x: 0,
+                    y: 0,
+                    floor: -8
+                }
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+}

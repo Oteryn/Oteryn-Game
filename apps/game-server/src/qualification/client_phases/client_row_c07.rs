@@ -28,10 +28,12 @@ const FIELD_ID: u32 = 21465;
 
 pub(super) async fn run_client_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), client_journey(clients)).await;
+    let result = row_complete(client_journey(clients)).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-240s need=server-complete-field-lifecycle".into()),
+        Err(_) => {
+            Err("step=journey observed=timeout-240s need=server-complete-field-lifecycle".into())
+        }
     };
     if let Err(error) = &result {
         evidence(&format!("C07_GAP {error}"));
@@ -40,11 +42,16 @@ pub(super) async fn run_client_packet(clients: &SeamClients<'_>) {
         "SEAM_EVIDENCE e2e_all scenario=C07.client status={} seconds={:.3}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
-        if result.is_ok() { "" } else { " evidence=required-actions-unproven-see-C07_GAP" },
+        if result.is_ok() {
+            ""
+        } else {
+            " evidence=required-actions-unproven-see-C07_GAP"
+        },
     ));
 }
 
 async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -55,6 +62,8 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc7).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let reference = provisioning::item_reference(&provisioning::item_index()?, RUNE_ID)?;
     let field = provisioning::item_reference(&provisioning::item_index()?, FIELD_ID)?;
     let purchase_sequence = acquire(&mut client, world, &metadata.npcs, reference).await?;
@@ -121,9 +130,11 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
 
     let old_session = client.join_snapshot().game_session_id;
     let retained_position = client.world_spatial().actor_position;
-    logout(&mut client).await?;
-    drop(client);
+    logout(&mut client).await?; row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xc8).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != retained_position
         || quantity(&fresh, reference)? != before_count - 1
@@ -143,87 +154,334 @@ async fn client_journey(clients: &SeamClients<'_>) -> TestResult {
     }
     check("fresh-admission", fresh.last_server_sequence());
     logout(&mut fresh).await
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)> {
-    [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
-        .into_iter().find_map(|direction| destination(world, at, direction).filter(|next| next.floor == at.floor).map(|next| (direction, next)))
+    [
+        StepDirection::North,
+        StepDirection::East,
+        StepDirection::South,
+        StepDirection::West,
+    ]
+    .into_iter()
+    .find_map(|direction| {
+        destination(world, at, direction)
+            .filter(|next| next.floor == at.floor)
+            .map(|next| (direction, next))
+    })
 }
-fn actor_position(at: TilePos) -> ActorPosition { ActorPosition { x: i32::from(at.x), y: i32::from(at.y), floor: -i16::from(at.floor) } }
-fn check(step: &str, sequence: u64) { evidence(&format!("C07_CHECK {step} PASS server_sequence={sequence}")); }
+fn actor_position(at: TilePos) -> ActorPosition {
+    ActorPosition {
+        x: i32::from(at.x),
+        y: i32::from(at.y),
+        floor: -i16::from(at.floor),
+    }
+}
+fn check(step: &str, sequence: u64) {
+    evidence(&format!("C07_CHECK {step} PASS server_sequence={sequence}"));
+}
 fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
-    Ok(client.inventory().ok_or("C07 inventory absent")?.entries.iter().filter(|e| e.item_definition_ref == reference).map(|e| u64::from(e.count.get())).sum())
+    Ok(client
+        .inventory()
+        .ok_or("C07 inventory absent")?
+        .entries
+        .iter()
+        .filter(|e| e.item_definition_ref == reference)
+        .map(|e| u64::from(e.count.get()))
+        .sum())
 }
-fn handle(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<oteryn_protocol_oteryn::item_view::ItemHandle> {
-    client.inventory().and_then(|v| v.entries.iter().find(|e| e.item_definition_ref == reference)).map(|e| e.handle).ok_or_else(|| "step=rune-use observed=no-carried-handle need=purchased-rune-inventory-frame".into())
+fn handle(
+    client: &DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> TestResult<oteryn_protocol_oteryn::item_view::ItemHandle> {
+    client
+        .inventory()
+        .and_then(|v| {
+            v.entries
+                .iter()
+                .find(|e| e.item_definition_ref == reference)
+        })
+        .map(|e| e.handle)
+        .ok_or_else(|| {
+            "step=rune-use observed=no-carried-handle need=purchased-rune-inventory-frame".into()
+        })
 }
 
-async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oteryn_world_bundle::npc::Table, reference: std::num::NonZeroU32) -> TestResult<u64> {
+async fn acquire(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+    reference: std::num::NonZeroU32,
+) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as wire;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00323.json"))?)?;
+    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/services/trade/trade-00000-00323.json"),
+    )?)?;
     let key = format!("oteryn:item.tibia.i{RUNE_ID}");
-    let sellers: BTreeSet<String> = trades["records"].as_array().ok_or("C07 trade records absent")?.iter().filter_map(|r| {
-        r["declaration"]["offers"].as_array()?.iter().any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)
-            .then(|| r["declaration"]["identity"]["key"].as_str()?.strip_prefix("oteryn:service.trade.").map(|n| format!("oteryn:npc.{n}")))?
-    }).collect();
+    let sellers: BTreeSet<String> = trades["records"]
+        .as_array()
+        .ok_or("C07 trade records absent")?
+        .iter()
+        .filter_map(|r| {
+            r["declaration"]["offers"]
+                .as_array()?
+                .iter()
+                .any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)
+                .then(|| {
+                    r["declaration"]["identity"]["key"]
+                        .as_str()?
+                        .strip_prefix("oteryn:service.trade.")
+                        .map(|n| format!("oteryn:npc.{n}"))
+                })?
+        })
+        .collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = npcs.npcs.iter().filter(|n| sellers.contains(&n.key)).filter_map(|n| route(world, here, |at| n.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|p| (n,p))).min_by_key(|(_,p)| p.len())
+    let (npc, path) = npcs
+        .npcs
+        .iter()
+        .filter(|n| sellers.contains(&n.key))
+        .filter_map(|n| {
+            route(world, here, |at| {
+                n.placements
+                    .iter()
+                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+            })
+            .map(|p| (n, p))
+        })
+        .min_by_key(|(_, p)| p.len())
         .ok_or("step=acquire observed=no-reachable-rune-seller need=compiled-vendor-route")?;
     walk(client, world, &path).await?;
-    let actor = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == -i16::from(p.floor)))).map(|e| e.entity).ok_or("step=acquire observed=vendor-not-visible need=npc-entity-delta")?;
+    let actor = client
+        .world_entities()
+        .and_then(|es| {
+            es.iter().find(|e| {
+                e.kind == oteryn_dev_client::EntityKind::Npc
+                    && npc.placements.iter().any(|p| {
+                        e.position.x == i32::from(p.x)
+                            && e.position.y == i32::from(p.y)
+                            && e.position.floor == -i16::from(p.floor)
+                    })
+            })
+        })
+        .map(|e| e.entity)
+        .ok_or("step=acquire observed=vendor-not-visible need=npc-entity-delta")?;
     for text in ["hi", "trade"] {
-        let reply = npc_shop::talk(client.session_mut(), &wire::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
-        if reply != wire::NpcIntentDisposition::Ok { return Err(format!("step=acquire-{text} observed={reply:?} need=Ok").into()); }
+        let reply = npc_shop::talk(
+            client.session_mut(),
+            &wire::NpcTalkIntent {
+                npc_actor: actor,
+                text: text.into(),
+            },
+        )
+        .await?;
+        if reply != wire::NpcIntentDisposition::Ok {
+            return Err(format!("step=acquire-{text} observed={reply:?} need=Ok").into());
+        }
     }
-    let delta = client.session_mut().read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1).await?;
-    let window = wire::decode_npc_trade_window(&delta.payload).map_err(|e| format!("C07 trade window: {e:?}"))?;
-    let (index, offer) = window.offers.iter().enumerate().find(|(_,o)| o.side == wire::NpcTradeSide::Buy && o.item_definition_ref == reference.get()).ok_or("step=acquire observed=rune-not-offered need=live-3188-offer")?;
+    let delta = client
+        .session_mut()
+        .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+        .await?;
+    let window = wire::decode_npc_trade_window(&delta.payload)
+        .map_err(|e| format!("C07 trade window: {e:?}"))?;
+    let (index, offer) = window
+        .offers
+        .iter()
+        .enumerate()
+        .find(|(_, o)| {
+            o.side == wire::NpcTradeSide::Buy && o.item_definition_ref == reference.get()
+        })
+        .ok_or("step=acquire observed=rune-not-offered need=live-3188-offer")?;
     let before = quantity(client, reference)?;
-    let reply = npc_shop::buy(client.session_mut(), &wire::NpcTradeIntent { npc_actor: actor, catalogue_revision: window.open.ok_or("C07 trade closed")?.1, offer_index: u32::try_from(index)?, side: offer.side, quantity: 2, expected_unit_price: offer.unit_price }).await?;
-    if reply != wire::NpcIntentDisposition::Ok { return Err(format!("step=acquire-buy observed={reply:?} need=Ok-and-earned-funds unit_price={}", offer.unit_price).into()); }
+    let reply = npc_shop::buy(
+        client.session_mut(),
+        &wire::NpcTradeIntent {
+            npc_actor: actor,
+            catalogue_revision: window.open.ok_or("C07 trade closed")?.1,
+            offer_index: u32::try_from(index)?,
+            side: offer.side,
+            quantity: 2,
+            expected_unit_price: offer.unit_price,
+        },
+    )
+    .await?;
+    if reply != wire::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "step=acquire-buy observed={reply:?} need=Ok-and-earned-funds unit_price={}",
+            offer.unit_price
+        )
+        .into());
+    }
     inventory_count(client, reference, before + u64::from(offer.count) * 2).await
 }
 
-async fn use_rune(client: &mut DevClientSession, reference: std::num::NonZeroU32, target: ActorPosition) -> TestResult<(oteryn_protocol_oteryn::world_object::UseDisposition,u64)> {
+async fn use_rune(
+    client: &mut DevClientSession,
+    reference: std::num::NonZeroU32,
+    target: ActorPosition,
+) -> TestResult<(oteryn_protocol_oteryn::world_object::UseDisposition, u64)> {
     use oteryn_protocol_oteryn::{actor_spell::SpellTargetPosition, world_object as wire};
-    let payload = wire::encode_item_use_intent(&wire::UseIntent { target: wire::UseTarget::Item(handle(client, reference)?), use_with: None, use_with_map_item: None, use_with_position: Some(SpellTargetPosition { x: target.x, y: target.y, floor: target.floor }) }).map_err(|e| format!("C07 rune encode: {e:?}"))?;
+    let payload = wire::encode_item_use_intent(&wire::UseIntent {
+        target: wire::UseTarget::Item(handle(client, reference)?),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: Some(SpellTargetPosition {
+            x: target.x,
+            y: target.y,
+            floor: target.floor,
+        }),
+    })
+    .map_err(|e| format!("C07 rune encode: {e:?}"))?;
     let reply = client.session_mut().world_context_use(&payload).await?;
-    let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload).map_err(|e| format!("C07 refusal: {e:?}"))?;
-    let disposition = wire::decode_use_result(payload).map_err(|e| format!("C07 use result: {e:?}"))?;
-    if reply.status != CommandStatus::Accepted { return Err(format!("step=rune-use observed=status:{:?}/disposition:{disposition:?} need=Accepted-command-frame", reply.status).into()); }
+    let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
+        .map_err(|e| format!("C07 refusal: {e:?}"))?;
+    let disposition =
+        wire::decode_use_result(payload).map_err(|e| format!("C07 use result: {e:?}"))?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=rune-use observed=status:{:?}/disposition:{disposition:?} need=Accepted-command-frame", reply.status).into());
+    }
     Ok((disposition, reply.server_sequence))
 }
 
-async fn inventory_count(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64) -> TestResult<u64> {
+async fn inventory_count(
+    client: &mut DevClientSession,
+    reference: std::num::NonZeroU32,
+    expected: u64,
+) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::Inventory(delta) = event
+                && quantity(client, reference)? == expected
+            {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=inventory-delta observed={} need={expected}",
+                quantity(client, reference)?
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
-async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
+async fn later_frame(client: &mut DevClientSession) -> TestResult {
+    client
+        .service_liveness(Duration::from_millis(100))
+        .await
+        .map_err(Into::into)
+}
 async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::ActorVitals(delta) = event && delta.value.health < before { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=field-step observed=health:{} need=health-below:{before}", client.actor_vitals().map_or(0, |v| v.health)).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::ActorVitals(delta) = event
+                && delta.value.health < before
+            {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=field-step observed=health:{} need=health-below:{before}",
+                client.actor_vitals().map_or(0, |v| v.health)
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
-async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
+async fn field_frame(
+    client: &mut DevClientSession,
+    at: ActorPosition,
+    reference: std::num::NonZeroU32,
+    present: bool,
+    after: u64,
+    wait: Duration,
+) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
-    loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present {
-        capture_map_delta(&delta, present);
-        return Ok(delta.server_sequence);
-    } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::WorldMap(delta) = event
+                && delta.server_sequence > after
+                && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at)
+                && tile
+                    .items
+                    .iter()
+                    .any(|item| item.definition == MapDefinition::Item(reference))
+                    == present
+            {
+                capture_map_delta(&delta, present)?;
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step={} observed=missing-map-delta tile={at:?} need=field-{present}",
+                if present {
+                    "field-cast"
+                } else {
+                    "field-expiry"
+                }
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
-    loop { let reply = client.session_mut().logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
+    loop {
+        let reply = client.session_mut().logout().await?;
+        if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Ok(());
+        } else if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into());
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+    }
 }
 
-fn capture_map_delta(delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>, present: bool) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else { return; };
-    let result = oteryn_protocol_oteryn::world_map::encode_world_map_delta(&delta.value.header, &delta.value)
-        .map_err(|error| format!("C07 map encode: {error:?}"))
-        .and_then(|payload| std::fs::write(Path::new(&path).join(if present { "c07-map-placed.bin" } else { "c07-map-expired.bin" }), payload).map_err(|error| error.to_string()));
-    if let Err(error) = result { evidence(&format!("C07_CAPTURE_WRITE_ERROR {error}")); }
+fn capture_map_delta(
+    delta: &oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>,
+    present: bool,
+) -> TestResult {
+    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let result = oteryn_protocol_oteryn::world_map::encode_world_map_delta(
+        &delta.value.header,
+        &delta.value,
+    )
+    .map_err(|error| format!("C07 map encode: {error:?}"))
+    .and_then(|payload| {
+        std::fs::write(
+            Path::new(&path).join(if present {
+                "c07-map-placed.bin"
+            } else {
+                "c07-map-expired.bin"
+            }),
+            payload,
+        )
+        .map_err(|error| error.to_string())
+    });
+    result?;
+    Ok(())
 }
 
 fn capture_expected(
@@ -236,25 +494,33 @@ fn capture_expected(
         return Ok(());
     };
     let result = (|| -> TestResult {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize()?;
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()?;
         let path = Path::new(&path).canonicalize()?;
         if !path.starts_with(root) {
             return Err("E2E_ALL_CAPTURE_DIR must be inside the Game worktree".into());
         }
         let expected = format!(
             "field_ref={} target={} {} {} health_before={} health_after={} field_present={}\n",
-            field, target.x, target.y, target.floor, health_before,
+            field,
+            target.x,
+            target.y,
+            target.floor,
+            health_before,
             client.actor_vitals().map_or(0, |vitals| vitals.health),
             false,
         );
         let vitals = client.actor_vitals().ok_or("C07 capture vitals absent")?;
-        std::fs::write(path.join("c07-vitals.bin"), oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(vitals).map_err(|error| format!("C07 vitals encode: {error:?}"))?)?;
+        std::fs::write(
+            path.join("c07-vitals.bin"),
+            oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(vitals)
+                .map_err(|error| format!("C07 vitals encode: {error:?}"))?,
+        )?;
         std::fs::write(path.join("c07-expected.txt"), expected)?;
         Ok(())
     })();
-    if let Err(error) = result {
-        evidence(&format!("C07_CAPTURE_WRITE_ERROR {error}"));
-    }
+    result?;
     Ok(())
 }
 
@@ -262,5 +528,11 @@ fn capture_expected(
 mod tests {
     use super::*;
     #[test]
-    fn field_ids_resolve_from_the_production_item_index() -> TestResult { let index = provisioning::item_index()?; let rune = provisioning::item_reference(&index, RUNE_ID)?; let field = provisioning::item_reference(&index, FIELD_ID)?; assert_ne!(rune, field); Ok(()) }
+    fn field_ids_resolve_from_the_production_item_index() -> TestResult {
+        let index = provisioning::item_index()?;
+        let rune = provisioning::item_reference(&index, RUNE_ID)?;
+        let field = provisioning::item_reference(&index, FIELD_ID)?;
+        assert_ne!(rune, field);
+        Ok(())
+    }
 }

@@ -222,16 +222,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "vocation-after-relog",
         target,
     )?;
-    // Best effort: return the character to its original vocation for later rows.
+    // Return the character to its original vocation for later rows.
     let here = tile(fresh.world_spatial().actor_position)?;
-    if let Some(back) = far_route(world, here, |at| {
+    let back = far_route(world, here, |at| {
         trials
             .iter()
             .any(|(tile, vocation)| *tile == at && *vocation == before)
-    }) && walk(&mut fresh, world, &back).await.is_ok()
-    {
-        let _ = wait_vocation(clients, &mut fresh, |now| now == before).await;
-    }
+    })
+    .ok_or("needed:route-to-restore-original-vocation")?;
+    walk(&mut fresh, world, &back).await?;
+    wait_vocation(clients, &mut fresh, |now| now == before).await?;
     logout(&mut fresh).await?;
     Ok((
         "PASS",

@@ -75,7 +75,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 360s; need the server to complete the pending NPC/travel command".into()) });
 }
 
@@ -142,12 +142,18 @@ fn actor_at(
     client: &DevClientSession,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> Option<oteryn_dev_client::EntityRef> {
-    client
-        .world_entities()?
+    actor_at_from(client.world_entities(), &npc.placements)
+}
+
+fn actor_at_from(
+    entities: Option<&oteryn_dev_client::WorldEntities>,
+    placements: &[oteryn_world_bundle::npc::Placement],
+) -> Option<oteryn_dev_client::EntityRef> {
+    entities?
         .iter()
         .find(|entry| {
             entry.kind == EntityKind::Npc
-                && npc.placements.iter().any(|p| {
+                && placements.iter().any(|p| {
                     entry.position
                         == ActorPosition {
                             x: i32::from(p.x),
@@ -242,6 +248,7 @@ async fn earn(
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(360);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -252,6 +259,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0xf8, 1).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let here = tile(client.world_spatial().actor_position)?;
     let (key, keyword, display, fare, npc) = TRAVEL_NPCS
         .iter()
@@ -351,8 +360,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step fresh-admission: logout refused".into());
     }
-    drop(client);
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_character(clients, 0xf9, 1).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.world_spatial().actor_position != saved_position || carried_gold(&fresh)? != saved_gold
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
@@ -364,6 +376,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step fresh-admission: Rashid shop was not restored; observed reply={fresh_trade:?} shop_delta={fresh_shop}").into());
     }
     row.step("fresh-admission", (saved_position, saved_gold, fresh_trade));
-    let _ = fresh.session_mut().logout().await?;
+    row_logout(&mut fresh).await?; row_needs_logout_1 = false;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn missing_visibility_has_no_npc_identity() {
+        assert_eq!(actor_at_from(None, &[]), None);
+    }
 }

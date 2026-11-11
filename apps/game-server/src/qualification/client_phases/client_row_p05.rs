@@ -6,13 +6,13 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::task_board;
 use task_board::task_board::full::{Reply, Request, decode_reply, encode_request};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P05_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(client: &mut DevClientSession, action: u8, name: &str) -> TestResult<Reply> {
@@ -33,12 +33,14 @@ async fn send(client: &mut DevClientSession, action: u8, name: &str) -> TestResu
     if result.status != CommandStatus::Accepted {
         return Err(format!("task-board action={action} status={:?}", result.status).into());
     }
-    capture(name, &result.payload);
+    capture(name, &result.payload)?;
     decode_reply(&result.payload).map_err(|error| format!("reply decode: {error:?}").into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_character(clients, 0x27, 0).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let before = send(&mut client, 4, "p05-query.bin").await?;
     let bought = send(&mut client, 17, "p05-buy.bin").await?;
     if bought.refusal != 0 {
@@ -57,12 +59,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         level(&bought),
         repeated.refusal
     );
-    capture("p05-expected.txt", expected.as_bytes());
+    capture("p05-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P05.client status=CAPTURED evidence={expected}"
         )),

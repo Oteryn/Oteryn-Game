@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::hireling::management;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E12_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -38,7 +38,9 @@ async fn command(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let mut client = connect_world(clients, 0x3c).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&management::CAPABILITY_HIRELING_MANAGEMENT_V1)
@@ -84,19 +86,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         entry.outfits,
         entry.skills
     );
-    capture("e12-list.bin", &list_bytes);
-    capture("e12-refused.bin", &refused_bytes);
-    capture("e12-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("e12-list.bin", &list_bytes)?;
+    capture("e12-refused.bin", &refused_bytes)?;
+    capture("e12-expected.txt", expected.as_bytes())?;
+
     Ok(format!(
         "hireling={} look_type={} refusal=OutfitNotOwned",
         hex(&entry.hireling),
         entry.look_type
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(150), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E12.client status=CAPTURED evidence={observed}"
         )),
@@ -105,5 +112,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E12.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
     }
 }

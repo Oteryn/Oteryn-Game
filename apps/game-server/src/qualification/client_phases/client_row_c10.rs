@@ -11,7 +11,7 @@ use std::time::Duration;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let status = match result {
         Ok(Ok(())) => "PASS",
         Ok(Err(error)) => {
@@ -30,6 +30,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -40,35 +41,55 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xc1).await?;
-    let before = client.actor_vitals().copied().ok_or("C10 client vitals absent")?;
-    let catalog = client
-        .session_mut()
-        .gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
-        .ok_or("C10 client spell catalogue absent")?;
-    let spell = spell_wire::decode_catalog(&catalog.payload)
-        .map_err(|error| format!("C10 client catalogue: {error:?}"))?
-        .into_iter()
-        .find(|spell| spell.available && spell.rune_item.is_none() && spell.soul > 0)
-        .ok_or("C10 client has no available soul spell")?;
-    let index = NonZeroU32::new(spell.cast_index).ok_or("C10 client zero cast index")?;
-    let cast = client.cast_spell(index, SpellTarget::None, false).await?;
-    if cast.disposition != SpellCastDisposition::Cast {
-        return Err(format!("C10 client cast reply: {cast:?}").into());
-    }
-    let debit = wait_soul(&mut client, |soul| soul == before.soul.saturating_sub(spell.soul), Duration::from_secs(5)).await?;
-    let refused = client.cast_spell(index, SpellTarget::None, false).await?;
-    if refused.disposition != SpellCastDisposition::CoolingDown
-        || client.actor_vitals() != Some(&debit.value)
-    {
-        return Err(format!("C10 client cooldown changed state: {refused:?}").into());
-    }
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client)
-        .await
-        .map_err(|error| format!("C10 client hunt: {error}"))?;
-    let regenerated = wait_soul(&mut client, |soul| soul == debit.value.soul + 1, Duration::from_secs(130)).await?;
-    capture(&before, &debit, &regenerated);
-    Ok(())
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let before = client
+            .actor_vitals()
+            .copied()
+            .ok_or("C10 client vitals absent")?;
+        let catalog = client
+            .session_mut()
+            .gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+            .ok_or("C10 client spell catalogue absent")?;
+        let spell = spell_wire::decode_catalog(&catalog.payload)
+            .map_err(|error| format!("C10 client catalogue: {error:?}"))?
+            .into_iter()
+            .find(|spell| spell.available && spell.rune_item.is_none() && spell.soul > 0)
+            .ok_or("C10 client has no available soul spell")?;
+        let index = NonZeroU32::new(spell.cast_index).ok_or("C10 client zero cast index")?;
+        let cast = client.cast_spell(index, SpellTarget::None, false).await?;
+        if cast.disposition != SpellCastDisposition::Cast {
+            return Err(format!("C10 client cast reply: {cast:?}").into());
+        }
+        let debit = wait_soul(
+            &mut client,
+            |soul| soul == before.soul.saturating_sub(spell.soul),
+            Duration::from_secs(5),
+        )
+        .await?;
+        let refused = client.cast_spell(index, SpellTarget::None, false).await?;
+        if refused.disposition != SpellCastDisposition::CoolingDown
+            || client.actor_vitals() != Some(&debit.value)
+        {
+            return Err(format!("C10 client cooldown changed state: {refused:?}").into());
+        }
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        client_hunt::hunt(&mut client)
+            .await
+            .map_err(|error| format!("C10 client hunt: {error}"))?;
+        let regenerated = wait_soul(
+            &mut client,
+            |soul| soul == debit.value.soul + 1,
+            Duration::from_secs(130),
+        )
+        .await?;
+        capture(&before, &debit, &regenerated)?;
+        Ok(())
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 async fn wait_soul(
@@ -96,9 +117,9 @@ fn capture(
     before: &actor_spell::ActorVitals,
     debit: &oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>,
     regenerated: &oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>,
-) {
+) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     let write = || -> TestResult {
         let path = Path::new(&path);
@@ -108,19 +129,20 @@ fn capture(
         };
         std::fs::write(path.join("c10-saved-rest.bin"), encode(before)?)?;
         std::fs::write(path.join("c10-debit.bin"), encode(&debit.value)?)?;
-        std::fs::write(path.join("c10-regenerated.bin"), encode(&regenerated.value)?)?;
+        std::fs::write(
+            path.join("c10-regenerated.bin"),
+            encode(&regenerated.value)?,
+        )?;
         std::fs::write(
             path.join("c10-expected.txt"),
             format!(
                 "{} {} {}\n",
-                before.soul,
-                debit.value.soul,
-                regenerated.value.soul
+                before.soul, debit.value.soul, regenerated.value.soul
             ),
         )?;
         Ok(())
     };
-    if let Err(error) = write() {
-        evidence(&format!("C10_CLIENT_CAPTURE_WRITE_ERROR {error}"));
-    }
+    write()?;
+
+    Ok(())
 }

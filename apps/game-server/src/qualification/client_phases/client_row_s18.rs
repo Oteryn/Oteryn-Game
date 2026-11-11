@@ -6,13 +6,13 @@ use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession};
 use oteryn_protocol_oteryn::chat;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S18_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn speak(
@@ -55,9 +55,14 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     let mut client = connect_world(clients, 0x0a).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let say = speak(&mut client, ChatSpeechMode::Say, "s18-say-line").await?;
-    tokio::time::sleep(Duration::from_millis(1100)).await;
+    let wait_until = tokio::time::Instant::now() + Duration::from_millis(1100);
+    while tokio::time::Instant::now() < wait_until {
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
     let whisper = speak(&mut client, ChatSpeechMode::Whisper, "s18-whisper-line").await?;
     let (
         ChatLine::Local {
@@ -80,11 +85,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture(
         "s18-say.bin",
         &chat::encode_chat_line(&say).map_err(|error| format!("encode say: {error:?}"))?,
-    );
+    )?;
     capture(
         "s18-whisper.bin",
         &chat::encode_chat_line(&whisper).map_err(|error| format!("encode whisper: {error:?}"))?,
-    );
+    )?;
     let expected = format!(
         "speaker={}\ngeneration={}\nname={speaker_name}\nx={}\ny={}\nfloor={}\nsay=s18-say-line\nwhisper=s18-whisper-line\n",
         hex(&speaker.identity),
@@ -93,15 +98,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         position.y,
         position.floor
     );
-    capture("s18-expected.txt", expected.as_bytes());
+    capture("s18-expected.txt", expected.as_bytes())?;
     Ok(expected)
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(60), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S18.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")
@@ -110,5 +120,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=S18.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=S18.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
     }
 }

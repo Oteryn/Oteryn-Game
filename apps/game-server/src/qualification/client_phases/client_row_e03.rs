@@ -7,17 +7,21 @@ use oteryn_protocol_oteryn::item_view;
 
 const COINS: [u32; 3] = [3031, 3035, 3043];
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn pairs(client: &oteryn_dev_client::DevClientSession) -> String {
-    client.inventory().map_or_else(String::new, |inventory| {
+    pairs_from(client.inventory())
+}
+
+fn pairs_from(input: Option<&oteryn_dev_client::CharacterInventory>) -> String {
+    input.map_or_else(String::new, |inventory| {
         inventory
             .entries
             .iter()
@@ -28,13 +32,15 @@ fn pairs(client: &oteryn_dev_client::DevClientSession) -> String {
 
 fn encoded(client: &oteryn_dev_client::DevClientSession) -> TestResult<Vec<u8>> {
     let inventory = client.inventory().ok_or("inventory absent")?;
-    item_view::encode_character_inventory(inventory)
+    item_view::encode_character_inventory_with_equip_drop(inventory, true)
         .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let definitions = provisioning::item_index()?;
     let mut client = connect_world(clients, 0x34).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let mut stack = None;
     for id in COINS {
         let reference = provisioning::item_reference(&definitions, id)?;
@@ -62,18 +68,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         client.take_events();
     }
     let after_pairs = pairs(&client);
-    capture("e03-before.bin", &before_payload);
-    capture("e03-after.bin", &encoded(&client)?);
+    capture("e03-before.bin", &before_payload)?;
+    capture("e03-after.bin", &encoded(&client)?)?;
     capture(
         "e03-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),
-    );
-    let _ = client.session_mut().logout().await;
+    )?;
+
     Ok(format!("before={before_pairs} after={after_pairs}"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(90), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E03.client status=CAPTURED evidence={observed}"
         )),
@@ -82,5 +93,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E03.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert_eq!(pairs_from(None), "");
+        assert_eq!(
+            pairs_from(Some(&oteryn_dev_client::CharacterInventory::default())),
+            ""
+        );
     }
 }

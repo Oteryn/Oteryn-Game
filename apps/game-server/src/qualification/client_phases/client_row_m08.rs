@@ -20,7 +20,7 @@ const CASE: (&str, u32, u16, u16) = ("shovel", 3457, 593, 594);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(300), journey(clients)).await;
+    let result = row_complete(journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-after-300s need=responsive-server".into()),
@@ -378,6 +378,7 @@ async fn use_tool(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -389,57 +390,59 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let objects = objects(&bytes)?;
     let mut client = connect_world(clients, 0xda).await?;
-    let (_, id, before, after) = CASE;
-    let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
-    let item = match inventory_item(&client, reference) {
-        Some(item) => item,
-        None => buy(&mut client, world, &metadata.npcs, id).await?,
-    };
-    let object = approach(&mut client, world, &objects, before).await?;
-    let (snapshot_revision, snapshot, delta) =
-        use_tool(&mut client, world, item, object, after).await?;
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let snapshot_payload =
-            oteryn_protocol_oteryn::world_map::encode_world_map_snapshot(&snapshot)
-                .map_err(|error| format!("capture-snapshot:{error:?}"))?;
-        let delta_payload = oteryn_protocol_oteryn::world_map::encode_world_map_delta(
-            &snapshot.header,
-            &delta.value,
-        )
-        .map_err(|error| format!("capture-delta:{error:?}"))?;
-        let writes = [
-            ("m08-snapshot.bin", snapshot_payload),
-            ("m08-delta.bin", delta_payload),
-            (
-                "m08-revisions.txt",
-                format!(
-                    "{} {} {} {}",
-                    snapshot_revision,
-                    delta.base_revision,
-                    delta.new_revision,
-                    delta.server_sequence
-                )
-                .into_bytes(),
-            ),
-            (
-                "m08-expected.txt",
-                format!(
-                    "{} {} {} {} {}\n",
-                    object.at.x, object.at.y, object.at.floor, object.ordinal, after
-                )
-                .into_bytes(),
-            ),
-        ];
-        for (name, bytes) in writes {
-            if let Err(error) = std::fs::write(std::path::Path::new(&path).join(name), bytes) {
-                evidence(&format!(
-                    "M08_CAPTURE_WRITE_ERROR file={name} error={}",
-                    clean(&error.to_string())
-                ));
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let (_, id, before, after) = CASE;
+        let reference = provisioning::item_reference(&provisioning::item_index()?, id)?;
+        let item = match inventory_item(&client, reference) {
+            Some(item) => item,
+            None => buy(&mut client, world, &metadata.npcs, id).await?,
+        };
+        let object = approach(&mut client, world, &objects, before).await?;
+        let (snapshot_revision, snapshot, delta) =
+            use_tool(&mut client, world, item, object, after).await?;
+        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            let snapshot_payload =
+                oteryn_protocol_oteryn::world_map::encode_world_map_snapshot(&snapshot)
+                    .map_err(|error| format!("capture-snapshot:{error:?}"))?;
+            let delta_payload = oteryn_protocol_oteryn::world_map::encode_world_map_delta(
+                &snapshot.header,
+                &delta.value,
+            )
+            .map_err(|error| format!("capture-delta:{error:?}"))?;
+            let writes = [
+                ("m08-snapshot.bin", snapshot_payload),
+                ("m08-delta.bin", delta_payload),
+                (
+                    "m08-revisions.txt",
+                    format!(
+                        "{} {} {} {}",
+                        snapshot_revision,
+                        delta.base_revision,
+                        delta.new_revision,
+                        delta.server_sequence
+                    )
+                    .into_bytes(),
+                ),
+                (
+                    "m08-expected.txt",
+                    format!(
+                        "{} {} {} {} {}\n",
+                        object.at.x, object.at.y, object.at.floor, object.ordinal, after
+                    )
+                    .into_bytes(),
+                ),
+            ];
+            for (name, bytes) in writes {
+                std::fs::write(std::path::Path::new(&path).join(name), bytes)?;
             }
         }
-    }
-    Ok(())
+        Ok(())
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 #[cfg(test)]

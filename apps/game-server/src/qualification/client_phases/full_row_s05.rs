@@ -78,8 +78,8 @@ impl Row {
                 evidence(&format!("S05_GAP step={step} status=unproven"));
             }
         }
-        let pass = self.failures.is_empty()
-            && REQUIRED.iter().all(|step| self.passed.contains(step));
+        let pass =
+            self.failures.is_empty() && REQUIRED.iter().all(|step| self.passed.contains(step));
         let suffix = self
             .failures
             .first()
@@ -109,7 +109,7 @@ fn token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    match tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
+    match row_complete(journey(&mut row, clients)).await {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("journey", error),
         Err(_) => row.fail("journey", "timeout-180s"),
@@ -224,196 +224,261 @@ async fn attempt_transfer(
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world_id = WorldId::decode(&clients.world)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        world_id,
-        ChannelId::decode(&clients.channel)?,
-    )?;
+    let world = load_world(bytes, &pin, world_id, ChannelId::decode(&clients.channel)?)?;
     let world_bytes = *world_id.as_bytes();
     let mut client = connect_character(clients, 0xb5, 1).await?;
-
-    let initial = query(&mut client, world_bytes).await?;
-    let Some(private) = select(&initial, 1) else {
-        row.fail("catalogue-rent", "accepted-query-missing-private-house");
-        return Ok(());
-    };
-    if private.rent > 0 && private.revision > 0 {
-        row.pass("catalogue-rent", (&private.house, private.rent, private.revision));
-    } else {
-        row.fail(
-            "catalogue-rent",
-            format!("row={private:?}:missing-rent-or-revision"),
-        );
-    }
-
-    let at = entrance(&private.house)?;
-    let from = tile(client.world_spatial().actor_position)?;
-    if let Some(path) = route(world, from, |candidate| candidate == at) {
-        match walk(&mut client, world, &path).await {
-            Ok(()) => row.pass("walk-entrance", at),
-            Err(error) => row.fail("walk-entrance", error),
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let initial = query(&mut client, world_bytes).await?;
+        let Some(private) = select(&initial, 1) else {
+            row.fail("catalogue-rent", "accepted-query-missing-private-house");
+            return Ok(());
+        };
+        if private.rent > 0 && private.revision > 0 {
+            row.pass(
+                "catalogue-rent",
+                (&private.house, private.rent, private.revision),
+            );
+        } else {
+            row.fail(
+                "catalogue-rent",
+                format!("row={private:?}:missing-rent-or-revision"),
+            );
         }
-    } else {
-        row.fail("walk-entrance", format!("no-player-route:{from:?}->{at:?}"));
-    }
 
-    let maximum = private.price.max(private.rent).max(1);
-    let (bid_d, _, bid_reply) =
-        mutate(&mut client, world_bytes, &private.house, private.revision, &house::Action::Bid(maximum)).await?;
-    let after_bid = query(&mut client, world_bytes).await?;
-    let bid_state = after_bid.iter().find(|candidate| candidate.house == private.house);
-    if bid_d == 1
-        && bid_state.is_some_and(|state| state.owned || state.maximum == Some(maximum))
-    {
-        row.pass("auction-bid", (bid_d, bid_state));
-    } else {
-        row.fail("auction-bid", format!("{bid_reply},disposition={bid_d},row={bid_state:?}"));
-    }
+        let at = entrance(&private.house)?;
+        let from = tile(client.world_spatial().actor_position)?;
+        if let Some(path) = route(world, from, |candidate| candidate == at) {
+            match walk(&mut client, world, &path).await {
+                Ok(()) => row.pass("walk-entrance", at),
+                Err(error) => row.fail("walk-entrance", error),
+            }
+        } else {
+            row.fail("walk-entrance", format!("no-player-route:{from:?}->{at:?}"));
+        }
 
-    if let Some(guildhall) = select(&initial, 3) {
-        let before_owned = guildhall.owned;
-        let (d, _, reply) = mutate(
+        let maximum = private.price.max(private.rent).max(1);
+        let (bid_d, _, bid_reply) = mutate(
             &mut client,
             world_bytes,
-            &guildhall.house,
-            guildhall.revision,
-            &house::Action::Bid(guildhall.price.max(guildhall.rent).max(1)),
+            &private.house,
+            private.revision,
+            &house::Action::Bid(maximum),
         )
         .await?;
-        let after = query(&mut client, world_bytes).await?;
-        let unchanged = after
+        let after_bid = query(&mut client, world_bytes).await?;
+        let bid_state = after_bid
             .iter()
-            .find(|candidate| candidate.house == guildhall.house)
-            .is_some_and(|candidate| candidate.owned == before_owned);
-        if (4..=10).contains(&d) && unchanged {
-            row.pass("guildhall-refusal", d);
+            .find(|candidate| candidate.house == private.house);
+        if bid_d == 1
+            && bid_state.is_some_and(|state| state.owned || state.maximum == Some(maximum))
+        {
+            row.pass("auction-bid", (bid_d, bid_state));
         } else {
-            row.fail("guildhall-refusal", format!("{reply},disposition={d},unchanged={unchanged}"));
+            row.fail(
+                "auction-bid",
+                format!("{bid_reply},disposition={bid_d},row={bid_state:?}"),
+            );
         }
-    } else {
-        row.fail("guildhall-refusal", "accepted-query-missing-guildhall");
-    }
 
-    let current = query(&mut client, world_bytes)
-        .await?
-        .into_iter()
-        .find(|candidate| candidate.house == private.house)
-        .ok_or("selected House disappeared")?;
-    let acl_action = house::Action::Guests(vec![clients.characters[0]]);
-    let (acl_d, acl_revision, acl_reply) = mutate(
-        &mut client,
-        world_bytes,
-        &private.house,
-        current.acl_revision,
-        &acl_action,
-    )
-    .await?;
-    let after_acl = query(&mut client, world_bytes).await?;
-    let durable_acl = after_acl
-        .iter()
-        .find(|candidate| candidate.house == private.house)
-        .map(|candidate| candidate.acl_revision);
-    if acl_d == 1 && acl_revision > current.acl_revision && durable_acl == Some(acl_revision) {
-        row.pass("acl-update", acl_revision);
-    } else {
-        row.fail("acl-update", format!("{acl_reply},disposition={acl_d},revision={acl_revision},query={durable_acl:?}"));
-    }
-    let (stale_d, _, stale_reply) = mutate(
-        &mut client,
-        world_bytes,
-        &private.house,
-        current.acl_revision,
-        &acl_action,
-    )
-    .await?;
-    if stale_d == 3 && query(&mut client, world_bytes).await?.iter().find(|v| v.house == private.house).map(|v| v.acl_revision) == durable_acl {
-        row.pass("acl-conflict", stale_d);
-    } else {
-        row.fail("acl-conflict", format!("{stale_reply},disposition={stale_d}"));
-    }
+        if let Some(guildhall) = select(&initial, 3) {
+            let before_owned = guildhall.owned;
+            let (d, _, reply) = mutate(
+                &mut client,
+                world_bytes,
+                &guildhall.house,
+                guildhall.revision,
+                &house::Action::Bid(guildhall.price.max(guildhall.rent).max(1)),
+            )
+            .await?;
+            let after = query(&mut client, world_bytes).await?;
+            let unchanged = after
+                .iter()
+                .find(|candidate| candidate.house == guildhall.house)
+                .is_some_and(|candidate| candidate.owned == before_owned);
+            if (4..=10).contains(&d) && unchanged {
+                row.pass("guildhall-refusal", d);
+            } else {
+                row.fail(
+                    "guildhall-refusal",
+                    format!("{reply},disposition={d},unchanged={unchanged}"),
+                );
+            }
+        } else {
+            row.fail("guildhall-refusal", "accepted-query-missing-guildhall");
+        }
 
-    let (entered, enter_reply) = attempt_transfer(&mut client, &private.house, false).await?;
-    if entered {
-        row.pass("entry", client.world_spatial().actor_position);
-    } else {
-        row.fail("entry", enter_reply);
-    }
-    let (exited, exit_reply) = attempt_transfer(&mut client, &private.house, true).await?;
-    if entered && exited && tile(client.world_spatial().actor_position)? == at {
-        row.pass("exit", at);
-    } else {
-        row.fail("exit", exit_reply);
-    }
+        let current = query(&mut client, world_bytes)
+            .await?
+            .into_iter()
+            .find(|candidate| candidate.house == private.house)
+            .ok_or("selected House disappeared")?;
+        let acl_action = house::Action::Guests(vec![clients.characters[0]]);
+        let (acl_d, acl_revision, acl_reply) = mutate(
+            &mut client,
+            world_bytes,
+            &private.house,
+            current.acl_revision,
+            &acl_action,
+        )
+        .await?;
+        let after_acl = query(&mut client, world_bytes).await?;
+        let durable_acl = after_acl
+            .iter()
+            .find(|candidate| candidate.house == private.house)
+            .map(|candidate| candidate.acl_revision);
+        if acl_d == 1 && acl_revision > current.acl_revision && durable_acl == Some(acl_revision) {
+            row.pass("acl-update", acl_revision);
+        } else {
+            row.fail(
+                "acl-update",
+                format!(
+                    "{acl_reply},disposition={acl_d},revision={acl_revision},query={durable_acl:?}"
+                ),
+            );
+        }
+        let (stale_d, _, stale_reply) = mutate(
+            &mut client,
+            world_bytes,
+            &private.house,
+            current.acl_revision,
+            &acl_action,
+        )
+        .await?;
+        if stale_d == 3
+            && query(&mut client, world_bytes)
+                .await?
+                .iter()
+                .find(|v| v.house == private.house)
+                .map(|v| v.acl_revision)
+                == durable_acl
+        {
+            row.pass("acl-conflict", stale_d);
+        } else {
+            row.fail(
+                "acl-conflict",
+                format!("{stale_reply},disposition={stale_d}"),
+            );
+        }
 
-    let due = u64::try_from(
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_millis(),
-    )?
-    .saturating_add(86_400_000);
-    let base_revision = after_acl
-        .iter()
-        .find(|candidate| candidate.house == private.house)
-        .map(|candidate| candidate.revision)
-        .unwrap_or(current.revision);
-    let (move_d, _, move_reply) = mutate(
-        &mut client,
-        world_bytes,
-        &private.house,
-        base_revision,
-        &house::Action::Notice(due),
-    )
-    .await?;
-    let moved = query(&mut client, world_bytes).await?;
-    let moved_row = moved.iter().find(|candidate| candidate.house == private.house);
-    if move_d == 1 && moved_row.is_some_and(|candidate| candidate.notice == Some(due)) {
-        row.pass("move-out", due);
-    } else {
-        row.fail("move-out", format!("{move_reply},disposition={move_d},row={moved_row:?}"));
-    }
-    let cancel_revision = moved_row.map(|candidate| candidate.revision).unwrap_or(base_revision);
-    let (cancel_d, _, cancel_reply) = mutate(
-        &mut client,
-        world_bytes,
-        &private.house,
-        cancel_revision,
-        &house::Action::Cancel,
-    )
-    .await?;
-    let cancelled = query(&mut client, world_bytes).await?;
-    let cancelled_row = cancelled.iter().find(|candidate| candidate.house == private.house);
-    if cancel_d == 1 && cancelled_row.is_some_and(|candidate| candidate.notice.is_none()) {
-        row.pass("cancel-move-out", cancel_d);
-    } else {
-        row.fail("cancel-move-out", format!("{cancel_reply},disposition={cancel_d},row={cancelled_row:?}"));
-    }
+        let (entered, enter_reply) = attempt_transfer(&mut client, &private.house, false).await?;
+        if entered {
+            row.pass("entry", client.world_spatial().actor_position);
+        } else {
+            row.fail("entry", enter_reply);
+        }
+        let (exited, exit_reply) = attempt_transfer(&mut client, &private.house, true).await?;
+        if entered && exited && tile(client.world_spatial().actor_position)? == at {
+            row.pass("exit", at);
+        } else {
+            row.fail("exit", exit_reply);
+        }
 
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        row.fail("fresh-admission-state", format!("logout={logout:?}"));
-        return Ok(());
+        let due = u64::try_from(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_millis(),
+        )?
+        .saturating_add(86_400_000);
+        let base_revision = after_acl
+            .iter()
+            .find(|candidate| candidate.house == private.house)
+            .map(|candidate| candidate.revision)
+            .unwrap_or(current.revision);
+        let (move_d, _, move_reply) = mutate(
+            &mut client,
+            world_bytes,
+            &private.house,
+            base_revision,
+            &house::Action::Notice(due),
+        )
+        .await?;
+        let moved = query(&mut client, world_bytes).await?;
+        let moved_row = moved
+            .iter()
+            .find(|candidate| candidate.house == private.house);
+        if move_d == 1 && moved_row.is_some_and(|candidate| candidate.notice == Some(due)) {
+            row.pass("move-out", due);
+        } else {
+            row.fail(
+                "move-out",
+                format!("{move_reply},disposition={move_d},row={moved_row:?}"),
+            );
+        }
+        let cancel_revision = moved_row
+            .map(|candidate| candidate.revision)
+            .unwrap_or(base_revision);
+        let (cancel_d, _, cancel_reply) = mutate(
+            &mut client,
+            world_bytes,
+            &private.house,
+            cancel_revision,
+            &house::Action::Cancel,
+        )
+        .await?;
+        let cancelled = query(&mut client, world_bytes).await?;
+        let cancelled_row = cancelled
+            .iter()
+            .find(|candidate| candidate.house == private.house);
+        if cancel_d == 1 && cancelled_row.is_some_and(|candidate| candidate.notice.is_none()) {
+            row.pass("cancel-move-out", cancel_d);
+        } else {
+            row.fail(
+                "cancel-move-out",
+                format!("{cancel_reply},disposition={cancel_d},row={cancelled_row:?}"),
+            );
+        }
+
+        let logout = client.session_mut().logout().await?;
+        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            row.fail("fresh-admission-state", format!("logout={logout:?}"));
+            return Ok(());
+        }
+        if row_needs_logout_0 {
+            row_logout(&mut client).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut fresh = connect_character(clients, 0xb6, 1).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            let persisted = query(&mut fresh, world_bytes).await?;
+            let persisted = persisted
+                .iter()
+                .find(|candidate| candidate.house == private.house);
+            if let (Some(before), Some(after)) = (cancelled_row, persisted)
+                && before.owned == after.owned
+                && before.maximum == after.maximum
+                && before.acl_revision == after.acl_revision
+                && before.notice == after.notice
+                && before.rent == after.rent
+            {
+                row.pass("fresh-admission-state", after);
+            } else {
+                row.fail(
+                    "fresh-admission-state",
+                    format!("before={cancelled_row:?},after={persisted:?}"),
+                );
+            }
+            row_logout(&mut fresh).await?;
+            row_needs_logout_1 = false;
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut fresh).await?;
+        }
+        row_result
     }
-    drop(client);
-    let mut fresh = connect_character(clients, 0xb6, 1).await?;
-    let persisted = query(&mut fresh, world_bytes).await?;
-    let persisted = persisted.iter().find(|candidate| candidate.house == private.house);
-    if let (Some(before), Some(after)) = (cancelled_row, persisted)
-        && before.owned == after.owned
-        && before.maximum == after.maximum
-        && before.acl_revision == after.acl_revision
-        && before.notice == after.notice
-        && before.rent == after.rent
-    {
-        row.pass("fresh-admission-state", after);
-    } else {
-        row.fail("fresh-admission-state", format!("before={cancelled_row:?},after={persisted:?}"));
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
     }
-    let _ = fresh.session_mut().logout().await;
-    Ok(())
+    row_result
 }
 
 #[cfg(test)]

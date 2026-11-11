@@ -8,17 +8,19 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::server_save_countdown as wire;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W05A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0xfe).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1)
@@ -49,7 +51,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             SessionEvent::ServerSaveCountdown(delta) => Some(delta),
             _ => None,
         });
-    capture("w05a-snapshot.bin", &snapshot.payload);
+    capture("w05a-snapshot.bin", &snapshot.payload)?;
     let mut expected = format!("snapshot_revision={}\n", snapshot.revision);
     if let Some(delta) = notice {
         if delta.new_revision != delta.base_revision + 1
@@ -61,7 +63,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         capture(
             "w05a-countdown.bin",
             &wire::encode_server_save_countdown(delta.value).map_err(|error| format!("{error:?}"))?,
-        );
+        )?;
         expected.push_str(&format!(
             "countdown=present\nbase_revision={}\nnew_revision={}\nending_epoch={}\nminutes_remaining={}\n",
             delta.base_revision, delta.new_revision, delta.value.ending_epoch, delta.value.minutes_remaining
@@ -69,12 +71,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     } else {
         expected.push_str("countdown=absent\n");
     }
-    capture("w05a-expected.txt", expected.as_bytes());
+    capture("w05a-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W05a.client status=CAPTURED evidence={observed}"
         )),

@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::character_info_panel as info;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P12C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn send(
@@ -46,40 +46,50 @@ fn summary(bytes: &[u8]) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_character(clients, 0x31, 0).await?;
-    let mut summaries = Vec::new();
-    for (name, offset, limit) in [("query", 0, 50), ("paged", 1, 1)] {
-        let page = info::PageRequest::new(offset, limit).ok_or("page")?;
-        let reply = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!("QuerySelf {name} status={:?}", reply.status).into());
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let mut summaries = Vec::new();
+        for (name, offset, limit) in [("query", 0, 50), ("paged", 1, 1)] {
+            let page = info::PageRequest::new(offset, limit).ok_or("page")?;
+            let reply = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
+            if reply.status != CommandStatus::Accepted {
+                return Err(format!("QuerySelf {name} status={:?}", reply.status).into());
+            }
+            capture(&format!("p12c-{name}.bin"), &reply.payload)?;
+            summaries.push(summary(&reply.payload)?);
         }
-        capture(&format!("p12c-{name}.bin"), &reply.payload);
-        summaries.push(summary(&reply.payload)?);
-    }
-    let target = clients.characters[1];
-    let refused = send(
-        &mut client,
-        info::CharacterInfoOperation::QueryVisible {
-            character: target,
-            page: info::PageRequest::new(0, 1).ok_or("page")?,
-        },
-    )
-    .await?;
-    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
-        return Err(format!("QueryVisible was not rejected without payload: {refused:?}").into());
-    }
-    let target: String = target.iter().map(|byte| format!("{byte:02x}")).collect();
-    let expected = format!(
-        "query={}\npaged={}\nvisible_target={target}\nrefused_status=Rejected\n",
-        summaries[0], summaries[1]
-    );
-    capture("p12c-expected.txt", expected.as_bytes());
-    Ok(expected.replace('\n', ";"))
+        let target = clients.characters[1];
+        let refused = send(
+            &mut client,
+            info::CharacterInfoOperation::QueryVisible {
+                character: target,
+                page: info::PageRequest::new(0, 1).ok_or("page")?,
+            },
+        )
+        .await?;
+        if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
+            return Err(
+                format!("QueryVisible was not rejected without payload: {refused:?}").into(),
+            );
+        }
+        let target: String = target.iter().map(|byte| format!("{byte:02x}")).collect();
+        let expected = format!(
+            "query={}\npaged={}\nvisible_target={target}\nrefused_status=Rejected\n",
+            summaries[0], summaries[1]
+        );
+        capture("p12c-expected.txt", expected.as_bytes())?;
+        Ok(expected.replace('\n', ";"))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P12c.client status=CAPTURED evidence={expected}"
         )),
@@ -87,5 +97,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P12c.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P12c.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn summary_rejects_truncated_or_extra_title_data() {
+        assert!(summary(&[]).is_err());
+        let mut payload = vec![0; 71];
+        assert!(summary(&payload).is_ok());
+        payload[69] = 1;
+        assert!(summary(&payload).is_err());
+        payload.push(0);
+        assert!(summary(&payload).is_ok());
+        payload.push(0);
+        assert!(summary(&payload).is_err());
     }
 }

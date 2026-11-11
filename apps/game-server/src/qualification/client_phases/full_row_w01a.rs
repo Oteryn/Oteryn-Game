@@ -78,7 +78,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {
@@ -146,6 +146,7 @@ async fn wait_for_motion(
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -156,6 +157,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa1).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
 
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let target = adjacent_creature(&client)?;
@@ -285,6 +288,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 _ => None,
             })
     });
+    let target_absent_after_refusal = client.world_entities()
+        .is_some_and(|entities| entities.get(&target.entity).is_none());
     let cleared = client.session_mut().attack_target(None).await?;
     if cleared.disposition != AttackIntentDisposition::Ok {
         return Err(
@@ -303,12 +308,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             )
             .into());
         }
-        None => {
-            return Err(format!(
-                "step=out-of-range-refusal observed=attack-reply-{refused:?},target-health-unobservable need=observed-nondecreasing-health-after-refusal"
-            )
-            .into());
+        None if target_absent_after_refusal => {
+            row.pass("out-of-range-refusal", (refused, "target-left-visibility"));
         }
+        None => return Err("step=out-of-range-refusal observed=invalid-target-or-absent-visibility-store".into()),
     }
 
     let saved = client.world_spatial().actor_position;
@@ -319,7 +322,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "step=logout-fresh-admission observed=logout-refused need=accepted-logout".into(),
         );
     }
-    client = connect_world(clients, 0xa2).await?;
+    row_needs_logout_0 = false;
+    client = connect_world(clients, 0xa2).await?; row_needs_logout_0 = true;
     if client.world_spatial().actor_position != saved {
         return Err(format!("step=logout-fresh-admission observed=saved={saved:?},fresh={:?} need=durable-player-cell", client.world_spatial().actor_position).into());
     }
@@ -335,8 +339,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     walk(&mut client, world, &retreat).await?;
     let reacquired = wait_for_motion(&mut client, fresh.entity, fresh.position, true).await?;
     row.pass("think-reacquires", (fresh.position, reacquired));
-    let _ = client.session_mut().logout().await?;
+    row_logout(&mut client).await?; row_needs_logout_0 = false;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]

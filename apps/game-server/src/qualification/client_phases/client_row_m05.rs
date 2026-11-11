@@ -18,9 +18,8 @@ fn doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                let appearance = crate::map::palette_appearance(
-                    &manifest.palette[item.palette as usize].key,
-                );
+                let appearance =
+                    crate::map::palette_appearance(&manifest.palette[item.palette as usize].key);
                 let at = TilePos {
                     x: tile.x,
                     y: tile.y,
@@ -56,10 +55,14 @@ async fn next_overlay(client: &mut DevClientSession) -> TestResult<WorldObjectOv
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
-        if let Some(entry) = client.take_events().into_iter().find_map(|event| match event {
-            SessionEvent::WorldObjectOverlay(delta) => Some(delta.value),
-            _ => None,
-        }) {
+        if let Some(entry) = client
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::WorldObjectOverlay(delta) => Some(delta.value),
+                _ => None,
+            })
+        {
             return Ok(entry);
         }
         if tokio::time::Instant::now() >= deadline {
@@ -68,9 +71,9 @@ async fn next_overlay(client: &mut DevClientSession) -> TestResult<WorldObjectOv
     }
 }
 
-fn capture(entries: &[(&str, &WorldObjectOverlayEntry)]) {
+fn capture(entries: &[(&str, &WorldObjectOverlayEntry)]) -> TestResult {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
     let result: TestResult = (|| {
         let path = Path::new(&path);
@@ -90,9 +93,9 @@ fn capture(entries: &[(&str, &WorldObjectOverlayEntry)]) {
         )?;
         Ok(())
     })();
-    if let Err(error) = result {
-        evidence(&format!("M05_CLIENT_CAPTURE_WRITE_ERROR {error}"));
-    }
+    result?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -106,40 +109,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let doors = doors(&bytes, world)?;
     let mut client = connect_world(clients, 0xc5).await?;
-    let mut captured = Vec::new();
-    for (appearance, family) in [(1638, "basic"), (1629, "key")] {
-        let door = doors
+    let row_result: TestResult<_> = async {
+        let mut captured = Vec::new();
+        for (appearance, family) in [(1638, "basic"), (1629, "key")] {
+            let door = doors
+                .iter()
+                .copied()
+                .find(|door| door.appearance == appearance)
+                .ok_or_else(|| format!("M05 client capture found no {family} door"))?;
+            let from = tile(client.world_spatial().actor_position)?;
+            let path = route(world, from, |at| {
+                at.floor == door.at.floor
+                    && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
+            })
+            .ok_or_else(|| format!("M05 client capture has no route to {family} door"))?;
+            walk(&mut client, world, &path).await?;
+            let placement = placement(world, door)?;
+            let opened = client.use_object(&placement, 0).await?;
+            if opened.disposition != UseDisposition::Committed {
+                return Err(format!("M05 {family} open observed {:?}", opened.disposition).into());
+            }
+            let open = next_overlay(&mut client).await?;
+            let closed = client.use_object(&placement, open.revision).await?;
+            if closed.disposition != UseDisposition::Committed {
+                return Err(format!("M05 {family} close observed {:?}", closed.disposition).into());
+            }
+            let closed = next_overlay(&mut client).await?;
+            captured.push((format!("{family}-open"), open));
+            captured.push((format!("{family}-closed"), closed));
+        }
+        let entries = captured
             .iter()
-            .copied()
-            .find(|door| door.appearance == appearance)
-            .ok_or_else(|| format!("M05 client capture found no {family} door"))?;
-        let from = tile(client.world_spatial().actor_position)?;
-        let path = route(world, from, |at| {
-            at.floor == door.at.floor
-                && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
-        })
-        .ok_or_else(|| format!("M05 client capture has no route to {family} door"))?;
-        walk(&mut client, world, &path).await?;
-        let placement = placement(world, door)?;
-        let opened = client.use_object(&placement, 0).await?;
-        if opened.disposition != UseDisposition::Committed {
-            return Err(format!("M05 {family} open observed {:?}", opened.disposition).into());
-        }
-        let open = next_overlay(&mut client).await?;
-        let closed = client.use_object(&placement, open.revision).await?;
-        if closed.disposition != UseDisposition::Committed {
-            return Err(format!("M05 {family} close observed {:?}", closed.disposition).into());
-        }
-        let closed = next_overlay(&mut client).await?;
-        captured.push((format!("{family}-open"), open));
-        captured.push((format!("{family}-closed"), closed));
+            .map(|(name, entry)| (name.as_str(), entry))
+            .collect::<Vec<_>>();
+        capture(&entries)?;
+        Ok(())
     }
-    let entries = captured
-        .iter()
-        .map(|(name, entry)| (name.as_str(), entry))
-        .collect::<Vec<_>>();
-    capture(&entries);
-    Ok(())
+    .await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -154,4 +163,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .map(|error| format!(" evidence={}", error.to_string().replace(' ', "-")))
             .unwrap_or_default()
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn malformed_bundle_cannot_supply_a_door() -> TestResult {
+        let world = row_helper_world()?;
+        assert!(doors(&[], &world).is_err());
+        assert!(doors(&[255; 8], &world).is_err());
+        Ok(())
+    }
 }

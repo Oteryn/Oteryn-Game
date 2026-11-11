@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E05_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -35,7 +35,8 @@ async fn command(
     if response.status != CommandStatus::Accepted {
         return Err(format!("market transport status {:?}", response.status).into());
     }
-    let reply = wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
+    let reply =
+        wire::decode_reply(&response.payload).map_err(|error| format!("decode {error:?}"))?;
     Ok((reply, response.payload))
 }
 
@@ -52,6 +53,7 @@ fn request(action: u8, definition: u32, offer: [u8; 16]) -> MarketRequest {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -61,6 +63,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x36, 1).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         near_locker(world, at)
     })
@@ -115,22 +118,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         after.rows.len(),
         ended.state
     );
-    capture("e05-wares.bin", &wares_bytes);
-    capture("e05-create.bin", &created_bytes);
-    capture("e05-own.bin", &own_bytes);
-    capture("e05-cancel.bin", &cancelled_bytes);
-    capture("e05-own-after.bin", &after_bytes);
-    capture("e05-history.bin", &history_bytes);
-    capture("e05-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    capture("e05-wares.bin", &wares_bytes)?;
+    capture("e05-create.bin", &created_bytes)?;
+    capture("e05-own.bin", &own_bytes)?;
+    capture("e05-cancel.bin", &cancelled_bytes)?;
+    capture("e05-own-after.bin", &after_bytes)?;
+    capture("e05-history.bin", &history_bytes)?;
+    capture("e05-expected.txt", expected.as_bytes())?;
+
     Ok(format!(
         "definition={} history_state={}",
         ware.definition, ended.state
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(150), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E05.client status=CAPTURED evidence={observed}"
         )),
@@ -139,5 +147,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E05.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
     }
 }

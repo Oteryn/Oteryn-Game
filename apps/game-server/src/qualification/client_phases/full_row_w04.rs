@@ -78,7 +78,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(190), journey(&mut row, clients)).await;
+    let result = row_complete(journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -127,7 +127,10 @@ fn take_raid_notice(client: &mut DevClientSession) -> Option<ServerMessage> {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(190);
     let mut client = connect_world(clients, 0xb4).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_RAID_SCHEDULE_V1)
@@ -228,8 +231,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=fresh-admission observed=logout-refused".into());
     }
-    drop(client);
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xb5).await?;
+    let row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let restored = query(&mut fresh).await?;
     if restored != completed {
         return Err(format!(
@@ -242,4 +248,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=announcement observed=no-warning-or-advance-delta server-needed=scheduled-raid-with-announcement".into());
     }
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }

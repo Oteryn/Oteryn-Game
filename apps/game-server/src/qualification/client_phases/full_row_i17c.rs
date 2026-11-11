@@ -27,15 +27,16 @@ fn token(value: &str) -> String {
 }
 
 fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
+    let inventory = client.inventory().ok_or("inventory snapshot absent")?;
+    Ok(inventory_quantities(inventory))
+}
+
+fn inventory_quantities(inventory: &oteryn_dev_client::CharacterInventory) -> BTreeMap<u32, u64> {
     let mut values = BTreeMap::new();
-    for item in &client
-        .inventory()
-        .ok_or("inventory snapshot absent")?
-        .entries
-    {
+    for item in &inventory.entries {
         *values.entry(item.item_definition_ref.get()).or_default() += u64::from(item.count.get());
     }
-    Ok(values)
+    values
 }
 
 fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
@@ -282,8 +283,10 @@ async fn buy(
 async fn quiver_arrows(clients: &SeamClients<'_>) -> TestResult<i64> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let total: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(sum(a.quantity),0)::bigint FROM game_item_nested_entries e JOIN game_item_instances a ON a.item_instance_id=e.item_instance_id JOIN game_item_instances q ON q.item_instance_id=e.parent_item_instance_id WHERE a.definition_production_key='oteryn:item.tibia.i3447' AND a.lifecycle=1 AND q.definition_production_key='oteryn:item.tibia.i35562' AND q.lifecycle=1",
+        "SELECT COALESCE(sum(a.quantity),0)::bigint FROM game_item_nested_entries e JOIN game_item_instances a ON a.item_instance_id=e.item_instance_id JOIN game_item_instances q ON q.item_instance_id=e.parent_item_instance_id WHERE a.definition_production_key='oteryn:item.tibia.i3447' AND a.lifecycle=1 AND q.definition_production_key='oteryn:item.tibia.i35562' AND q.lifecycle=1 AND EXISTS (SELECT 1 FROM game_character_equipment_slots s WHERE s.item_instance_id=q.item_instance_id AND s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid AND s.slot=6)",
     )
+    .bind(clients.characters[1].as_slice())
+    .bind(clients.world.as_slice())
     .fetch_one(&mut connection)
     .await?;
     Ok(total)
@@ -356,4 +359,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     logout(&mut client).await?;
     Ok("two-hand-swap-and-arrows-to-quiver-durable".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn evidence_tokens_cover_empty_and_whitespace() {
+        assert_eq!(token(""), "");
+        assert!(!token("a b\tc\nd").chars().any(char::is_whitespace));
+        assert_eq!(token("source:path.rs:12"), "source:path.rs:12");
+    }
+}
+
+#[cfg(test)]
+mod quantity_tests {
+    use super::*;
+    #[test]
+    fn totals_do_not_wrap_at_the_wire_count_limit() {
+        let mut inventory = oteryn_dev_client::CharacterInventory::default();
+        assert!(inventory_quantities(&inventory).is_empty());
+        let item = oteryn_dev_client::ItemEntry {
+            handle: std::num::NonZeroU64::MIN,
+            item_definition_ref: std::num::NonZeroU32::MIN,
+            count: std::num::NonZeroU32::MAX,
+            sub_type: 0,
+        };
+        inventory.entries = vec![item, item];
+        assert_eq!(
+            inventory_quantities(&inventory).get(&1),
+            Some(&(2 * u64::from(u32::MAX)))
+        );
+    }
 }

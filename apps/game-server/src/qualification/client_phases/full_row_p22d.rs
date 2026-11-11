@@ -78,7 +78,9 @@ fn kills(snapshot: &Option<tr::TrackerSnapshot>, key: &str) -> u32 {
 /// Whether a session failure is the refusal of the pushed tracker domain.
 fn is_domain_gap(error: &str) -> bool {
     let lowered = error.to_ascii_lowercase();
-    lowered.contains("unsupportedpusheddomain")
+    (lowered.contains("server pushed a delta of domain 98,")
+        && lowered.contains("keeps no store for"))
+        || lowered.contains("unsupportedpusheddomain")
         || (lowered.contains("unsupported") && lowered.contains("98"))
 }
 
@@ -232,6 +234,12 @@ mod tests {
     #[test]
     fn domain_gap_is_recognised_from_the_session_error() {
         assert!(is_domain_gap("UnsupportedPushedDomain { domain_id: 98 }"));
+        assert!(is_domain_gap(
+            "server pushed a delta of domain 98, which this session keeps no store for"
+        ));
+        assert!(!is_domain_gap(
+            "server pushed a delta of domain 97, which this session keeps no store for"
+        ));
         assert!(!is_domain_gap("connection reset"));
     }
 }

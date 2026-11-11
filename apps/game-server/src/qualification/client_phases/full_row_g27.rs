@@ -159,6 +159,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
+    logout(&mut a).await?;
+    logout(&mut b).await?;
+    a = connect_character(clients, 0xa7, 1).await?;
+    b = connect_character(clients, 0xb7, 0).await?;
+    let (_, persisted) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
+    if persisted["account_friends"][0]["main_character"].as_str() != Some(name_b.as_str()) {
+        return Err("step=fresh-admission observed=accepted-friendship-lost".into());
+    }
+    let outgoing = persisted["account_friends"][0]["handle"]
+        .as_u64()
+        .ok_or("step=fresh-admission observed=friend-handle-absent")?;
     let mut panel = cyc::CyclopediaCharacterPanel {
         selected: true,
         ..Default::default()
@@ -184,6 +195,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         {
             return Err("step=badge-hide observed=reply-not-applied".into());
         }
+        logout(&mut a).await?;
+        a = connect_character(clients, 0xa7, 1).await?;
+        panel = cyc::CyclopediaCharacterPanel {
+            selected: true,
+            ..Default::default()
+        };
         if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await?
             || !panel.badge_visibility_known
             || !panel.server_hidden_badges.contains(&badge)
@@ -206,6 +223,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         {
             return Err("step=badge-restore observed=reply-not-applied".into());
         }
+        logout(&mut a).await?;
+        a = connect_character(clients, 0xa7, 1).await?;
+        panel = cyc::CyclopediaCharacterPanel {
+            selected: true,
+            ..Default::default()
+        };
         if !panel_call(&mut a, &mut panel, cyc::Intent::Badges).await?
             || !panel.badge_visibility_known
             || panel.server_hidden_badges.contains(&badge)
@@ -218,6 +241,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
         badge_note = format!("badge-{badge}-hidden-and-restored");
     }
+    let (_, current) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
+    let outgoing = current["account_friends"][0]["handle"]
+        .as_u64()
+        .unwrap_or(outgoing);
     let (code, _) = friends(&mut a, vip::Operation::FriendRevoke, outgoing, "").await?;
     if code != 1 {
         return Err(format!("step=revoke observed=code:{code};needed=1").into());
@@ -232,8 +259,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let _ = name_a;
     logout(&mut a).await?;
     logout(&mut b).await?;
+    a = connect_character(clients, 0xa7, 1).await?;
+    b = connect_character(clients, 0xb7, 0).await?;
+    for client in [&mut a, &mut b] {
+        let (_, persisted) = friends(client, vip::Operation::FriendsQuery, 0, "").await?;
+        if !persisted["account_friends"]
+            .as_array()
+            .is_some_and(|rows| rows.is_empty())
+        {
+            return Err("step=fresh-admission observed=revoked-friendship-restored".into());
+        }
+    }
+    logout(&mut a).await?;
+    logout(&mut b).await?;
     if earned.is_empty() {
         return Err(format!("friends-invite-accept-revoke-proven;step=badge-visibility observed={badge_note};needed:earned-badge").into());
     }
     Ok(format!("friends-and-{badge_note}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn evidence_tokens_cover_empty_and_whitespace() {
+        assert_eq!(token(""), "");
+        assert!(!token("a b\tc\nd").chars().any(char::is_whitespace));
+        assert_eq!(token("source:path.rs:12"), "source:path.rs:12");
+    }
 }

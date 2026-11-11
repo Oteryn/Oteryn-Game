@@ -8,17 +8,19 @@ use oteryn_dev_client::client_runtime::daily_reward::{
 };
 use oteryn_protocol_oteryn::daily_reward as wire;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P10_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0x2c).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let query = client
         .session_mut()
         .gated_command(
@@ -30,7 +32,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if query.status != CommandStatus::Accepted {
         return Err(format!("wall query status={:?}", query.status).into());
     }
-    capture("p10-wall.bin", &query.payload);
+    capture("p10-wall.bin", &query.payload)?;
     let DailyRewardReply::Wall(wall) = decode_reply(DailyRewardCommand::Query, &query.payload)?
     else {
         return Err("wall query did not decode as a wall".into());
@@ -46,12 +48,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         vitals.max_mana,
         vitals.soul
     ))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=P10.client status=MISSING-CLIENT evidence={observed};searched=crates/session,crates/client-ui/src/features/0182-daily-reward,crates/client-runtime/src/features/*daily-reward*,tools/dev-client,apps/client/src/features/0182-daily-reward;gap=resting_regen_needs_seven_epoch_streak_not_reachable_in_run"
+            "e2e_all scenario=P10.client status=FAIL evidence=needed:resting-regeneration-journey;{observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=P10.client status=FAIL evidence={error}"

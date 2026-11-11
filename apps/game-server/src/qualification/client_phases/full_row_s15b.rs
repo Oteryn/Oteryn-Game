@@ -61,100 +61,119 @@ fn compact(value: &str) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
-    let mut client = connect_world(clients, 0x8b).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let (monster, own) = actors(&client)?;
-    require_damage(
-        &mut client,
-        monster,
-        own,
-        Duration::from_secs(20),
-        "step=1 baseline targeting",
-    )
-    .await?;
-    evidence("S15B_CHECK step=1 baseline-monster-target PASS");
-
-    let expected = destination(
-        world,
-        tile(client.world_spatial().actor_position)?,
-        StepDirection::West,
-    )
-    .map(actor_position);
-    client = client_disconnect_resume::recover(client, clients, expected)
-        .await
-        .map_err(|error| {
-            format!("step=2 reconnect observed={error} need=committed CompleteReconnect")
-        })?;
-    let (monster, own) = actors(&client)?;
-    evidence("S15B_CHECK step=2 committed-reconnect PASS");
-
-    player_commands(&mut client, monster).await?;
-    client.take_events();
-    require_quiet(
-        &mut client,
-        monster,
-        own,
-        Duration::from_millis(2_500),
-        "step=3 four-second protection",
-    )
-    .await?;
-    evidence("S15B_CHECK step=3 commands-accepted-and-monster-suppressed PASS");
-    require_damage(
-        &mut client,
-        monster,
-        own,
-        Duration::from_secs(12),
-        "step=4 reentry expiry",
-    )
-    .await?;
-
-    let refused = client.session_mut().logout().await?;
-    if !matches!(
-        refused.result,
-        Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
-    ) {
-        return Err(format!(
-            "step=4 combat logout refusal observed={refused:?} need=Refused while in-fight"
+    let mut active_client = None;
+    let result: TestResult = tokio::time::timeout(Duration::from_secs(180), async {
+        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+        let world = load_world(
+            bytes,
+            &pin,
+            WorldId::decode(&clients.world)?,
+            ChannelId::decode(&clients.channel)?,
+        )?;
+        active_client = Some(connect_world(clients, 0x8b).await?);
+        let client = active_client.as_mut().ok_or("admission absent")?;
+        travel_to_spawn(&mut *client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        let (monster, own) = actors(client)?;
+        require_damage(
+            &mut *client,
+            monster,
+            own,
+            Duration::from_secs(20),
+            "step=1 baseline targeting",
         )
-        .into());
-    }
-    logout_after_combat(&mut client).await?;
-    evidence("S15B_CHECK step=4 expiry-damage-and-logout-refusal PASS");
-    drop(client);
+        .await?;
+        evidence("S15B_CHECK step=1 baseline-monster-target PASS");
 
-    let mut fresh = connect_world(clients, 0x8c)
-        .await
-        .map_err(|error| format!("step=5 fresh admission observed={error}"))?;
-    travel_to_spawn(&mut fresh, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let (monster, own) = actors(&fresh)?;
-    fresh.take_events();
-    require_quiet(
-        &mut fresh,
-        monster,
-        own,
-        Duration::from_secs(3),
-        "step=5 fresh-login protection",
-    )
-    .await?;
-    require_damage(
-        &mut fresh,
-        monster,
-        own,
-        Duration::from_secs(12),
-        "step=5 fresh-login expiry",
-    )
-    .await?;
-    evidence("S15B_CHECK step=5 fresh-admission-window-not-reentry-epoch PASS");
-    Ok(())
+        let expected = destination(
+            world,
+            tile(client.world_spatial().actor_position)?,
+            StepDirection::West,
+        )
+        .map(actor_position);
+        let current = active_client.take().ok_or("reconnect session absent")?;
+        active_client = Some(
+            client_disconnect_resume::recover(current, clients, expected)
+                .await
+                .map_err(|error| {
+                    format!("step=2 reconnect observed={error} need=committed CompleteReconnect")
+                })?,
+        );
+        let client = active_client
+            .as_mut()
+            .ok_or("replacement admission absent")?;
+        let (monster, own) = actors(client)?;
+        evidence("S15B_CHECK step=2 committed-reconnect PASS");
+
+        player_commands(&mut *client, monster).await?;
+        client.take_events();
+        require_quiet(
+            &mut *client,
+            monster,
+            own,
+            Duration::from_millis(2_500),
+            "step=3 four-second protection",
+        )
+        .await?;
+        evidence("S15B_CHECK step=3 commands-accepted-and-monster-suppressed PASS");
+        require_damage(
+            &mut *client,
+            monster,
+            own,
+            Duration::from_secs(12),
+            "step=4 reentry expiry",
+        )
+        .await?;
+
+        let refused = client.session_mut().logout().await?;
+        if !matches!(
+            refused.result,
+            Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
+        ) {
+            return Err(format!(
+                "step=4 combat logout refusal observed={refused:?} need=Refused while in-fight"
+            )
+            .into());
+        }
+        logout_after_combat(&mut *client).await?;
+        evidence("S15B_CHECK step=4 expiry-damage-and-logout-refusal PASS");
+        active_client = None;
+
+        active_client = Some(
+            connect_world(clients, 0x8c)
+                .await
+                .map_err(|error| format!("step=5 fresh admission observed={error}"))?,
+        );
+        let fresh = active_client.as_mut().ok_or("fresh admission absent")?;
+        travel_to_spawn(&mut *fresh, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        let (monster, own) = actors(fresh)?;
+        fresh.take_events();
+        require_quiet(
+            &mut *fresh,
+            monster,
+            own,
+            Duration::from_secs(3),
+            "step=5 fresh-login protection",
+        )
+        .await?;
+        require_damage(
+            &mut *fresh,
+            monster,
+            own,
+            Duration::from_secs(12),
+            "step=5 fresh-login expiry",
+        )
+        .await?;
+        evidence("S15B_CHECK step=5 fresh-admission-window-not-reentry-epoch PASS");
+        Ok(())
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    if let Some(client) = active_client.as_mut() {
+        row_logout(client).await?;
+    }
+    result
 }
 
 fn actor_position(at: TilePos) -> ActorPosition {

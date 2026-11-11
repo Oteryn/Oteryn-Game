@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{item_view::ItemHandle, loop_training as wire};
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P15_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn take_varint(bytes: &[u8], cursor: &mut usize) -> Option<u64> {
@@ -158,12 +158,14 @@ fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePo
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_character(clients, 0x41, 0).await?;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let (status_bytes, status) = exercise(&mut client, wire::ExerciseIntent::Status).await?;
     if status.disposition != 2 || status.revision == 0 {
         return Err(format!("STATUS reply={status:?}").into());
     }
-    capture("p15-status.bin", &status_bytes);
+    capture("p15-status.bin", &status_bytes)?;
 
     let missing = ItemHandle::new(u64::MAX).ok_or("nonzero refusal handle")?;
     let (refused_bytes, refused) = exercise(
@@ -177,7 +179,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refused != wire::TrainingResult::REFUSED {
         return Err(format!("invalid START reply={refused:?}").into());
     }
-    capture("p15-refused.bin", &refused_bytes);
+    capture("p15-refused.bin", &refused_bytes)?;
 
     let weapon = carried_weapon(&client)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -202,13 +204,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if running.disposition != 1 || running.revision == 0 || running.charges == 0 {
         return Err(format!("START reply={running:?}").into());
     }
-    capture("p15-running.bin", &running_bytes);
+    capture("p15-running.bin", &running_bytes)?;
     let (stopped_bytes, stopped) = exercise(&mut client, wire::ExerciseIntent::Stop).await?;
     if stopped.disposition != 2 || stopped.charges > running.charges {
         return Err(format!("STOP reply={stopped:?} after {running:?}").into());
     }
-    capture("p15-stopped.bin", &stopped_bytes);
-    let _ = client.session_mut().logout().await?;
+    capture("p15-stopped.bin", &stopped_bytes)?;
+
     let expected = format!(
         "status_disposition={}\nstatus_charges={}\nrefused_disposition={}\nrunning_disposition={}\nrunning_charges={}\nstopped_disposition={}\nstopped_charges={}\n",
         status.disposition,
@@ -219,12 +221,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         stopped.disposition,
         stopped.charges
     );
-    capture("p15-expected.txt", expected.as_bytes());
+    capture("p15-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P15.client status=CAPTURED evidence={expected}"
         )),
@@ -232,5 +239,26 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=P15.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=P15.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn varints_cover_boundaries_truncation_and_overflow() {
+        for value in [0, 127, 128, u64::MAX] {
+            let mut bytes = Vec::new();
+            push_varint(&mut bytes, value);
+            let mut cursor = 0;
+            assert_eq!(take_varint(&bytes, &mut cursor), Some(value));
+            assert_eq!(cursor, bytes.len());
+        }
+        assert_eq!(take_varint(&[], &mut 0), None);
+        assert_eq!(take_varint(&[128], &mut 0), None);
+        assert_eq!(take_varint(&[255; 10], &mut 0), None);
+        assert!(training_reply(&[]).is_none());
+        assert!(training_reply(&[8, 1, 8, 1]).is_none());
     }
 }

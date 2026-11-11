@@ -171,3 +171,91 @@ explicit. Do not change these labels without tracing and executing the case.
 | W22b | Monster loot: modifiers (prey, boosted, stamina, Gut charm, Wealth Duplex) (PARTIAL) | UNTRACED; audit owner `crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:46` | UNTRACED (not inferred from audit status) | NONE verified in client phases | `W22b.full`: complete row lifecycle | UNRESOLVED | PENDING |
 | W23 | Town citizenship / home temple (PARTIAL) | UNTRACED; audit owner `crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs` | UNTRACED (not inferred from audit status) | NONE verified in client phases | `W23.full`: complete row lifecycle | UNRESOLVED | PENDING |
 | W24 | Ambient zone sounds (PARTIAL) | UNTRACED; audit owner `crates/protocol-oteryn/src/presentation.rs:158` | UNTRACED (not inferred from audit status) | NONE verified in client phases | `W24.full`: complete row lifecycle | UNRESOLVED | PENDING |
+
+## Additional emitted journeys
+
+| ID | Mechanic | Required scenario |
+| --- | --- | --- |
+| C19b | starting items, per-vocation equipment and backpack contents  | `C19b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G01 | house controls in the production session (apps/client feature 0049-house)  | `G01.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G02 | named Wheel builds and code exchange (apps/client 0148-wheel-allocation presets)  | `G02.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G03 | depot search result list and retrieval (apps/client 0153-depot-search)  | `G03.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G04 | player bug report (apps/client 0076-player-report, `bug.rs`)  | `G04.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G05 | settings import/export/backup/defaults (apps/client `local-reference-preferences`)  | `G05.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G06 | native login challenge before admission (apps/client `native_entry/challenge`,  | `G06.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G07 | house furniture rotation and decorations (apps/client 0445-house-furniture-rotation)  | `G07.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G08 | taming mounts (server package SRVPKG1, `gameplay_transport/mount_taming.rs`)  | `G08.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G09 | pocket watch USE shows the world time (server package SRVPKG1, `novelty_item_use.rs`,  | `G09.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G10 | Cyclopedia titles, analyser, boss tracker and minimap markers  | `G10.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G11 | G11 imbuement details query (capability 447, command 731)  | `G11.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G12 | G12 weapon proficiency state and perks (capabilities 448 and 195, commands 732 and 378)  | `G12.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G13 | G13 spellbook details query and spell augments (capabilities 449 and 199, commands 733, 388)  | `G13.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G14 | G14 server modal dialog query and answer (capability 450, commands 736 and 737)  | `G14.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G15 | G15 analyser item and party hunt queries (capability 10, commands 734 and 735)  | `G15.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G16 | G16 daily reward details, picker and pick claim (capability 182, commands 738, 6122, 6123)  | `G16.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G17 | G17 returner reward query and claim (capability 182, commands 6124 and 6125)  | `G17.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G18 | G18 house podium preview (capability 150, command 739)  | `G18.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G19 | G19 battle list metadata query (capability 17, command 740)  | `G19.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G20 | G20 forge preview (capability 152, command 6116)  | `G20.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G21 | G21 chat console sender-level lookup (capability 7, command 6117)  | `G21.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G22 | G22 store browse and offer popularity (capability 154, command 6118)  | `G22.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G23 | G23 wheel presentation and gem presentation (capability 148, commands 6119 and 6121)  | `G23.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G24 | G24 market details and statistics (capability 63, command 6126)  | `G24.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G25 | coin transfer quotes and coin market (cmd 6127/6128, caps 154/63)  | `G25.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G26 | house sale escrow/authority (cmd 6129, cap 49)  | `G26.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G27 | account friends and badge visibility (caps 43 and 199)  | `G27.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G28 | Character Bazaar, world transfer and login challenge fences (cg-account)  | `G28.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G29 | quest tracker and filters, achievements, titles, defence stats, blessings  | `G29.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G30 | Cyclopedia character misc skills and resource bars (cap 199)  | `G30.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G31 | options pages, HP/MP arcs, minimap memory, action bar, settings (apps/client local-reference-preferences, local-spell-action-bar, local-minimap)  | `G31.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G32 | shrine quotes (imbuement, cap 68/cmd 85) and the player bug report flow (cap 76)  | `G32.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G33 | seasonal Cake and Santa (W05d). Both producers are gated by committed annual windows  | `G33.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G34 | ENGNPC NPC/quest receipts (#3050). A quest NPC offer commits its track write and the  | `G34.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G35 | Soul War, Rotten Blood and Primal Hazard selection, private boss loot, Svargrond arena  | `G35.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G36 | Soulpit fight entry. The entry owner is `use_soulpit_obelisk`  | `G36.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G37 | client parity package 3 (#3075): 0007-chat, 0009-highscores, 0042-party, 0062-stash,  | `G37.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G38 | Windows touch joystick and action hotbar (#3074, O035 and O056). The feature is  | `G38.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G39 | native modal, discovery, bed, use-at, House and bounty journeys  | `G39.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| G40 | first durable NPC steps, the two fixed item exchanges and Forge admission  | `G40.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I17a | hotkey equip, a worn item by definition id from the backpack and from a loot pouch  | `I17a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I17b | hotkey equip toggles a worn item off into the managed container  | `I17b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I17c | hotkey equip, automatic two-hand/shield swap and ammunition into the quiver  | `I17c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I17d | hotkey equip, jewelry delay and the feared gate  | `I17d.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I18a | browse field, open a tile's browse container with walk-to  | `I18a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I18b | browse field, move items out of and into the browse field  | `I18b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I18c | browse field, move up from a ground container  | `I18c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| I19 | gem and weapon enchanting at elemental shrines (`items/src/item_craft/enchanting.rs`)  | `I19.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N01 | N01 client replay capture: the house owner updates the guest list through the real HOUSE-WIRE-1  | `N01.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N02 | N02 client replay capture: a real accepted Wheel allocation Save (and the current-state query  | `N02.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N03 | N03 client replay capture: deposit a carried item at an authored depot locker, then capture the  | `N03.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N04 | N04 client replay capture: a real player bug report (category "Other issue", no map position)  | `N04.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N07a | N07a client replay capture: the real CHARACTER_INFO QuerySelf, accepted Select, refused  | `N07a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N07b | N07b client replay capture: two real BOSS_COOLDOWNS replies, a moment apart, that feed the  | `N07b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N07c | N07c client capture: a real rat kill whose ANALYSER facts (state domain 15) the live session  | `N07c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| N07d | N07d client replay capture: the real admitted WORLD_MAP_VIEW snapshot that the persisted  | `N07d.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| P12b | P12b (Cyclopedia badges, Crystal `PlayerBadge::checkAndUpdateNewBadges`):  | `P12b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| P22a | P22a (Crystal Cyclopedia bestiary tracker add/remove), driven through the native session:  | `P22a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| P22b | P22b (bosstiary tracker add/remove, kill-gated):  | `P22b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| P22c | P22c (tracker persistence across login):  | `P22c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| P22d | P22d (live tracker refresh on kill progress):  | `P22d.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S14a | S14a (Team Finder leader listing create/edit/remove):  | `S14a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S14b | S14b (Team Finder browse and join request/cancel), two live characters:  | `S14b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S14c | S14c (Team Finder leader accept/deny/invite), two live characters:  | `S14c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S15a | S15a (login protection: monsters ignore a fresh login for 10 s):  | `S15a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S16c | S16C (vocation choice, trial tiles before level 20), driven like a player:  | `S16c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S16d | S16D (vocation room teleport/doors and mainland item removal), driven like a player:  | `S16d.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S17a | S17a (livestream, Canary only: caster on/off, password, description):  | `S17a.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S17b | S17B (livestream read-only viewer login and fan-out):  | `S17b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S17c | S17C (livestream viewer chat and moderation):  | `S17c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| S19 | S19 player typing indicator, derived from the capability-233 owners  | `S19.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W05b | W05b daily world changes, derived from the world-change owner (`world-change/src/daily.rs`)  | `W05b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W05d | W05d seasonal events and the event scheduler, derived from the world-event owner  | `W05d.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W06 | W06 Echo Warden kill trigger, portal, raid and first-species charm reward, derived from the  | `W06.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W07 | W07 Soulpit waves, Soul Core/prism/seal custody and survival rewards, derived from the Soulpit  | `W07.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W09 | W09 concoction effects/cooldowns and Drome Cube consume/reward, derived from the item-use owner `crates/gameplay/dispatch/src/gameplay_transport/drome_cube_use.rs`  | `W09.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W15c | W15c Killing in the Name Of (Grizzly Adams), derived from the NPC conversation owner  | `W15c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W19b | W19b planting/seeds, derived from the item-use owner `crates/gameplay/dispatch/src/gameplay_transport/item_craft/planting.rs`  | `W19b.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W19c | W19c novelty items (fireworks, toys), derived from the novelty-item owner  | `W19c.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W19d | W19d outfit/mount usable items, derived from the item-use owner `crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:220`  | `W19d.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W19e | W19e rust remover, lottery ticket, anniversary items, derived from the item-use owner `crates/gameplay/dispatch/src/gameplay_transport/connection/routing/use_item.rs:220`  | `W19e.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |
+| W21 | W21 boss difficulty selection, derived from the capability-225 owners  | `W21.full`: complete real-server journey, durable state after fresh admission where applicable, and client replay |

@@ -7,13 +7,13 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::npc_service as wire;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S16A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 struct Step {
@@ -109,8 +109,15 @@ async fn talk(
     if conversation.open.map(|(actor, _)| actor) != Some(npc) || conversation.lines != [step.line] {
         return Err(format!("step={} different conversation {conversation:?}", step.name).into());
     }
-    capture(&format!("s16a-{}-conversation.bin", step.name), &delta.payload);
-    let identity: String = npc.identity.iter().map(|byte| format!("{byte:02x}")).collect();
+    capture(
+        &format!("s16a-{}-conversation.bin", step.name),
+        &delta.payload,
+    )?;
+    let identity: String = npc
+        .identity
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     Ok(format!(
         "{}\t{}\t{}\t{}\t{}\t{identity}:{}\t{}\n",
         step.name,
@@ -124,6 +131,7 @@ async fn talk(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -134,65 +142,72 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x41, 0).await?;
-    let start = tile(client.world_spatial().actor_position)?;
-    let oressa = metadata
-        .npcs
-        .npcs
-        .iter()
-        .find(|npc| npc.key == "oteryn:npc.oressa")
-        .ok_or("S16a client capture: Oressa absent")?;
-    let path = route(world, start, |at| {
-        oressa.placements.iter().any(|place| {
-            place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
-        })
-    })
-    .ok_or("S16a client capture: Oressa unreachable")?;
-    walk(&mut client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == EntityKind::Npc
-                    && oressa.placements.iter().any(|place| {
-                        entity.position.x == i32::from(place.x)
-                            && entity.position.y == i32::from(place.y)
-                            && entity.position.floor == -i16::from(place.floor)
-                    })
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let start = tile(client.world_spatial().actor_position)?;
+        let oressa = metadata
+            .npcs
+            .npcs
+            .iter()
+            .find(|npc| npc.key == "oteryn:npc.oressa")
+            .ok_or("S16a client capture: Oressa absent")?;
+        let path = route(world, start, |at| {
+            oressa.placements.iter().any(|place| {
+                place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
             })
         })
-        .map(|entity| entity.entity)
-        .ok_or("S16a client capture: Oressa not visible")?;
-    let mut expected = String::new();
-    let mut previous = None;
-    let mut failure = None;
-    for step in &STEPS {
-        match talk(&mut client, actor, step, &mut previous).await {
-            Ok(line) => expected.push_str(&line),
-            Err(error) => {
-                failure = Some(error);
-                break;
+        .ok_or("S16a client capture: Oressa unreachable")?;
+        walk(&mut client, world, &path).await?;
+        let actor = client
+            .world_entities()
+            .and_then(|entities| {
+                entities.iter().find(|entity| {
+                    entity.kind == EntityKind::Npc
+                        && oressa.placements.iter().any(|place| {
+                            entity.position.x == i32::from(place.x)
+                                && entity.position.y == i32::from(place.y)
+                                && entity.position.floor == -i16::from(place.floor)
+                        })
+                })
+            })
+            .map(|entity| entity.entity)
+            .ok_or("S16a client capture: Oressa not visible")?;
+        let mut expected = String::new();
+        let mut previous = None;
+        let mut failure = None;
+        for step in &STEPS {
+            match talk(&mut client, actor, step, &mut previous).await {
+                Ok(line) => expected.push_str(&line),
+                Err(error) => {
+                    failure = Some(error);
+                    break;
+                }
             }
         }
-    }
-    if let Some(back) = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == start
-    }) && let Err(error) = walk(&mut client, world, &back).await
-    {
-        evidence(&format!("S16A_CLIENT_RETURN_WALK_ERROR error={error}"));
-    }
-    let _ = client.session_mut().logout().await;
-    if let Some(error) = failure {
-        return Err(error);
-    }
-    capture("s16a-expected.txt", expected.as_bytes());
-    Ok(format!("frames={}", STEPS.len()))
+        if let Some(back) = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            at == start
+        }) && let Err(error) = walk(&mut client, world, &back).await
+        {
+            evidence(&format!("S16A_CLIENT_RETURN_WALK_ERROR error={error}"));
+        }
+
+        if let Some(error) = failure {
+            return Err(error);
+        }
+        capture("s16a-expected.txt", expected.as_bytes())?;
+        Ok(format!("frames={}", STEPS.len()))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=S16a.client status=CAPTURED evidence={observed}"
         )),

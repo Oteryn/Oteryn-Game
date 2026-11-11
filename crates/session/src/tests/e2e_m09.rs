@@ -21,15 +21,18 @@ fn e2e_m09_replays_yield_inventory_and_rejects_invalid_payload() -> Result<(), B
             let inventory = CharacterInventory {
                 main_backpack: Some(entry(1, 2854, 1)),
                 entries: vec![entry(2, 3492, 39), entry(3, 3578, 1)],
-                equipment: vec![],
+                equipment: vec![item_view::EquippedItem {
+                    slot: item_view::EquipmentSlot::Head,
+                    item: entry(99, 3351, 1),
+                }],
             };
             (
-                item_view::encode_character_inventory(&inventory)
+                item_view::encode_character_inventory_with_equip_drop(&inventory, true)
                     .map_err(|error| format!("{error:?}"))?,
                 "3492 39\n3578 1\n".into(),
             )
         };
-        let decoded = item_view::decode_character_inventory(&payload)
+        let decoded = item_view::decode_character_inventory_with_equip_drop(&payload, true)
             .map_err(|error| format!("{error:?}"))?;
         let before = CharacterInventory::default();
         let (client, peer) = item_peer(
@@ -98,4 +101,52 @@ fn e2e_m09_replays_yield_inventory_and_rejects_invalid_payload() -> Result<(), B
         peer.await??;
         Ok(())
     })?
+}
+
+fn item_peer(
+    snapshot: (u32, Vec<u8>),
+    raw: Vec<(u32, u64, u32, Vec<u8>)>,
+    script: Vec<ItemStep>,
+) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
+    let (client, mut server) = tokio::io::duplex(256 * 1024);
+    let peer = tokio::spawn(async move {
+        join_peer_with(
+            &mut server,
+            CLIENT_SUPPORTED_CAPABILITIES,
+            &[4, 6, 12],
+            &[],
+            snapshot,
+            &raw,
+        )
+        .await?;
+        for step in script {
+            match step {
+                ItemStep::Send(step) => play_step(&mut server, step).await?,
+                ItemStep::Expect(command_type, payload) => {
+                    let frame = read_frame(&mut server).await?;
+                    let envelope = decode_wire_envelope(&frame)?;
+                    let command = envelope.client_command(1)?;
+                    assert_eq!(command.command_type, command_type);
+                    assert_eq!(command.payload, payload.as_slice());
+                }
+            }
+        }
+        let mut rest = Vec::new();
+        let _ = server.read_to_end(&mut rest).await;
+        Ok::<(), BoxError>(())
+    });
+    (client, peer)
+}
+
+fn inventory_domain(
+    revision: u64,
+    view: &CharacterInventory,
+) -> Result<(u32, u64, u32, Vec<u8>), BoxError> {
+    Ok((
+        STATE_DOMAIN_CHARACTER_INVENTORY,
+        revision,
+        item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
+        item_view::encode_character_inventory_with_equip_drop(view, true)
+            .map_err(|error| format!("{error:?}"))?,
+    ))
 }

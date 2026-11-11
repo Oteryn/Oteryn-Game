@@ -152,6 +152,8 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
         .find(|door| door.action <= 1000 && door.appearance != 1628)
         .ok_or("step-4 observed=no-authored-quest-predicate-candidate")?;
     let mut client = connect_world(clients, 0xb6).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
 
     approach(&mut client, world, key).await?;
     let before = client.world_spatial().actor_position;
@@ -186,8 +188,11 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
     {
         return Err("step-5 observed=logout-refused".into());
     }
-    drop(client);
+    row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut fresh = connect_world(clients, 0xb7).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = async {
     approach(&mut fresh, world, level).await?;
     let replay = use_door(&mut fresh, world, level).await?;
     evidence(&format!(
@@ -198,7 +203,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
     evidence(&format!(
         "M06_CHECK step=5 action=fresh-admission-quest-USE observed={quest_replay:?}"
     ));
-    let _ = fresh.session_mut().logout().await?;
+    row_logout(&mut fresh).await?; row_needs_logout_1 = false;
 
     if !direct_ok {
         return Err(format!("step-1 observed={direct:?}; expected Locked without movement").into());
@@ -222,6 +227,16 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
         "step-3 progression observed=initial:{level_reply:?}/fresh:{replay:?}; no ordinary level-earning action was executed before the required committed USE; step-4 transition observed=initial:{quest_reply:?}/fresh:{quest_replay:?}; no ordinary dialogue/combat/item storage transition was executed before the required committed USE"
     )
     .into())
+
+    }.await;
+    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

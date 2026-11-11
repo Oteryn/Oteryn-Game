@@ -20,9 +20,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
-    let entities = client
-        .world_entities()
-        .ok_or("C17b.client entity snapshot absent")?;
+    own_from(client.world_entities())
+}
+
+fn own_from(
+    input: Option<&oteryn_dev_client::WorldEntities>,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let entities = input.ok_or("C17b.client entity snapshot absent")?;
     entities
         .iter()
         .find(|entity| &entity.entity.identity == entities.own_identity())
@@ -56,15 +60,13 @@ fn spell_index() -> TestResult<std::num::NonZeroU32> {
         .ok_or_else(|| "C17b.client Invisibility spell absent".into())
 }
 
-fn write_capture(name: &str, bytes: &[u8]) {
+fn write_capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&directory).join(name), bytes) {
-        evidence(&format!(
-            "C17b.client capture write failed file={name} error={error}"
-        ));
-    }
+    std::fs::write(Path::new(&directory).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -78,7 +80,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut caster = connect_character(clients, 0xc1, 1).await?;
-    let mut observer = connect_character(clients, 0xc2, 0).await?;
+    let row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let mut observer = connect_character(clients, 0xc2, 0).await?;
+        let row_needs_logout_1 = true;
+        let row_result: TestResult<_> = async {
     travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_position = tile(caster.world_spatial().actor_position)?;
     let path = route(
@@ -98,7 +104,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if entities.get(&caster_ref).is_none() {
         return Err("C17b.client caster was not initially visible".into());
     }
-    let fields = EntityFields::selected(observer.selected_capabilities());
+    let fields = EntityFields::selected(&[6, 286]);
     let snapshot = WorldSpatialEntitiesSnapshot {
         content_generation: observer.world_spatial().content_generation,
         actor_position: observer.world_spatial().actor_position,
@@ -139,8 +145,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &EntityLights::new(),
     )
     .map_err(|error| format!("C17b.client delta encode: {error:?}"))?;
-    write_capture("c17b-snapshot.bin", &snapshot_payload);
-    write_capture("c17b-invisible.bin", &delta_payload);
+    write_capture("c17b-snapshot.bin", &snapshot_payload)?;
+    write_capture("c17b-invisible.bin", &delta_payload)?;
     write_capture(
         "c17b-expected.txt",
         format!(
@@ -156,10 +162,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             caster_ref.generation
         )
         .as_bytes(),
-    );
+    )?;
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=C17b.client status=PASS cast_sequence={} leave_sequence={}",
         cast.result_server_sequence, removed.server_sequence
     ));
     Ok(())
+
+    }.await;
+        if row_needs_logout_1 {
+            row_logout(&mut observer).await?;
+        }
+        row_result
+    }
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut caster).await?;
+    }
+    row_result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn absent_projection_cannot_supply_evidence() {
+        assert!(own_from(None).is_err());
+    }
 }

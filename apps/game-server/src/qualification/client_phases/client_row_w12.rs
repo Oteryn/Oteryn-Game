@@ -5,13 +5,13 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::cyclopedia_map as wire;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W12_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 async fn exchange(
@@ -27,8 +27,9 @@ async fn exchange(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("map operation {operation} status={:?}", reply.status).into());
     }
-    capture(file, &reply.payload);
-    wire::decode_result(&reply.payload).map_err(|_| format!("operation {operation} result malformed").into())
+    capture(file, &reply.payload)?;
+    wire::decode_result(&reply.payload)
+        .map_err(|_| format!("operation {operation} result malformed").into())
 }
 
 fn describe(prefix: &str, result: &wire::MapResult) -> String {
@@ -47,39 +48,49 @@ fn describe(prefix: &str, result: &wire::MapResult) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut client = connect_world(clients, 0xfc).await?;
-    let query = exchange(&mut client, 0, "w12-query.bin").await?;
-    let find = exchange(&mut client, 3, "w12-find.bin").await?;
-    if find.code != 4 {
-        return Err(format!("FIND before START was not refused with code 4: {find:?}").into());
-    }
-    let start = exchange(&mut client, 1, "w12-start.bin").await?;
-    if !matches!(start.code, 0 | 2) {
-        return Err(format!("START returned neither success nor premium refusal: {start:?}").into());
-    }
-    let refused = client
-        .session_mut()
-        .gated_command(
-            wire::CAPABILITY_CYCLOPEDIA_MAP_V1,
-            wire::COMMAND_TYPE_CYCLOPEDIA_INTENT,
-            &[1, 2, 0, 0, 0, 0, 0, 0, 0],
-        )
-        .await?;
-    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
-        return Err(format!("malformed intent was not refused: {refused:?}").into());
-    }
-    let expected = format!(
-        "{}{}{}",
-        describe("query", &query),
-        describe("find", &find),
-        describe("start", &start)
-    );
-    capture("w12-expected.txt", expected.as_bytes());
-    Ok(expected.replace('\n', ";").replace(' ', ""))
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+        let query = exchange(&mut client, 0, "w12-query.bin").await?;
+        let find = exchange(&mut client, 3, "w12-find.bin").await?;
+        if find.code != 4 {
+            return Err(format!("FIND before START was not refused with code 4: {find:?}").into());
+        }
+        let start = exchange(&mut client, 1, "w12-start.bin").await?;
+        if !matches!(start.code, 0 | 2) {
+            return Err(
+                format!("START returned neither success nor premium refusal: {start:?}").into(),
+            );
+        }
+        let refused = client
+            .session_mut()
+            .gated_command(
+                wire::CAPABILITY_CYCLOPEDIA_MAP_V1,
+                wire::COMMAND_TYPE_CYCLOPEDIA_INTENT,
+                &[1, 2, 0, 0, 0, 0, 0, 0, 0],
+            )
+            .await?;
+        if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
+            return Err(format!("malformed intent was not refused: {refused:?}").into());
+        }
+        let expected = format!(
+            "{}{}{}",
+            describe("query", &query),
+            describe("find", &find),
+            describe("start", &start)
+        );
+        capture("w12-expected.txt", expected.as_bytes())?;
+        Ok(expected.replace('\n', ";").replace(' ', ""))
+    })
+    .await
+    .unwrap_or_else(|error| Err(error.into()));
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W12.client status=CAPTURED evidence={observed}"
         )),
@@ -87,5 +98,27 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=W12.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=W12.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn map_evidence_keeps_revision_width_and_visibility() {
+        let result = wire::MapResult {
+            code: 0,
+            revision: u64::MAX,
+            discovered: false,
+            found: 0,
+            area_percent: 0,
+            pool: 0,
+            epoch: 0,
+            improved: false,
+            visible: vec![],
+        };
+        let text = describe("query", &result);
+        assert!(text.contains("query_revision=18446744073709551615\n"));
+        assert!(text.ends_with("query_visible=[]\n"));
     }
 }

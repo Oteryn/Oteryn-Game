@@ -60,8 +60,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         step: 0,
         failure: None,
     };
-    let result =
-        tokio::time::timeout(Duration::from_secs(90), journey(&mut verdict, clients)).await;
+    let result = row_complete(journey(&mut verdict, clients)).await;
     if let Err(error) = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline; observed=timeout; need=responsive exercise owner".into()),
@@ -237,100 +236,130 @@ fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePo
 }
 
 async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     let mut client = connect_character(clients, 0xb5, 0).await?;
-    let initial = command(&mut client, wire::ExerciseIntent::Status).await?;
-    if initial.disposition != 2 || initial.revision == 0 {
-        return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());
-    }
-    verdict.pass(1, initial);
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
+        let initial = command(&mut client, wire::ExerciseIntent::Status).await?;
+        if initial.disposition != 2 || initial.revision == 0 {
+            return Err(format!("STATUS reply={initial:?}; need=stopped durable state").into());
+        }
+        verdict.pass(1, initial);
 
-    let missing = ItemHandle::new(u64::MAX).ok_or("nonzero refusal handle")?;
-    let refused = command(
-        &mut client,
-        wire::ExerciseIntent::Start {
-            weapon: missing,
-            dummy: missing,
-        },
-    )
-    .await?;
-    if refused != wire::TrainingResult::REFUSED {
-        return Err(format!("invalid START reply={refused:?}; need=REFUSED without delta").into());
-    }
-    verdict.pass(2, refused);
+        let missing = ItemHandle::new(u64::MAX).ok_or("nonzero refusal handle")?;
+        let refused = command(
+            &mut client,
+            wire::ExerciseIntent::Start {
+                weapon: missing,
+                dummy: missing,
+            },
+        )
+        .await?;
+        if refused != wire::TrainingResult::REFUSED {
+            return Err(
+                format!("invalid START reply={refused:?}; need=REFUSED without delta").into(),
+            );
+        }
+        verdict.pass(2, refused);
 
-    let (weapon, full) = carried_weapon(&client)?;
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let positions = dummy_positions(&bytes)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        positions.iter().any(|dummy| {
-            at.floor == dummy.floor && at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)) <= 1
+        let (weapon, full) = carried_weapon(&client)?;
+        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let positions = dummy_positions(&bytes)?;
+        let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+        let world = load_world(
+            bytes,
+            &pin,
+            WorldId::decode(&clients.world)?,
+            ChannelId::decode(&clients.channel)?,
+        )?;
+        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+            positions.iter().any(|dummy| {
+                at.floor == dummy.floor && at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)) <= 1
+            })
         })
-    })
-    .ok_or("no player-walkable route to authored exercise dummy; need=reachable dummy placement")?;
-    walk(&mut client, world, &path).await?;
-    let dummy = visible_dummy(&mut client)?;
-    let running = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
-    if running.disposition != 1 || running.charges != full || running.revision == 0 {
-        return Err(format!("START reply={running:?}; need=running charges={full}").into());
-    }
-    verdict.pass(3, running);
+        .ok_or(
+            "no player-walkable route to authored exercise dummy; need=reachable dummy placement",
+        )?;
+        walk(&mut client, world, &path).await?;
+        let dummy = visible_dummy(&mut client)?;
+        let running = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+        if running.disposition != 1 || running.charges != full || running.revision == 0 {
+            return Err(format!("START reply={running:?}; need=running charges={full}").into());
+        }
+        verdict.pass(3, running);
 
-    client.service_liveness(Duration::from_millis(2300)).await?;
-    let ticked = command(&mut client, wire::ExerciseIntent::Status).await?;
-    if ticked.disposition != 1 || ticked.charges >= full {
-        return Err(
-            format!("post-tick STATUS reply={ticked:?}; need=charge delta below {full}").into(),
-        );
-    }
-    verdict.pass(4, ticked);
+        client.service_liveness(Duration::from_millis(2300)).await?;
+        let ticked = command(&mut client, wire::ExerciseIntent::Status).await?;
+        if ticked.disposition != 1 || ticked.charges >= full {
+            return Err(format!(
+                "post-tick STATUS reply={ticked:?}; need=charge delta below {full}"
+            )
+            .into());
+        }
+        verdict.pass(4, ticked);
 
-    let stopped = command(&mut client, wire::ExerciseIntent::Stop).await?;
-    if stopped.disposition != 2
-        || stopped.charges != ticked.charges
-        || stopped.revision < ticked.revision
-    {
-        return Err(format!(
-            "STOP reply={stopped:?}; before={ticked:?}; need=settled durable charge/revision"
-        )
-        .into());
+        let stopped = command(&mut client, wire::ExerciseIntent::Stop).await?;
+        if stopped.disposition != 2
+            || stopped.charges != ticked.charges
+            || stopped.revision < ticked.revision
+        {
+            return Err(format!(
+                "STOP reply={stopped:?}; before={ticked:?}; need=settled durable charge/revision"
+            )
+            .into());
+        }
+        verdict.pass(5, stopped);
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("logout reply refused; need=accepted durable save".into());
+        }
+        row_needs_logout_0 = false;
+        if row_needs_logout_0 {
+            row_logout(&mut client).await?;
+            row_needs_logout_0 = false;
+        }
+        let mut client = connect_character(clients, 0xb6, 0).await?;
+        let mut row_needs_logout_1 = true;
+        let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
+            let (weapon, _) = carried_weapon(&client)?;
+            let dummy = visible_dummy(&mut client)?;
+            let restored =
+                command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+            if restored.disposition != 1
+                || restored.charges != stopped.charges
+                || restored.revision < stopped.revision
+            {
+                return Err(format!(
+                    "fresh-admission START={restored:?}; expected charges={} revision>={}",
+                    stopped.charges, stopped.revision
+                )
+                .into());
+            }
+            let restored = command(&mut client, wire::ExerciseIntent::Stop).await?;
+            if restored.disposition != 2 || restored.charges != stopped.charges {
+                return Err(format!(
+                    "fresh-admission STOP={restored:?}; need=settled persisted charges"
+                )
+                .into());
+            }
+            verdict.pass(6, restored);
+            row_logout(&mut client).await?;
+            row_needs_logout_1 = false;
+            Ok(())
+        })
+        .await
+        .unwrap_or_else(|error| Err(error.into()));
+        if row_needs_logout_1 {
+            row_logout(&mut client).await?;
+        }
+        row_result
     }
-    verdict.pass(5, stopped);
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout reply refused; need=accepted durable save".into());
+    .await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
     }
-    drop(client);
-    let mut client = connect_character(clients, 0xb6, 0).await?;
-    let (weapon, _) = carried_weapon(&client)?;
-    let dummy = visible_dummy(&mut client)?;
-    let restored = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
-    if restored.disposition != 1
-        || restored.charges != stopped.charges
-        || restored.revision < stopped.revision
-    {
-        return Err(format!(
-            "fresh-admission START={restored:?}; expected charges={} revision>={}",
-            stopped.charges, stopped.revision
-        )
-        .into());
-    }
-    let restored = command(&mut client, wire::ExerciseIntent::Stop).await?;
-    if restored.disposition != 2 || restored.charges != stopped.charges {
-        return Err(
-            format!("fresh-admission STOP={restored:?}; need=settled persisted charges").into(),
-        );
-    }
-    verdict.pass(6, restored);
-    let _ = client.session_mut().logout().await?;
-    Ok(())
+    row_result
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 };
 
 fn decode_identity(value: &str) -> Result<[u8; 16], BoxError> {
-    if value.len() != 32 {
+    if value.len() != 32 || !value.is_ascii() {
         return Err("invalid C17b target identity length".into());
     }
     let mut identity = [0_u8; 16];
@@ -46,7 +46,7 @@ fn invisibility_visibility_payload_removes_target_and_rejects_replay() -> Result
                 decode_identity(identity)?,
                 generation.parse::<u64>()?,
                 sequence.parse::<u64>()?,
-                CLIENT_SUPPORTED_CAPABILITIES,
+                &[6_u32, 286] as &'static [u32],
             )
         } else {
             let target = actor(EntityKind::Player, 9, 3, at(1, 0));
@@ -125,4 +125,13 @@ fn invisibility_visibility_payload_removes_target_and_rejects_replay() -> Result
         peer.await??;
         Ok(())
     })?
+}
+
+#[test]
+fn captured_identity_rejects_malformed_and_non_ascii_text() -> Result<(), BoxError> {
+    assert!(decode_identity("").is_err());
+    assert!(decode_identity(&"é".repeat(16)).is_err());
+    assert!(decode_identity(&"gg".repeat(16)).is_err());
+    assert_eq!(decode_identity(&"ff".repeat(16))?, [255; 16]);
+    Ok(())
 }

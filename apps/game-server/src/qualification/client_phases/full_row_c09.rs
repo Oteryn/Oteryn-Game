@@ -81,7 +81,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(300), journey(&mut row, clients))
+    let result = row_complete(journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("timeout waiting for required C09 server reply/delta".into()));
     row.finish(result);
@@ -348,6 +348,7 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -358,6 +359,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
     let mut client = connect_world(clients, 0xc9).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let initial = quantity(&client, meat)?;
     buy_meat(&mut client, world, meat).await?;
     if quantity(&client, meat)? != initial + 2 {
@@ -410,9 +413,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     );
     let durable_quantity = quantity(&client, meat)?;
     let old_session = client.join_snapshot().game_session_id;
-    accepted_logout(&mut client).await?;
-    drop(client);
+    accepted_logout(&mut client).await?; row_needs_logout_0 = false;
+    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
     let mut client = connect_world(clients, 0xd9).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let admitted = *client
         .actor_vitals()
         .ok_or("fresh-admission vitals absent")?;
@@ -432,8 +437,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             after.1,
         ),
     );
-    let _ = accepted_logout(&mut client).await;
+    accepted_logout(&mut client).await?; row_needs_logout_1 = false;
     Ok(())
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut client).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut client).await?;
+    }
+    row_result
 }
 
 #[cfg(test)]

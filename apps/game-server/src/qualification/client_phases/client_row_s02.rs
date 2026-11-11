@@ -7,13 +7,13 @@ use oteryn_dev_client::{DevClientSession, EntityRef};
 use oteryn_protocol_oteryn::{CommandStatus, party_skull};
 use runtime::party::PartyIntent;
 
-fn capture(name: &str, bytes: &[u8]) {
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
+        return Ok(());
     };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+
+    Ok(())
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -68,6 +68,7 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let row_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -77,7 +78,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut leader = connect_character(clients, 0x49, 0).await?;
+    let mut row_needs_logout_0 = true;
+    let row_result: TestResult<_> = async {
     let mut peer = connect_character(clients, 0x4a, 1).await?;
+    let mut row_needs_logout_1 = true;
+    let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let other = tile(peer.world_spatial().actor_position)?;
     let path = route(world, tile(leader.world_spatial().actor_position)?, |at| {
         at != other
@@ -93,7 +98,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !(1..=2).contains(&invited_shield) {
         return Err(format!("invitation shield {invited_shield} is not blue/yellow").into());
     }
-    capture("s02-invited.bin", &invited_bytes);
+    capture("s02-invited.bin", &invited_bytes)?;
 
     let view = party(&mut peer, None).await?;
     let state = runtime::party::decode_party_result(&view)
@@ -112,8 +117,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if leader_shield != 4 && leader_shield != 6 {
         return Err(format!("leader shield {leader_shield} is not leader/shared").into());
     }
-    capture("s02-member.bin", &member_bytes);
-    capture("s02-leader.bin", &leader_bytes);
+    capture("s02-member.bin", &member_bytes)?;
+    capture("s02-leader.bin", &leader_bytes)?;
     let expected = format!(
         "peer_identity={}\npeer_generation={}\nleader_identity={}\nleader_generation={}\ninvited_shield={invited_shield}\ninvited_skull={invited_skull}\nmember_shield={peer_shield}\nmember_skull={peer_skull}\nleader_shield={leader_shield}\nleader_skull={leader_skull}\n",
         hex(&peer_ref.identity),
@@ -121,15 +126,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         hex(&leader_ref.identity),
         leader_ref.generation,
     );
-    capture("s02-expected.txt", expected.as_bytes());
+    capture("s02-expected.txt", expected.as_bytes())?;
     party(&mut leader, Some(PartyIntent::Leave)).await?;
-    let _ = leader.session_mut().logout().await?;
-    let _ = peer.session_mut().logout().await?;
+    row_logout(&mut leader).await?; row_needs_logout_0 = false;
+    row_logout(&mut peer).await?; row_needs_logout_1 = false;
     Ok(expected.replace('\n', ";"))
+
+    }).await.unwrap_or_else(|error| Err(error.into()));
+    if row_needs_logout_1 { row_logout(&mut peer).await?; }
+    row_result
+
+    }.await;
+    if row_needs_logout_0 {
+        row_logout(&mut leader).await?;
+    }
+    row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match row_complete(journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S02.client status=CAPTURED evidence={expected}"
         )),
@@ -137,5 +152,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=S02.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=S02.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hex_preserves_zero_padding_and_high_bytes() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[0, 15, 128, 255]), "000f80ff");
     }
 }

@@ -3,17 +3,18 @@
 use super::*;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = capture(clients).await {
+    if let Err(error) = capture(clients).await.inspect(|line| evidence(line)) {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C11.client status=FAIL evidence={error}"
         ));
     }
 }
 
-async fn capture(clients: &SeamClients<'_>) -> TestResult {
+async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
     use oteryn_protocol_oteryn::battle_instinct_status as wire;
 
     let mut client = connect_world(clients, 0xcd).await?;
+    let row_result: TestResult<_> = async {
     let reply = client
         .session_mut()
         .gated_command(
@@ -36,18 +37,21 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             status.melee,
             status.shielding
         );
-        for (name, result) in [
+        for (_name, result) in [
             ("c11-battle-instinct.bin", std::fs::write(path.join("c11-battle-instinct.bin"), &reply.payload)),
             ("c11-expected.txt", std::fs::write(path.join("c11-expected.txt"), expected)),
         ] {
-            if let Err(error) = result {
-                evidence(&format!("C11_CAPTURE_WRITE_ERROR file={name} error={error}"));
-            }
+            result?;
         }
     }
-    evidence(&format!(
+    let verdict = format!(
         "SEAM_EVIDENCE e2e_all scenario=C11.client status=PASS evidence=active-{}-melee-{}-shielding-{}",
         status.active, status.melee, status.shielding
-    ));
-    Ok(())
+    );
+    Ok(verdict)
+
+    }.await;
+    let logout_result = row_logout(&mut client).await;
+    logout_result?;
+    row_result
 }

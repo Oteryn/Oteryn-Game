@@ -74,10 +74,17 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
                 .get(point.creature as usize)
                 .is_some_and(|creature| creature.key == "oteryn:creature.rat")
         })
-        .map(|(floor, point)| TilePos { x: point.x, y: point.y, floor })
+        .map(|(floor, point)| TilePos {
+            x: point.x,
+            y: point.y,
+            floor,
+        })
         .collect();
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
             && rats.iter().any(|rat| {
                 rat.floor == at.floor && rat.x.abs_diff(at.x).max(rat.y.abs_diff(at.y)) <= 1
             })
@@ -91,12 +98,20 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
             entities.iter().find(|entity| {
                 entity.kind == oteryn_dev_client::EntityKind::Creature
                     && entity.position.floor == at.floor
-                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
+                    && entity
+                        .position
+                        .x
+                        .abs_diff(at.x)
+                        .max(entity.position.y.abs_diff(at.y))
+                        <= 1
             })
         })
         .copied()
         .ok_or("step-3 rat spawn reached but no adjacent creature frame observed")?;
-    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
+    let attack = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
     if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step-3 native ATTACK refused: {attack:?}").into());
     }
@@ -104,13 +119,19 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
-        if client.world_entities().is_some_and(|entities| entities.get(&target.entity).is_none()) {
+        if client
+            .world_entities()
+            .is_some_and(|entities| entities.get(&target.entity).is_none())
+        {
             client.session_mut().attack_target(None).await?;
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
             client.session_mut().attack_target(None).await?;
-            return Err(format!("step-3 ATTACK timed out without creature removal; reply={attack:?}").into());
+            return Err(format!(
+                "step-3 ATTACK timed out without creature removal; reply={attack:?}"
+            )
+            .into());
         }
     }
 }
@@ -121,7 +142,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         let reply = client.session_mut().logout().await?;
         match reply.result {
             Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-                if reply.status == CommandStatus::Accepted => return Ok(()),
+                if reply.status == CommandStatus::Accepted =>
+            {
+                return Ok(());
+            }
             Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
                 if tokio::time::Instant::now() < deadline =>
             {
@@ -167,7 +191,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // HuntingClock's first due boundary is the admission second. Cross it
     // naturally so this credited kill must exercise (rather than merely arm)
     // the one-minute debit, while remaining well below the two-minute branch.
-    tokio::time::sleep(Duration::from_secs(2)).await;
+    let wait_until = tokio::time::Instant::now() + Duration::from_secs(2);
+    while tokio::time::Instant::now() < wait_until {
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
     hunt(&mut client, world).await?;
     let settlement_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let after = loop {
@@ -179,7 +206,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     };
     if after.xp <= before.xp || after.level < before.level || after.stamina + 1 != before.stamina {
-        return Err(format!("step-3 kill settlement mismatch: before={before:?} after={after:?}").into());
+        return Err(
+            format!("step-3 kill settlement mismatch: before={before:?} after={after:?}").into(),
+        );
     }
     logout(&mut client).await?;
     drop(client);
@@ -194,7 +223,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || recovered.level != after.level
         || recovered.stamina != after.stamina + 1
     {
-        return Err(format!("step-5 durable/offline recovery mismatch: saved={after:?} fresh={recovered:?}").into());
+        return Err(format!(
+            "step-5 durable/offline recovery mismatch: saved={after:?} fresh={recovered:?}"
+        )
+        .into());
     }
     logout(&mut fresh).await?;
     Ok(())
@@ -236,7 +268,14 @@ mod tests {
         })
         .encode()
         .map_err(|error| format!("encode fixture: {error:?}"))?;
-        assert_eq!(decode_progress(&payload)?, Progress { xp: 123, level: 7, stamina: 2_519 });
+        assert_eq!(
+            decode_progress(&payload)?,
+            Progress {
+                xp: 123,
+                level: 7,
+                stamina: 2_519
+            }
+        );
         assert!(decode_progress(&payload[..41]).is_err());
         Ok(())
     }
