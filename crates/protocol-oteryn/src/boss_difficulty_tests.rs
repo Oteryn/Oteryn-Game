@@ -202,3 +202,102 @@ fn legacy_window_bytes_and_open_action_remain_compatible() -> Result<(), Error> 
     assert_eq!(decode_request(&encode_request(&request)?)?, request);
     Ok(())
 }
+
+fn pity_window() -> Reply {
+    Reply::Window {
+        context: [9; 16],
+        boss_key: "oteryn:boss.mimar_haffar".into(),
+        boss_creature_key: "oteryn:creature.mimar_haffar".into(),
+        content_revision: "r1".into(),
+        selected_difficulty: 3,
+        personal_highest: 2,
+        unlocked_max: 3,
+        maximum_difficulty: 25,
+    }
+}
+
+#[test]
+fn pity_tracker_fields_round_trip_after_the_progress_fields() -> Result<(), Error> {
+    let window = pity_window();
+    for pity in [
+        PityTracker {
+            kills_without_drop: 0,
+            bonus_permille: 0,
+            tracker_active: true,
+        },
+        PityTracker {
+            kills_without_drop: 10,
+            bonus_permille: 1_000,
+            tracker_active: true,
+        },
+        PityTracker {
+            kills_without_drop: 37,
+            bonus_permille: MAX_PITY_BONUS_PERMILLE,
+            tracker_active: true,
+        },
+        PityTracker {
+            kills_without_drop: u16::MAX,
+            bonus_permille: 0,
+            tracker_active: false,
+        },
+    ] {
+        let bytes = encode_reply_with_pity(&window, Some(&pity))?;
+        let mut expected = encode_reply(&window)?;
+        push_varint_field(&mut expected, 11, u64::from(pity.kills_without_drop));
+        push_varint_field(&mut expected, 12, u64::from(pity.bonus_permille));
+        push_varint_field(&mut expected, 13, u64::from(pity.tracker_active));
+        assert_eq!(bytes, expected);
+        assert_eq!(
+            decode_reply_with_pity(&bytes)?,
+            (window.clone(), Some(pity))
+        );
+        // A session without capability 492 never accepts the extension fields.
+        assert!(decode_reply(&bytes).is_err());
+    }
+    // Without a tracker the selected decoder reads the V1 bytes unchanged.
+    let plain = encode_reply(&window)?;
+    assert_eq!(decode_reply_with_pity(&plain)?, (window, None));
+    Ok(())
+}
+
+#[test]
+fn pity_tracker_rejects_partial_out_of_range_and_non_progress_replies() -> Result<(), Error> {
+    let window = pity_window();
+    let active = PityTracker {
+        kills_without_drop: 5,
+        bonus_permille: 500,
+        tracker_active: true,
+    };
+    let bytes = encode_reply_with_pity(&window, Some(&active))?;
+    let plain_length = encode_reply(&window)?.len();
+    for end in plain_length + 1..bytes.len() {
+        assert!(
+            decode_reply_with_pity(&bytes[..end]).is_err(),
+            "partial tracker at {end}"
+        );
+    }
+    for invalid in [
+        PityTracker {
+            bonus_permille: MAX_PITY_BONUS_PERMILLE + 1,
+            ..active
+        },
+        PityTracker {
+            tracker_active: false,
+            ..active
+        },
+    ] {
+        assert!(encode_reply_with_pity(&window, Some(&invalid)).is_err());
+    }
+    let mut flag = encode_reply(&window)?;
+    push_varint_field(&mut flag, 11, 1);
+    push_varint_field(&mut flag, 12, 0);
+    push_varint_field(&mut flag, 13, 2);
+    assert!(decode_reply_with_pity(&flag).is_err());
+    let mut legacy = window;
+    if let Reply::Window { unlocked_max, .. } = &mut legacy {
+        *unlocked_max = 0;
+    }
+    assert!(encode_reply_with_pity(&legacy, Some(&active)).is_err());
+    assert!(encode_reply_with_pity(&Reply::Closed { context: [9; 16] }, Some(&active)).is_err());
+    Ok(())
+}
