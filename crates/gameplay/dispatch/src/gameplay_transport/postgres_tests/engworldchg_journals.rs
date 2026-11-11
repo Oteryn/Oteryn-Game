@@ -104,13 +104,19 @@ fn scenario(
                         |member| member.from,
                     ),
             );
+            let room = super::rust_lottery::bundle_action_room(
+                activated.qualified_room(),
+                &world,
+                deps.admitted.world_id,
+                &cells,
+            )?;
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
                 generation.identity().server_artifact_digest(),
                 generation.identity().client_artifact_digest(),
-                activated.frame_binding().digest(),
-                world.map_revision_digest(),
+                room.frame_binding().digest(),
+                room.map_revision_digest(),
                 (origin.x, origin.y, origin.floor),
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -133,6 +139,7 @@ fn scenario(
                 .initialize_pinned_test_position(deps.actor, origin)
                 .map_err(debug)?;
             deps.runtime = tokio::sync::Mutex::new(runtime);
+            deps.combat_room = Some(room);
             let (consumer, clock, activation, _) =
                 crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
                     id(40),

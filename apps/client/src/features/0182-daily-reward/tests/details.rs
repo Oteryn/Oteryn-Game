@@ -72,7 +72,7 @@ fn daily_reward_catalogue_and_account_history_cross_real_session_caller() -> Res
                 let panel = tokio::time::timeout(Duration::from_secs(3), async {
                     loop {
                         let panel = link.daily_reward_panel();
-                        // The first reply can arrive before the second request is queued.
+                        // A second accepted refresh keeps the previous details while pending.
                         if panel.details.is_some() && !panel.pending {
                             break panel;
                         }

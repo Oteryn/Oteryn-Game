@@ -443,7 +443,15 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
         let applied: u64 = applied.parse()?;
         let expires: u64 = expires.parse()?;
         assert_eq!(expires - applied, if item == 7644 { 0 } else { 60_000_000 });
-        super::cl6_status::check_timer(&owner, deps.actor, admitted.game_session_id, &key, item == 35563, 60_000).await?;
+        super::cl6_status::check_timer(
+            &owner,
+            deps.actor,
+            admitted.game_session_id,
+            &key,
+            item == 35563,
+            60_000,
+        )
+        .await?;
         let after_conditions = {
             let runtime = deps.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -562,7 +570,15 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
                 "expiry cannot consume another potion"
             );
         }
-        super::cl6_status::check_timer(&owner, deps.actor, admitted.game_session_id, &key, false, 60_000).await?;
+        super::cl6_status::check_timer(
+            &owner,
+            deps.actor,
+            admitted.game_session_id,
+            &key,
+            false,
+            60_000,
+        )
+        .await?;
         eprintln!("PG_MARKER i14-special-potion-effect-burn-flask-replay-cooldown {item}");
         drop(owner);
         drop(authority);

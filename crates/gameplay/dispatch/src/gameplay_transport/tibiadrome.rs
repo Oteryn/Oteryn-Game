@@ -27,16 +27,18 @@ pub(super) struct Drome {
 impl Drome {
     pub(in crate::gameplay_transport) fn test_exploding_corpses(
         &self,
+        runtime: &mut ChannelRuntimeV1,
         session: GameSessionId,
     ) -> Result<(), &'static str> {
-        modifiers::select_test_modifier(self, session,
+        modifiers::select_test_modifier(self, runtime, session,
             oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::ExplodingCorpses)
     }
     pub(in crate::gameplay_transport) fn test_somersault(
         &self,
+        runtime: &mut ChannelRuntimeV1,
         session: GameSessionId,
     ) -> Result<(), &'static str> {
-        modifiers::select_test_modifier(self, session,
+        modifiers::select_test_modifier(self, runtime, session,
             oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::Somersault)
     }
 }

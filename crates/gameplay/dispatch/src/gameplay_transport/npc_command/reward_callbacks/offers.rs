@@ -2,24 +2,7 @@
 use super::*;
 
 pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Offers> {
-    let mut offers = Offers {
-        schema: 1,
-        offers: Vec::new(),
-    };
-    for source in [
-        include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
-        include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
-    ] {
-        let document: Offers = serde_json::from_str(source).ok()?;
-        if document.schema != 1 {
-            return None;
-        }
-        offers.offers.extend(document.offers);
-    }
-    offers
-        .offers
-        .extend(super::offer_match::rafzan_offers()?.offers);
+    let mut offers = embedded()?;
     #[cfg(test)]
     if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
         offers.offers.extend(rows.iter().cloned());
@@ -38,5 +21,28 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
     {
         return None;
     }
+    Some(offers)
+}
+
+pub(super) fn embedded() -> Option<Offers> {
+    let mut offers = Offers {
+        schema: 1,
+        offers: Vec::new(),
+    };
+    for source in [
+        include_str!("../../../../../../../content/quests/shared-reward-offers.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
+    ] {
+        let document: Offers = serde_json::from_str(source).ok()?;
+        if document.schema != 1 {
+            return None;
+        }
+        offers.offers.extend(document.offers);
+    }
+    offers
+        .offers
+        .extend(super::offer_match::rafzan_offers()?.offers);
     Some(offers)
 }

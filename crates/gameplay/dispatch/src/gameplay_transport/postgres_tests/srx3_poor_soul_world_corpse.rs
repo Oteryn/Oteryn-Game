@@ -136,7 +136,7 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
                         crate::foundation::OwnerDamageCommand {
                             target: POOR_SOUL.as_bytes(),
                             occurrence: b"srx3:poor-soul:world-source-death",
-                            binding: b"srx3:poor-soul:actual-xml-owner",
+                            binding: b"srx3:poor-soul:world-source-death\0srx3:poor-soul:actual-xml-owner",
                             damage: health,
                         },
                     )

@@ -403,7 +403,7 @@ enum Physical {
 }
 
 #[test]
-fn srvenc_tibiadrome_postgres_real_source_hall_runs_an_irregular_native_wave() -> TestResult {
+fn srvenc_tibiadrome_postgres_source_hall_refuses_unqualified_native_pool() -> TestResult {
     run_physical_regression(Physical::Source)
 }
 
@@ -711,28 +711,83 @@ fn physical_context(
             sqlx::query("INSERT INTO game_character_tibiadrome(character_id,body) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body")
                 .bind(id(41).as_slice()).bind(serde_json::to_value(seeded)?).execute(&harness.pool).await?;
         }
-        owner.states.tibiadrome.mechanics_test_context.store(
-            mechanics_test_context && !matches!(case, Physical::Source),
-            std::sync::atomic::Ordering::Release,
-        );
+        let mechanics_test_context = mechanics_test_context && !matches!(case, Physical::Source);
+        owner
+            .states
+            .tibiadrome
+            .mechanics_test_context
+            .store(mechanics_test_context, std::sync::atomic::Ordering::Release);
         owner
             .states
             .tibiadrome
             .mechanics_test_hazards
             .store(large_hazards, std::sync::atomic::Ordering::Release);
+        let refusal_before = if !mechanics_test_context {
+            let physical = {
+                let runtime = deps.runtime.lock().await;
+                (
+                    runtime.read_actor_position(deps.actor).map_err(debug)?,
+                    runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .map(|creature| creature.actor)
+                        .collect::<Vec<_>>(),
+                )
+            };
+            let backpack = owner
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await?;
+            let fees: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fee_burns")
+                .fetch_one(&harness.pool)
+                .await?;
+            Some((physical, backpack, fees))
+        } else {
+            None
+        };
         let entered = drome_exchange(
             &owner,
             &mut admitted,
             oteryn_protocol_oteryn::arena::DromeAction::Enter,
         )
         .await?;
-        if !mechanics_test_context {
+        if let Some(((position, creatures), backpack, fees)) = refusal_before {
             assert_eq!(
-                (entered.disposition, entered.phase),
-                (6, 0),
-                "unqualified Svargrond profiles must not admit a Drome battle"
+                (entered.disposition, entered.phase, entered.wave),
+                (6, 0, 0),
+                "a source hall or Svargrond profiles alone cannot qualify a native Drome pool"
             );
-            assert!(!owner.runtime.lock().await.is_tibiadrome(deps.actor));
+            {
+                let runtime = deps.runtime.lock().await;
+                assert!(!runtime.is_tibiadrome(deps.actor));
+                assert_eq!(
+                    runtime.read_actor_position(deps.actor).map_err(debug)?,
+                    position
+                );
+                assert_eq!(
+                    runtime
+                        .visible_entities()
+                        .creatures
+                        .iter()
+                        .map(|creature| creature.actor)
+                        .collect::<Vec<_>>(),
+                    creatures,
+                    "refused entry cannot admit replacement native opponents"
+                );
+            }
+            assert_eq!(
+                owner
+                    .root
+                    .read_character_backpack(&authority, fence.character_id)
+                    .await?,
+                backpack,
+                "refused entry preserves every carried item and quantity"
+            );
+            let after_fees: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fee_burns")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(after_fees, fees, "refused entry cannot charge an arena fee");
             return Ok(());
         }
         assert_eq!(
@@ -814,7 +869,13 @@ fn physical_context(
             // The existing admitted physical fixture has a sealed ModifierOwner.
             // This exercises its real draw and pending-effect consumer, not a raw
             // Teleport effect or a second modifier engine.
-            owner.states.tibiadrome.test_somersault(session)?;
+            {
+                let mut runtime = deps.runtime.lock().await;
+                owner
+                    .states
+                    .tibiadrome
+                    .test_somersault(&mut runtime, session)?;
+            }
             let actor = *targets.first().ok_or("actual admitted Drome opponent")?;
             let baseline = world
                 .facts()
@@ -866,11 +927,19 @@ fn physical_context(
         }
 
         if matches!(case, Physical::ThreeWaveCommandCatchup) {
-            owner.states.tibiadrome.test_somersault(session)?;
+            let mut runtime = deps.runtime.lock().await;
+            owner
+                .states
+                .tibiadrome
+                .test_somersault(&mut runtime, session)?;
         }
         if exploding {
-            owner.states.tibiadrome.test_exploding_corpses(session)?;
             let mut runtime = deps.runtime.lock().await;
+            owner
+                .states
+                .tibiadrome
+                .test_exploding_corpses(&mut runtime, session)?;
+            assert!(runtime.permits_tibiadrome_health_loss(deps.actor, 25));
             let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
             let origin = before.position();
             let other = crate::foundation::GameSessionId::decode(&id(94)).map_err(debug)?;
@@ -1148,7 +1217,13 @@ fn physical_context(
                         .collect()
                 };
                 assert_eq!(targets.len(), 4, "native next-wave spawning");
-                owner.states.tibiadrome.test_somersault(session)?;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    owner
+                        .states
+                        .tibiadrome
+                        .test_somersault(&mut runtime, session)?;
+                }
                 for target in targets {
                     fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
                 }
