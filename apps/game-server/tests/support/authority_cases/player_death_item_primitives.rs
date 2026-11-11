@@ -2371,6 +2371,222 @@ fn player_death_terminal_item_update_still_rejects_surviving_custody() -> TestRe
         .map_err(Into::into)
 }
 
+async fn run_terminal_item_receipt_collision(admin: String) -> TestResult {
+    use crate::item_transfer_postgres_cases::CHARACTER;
+
+    let h = Harness::create(admin, "terminal_item_receipt_collision").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = carried_chain(&h, &authority, 2).await?;
+    let selected = items[0];
+    drop_unselected_death_root(&h, &authority, selected, false).await?;
+    let reset = prepare_nested_reset(&h, &h.root).await?;
+    let before = nested_reset_terminal_snapshot(&h).await?;
+
+    // Obtain the real owner's frozen root reservation, then refuse its first
+    // terminal write. All production guards remain installed and active.
+    sqlx::raw_sql(
+        "CREATE SEQUENCE test_terminal_collision_stop; \
+         CREATE FUNCTION test_terminal_collision_stop() RETURNS trigger LANGUAGE plpgsql AS $$ \
+          BEGIN IF NEW.lifecycle=2 THEN \
+           PERFORM nextval('test_terminal_collision_stop'::regclass); \
+           RAISE EXCEPTION 'fixture stops before terminal Item write'; \
+          END IF; RETURN NEW; END $$; \
+         CREATE TRIGGER test_terminal_collision_stop BEFORE UPDATE ON game_item_instances \
+          FOR EACH ROW EXECUTE FUNCTION test_terminal_collision_stop(); \
+         GRANT USAGE,SELECT ON SEQUENCE test_terminal_collision_stop TO oteryn_game_runtime;",
+    )
+    .execute(&h.pool)
+    .await?;
+    let stopped = h
+        .root
+        .retire_world_reset_ground(&authority, &h.node, &reset)
+        .await;
+    sqlx::raw_sql(
+        "DROP TRIGGER test_terminal_collision_stop ON game_item_instances; \
+         DROP FUNCTION test_terminal_collision_stop();",
+    )
+    .execute(&h.pool)
+    .await?;
+    assert!(stopped.is_err());
+    let reached: bool = sqlx::query_scalar("SELECT is_called FROM test_terminal_collision_stop")
+        .fetch_one(&h.pool)
+        .await?;
+    assert!(reached, "the real owner reached its terminal Item write");
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, before);
+    assert_eq!(h.count("game_item_decay_retire_reservations").await?, 1);
+    let frozen: (Vec<u8>, i64) = sqlx::query_as(
+        "SELECT uuid_send(transaction_id),quantity_before \
+         FROM game_item_decay_retire_reservations WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(frozen.1, 1);
+    let footprint = h.footprint().await?;
+    assert_eq!(h.count("game_item_house_shape_proofs").await?, 0);
+
+    let mut tx = h.pool.begin().await?;
+    // This private evidence is deliberately conflicting. Its foreign key and
+    // full House proof are deferred; the Item BEFORE guard must refuse first.
+    let proof = sqlx::query(
+        "INSERT INTO game_item_house_shape_proofs( \
+          transaction_id,event_id,game_session_id,command_id,character_id,world_id,house_key, \
+          shape,item_instance_id,quantity_before,state_revision_before, \
+          definition_family,definition_production_key,definition_revision_ref,key_number,source_kind, \
+          reclaim_subject,provenance_before,scope_generation,connection_generation,lease_generation, \
+          content_revision,ruleset_revision) \
+         SELECT r.transaction_id,r.event_id,i.item_instance_id,1,encode($2,'hex')::uuid,i.world_id, \
+          'collision-fixture',5,i.item_instance_id,i.quantity,i.state_revision, \
+          i.definition_family,i.definition_production_key,i.definition_revision_ref,0,1, \
+          encode($2,'hex')::uuid,1,1,1,1,'content-1','ruleset-1' \
+         FROM game_item_decay_retire_reservations r JOIN game_item_instances i USING(item_instance_id) \
+         WHERE r.item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .bind(id(CHARACTER).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(proof.rows_affected(), 1);
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    match sqlx::query(
+        "UPDATE game_item_instances SET quantity=0,lifecycle=2, \
+         last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .bind(frozen.0.as_slice())
+    .execute(&mut *tx)
+    .await
+    {
+        Err(sqlx::Error::Database(error)) => {
+            assert_eq!(error.code().as_deref(), Some("23514"));
+            assert_eq!(error.message(), "house transfer preserves item state");
+        }
+        other => {
+            return Err(
+                format!("expected immediate House receipt collision, got {other:?}").into(),
+            );
+        }
+    }
+    tx.rollback().await?;
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, before);
+    assert_eq!(h.footprint().await?, footprint);
+    assert_eq!(h.count("game_item_house_shape_proofs").await?, 0);
+    assert!(
+        h.root
+            .retire_world_reset_ground(&authority, &h.node, &reset)
+            .await
+            .map_err(debug)?
+    );
+    for item in items {
+        assert_eq!(h.item_state(item).await?, (0, 2));
+    }
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_terminal_item_keeps_competing_receipt_guard() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_terminal_item_receipt_collision(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "terminal Item receipt collision thread panicked")?
+        .map_err(Into::into)
+}
+
+async fn run_terminal_item_nested_contents_refusal(admin: String) -> TestResult {
+    let h = Harness::create(admin, "terminal_item_nested_contents").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = carried_chain(&h, &authority, 2).await?;
+    let selected = items[0];
+    drop_unselected_death_root(&h, &authority, selected, false).await?;
+    assert_eq!(h.count("game_item_nested_entries").await?, 2);
+    let before = nested_reset_terminal_snapshot(&h).await?;
+    let footprint = h.footprint().await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let changed = sqlx::query(
+        "UPDATE game_item_instances SET quantity=0,lifecycle=2, \
+         last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .bind(id(240).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(changed.rows_affected(), 1);
+    let removed = sqlx::query(
+        "DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(selected.as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(removed.rows_affected(), 1);
+    // The root has no custody, but its real normalized nested child survives.
+    // Execute the actual location callback before other deferred proof errors.
+    match sqlx::query("SET CONSTRAINTS game_item_instance_location_exclusive IMMEDIATE")
+        .execute(&mut *tx)
+        .await
+    {
+        Err(sqlx::Error::Database(error)) => {
+            assert_eq!(error.code().as_deref(), Some("23514"));
+            assert_eq!(
+                error.message(),
+                "a retired item cannot hold nested contents"
+            );
+        }
+        other => {
+            return Err(format!("expected retired parent contents refusal, got {other:?}").into());
+        }
+    }
+    tx.rollback().await?;
+    assert_eq!(nested_reset_terminal_snapshot(&h).await?, before);
+    assert_eq!(h.footprint().await?, footprint);
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_terminal_item_without_custody_still_rejects_nested_contents() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_terminal_item_nested_contents_refusal(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "terminal Item nested contents thread panicked")?
+        .map_err(Into::into)
+}
+
 /// Qualified test Content keeps the same weights for the whole scenario. One
 /// additional carried bag makes the complete incoming tree exactly one unit
 /// overweight; dropping that bag admits the same tree at the exact capacity.

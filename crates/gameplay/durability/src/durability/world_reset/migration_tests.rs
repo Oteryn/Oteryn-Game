@@ -42,7 +42,7 @@ fn death_tree_retirement_adds_private_source_proofs_without_replacing_authority_
 -> Result<(), Box<dyn std::error::Error>> {
     let migration = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
-        .find(|migration| migration.version == 2731)
+        .find(|migration| migration.version == 2805)
         .ok_or("death tree retirement migration")?;
     let sql = migration.sql.as_str();
     for guard in [
@@ -100,7 +100,7 @@ fn death_tree_retirement_preserves_the_existing_corpse_capacity()
     );
     let retirement = oteryn_gameplay_durability::GAME_MIGRATOR
         .iter()
-        .find(|migration| migration.version == 2731)
+        .find(|migration| migration.version == 2805)
         .ok_or("death tree retirement migration")?;
     assert!(retirement.sql.as_str().contains(&format!(
         "AND (cause_kind<>''CORPSE_DECAY'' OR placement_ordinal<={corpse_max})"
@@ -120,7 +120,7 @@ fn death_tree_bounds_remain_compulsory_at_both_terminal_root_proofs()
     let migrations = &oteryn_gameplay_durability::GAME_MIGRATOR;
     let retirement = migrations
         .iter()
-        .find(|migration| migration.version == 2731)
+        .find(|migration| migration.version == 2805)
         .ok_or("death tree retirement migration")?;
     let sql = retirement.sql.as_str();
     let entry = sql
