@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "recipe_sha256": "10d3f897c07d8335fb8075749b63632d86bebedcc19392554cb9a5dd66388ace",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/goblin_merchant_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/goblin_merchant_quest/s1",
+              "quest": "oteryn:quest.goblin_merchant_quest",
+              "npc": "oteryn:npc.rafzan",
+              "keywords": [
+                "six jobs"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/goblin_merchant_quest/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Place three Advertisement Signs on cracked swamp stones."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "recipe_sha256": "b24ad4f59de103ec7a63b5faa4fa6de02853c7aa0c72fd9743d2f20c76fa3d61",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/machinery_of_war_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/machinery_of_war_quest/s1",
+              "quest": "oteryn:quest.machinery_of_war_quest",
+              "npc": "oteryn:npc.baxter",
+              "keywords": [
+                "orc-war commission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/machinery_of_war_quest/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Obtain forty-four Bricklayers' Kits for the chosen repair budget."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ],
+              "minimum_level": 50
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.authored.annual_autumn_vintage",
+      "recipe_sha256": "dc7b24d53af05a570112598efcddf625fa6ebcb6518ab20f9384faf8360e2322",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/annual_autumn_vintage/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/annual_autumn_vintage/s1",
+              "quest": "oteryn:quest.authored.annual_autumn_vintage",
+              "npc": "oteryn:npc.emilie",
+              "keywords": [
+                "cellar assignment"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/annual_autumn_vintage/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Gather ten winterberry bunches"
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.barbarian_test",
+      "recipe_sha256": "022dfe6496e1e40c7571b07557cf62313a43d1be3621445d8e697e5645c0c1de",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/barbarian_test/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/barbarian_test/s1",
+              "quest": "oteryn:quest.barbarian_test",
+              "npc": "oteryn:npc.sven",
+              "keywords": [
+                "barbarian test"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/barbarian_test/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Next: Offer a Honeycomb and complete the chosen ten-sip mead test."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+                "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+              ],
+              "requires_premium": true
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00100-00199.json: selected recipe s1",
+        "tools/content-schema/quest-authoring/m01a_talk_routes.py: authored briefing choices"
+      ]
+    }
+  ]
+}

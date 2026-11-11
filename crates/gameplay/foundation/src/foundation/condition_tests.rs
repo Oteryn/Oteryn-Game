@@ -1583,6 +1583,11 @@ fn non_ticking_expiry_preserves_overdue_dot_regeneration_and_tick_budget() {
         )
         .unwrap();
     }
+    assert_eq!(
+        store.next_non_ticking_expiry(),
+        None,
+        "periodic debt never becomes a native housekeeping expiry deadline"
+    );
     let now = 20_000 * MS;
     assert_eq!(
         store.take_due(now, TickFacts::default()).len(),
@@ -1735,4 +1740,93 @@ fn pubproj_historical_source_expires_with_condition_and_never_restores_authority
         store.instances().is_empty(),
         "metadata has no lifetime outside its exhausted condition"
     );
+}
+
+/// Canary 47dfd51f lisa_heal.lua:1-5, tyrn_heal.lua:1-5 and
+/// glooth_fairy_healing.lua:1-5 and omrafir_beam.lua:1-5 share regeneration sub-ID 88888.
+/// Integer health gain is zero; their scripted heals are separate callbacks.
+#[test]
+fn srx3_source_regeneration_88888_uses_canonical_store_and_exact_expiry() {
+    for duration_ms in [5_000_u32, 6_000, 7_000, 10_000, 30_000, 600_000, 900_000] {
+        let values: ConditionValues = serde_json::from_value(serde_json::json!({
+            "SpellRegeneration": {
+                "duration_ms": duration_ms,
+                "sub_id": 88888,
+                "health_gain": 0,
+                "health_interval_ms": duration_ms,
+                "mana_gain": 0,
+                "mana_interval_ms": 1000
+            }
+        }))
+        .expect("source regeneration marker retains its complete source sub-ID");
+        let marker = ConditionDefinition::new("source.regeneration.marker", 1, values)
+            .expect("zero-gain source marker is a real canonical condition");
+        assert_eq!(
+            serde_json::to_value(marker.condition_type()).expect("condition type"),
+            serde_json::json!({"SpellRegeneration": 88888})
+        );
+        let root = root();
+        let mut store = ConditionStore::<u32>::new();
+        store
+            .apply(
+                &marker,
+                Some(7),
+                ConditionSourceKind::SelfUse,
+                &[],
+                &facts(0, &root),
+            )
+            .expect("source marker admission");
+        let before_expiry = u64::from(duration_ms) * MS - 1;
+        assert_eq!(
+            store.next_non_ticking_expiry(),
+            Some(before_expiry + 1),
+            "native housekeeping preserves the exact microsecond marker deadline"
+        );
+        assert_eq!(store.instances().len(), 1);
+        assert_eq!(
+            store.instances()[0].remaining_duration_ms(before_expiry),
+            Some(0)
+        );
+        assert_eq!(store.instances()[0].definition(), &marker);
+        let mut expiry_only = store.clone();
+        assert!(!expiry_only.expire_non_ticking(before_expiry));
+        assert!(expiry_only.expire_non_ticking(before_expiry + 1));
+        assert!(expiry_only.instances().is_empty());
+        assert_eq!(expiry_only.next_non_ticking_expiry(), None);
+        // A retained marker schedules no HP/mana gain. It still owns its exact
+        // source lifetime and is removed by the existing condition tick owner.
+        assert!(
+            store
+                .take_due(before_expiry, TickFacts::default())
+                .is_empty()
+        );
+        assert_eq!(store.instances().len(), 1);
+        assert!(
+            store
+                .take_due(before_expiry + 1, TickFacts::default())
+                .is_empty()
+        );
+        assert!(store.instances().is_empty());
+    }
+}
+
+#[test]
+fn srx3_regeneration_marker_does_not_admit_arbitrary_zero_gain_subids() {
+    for (sub_id, health_gain, mana_gain) in [(0, 0, 0), (1, 0, 0), (88_889, 0, 0), (88_888, 1, 0)] {
+        assert!(
+            ConditionDefinition::new(
+                "source.regeneration.invalid",
+                1,
+                ConditionValues::SpellRegeneration {
+                    duration_ms: 6_000,
+                    sub_id,
+                    health_gain,
+                    health_interval_ms: 6_000,
+                    mana_gain,
+                    mana_interval_ms: 1_000,
+                },
+            )
+            .is_none()
+        );
+    }
 }

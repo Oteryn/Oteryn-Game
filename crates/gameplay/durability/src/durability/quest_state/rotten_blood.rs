@@ -3,6 +3,12 @@
 //! Access remains an existing Quest track, so altar items and paid access are
 //! consumed by the existing item/wallet callback owners, never by this module.
 
+pub(super) mod current;
+pub use current::{
+    CurrentRottenBloodPartyFacts, CurrentRottenBloodTaintFacts,
+    read_current_rotten_blood_taints_in_transaction,
+};
+
 use oteryn_gameplay_quests::quest::rotten_blood::{
     ACCESS_TRACK, CleanseMode, RottenBloodBoss, RottenBloodRefusal, RottenBloodState,
 };
@@ -21,6 +27,7 @@ use super::super::db::{
 };
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use super::super::{DurabilityError, DurabilityRoot};
+pub mod room_taints;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::RuntimeScopeRefV1;
 
@@ -222,6 +229,13 @@ pub async fn apply_rotten_blood_kill_in_transaction(
             .any(|p| p[0].0.character_id >= p[1].0.character_id)
     {
         return Err(CharacterProgressionError::InvalidInput);
+    }
+    let (scope, generation) = super::super::party_kill_xp::decoded_death_scope(death_key)
+        .ok_or(CharacterProgressionError::AuthorityRejected)?;
+    if participants.iter().any(|(fence, _)| {
+        fence.runtime_scope != scope || fence.scope_ownership_generation.get() != generation
+    }) {
+        return Err(CharacterProgressionError::AuthorityRejected);
     }
     let source: Option<(String, bool, i16)> = sqlx::query_as(
         "SELECT creature_key,created_xact_id=pg_current_xact_id(),principal_count FROM game_party_kill_xp_receipts WHERE death_key=$1",

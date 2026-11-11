@@ -122,6 +122,7 @@ impl QuestLogLines {
 /// The session copy as the Channel owner holds it, with the content it is projected against.
 #[derive(Clone)]
 pub struct QuestLogSource {
+    pub map_marks: Vec<oteryn_protocol_oteryn::quest_log::QuestMapMark>,
     pub content: QuestLogLines,
     pub copy: Arc<dyn QuestLogFacts + Send + Sync>,
     /// Changes whenever the copy changes (each applied receipt and each reload).
@@ -205,6 +206,7 @@ fn project(
     };
     let (content, copy) = (&*source.content.0, &*source.copy);
     QuestLog {
+        map_marks: source.map_marks.clone(),
         view: match view {
             None => None,
             Some(RequestedView::List) => Some(QuestLogView::List(

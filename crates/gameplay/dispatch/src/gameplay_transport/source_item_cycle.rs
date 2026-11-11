@@ -41,6 +41,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .and_then(|timer| timer.next_due_time())
                     .map(|due| due.get())
                     .into_iter()
+                    .chain(states.primal_callbacks.next_due_us())
+                    .chain(states.spite_steps.next_due_us())
+                    .chain(states.rotten_blood_callbacks.next_due_time())
                     .chain(
                         self.bundle_map()
                             .and_then(|map| map.facts.next_movement_decay_time()),
@@ -106,9 +109,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             self.drain_source_item_deadlines().await;
+            self.drain_spite_recovery_notices().await;
             self.drain_quest_encounter_deadlines().await;
+            self.drain_elemental_altar_bosses().await;
             self.drain_source_party_deadlines_bounded().await;
+            self.drain_rotten_movement_callbacks().await;
             let _ = self.drain_native_ai_timers().await;
+            self.drain_rotten_movement_callbacks().await;
+            self.drain_bak_first_think_claims().await;
+            self.drain_primal_pod_callbacks().await;
+            self.drain_primal_pod_expiries().await;
+            self.drain_rotten_portal_callbacks().await;
             if let Some(cycle) = npc_voices.as_mut() {
                 self.emit_npc_voices(cycle, self.owner_now().get()).await;
             }
@@ -173,6 +184,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || source.source_digest() != runtime.content_pin().server_artifact_digest()
         {
             return false;
+        }
+        if matches!(
+            runtime.binding().runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_static_instance(
+                &runtime, room, source,
+            )
+            .is_ok();
         }
         let binding = match crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
             &runtime, room, source,

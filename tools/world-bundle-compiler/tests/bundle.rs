@@ -755,3 +755,45 @@ fn legacy_zero_item_quantity_defaults_without_weakening_the_sector_codec() -> Te
     oteryn_world_bundle_compiler::compile::equivalence(&source, &Resolver, &compiled.bytes)?;
     Ok(())
 }
+
+#[test]
+fn srx3_source_static_bundle_capability_is_required_only_for_used_qualified_surfaces() -> TestResult
+{
+    use oteryn_world_bundle_compiler::resolve::Registry;
+    let mut registry = Registry::default();
+    registry.add_catalogue(
+        "WorldObject",
+        include_bytes!("../../../content/world/objects/objects-12932-13108.json"),
+    )?;
+    registry.add_catalogue(
+        "Terrain",
+        include_bytes!("../../../content/world/terrain/terrain-08613-08613.json"),
+    )?;
+    registry.seal()?;
+    let palette = vec![
+        "oteryn:terrain.tibia.i9290".into(),
+        "oteryn:world-object.tibia.i10649".into(),
+    ];
+    let families = Families::default();
+    for (items, required) in [
+        (vec![item(0, 0)], false),
+        (vec![item(0, 0), item(1, 0)], true),
+    ] {
+        let regions = vec![region(7, 0, 0, &[(0, vec![tile(1, 2, items)])])?];
+        let input = input(&regions, &palette, BuildClass::NonProduction, &families);
+        let compiled = compile(&input, &registry)?;
+        let decoded = bundle::read(&compiled.bytes)?;
+        assert_eq!(
+            decoded
+                .manifest
+                .identity
+                .required_capabilities
+                .iter()
+                .any(|name| name == "source-static-surfaces-v1"),
+            required,
+            "an unused static catalogue must not change compatibility; a placed static surface must fence old readers"
+        );
+        oteryn_world_bundle_compiler::compile::equivalence(&input, &registry, &compiled.bytes)?;
+    }
+    Ok(())
+}

@@ -418,6 +418,12 @@ fn scenario_case(
         } else {
             None
         };
+        let embedded_catalogue = std::sync::Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?
+                .catalogue()
+                .clone(),
+        );
         let cells = world
             .movement_cells(if matches!(case, Case::ChoiceDoor) {
                 activated_pin.qualified_room().movement_cells()
@@ -562,7 +568,9 @@ fn scenario_case(
             owner.active_generation = Some(generation);
             owner.quest_catalogue = quest_catalogue.clone();
             owner.movement_cells = (&cells).into();
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
             owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             let mut stale = admitted;
             let mut stale_fence = fence;
@@ -654,6 +662,7 @@ fn scenario_case(
             for (index, (item, quantity)) in burdens.into_iter().enumerate() {
                 let request = RewardClaimMintRequest {
                     backpack_outputs: false,
+                    additional_items: Vec::new(),
                     command: CommandRef::new(
                         admitted.game_session_id,
                         CommandId::new(100 + u64::try_from(index)?).map_err(debug)?,
@@ -704,7 +713,9 @@ fn scenario_case(
                 owner.active_generation = Some(generation);
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
                 assert_eq!(
                     wire_use_targets(
@@ -798,7 +809,9 @@ fn scenario_case(
                 owner.active_generation = Some(generation);
                 owner.quest_catalogue = quest_catalogue.clone();
                 owner.movement_cells = (&cells).into();
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&embedded_catalogue));
                 owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
                 deps.initialize(&owner).await;
                 if cold_replay {
                     assert_eq!(

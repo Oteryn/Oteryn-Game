@@ -12,6 +12,7 @@ use tokio::sync::Mutex;
 #[derive(Default)]
 pub struct ChannelSessionStates {
     pub(super) admission_queue: std::sync::Mutex<super::admission_queue::AdmissionWaitQueue>,
+    /// Independent mutable Map facts for one source-qualified Instance.
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     /// APP-3: the appearance-change command state of each session, forgotten with the session.
     pub appearance_commands: appearance_change::AppearanceCommands,
@@ -143,6 +144,7 @@ impl ChannelSessionStates {
         Self {
             casts: self.casts.clone(),
             analyser: std::sync::Arc::clone(&self.analyser),
+            boss_activity_handoff: self.boss_activity_handoff.clone(),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
             server_messages: std::sync::Arc::clone(&self.server_messages),

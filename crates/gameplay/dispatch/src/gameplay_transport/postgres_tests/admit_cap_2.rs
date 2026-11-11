@@ -166,6 +166,12 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.movement_cells = (&cells).into();
+    let wire_start = {
+        let runtime = owner.runtime.lock().await;
+        owner.wire_position_frame(&runtime).and_then(|frame| frame.project(start))
+            .ok_or("project admission rune caster")?
+    };
+
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         if enabled { &[11, 30] } else { &[18] },
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
@@ -323,9 +329,9 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
             use_with: None,
             use_with_map_item: None,
             use_with_position: Some(SpellTargetPosition {
-                x: 101,
-                y: 100,
-                floor: 7,
+                x: wire_start.x + 1,
+                y: wire_start.y,
+                floor: wire_start.floor,
             }),
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;

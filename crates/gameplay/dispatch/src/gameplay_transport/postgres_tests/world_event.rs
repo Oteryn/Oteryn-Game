@@ -46,7 +46,7 @@ fn w05d_halloween_calendar_reaches_real_reset_query_and_replay() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_run(2, Some("Halloween"), false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_run(2, Some("Halloween"), false, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "seasonal reset query thread panicked")??;
     Ok(())
@@ -60,7 +60,7 @@ fn w05d_christmas_real_npc_present_replay_and_permanent_claim() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_run(2, Some("Christmas"), false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_run(2, Some("Christmas"), false, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Christmas native NPC thread panicked")??;
     eprintln!(
@@ -78,7 +78,7 @@ fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario_run(2, Some("A Piece of Cake"), false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario_run(2, Some("A Piece of Cake"), false, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Cake native NPC thread panicked")??;
     eprintln!(
@@ -89,22 +89,29 @@ fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
 }
 
 pub(super) fn scenario(epochs: u64) -> TestResult {
-    scenario_run(epochs, None, false)
+    scenario_run(epochs, None, false, None)
 }
 
 pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResult {
-    scenario_run(epochs, None, consumers)
+    scenario_run(epochs, None, consumers, None)
 }
 
-fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool) -> TestResult {
+pub(super) fn scenario_with_native_deaths(epochs: u64, creature: &'static str, active: bool) -> TestResult {
+    scenario_run(epochs, None, false, Some((creature, active)))
+}
+
+fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_deaths: Option<(&'static str, bool)>) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
-            Harness::create_with_admission_seed(admin, "world_event_dispatch", !consumers, false).await?;
-        if seasonal.is_some() {
+            Harness::create_with_admission_seed(admin, "world_event_dispatch", !(consumers || native_deaths.is_some()), false).await?;
+        let clock = seasonal.or_else(|| native_deaths.and_then(|(creature, active)| {
+            (creature == "werewolf").then_some(if active { "QworldGrimvaleActive" } else { "QworldGrimvaleInactive" })
+        }));
+        if clock.is_some() {
             // Fixture clock set before the real reset writer creates its epoch;
             // admission, publication and mutation guards remain enabled.
-            if seasonal == Some("A Piece of Cake") {
+            if clock == Some("A Piece of Cake") {
                 // Business clock matches the historical epoch fixture. T94's
                 // actual observation clock remains current: terminal native
                 // evidence must not claim a future decision (native.rs:483-484).
@@ -112,7 +119,14 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool) -> TestRes
                     .execute(&h.pool).await?;
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
-            } else if seasonal == Some("Christmas") {
+            } else if matches!(clock, Some("QworldGrimvaleActive" | "QworldGrimvaleInactive")) {
+                let clock_sql = if clock == Some("QworldGrimvaleActive") {
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-13 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                } else {
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                };
+                sqlx::query(clock_sql).execute(&h.pool).await?;
+            } else if clock == Some("Christmas") {
                 sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else {
@@ -194,10 +208,12 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool) -> TestRes
         event_fixture::admit(&h, epochs + 1).await?;
         let mut deps = Dependencies::new()?;
         deps.room = room.clone();
-        if consumers {
+        if consumers || native_deaths.is_some() {
             deps.combat_room = Some(room.clone());
+            // Native death cases retain whole cohorts before draining them; include the player.
+            let capacity = if native_deaths.is_some() { 16 } else { 3 };
             planned_world_reset::reset_fixture::set_runtime_with_capacity(
-                &mut deps, world, channel, &pin, epochs + 1, 3,
+                &mut deps, world, channel, &pin, epochs + 1, capacity,
             )?;
         } else {
             set_seasonal_runtime(&mut deps, world, channel, &pin, epochs + 1)?;
@@ -218,7 +234,7 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool) -> TestRes
         item_fence.scope_ownership_generation =
             ScopeOwnershipGeneration::new(epochs + 1).map_err(debug)?;
         deps.admitted.item_fence = Some(item_fence);
-        if consumers {
+        if consumers || native_deaths.is_some() {
             let mut runtime = deps.runtime.lock().await;
             runtime.initialize_pinned_test_position(actor, crate::foundation::MovementLocalPosition { x: 2, y: 11, floor: -7 }).map_err(debug)?;
             runtime.bind_attacker_lease(actor, deps.admitted.game_session_id,
@@ -255,6 +271,9 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool) -> TestRes
             super::qworld::consumers::qualify(&h, &mut owner, &mut admitted, actor, channel_pin, room, epochs).await?;
         }
 
+        if let Some((creature, active)) = native_deaths {
+            super::qworld_native_deaths::exercise(&h, &mut owner, &mut admitted, creature, active).await?;
+        }
         owner
             .runtime
             .lock()

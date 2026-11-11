@@ -463,6 +463,32 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
         );
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_terrain_tool_receipts WHERE tool_item_instance_id IS NULL").fetch_one(&harness.pool).await?, 1);
         assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_terrain_tool_receipts WHERE tool_item_instance_id IS NULL AND tool_definition_family IS NULL AND tool_definition_production_key IS NULL AND tool_definition_revision_ref IS NULL")
+                .fetch_one(&harness.pool)
+                .await?,
+            1,
+            "a bare map action has no invented tool definition",
+        );
+        if before == 3699 {
+            // The no-tool arm must retain the database-owned snapshot guard.
+            let forged = sqlx::query("INSERT INTO game_terrain_tool_receipts(game_session_id,command_id,character_id,tool_item_instance_id,intent,world_id,channel_id,placement,reset_epoch,transformed_item_id,tool_definition_family,tool_definition_production_key,tool_definition_revision_ref) SELECT game_session_id,command_id+1000,character_id,NULL,intent,world_id,channel_id,placement,reset_epoch,transformed_item_id,'Item','oteryn:item.tibia.i2854','definition-r1' FROM game_terrain_tool_receipts LIMIT 1")
+                .execute(&harness.pool)
+                .await
+                .expect_err("no-tool receipts cannot forge a definition");
+            assert_eq!(
+                forged.as_database_error().map(|error| error.message()),
+                Some("terrain tool definition snapshot is database-owned"),
+            );
+            let changed = sqlx::query("UPDATE game_terrain_tool_receipts SET tool_definition_family='Item',tool_definition_production_key='oteryn:item.tibia.i2854',tool_definition_revision_ref='definition-r1'")
+                .execute(&harness.pool)
+                .await
+                .expect_err("an absent source definition remains immutable");
+            assert_eq!(
+                changed.as_database_error().map(|error| error.message()),
+                Some("terrain tool definition snapshot is immutable"),
+            );
+        }
+        assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_map_harvest_records")
                 .fetch_one(&harness.pool)
                 .await?,

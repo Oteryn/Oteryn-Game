@@ -123,6 +123,16 @@ async fn qualify(
         .await
         .map_err(fixture::debug)?;
     let (death, request) = corpse_request(scope, 1)?;
+    assert!(
+        matches!(
+            h.root
+                .freeze_item_mint(&authority, &h.node, request.clone())
+                .await,
+            Err(ItemMintError::AuthorityRejected)
+        ),
+        "an assigned, ready Instance without a committed participant is not a MINT owner"
+    );
+    activity_entry::enter(h, scope).await?;
     let expected_ground = if legacy_reservation {
         let mut bytes = death.world_id().as_bytes().to_vec();
         bytes.extend_from_slice(b"instance:");
@@ -517,7 +527,7 @@ fn native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fen
         return Ok(());
     };
     fixture::runtime()?.block_on(async move {
-        let h=fixture::Harness::create(admin,"encx_native_corpse",true).await?;
+        let h=fixture::Harness::create_with_admission_seed(admin,"encx_native_corpse",true,false).await?;
         eprintln!("Canonical PostgreSQL 18.6; physical Instance death, native corpse/loot owner, replay and namespace fences");
         let result=qualify(&h,false,false).await;
         h.cleanup().await?;
@@ -662,7 +672,7 @@ fn native_instance_corpse_migration_preserves_committed_causes_and_replay_postgr
         return Ok(());
     };
     fixture::runtime()?.block_on(async move {
-        let h=fixture::Harness::create(admin,"encx_corpse_migration",true).await?;
+        let h=fixture::Harness::create_with_admission_seed(admin,"encx_corpse_migration",true,false).await?;
         eprintln!("Canonical PostgreSQL18.6:1152 preserves genuine committed Channel/Instance corpse and loot causes");
         let result=qualify(&h,true,false).await;
         h.cleanup().await?;
@@ -677,10 +687,16 @@ fn native_instance_corpse_migration_preserves_legacy_v1_corpse_and_loot_replay_p
         return Ok(());
     };
     fixture::runtime()?.block_on(async move {
-        let h=fixture::Harness::create(admin,"encx_corpse_legacy_migration",true).await?;
+        let h=fixture::Harness::create_with_admission_seed(admin,"encx_corpse_legacy_migration",true,false).await?;
         eprintln!("Canonical PostgreSQL18.6:legacyv1/61 nativeInstance corpse+loot survives1152 and publicv2/53 replay");
         let result=qualify(&h,true,true).await;
         h.cleanup().await?;
         result
     })
 }
+
+#[path = "native_corpse/activity_entry.rs"]
+mod activity_entry;
+
+#[path = "native_corpse/primal_deadline.rs"]
+mod primal_deadline;

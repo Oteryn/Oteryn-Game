@@ -361,61 +361,6 @@
                   "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
                 },
                 "profile": {
-                  "enum": [
-                    "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
-                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
-                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
-                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
-                  ]
-                },
-                "client_version": {
-                  "type": "string",
-                  "pattern": "^[0-9]+\\.[0-9]+$"
-                },
-                "artifact": {
-                  "type": "string",
-                  "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$"
-                },
-                "membership_manifest_sha256": {
-                  "type": "string",
-                  "pattern": "^[0-9a-f]{64}$"
-                },
-                "membership_entries_sha256": {
-                  "type": "string",
-                  "pattern": "^[0-9a-f]{64}$"
-                }
-              },
-              "required": [
-                "engine",
-                "publisher",
-                "product",
-                "revision",
-                "profile",
-                "client_version",
-                "artifact",
-                "membership_manifest_sha256",
-                "membership_entries_sha256"
-              ]
-            },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "engine": {
-                  "const": "official_client"
-                },
-                "publisher": {
-                  "const": "CipSoft"
-                },
-                "product": {
-                  "const": "Tibia-client"
-                },
-                "revision": {
-                  "type": "string",
-                  "pattern": "^[0-9a-f]{64}$",
-                  "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
-                },
-                "profile": {
                   "const": "OTERYN_OFFICIAL_CLIENT_FIXED_GEOMETRY/v1"
                 },
                 "client_version": {
@@ -528,6 +473,122 @@
                 "membership_manifest_sha256",
                 "membership_entries_sha256",
                 "wiki_source"
+              ]
+            },
+            {
+              "const": {
+                "engine": "canary",
+                "repository": "opentibiabr/canary",
+                "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                "profile": "OTERYN_QM50_ELEVATOR_GROUND/v1",
+                "items_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+                "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "publisher": {
+                  "const": "CipSoft"
+                },
+                "product": {
+                  "const": "Tibia-client"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$",
+                  "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
+                },
+                "profile": {
+                  "enum": [
+                    "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
+                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
+                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+                    "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
+                  ]
+                },
+                "client_version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+$"
+                },
+                "artifact": {
+                  "type": "string",
+                  "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$"
+                },
+                "membership_manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "membership_entries_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "engine",
+                "publisher",
+                "product",
+                "revision",
+                "profile",
+                "client_version",
+                "artifact",
+                "membership_manifest_sha256",
+                "membership_entries_sha256"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "publisher": {
+                  "const": "CipSoft"
+                },
+                "product": {
+                  "const": "Tibia-client"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$",
+                  "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1"
+                },
+                "client_version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+$"
+                },
+                "artifact": {
+                  "type": "string",
+                  "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$"
+                },
+                "membership_manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "membership_entries_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "engine",
+                "publisher",
+                "product",
+                "revision",
+                "profile",
+                "client_version",
+                "artifact",
+                "membership_manifest_sha256",
+                "membership_entries_sha256"
               ]
             }
           ]
@@ -836,6 +897,254 @@
               "item_pointer"
             ]
           }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "crystal"
+                },
+                "revision": {
+                  "const": "201189f871d23597b82caf88fd611454a2ddefb8"
+                },
+                "profile": {
+                  "const": "OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1"
+                }
+              }
+            },
+            "source_item_id": {
+              "enum": [
+                10649,
+                10650,
+                10653,
+                10654,
+                10728,
+                10730,
+                10735,
+                10736,
+                10737,
+                10740,
+                10747,
+                11075,
+                11077,
+                11079,
+                11102,
+                11103,
+                11104,
+                11105,
+                23467,
+                23468,
+                25181,
+                32898,
+                32906,
+                33017,
+                33066,
+                33067,
+                33068,
+                33069,
+                33070,
+                34009,
+                34943,
+                34946,
+                34951,
+                34953,
+                39095,
+                42370,
+                42371,
+                42374,
+                42376,
+                42377,
+                42379,
+                42380,
+                42382,
+                42385,
+                42651,
+                42653,
+                42654,
+                42655,
+                42656,
+                42658,
+                42659,
+                42660,
+                42662,
+                42663,
+                42664,
+                42665,
+                42666,
+                42667,
+                42680,
+                42681,
+                42753,
+                42852,
+                42856,
+                42858,
+                42859,
+                42863,
+                42864,
+                42865,
+                42880,
+                42887,
+                42892,
+                42893,
+                42894,
+                42895,
+                42896,
+                42897,
+                42898,
+                42899,
+                42900,
+                42901,
+                42902,
+                42910,
+                42923,
+                42933,
+                42940,
+                42941,
+                42944,
+                42947,
+                42949,
+                42950,
+                42952,
+                42958,
+                42961,
+                42973,
+                42974,
+                42975,
+                42976,
+                42977,
+                42978,
+                42979,
+                42981,
+                42982,
+                42983,
+                42987,
+                42991,
+                42995,
+                42997,
+                43089,
+                43092,
+                43308,
+                43309,
+                43310,
+                43311,
+                43312,
+                43313,
+                43314,
+                43315,
+                43316,
+                43317,
+                43358,
+                43359,
+                43360,
+                43361,
+                43362,
+                43363,
+                43364,
+                43365,
+                43366,
+                43497,
+                43498,
+                43507,
+                43508,
+                43516,
+                43983,
+                43984,
+                43985,
+                43986,
+                43987,
+                43988,
+                43989,
+                46629,
+                46630,
+                46631,
+                46632,
+                46633,
+                46634,
+                46635,
+                46636,
+                46637,
+                46638,
+                46639,
+                46640,
+                46641,
+                46643,
+                46644,
+                46645,
+                46646,
+                48236
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "feroxa_fixed_source_scenery"
+                }
+              }
+            },
+            "source_item_id": {
+              "const": 13841
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "appearance_only_quest_target"
+                }
+              }
+            },
+            "source_item_id": {
+              "const": 53439
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
         }
       ]
     },
@@ -918,6 +1227,140 @@
                     },
                     "profile": {
                       "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    }
+                  }
+                },
+                {
+                  "const": {
+                    "engine": "canary",
+                    "repository": "opentibiabr/canary",
+                    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                    "profile": "OTERYN_QM50_ELEVATOR_GROUND/v1",
+                    "items_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+                    "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "provenance": {
+          "properties": {
+            "source": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "crystal"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_OWN_WIKI_WORLD/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_FEROXA_FIXED_SOURCE_SCENERY/v1"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "provenance": {
+          "properties": {
+            "source": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "crystal"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_OWN_WIKI_WORLD/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_QUEST_RAM_WORLD/v1"
                     }
                   }
                 }

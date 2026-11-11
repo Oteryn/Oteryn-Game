@@ -4545,5 +4545,24 @@
     },
     "next": "Finish main convergence and publish; then live blessing/promotion predicates, preserving the 17-row queue order.",
     "end_to_end_done_quests": []
+  },
+  "current_mechanic_batch": {
+    "mechanic": "M02",
+    "status": "QUALIFIED_NATIVE_USE",
+    "scope": "Nomads Land exact ordered mutable Ground window predicate; not whole-quest completion.",
+    "postgres_version": "18.6",
+    "cases": [
+      {
+        "test": "m02_nomads_native_use_observes_both_live_stacks_postgres",
+        "duration_seconds": 92.568041532
+      },
+      {
+        "test": "m02_nomads_native_use_refuses_same_counts_in_wrong_order_postgres",
+        "duration_seconds": 77.87562718
+      }
+    ],
+    "caller": "ordinary command 2 USE against the committed native window at 33216,32855,-9 ordinal1",
+    "remaining": "M01a remaining TALK routes; M03 Pits binding and remaining time-machine pieces.",
+    "verification_at_push": "Own PG, fmt, architecture and pin check pass; clippy running under owner immediate-push direction."
   }
 }

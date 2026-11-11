@@ -47,21 +47,64 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let source = NpcRuleCatalog::load_embedded().map_err(debug)?;
-    assert_eq!(source.programs().len(), 15);
+    // The merged Paradox and citizen Source owners add exactly two programs,
+    // 31 rules and four NPCs. Keep the prior cohort's exact census as well.
+    let inherited = source
+        .programs()
+        .iter()
+        .filter(|p| {
+            p.document.quest != "oteryn:quest.the_paradox_tower_quest"
+                && p.document.program_key.as_deref()
+                    != Some("oteryn:quest-npc-program.citizen-source-sagas")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(source.programs().len(), 25);
+    assert_eq!(inherited.len(), 23);
     assert_eq!(
-        source
-            .programs()
+        inherited
             .iter()
             .map(|p| p.document.rules.len())
             .sum::<usize>(),
-        1167
+        1212
     );
-    let unique = source
-        .programs()
+    let unique = inherited
         .iter()
         .flat_map(|p| p.document.rules.iter().map(|r| r.npc.as_str()))
         .collect::<std::collections::BTreeSet<_>>();
-    assert_eq!(unique.len(), 89);
+    assert_eq!(unique.len(), 97);
+    for (quest, program_key, count, npcs) in [
+        (
+            "oteryn:quest.the_paradox_tower_quest",
+            None,
+            28,
+            vec!["oteryn:npc.riddler"],
+        ),
+        (
+            "oteryn:quest.outfit_and_addon_quests",
+            Some("oteryn:quest-npc-program.citizen-source-sagas"),
+            3,
+            vec!["oteryn:npc.amber", "oteryn:npc.hanna", "oteryn:npc.lubo"],
+        ),
+    ] {
+        let added = source
+            .programs()
+            .iter()
+            .filter(|p| p.document.quest == quest && p.document.program_key.as_deref() == program_key)
+            .collect::<Vec<_>>();
+        assert_eq!(added.len(), 1);
+        assert_eq!(added[0].document.rules.len(), count);
+        assert_eq!(
+            added[0]
+                .document
+                .rules
+                .iter()
+                .map(|rule| rule.npc.as_str())
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect::<Vec<_>>(),
+            npcs
+        );
+    }
     let [kesar, demeron, tereban] =
         super::classic_quests::install(owner, admitted, [KESAR, DEMERON, "oteryn:npc.tereban"])
             .await?;

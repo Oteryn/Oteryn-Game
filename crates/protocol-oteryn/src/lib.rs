@@ -102,11 +102,13 @@ pub mod mail;
 pub mod market;
 pub mod market_details;
 pub mod mechanics_status;
+pub mod native_map_cues;
 pub mod npc_service;
 pub mod npc_shop;
 pub mod party;
 pub mod party_effects;
 pub mod party_skull;
+pub mod personal_map_marks;
 pub mod player_report;
 pub mod player_trade;
 pub mod player_typing;
@@ -1263,6 +1265,24 @@ pub fn encode_client_command(
     connection_generation: u64,
     value: &ClientCommandValue<'_>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_client_command_with_session(connection_generation, value, None)
+}
+
+/// Binds a command to the current GameSession across same-socket activity barriers.
+pub fn encode_client_command_for_session(
+    connection_generation: u64,
+    value: &ClientCommandValue<'_>,
+    game_session_id: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    decode_uuid_v7(game_session_id)?;
+    encode_client_command_with_session(connection_generation, value, Some(game_session_id))
+}
+
+fn encode_client_command_with_session(
+    connection_generation: u64,
+    value: &ClientCommandValue<'_>,
+    game_session_id: Option<&[u8; 16]>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     if connection_generation == 0 || value.command_id == 0 || value.command_type == 0 {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
@@ -1273,6 +1293,9 @@ pub fn encode_client_command(
     push_scalar(&mut body, 1, value.command_id);
     push_scalar(&mut body, 2, u64::from(value.command_type));
     push_bytes(&mut body, 4, value.payload);
+    if let Some(session) = game_session_id {
+        push_bytes(&mut body, 16, session);
+    }
     let mut output = Vec::with_capacity(body.len() + 16);
     push_scalar(&mut output, 1, MessageType::ClientCommand as u64);
     push_scalar(&mut output, 2, connection_generation);
@@ -1893,6 +1916,7 @@ impl<'a> WireEnvelopeView<'a> {
         {
             return Err(FoundationProtocolError::StaleConnectionGeneration);
         }
+        self.client_command_session_id()?;
         let input = self.payload;
         let mut cursor = 0usize;
         let (mut command_id, mut command_type, mut payload) = (None, None, None);
@@ -1926,6 +1950,36 @@ impl<'a> WireEnvelopeView<'a> {
             }),
             _ => Err(FoundationProtocolError::MalformedEnvelope),
         }
+    }
+
+    /// Optional current GameSession binding (ClientCommand field16).
+    pub fn client_command_session_id(&self) -> Result<Option<&'a [u8]>, FoundationProtocolError> {
+        if self.message_type != MessageType::ClientCommand {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        let mut cursor = 0;
+        let mut session = None;
+        while cursor < self.payload.len() {
+            let key = read_varint(self.payload, &mut cursor)?;
+            let field = decode_field_number(key)?;
+            let wire = (key & 7) as u8;
+            if field == 16 {
+                read_singular_bytes(
+                    self.payload,
+                    &mut cursor,
+                    wire,
+                    &mut session,
+                    16,
+                    FoundationProtocolError::MalformedEnvelope,
+                )?;
+            } else {
+                skip_field(self.payload, &mut cursor, wire)?;
+            }
+        }
+        if let Some(id) = session {
+            decode_uuid_v7(id).map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+        }
+        Ok(session)
     }
 
     pub fn client_bootstrap(&self) -> Result<ClientBootstrapView<'_>, FoundationProtocolError> {

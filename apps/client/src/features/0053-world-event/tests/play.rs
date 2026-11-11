@@ -56,6 +56,16 @@ fn world_event_shell_query_crosses_the_session_loop()
                     &mut self,
                     command: &FeatureCommand,
                 ) -> Result<GatedCommandResult, SessionError> {
+                    if command.capability == 451 {
+                        assert_eq!(command.kind, 741);
+                        assert!(command.payload.is_empty());
+                        return Ok(GatedCommandResult {
+                            payload: oteryn_client_runtime::personal_map_marks::PersonalMapMarks::default()
+                                .encode()
+                                .ok_or(SessionError::SessionUnusable)?,
+                            ..result(command.capability)
+                        });
+                    }
                     // All-capability sessions also refresh the retained death receipt at login.
                     if command.capability == 382 {
                         assert_eq!(command.kind, 664);

@@ -1,18 +1,25 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+#[cfg(test)]
+mod achievement_tests;
 mod admission;
 mod bounds;
+mod calendar;
+mod equipped_storage;
+pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+mod player_name;
 mod questpc2_albinius_source;
 mod questpc2_gerimor_source;
 mod questpc2_gnomus_source;
 mod questpc2_henricus_source;
 mod questpc2_oldrak_source;
+pub mod teleport;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -153,8 +160,19 @@ pub enum NpcRuleGuard {
     CalendarMonth {
         value: u8,
     },
+    /// Inclusive, annually repeating UTC dates; the durable owner supplies epoch time.
+    CalendarWindow {
+        start_month: u8,
+        start_day: u8,
+        end_month: u8,
+        end_day: u8,
+        within: bool,
+    },
     Vocation {
         value: String,
+    },
+    Premium {
+        value: bool,
     },
     Sex {
         value: u8,
@@ -170,6 +188,11 @@ pub enum NpcRuleGuard {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleEffect {
+    /// Once-only proof of one source saga; never closes the canonical quest.
+    /// The declared 0..1 track includes the canonical quest and source identity.
+    CompleteSource {
+        track: String,
+    },
     BigfootMatchmakerTarget,
     BigfootSoulMelody,
     Set {
@@ -252,6 +275,10 @@ pub struct NpcRule {
     pub trigger: NpcRuleTrigger,
     #[serde(default)]
     pub keywords: Vec<String>,
+    /// Match the current Character owner's name instead of a source literal.
+    /// Omit false to preserve existing programme digests byte for byte.
+    #[serde(default, skip_serializing_if = "player_name::is_false")]
+    pub match_player_name: bool,
     #[serde(default)]
     pub exclude_keywords: Vec<String>,
     #[serde(default)]
@@ -270,7 +297,14 @@ pub struct NpcRule {
     pub continue_matching: bool,
     #[serde(default)]
     pub inventory_failure_reply: Vec<String>,
+    /// Canonical personal completion, committed with this selected source branch.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -334,15 +368,24 @@ pub struct NpcRuleInput<'a> {
     pub npc: &'a str,
     pub trigger: NpcRuleTrigger,
     pub message: &'a str,
+    pub player_name: Option<&'a str>,
     pub topic: i32,
     pub tracks: &'a BTreeMap<String, i64>,
     pub inventory: &'a NpcInventorySnapshot,
     pub now_epoch_seconds: i64,
     pub calendar_month: u8,
+    pub premium_current: bool,
     pub level: u32,
     pub vocation: &'a str,
     pub sex: u8,
     pub outfits: &'a BTreeMap<u16, u8>,
+}
+
+impl NpcRuleInput<'_> {
+    /// M17: preview and commit project the epoch supplied by their existing owners.
+    pub fn utc_calendar(&self) -> Result<NpcUtcCalendar, NpcRuleError> {
+        NpcUtcCalendar::from_epoch(self.now_epoch_seconds)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -355,6 +398,7 @@ pub struct NpcTrackChange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRulePlan {
     pub quest: String,
+    pub completes: bool,
     pub program_digest: [u8; 32],
     pub selected_rule_keys: Vec<String>,
     pub reply: Vec<String>,
@@ -464,9 +508,15 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
-                let supplemental = Self::from_json_documents(&[include_str!(
-                    "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
-                ), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"), include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json")])?;
+                let supplemental = Self::from_json_documents(&[
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/m41-kilmaresh.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-albinius.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gerimor.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
+                ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
@@ -477,18 +527,35 @@ impl NpcRuleCatalog {
                         || p.document.program_key.as_deref() == Some(questpc2_gnomus_source::PROGRAM)
                         || p.document.program_key.as_deref() == Some(questpc2_henricus_source::PROGRAM)
                         || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.first-dragon-calendar")
+                        || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.citizen-source-sagas")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.citizen-source-sagas")
                         || matches!(
                             p.document.quest.as_str(),
                             "oteryn:quest.a_father_s_burden_quest"
                                 | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.blood_brothers_quest"
+                                | "oteryn:quest.dangerous_depths_quest"
+                                | "oteryn:quest.elemental_spheres_quest"
                                 | "oteryn:quest.bigfoot_s_burden_quest"
                                 | "oteryn:quest.hero_of_rathleton_quest"
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.the_paradox_tower_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_djinn_war_efreet_faction"
+                                | "oteryn:quest.the_djinn_war_marid_faction"
+                                | "oteryn:quest.the_white_raven_monastery_quest"
+                                | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.tower_defence_quest"
                         )
                 });
                 let authored = Self::from_json_documents(AUTHORED_NPC_RULE_PROGRAMS)?;
@@ -587,7 +654,8 @@ impl NpcRuleCatalog {
                             | NpcRuleEffect::SetTopic { .. }
                             | NpcRuleEffect::TakeItem { .. }
                             | NpcRuleEffect::GiveItem { .. }
-                    )
+                    ) && !matches!(effect, NpcRuleEffect::Achievement { name }
+                        if plan.quest == crate::quest::hot_cuisine::QUEST && name == "Culinary Master")
                 })
                 || plan
                     .effects
@@ -667,6 +735,23 @@ impl NpcRuleCatalog {
     }
 }
 
+// These accepted source programmes add only new NPC-owned tracks to an existing
+// quest. Its exact previous definition remains valid even without a shared track.
+fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
+    program.document.schema == 1
+        && matches!(
+            (
+                program.document.quest.as_str(),
+                program.document.program_key.as_deref(),
+            ),
+            ("oteryn:quest.elemental_spheres_quest", None)
+                | (
+                    "oteryn:quest.outfit_and_addon_quests",
+                    Some("oteryn:quest-npc-program.citizen-source-sagas")
+                )
+        )
+}
+
 /// Extend native bounds only for source writes; preserve existing absent values.
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
@@ -674,6 +759,7 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     let mut legacy = catalogue.npc_legacy.clone();
+    let predecessors = catalogue.predecessors.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
         if program.document.schema == 1
@@ -681,11 +767,12 @@ pub(super) fn extend(
                 quest.as_str(),
                 "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
             )
-            && program
+            && (program
                 .document
                 .tracks
                 .iter()
                 .any(|track| source_tracks.contains_key(&track.key))
+                || additive_legacy_owner(program))
             && let Some(hash) = catalogue.definition_hash(quest)
         {
             legacy.insert(
@@ -774,6 +861,8 @@ pub(super) fn extend(
     )
     .map_err(|e| format!("{e:?}"))?;
     active.npc_legacy = legacy;
+    active.predecessors = predecessors;
+    completion_predecessors::register(&mut active, source)?;
     Ok(active)
 }
 
@@ -801,7 +890,13 @@ pub fn legacy_defaults<'a>(
 
 /// Source catalogue bounds and predecessor regression tests.
 #[cfg(test)]
+mod multiple_item_rewards_tests;
+
+#[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod calendar_window_tests;
 
 #[cfg(test)]
 mod draconia_source_tests {
@@ -821,3 +916,8 @@ mod draconia_source_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod engnpc_finales;
+
+mod completion_predecessors;

@@ -57,6 +57,66 @@ pub(super) struct PvpSwing {
     pub(super) generation: u64,
 }
 
+// Inspect a clone: a missing source name read must not consume the real swing
+// deadline/ordinal or draw any RNG. Cleave uses its existing exact target selector.
+fn native_health_swing_targets(
+    entry: &ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    digest: [u8; 32],
+    now: SemanticTimeMicros,
+    constants: &AttackConstants,
+) -> Result<Vec<ExactActorRef>, ()> {
+    let mut preview = entry.clone();
+    let Some(selected) = select_swing(&mut preview, runtime, states, room, digest, now, constants)
+    else {
+        return Ok(Vec::new());
+    };
+    let mut targets = equipped_offence::cleave_targets(&preview, &selected, runtime, room, now);
+    targets.push(selected.target);
+    targets.retain(|target| runtime.contains_live_creature(*target));
+    let mut required = Vec::new();
+    for target in targets {
+        if runtime.companion_snapshot(target).is_err() {
+            let key = std::str::from_utf8(
+                runtime
+                    .current_live_creature_identity(target)
+                    .map_err(|_| ())?,
+            )
+            .map_err(|_| ())?;
+            if crate::content::native_monster_callbacks::requires_native_health_event(key) {
+                return Err(());
+            }
+            continue;
+        }
+        if runtime.native_health_event(target).map_err(|_| ())?.is_some_and(|event| {
+            event.kind() == crate::content::native_monster_callbacks::NativeHealthEventKind::HealthForgotten
+        }) && !required.contains(&target) {
+            required.push(target);
+        }
+    }
+    Ok(required)
+}
+
+fn observe_native_attack_health(
+    runtime: &ChannelRuntimeV1,
+    names: Option<&crate::gameplay_transport::source_names::NativeHealthNamesData>,
+    target: ExactActorRef,
+) -> Result<Option<crate::foundation::NativeHealthChangeObservation>, ()> {
+    match names {
+        Some(names) => names.observe(runtime, target),
+        None => match runtime.observe_native_health_change(
+            target,
+            &|_: crate::foundation::ExactActorRef,
+              _: crate::foundation::MovementPositionSnapshot| None,
+        ) {
+            Ok(None) => Ok(None),
+            Ok(Some(_)) | Err(_) => Err(()),
+        },
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
@@ -85,9 +145,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(constants) = AttackConstants::checked_in() else {
             return;
         };
+        // A genuine Cloak hit has a synchronous source Item callback. Prepare
+        // its existing map owner before retaining the physical lane for the hit.
+        let cloak_target = {
+            let runtime = self.runtime.lock().await;
+            let attack = self.states.attack.lock().await;
+            attack
+                .entries
+                .iter()
+                .filter_map(|entry| entry.state.target())
+                .any(|target| {
+                    runtime
+                        .matches_live_creature_identity(target, b"oteryn:creature.cloak_of_terror")
+                })
+        };
+        if cloak_target && !self.ensure_source_map_initialized().await {
+            return;
+        }
         let Some(mut pvp_permit) = self.spell_lane_permit().await else {
             return;
         };
+        // A failed native health callback retains its original occurrence.
+        // Resolve it under this same physical lane before spending another
+        // attacker's canonical clock or ordinal.
+        if !self.drain_cloak_blood_with_permit(&pvp_permit).await {
+            return;
+        }
         let sessions = self
             .states
             .attack
@@ -105,7 +188,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             talismans.insert(session, snapshot);
         }
         let now = now.unwrap_or_else(|| self.owner_now());
+        let needs_health_names = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
+            let digest = runtime.content_pin().server_artifact_digest();
+            let mut required = false;
+            for entry in &attack.entries {
+                // Missing metadata belongs to this entry; the real pass below
+                // retries it without starving unrelated attackers.
+                if let Ok(targets) = native_health_swing_targets(
+                    entry, &runtime, &states, room, digest, now, constants,
+                ) {
+                    required |= !targets.is_empty();
+                }
+            }
+            required
+        };
+        // The actual fixed-name SQL runs with no Runtime, spell-state or attack
+        // guard held. Ordinary targets cause no extra name read.
+        let health_names = if needs_health_names {
+            self.read_native_health_names(&pvp_permit).await.ok()
+        } else {
+            None
+        };
         let mut runtime = self.runtime.lock().await;
+        let health_names_data =
+            health_names.and_then(|read| self.seal_native_health_names(&runtime, read).ok());
         let digest = runtime.content_pin().server_artifact_digest();
         if runtime.owner_fence().is_err()
             || content.source_digest() != digest
@@ -117,6 +226,78 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let objects = self.door.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
+        // Only lineages already held by the real attack owner are read. The
+        // snapshot grants neither a swing nor payment; those are selected below.
+        let source_players: Vec<_> = attack
+            .entries
+            .iter()
+            .filter_map(|entry| {
+                let (target, lineage) = entry.state.held_target_lineage()?;
+                if entry
+                    .state
+                    .next_due(constants.attack_interval_micros())
+                    .is_some_and(|due| due > now)
+                {
+                    return None;
+                }
+                let target = runtime.companion_snapshot(target).ok()?;
+                content.policies().soul_war_health_policy(
+                    &target.state.policy.definition_key,
+                    &target.state.policy.definition_revision,
+                )?;
+                let control = runtime
+                    .player_control_facts(entry.actor, entry.session)
+                    .ok()?;
+                if control.control_loss.is_some() {
+                    return None;
+                }
+                Some((entry.actor, entry.session, lineage))
+            })
+            .collect();
+        let mut unavailable_source_players = std::collections::BTreeSet::new();
+        if !source_players.is_empty() {
+            let Some(active) = self.active_generation else {
+                return;
+            };
+            let read = if let Ok(pass) = self.root.try_issue_semantic_pass() {
+                let mut context = (
+                    self,
+                    &mut *runtime,
+                    &*states,
+                    &pvp_permit,
+                    active,
+                    room,
+                    &source_players,
+                );
+                pass.run_with_context(&mut context,move |holder,deadline,context| Box::pin(async move {
+                use crate::durability::spell_item_transaction::{begin_spell_owner_transaction,assert_spell_item_scope_in_transaction,check_scope_transaction};
+                let (owner,runtime,states,permit,active,room,sources)=context;
+                let mut tx=begin_spell_owner_transaction(holder,deadline).await?;
+                let authority=assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,
+                    runtime.binding().runtime_scope(),runtime.binding().scope_generation().get()).await
+                    .map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                crate::gameplay_transport::soul_war_callbacks::player_source::publish_auto_sources(
+                    &mut tx,owner.root,&authority,active,room,runtime,states,sources,now.get()).await?;
+                check_scope_transaction(&mut tx,&authority).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                tx.rollback().await?;
+                Ok(())
+            })).await
+            } else {
+                Err(crate::durability::DurabilityError::Unavailable)
+            };
+            if read.is_err() {
+                // An unavailable source enrichment refuses its own affected
+                // attackers. It cannot suppress unrelated ordinary combat.
+                unavailable_source_players.extend(
+                    source_players
+                        .iter()
+                        .map(|(actor, _, _)| actor.placement_identity()),
+                );
+            }
+            if runtime.owner_fence().is_err() {
+                return;
+            }
+        }
         let ChannelAttackStates {
             entries,
             blocks,
@@ -152,6 +333,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .is_ok_and(|flags| flags.0)
             {
                 entry.clear_target();
+                continue;
+            }
+            if unavailable_source_players.contains(&entry.actor.placement_identity()) {
+                continue;
+            }
+            let Ok(required_health) =
+                native_health_swing_targets(entry, &runtime, &states, room, digest, now, constants)
+            else {
+                continue;
+            };
+            if required_health.iter().any(|target| {
+                observe_native_attack_health(&runtime, health_names_data.as_ref(), *target).is_err()
+            }) {
+                // A foreign identity change after the detached read retries
+                // without consuming the actual held attack's timer or ordinal.
                 continue;
             }
             let state_before = entry.state.clone();
@@ -528,9 +724,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
                 // a creature without them takes no hit (fail closed).
-                let (Some(defense), Some(armor)) =
-                    (snapshot.state.policy.defense, snapshot.state.policy.armor)
-                else {
+                let (Some(defense), Some(armor)) = (
+                    runtime.effective_creature_defense(&snapshot).ok(),
+                    snapshot.state.policy.armor,
+                ) else {
                     continue;
                 };
                 // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
@@ -558,6 +755,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+                let health_change = match observe_native_attack_health(
+                    &runtime,
+                    health_names_data.as_ref(),
+                    target,
+                ) {
+                    Ok(observation) => observation,
+                    Err(()) => continue,
+                };
+                let cruelty_drain = match runtime.soul_war_health_callback(target) {
+                    Ok(Some(policy)) if policy.is_cruelty() => {
+                        match runtime.soul_war_cruelty_drain(&snapshot) {
+                            Ok(value) => Some(value.unwrap_or(2)),
+                            Err(_) => continue,
+                        }
+                    }
+                    Ok(_) => None,
+                    Err(_) => continue,
+                };
                 let mut resolved_element = crate::content::ProjectV2RangedElement::Physical;
                 let mut ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
@@ -566,6 +781,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         damage,
                         &offence,
                         (&root, constants, entry.actor, swing.lineage, ordinal),
+                        cruelty_drain,
+                        health_change.as_ref(),
                         states
                             .get(&runtime, entry.actor, entry.session)
                             .and_then(|state| {
@@ -651,10 +868,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         magnitude
                     };
                 let landed = if selected.weapon.ranged.is_none() {
-                    if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
-                        let Some(parts) = finish_melee_components(
-                            ranged_magnitude.unwrap_or([landed, 0]),
-                            |primary, secondary| {
+                    let Some(parts) = finish_melee_components(
+                        ranged_magnitude.unwrap_or([landed, 0]),
+                        |primary| match health_change.as_ref() {
+                            Some(event) => primary
+                                .checked_neg()
+                                .and_then(|value| event.primary(value).ok())
+                                .and_then(i64::checked_neg),
+                            None => Some(primary),
+                        },
+                        cruelty_drain,
+                        |primary, secondary| {
+                            if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
                                 state.finish_wheel_attack_components(
                                     primary,
                                     secondary,
@@ -667,17 +892,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         target,
                                     )?,
                                 )
-                            },
-                        ) else {
-                            continue;
-                        };
-                        if ranged_magnitude.is_some() {
-                            ranged_magnitude = Some(parts);
-                        }
-                        parts[0].saturating_add(parts[1])
-                    } else {
-                        landed
+                            } else {
+                                Some((primary, secondary))
+                            }
+                        },
+                    ) else {
+                        continue;
+                    };
+                    if ranged_magnitude.is_some() {
+                        ranged_magnitude = Some(parts);
                     }
+                    parts[0].saturating_add(parts[1])
                 } else {
                     landed
                 };
@@ -759,14 +984,52 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
                 // hit, the death time the kill reward reads (§1.2).
-                let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                    &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
-                    &resolved,
-                    &plan,
-                    entry.actor,
-                    swing.lineage,
-                    ordinal,
-                );
+                let committed = {
+                    let Ok(mut cache) = kills.1.lock() else {
+                        continue;
+                    };
+                    let item = selected.weapon.ranged.as_ref().map_or_else(
+                        || selected.weapon.item_key.as_deref().unwrap_or(""),
+                        |loadout| loadout.weapon.definition.production_key.as_str(),
+                    );
+                    let creature = if extension { "" } else { race_key.as_str() };
+                    let Ok(mut hits) = cache.hits.prepare(
+                        &runtime,
+                        entry.actor,
+                        target,
+                        swing.lineage,
+                        ordinal,
+                        creature,
+                        item,
+                        None,
+                    ) else {
+                        continue;
+                    };
+                    let committed = crate::ability::commit::commit_exact_owner_swing_damage(
+                        &mut runtime.borrow_exact_actor_commit_at_us(now.get()),
+                        &resolved,
+                        &plan,
+                        entry.actor,
+                        swing.lineage,
+                        ordinal,
+                    );
+
+                    if committed
+                        .as_ref()
+                        .is_ok_and(|result| result.committed_health_loss().is_some())
+                        && let Ok(Some(witness)) = runtime
+                            .borrow_exact_actor_commit_at(now.get() / 1_000)
+                            .committed_hit_for_bound_attacker(
+                                target,
+                                entry.actor,
+                                swing.lineage,
+                                ordinal,
+                            )
+                    {
+                        hits.capture(witness, creature, item, None);
+                    }
+                    committed
+                };
                 let Ok(result) = committed else {
                     if !extension {
                         entry.clear_target();
@@ -862,8 +1125,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &offence,
                     &result,
                 );
-                if result.applied
-                    && result.health_after < result.health_before
+                if result.committed_health_loss().is_some()
                     && snapshot.state.master.is_none()
                     && !snapshot.state.policy.is_familiar
                 {
@@ -882,13 +1144,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &result,
                     &mut activity_cells,
                 );
-                if result.applied && result.health_after < result.health_before {
+                if result.committed_health_loss().is_some() {
                     kills.boss_damage_dealt(&runtime, target, entry.actor, entry.session);
                 }
                 // Source-qualified leaf damage uses the existing independent replay stream.
                 // It neither consumes another player command nor re-enters Charm evaluation.
                 let mut lethal_result = result;
-                if result.applied && result.health_before > result.health_after {
+                if result.committed_health_loss().is_some() {
                     for outcome in &outcomes {
                         if let Some(CharmEffectOutcome::PreventCreatureFlee { duration_ms }) =
                             charm_combat::effect(outcome)
@@ -985,14 +1247,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             swing.lineage.command_id().get(),
                             outcome.charm_key
                         );
-                        if let Ok(child) = runtime.commit_source_damage(
+                        if let Ok(child) = runtime.commit_source_damage_at_us(
                             target,
                             entry.actor,
                             entry.session,
                             stream.as_bytes(),
                             u64::from(ordinal),
                             amount,
-                            now.get() / 1_000,
+                            now.get(),
                         ) {
                             if child.applied {
                                 states.analyser.impact_amount(
@@ -1160,6 +1422,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
             }
+            // Complete this swing (including cleave) before its health callback;
+            // leave later attackers' untouched clocks for the next coalesced turn.
+            if runtime
+                .pending_cloak_blood_events(1)
+                .is_ok_and(|events| !events.is_empty())
+            {
+                states.owner_wake.notify_one();
+                break;
+            }
         }
         for hit in pvp_hits {
             self.land_pvp_swing(
@@ -1180,8 +1451,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(objects);
         drop(states);
         drop(runtime);
+        // No later Item command can overtake the normal hit's source callback.
+        let _ = self.drain_cloak_blood_with_permit(&pvp_permit).await;
         drop(pvp_permit);
         self.save_trained_levels(trained).await;
+        let _ = self.drain_native_quest_hits().await;
     }
 }
 
@@ -2067,12 +2341,21 @@ fn publish_hit_sound(
         .record(runtime, actor, position.position(), cue, secondary);
 }
 
-// Keep the mitigated components separate when entering the shared Wheel owner.
+// Native health callbacks change only primary; Cruelty scales each component
+// before the shared Wheel owner. Keep both results through elemental conversion.
 fn finish_melee_components(
     parts: [i64; 2],
+    health_primary: impl FnOnce(i64) -> Option<i64>,
+    cruelty_drain: Option<u64>,
     finish: impl FnOnce(i64, i64) -> Option<(i64, i64)>,
 ) -> Option<[i64; 2]> {
-    let (primary, secondary) = finish(parts[0], parts[1])?;
+    let primary = super::cruelty_health_component(health_primary(parts[0])?, cruelty_drain)?;
+    let secondary = super::cruelty_health_component(parts[1], cruelty_drain)?;
+    // A zero Cruelty result exits Game's HP path before Wheel can add damage.
+    if cruelty_drain.is_some() && primary == 0 && secondary == 0 {
+        return None;
+    }
+    let (primary, secondary) = finish(primary, secondary)?;
     Some([primary, secondary])
 }
 
@@ -2143,12 +2426,38 @@ mod tests {
         let effects = derive_runtime_effects(data.wheel(), &allocation, "knight", 1000, true, true)
             .ok_or("effects")?;
         assert_eq!(effects.flat_damage_bonus(), Some(4));
-        let parts = super::finish_melee_components([50, 50], |primary, secondary| {
+        let parts = super::finish_melee_components([50, 50], Some, None, |primary, secondary| {
             effects.finish_damage_pair(primary, secondary, 1000, 1000, false)
         });
         assert_eq!(parts, Some([54, 54]));
         assert_eq!(parts.map(|parts| parts[0] + parts[1]), Some(108));
         Ok(())
+    }
+
+    #[test]
+    fn t174_converted_melee_native_health_and_cruelty_precede_wheel() {
+        let parts = super::finish_melee_components(
+            [50, 50],
+            |primary| {
+                assert_eq!(primary, 50);
+                Some(primary + 10)
+            },
+            Some(50),
+            |primary, secondary| {
+                assert_eq!((primary, secondary), (30, 25));
+                Some((primary + 4, secondary + 4))
+            },
+        );
+        assert_eq!(parts, Some([34, 29]));
+        let mut wheel_called = false;
+        assert_eq!(
+            super::finish_melee_components([50, 50], Some, Some(100), |_, _| {
+                wheel_called = true;
+                None
+            }),
+            None
+        );
+        assert!(!wheel_called, "fully drained health must not reach Wheel");
     }
 
     #[test]

@@ -6,7 +6,9 @@ use crate::charm_wire::{
 use ArenaWireError as Error;
 
 mod drome;
+mod drome_hazards;
 pub use drome::*;
+pub use drome_hazards::*;
 mod match_wire;
 pub use match_wire::*;
 

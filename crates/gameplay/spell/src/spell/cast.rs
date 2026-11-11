@@ -84,6 +84,10 @@ pub struct CharacterCastFacts {
 /// evaluation that changes Serene.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerSpellState {
+    /// Soul War login-reset counter, retained by the existing scoped state transfer.
+    pub(super) soul_war_torment: u8,
+    pub(super) soul_war_torment_icon_visible: bool,
+    pub(super) soul_war_torment_occurrence: Option<([u8; 16], u64)>,
     /// Tibiadrome suppresses training and soul-cost spells (manual combat.md:258-259).
     pub drome_practice: bool,
     pub facts: CharacterCastFacts,
@@ -199,6 +203,9 @@ impl PlayerSpellState {
             && facts.max_mana <= MAX_VITAL_POOL
             && facts.max_soul <= MAX_SOUL)
             .then(|| Self {
+                soul_war_torment: 0,
+                soul_war_torment_occurrence: None,
+                soul_war_torment_icon_visible: false,
                 drome_practice: false,
                 facts,
                 base_max_health: facts.max_health,
@@ -295,3 +302,5 @@ pub use wheel::{
 mod gate_tests;
 #[cfg(test)]
 mod tests;
+
+mod soul_war_torment;

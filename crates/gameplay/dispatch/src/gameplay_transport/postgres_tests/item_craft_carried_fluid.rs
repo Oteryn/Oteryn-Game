@@ -167,8 +167,10 @@ fn scenario(case: Case, name: &str) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let bundle_room=if case.ground() || case.moves() {Some(super::rust_lottery::bundle_action_room(pin.qualified_room(),&map,deps.admitted.world_id,&cells)?)} else {None};
-        let action_room=bundle_room.as_ref().unwrap_or(pin.qualified_room());
+        let bundle_room = super::rust_lottery::bundle_action_room(
+            pin.qualified_room(), &map, deps.admitted.world_id, &cells,
+        )?;
+        let action_room = &bundle_room;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
@@ -686,9 +688,14 @@ async fn exchange_carried(
     let mut client_task = std::pin::pin!(client_task);
     let mut end = None;
     let mut result = None;
+    // This direct connection has no node task to replenish a retired DB holder.
+    let mut maintenance = std::pin::pin!(super::item_craft::maintain_ready(owner));
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {
+            if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
+                return Poll::Ready(result);
+            }
             if end.is_none()
                 && let Poll::Ready(value) = serving.as_mut().poll(context)
             {
@@ -700,13 +707,13 @@ async fn exchange_carried(
                 result = Some(value);
             }
             if end.is_some() && result.is_some() {
-                Poll::Ready(())
+                Poll::Ready(Ok(()))
             } else {
                 Poll::Pending
             }
         }),
     )
-    .await?;
+    .await??;
     let end = end.ok_or("server did not finish")?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}").into());

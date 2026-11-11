@@ -39,11 +39,23 @@ impl ItemWeightLookup for WheelItemWeights<'_> {
 }
 
 impl ItemLoopContent for WheelItemWeights<'_> {
+    fn npc_outfit_content(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        self.content.npc_outfit_content()
+    }
     fn loop_content_digest(&self) -> [u8; 32] {
         self.content.loop_content_digest()
     }
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         self.content.loop_facts(definition)
+    }
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        self.content.loop_native_corpse_facts(definition)
+    }
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        self.content.loop_ground_facts(definition)
     }
     fn loop_definition(&self, reference: u32) -> Option<TypedDefinitionRef> {
         self.content.loop_definition(reference)

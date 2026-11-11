@@ -4,6 +4,19 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "native_gameplay/boss_corpse_terminal.rs"]
+mod boss_corpse_terminal;
+#[path = "native_gameplay/boss_movement_bindings.rs"]
+mod boss_movement_bindings;
+#[path = "native_gameplay/boss_reward_bindings.rs"]
+mod boss_reward_bindings;
+#[path = "native_gameplay/galthen_furniture.rs"]
+mod galthen_furniture;
+#[path = "native_gameplay/galthen_loot.rs"]
+mod galthen_loot;
+#[path = "native_gameplay/m25_corpse_items.rs"]
+mod m25_corpse_items;
+
 use super::character_progression_content::{
     CharacterProgressionContent, MAX_PROGRESSION_SECTION_BYTES,
 };
@@ -30,11 +43,13 @@ mod authored_items;
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
+mod qready1_cradle;
 pub use cosmetics_view::{MARRIAGE_GRANT_KEY, MARRIAGE_PROVENANCE, NativeCosmeticsView};
 
 mod market_catalogue;
 
 pub mod mount_taming;
+mod primal_callbacks;
 
 mod item_profile_updates;
 mod native_cosmetics;
@@ -269,10 +284,24 @@ impl NativeMonsterMeleeProfile {
                     .bytes()
                     .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
         };
-        if !matches!(
-            self.source_repository.as_str(),
-            "opentibiabr/canary" | "zimbadev/crystalserver"
-        ) || !source_hex(&self.source_revision, 40)
+        // M28 admits one fully pinned OTServBR-derived Fugue body. This is not
+        // a repository-wide admission for arbitrary third-party creature rows.
+        let fugue_source = self.source_repository == "Meth28/global"
+            && self.source_revision == "d959b2a99136978fc714622d42f6906b6d90e892"
+            && self.source_sha256
+                == "834ff4317ac9072021905921751056e5dc466dc216589292c8274e250a19595c"
+            && self.source_path == "data/monster/quests/the_order_of_the_lion/fugue.lua"
+            && self.ability.key == "oteryn:ability.creature.fugue.attack-1"
+            && self.minimum == 150
+            && self.maximum == 700
+            && self.interval_ms == 2000
+            && self.chance_ppm == 1_000_000;
+        if !(fugue_source
+            || matches!(
+                self.source_repository.as_str(),
+                "opentibiabr/canary" | "zimbadev/crystalserver"
+            ))
+            || !source_hex(&self.source_revision, 40)
             || !source_hex(&self.source_sha256, 64)
             || self.source_path.is_empty()
             || self.source_path.starts_with('/')
@@ -1211,6 +1240,15 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        let cradle_profiles = qready1_cradle::profiles()?;
+        for (id, record) in &cradle_profiles {
+            if admitted
+                .insert(id.clone(), record.production_binding.clone())
+                .is_some()
+            {
+                return Err(invalid("M20 Cradle identity collision"));
+            }
+        }
         let candidate_bytes = include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
         );
@@ -1239,8 +1277,45 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             }
         }
         authored_items::admit(&items, sections[5], &mut admitted)?;
+        let mut source_reward_items = boss_reward_bindings::qualified_records()?;
+        for record in &source_reward_items {
+            let binding = &record.production_binding;
+            if admitted
+                .insert(binding.external_id.clone(), binding.clone())
+                .is_some()
+            {
+                return Err(invalid("native boss reward exact binding conflict"));
+            }
+        }
+        let movement_items = boss_movement_bindings::qualified_records()?;
+        boss_movement_bindings::admit_exact_bindings(&mut admitted, &movement_items)?;
+        source_reward_items.extend(movement_items);
+        let terminal = boss_corpse_terminal::qualified_record()?;
+        if admitted
+            .insert(
+                terminal.production_binding.external_id.clone(),
+                terminal.production_binding.clone(),
+            )
+            .is_some()
+        {
+            return Err(invalid("native Elder corpse terminal binding conflict"));
+        }
+        source_reward_items.push(terminal);
+        let m25_items = m25_corpse_items::qualified_records()?;
+        m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
+        source_reward_items.extend(m25_items);
+        source_reward_items.extend(galthen_furniture::qualified_records()?);
+        source_reward_items.extend(galthen_loot::qualified_records()?);
         for record in &items.records {
             let binding = &record.production_binding;
+            if cradle_profiles
+                .get(&binding.external_id)
+                .is_some_and(|source| source != record)
+            {
+                return Err(invalid(
+                    "M20 Cradle profile differs from its qualified source",
+                ));
+            }
             let external = binding
                 .external_id
                 .parse::<u32>()
@@ -1257,7 +1332,14 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             {
                 return Err(invalid("native gameplay item production binding"));
             }
-            if binding.external_id == "48416" {
+            if let Some(expected) = source_reward_items
+                .iter()
+                .find(|expected| expected.production_binding.external_id == binding.external_id)
+            {
+                if record != expected {
+                    return Err(invalid("native boss reward complete source Item policy"));
+                }
+            } else if binding.external_id == "48416" {
                 use super::{ReferenceItemField as F, ReferenceItemType as Type};
                 let semantics = &record.semantics;
                 let attributes = &record.attributes;
@@ -1284,8 +1366,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 {
                     return Err(invalid("W02 Sugar corpse source policy"));
                 }
-            }
-            if binding.external_id == "44179" {
+            } else if binding.external_id == "44179" {
                 use super::ReferenceItemField as F;
                 let canonical: serde_json::Value = serde_json::from_slice(include_bytes!(
                     "../../../../../content/items/definitions/items-25500-25999.json"
@@ -1331,8 +1412,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 {
                     return Err(invalid("ITEMHOLD-Q exact Wiki recipe"));
                 }
-            }
-            if binding.external_id == "40450" {
+            } else if binding.external_id == "40450" {
                 use super::ReferenceItemField as F;
                 let F::Known(physical) = &record.semantics.physical else {
                     return Err(invalid("native gameplay40450 source physics"));
@@ -1610,9 +1690,13 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         .then(|| super::creature_reward::LootTablesSection::decode(sections[11], &creatures))
         .transpose()?;
     let reward_table = Arc::new(
-        super::creature_reward::CreatureRewardTable::from_pin(&creatures, loot.as_ref())
-            .with_daily_boss_equipment(items.as_ref())
-            .with_encounter_items(items.as_ref()),
+        super::creature_reward::CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            loot.as_ref(),
+            items.as_ref(),
+        )
+        .with_daily_boss_equipment(items.as_ref())
+        .with_encounter_items(items.as_ref()),
     );
     let cosmetics = if is_v9 {
         let mut cosmetics = native_cosmetics::decode(sections[12])?
@@ -1622,8 +1706,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     } else {
         None
     };
-    let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
+    let mut policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
+    policies.bind_soul_war_health_callbacks(&creatures);
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
@@ -2054,6 +2139,60 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
+    -> Result<(), ContentError> {
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|_| invalid("M25 actual production activation"))?;
+        let active = controller
+            .active()
+            .ok_or_else(|| invalid("M25 active content"))?;
+        let admitted = active
+            .native_gameplay()
+            .ok_or_else(|| invalid("M25 native content"))?;
+        for boss in ["oteryn:creature.ahau", "oteryn:creature.mitmah_vanguard"] {
+            assert_eq!(
+                admitted.reward_table().row(boss).err(),
+                None,
+                "the complete production boss reward row must be admissible: {boss}"
+            );
+        }
+        for corpse in [
+            "oteryn:item.tibia.i42069",
+            "oteryn:item.tibia.i44687",
+            "oteryn:item.tibia.i31483",
+            "oteryn:item.tibia.i21287",
+        ] {
+            assert!(admitted.item_policy(corpse, "definition-r1").is_some());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn m18_exit_carpet_uses_validated_native_collision_and_ground_custody() {
+        // Crystal201189f items.xml:35502-35504 and the pinned appearance's
+        // clip/unmove flags: the source timeout exit is carpet17400, not a wall.
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().unwrap();
+        let native = generation.native_gameplay().unwrap();
+        let profile = native
+            .item_policy("oteryn:item.tibia.i17400", "definition-r1")
+            .unwrap();
+        let row = profile.record();
+        assert_eq!(row.attributes.blocks_movement, Some(false));
+        assert_eq!(row.attributes.blocks_projectile, Some(false));
+        assert_eq!(
+            row.admission.legal_destinations,
+            vec![NativeItemDestination::Ground]
+        );
+        assert_eq!(row.attributes.always_on_top_order, Some(1));
+    }
+
+    #[test]
     fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
         let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
         let mut supplied = input();
@@ -2439,6 +2578,99 @@ mod tests {
             supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
             assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
         }
+    }
+
+    #[test]
+    fn m07_too_hot_tools_survive_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for item in [36543, 36544, 36545] {
+            let key = format!("oteryn:item.tibia.i{item}");
+            let record = decoded
+                .state
+                .item_policy(&key, "definition-r1")
+                .expect("qualified Too Hot tool")
+                .record();
+            assert!(record.admission.materializable);
+            assert_eq!(
+                record.admission.legal_destinations,
+                [
+                    NativeItemDestination::CharacterInventory,
+                    NativeItemDestination::Ground
+                ]
+            );
+            assert!(matches!(&record.semantics.physical, F::Known(physical)
+                if physical.movable == F::Known(true) && physical.weight == F::Known(850)));
+        }
+    }
+
+    #[test]
+    fn m07_fire_bug_profile_survives_native_artifact_with_portable_custody() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i5467", "definition-r1")
+            .expect("qualified Machinery Fire Bug")
+            .record();
+        assert!(record.admission.materializable);
+        assert_eq!(
+            record.admission.legal_destinations,
+            [
+                NativeItemDestination::CharacterInventory,
+                NativeItemDestination::Ground
+            ]
+        );
+        assert!(matches!(&record.semantics.physical, F::Known(physical)
+            if physical.movable == F::Known(true) && physical.weight == F::Known(3050)));
+    }
+
+    #[test]
+    fn m07_lion_flower_profile_preserves_annotation_without_an_active_deadline() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let record = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i21389", "definition-r1")
+            .expect("qualified Lion Beauty input")
+            .record();
+        assert!(record.admission.materializable);
+        let F::Known(temporal) = &record.semantics.temporal else {
+            panic!("source duration annotation must survive artifact loading");
+        };
+        assert_eq!(
+            temporal.duration,
+            F::Known(super::super::ReferenceMilliseconds(3_600_000))
+        );
+        // Crystal 201189f8 items.xml:42586-42590 declares a one-hour duration.
+        // This is the admitted clock representation, not an instantiated Item deadline.
+        assert_eq!(
+            temporal.consumption_mode,
+            F::Known(super::super::ReferenceTemporalMode::DurableAbsoluteDeadline)
+        );
+        assert_eq!(temporal.stop_duration, F::Known(false));
+        assert_eq!(temporal.decay_target, F::NotApplicable);
     }
 
     #[test]
@@ -3034,6 +3266,41 @@ mod tests {
         }
     }
     #[test]
+    fn fugue_melee_admission_is_limited_to_the_exact_source_body() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/creatures/definitions/spell-native-profiles.json");
+        let document: CreatureProfilesDocument =
+            serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        let row = document
+            .records
+            .iter()
+            .find(|r| r.profile.target.key == "oteryn:creature.fugue")
+            .expect("production Fugue body");
+        let melee = row.monster_melee.clone().expect("source melee");
+        let ProjectV2AuthoringProfileData::Behavior(behavior) =
+            &row.behavior.as_ref().unwrap().data
+        else {
+            unreachable!()
+        };
+        assert!(melee.validate(behavior).is_ok());
+        for mutation in 0..6 {
+            let mut changed = melee.clone();
+            match mutation {
+                0 => changed.source_repository = "unknown/creatures".into(),
+                1 => changed.source_revision = "0".repeat(40),
+                2 => changed.source_sha256 = "0".repeat(64),
+                3 => changed.source_path = "other/fugue.lua".into(),
+                4 => changed.minimum += 1,
+                _ => changed.maximum += 1,
+            }
+            assert!(
+                changed.validate(behavior).is_err(),
+                "unqualified Fugue source mutation {mutation}"
+            );
+        }
+    }
+
+    #[test]
     fn monster_melee_requires_exact_active_schedule_and_explicit_approximation_status() {
         let mut creatures: CreatureProfilesDocument =
             serde_json::from_slice(&input().creature_profiles.bytes).unwrap();
@@ -3214,6 +3481,40 @@ mod tests {
         changed.spell_appearances = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &changed).is_err());
     }
+    #[test]
+    fn srx3_reward_binding_requires_complete_source_profile_at_real_decoder() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let records = boss_reward_bindings::qualified_records().unwrap();
+        let original = serde_json::json!({
+            "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": records,
+        });
+        let mut supplied = input();
+        let bytes = serde_json::to_vec(&original).unwrap();
+        supplied.item_profiles = Some(pinned(&bytes));
+        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&compiled.server_artifact).unwrap();
+        assert!(
+            decoded
+                .state
+                .item_policy("oteryn:item.tibia.i43946", "definition-r1")
+                .is_some()
+        );
+        for pointer in [
+            "/records/0/production_binding_qualification/scope",
+            "/records/0/authoring/item/revision",
+        ] {
+            let mut changed = original.clone();
+            *changed.pointer_mut(pointer).unwrap() = "unqualified-splice".into();
+            let bytes = serde_json::to_vec(&changed).unwrap();
+            supplied.item_profiles = Some(pinned(&bytes));
+            assert!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_err(),
+                "{pointer}"
+            );
+        }
+    }
+
     #[test]
     fn existing_twenty_two_record_baseline_is_preserved_exactly_by_envelope() {
         let source = test_source(3).unwrap();
@@ -3431,7 +3732,14 @@ mod tests {
         );
         assert_eq!(rewards.row(creature).err(), Some(private_refusal));
         let corpse = rewards.reward_boss_corpse(creature).unwrap();
-        assert_eq!(corpse.corpse_item.production_key, item);
+        assert_eq!(
+            corpse
+                .corpse_item
+                .as_ref()
+                .expect("source Bakragore corpse")
+                .production_key,
+            item
+        );
         assert!(corpse.loot_table.entries.is_empty());
         assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
         assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
@@ -3439,7 +3747,14 @@ mod tests {
         // Main separates a reward boss's physical body from its private loot
         // budget. The branch's exact native-goal loot closure now qualifies Spite.
         let spite = rewards.row("oteryn:creature.goshnar_s_spite").unwrap();
-        assert_eq!(spite.corpse_item.production_key, "oteryn:item.tibia.i33867");
+        assert_eq!(
+            spite
+                .corpse_item
+                .as_ref()
+                .expect("source Spite corpse")
+                .production_key,
+            "oteryn:item.tibia.i33867"
+        );
         assert!(!spite.loot_table.entries.is_empty());
         let supplied = NativeGameplayInput::from_manifest(
             &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -4494,7 +4809,7 @@ mod source_item_closure_tests {
                 }
             }
         }
-        assert_eq!((create, remove), (62, 20));
+        assert_eq!((create, remove), (64, 20));
         Ok(())
     }
     #[test]
@@ -4573,8 +4888,17 @@ pub fn retained_callback_native_fixture(
 ) -> NativeGameplayState {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
         .expect("explicit actual native manifest required for callback authority test");
-    let input = NativeGameplayInput::from_manifest(Path::new(&path))
-        .expect("qualified native callback test fixture");
+    retained_callback_native_fixture_at(world, Path::new(&path))
+}
+
+#[cfg(any(test, feature = "test-support"))]
+#[allow(clippy::expect_used)]
+pub fn retained_callback_native_fixture_at(
+    world: oteryn_protocol_oteryn::WorldId,
+    path: &Path,
+) -> NativeGameplayState {
+    let input =
+        NativeGameplayInput::from_manifest(path).expect("qualified native callback test fixture");
     let room = super::qualify_selected_native_gameplay_room(world, &input)
         .expect("qualified native callback test fixture");
     let staged = super::production::StagedGeneration::stage(

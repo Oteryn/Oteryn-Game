@@ -805,6 +805,7 @@ fn chest(
 ) -> RewardClaimMintRequest {
     RewardClaimMintRequest {
         backpack_outputs: false,
+        additional_items: Vec::new(),
         command,
         claim: definition("RewardClaim", claim_key),
         source_placement: "fixture:placement.chest".into(),
@@ -1717,6 +1718,7 @@ fn a_key_claim_records_its_number_once_and_the_database_rejects_any_other_key_ro
         let backpack = harness.equip_backpack(&authority, 1).await?;
         let key = RewardClaimMintRequest {
             backpack_outputs: false,
+            additional_items: Vec::new(),
             key_number: Some(10),
             ..chest(
                 command(2)?,
@@ -3257,3 +3259,6 @@ mod quest_obligations {
         })
     }
 }
+
+#[path = "reward_claim_mint_postgres_cases/qmech_siblings.rs"]
+pub(super) mod qmech_siblings;

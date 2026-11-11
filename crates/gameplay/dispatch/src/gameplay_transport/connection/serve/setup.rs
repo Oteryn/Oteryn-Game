@@ -142,6 +142,7 @@ where
     if let Some(message) = zones_nologout_transport::snapshot(authority, admitted) {
         payloads.push(message.map_err(|()| ServeEnd::Disconnected)?);
     }
+    native_cues::snapshot_observations(authority, actor, admitted, &mut payloads).await?;
     let mut domains = payloads
         .iter()
         .map(|domain| DomainSnapshot {
@@ -365,6 +366,7 @@ async fn live<A: FreshAdmissionAuthority>(
         refresh_cursor: 0,
         activity_ack: None,
         cast_chat_revision: u64::from(cast_chat_active),
+        require_session_binding: false,
         spell_catalog,
         integrity,
         stash_rows: None,
@@ -395,10 +397,20 @@ async fn live<A: FreshAdmissionAuthority>(
             0
         },
         movement_effect_revision: authority
-            .observe_movement_effects(0)
+            .observe_current_actor_movement_effects(actor, admitted.game_session_id, 0)
+            .await
             .last()
             .map(|effect| effect.0)
             .unwrap_or(0),
+        movement_speech_revision: authority
+            .observe_movement_speech(0)
+            .last()
+            .map_or(0, |entry| entry.0),
+        creature_visual_revision: authority
+            .observe_creature_visuals(0)
+            .last()
+            .map_or(0, |entry| entry.0),
+        native_cue_actor: actor,
         selected_capabilities,
         overlay_served,
         notices_selected,

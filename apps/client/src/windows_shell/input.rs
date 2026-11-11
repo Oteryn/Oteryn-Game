@@ -157,8 +157,10 @@ impl Application {
             if play.view.target_move_input(&play.link, events) {
                 return;
             }
-            if !play.view.diagonal_movement_input(&play.link, events)
-                && let Some(direction) = arrow_step(events)
+            if let Some(direction) = play
+                .link
+                .diagonal_input(events)
+                .or_else(|| arrow_step(events).filter(|direction| !direction.is_diagonal()))
             {
                 play.view.arrow(direction);
             }

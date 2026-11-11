@@ -5858,6 +5858,17 @@ fn assert_exhausted_budget_refused<
 #[test]
 fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
 -> Result<(), Box<dyn std::error::Error>> {
+    // Construct the complete future on the scenario stack, before Box::pin moves it.
+    std::thread::Builder::new()
+        .name("complete-reconnect".into())
+        .stack_size(64 << 20)
+        .spawn(|| complete_reconnect_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "complete reconnect scenario thread panicked")?
+        .map_err(Into::into)
+}
+
+fn complete_reconnect_scenario() -> Result<(), Box<dyn std::error::Error>> {
     use base64::Engine;
     use durability::admission_authority_guards::AdmissionGuardStore;
     use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};

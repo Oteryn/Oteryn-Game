@@ -477,6 +477,7 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             .expect("exact Channel or Instance death binds its committed physical body");
         assert_eq!(carrier.bound_corpses(None)[0].item, corpse_item);
         let before_replay = carrier.clone();
+        let committed_binding = carrier.clone();
         assert_eq!(
             carrier.bind_corpse_item_inner(ExactActorRef(*actor), corpse_item.clone()),
             Ok(())
@@ -485,11 +486,19 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             *carrier, before_replay,
             "same committed Item replay is idempotent"
         );
+        assert_eq!(
+            *carrier, committed_binding,
+            "same committed Item replay is mutation-free in either scope"
+        );
         let mut substituted = corpse_item.clone();
         substituted.item_instance_id = id(11);
         assert_eq!(
             carrier.bind_corpse_item_inner(ExactActorRef(*actor), substituted),
             Err(CarrierError::CorpseProjectionConflict)
+        );
+        assert_eq!(
+            *carrier, committed_binding,
+            "a different Item cannot overwrite the committed binding"
         );
         let mut foreign_actor = *actor;
         foreign_actor.runtime_scope = RuntimeScopeRefV1::Channel {

@@ -271,3 +271,201 @@ fn asymmetric_wall_rejects_effects_it_cannot_commit() -> Result<(), String> {
     }
     Ok(())
 }
+
+#[test]
+fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
+-> Result<(), String> {
+    let mut value = base();
+    value["requires_world_admission"] = true.into();
+    value["storage"] = serde_json::json!([
+        {"track":dance::QUESTLINE_TRACK,"minimum":-1,"maximum":15,"set":1}
+    ]);
+    value["world_requirements"] = serde_json::json!([{
+        "position":{"x":32991,"y":31496,"floor":-1}, "appearance":0,
+        "ground_stack":[{"item":"oteryn:item.tibia.i2471","count":1},
+                        {"item":"oteryn:item.tibia.i2904","count":1}]
+    }]);
+    assert!(
+        callbacks(value.clone()).is_ok(),
+        "portable stacks need a durable read-set"
+    );
+    for case in 0..6 {
+        let mut bad = value.clone();
+        match case {
+            0 => bad["storage"] = serde_json::json!([]),
+            1 => bad["world_requirements"][0]["ground_stack"][0]["count"] = 0.into(),
+            2 => bad["world_requirements"][0]["ground_stack"][0]["item"] = "*".into(),
+            3 => bad["world_requirements"][0]["ground_stack"][0]["count"] = 101.into(),
+            4 => bad["world_requirements"][0]["ground_stack"] = serde_json::json!([]),
+            _ => {
+                bad["world_requirements"][0]["ground_stack"] = serde_json::json!(vec![
+                        value["world_requirements"][0]["ground_stack"][0]
+                            .clone();
+                        MAX_EFFECTS + 1
+                    ])
+            }
+        }
+        assert!(
+            callbacks(bad).is_err(),
+            "accepted unsafe Ground prerequisite {case}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn m33_disjoint_readonly_phases_share_one_step_selector_without_ambiguity() -> Result<(), String> {
+    // questpc7 retained Feaster route: same entrance, programme 0 versus 5;
+    // Wiki Feaster of Souls oldid421868, s2 and s6 of the chosen recipe.
+    let mut entry = base();
+    entry["key"] = "oteryn:quest-callback/m33/feaster-entry".into();
+    entry["quest"] = "oteryn:quest.feaster_of_souls_quest".into();
+    entry["storage"] = serde_json::json!([
+        {"track":"oteryn:quest-progress/questpc7/feaster/programme","minimum":0,"maximum":0,"set":0,"preserve":true}
+    ]);
+    let mut reentry = entry.clone();
+    reentry["key"] = "oteryn:quest-callback/m33/feaster-reentry".into();
+    reentry["storage"][0]["minimum"] = 5.into();
+    reentry["storage"][0]["maximum"] = 5.into();
+    reentry["storage"][0]["set"] = 5.into();
+    let first = callbacks(entry.clone())?.remove(0);
+    let second = callbacks(reentry.clone())?.remove(0);
+    assert!(
+        validate_registry(&[first.clone(), second]).is_ok(),
+        "disjoint source phases must be admissible"
+    );
+    let phases = callbacks(serde_json::json!({
+        "key":"oteryn:quest-callback/m33/feaster-reentry-selection",
+        "quest":entry["quest"],"trigger":"step_in","selector":entry["selector"],
+        "lever":null,"reversible":false,"passages":[],"teleport":null,
+        "storage":[{"track":"oteryn:quest-progress/questpc7/feaster/programme","minimum":5,"maximum":5,"set":5,"preserve":true}],
+        "offerings":[],"item_on_target":null,"return_on_failure":false,"failure_message":null,"sources":entry["sources"]
+    }))?;
+    let second_phase = phases.first().ok_or("phase")?;
+    let book = extend_callbacks(
+        QuestStateCatalogue::new("phase", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+        &[first.clone(), second_phase.clone()],
+    )?;
+    let key = "oteryn:quest-progress/questpc7/feaster/programme".to_string();
+    for (value, expected) in [
+        (0, Some(first.key.as_str())),
+        (5, Some(second_phase.key.as_str())),
+        (3, None),
+    ] {
+        let selected = select_storage_phase(
+            &[&first, second_phase],
+            &BTreeMap::from([(key.clone(), value)]),
+            &book,
+        )?;
+        assert_eq!(selected.map(|callback| callback.key.as_str()), expected);
+    }
+    reentry["storage"][0]["minimum"] = 0.into();
+    assert!(
+        validate_registry(&[first, callbacks(reentry)?.remove(0)]).is_err(),
+        "overlapping phases must remain ambiguous"
+    );
+    Ok(())
+}
+
+#[test]
+fn m33_feaster_registered_routes_choose_the_source_destination_by_programme() -> Result<(), String>
+{
+    // questpc7-world-callbacks.json at 2caf66704f735bde02cb68370a5b5e00dd2d87a6:
+    // entry and purification-entry, Feaster chosen recipe s2/s6 (Wiki oldid421868).
+    let callbacks = load()?;
+    let routes: Vec<_> = callbacks
+        .iter()
+        .filter(|c| {
+            matches!(
+                c.key.as_str(),
+                "oteryn:quest-callback/questpc7-feaster-entry"
+                    | "oteryn:quest-callback/questpc7-feaster-purification-entry"
+            )
+        })
+        .collect();
+    assert_eq!(
+        routes.len(),
+        2,
+        "both source routes must reach the production registry"
+    );
+    let book = extend_callbacks(
+        QuestStateCatalogue::new("m33-source", vec![], vec![]).map_err(|e| format!("{e:?}"))?,
+        &routes.iter().map(|c| (*c).clone()).collect::<Vec<_>>(),
+    )?;
+    let programme = "oteryn:quest-progress/questpc7/feaster/programme".to_string();
+    assert!(
+        select_storage_phase(&routes, &BTreeMap::new(), &book)?.is_none(),
+        "unstarted quest cannot enter"
+    );
+    for (phase, destination) in [
+        (
+            0,
+            Position {
+                x: 32407,
+                y: 31788,
+                floor: -7,
+            },
+        ),
+        (
+            5,
+            Position {
+                x: 31917,
+                y: 32354,
+                floor: -8,
+            },
+        ),
+    ] {
+        let route = select_storage_phase(
+            &routes,
+            &BTreeMap::from([(programme.clone(), phase)]),
+            &book,
+        )?
+        .ok_or("source phase")?;
+        assert_eq!(route.teleport, Some(destination));
+        assert_eq!(route.minimum_level, Some(250));
+        assert!(route.admission.as_ref().is_some_and(|a| a.premium));
+        assert_eq!(
+            route.selector.position,
+            Some(Position {
+                x: 32627,
+                y: 32076,
+                floor: -7
+            })
+        );
+        assert_eq!(route.selector.appearance, Some(231));
+        assert!(route.requires_world_admission);
+        for case in 0..4 {
+            let mut bad = route.clone();
+            match case {
+                0 => bad.teleport.as_mut().ok_or("destination")?.x += 1,
+                1 => bad.minimum_level = Some(1),
+                2 => bad.storage[0].preserve = false,
+                _ => bad.sources.clear(),
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err(),
+                "altered chosen route {case}"
+            );
+        }
+        assert!(
+            route
+                .storage
+                .iter()
+                .any(|g| g.track == programme && g.preserve)
+        );
+        let consumed = route
+            .storage
+            .iter()
+            .find(|g| !g.preserve)
+            .ok_or("entry receipt")?;
+        let used = BTreeMap::from([
+            (programme.clone(), phase),
+            (consumed.track.clone(), consumed.set),
+        ]);
+        assert!(
+            select_storage_phase(&routes, &used, &book)?.is_none(),
+            "completed entry receipt cannot replay"
+        );
+    }
+    Ok(())
+}

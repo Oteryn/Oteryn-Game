@@ -149,6 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .collect::<String>()
                 );
                 let request = RewardClaimMintRequest {
+                    additional_items: Vec::new(),
                     backpack_outputs: false,
                     command: CommandRef::new(command.game_session_id, id),
                     claim: TypedDefinitionRef {

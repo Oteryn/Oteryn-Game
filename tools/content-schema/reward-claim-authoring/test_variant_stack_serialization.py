@@ -36,12 +36,16 @@ class VariantStackSerializationTests(unittest.TestCase):
                 self.assertEqual(d['data_holds'], [])
         self.assertEqual(len(changed), 2)
         # W15b's 67 recipes include these stack normalizations (PR2770 Q4/A).
-        # ITEMHOLD-Q qualifies two more without changing their raw source witnesses.
+        # Exact Item, charged-weapon and source-selected fluid admissions qualify more
+        # without changing the raw source witnesses (see container_native tests).
         errors = variants.native_lowering_errors(self.records)
         self.assertEqual(len(errors), 27)
-        qualified = {'oteryn:reward-claim.kv.ornamentedshield',
+        qualified = {'oteryn:reward-claim.kv.draconia1',
+                     'oteryn:reward-claim.kv.fireaxe1',
+                     'oteryn:reward-claim.kv.goblintemple2',
+                     'oteryn:reward-claim.kv.ornamentedshield',
                      'oteryn:reward-claim.kv.triangletower',
-                     'oteryn:reward-claim.kv.draconia1'}
+                     'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine'}
         self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))
         draconia = next(r['definition'] for r in self.records
                         if r['definition']['identity']['key'].endswith('.draconia1'))
@@ -55,7 +59,7 @@ class VariantStackSerializationTests(unittest.TestCase):
                 self.assertIn('native_contents', row['definition'])
                 del row['definition']['native_contents']
         previous_errors = variants.native_lowering_errors(without_itemhold)
-        self.assertEqual(len(previous_errors), 30)  # All three qualified ITEMHOLD claims were removed.
+        self.assertEqual(len(previous_errors), len(errors) + len(qualified))  # Every named qualified claim was removed.
         self.assertEqual({error['claim'] for error in previous_errors}
                          - {error['claim'] for error in errors}, qualified)
 

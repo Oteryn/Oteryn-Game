@@ -4,7 +4,8 @@
 
 use super::*;
 use crate::durability::map_item_mint::{
-    MapItemMintError, MapItemMintOutcome, MapItemMintRequest, plan_map_item_mint,
+    FlatMapCrateProof, MapItemMintError, MapItemMintOutcome, MapItemMintRequest,
+    plan_map_item_mint_request,
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::map::overlay::pickup::{self, MintResolution};
@@ -19,37 +20,6 @@ pub(super) async fn move_map_item(
     let ground_cache = &admission.states.loop_ground;
     let refused = LoopMoveResult::Refused;
     let stale = refused(LoopMoveRefusal::Stale);
-    let destination = match request.target {
-        LoopTarget::MainBackpack => LoopDestination::MainBackpack,
-        LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
-        LoopTarget::Ground(to) if door_origin.is_some() => {
-            let Some(from) = door_origin else {
-                return refused(LoopMoveRefusal::Rejected);
-            };
-            let Some(map) = admission.bundle_map() else {
-                return refused(LoopMoveRefusal::NotSupported);
-            };
-            let Some(active) = admission.active_generation else {
-                return refused(LoopMoveRefusal::Rejected);
-            };
-            let runtime = admission.runtime.lock().await;
-            let spatial_position = match source_drop_cell(
-                map.overlay.base(),
-                (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
-                to,
-            ) {
-                Ok(cell) => cell,
-                Err(result) => return result,
-            };
-            LoopDestination::Ground(LoopGround {
-                spatial_position,
-                map_revision: map_revision(map.overlay.base()),
-                content_revision: sha256_revision(active.identity().server_artifact_digest()),
-                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
-            })
-        }
-        _ => return refused(LoopMoveRefusal::NotSupported),
-    };
     let Some(fence) = command.item_fence else {
         return refused(LoopMoveRefusal::Rejected);
     };
@@ -86,6 +56,32 @@ pub(super) async fn move_map_item(
     else {
         return refused(LoopMoveRefusal::NotSupported);
     };
+    let destination = match request.target {
+        LoopTarget::MainBackpack => LoopDestination::MainBackpack,
+        LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
+        LoopTarget::Ground(to) => {
+            let reach = door_origin.map_or((at.at.x, at.at.y, at.at.floor), |from| {
+                (i32::from(from.x), i32::from(from.y), i16::from(from.floor))
+            });
+            let cell = if door_origin.is_some() {
+                source_drop_cell(at.map.overlay.base(), reach, to)
+            } else {
+                drop_cell(at.map.overlay.base(), reach, to)
+            };
+            let spatial_position = match cell {
+                Ok(cell) => cell,
+                Err(result) => return result,
+            };
+            let runtime = admission.runtime.lock().await;
+            LoopDestination::Ground(LoopGround {
+                spatial_position,
+                map_revision: map_revision(at.map.overlay.base()),
+                content_revision: sha256_revision(native.source_digest()),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            })
+        }
+        _ => return refused(LoopMoveRefusal::NotSupported),
+    };
     let base = at.map.overlay.base();
     // Only boot's durable active epoch may name this physical map generation.
     if bundle_digest != base.digest() || reset_epoch != admission.reset_epoch {
@@ -100,54 +96,136 @@ pub(super) async fn move_map_item(
     let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
         return stale;
     };
-    let Some(id) = tile
-        .ids()
-        .iter()
-        .zip(tile.depths())
-        .filter(|(_, depth)| **depth == 0)
-        .nth(usize::from(ordinal))
-        .map(|(id, _)| *id)
-    else {
-        return stale;
-    };
-    let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
-        return stale;
-    };
-    let Some(EntryFacts {
-        definition: MapDefinition::Item(reference),
-        ..
-    }) = at.map.facts.base_entry(pos, ordinal, id)
-    else {
-        return stale;
+    let nested = at.map.facts.captured_map_item(placement_key);
+    let (reference, quantity, key_number) = if let Some(node) = &nested {
+        let attrs = &node.attrs;
+        if at.map.facts.house_id(pos).is_some()
+            || !node.facts.pickupable
+            || !node.children.is_empty()
+            || attrs.unique.is_some()
+            || attrs.door.is_some()
+            || attrs.depot.is_some()
+            || attrs.teleport.is_some()
+            || attrs.text.is_some()
+            || attrs.description.is_some()
+            || attrs.charges.is_some()
+        {
+            return stale;
+        }
+        let MapDefinition::Item(reference) = node.facts.definition else {
+            return stale;
+        };
+        (reference, node.facts.count, attrs.action)
+    } else {
+        let Some(id) = tile
+            .ids()
+            .iter()
+            .zip(tile.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))
+            .map(|(id, _)| *id)
+        else {
+            return stale;
+        };
+        let Some(EntryFacts {
+            definition: MapDefinition::Item(reference),
+            ..
+        }) = at.map.facts.base_entry(pos, ordinal, id)
+        else {
+            return stale;
+        };
+        let Some(definition) =
+            crate::gameplay_transport::item_look::typed_definition(index, reference)
+        else {
+            return stale;
+        };
+        let entry = at
+            .map
+            .facts
+            .pickup_entry(pos, ordinal, id)
+            .or_else(|reason| {
+                if matches!(destination, LoopDestination::Ground(_)) {
+                    at.map.facts.empty_amphora_push_entry(
+                        pos,
+                        ordinal,
+                        id,
+                        tile.depths(),
+                        &definition.production_key,
+                    )
+                } else {
+                    Err(reason)
+                }
+            });
+        let Ok(entry) = entry else {
+            return stale;
+        };
+        (reference, entry.quantity, None)
     };
     let Some(definition) = crate::gameplay_transport::item_look::typed_definition(index, reference)
     else {
         return stale;
     };
-    let Ok(item) = generation_item_facts(native, &definition) else {
-        return stale;
-    };
-    if plan_map_item_mint(&item, entry.quantity, false).is_err() {
+    let ground_push = matches!(destination, LoopDestination::Ground(_));
+    if key_number.is_some()
+        && !matches!(
+            definition.production_key.as_str(),
+            "oteryn:item.tibia.i2968"
+                | "oteryn:item.tibia.i2969"
+                | "oteryn:item.tibia.i2970"
+                | "oteryn:item.tibia.i2971"
+                | "oteryn:item.tibia.i2972"
+                | "oteryn:item.tibia.i2973"
+        )
+    {
         return stale;
     }
-    let Some(ground) = loop_ground(admission, base, Some(index)).await else {
-        return LoopMoveResult::Unknown;
+    if !oteryn_gameplay_items::map_pickup::whole_quantity_requested(quantity, request.count) {
+        return refused(LoopMoveRefusal::NotSupported);
+    }
+    let item = if ground_push {
+        oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts(native, &definition)
+    } else {
+        generation_item_facts(native, &definition)
+    };
+    let Ok(item) = item else {
+        return stale;
     };
     let mint = MapItemMintRequest {
+        key_number,
+        flat_crate: FlatMapCrateProof::qualify(&item, bundle_digest, placement_key, tile.depths()),
         command: CommandRef::new(command.game_session_id, command_id),
         base_bundle_digest: bundle_digest,
         placement_key,
         reset_epoch,
         item,
-        quantity: entry.quantity,
+        quantity,
         content_revision: sha256_revision(native.source_digest()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
-    let hidden = ground
-        .overlay()
-        .tile(pos)
-        .is_some_and(|tile| tile.is_hidden(ordinal));
+    if plan_map_item_mint_request(&mint, false).is_err() {
+        return stale;
+    }
+    let Some(ground) = loop_ground(admission, base, Some(index)).await else {
+        return LoopMoveResult::Unknown;
+    };
+    if let Some(node) = &nested {
+        let mut ancestor = node.parent;
+        loop {
+            if ground.taken_sources.contains(&ancestor) {
+                return stale;
+            }
+            let Some(parent) = at.map.facts.captured_map_item(ancestor) else {
+                break;
+            };
+            ancestor = parent.parent;
+        }
+    }
+    let hidden = ground.taken_sources.contains(&placement_key)
+        || ground
+            .overlay()
+            .tile(pos)
+            .is_some_and(|tile| tile.is_hidden(ordinal));
     // A crash-retry is the sole exception to the hidden-origin gate. This probe writes nothing.
     if hidden {
         match admission
@@ -212,7 +290,10 @@ pub(super) async fn move_map_item(
     if pickup::rehide_taken_origins(&mut overlay, &taken).is_err() {
         return LoopMoveResult::Unknown;
     }
-    if !hidden && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err() {
+    if nested.is_none()
+        && !hidden
+        && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err()
+    {
         return refused(LoopMoveRefusal::NoRoom);
     }
     pending_origin(ground_cache, placement_key, Some(mint.command));

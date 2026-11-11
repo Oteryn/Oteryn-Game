@@ -74,10 +74,12 @@ pub async fn consume_field_protection_in_transaction(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     read: &super::spell_item_transaction::StandingTileRead,
     character_revision: u64,
-    cycle: [u8;32],
+    cycle: [u8; 32],
     request: &TimedRequest,
 ) -> Result<TimedItemResult> {
-    read.check_transaction(tx).await.map_err(|_| TimedWriteError::AuthorityRejected)?;
+    read.check_transaction(tx)
+        .await
+        .map_err(|_| TimedWriteError::AuthorityRejected)?;
     let item = read.fence();
     let fence = CurrentCharacterGameplayFence {
         character_id: item.character_id,
@@ -91,17 +93,23 @@ pub async fn consume_field_protection_in_transaction(
     };
     let equipped: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid)")
         .bind(item.character_id.as_bytes().as_slice()).bind(request.item.as_slice()).fetch_one(&mut ***tx).await?;
-    if !equipped || request.content_digest != read.content_digest()
-        || !matches!(request.operation, TimedOperation::Use { elapsed_ms: 0 }) {
+    if !equipped
+        || request.content_digest != read.content_digest()
+        || !matches!(request.operation, TimedOperation::Use { elapsed_ms: 0 })
+    {
         return Err(TimedWriteError::AuthorityRejected);
     }
     sqlx::query("INSERT INTO game_player_field_charge_writes(cycle,item_instance_id,expected_revision,victim,game_session_id) VALUES($1,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid)")
         .bind(cycle.as_slice()).bind(request.item.as_slice()).bind(request.expected_revision.to_string()).bind(item.character_id.as_bytes().as_slice()).bind(item.game_session_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
     // Check each complete one-item shape before the next pulse. The cycle/proof
     // foreign keys remain deferred until the final HP successor is receipted.
-    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent DEFERRED").execute(&mut ***tx).await?;
+    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent DEFERRED")
+        .execute(&mut ***tx)
+        .await?;
     let result = apply(tx, &fence, request).await?;
-    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent IMMEDIATE").execute(&mut ***tx).await?;
+    sqlx::query("SET CONSTRAINTS game_item_timed_state_write_consistent IMMEDIATE")
+        .execute(&mut ***tx)
+        .await?;
     Ok(result)
 }
 

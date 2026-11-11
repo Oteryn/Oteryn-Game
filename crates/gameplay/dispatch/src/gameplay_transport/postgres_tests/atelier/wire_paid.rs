@@ -651,7 +651,7 @@ fn scenario(case: Case) -> TestResult {
             &[wire::CAPABILITY_WHEEL_ALLOCATION_V1]
         };
         admitted.continuity.selected_capabilities = if matches!(case, Case::Resources) {
-            crate::gameplay_transport::connection::fresh_capability_selection(&owner, capabilities)
+            crate::gameplay_transport::connection::fresh_capability_selection(&owner, capabilities).await
         } else {
             SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
         }

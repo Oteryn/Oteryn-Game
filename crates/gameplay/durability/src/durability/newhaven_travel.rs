@@ -70,7 +70,7 @@ impl DurabilityRoot {
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let cooldown: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_newhaven_travel_receipts WHERE character_id=encode($1,'hex')::uuid AND arrived_at > clock_timestamp()-interval '3 seconds')")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            if level.and_then(|level|u32::try_from(level).ok()).unwrap_or(0) < route.min_level() || blocked || obligation || cooldown {
+            if level.and_then(|level|u32::try_from(level).ok()).unwrap_or(0) < route.min_level() || obligation || (route == NewhavenRoute::Seagull && (blocked || cooldown)) {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             sqlx::query("INSERT INTO game_newhaven_travel_receipts(character_id,game_session_id,command_id,occurrence_id,route) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),encode($4,'hex')::uuid,$5)")
@@ -88,11 +88,37 @@ impl DurabilityRoot {
 /// Called after an actual placement, under the same root lock as arrival consumption.
 pub(super) async fn complete_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    character: crate::domain::CharacterId,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
     occurrence: super::npc_travel::TravelOccurrence,
 ) -> Result<(), DurabilityError> {
+    let character = fence.character_id;
     let completed = sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp() WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid AND arrived_at IS NULL RETURNING route,request_binding IS NOT NULL AS donor_route")
         .bind(character.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    if completed.as_ref().is_some_and(|row| {
+        row.try_get::<String, _>("route")
+            .is_ok_and(|route| route == "targuna")
+            && row
+                .try_get::<bool, _>("donor_route")
+                .is_ok_and(|paid| !paid)
+    }) {
+        // Crystal anna.lua:103-107 and lib/tables/town.lua:29-30: Targuna town 34
+        // only after placement. Both remain in this arrival-consumption transaction.
+        let root = assert_gameplay_fence(tx, &fence, node)
+            .await?
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let before: Option<i32> = sqlx::query_scalar(
+            "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid"
+        ).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        super::character_home_town::write_in_transaction(
+            tx,
+            fence,
+            &root,
+            before.unwrap_or(33),
+            34,
+        )
+        .await?;
+    }
     if let Some(row) = &completed
         && row.try_get::<bool, _>("donor_route")?
     {
@@ -109,9 +135,11 @@ pub(super) async fn complete_in_transaction(
         )
         .await?;
     }
+    // Native Departed/false/false represents the donor resets to -1 of
+    // newhavenCitizen/Hunting/NewLootTheCorruptor (storages.lua:3125-3127, 48031..48033).
     if completed.as_ref().is_some_and(|row| {
         row.try_get::<String, _>("route")
-            .is_ok_and(|route| matches!(route.as_str(), "rookgaard" | "thais_peninsula"))
+            .is_ok_and(|route| matches!(route.as_str(), "rookgaard" | "targuna"))
     }) && let TutorialProgressOutcome::Read(Some(stored)) =
         tutorial_progress_in_transaction(tx, character, None).await?
         && let Some(next) = tutorial_transition(

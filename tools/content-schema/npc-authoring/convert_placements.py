@@ -5,9 +5,15 @@ Writes content/world/npc-placements/ (index.json, held.json and placements-*.jso
 NPC keys of npc_placement_scope.json, and only those that the NPC catalogue admits. A cell shared
 with another placement is held (SCHEDULE_VARIANT, SHARED_CELL) instead of written; one NPC listed
 twice at one cell and direction is one record. A wiki-origin placement has no direction in the
-source and is written as north. Optional placement_cells narrows a scoped NPC to a distinct subset of candidate cells; it never introduces coordinates or bypasses holds. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
-normalized facts are written. Explicit pinned placement overrides preserve their own evidence
-and replace only a scoped candidate’s placement hypothesis. Fails closed on an unadmitted key or an out-of-range position.
+source and is written as north. Optional placement_cells narrows a scoped NPC to
+a distinct subset of candidate cells; it never introduces coordinates or bypasses holds.
+Optional block_solid_contacts admits only source-backed solid-object contacts;
+the compiler still checks walls, floor changes and other terrain hazards.
+Explicit placement_adjustments choose adjacent clear native ground while retaining
+the donor cell. Pinned placement overrides preserve their own evidence and replace
+only a scoped candidate's placement hypothesis. The source is OTS_HYPOTHESIS_ONLY
+migration evidence: only normalized facts are written. Unadmitted keys and
+out-of-range positions fail closed.
 
     python convert_placements.py [--check]
 """
@@ -23,6 +29,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import native_contacts
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 OUT = ROOT / "content/world/npc-placements"
@@ -30,6 +38,7 @@ CANDIDATES = HERE / "samples/promotion-candidates-v1.json"
 SCOPE = HERE / "npc_placement_scope.json"
 NPCS = ROOT / "content/npcs/definitions"
 FRAME = "global-target-2026-09-27"
+from chosen_placement_adjustments import choose_cell
 SHARD_SIZE = 500
 SOURCES = {
     "canary": ("opentibiabr/canary", "47dfd51f45280a59a1d3e50ba7edd573d7234446", "oteryn:source.canary"),
@@ -148,6 +157,8 @@ def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str],
 def provenance(candidate: dict, placement: dict) -> list[dict]:
     if "placement_override_provenance" in candidate:
         return copy.deepcopy(candidate["placement_override_provenance"])
+    if placement.get("origin") == "native_wiki_br":
+        return [candidate["native_provenance"]]
     # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
     arbitration = sorted(
         (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
@@ -192,6 +203,12 @@ def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
+    native = native_contacts.candidates(NPCS, scope.get("native_contacts", []))
+    if set(native) & set(candidates):
+        raise ValueError("native contacts cannot replace donor candidates")
+    if not set(native) <= set(scope["npcs"]):
+        raise ValueError("native_contacts names an unscoped NPC")
+    candidates.update(native)
     candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
     candidates = apply_authored_placements(candidates, scope, admitted)
@@ -204,6 +221,9 @@ def convert() -> dict[str, str]:
 
     # A candidate can include both the Global world and an example map. Scope
     # may select known cells, but never introduce a cell or bypass sharing rules.
+    contacts = scope.get("block_solid_contacts", [])
+    if not isinstance(contacts, list) or not set(contacts) <= set(npcs):
+        sys.exit("block_solid_contacts names an unscoped NPC")
     selections = scope.get("placement_cells", {})
     if not isinstance(selections, dict) or not set(selections) <= set(npcs):
         sys.exit("placement_cells names an unscoped NPC")
@@ -216,6 +236,13 @@ def convert() -> dict[str, str]:
         if len(selected) != len(cells) or not selected <= available:
             sys.exit(f"{npc}: placement selection is not a distinct subset of source cells")
         selected_cells[npc] = selected
+
+    adjustments = scope.get("placement_adjustments", {})
+    if not isinstance(adjustments, dict) or not set(adjustments) <= set(npcs):
+        sys.exit("placement_adjustments names an unscoped NPC")
+    if any(len(candidates[npc]["placements"]) != 1 for npc in adjustments):
+        sys.exit("chosen adjacent placement requires a unique retained source cell")
+    adjusted_cells = set()
 
     # Every candidate placement counts for cell sharing, scoped or not.
     occupancy = defaultdict(list)
@@ -252,9 +279,15 @@ def convert() -> dict[str, str]:
                 if entry not in held:
                     held.append(entry)
                 continue
+            choice_evidence = None
+            if npc in adjustments:
+                cell, choice_evidence = choose_cell(ROOT, cell, adjustments[npc], set(occupancy) | adjusted_cells)
+                adjusted_cells.add(cell)
             x, y, z = cell
             key = f"oteryn:npc_placement.{local_name(npc)}.x{x}_y{y}_z{z}"
             rows = provenance(candidate, placement)
+            if choice_evidence is not None:
+                rows.append(choice_evidence)
             if key in records:
                 existing = records[key]["declaration"]
                 if existing["direction"] != direction:
@@ -272,6 +305,9 @@ def convert() -> dict[str, str]:
                     "provenance": rows,
                 }
             }
+    for record in records.values():
+        if record["declaration"]["npc"] in contacts:
+            record["declaration"]["block_solid_contact"] = True
     placed = {r["declaration"]["npc"] for r in records.values()}
     for npc in npcs:
         if npc not in placed and not any(h["npc"] == npc for h in held):
@@ -284,6 +320,9 @@ def convert() -> dict[str, str]:
     for start in range(0, len(ordered), SHARD_SIZE):
         part = ordered[start : start + SHARD_SIZE]
         name = f"placements-{start:05d}-{start + len(part) - 1:05d}.json"
+        if start == 0:
+            # Keep Main's published shard path as admitted placements grow.
+            name = "placements-00000-00055.json"
         shards.append(f"content/world/npc-placements/{name}")
         files[name] = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "records": part})
     held_text = dump({"coordinate_frame": FRAME, "family": "Npc.Placement", "held": held, "schema": "OTERYN_NPC_PLACEMENT_HELD/v1"})
@@ -301,6 +340,8 @@ def convert() -> dict[str, str]:
             "inputs": {
                 "candidates_sha256": hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
+                **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
+                   if native else {}),
             },
             "npc_count": len(placed),
             "population_state": "POPULATED",

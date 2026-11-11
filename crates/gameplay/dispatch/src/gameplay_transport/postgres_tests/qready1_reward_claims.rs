@@ -250,6 +250,10 @@ fn claim_case(
         };
         // The second USE is a new command on the live connection. Rebuild the owner
         // for the replay so no Foundation command-result cache can satisfy it.
+        let catalogue = std::sync::Arc::new(
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?.catalogue().clone(),
+        );
         for (commands, expected) in [
             (
                 &[1, 2][..],
@@ -259,8 +263,10 @@ fn claim_case(
         ] {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
+            owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
             owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
+            owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
                 super::quest_callbacks::wire_uses(&owner, admitted, commands, &target)
@@ -277,6 +283,20 @@ fn claim_case(
             assert_eq!(bag.entries.len(), 1);
             assert_eq!(bag.entries[0].item.quantity, quantity);
             assert_eq!(bag.entries[0].item.definition.production_key, reward);
+            let quest = match claim {
+                "oteryn:reward-claim.kv.adoreduh" => Some("oteryn:quest.adorned_uh_rune_quest"),
+                "oteryn:reward-claim.kv.barbarianaxe1" => Some("oteryn:quest.barbarian_axe_quest"),
+                "oteryn:reward-claim.kv.battleaxe" => Some("oteryn:quest.battle_axe_quest"),
+                "oteryn:reward-claim.kv.bloodherb" => Some("oteryn:quest.blood_herb_quest"),
+                "oteryn:reward-claim.kv.captain_iglues" => Some("oteryn:quest.captain_iglues_treasure_quest"),
+                _ => None,
+            };
+            if let Some(quest) = quest {
+                let completed: (i64, i64) = sqlx::query_as(
+                    "SELECT (SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND completed_character_revision IS NOT NULL), (SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND completes)",
+                ).bind(fence.character_id.as_bytes().as_slice()).bind(quest).fetch_one(&harness.pool).await?;
+                assert_eq!(completed, (1, 1), "{quest}: native source claim must record completion exactly once");
+            }
         }
         let claims: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_production_key=$2), (SELECT count(*) FROM game_reward_claim_mint_receipts)")
             .bind(fence.character_id.as_bytes().as_slice()).bind(claim).fetch_one(&harness.pool).await?;

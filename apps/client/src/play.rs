@@ -77,6 +77,9 @@ pub struct PlayView {
 
 mod construction;
 
+mod activity_scope;
+#[cfg(test)]
+pub(crate) mod capture_test_support;
 mod end;
 #[path = "features/0233-touch-controls/mod.rs"]
 mod feature_0233_touch_controls;
@@ -86,6 +89,7 @@ mod mailbox;
 mod refusal_details;
 mod resource_hud;
 pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
+mod session_initialize;
 mod session_loop;
 mod session_stepper;
 #[cfg(windows)]

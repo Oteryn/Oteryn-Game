@@ -6,6 +6,12 @@
 mod activity_transfer;
 #[path = "novelty_item_owner.rs"]
 mod novelty_item_owner;
+#[path = "actor_spell/rotten_blood.rs"]
+mod rotten_blood;
+#[path = "actor_spell/soul_war_attacks.rs"]
+mod soul_war_attacks;
+#[path = "actor_spell/soul_war_torment.rs"]
+mod soul_war_torment;
 pub(in crate::gameplay_transport) use activity_transfer::PreparedActivitySpellStates;
 pub(in crate::gameplay_transport) use novelty_item_owner::NoveltyEffectRequest;
 pub use oteryn_protocol_oteryn::actor_spell::*;
@@ -106,6 +112,9 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) encounter_phases: super::encounter_phases::Registry,
+    pub(super) native_self_heals: crate::foundation::CreatureSelfHealLedger,
+    pub(super) native_self_heal_content: Option<[u8; 32]>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     pub(in crate::gameplay_transport) enchanting_pending: Vec<(ExactActorRef, GameSessionId)>,
     /// Last persisted native gourmet conditions; a write-suppression projection only.
@@ -168,6 +177,23 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_map_initialization_pass_us: u64,
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_summons: crate::monster_summon::NativeSummonOwner,
+    pub(super) soul_war_callbacks: super::soul_war_callbacks::SoulWarCallbacks,
+    pub(super) cloak_blood_steps: Vec<std::sync::Arc<super::soul_war_cloak_blood::step::PendingBloodStep>>,
+    /// Routing hint only; SQL re-proves the actual pool and its source at entry.
+    pub(super) cloak_blood_cells: std::collections::BTreeSet<(i32,i32,i16)>,
+    pub(super) spite_global: super::spite_global::SpiteGlobalState,
+    pub(super) spite_steps: super::spite_step::SpiteStepState,
+    pub(super) primal_callbacks: super::primal_callbacks::PrimalCallbacks,
+    pub(super) rotten_blood_callbacks: super::rotten_blood_callbacks::RottenBloodCallbacks,
+    pub(super) rotten_area: super::monster_profile_cycle::rotten_area::AreaState,
+    pub(super) native_callbacks: super::monster_profile_cycle::native_callbacks::NativeCallbacks,
+    pub(super) native_profile_pass: super::monster_profile_cycle::retained::ProfilePassOwner,
+    pub(super) source_death_action: Option<super::source_death::PreparedSourceDeathAction>,
+    pub(super) source_death_action_ready: bool,
+    pub(super) source_death_corpse: Option<std::sync::Arc<tokio::sync::Mutex<super::source_death::PendingSourceCorpse>>>,
+    pub(super) source_death_action_reservation: Option<oteryn_gameplay_entities::carrier::runtime_actor_source_reservation::SourceDeathActionReservation>,
+    pub(in crate::gameplay_transport) rotten_waves:
+        super::monster_profile_cycle::rotten_waves::RoomWaveStates,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
     pub(in crate::gameplay_transport) monster_spells:
         crate::creature_damage_spell::DamageSpellOwner,
@@ -299,6 +325,9 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            encounter_phases: Default::default(),
+            native_self_heals: Default::default(),
+            native_self_heal_content: None,
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
             pending_item_effects: Vec::new(),
@@ -330,6 +359,21 @@ impl Default for ChannelSpellStates {
             monster_chains: None,
             monster_composed: Default::default(),
             monster_summons: Default::default(),
+            soul_war_callbacks: Default::default(),
+            cloak_blood_steps: Vec::new(),
+            cloak_blood_cells: Default::default(),
+            spite_global: Default::default(),
+            spite_steps: Default::default(),
+            primal_callbacks: Default::default(),
+            rotten_blood_callbacks: Default::default(),
+            rotten_area: Default::default(),
+            native_callbacks: Default::default(),
+            native_profile_pass: Default::default(),
+            source_death_action: None,
+            source_death_action_ready: false,
+            source_death_corpse: None,
+            source_death_action_reservation: None,
+            rotten_waves: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),
@@ -446,9 +490,14 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.pending_item_effects
-            .iter()
-            .any(|memo| memo.actor == actor && memo.request.command.game_session_id() == session)
+        self.rotten_area.pending_for(actor, session)
+            || self.primal_callbacks.has_pending_step(actor, session)
+            || self
+                .rotten_blood_callbacks
+                .pending_for_player(actor, session)
+            || self.pending_item_effects.iter().any(|memo| {
+                memo.actor == actor && memo.request.command.game_session_id() == session
+            })
             || self
                 .pending_gourmet
                 .iter()
@@ -617,8 +666,11 @@ impl ChannelSpellStates {
 
     /// Shared carrier-owner bookkeeping. This uses the carrier's actual Channel
     /// binding to maintain its existing timer owner; it grants no actor authority.
-    /// Each caller first proves either ordinary Channel or explicit House custody.
-    fn initialize_owner_bookkeeping(&mut self, runtime: &ChannelRuntimeV1) -> Option<()> {
+    /// Each caller first proves ordinary Channel, named House, or activity custody.
+    pub(in crate::gameplay_transport) fn initialize_owner_bookkeeping(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Option<()> {
         let binding = runtime.binding();
         if self.spell_timers.as_ref().is_some_and(|timers| {
             timers.scope() != binding.runtime_scope()
@@ -1302,8 +1354,253 @@ impl ChannelSpellStates {
         analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
         public_cause: Option<crate::durability::character_death::PublicDeathCause>,
     ) -> Option<CreatureHit> {
-        // Durable unknown outcomes retain their exact player before-state. A bite
-        // must not invalidate that state, including another caster's reserved target.
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            target_session,
+            magnitude,
+            kind,
+            now,
+            analyser_source,
+            false,
+            public_cause,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "routing reuses native movement preflight without granting movement or Item authority"
+    )]
+    pub(super) fn cloak_blood_ingress_needed(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: crate::foundation::MovementPositionSnapshot,
+        direction: crate::movement::CardinalStep,
+        blocking: &dyn crate::map::floor::CellBlocker,
+    ) -> bool {
+        !self.cloak_blood_cells.is_empty()
+            && field_step_ingress::destination(
+                runtime, cells, actor, session, origin, direction, blocking,
+            )
+            .is_ok_and(|p| self.cloak_blood_cells.contains(&(p.x, p.y, p.floor)))
+    }
+
+    /// Crystal's blood MoveEvent uses addHealth with ENERGY and a null attacker.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source-qualified direct Lua health loss retains the existing HP/shield/death owner"
+    )]
+    pub(super) fn apply_soul_war_blood_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        if !super::soul_war_callbacks::qualifies_source(runtime, native) {
+            return None;
+        }
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            session,
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Energy,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            true,
+            None,
+        )
+    }
+
+    /// Exact native Soul War Lua health callbacks use the existing HP/shield/death
+    /// owner, with source qualification before selecting origin-less processing.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn apply_soul_war_lua_health_loss(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        let key = super::soul_war_callbacks::source_actor(runtime, native, source)?;
+        let blue = key == "oteryn:creature.goshnar_s_megalomania_blue";
+        let permitted = if blue {
+            native.creature_profiles().records.iter().find(|row|row.profile.target.key==key)
+                .and_then(|row|native.soul_war_source_attacks(&row.profile.target))
+                .is_some_and(|proof|proof.abilities().keys().any(|ability|
+                    proof.kind(ability)==Some(crate::content::native_soul_war::QualifiedSoulWarAttackKind::MegalomaniaBlue)))
+        } else {
+            matches!(
+                key.as_str(),
+                "oteryn:creature.soulsnatcher"
+                    | "oteryn:creature.goshnar_s_malice"
+                    | "oteryn:creature.soul_cage"
+            ) && super::soul_war_callbacks::qualifies_source(runtime, native)
+        };
+        if !permitted
+            || !matches!(
+                runtime.binding().runtime_scope(),
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
+        {
+            return None;
+        }
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            target_session,
+            magnitude,
+            if blue {
+                crate::player_lethal::PlayerHitKind::Death
+            } else {
+                crate::player_lethal::PlayerHitKind::Mitigated
+            },
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            true,
+            None,
+        )
+    }
+
+    /// Crystal soul_war.lua:1074: fixed 8000 death damage from the retained
+    /// room callback. This shares the existing shield/lethal/HP owner.
+    pub(super) fn apply_soul_war_white_tile_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        source: &oteryn_gameplay_entities::carrier::soul_war::SoulWarSpawnSource,
+        target: ExactActorRef,
+        session: GameSessionId,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        if !super::soul_war_callbacks::qualifies_source(runtime, native)
+            || !runtime.soul_war_white_tile_source_current(source)
+        {
+            return None;
+        }
+        self.apply_creature_damage_kind_inner(
+            runtime,
+            target,
+            session,
+            8000,
+            crate::player_lethal::PlayerHitKind::Death,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            true,
+            None,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn apply_creature_damage_kind_inner(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        kind: crate::player_lethal::PlayerHitKind,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        direct_lua_health: bool,
+        public_cause: Option<crate::durability::character_death::PublicDeathCause>,
+    ) -> Option<CreatureHit> {
+        let magnitude = if direct_lua_health {
+            magnitude
+        } else {
+            runtime
+                .tibiadrome_incoming_damage(target, magnitude, now.get())
+                .ok()?
+        };
+        self.apply_player_damage_stage(
+            runtime,
+            target,
+            target_session,
+            kind,
+            analyser_source,
+            public_cause,
+            |state| {
+                if direct_lua_health {
+                    crate::spell::actor_conditions::stage_soul_war_lua_health_loss(
+                        state,
+                        magnitude,
+                        now.get(),
+                    )
+                } else {
+                    crate::spell::actor_conditions::stage_typed_hit_in_world(
+                        runtime,
+                        target,
+                        state,
+                        magnitude,
+                        kind,
+                        now.get(),
+                    )
+                }
+                .ok()
+            },
+        )
+    }
+
+    pub(super) fn apply_soul_war_fifth_taint(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        proof: &super::soul_war_callbacks::QualifiedFifthTaint,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        if !proof.permits(
+            runtime,
+            target,
+            session,
+            now.get(),
+            self.get(runtime, target, session)?.revision(),
+        ) {
+            return None;
+        }
+        self.apply_player_damage_stage(
+            runtime,
+            target,
+            session,
+            crate::player_lethal::PlayerHitKind::Mitigated,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            None,
+            |state| {
+                crate::spell::actor_conditions::stage_soul_war_fifth_taint(state, now.get()).ok()
+            },
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "same player HP commit owner retains independently qualified historical death metadata"
+    )]
+    fn apply_player_damage_stage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        kind: crate::player_lethal::PlayerHitKind,
+        analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        public_cause: Option<crate::durability::character_death::PublicDeathCause>,
+        stage: impl FnOnce(
+            &PlayerSpellState,
+        ) -> Option<(
+            PlayerSpellState,
+            crate::ability::creature_bite::FlooredDamage,
+        )>,
+    ) -> Option<CreatureHit> {
+        // Durable unknown outcomes retain their exact before-state, including
+        // another caster's reserved target. All source hit variants share this
+        // existing commit, analyser and lethal owner.
         if self.is_dead(target)
             || self.has_pending_spell_commit(target, target_session)
             || runtime.assert_actor_spell_unreserved(target).is_err()
@@ -1312,15 +1609,7 @@ impl ChannelSpellStates {
         }
         let state = self.get(runtime, target, target_session)?;
         let health_before = state.vitals().health;
-        let (next, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
-            runtime,
-            target,
-            state,
-            magnitude,
-            kind,
-            now.get(),
-        )
-        .ok()?;
+        let (next, damage) = stage(state)?;
         if next.revision() == state.revision() {
             return Some(CreatureHit {
                 damage,
@@ -1582,8 +1871,28 @@ struct NativeSourceMemo<T> {
     magnitude: u32,
     kind: Option<crate::player_lethal::PlayerHitKind>,
     receipt: T,
+    source_primary: Option<(ExactActorRef, u32)>,
 }
 impl ChannelSpellStates {
+    /// Reads the canonical committed source receipts; creates no test vitals owner.
+    #[cfg(test)]
+    pub(crate) fn mushroom_damage_receipts_for_test(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Vec<(u32, crate::player_lethal::PlayerDamageReceipt)> {
+        self.source_damage
+            .iter()
+            .filter(|memo| {
+                memo.actor == actor
+                    && memo.session == session
+                    && memo.occurrence.starts_with("native:mushroom-fuse:")
+                    && memo.kind == Some(crate::player_lethal::PlayerHitKind::LifeDrain)
+            })
+            .map(|memo| (memo.magnitude, memo.receipt))
+            .collect()
+    }
+
     fn prune_source_memos(&mut self, runtime: &ChannelRuntimeV1) {
         self.source_damage
             .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
@@ -1741,6 +2050,23 @@ impl ChannelSpellStates {
     }
 }
 impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
+    fn reflect_equipment_damage_at_occurrence(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        sequence: u64,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        self.reflect_equipment_for_source_occurrence(
+            runtime, source, target, session, element, magnitude, stream, sequence, now,
+        )
+    }
+
     fn reflect_equipment_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -2016,6 +2342,23 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             state.revision(),
         ))
     }
+    fn source_player_health_including_dead(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        // DATA only. The native event's Combat reader separately proves the
+        // actual in-fight hold or rejects other control-loss states.
+        runtime.player_control_facts(target, session).ok()?;
+        let state = self.get(runtime, target, session)?;
+        let vitals = state.vitals();
+        (vitals.max_health > 0 && vitals.health <= vitals.max_health).then_some((
+            vitals.health,
+            vitals.max_health,
+            state.revision(),
+        ))
+    }
     fn apply_attack_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -2055,6 +2398,47 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             now,
             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::None,
         )
+    }
+    fn apply_source_typed_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        kind: crate::player_lethal::PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        self.prune_source_memos(runtime);
+        if let Some(previous) = self.source_damage.iter().find(|memo| {
+            memo.actor == target && memo.session == session && memo.occurrence == occurrence
+        }) {
+            return (previous.source_primary == Some((source, magnitude))
+                && previous.kind == Some(kind))
+            .then_some(previous.receipt);
+        }
+        // Equipment reflection only queues source death; the same held runtime
+        // still retains its exact incarnation and percentage until the cast
+        // finishes (equipment_reflection.rs:70-89). HP0 is not removal.
+        let adjusted = runtime
+            .soul_war_hatred_player_primary(source, magnitude)
+            .ok()?;
+        let receipt = self.apply_typed_attack_damage_from(
+            runtime,
+            target,
+            session,
+            adjusted,
+            kind,
+            occurrence,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+        )?;
+        let memo = self.source_damage.iter_mut().find(|memo| {
+            memo.actor == target && memo.session == session && memo.occurrence == occurrence
+        })?;
+        memo.source_primary = Some((source, magnitude));
+        Some(receipt)
     }
     fn apply_source_player_heal(
         &mut self,
@@ -2105,6 +2489,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             vitals_revision,
         };
         let memo = NativeSourceMemo {
+            source_primary: None,
             actor: target,
             session,
             occurrence: text,
@@ -2186,6 +2571,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             return None;
         }
         let memo = NativeSourceMemo {
+            source_primary: None,
             actor: target,
             session,
             occurrence: text,
@@ -2478,6 +2864,26 @@ impl ChannelSpellStates {
         crate::foundation::CreaturePeriodicReceipt,
         oteryn_gameplay_domain::domain::carrier_values::CarrierError,
     > {
+        self.tick_source_creature_conditions_with_health_observations(
+            runtime,
+            target,
+            facts,
+            now,
+            &[],
+        )
+    }
+
+    pub fn tick_source_creature_conditions_with_health_observations(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        facts: crate::foundation::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        observations: &[oteryn_gameplay_entities::NativeHealthChangeObservation],
+    ) -> Result<
+        crate::foundation::CreaturePeriodicReceipt,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
         let mut lookup = |r: &ChannelRuntimeV1, source: ExactActorRef, at: u64| {
             if !r.borrow_exact_actor_lookup().contains(source) {
                 return Ok(None);
@@ -2523,11 +2929,12 @@ impl ChannelSpellStates {
             });
             Ok(Some(if elite { percent / 2 } else { percent }))
         };
-        let receipt = runtime.apply_creature_periodic_turn_with_sources(
+        let receipt = runtime.apply_creature_periodic_turn_with_sources_and_health_observations(
             target,
             now.get(),
             facts,
             &mut lookup,
+            observations,
         )?;
         for impact in &receipt.impacts {
             if let Some(source) = impact.source
@@ -2557,8 +2964,15 @@ impl ChannelSpellStates {
 #[path = "actor_spell_source_creature_dot_owner_tests.rs"]
 mod source_creature_dot_owner_tests;
 
+#[derive(Debug, Clone, Copy)]
+pub(in crate::gameplay_transport) enum NonPlayerFieldOrigin {
+    Creature,
+    Environment,
+}
+
 #[derive(Debug)]
-pub(in crate::gameplay_transport) struct CreatureFieldContact {
+pub(in crate::gameplay_transport) struct NonPlayerFieldContact {
+    pub(in crate::gameplay_transport) origin: NonPlayerFieldOrigin,
     pub(in crate::gameplay_transport) source: String,
     pub(in crate::gameplay_transport) definition:
         oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
@@ -2570,7 +2984,7 @@ impl ChannelSpellStates {
     /// Real STEP and field initial HP/DOT are staged before movement. This is an
     /// owner method, not a callback that can mutate the stores during preflight.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::gameplay_transport) fn step_with_creature_field_contact(
+    pub(in crate::gameplay_transport) fn step_with_non_player_field_contact(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         cells: &crate::content::NativeEntryMovementCells,
@@ -2581,7 +2995,7 @@ impl ChannelSpellStates {
         blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
         proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
-        contact: Option<CreatureFieldContact>,
+        contact: Option<NonPlayerFieldContact>,
     ) -> actor_movement::StepInChannel {
         let Some(contact) = contact else {
             return actor_movement::step_in_channel_with_source_step(
@@ -2641,26 +3055,35 @@ impl ChannelSpellStates {
                 runtime, cells, actor, session, expected, direction, blocking,
             )?
         };
-        let (mut next, _damage) = before
-            .stage_creature_field_contact(
+        let stage_hit = |state: &PlayerSpellState, amount, element, now| {
+            crate::spell::actor_conditions::stage_typed_hit_at_position(
+                runtime,
+                actor,
+                destination,
+                state,
+                amount,
+                crate::player_lethal::PlayerHitKind::from_dot(element),
+                now,
+            )
+            .ok()
+        };
+        let staged = match contact.origin {
+            NonPlayerFieldOrigin::Creature => before.stage_creature_field_contact(
                 contact.source,
                 &contact.definition,
                 &facts,
                 contact.element,
-                |state, amount, element, now| {
-                    crate::spell::actor_conditions::stage_typed_hit_at_position(
-                        runtime,
-                        actor,
-                        destination,
-                        state,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_dot(element),
-                        now,
-                    )
-                    .ok()
-                },
-            )
-            .ok_or(crate::movement::MovementError::NotQualified)?;
+                stage_hit,
+            ),
+            NonPlayerFieldOrigin::Environment => before.stage_environment_field_contact(
+                contact.source,
+                &contact.definition,
+                &facts,
+                contact.element,
+                stage_hit,
+            ),
+        };
+        let (mut next, _damage) = staged.ok_or(crate::movement::MovementError::NotQualified)?;
         let changed = next != *before;
         let death = if next.vitals().health == 0 {
             self.deaths
@@ -2793,6 +3216,7 @@ impl ChannelSpellStates {
             death,
         };
         let memo = NativeSourceMemo {
+            source_primary: None,
             actor: target,
             session,
             occurrence: text,
@@ -2853,3 +3277,6 @@ impl ChannelSpellStates {
         }
     }
 }
+
+mod drome_modifiers;
+pub(in crate::gameplay_transport) use drome_modifiers::DromeHealthLoss;

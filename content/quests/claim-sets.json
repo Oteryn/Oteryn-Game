@@ -1,0 +1,261 @@
+{
+  "oteryn:quest.bear_room_quest": {
+    "groups": [
+      [
+        "kv/bear_chest1"
+      ],
+      [
+        "kv/bear_chest2"
+      ],
+      [
+        "kv/bear_chest3"
+      ]
+    ]
+  },
+  "oteryn:quest.behemoth_quest": {
+    "groups": [
+      [
+        "kv/behemothquest1"
+      ],
+      [
+        "kv/behemothquest2"
+      ],
+      [
+        "kv/behemothquest3"
+      ],
+      [
+        "kv/behemothquest4"
+      ]
+    ]
+  },
+  "oteryn:quest.circle_room_quest": {
+    "groups": [
+      [
+        "kv/circleroom1"
+      ],
+      [
+        "kv/circleroom2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.crystal_wand_quest": {
+    "groups": [
+      [
+        "kv/crystalwand1"
+      ],
+      [
+        "kv/crystalwand2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.demona_ring_quest": {
+    "groups": [
+      [
+        "kv/demonaring1"
+      ],
+      [
+        "kv/demonaring2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.double_hero_quest": {
+    "groups": [
+      [
+        "kv/doublehero1"
+      ],
+      [
+        "kv/doublehero2"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.griffin_shield_quest": {
+    "groups": [
+      [
+        "kv/griffinshield1"
+      ],
+      [
+        "kv/griffinshield2"
+      ],
+      [
+        "kv/griffinshield3"
+      ]
+    ],
+    "mint_only": true
+  },
+  "oteryn:quest.alawar_s_vault_quest": {
+    "groups": [
+      [
+        "kv/alawars_vault1"
+      ],
+      [
+        "kv/alawars_vault2"
+      ]
+    ]
+  },
+  "oteryn:quest.black_knight_quest": {
+    "groups": [
+      [
+        "kv/blackknight1"
+      ],
+      [
+        "kv/blackknight2"
+      ]
+    ]
+  },
+  "oteryn:quest.draconia_quest": {
+    "groups": [
+      [
+        "kv/draconia1"
+      ],
+      [
+        "kv/draconia2"
+      ]
+    ]
+  },
+  "oteryn:quest.dragon_tower_quest": {
+    "groups": [
+      [
+        "quest/u7_1/dragon_tower/rewards/backpack1"
+      ],
+      [
+        "quest/u7_1/dragon_tower/rewards/backpack2"
+      ]
+    ]
+  },
+  "oteryn:quest.dreamer_s_challenge_quest": {
+    "groups": [
+      [
+        "quest/u7_9/dreamers_challenge/bplong_sword"
+      ],
+      [
+        "quest/u7_9/dreamers_challenge/chest_book"
+      ],
+      [
+        "quest/u7_9/dreamers_challenge/chests3_small_diamond"
+      ],
+      [
+        "quest/u7_9/dreamers_challenge/chests_wine"
+      ]
+    ]
+  },
+  "oteryn:quest.edron_goblin_quest": {
+    "groups": [
+      [
+        "kv/edrongoblin1"
+      ],
+      [
+        "kv/edrongoblin2"
+      ]
+    ]
+  },
+  "oteryn:quest.emperor_s_cookies_quest": {
+    "groups": [
+      [
+        "quest/u6_1/emperors_cookies/rewards/cookies"
+      ],
+      [
+        "quest/key/id3802"
+      ]
+    ]
+  },
+  "oteryn:quest.fanfare_quest": {
+    "groups": [
+      [
+        "kv/fanfare"
+      ]
+    ]
+  },
+  "oteryn:quest.fire_axe_quest": {
+    "groups": [
+      [
+        "kv/fireaxe1"
+      ],
+      [
+        "kv/fireaxe2"
+      ]
+    ]
+  },
+  "oteryn:quest.ghoul_room_quest": {
+    "groups": [
+      [
+        "kv/ghoulroom1"
+      ],
+      [
+        "kv/ghoulroom2"
+      ]
+    ]
+  },
+  "oteryn:quest.goblin_temple_quest": {
+    "groups": [
+      [
+        "kv/goblintemple"
+      ],
+      [
+        "kv/goblintemple2"
+      ]
+    ]
+  },
+  "oteryn:quest.katana_quest": {
+    "groups": [
+      [
+        "kv/katanacorpse1"
+      ],
+      [
+        "kv/katanacorpse2"
+      ]
+    ]
+  },
+  "oteryn:quest.koshei_the_deathless_quest": {
+    "groups": [
+      [
+        "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs"
+      ],
+      [
+        "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum"
+      ]
+    ]
+  },
+  "oteryn:quest.longsword_quest": {
+    "groups": [
+      [
+        "kv/longsword1"
+      ],
+      [
+        "kv/longsword2"
+      ],
+      [
+        "kv/longsword3"
+      ]
+    ]
+  },
+  "oteryn:quest.mad_mage_room_quest": {
+    "groups": [
+      [
+        "kv/madmageroom1"
+      ],
+      [
+        "kv/madmageroom2"
+      ],
+      [
+        "kv/madmageroom3"
+      ]
+    ]
+  },
+  "oteryn:quest.minotaur_hell_quest": {
+    "groups": [
+      [
+        "kv/minohell1"
+      ],
+      [
+        "kv/minohell2"
+      ],
+      [
+        "kv/minohell3"
+      ]
+    ]
+  }
+}

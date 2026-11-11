@@ -15,8 +15,7 @@ mod snapshot;
 fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<(), String> {
     use oteryn_client_runtime::quest_log::{QuestLine, QuestLogQuery};
     let (link, mut commands, outbox) = play_channel();
-    let visible = QuestLog {
-        view: Some(QuestLogView::Line(QuestLine {
+    let visible = QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::Line(QuestLine {
             quest_index: 1,
             completed: false,
             missions: vec![],
@@ -50,8 +49,7 @@ fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<
         command_id: 1,
         status: oteryn_client_runtime::CommandStatus::Accepted,
         server_sequence: 1,
-        payload: encode_quest_log(&QuestLog {
-            view: Some(QuestLogView::List(list.clone())),
+        payload: encode_quest_log(&QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(list.clone())),
             tracked: vec![],
         })
         .map_err(|e| format!("{e:?}"))?,
@@ -96,8 +94,7 @@ fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<
         command_id: 3,
         status: oteryn_client_runtime::CommandStatus::Accepted,
         server_sequence: 3,
-        payload: encode_quest_log(&QuestLog {
-            view: Some(QuestLogView::List(list)),
+        payload: encode_quest_log(&QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(list)),
             tracked: vec![],
         })
         .map_err(|e| format!("{e:?}"))?,
@@ -139,8 +136,7 @@ fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<
             server_sequence: base + 1,
             base_revision: base,
             new_revision: base + 1,
-            value: QuestLog {
-                view: visible.view.clone(),
+            value: QuestLog { map_marks: Vec::new(), view: visible.view.clone(),
                 tracked,
             },
         })]);
@@ -151,8 +147,7 @@ fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<
         command_id: 5,
         status: oteryn_client_runtime::CommandStatus::Accepted,
         server_sequence: 7,
-        payload: encode_quest_log(&QuestLog {
-            view: Some(QuestLogView::List(
+        payload: encode_quest_log(&QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(
                 (1..=3)
                     .map(|quest_index| QuestListEntry {
                         quest_index,

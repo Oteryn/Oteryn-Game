@@ -39,6 +39,7 @@
     "crates/gameplay/dispatch/build_mechanics.rs:138"
   ],
   "crates/gameplay/durability": [
+    "crates/gameplay/durability/build.rs:4",
     "crates/gameplay/durability/src/durability/character_equipment.rs:195",
     "crates/gameplay/durability/src/durability/character_equipment.rs:197",
     "crates/gameplay/durability/src/durability/character_equipment.rs:202",
@@ -58,15 +59,15 @@
     "crates/gameplay/monster-ai/src/monster_lab.rs:426"
   ],
   "crates/gameplay/quests": [
-    "crates/gameplay/quests/build_authored_bindings.rs:10",
-    "crates/gameplay/quests/build_authored_bindings.rs:76",
+    "crates/gameplay/quests/build_authored_bindings.rs:16",
+    "crates/gameplay/quests/build_authored_bindings.rs:88",
     "crates/gameplay/quests/build_batch3_a.rs:26",
     "crates/gameplay/quests/build_batch3_a.rs:27",
     "crates/gameplay/quests/build_batch3_a.rs:33",
     "crates/gameplay/quests/build_batch3_a.rs:7",
     "crates/gameplay/quests/build_batch3_a.rs:9",
-    "crates/gameplay/quests/build_npc_programs.rs:46",
-    "crates/gameplay/quests/build_npc_programs.rs:64"
+    "crates/gameplay/quests/build_npc_programs.rs:45",
+    "crates/gameplay/quests/build_npc_programs.rs:60"
   ],
   "crates/gameplay/world": [
     "crates/gameplay/world/src/map/spell_tiles.rs:1079"

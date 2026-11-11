@@ -2,6 +2,7 @@ name: Content Tree Migration Equivalence
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     branches:
       - main
     paths:
@@ -158,9 +159,9 @@ jobs:
           python tools/content-migration/test_source_relocations.py
           python tools/content-migration/test_regenerate_content.py
           python tools/merge-driver/test_oteryn_additive_driver.py
+          # The migration test awaits its test_item_taxonomy.py subcheck with check=True.
           python tools/content-migration/test_world_project_v2_to_tree.py
           python tools/content-migration/test_npc_presence_stage.py
-          python tools/content-migration/test_item_taxonomy.py
           python tools/content-migration/test_item_navigation_source_supplement.py
           python tools/content-migration/test_item_engine_navigation.py
           python tools/content-migration/test_item_external_family_refinement.py
@@ -171,3 +172,92 @@ jobs:
         env:
           SEAL_BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
         run: python tools/content-schema/starter-kit-authoring/starter_kit_authoring.py content --check --seal-base "$SEAL_BASE"
+
+  generate-candidate:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'content-candidate')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      # This isolated checkout produces reviewable artifacts; it never publishes a commit.
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt
+
+      - name: Install pinned content authoring dependencies
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/content-candidate-venv"
+          "$RUNNER_TEMP/content-candidate-venv/bin/python" -m pip install -r tools/content-schema/item-authoring/requirements.txt
+          echo "$RUNNER_TEMP/content-candidate-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.99.1-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python3 tools/repository/normalize_cargo_mtimes.py
+
+      - name: Rebuild canonical Quest source and state projections
+        run: |
+          set -euo pipefail
+          python3 tools/content-schema/quest-authoring/amend_itemhold_source_receipt.py --check
+          python3 tools/content-schema/quest-authoring/quest_tree_authoring.py content
+          python3 tools/content-schema/quest-authoring/quest_state_lowering.py
+          python3 tools/content-schema/quest-authoring/quest_completion_import.py
+
+      - name: Regenerate canonical content without qualification tests
+        env:
+          RUSTUP_TOOLCHAIN: 1.99.1
+        run: python3 tools/content-migration/regenerate_content.py --skip-checks --no-stage
+
+      - name: Stage candidate inputs and refresh final World bundle pins
+        run: |
+          set -euo pipefail
+          # The compiler's input diagnostic must describe the generated inputs.
+          # Staging is confined to this disposable checkout; no commit/ref is written.
+          git add --all
+          cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .
+
+      - name: Export exact candidate patch
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          output="$RUNNER_TEMP/content-candidate"
+          mkdir -p "$output"
+          git rev-parse HEAD > "$output/base-sha.txt"
+          git write-tree > "$output/staged-input-tree.txt"
+          git diff --binary --full-index --output="$output/candidate.patch" HEAD
+          sha256sum "$output/candidate.patch" > "$output/candidate.sha256"
+          git status --porcelain=v1 > "$output/status.txt"
+          printf '%s\n' 'amend_itemhold_source_receipt.py --check; quest_tree_authoring.py content; quest_state_lowering.py; quest_completion_import.py; regenerate_content.py --skip-checks --no-stage; stage generated inputs; world-bundle-compiler pin-refresh' > "$output/operation.txt"
+
+      - name: Upload generated candidate for review
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: content-candidate-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/content-candidate/
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 7

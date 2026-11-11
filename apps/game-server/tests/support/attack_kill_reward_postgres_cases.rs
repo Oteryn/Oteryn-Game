@@ -574,8 +574,8 @@ fn input(
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
         tutorial_corruptor: None,
-        corpse_item: corpse_item_ref(),
-        loot_table_ref: rat_loot_table_ref(),
+        corpse_item: Some(corpse_item_ref()),
+        loot_table_ref: Some(rat_loot_table_ref()),
         loot_table,
         ground: ground(),
         inflight_loot_mints_before_this_death: 0,
@@ -687,7 +687,10 @@ fn swing_committed_kill_composes_with_explicit_reward_settlement() -> TestResult
             settle_on_fresh_lane(facts, &session, &mut slot, input(rat_loot_table(), 1, 1)?)
                 .await
                 .map_err(debug)?;
-        let minted = outcome.loot.map_err(debug)?;
+        let minted = outcome
+            .loot
+            .map_err(debug)?
+            .ok_or("fixture physical corpse")?;
         assert_eq!(minted.entries.len(), 1);
         let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
             return Err("the kill's XP award must be freshly committed".into());

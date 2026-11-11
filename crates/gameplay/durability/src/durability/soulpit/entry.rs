@@ -98,20 +98,19 @@ pub(super) async fn write(
         if facts.len() != 1 {
             return Err(SoulpitWriteError::Rule(SoulpitError::InvalidParticipants));
         }
+        let stored_floor = participant.try_get::<i16, _>("entry_floor")?;
+        // Source-world cells use -z; native Bundle custody retains physical +z.
+        // Both describe this one donor floor, never an arbitrary coordinate frame.
+        let floor = match stored_floor {
+            -8 | 8 => -8,
+            _ => return Err(SoulpitError::NotOnEntryTile.into()),
+        };
         let position = TilePos {
             x: u16::try_from(participant.try_get::<i32, _>("entry_x")?)
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
             y: u16::try_from(participant.try_get::<i32, _>("entry_y")?)
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
-            // Runtime/LastPosition floors retain source z; map TilePos uses
-            // -source_z (ADR-0021), as bundle_map_position does at USE ingress.
-            floor: i8::try_from(
-                participant
-                    .try_get::<i16, _>("entry_floor")?
-                    .checked_neg()
-                    .ok_or(SoulpitError::NotOnEntryTile)?,
-            )
-            .map_err(|_| SoulpitError::NotOnEntryTile)?,
+            floor,
         };
         let slot = entry_slot(position).ok_or(SoulpitError::NotOnEntryTile)?;
         let level = u32::try_from(participant.try_get::<i64, _>("level")?)

@@ -2,7 +2,7 @@
 use super::*;
 use sha2::{Digest, Sha256};
 
-const REFLECTION_STREAMS_MAX: usize = 1024;
+pub(super) const REFLECTION_STREAMS_MAX: usize = 1024;
 
 impl ChannelRuntimeV1 {
     /// Commit a source-qualified reflected hit. The incoming owner admits the source stream
@@ -42,6 +42,45 @@ impl ChannelRuntimeV1 {
         magnitude: u32,
         now_ms: u64,
     ) -> Result<OwnerDamageResult, CarrierError> {
+        self.commit_source_damage_with_clock(
+            source, reflector, session, stream, sequence, magnitude, now_ms, None,
+        )
+    }
+    /// Actual native clock precision, independent of the source stream sequence.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage_at_us(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_us: u64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        self.commit_source_damage_with_clock(
+            source,
+            reflector,
+            session,
+            stream,
+            sequence,
+            magnitude,
+            now_us / 1_000,
+            Some(now_us),
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn commit_source_damage_with_clock(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_ms: u64,
+        enqueue_us: Option<u64>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
         let lease = self.bound_attacker_lease(reflector, session)?;
         // The incoming owner may still hit a player held through disconnect. The bound
         // lease/session fence is required; a live client connection is not.
@@ -54,7 +93,35 @@ impl ChannelRuntimeV1 {
             .chain_update(stream)
             .finalize()
             .into();
-        let owner = self.borrow_exact_actor_commit_at(now_ms);
+        // Crystal CombatDamage defaults to ORIGIN_NONE (creatures_definitions.hpp:
+        // 1738); equipment reflection and IOBestiary charm leaves retain it.
+        // Game::combatChangeHealth skips HEALTHCHANGE at 7934 but still passes
+        // the actual reflector to PREPAREDEATH at 8283.
+        let reflector_index = self.carrier.validate_ref(&self.continuity, reflector.0)?;
+        let (command, origin) = match &self.carrier.slots[reflector_index] {
+            Slot::Occupied { spell_combat, .. } => spell_combat
+                .soul_war_player_source
+                .as_ref()
+                .map(|current| (current.command, current.facts.origin))
+                .unwrap_or((
+                    None,
+                    super::soul_war_player_source::SoulWarPlayerSourceOrigin::Reflection,
+                )),
+            _ => return Err(CarrierError::CreatureTargetMismatch),
+        };
+        let mut source_context = self.carrier.soul_war_health_context(
+            &self.continuity,
+            Some(reflector),
+            command,
+            Some(now_ms),
+            origin,
+            self.content_pin(),
+        )?;
+        source_context.invoke_health_change = false;
+        let owner = match enqueue_us {
+            Some(now) => self.borrow_exact_actor_commit_at_us(now),
+            None => self.borrow_exact_actor_commit_at(now_ms),
+        };
         let index = owner.carrier.validate_ref(owner.continuity, source.0)?;
         let Slot::CreatureOccupied {
             committed,
@@ -96,7 +163,7 @@ impl ChannelRuntimeV1 {
         let mut binding = occurrence.as_bytes().to_vec();
         binding.push(0);
         binding.extend_from_slice(&magnitude.to_be_bytes());
-        let (_, next, result) = owner.carrier.prepare_creature_damage_inner_bounded(
+        let (_, next, result) = owner.carrier.prepare_creature_damage_inner_bounded_source(
             owner.continuity,
             source.0,
             OwnerDamageCommand {
@@ -110,6 +177,7 @@ impl ChannelRuntimeV1 {
             None,
             false,
             Some(now_ms),
+            Some(&source_context),
         )?;
         let Some(mut next) = next else {
             return Ok(result);
@@ -143,7 +211,27 @@ impl ChannelRuntimeV1 {
             Some(mark),
             Some(now_ms),
         );
+        // ORIGIN_NONE skips HEALTHCHANGE, not the actual Player's source
+        // damage-map entry. The stream replay guard above prevents duplicates.
+        damage_contributors.record_source_player(
+            lease.character_id(),
+            result
+                .health_before
+                .saturating_sub(result.health_after)
+                .unsigned_abs(),
+            Some(&source_context),
+            Some(now_ms),
+        );
+        // This source stream publishes its prepared Slot directly. Reserve
+        // and append through the SAME canonical death FIFO as other HP owners.
+        let notice = owner
+            .carrier
+            .native_death_notice_for_slot(source, &next, enqueue_us)?;
+        owner
+            .carrier
+            .reserve_native_death_capacity(notice.as_slice())?;
         owner.carrier.slots[index] = next;
+        owner.carrier.install_native_death_events(notice);
         Ok(result)
     }
 }
@@ -258,6 +346,38 @@ mod tests {
             .expect("shares");
         assert_eq!(shares[0].total, 25);
         assert_eq!(shares[0].session, Some(session));
+    }
+
+    #[test]
+    fn source_reflection_retry_keeps_sequence_and_original_attribution_time() {
+        let (mut runtime, player, session, creature) = fixture();
+        let stream = b"native-source:retained-reflection";
+        let first = runtime
+            .commit_source_damage_at_us(creature, player, session, stream, 17, 10, 5_000_123)
+            .expect("first source reflection");
+        assert!(first.applied);
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+        let replay = runtime
+            .commit_source_damage_at_us(creature, player, session, stream, 17, 10, 9_000_999)
+            .expect("same source occurrence at a later actual execution time");
+        assert!(!replay.applied);
+        assert_eq!(replay.health_before, first.health_before);
+        assert_eq!(replay.health_after, first.health_after);
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
+        let shares = runtime
+            .borrow_combat_death()
+            .reward_damage_shares(creature)
+            .expect("actual damage attribution");
+        assert_eq!(shares.len(), 1);
+        assert_eq!(shares[0].total, 10);
+        assert_eq!(shares[0].session, Some(session));
+        assert_eq!(shares[0].last_damage_at_ms, Some(5_000));
+        assert!(matches!(
+            runtime
+                .commit_source_damage_at_us(creature, player, session, stream, 17, 11, 10_000_001,),
+            Err(CarrierError::PlanConflict)
+        ));
+        assert_eq!(runtime.live_creature_health(creature), Some(9990));
     }
 
     #[test]

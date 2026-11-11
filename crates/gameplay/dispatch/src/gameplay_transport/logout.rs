@@ -76,12 +76,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match self.movement_cells().index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_) => {
                 let at = super::bundle_map_position(runtime, self.movement_cells(), actor)?;
-                let tile = at.map.overlay.base().tile(
-                    u16::try_from(at.at.x).ok()?,
-                    u16::try_from(at.at.y).ok()?,
-                    i8::try_from(at.at.floor).ok()?,
-                )?;
-                Some(tile.no_logout())
+                let flags = at.map.zone_flags(crate::map::overlay::TilePos {
+                    x: u16::try_from(at.at.x).ok()?,
+                    y: u16::try_from(at.at.y).ok()?,
+                    floor: i8::try_from(at.at.floor).ok()?,
+                })?;
+                Some(flags.0)
             }
             _ => Some(false),
         }
@@ -221,10 +221,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Check the bundle scope even on a tile whose mutable stack is unknown to spells.
                 index.lookup(scope, cell).ok()?;
                 let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
-                let tile = index.map().overlay.base().tile(pos.x, pos.y, pos.floor)?;
+                let (no_logout, protection_zone) = index.map().zone_flags(pos)?;
                 Some(LogoutZones {
-                    no_logout: tile.no_logout(),
-                    protection_zone: Some(tile.protection_zone()),
+                    no_logout,
+                    protection_zone: Some(protection_zone),
                 })
             }
             NativeMovementCollisionIndex::Source(world) => {

@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Borrow each test's existing harness and content; callers override deliberate deviations.
-pub(super) struct ComposedTestOwner<'a, 'f, 's> {
+pub struct ComposedTestOwner<'a, 'f, 's> {
     pub root: &'a DurabilityRoot,
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub holder: &'a NodeIncarnationProof,
@@ -26,7 +26,7 @@ pub(super) struct ComposedTestOwner<'a, 'f, 's> {
 }
 
 impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
-    pub(super) fn build(self) -> ComposedFreshAdmission<'a, 'f, 's> {
+    pub fn build(self) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
             proficiency_catalogue: None,
             server_motd: "",
@@ -74,4 +74,126 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             activity_runtimes: Default::default(),
         }
     }
+}
+
+// The dedicated PG target uses the same caller and constructor as in-crate tests.
+pub use super::connection::{FreshAdmissionAuthority, UseCommand};
+pub use super::item_view::ItemKey;
+
+pub fn empty_capabilities(
+    world: WorldId,
+    channel: ChannelId,
+) -> Result<Arc<super::world_required_capabilities::BoundRequiredCapabilities>, String> {
+    super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+        &[],
+        crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+        1,
+        "policy-1",
+        super::world_required_capabilities::offered_for_scope(false, None),
+    )
+    .map_err(|error| format!("{error:?}"))
+}
+
+pub async fn load_quests(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+) -> Result<crate::durability::character_progression::CurrentCharacterGameplayFence, String> {
+    owner.refresh_quest_session(session, true).await;
+    if owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(|_| "quest copy lock")?
+        .get(&session)
+        .and_then(|entry| entry.copy.as_ref())
+        .is_none()
+    {
+        return Err("quest copy unavailable".into());
+    }
+    owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|_| "current quest fence")?
+        .ok_or("terminal quest session".into())
+}
+
+// Retain the existing typed admission fixture inside its owning crate, where
+// its canonical UUID binding helper is available without widening production API.
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+mod fixture {
+    pub(super) fn debug(error: impl std::fmt::Debug) -> Box<dyn std::error::Error> {
+        format!("{error:?}").into()
+    }
+    pub(super) fn id(seed: u8) -> [u8; 16] {
+        [
+            seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+        ]
+    }
+}
+#[allow(
+    dead_code,
+    reason = "shared fixture includes activity and appearance producers unused by this consumer"
+)]
+#[path = "monk_save_fresh_fixture.rs"]
+pub mod fresh_fixture;
+
+/// Exercise the dispatch guard after the fixture's real Root capture transaction.
+pub fn finish_capture(
+    runtime: &mut ChannelRuntimeV1,
+    target: crate::foundation::ExactActorRef,
+    key: &str,
+    outcome: &crate::durability::quest_state::QuestTransitionOutcome,
+) -> Result<(), String> {
+    let mut guard =
+        super::cosmetic_item_use::capture_commit::CaptureCommitGuard::new(runtime, true);
+    guard.arm();
+    guard
+        .finish(outcome, Some(target), Some(key))
+        .map_err(|_| "capture retirement failed".into())
+}
+
+/// Dropping an armed commit is the same path used by cancellation or an unknown DB result.
+pub fn cancel_capture(runtime: &mut ChannelRuntimeV1) {
+    let guard = super::cosmetic_item_use::capture_commit::CaptureCommitGuard::new(runtime, true);
+    guard.arm();
+}
+
+/// Same read-only offer selector as NPC prepare, with the test's real persisted tracks.
+pub fn rafzan_resume_offer(
+    npc: &str,
+    topic: u16,
+    text: &str,
+    catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<(u16, Vec<String>)> {
+    super::npc_command::reward_callbacks::fixture_rafzan_resume(npc, topic, text, catalogue, tracks)
+}
+
+/// Resolve the real World target and expose only the selected carried-tool keys.
+pub fn world_tool_callbacks(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> Result<Vec<String>, String> {
+    let map = owner.bundle_map().ok_or("Bundle map")?;
+    let view = super::world_map::MapViewSource {
+        overlay: &map.overlay,
+        facts: &map.facts,
+        content_generation: owner
+            .active_generation
+            .ok_or("active generation")?
+            .identity()
+            .client_artifact_digest(),
+        reset_epoch: owner.reset_epoch,
+    };
+    let resolved = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
+        .map_err(|e| format!("{e:?}"))?;
+    Ok(owner
+        .callback_content()
+        .iter()
+        .filter(|c| {
+            super::mount_taming::quest_objects::accepts(c)
+                && super::quest_callbacks::matches(map, c, resolved.placement_key)
+        })
+        .map(|c| c.key.clone())
+        .collect())
 }

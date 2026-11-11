@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(context.effect_position()),
                 )
             } else {
-                novelty_items::plan_ground(
+                novelty_items::plan_ground_for_actor(
                     native,
                     &definition,
                     *command.game_session_id.as_bytes(),
@@ -77,6 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     request.source,
                     context.effect_position(),
                     context.in_house(),
+                    context.actor_position(),
                 )
             };
             let Some(plan) = plan else {

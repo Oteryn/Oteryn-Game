@@ -1,0 +1,470 @@
+[
+  {
+    "slug": "spite",
+    "room": "GoshnarsSpite",
+    "source_path": "data-global/lib/quests/soul_war.lua",
+    "source_sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "line": 296,
+    "boss_key": "oteryn:boss.goshnar_s_spite",
+    "creature_key": "oteryn:creature.goshnar_s_spite",
+    "boss": [
+      33743,
+      31632,
+      14
+    ],
+    "levers": [
+      [
+        33774,
+        31634,
+        14
+      ],
+      [
+        33775,
+        31634,
+        14
+      ],
+      [
+        33776,
+        31634,
+        14
+      ],
+      [
+        33777,
+        31634,
+        14
+      ],
+      [
+        33778,
+        31634,
+        14
+      ]
+    ],
+    "entries": [
+      [
+        33742,
+        31639,
+        14
+      ],
+      [
+        33742,
+        31639,
+        14
+      ],
+      [
+        33742,
+        31639,
+        14
+      ],
+      [
+        33742,
+        31639,
+        14
+      ],
+      [
+        33742,
+        31639,
+        14
+      ]
+    ],
+    "exit": [
+      33621,
+      31427,
+      10
+    ],
+    "minimum_players": 1,
+    "minimum_level": 250,
+    "cooldown_seconds": 72000,
+    "time_limit_seconds": 1200,
+    "after_kill_seconds": 60
+  },
+  {
+    "slug": "malice",
+    "room": "GoshnarsMalice",
+    "source_path": "data-global/lib/quests/soul_war.lua",
+    "source_sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "line": 332,
+    "boss_key": "oteryn:boss.goshnar_s_malice",
+    "creature_key": "oteryn:creature.goshnar_s_malice",
+    "boss": [
+      33709,
+      31599,
+      14
+    ],
+    "levers": [
+      [
+        33679,
+        31599,
+        14
+      ],
+      [
+        33680,
+        31599,
+        14
+      ],
+      [
+        33681,
+        31599,
+        14
+      ],
+      [
+        33682,
+        31599,
+        14
+      ],
+      [
+        33683,
+        31599,
+        14
+      ]
+    ],
+    "entries": [
+      [
+        33710,
+        31605,
+        14
+      ],
+      [
+        33710,
+        31605,
+        14
+      ],
+      [
+        33710,
+        31605,
+        14
+      ],
+      [
+        33710,
+        31605,
+        14
+      ],
+      [
+        33710,
+        31605,
+        14
+      ]
+    ],
+    "exit": [
+      33621,
+      31427,
+      10
+    ],
+    "minimum_players": 1,
+    "minimum_level": 250,
+    "cooldown_seconds": 72000,
+    "time_limit_seconds": 1200,
+    "after_kill_seconds": 60
+  },
+  {
+    "slug": "greed",
+    "room": "GoshnarsGreed",
+    "source_path": "data-global/lib/quests/soul_war.lua",
+    "source_sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "line": 355,
+    "boss_key": "oteryn:boss.goshnar_s_greed",
+    "creature_key": "oteryn:creature.goshnar_s_greed",
+    "boss": [
+      33746,
+      31666,
+      14
+    ],
+    "levers": [
+      [
+        33776,
+        31665,
+        14
+      ],
+      [
+        33777,
+        31665,
+        14
+      ],
+      [
+        33778,
+        31665,
+        14
+      ],
+      [
+        33779,
+        31665,
+        14
+      ],
+      [
+        33780,
+        31665,
+        14
+      ]
+    ],
+    "entries": [
+      [
+        33747,
+        31671,
+        14
+      ],
+      [
+        33747,
+        31671,
+        14
+      ],
+      [
+        33747,
+        31671,
+        14
+      ],
+      [
+        33747,
+        31671,
+        14
+      ],
+      [
+        33747,
+        31671,
+        14
+      ]
+    ],
+    "exit": [
+      33621,
+      31427,
+      10
+    ],
+    "minimum_players": 1,
+    "minimum_level": 250,
+    "cooldown_seconds": 72000,
+    "time_limit_seconds": 1200,
+    "after_kill_seconds": 60
+  },
+  {
+    "slug": "hatred",
+    "room": "GoshnarsHatred",
+    "source_path": "data-global/lib/quests/soul_war.lua",
+    "source_sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "line": 394,
+    "boss_key": "oteryn:boss.goshnar_s_hatred",
+    "creature_key": "oteryn:creature.goshnar_s_hatred",
+    "boss": [
+      33744,
+      31599,
+      14
+    ],
+    "levers": [
+      [
+        33773,
+        31601,
+        14
+      ],
+      [
+        33774,
+        31601,
+        14
+      ],
+      [
+        33775,
+        31601,
+        14
+      ],
+      [
+        33776,
+        31601,
+        14
+      ],
+      [
+        33777,
+        31601,
+        14
+      ]
+    ],
+    "entries": [
+      [
+        33743,
+        31604,
+        14
+      ],
+      [
+        33743,
+        31604,
+        14
+      ],
+      [
+        33743,
+        31604,
+        14
+      ],
+      [
+        33743,
+        31604,
+        14
+      ],
+      [
+        33743,
+        31604,
+        14
+      ]
+    ],
+    "exit": [
+      33621,
+      31427,
+      10
+    ],
+    "minimum_players": 1,
+    "minimum_level": 250,
+    "cooldown_seconds": 72000,
+    "time_limit_seconds": 1200,
+    "after_kill_seconds": 60
+  },
+  {
+    "slug": "cruelty",
+    "room": "GoshnarsCruelty",
+    "source_path": "data-global/lib/quests/soul_war.lua",
+    "source_sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "line": 422,
+    "boss_key": "oteryn:boss.goshnar_s_cruelty",
+    "creature_key": "oteryn:creature.goshnar_s_cruelty",
+    "boss": [
+      33856,
+      31866,
+      7
+    ],
+    "levers": [
+      [
+        33854,
+        31854,
+        6
+      ],
+      [
+        33855,
+        31854,
+        6
+      ],
+      [
+        33856,
+        31854,
+        6
+      ],
+      [
+        33857,
+        31854,
+        6
+      ],
+      [
+        33858,
+        31854,
+        6
+      ]
+    ],
+    "entries": [
+      [
+        33856,
+        31872,
+        7
+      ],
+      [
+        33856,
+        31872,
+        7
+      ],
+      [
+        33856,
+        31872,
+        7
+      ],
+      [
+        33856,
+        31872,
+        7
+      ],
+      [
+        33856,
+        31872,
+        7
+      ]
+    ],
+    "exit": [
+      33621,
+      31427,
+      10
+    ],
+    "minimum_players": 1,
+    "minimum_level": 250,
+    "cooldown_seconds": 72000,
+    "time_limit_seconds": 1200,
+    "after_kill_seconds": 60
+  },
+  {
+    "slug": "megalomania_purple",
+    "room": "GoshnarsMegalomania",
+    "source_path": "data-global/lib/quests/soul_war.lua",
+    "source_sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "line": 450,
+    "boss_key": "oteryn:boss.goshnar_s_megalomania",
+    "creature_key": "oteryn:creature.goshnar_s_megalomania_purple",
+    "boss": [
+      33710,
+      31634,
+      14
+    ],
+    "levers": [
+      [
+        33676,
+        31634,
+        14
+      ],
+      [
+        33677,
+        31634,
+        14
+      ],
+      [
+        33678,
+        31634,
+        14
+      ],
+      [
+        33679,
+        31634,
+        14
+      ],
+      [
+        33680,
+        31634,
+        14
+      ]
+    ],
+    "entries": [
+      [
+        33710,
+        31639,
+        14
+      ],
+      [
+        33710,
+        31639,
+        14
+      ],
+      [
+        33710,
+        31639,
+        14
+      ],
+      [
+        33710,
+        31639,
+        14
+      ],
+      [
+        33710,
+        31639,
+        14
+      ]
+    ],
+    "exit": [
+      33621,
+      31427,
+      10
+    ],
+    "minimum_players": 1,
+    "minimum_level": 250,
+    "cooldown_seconds": 259200,
+    "time_limit_seconds": 1200,
+    "after_kill_seconds": 60
+  }
+]

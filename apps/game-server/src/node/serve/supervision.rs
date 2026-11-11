@@ -69,7 +69,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     };
     let loops_stop = CancellationToken::new();
     let reset_watch = world_reset::ResetWatch::default();
-    let mut gameplay = pin!(world_reset::serve_watching_reset(
+    // Box each long-lived family before the supervisor retains it. Inline loop
+    // futures also inflate the enclosing boot/run construction and poll frames,
+    // leaving too little of the node stack for a player's first command.
+    let mut gameplay = Box::pin(world_reset::serve_watching_reset(
         listener,
         listener_config,
         owners,
@@ -77,7 +80,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         &reset_watch,
         reset_epoch,
     ));
-    let mut control_task = pin!(control_loop(
+    let mut control_task = Box::pin(control_loop(
         control,
         root,
         authority,
@@ -88,12 +91,12 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         native,
         shutdown,
     ));
-    let mut expiry = pin!(both(
+    let mut expiry = Box::pin(both(
         both(
             audit_expiry_loop(root, authority, &loops_stop),
-            online_statistics_retention_loop(root, authority, &loops_stop)
+            online_statistics_retention_loop(root, authority, &loops_stop),
         ),
-        coin_worker::run(root, authority, proof, material.world, &loops_stop)
+        coin_worker::run(root, authority, proof, material.world, &loops_stop),
     ));
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
@@ -108,7 +111,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             .ok()
             .and_then(|value| value.as_ref().and_then(|value| value.audit_key_id.clone())),
     };
-    let mut projection = pin!(both(
+    let mut projection = Box::pin(both(
         both(
             both(
                 both(
@@ -138,9 +141,9 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                             material.world,
                             &loops_stop,
                         ),
-                    )
+                    ),
                 ),
-                super::super::raid_scheduler::run(raids, &loops_stop)
+                super::super::raid_scheduler::run(raids, &loops_stop),
             ),
             account_characters_loop(
                 root,
@@ -150,7 +153,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                     .lock()
                     .ok()
                     .and_then(|mut projection| projection.take()),
-                &loops_stop
+                &loops_stop,
             ),
         ),
         both(
@@ -165,8 +168,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                         .ok()
                         .and_then(|mut value| value.take()),
                     material.world,
-                    &loops_stop
-                )
+                    &loops_stop,
+                ),
             ),
             public_projections_loop(
                 root,
@@ -176,13 +179,13 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                     .lock()
                     .ok()
                     .and_then(|mut public| public.take()),
-                &loops_stop
-            )
+                &loops_stop,
+            ),
         ),
     ));
     let mut projection_done = false;
     // Never gates serving either; disabled unless configured.
-    let mut commands = pin!(both(
+    let mut commands = Box::pin(both(
         character_commands_loop(
             root,
             authority,
@@ -193,7 +196,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 .lock()
                 .ok()
                 .and_then(|mut commands| commands.take()),
-            &loops_stop
+            &loops_stop,
         ),
         both(
             bazaar_loop(
@@ -206,7 +209,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                     .lock()
                     .ok()
                     .and_then(|mut bazaar| bazaar.take()),
-                &loops_stop
+                &loops_stop,
             ),
             both(
                 timed_npc_loop(root, material.world, runtime, timed_npcs, &loops_stop),
@@ -216,8 +219,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                     proof,
                     runtime,
                     (material.world, material.channel),
-                    &loops_stop
-                )
+                    &loops_stop,
+                ),
             ),
         ),
     ));
@@ -381,6 +384,13 @@ async fn timed_npc_loop(
             Ok(present) => timed_npcs.set_brutus_present(present),
             Err(_) => event("event=cake_brutus_projection state=retry"),
         }
+        if timed_npcs
+            .refresh_event_contacts(root, world)
+            .await
+            .is_err()
+        {
+            event("event=npc_event_presence state=retry");
+        }
         let mut runtime = runtime.lock().await;
         if let Some(Err(error)) = timed_npcs.tick(&mut runtime, now) {
             event(&format!(
@@ -392,3 +402,27 @@ async fn timed_npc_loop(
 
 #[path = "coin_worker.rs"]
 mod coin_worker;
+
+#[cfg(test)]
+mod tests {
+    use super::{Serving, supervise};
+
+    #[test]
+    fn supervisor_does_not_embed_long_lived_loop_futures() {
+        // Boot and run retain this future in their own state. Inspect its real
+        // layout without constructing it on the test stack or starting any loop.
+        // This bound supplements the running-node qualification, which exercises
+        // the nested poll stack and actual first-control commands.
+        fn future_size<F: std::future::Future>(
+            _: impl FnOnce(Serving<'static, 'static, 'static>) -> F,
+        ) -> usize {
+            std::mem::size_of::<F>()
+        }
+
+        let bytes = future_size(supervise);
+        assert!(
+            bytes <= 1024 * 1024,
+            "supervisor future retained {bytes} bytes of inline state"
+        );
+    }
+}

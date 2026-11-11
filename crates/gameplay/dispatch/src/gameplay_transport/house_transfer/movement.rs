@@ -12,9 +12,7 @@ use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::gameplay_transport::connection::StepOutcome;
 use crate::gameplay_transport::world_spatial::{StepDirection, StepDisposition};
 use crate::map::floor::CellBlocker;
-use crate::movement::speed::{
-    EngineeringGroundSpeed, QualifiedCellGroundSpeed, player_step_duration,
-};
+use crate::movement::speed::{EngineeringGroundSpeed, QualifiedCellGroundSpeed};
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_gameplay_entities::carrier::house_custody::HouseMovementSnapshot;
 use std::collections::{BTreeMap, BTreeSet};
@@ -286,16 +284,21 @@ impl Turn<'_, '_, '_, '_> {
             i64::from(equipment),
         );
         let duration = if crate::movement::source_floor_change::is_source_profile(cells) {
-            player_step_duration(
+            crate::movement::speed::player_directional_step_duration(
                 &QualifiedCellGroundSpeed { cells },
                 cell(destination),
                 speed,
+                direction,
             )
         } else {
-            // Identical to the existing native bundle/entry STEP owner. The
-            // map cutover owns switching this established ground-speed source.
-            player_step_duration(&EngineeringGroundSpeed, cell(destination), speed)
+            crate::movement::speed::player_directional_step_duration(
+                &EngineeringGroundSpeed,
+                cell(destination),
+                speed,
+                direction,
+            )
         }
+        .and_then(|duration| duration.checked_mul(if direction.is_diagonal() { 3 } else { 1 }))
         .ok_or(MovementError::NotQualified)?;
         let cooldowns = if stairhop {
             use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};

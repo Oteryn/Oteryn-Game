@@ -5,6 +5,7 @@
 //! `NO_ORB`.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
@@ -87,7 +88,7 @@ fn scenario_with_state(project_state: bool) -> TestResult {
             )
             .ok_or("proficiency bundle room")?;
         // Zone facts must be qualified against the same bundle as the runtime.
-        let channel_pin = crate::foundation::ChannelContentPin::from_activation(
+        let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
@@ -121,6 +122,7 @@ fn scenario_with_state(project_state: bool) -> TestResult {
             .track_shape();
         let mut owner = deps.owner(&harness, &authority);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&deps.room));
         owner.active_generation = Some(generation);
         owner.proficiency_catalogue = Some(Arc::clone(&catalogue));
         deps.initialize(&owner).await;

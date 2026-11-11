@@ -28,6 +28,8 @@ pub(super) struct ActorConditionState {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PlayerRuntimeState {
     pub(super) discovery_speed: u16,
+    pub(super) rotten_presentation: super::rotten_blood_presentation::RottenBloodPresentation,
+    pub(super) tile_entry_order: u64,
     pub(super) control_loss: Option<ControlLossMark>,
     pub(super) control_revision: u64,
     pub(super) staff_ghost: bool,
@@ -38,6 +40,7 @@ pub struct PlayerRuntimeState {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CreatureCommitState {
+    pub(super) tile_entry_order: u64,
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
     pub(super) field_entry_revision: Option<u64>,
@@ -136,6 +139,36 @@ pub enum ConditionOwnerError {
 }
 
 impl ActorConditionState {
+    /// Called on the staged canonical Creature slot at its sole health-drain
+    /// boundary. Advancing the condition revision prevents a pre-hit plan from
+    /// restoring the removed invisibility after the HP commit.
+    pub(super) fn remove_invisibility_on_drain(&mut self) -> Result<(), CarrierError> {
+        let hidden = |kind| {
+            matches!(
+                kind,
+                ConditionType::Invisible | ConditionType::Status(StatusKind::Invisible)
+            )
+        };
+        if !self
+            .store
+            .instances()
+            .iter()
+            .any(|instance| hidden(instance.definition().condition_type()))
+        {
+            return Ok(());
+        }
+        let revision = self
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        self.store.remove_type(ConditionType::Invisible);
+        self.store
+            .remove_type(ConditionType::Status(StatusKind::Invisible));
+        self.revision = revision;
+        self.receipt = None;
+        Ok(())
+    }
+
     pub(super) fn die(&mut self) {
         self.store.clear_on_death();
         self.receipt = None;
@@ -1039,5 +1072,84 @@ impl ChannelRuntimeV1 {
             Slot::Occupied { lifecycle, .. } => Ok(lifecycle.control_revision),
             _ => Err(CarrierError::ControlLossConflict),
         }
+    }
+}
+
+// Prepared in the canonical ActorConditionState module. Caller publishes this
+// successor only in the same staged slot as the canceled lethal hit receipt.
+impl ActorConditionState {
+    pub(super) fn prepare_w01_lethal_heal(
+        &self,
+        actor: ExactActorRef,
+        content: [u8; 32],
+        binding: &[u8],
+        now_ms: u64,
+    ) -> Result<Option<Self>, CarrierError> {
+        use oteryn_gameplay_domain::domain::condition::ConflictKey;
+        use oteryn_simulation_determinism::GameplayDecisionRoot;
+        use sha2::{Digest, Sha256};
+        let now = now_ms
+            .checked_mul(1000)
+            .ok_or(CarrierError::DamageOverflow)?;
+        if now < self.at {
+            return Err(CarrierError::PlanConflict);
+        }
+        if self
+            .store
+            // Source Lua observes the stored condition until postattack housekeeping.
+            .get(ConflictKey::SpellRegeneration(88888))
+            .is_some()
+        {
+            return Ok(None);
+        }
+        let definition = ConditionDefinition::new(
+            "source.monster.prepare-death.regeneration-marker.88888",
+            1,
+            ConditionValues::SpellRegeneration {
+                duration_ms: 900_000,
+                sub_id: 88888,
+                health_gain: 0,
+                health_interval_ms: 900_000,
+                mana_gain: 0,
+                mana_interval_ms: 1000,
+            },
+        )
+        .ok_or(CarrierError::InvalidCommitBinding)?;
+        let root = GameplayDecisionRoot::from_bytes(content);
+        let digest = Sha256::new()
+            .chain_update(b"w01.prepare-death.marker.v1")
+            .chain_update(binding)
+            .finalize();
+        let mut bytes = [0; 16];
+        bytes.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+        let mut successor = self.clone();
+        successor.store.expire_non_ticking(now);
+        successor
+            .store
+            .apply(
+                &definition,
+                Some(actor),
+                ConditionSourceKind::SelfUse,
+                &[],
+                &ApplicationFacts {
+                    now,
+                    base_speed: 0,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence,
+                },
+            )
+            .map_err(|_| CarrierError::InvalidCommitBinding)?;
+        successor.revision = successor
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        successor.at = now;
+        successor.receipt = None;
+        Ok(Some(successor))
     }
 }

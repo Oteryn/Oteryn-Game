@@ -33,8 +33,10 @@ const LOOT_SECTION_ITEMS_MAX: usize = 8192;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreatureRewardRow {
     pub xp_amount: ExactI64,
-    pub corpse_item: LootDefinitionRef,
-    pub loot_table_ref: LootDefinitionRef,
+    /// Absent only for the closed source-qualified corpse-free encounter children.
+    pub corpse_item: Option<LootDefinitionRef>,
+    /// Absent with corpse_item for those children; no synthetic Item/Loot identity.
+    pub loot_table_ref: Option<LootDefinitionRef>,
     pub loot_table: LootTableDefinition,
     pub race: Option<BestiaryRace>,
     pub boss: Option<BosstiaryBoss>,
@@ -460,12 +462,34 @@ impl CreatureRewardTable {
         })
     }
 
+    /// Actual native Item proofs qualify the closed Soul War48-capacity and
+    /// plain-body cases. Legacy callers retain the existing30-capacity rule.
+    pub(crate) fn from_pin_with_native_corpses(
+        creatures: &CreatureProfilesDocument,
+        section: Option<&LootTablesSection>,
+        items: Option<&super::native_gameplay::ItemProfilesDocument>,
+    ) -> Self {
+        let verified = verified_soul_war_corpses(items);
+        section.map_or_else(Self::default, |section| {
+            Self::build_with_native_corpses(creatures, section, canonical_races(), &verified)
+        })
+    }
+
     /// Pure: one row per pinned creature, keyed by its definition key. A row that cannot settle
     /// carries its refusal reason; the generation still activates.
     pub fn build(
         creatures: &CreatureProfilesDocument,
         section: &LootTablesSection,
         races: &HashMap<String, BestiaryRace>,
+    ) -> Self {
+        Self::build_with_native_corpses(creatures, section, races, &HashSet::new())
+    }
+
+    fn build_with_native_corpses(
+        creatures: &CreatureProfilesDocument,
+        section: &LootTablesSection,
+        races: &HashMap<String, BestiaryRace>,
+        verified_source_corpses: &HashSet<String>,
     ) -> Self {
         let bindings: HashMap<&str, Option<&SectionRef>> = section
             .creature_loot
@@ -499,7 +523,19 @@ impl CreatureRewardTable {
                             .get(&target.key)
                             .filter(|race| race.definition_revision() == target.revision)
                             .cloned();
-                        row(profile, *loot, &tables, &items, race, 30).map(|mut row| {
+                        row(
+                            &target.key,
+                            profile,
+                            *loot,
+                            &tables,
+                            &items,
+                            race,
+                            CorpseAdmission {
+                                maximum_corpse_capacity: 30,
+                                verified_source_corpses,
+                            },
+                        )
+                        .map(|mut row| {
                             row.boss = boss_metadata(profile, &target.key);
                             row
                         })
@@ -526,8 +562,15 @@ impl CreatureRewardTable {
                     .get(&target.key)
                     .filter(|race| race.definition_revision() == target.revision)
                     .cloned();
-                let mut corpse =
-                    empty_corpse::reward_boss_row(profile, &tables, &items, race).ok()?;
+                let mut corpse = empty_corpse::reward_boss_row(
+                    &target.key,
+                    profile,
+                    &tables,
+                    &items,
+                    race,
+                    verified_source_corpses,
+                )
+                .ok()?;
                 corpse.boss = boss_metadata(profile, &target.key);
                 Some((target.key.clone(), Arc::new(corpse)))
             })
@@ -618,6 +661,108 @@ impl CreatureRewardTable {
     }
 }
 
+fn source_soul_war_corpse_pair(
+    creature: &str,
+    profile: &ProjectV2CreatureAuthoring,
+    corpse: &SectionRef,
+) -> bool {
+    let expected_reward_boss = match (creature, corpse.key.as_str()) {
+        ("oteryn:creature.goshnar_s_cruelty", "oteryn:item.tibia.i33859")
+        | ("oteryn:creature.goshnar_s_greed", "oteryn:item.tibia.i33863")
+        | ("oteryn:creature.goshnar_s_spite", "oteryn:item.tibia.i33867")
+        | ("oteryn:creature.goshnar_s_malice", "oteryn:item.tibia.i33871")
+        | ("oteryn:creature.goshnar_s_hatred", "oteryn:item.tibia.i33875")
+        | (
+            "oteryn:creature.goshnar_s_megalomania_blue"
+            | "oteryn:creature.goshnar_s_megalomania_green",
+            "oteryn:item.tibia.i33889",
+        ) => true,
+        ("oteryn:creature.bony_sea_devil", "oteryn:item.tibia.i33797")
+        | ("oteryn:creature.cloak_of_terror", "oteryn:item.tibia.i33801")
+        | ("oteryn:creature.many_faces", "oteryn:item.tibia.i33805")
+        | ("oteryn:creature.branchy_crawler", "oteryn:item.tibia.i33809")
+        | ("oteryn:creature.vibrant_phantom", "oteryn:item.tibia.i33813")
+        | ("oteryn:creature.brachiodemon", "oteryn:item.tibia.i33817")
+        | ("oteryn:creature.rotten_golem", "oteryn:item.tibia.i33897")
+        | ("oteryn:creature.infernal_demon", "oteryn:item.tibia.i33901")
+        | ("oteryn:creature.turbulent_elemental", "oteryn:item.tibia.i33905")
+        | ("oteryn:creature.courage_leech", "oteryn:item.tibia.i33909") => false,
+        _ => return false,
+    };
+    corpse.family == "Item"
+        && corpse.revision == "definition-r1"
+        && profile.details.as_ref().is_some_and(|details| {
+            details.system_eligibility.reward_boss == expected_reward_boss
+                && details.corpse_item.as_ref().is_some_and(|declared| {
+                    matches!(declared.family, super::ProjectV2Family::Item)
+                        && declared.key == corpse.key
+                        && declared.revision == corpse.revision
+                })
+        })
+}
+
+fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
+    corpse.family == "Item"
+        && corpse.revision == "definition-r1"
+        && matches!(
+            (creature, corpse.key.as_str()),
+            (
+                "oteryn:creature.symbol_of_hatred",
+                "oteryn:item.tibia.i33792"
+            ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
+                | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
+                | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
+                | (
+                    "oteryn:creature.aspect_of_power",
+                    "oteryn:item.tibia.i33949"
+                )
+                | (
+                    "oteryn:creature.necromantic_focus",
+                    "oteryn:item.tibia.i33984"
+                )
+        )
+}
+
+fn verified_soul_war_corpses(
+    items: Option<&super::native_gameplay::ItemProfilesDocument>,
+) -> HashSet<String> {
+    use super::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+    use super::{ReferenceItemField as F, ReferenceItemType};
+    let Some(items) = items else {
+        return HashSet::new();
+    };
+    items.records.iter().filter(|record| {
+        let definition = &record.production_definition;
+        let common = definition.family == "Item" && definition.revision_ref == "definition-r1"
+            && record.production_binding.disposition == super::ProjectV2SourceIdentityDisposition::Exact
+            && matches!(record.production_binding.target.family, super::ProjectV2Family::Item)
+            && record.production_binding.target.key == definition.production_key
+            && record.production_binding.target.revision == definition.revision_ref
+            && record.admission.materializable
+            && record.admission.stack_class == NativeItemStackClass::NonStackable
+            && record.admission.legal_destinations.contains(&NativeItemDestination::Ground)
+            && matches!(&record.semantics.stack, F::Known(value) if value.stackable == F::Known(false));
+        if !common { return false; }
+        let source_48 = matches!(definition.production_key.as_str(),
+            "oteryn:item.tibia.i33797" | "oteryn:item.tibia.i33801" | "oteryn:item.tibia.i33805"
+            | "oteryn:item.tibia.i33809" | "oteryn:item.tibia.i33813" | "oteryn:item.tibia.i33817"
+            | "oteryn:item.tibia.i33859" | "oteryn:item.tibia.i33863" | "oteryn:item.tibia.i33867"
+            | "oteryn:item.tibia.i33871" | "oteryn:item.tibia.i33875" | "oteryn:item.tibia.i33889"
+            | "oteryn:item.tibia.i33897" | "oteryn:item.tibia.i33901" | "oteryn:item.tibia.i33905" | "oteryn:item.tibia.i33909")
+            && record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
+            && matches!(&record.semantics.physical, F::Known(value)
+                if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
+            && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
+        let source_plain = matches!(definition.production_key.as_str(),
+            "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
+            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+            && record.semantics.container == F::NotApplicable;
+        source_48 || source_plain
+    }).map(|record| record.production_definition.production_key.clone()).collect()
+}
+
 /// W07/Echo rules read exact Crystal 201189f stars. Native Bestiary progression is
 /// separately authored and intentionally remains unchanged by this encounter metadata.
 fn source_bestiary_stars(profile: &ProjectV2CreatureAuthoring) -> Option<u8> {
@@ -625,46 +770,91 @@ fn source_bestiary_stars(profile: &ProjectV2CreatureAuthoring) -> Option<u8> {
     oteryn_gameplay_domain::domain::soulpit::source_monster(name).map(|monster| monster.stars)
 }
 
+struct CorpseAdmission<'a> {
+    maximum_corpse_capacity: u32,
+    verified_source_corpses: &'a HashSet<String>,
+}
+
 fn row(
+    creature: &str,
     profile: &ProjectV2CreatureAuthoring,
     loot: Option<&SectionRef>,
     tables: &HashMap<&SectionRef, &SectionLootTable>,
     items: &HashMap<&SectionRef, &SectionItemFacts>,
     race: Option<BestiaryRace>,
-    maximum_corpse_capacity: u32,
+    corpse_admission: CorpseAdmission<'_>,
 ) -> Result<CreatureRewardRow, NoSettlementReason> {
+    let CorpseAdmission {
+        maximum_corpse_capacity,
+        verified_source_corpses,
+    } = corpse_admission;
     let xp_amount = i64::try_from(profile.experience.unwrap_or(0))
         .map(ExactI64::new)
         .map_err(|_| NoSettlementReason::XpOutOfRange)?;
-    let corpse = profile
+    let declared_corpse = profile
         .details
         .as_ref()
-        .and_then(|details| details.corpse_item.as_ref())
-        .ok_or(NoSettlementReason::CorpseItemMissing)?;
+        .and_then(|details| details.corpse_item.as_ref());
+    if declared_corpse.is_none()
+        && loot.is_none()
+        && profile
+            .details
+            .as_ref()
+            .is_some_and(|details| !details.system_eligibility.reward_boss)
+        && matches!(
+            creature,
+            "oteryn:creature.mushroom"
+                | "oteryn:creature.pillar_of_dark_energy"
+                | "oteryn:creature.spiteful_spitter"
+        )
+    {
+        return Ok(CreatureRewardRow {
+            xp_amount,
+            corpse_item: None,
+            loot_table_ref: None,
+            loot_table: LootTableDefinition {
+                algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+                entries: Vec::new(),
+            },
+            race,
+            boss: None,
+        });
+    }
+    let corpse = declared_corpse.ok_or(NoSettlementReason::CorpseItemMissing)?;
     let corpse = SectionRef {
         family: "Item".to_owned(),
         key: corpse.key.clone(),
         revision: corpse.revision.clone(),
     };
     let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
-    admitted(&corpse)
-        .and_then(|facts| facts.container_capacity)
-        .filter(|capacity| {
-            // Private rewards settle into personal custody, so the physical
-            // corpse's slot count is not their loot budget. The corpse must
-            // still be a materializable container; loot plans keep their own bounds.
-            (*capacity > 0
-                && profile.details.as_ref().is_some_and(|details| {
-                    details.system_eligibility.reward_boss
-                }))
-                || (1..=maximum_corpse_capacity).contains(capacity)
-                // Exact retained Seacrest source capacity is36. This value is not
-                // retained in the reward row or used as a runtime loot budget;
-                // actual planned/minted entries keep their independent30limit.
-                || (*capacity == 36 && corpse.key == "oteryn:item.tibia.i21893"
-                    && corpse.revision == "definition-r1")
-        })
-        .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
+    let source_plain = verified_source_corpses.contains(&corpse.key)
+        && source_plain_corpse_pair(creature, &corpse)
+        && profile
+            .details
+            .as_ref()
+            .is_some_and(|details| !details.system_eligibility.reward_boss);
+    if !source_plain {
+        admitted(&corpse)
+            .and_then(|facts| facts.container_capacity)
+            .filter(|capacity| {
+                // Private reward custody has its own loot budget; only the
+                // materializable physical container's positive capacity is admitted.
+                (*capacity > 0 && profile.details.as_ref().is_some_and(|details| details.system_eligibility.reward_boss))
+                    || (1..=maximum_corpse_capacity).contains(capacity)
+                    // Source capacity36 belongs only to this exact Seacrest
+                    // body; the independent runtime loot-entry limit stays30.
+                    || (*capacity == 36
+                        && corpse.key == "oteryn:item.tibia.i21893"
+                        && corpse.revision == "definition-r1")
+                    || (*capacity == 48
+                        && verified_source_corpses.contains(&corpse.key)
+                        && source_soul_war_corpse_pair(creature, profile, &corpse))
+            })
+            .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
+    }
+    // The legacy Loot-section materializable flag describes containers/carried
+    // yields. A plain corpse has neither a capacity nor a fabricated yield;
+    // its exact complete native Item proof above is its Ground authority.
     let corpse_item = corpse.lower();
     let (loot_table_ref, loot_table) = match loot {
         // A `null` binding mints the corpse with no loot: an empty table under the corpse's own
@@ -692,10 +882,13 @@ fn row(
             )
         }
     };
+    if source_plain && !loot_table.entries.is_empty() {
+        return Err(NoSettlementReason::CorpseItemInadmissible);
+    }
     Ok(CreatureRewardRow {
         xp_amount,
-        corpse_item,
-        loot_table_ref,
+        corpse_item: Some(corpse_item),
+        loot_table_ref: Some(loot_table_ref),
         loot_table,
         race,
         boss: None,
@@ -762,6 +955,117 @@ mod encounter_source_tests {
 }
 
 #[cfg(test)]
+mod private_loot_capacity_tests {
+    use super::*;
+
+    #[test]
+    fn private_boss_corpse_capacity_does_not_admit_ordinary_or_unmaterializable_corpses()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
+            "details": {
+                "display_name": "fixture", "inspection": "", "defense": 0, "critical_chance_ppm": 0,
+                "flags": {"attackable": true, "illusionable": false, "health_hidden": false},
+                "summoning": {"summonable": false, "convinceable": false, "is_familiar": false},
+                "system_eligibility": {"prey": false, "exclusive_prey": false, "forge": false, "reward_boss": true},
+                "spawn_eligibility": {"period": "All", "ignore_period_underground": false, "blocked_by_nearby_players": false},
+                "corpse_item": {"family": "Item", "key": "oteryn:item.fixture", "revision": "definition-r1"}
+            }
+        }))?;
+        let corpse = SectionRef {
+            family: "Item".into(),
+            key: "oteryn:item.fixture".into(),
+            revision: "definition-r1".into(),
+        };
+        let mut facts = SectionItemFacts {
+            item: corpse.clone(),
+            materializable: true,
+            container_capacity: Some(64),
+            charges: None,
+            stackable: false,
+            creature_product: false,
+        };
+        assert!(
+            row(
+                "oteryn:creature.fixture",
+                &profile,
+                None,
+                &HashMap::new(),
+                &HashMap::from([(&corpse, &facts)]),
+                None,
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
+            )
+            .is_ok()
+        );
+        profile
+            .details
+            .as_mut()
+            .ok_or("details")?
+            .system_eligibility
+            .reward_boss = false;
+        assert_eq!(
+            row(
+                "oteryn:creature.fixture",
+                &profile,
+                None,
+                &HashMap::new(),
+                &HashMap::from([(&corpse, &facts)]),
+                None,
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
+            ),
+            Err(NoSettlementReason::CorpseItemInadmissible)
+        );
+        profile
+            .details
+            .as_mut()
+            .ok_or("details")?
+            .system_eligibility
+            .reward_boss = true;
+        for capacity in [None, Some(0)] {
+            facts.container_capacity = capacity;
+            assert_eq!(
+                row(
+                    "oteryn:creature.fixture",
+                    &profile,
+                    None,
+                    &HashMap::new(),
+                    &HashMap::from([(&corpse, &facts)]),
+                    None,
+                    CorpseAdmission {
+                        maximum_corpse_capacity: 30,
+                        verified_source_corpses: &HashSet::new(),
+                    },
+                ),
+                Err(NoSettlementReason::CorpseItemInadmissible)
+            );
+        }
+        facts.container_capacity = Some(64);
+        facts.materializable = false;
+        assert_eq!(
+            row(
+                "oteryn:creature.fixture",
+                &profile,
+                None,
+                &HashMap::new(),
+                &HashMap::from([(&corpse, &facts)]),
+                None,
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
+            ),
+            Err(NoSettlementReason::CorpseItemInadmissible)
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
 mod private_loot_tests {
     use super::*;
 
@@ -793,12 +1097,16 @@ mod private_loot_tests {
         };
         assert!(
             row(
+                "oteryn:creature.fixture",
                 &profile,
                 None,
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             )
             .is_ok()
         );
@@ -810,12 +1118,16 @@ mod private_loot_tests {
             .reward_boss = false;
         assert_eq!(
             row(
+                "oteryn:creature.fixture",
                 &profile,
                 None,
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
         );
@@ -829,12 +1141,16 @@ mod private_loot_tests {
             facts.container_capacity = capacity;
             assert_eq!(
                 row(
+                    "oteryn:creature.fixture",
                     &profile,
                     None,
                     &HashMap::new(),
                     &HashMap::from([(&corpse, &facts)]),
                     None,
-                    30,
+                    CorpseAdmission {
+                        maximum_corpse_capacity: 30,
+                        verified_source_corpses: &HashSet::new(),
+                    },
                 ),
                 Err(NoSettlementReason::CorpseItemInadmissible)
             );
@@ -843,14 +1159,136 @@ mod private_loot_tests {
         facts.materializable = false;
         assert_eq!(
             row(
+                "oteryn:creature.fixture",
                 &profile,
                 None,
                 &HashMap::new(),
                 &HashMap::from([(&corpse, &facts)]),
                 None,
-                30,
+                CorpseAdmission {
+                    maximum_corpse_capacity: 30,
+                    verified_source_corpses: &HashSet::new(),
+                },
             ),
             Err(NoSettlementReason::CorpseItemInadmissible)
+        );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod source_48_corpse_tests {
+    use super::*;
+
+    #[test]
+    fn soul_war_48_capacity_requires_exact_native_ground_profile_and_actual_boss_pair()
+    -> Result<(), String> {
+        use crate::content::ReferenceItemField as F;
+        use crate::content::native_gameplay::{ItemProfilesDocument, NativeItemDestination};
+        let captured: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/boss-corpse-item-profiles.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let mut items = ItemProfilesDocument {
+            schema: "OTERYN_NATIVE_ITEM_PROFILES/v1".into(),
+            records: serde_json::from_value(captured["records"].clone())
+                .map_err(|error| error.to_string())?,
+        };
+        // The exact source closure includes sixteen48-capacity bodies and
+        // five plain bodies; unrelated admitted Items remain excluded.
+        assert_eq!(
+            verified_soul_war_corpses(Some(&items)),
+            std::collections::HashSet::from(
+                [
+                    "oteryn:item.tibia.i33792",
+                    "oteryn:item.tibia.i33797",
+                    "oteryn:item.tibia.i33801",
+                    "oteryn:item.tibia.i33805",
+                    "oteryn:item.tibia.i33809",
+                    "oteryn:item.tibia.i33813",
+                    "oteryn:item.tibia.i33817",
+                    "oteryn:item.tibia.i33859",
+                    "oteryn:item.tibia.i33863",
+                    "oteryn:item.tibia.i33867",
+                    "oteryn:item.tibia.i33871",
+                    "oteryn:item.tibia.i33875",
+                    "oteryn:item.tibia.i33876",
+                    "oteryn:item.tibia.i33889",
+                    "oteryn:item.tibia.i33891",
+                    "oteryn:item.tibia.i33897",
+                    "oteryn:item.tibia.i33901",
+                    "oteryn:item.tibia.i33905",
+                    "oteryn:item.tibia.i33909",
+                    "oteryn:item.tibia.i33949",
+                    "oteryn:item.tibia.i33984",
+                ]
+                .map(str::to_owned)
+            )
+        );
+        let greed_key = "oteryn:item.tibia.i33863";
+        let original = items
+            .records
+            .iter()
+            .position(|record| record.production_definition.production_key == greed_key)
+            .ok_or("source Greed corpse")?;
+        let record = items.records[original].clone();
+        items.records[original]
+            .admission
+            .legal_destinations
+            .push(NativeItemDestination::CharacterInventory);
+        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        items.records[original] = record.clone();
+        if let F::Known(container) = &mut items.records[original].semantics.container {
+            container.capacity = F::Known(47);
+        }
+        assert!(!verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        items.records[original] = record;
+        assert!(verified_soul_war_corpses(Some(&items)).contains(greed_key));
+        let mut profile: ProjectV2CreatureAuthoring = serde_json::from_value(serde_json::json!({
+            "details": {
+                "display_name":"Goshnar's Greed","inspection":"","defense":0,"critical_chance_ppm":0,
+                "corpse_item":{"family":"Item","key":"oteryn:item.tibia.i33863","revision":"definition-r1"},
+                "flags":{"attackable":true,"illusionable":false,"health_hidden":false},
+                "summoning":{"summonable":false,"convinceable":false,"is_familiar":false},
+                "system_eligibility":{"prey":false,"exclusive_prey":false,"forge":false,"reward_boss":true},
+                "spawn_eligibility":{"period":"All","ignore_period_underground":false,"blocked_by_nearby_players":false}
+            }
+        })).map_err(|error| error.to_string())?;
+        let corpse = SectionRef {
+            family: "Item".into(),
+            key: greed_key.into(),
+            revision: "definition-r1".into(),
+        };
+        assert!(source_soul_war_corpse_pair(
+            "oteryn:creature.goshnar_s_greed",
+            &profile,
+            &corpse
+        ));
+        assert!(!source_soul_war_corpse_pair(
+            "oteryn:creature.rat",
+            &profile,
+            &corpse
+        ));
+        assert!(!source_soul_war_corpse_pair(
+            "oteryn:creature.goshnar_s_malice",
+            &profile,
+            &corpse
+        ));
+        profile
+            .details
+            .as_mut()
+            .ok_or("source details")?
+            .system_eligibility
+            .reward_boss = false;
+        assert!(!source_soul_war_corpse_pair(
+            "oteryn:creature.goshnar_s_greed",
+            &profile,
+            &corpse
+        ));
+        assert_eq!(
+            oteryn_gameplay_domain::domain::loot_data::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
+            30,
+            "physical capacity never raises the existing loot/work bound"
         );
         Ok(())
     }

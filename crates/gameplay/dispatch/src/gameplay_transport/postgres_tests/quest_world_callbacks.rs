@@ -11,6 +11,24 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == "m01b/asura-palace/s1/entry" {
+        let loaded =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("asura-dispatch")
+                .map_err(debug)?;
+        return oteryn_gameplay_quests::quest::world_callbacks::load_for(loaded.catalogue())?
+            .into_iter()
+            .find(|callback| callback.key.ends_with(name))
+            .ok_or_else(|| "authored Asura callback".into());
+    }
+    if name == "engitem-native-seal-paint" {
+        return oteryn_gameplay_quests::quest::ice_islands_seals::callbacks::definition(
+            super::engitem_seal_paint::SEALS[0],
+        )
+        .map_err(Into::into);
+    }
+    if name == "engitem-targuna-selected-tool" {
+        return oteryn_gameplay_quests::quest::targuna_ram::callback().map_err(Into::into);
+    }
     if name == "triangle-tower-lever" {
         // This source-equivalent adapter is deliberately absent from production:
         // the established Triangle callback owns the physical lever selector.
@@ -349,10 +367,32 @@ fn world_cells(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    let distinct_seals = matches!(
+        callback.native_rule,
+        Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { seal: 122 })
+    );
+    if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i4515".into();
+    } else if distinct_seals {
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i6685".into();
+        data.manifest.palette[0]
+            .terrain
+            .as_mut()
+            .ok_or("seal ground terrain")?
+            .ground_speed = Some(100);
+    }
     let mut cells = BTreeMap::new();
     for x in trigger.x - 2..=trigger.x + 8 {
         for y in trigger.y - 1..=trigger.y + 1 {
             cells.insert((trigger.floor, x, y), Vec::new());
+        }
+    }
+    if callback
+        .key
+        .starts_with("oteryn:quest-callback/unnatural-selection-dance-")
+    {
+        for (x, y, floor) in oteryn_gameplay_quests::quest::unnatural_selection::TILES {
+            cells.entry((floor, x, y)).or_default();
         }
     }
     for position in callback
@@ -383,6 +423,14 @@ fn world_cells(
         }
     }
     let mut effect_positions = extra.to_vec();
+    if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
+        effect_positions.push(oteryn_gameplay_quests::quest::dreamer_fire_bug::DESTINATION);
+        effect_positions.extend(
+            oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITION_POSITIONS
+                .into_iter()
+                .map(|(x, y)| Position { x, y, floor: -9 }),
+        );
+    }
     if let Some(pair) = &callback.effects.portals {
         for portal in &pair.portals {
             effect_positions.extend([portal.position, portal.destination]);
@@ -404,36 +452,11 @@ fn world_cells(
             }
         }
     }
-    let appearance = callback.selector.appearance.unwrap_or(appearance);
-    for passage in &callback.passages {
-        if passage.replacement == Some(7767) {
-            let p = passage.position;
-            cells.entry((p.floor, p.x, p.y - 1)).or_default();
-            cells.entry((p.floor - 1, p.x, p.y)).or_default();
-        }
-    }
-    let mut effect_positions = Vec::new();
-    if let Some(pair) = &callback.effects.portals {
-        for portal in &pair.portals {
-            effect_positions.extend([portal.position, portal.destination]);
-        }
-    }
-    if let Some(cycle) = &callback.effects.item_cycle {
-        effect_positions.push(cycle.position);
-    }
-    if let Some(encounter) = &callback.effects.encounter {
-        for player in &encounter.players {
-            effect_positions.extend([player.from, player.to]);
-        }
-        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
-    }
-    for p in effect_positions {
-        for x in p.x - 1..=p.x + 1 {
-            for y in p.y - 1..=p.y + 1 {
-                cells.entry((p.floor, x, y)).or_default();
-            }
-        }
-    }
+    let appearance = callback
+        .selector
+        .appearance
+        .or_else(|| distinct_seals.then_some(7178))
+        .unwrap_or(appearance);
     if callback.key == "oteryn:quest-callback/l6-carried-step-fixture"
         && let Some(recipe) = oteryn_gameplay_quests::quest::carried_step::RECIPES
             .iter()
@@ -447,28 +470,6 @@ fn world_cells(
         let p = presence.position;
         cells.entry((p.floor, p.x, p.y)).or_default();
         cells.entry((p.floor + 1, p.x, p.y + 1)).or_default();
-    }
-    let mut effect_positions = Vec::new();
-    if let Some(pair) = &callback.effects.portals {
-        for portal in &pair.portals {
-            effect_positions.extend([portal.position, portal.destination]);
-        }
-    }
-    if let Some(cycle) = &callback.effects.item_cycle {
-        effect_positions.push(cycle.position);
-    }
-    if let Some(encounter) = &callback.effects.encounter {
-        for player in &encounter.players {
-            effect_positions.extend([player.from, player.to]);
-        }
-        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
-    }
-    for p in effect_positions {
-        for x in p.x - 1..=p.x + 1 {
-            for y in p.y - 1..=p.y + 1 {
-                cells.entry((p.floor, x, y)).or_default();
-            }
-        }
     }
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
@@ -530,6 +531,112 @@ fn world_cells(
                 attrs: Default::default(),
             });
     }
+    if callback
+        .key
+        .starts_with(oteryn_gameplay_quests::quest::ice_seal_paint::PREFIX)
+    {
+        let middle = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:terrain.tibia.i4734".into(),
+            family: bundle::Family::Terrain,
+            id: middle,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: middle,
+                depth: 0,
+                attrs: Default::default(),
+            });
+    }
+    if distinct_seals {
+        let start = super::engitem_seal_paint::START;
+        for border in [4726, 4733] {
+            let palette = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{border}"),
+                family: bundle::Family::Terrain,
+                id: palette,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Border,
+                    walkable: Some(true),
+                    ground_speed: None,
+                    blocks_projectile: None,
+                }),
+            });
+            cells
+                .entry((start.floor, start.x, start.y))
+                .or_default()
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+        }
+        // The three adjacent B3 roots retain their individual border and ordinal.
+        for (seal, border) in [(120, 4734), (121, 4736), (122, 4737)] {
+            let target = oteryn_gameplay_quests::quest::ice_islands_seals::targets::target(seal)
+                .ok_or("native seal")?;
+            assert_eq!(target.ordinal, 2);
+            let (x, y, floor) = target.position;
+            let middle = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{border}"),
+                family: bundle::Family::Terrain,
+                id: middle,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Border,
+                    walkable: Some(true),
+                    ground_speed: None,
+                    blocks_projectile: None,
+                }),
+            });
+            let items = cells.entry((floor, x, y)).or_default();
+            items.push(sector::Item {
+                palette: middle,
+                depth: 0,
+                attrs: Default::default(),
+            });
+            if (floor, x, y) != (trigger.floor, trigger.x, trigger.y) {
+                items.push(sector::Item {
+                    palette: 1,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+            }
+        }
+    }
+    if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
+        // B3 (31926,31896,7): ground 4515, border 5485, Ram 53439.
+        // Keep the source selector's ordinal 2 without a legacy fallback.
+        let middle = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:terrain.tibia.i5485".into(),
+            family: bundle::Family::Terrain,
+            id: middle,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Border,
+                walkable: Some(true),
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: middle,
+                depth: 0,
+                attrs: Default::default(),
+            });
+    }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
         .or_default()
@@ -539,7 +646,9 @@ fn world_cells(
             attrs: sector::Attrs {
                 // The source plate starts without its startup UID in the binary map.
                 // Require the production source-binding projection instead of seeding it.
-                unique: if callback.key.ends_with("/thais-lighthouse-plate") {
+                unique: if callback.key.ends_with("/thais-lighthouse-plate")
+                    || callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE
+                {
                     None
                 } else {
                     callback.selector.unique
@@ -552,6 +661,38 @@ fn world_cells(
                 ..Default::default()
             },
         });
+    if callback.key == oteryn_gameplay_quests::quest::dreamer_death_ring::RESET {
+        // Synthetic literal UID2244; no production-map position correspondence is claimed.
+        cells
+            .entry((trigger.floor, trigger.x - 1, trigger.y + 1))
+            .or_default()
+            .push(sector::Item {
+                palette: 1,
+                depth: 0,
+                attrs: sector::Attrs {
+                    unique: Some(2244),
+                    ..Default::default()
+                },
+            });
+    }
+    if callback
+        .key
+        .starts_with("oteryn:quest-callback/unnatural-selection-dance-")
+    {
+        for (x, y, floor) in oteryn_gameplay_quests::quest::unnatural_selection::TILES {
+            if (x, y, floor) == (trigger.x, trigger.y, trigger.floor) {
+                continue;
+            }
+            cells.entry((floor, x, y)).or_default().push(sector::Item {
+                palette: 1,
+                depth: 0,
+                attrs: sector::Attrs {
+                    action: callback.selector.action,
+                    ..Default::default()
+                },
+            });
+        }
+    }
     if callback.key == "oteryn:quest-callback/l6-shared-gate-fixture" {
         let (action, _, _) =
             super::l6_shared_gates::spec(callback.selector.unique.ok_or("gate UID")?)?;
@@ -985,10 +1126,19 @@ fn world_cells(
         &crate::map::boot::BootPins {
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
-            start: crate::map::overlay::TilePos {
-                x: trigger.x - 1,
-                y: trigger.y,
-                floor: trigger.floor,
+            start: if distinct_seals {
+                let start = super::engitem_seal_paint::START;
+                crate::map::overlay::TilePos {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                }
+            } else {
+                crate::map::overlay::TilePos {
+                    x: trigger.x - 1,
+                    y: trigger.y,
+                    floor: trigger.floor,
+                }
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,

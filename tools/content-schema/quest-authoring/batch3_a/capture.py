@@ -118,6 +118,8 @@ class Capture:
     def save(self):
         document = {"schema": 1, "quest": self.key, "tracks": list(self.tracks.values()), "rules": self.rules,
                     "source_files": [{"path": path, "sha256": sha, "revision": PIN.split(":")[1]} for path, sha in sorted(self.files.items())]}
+        from questpc2_live_eligibility import prerequisites
+        document = prerequisites(document)
         validate_document(document)
         path = HERE / "npc" / f"{self.quest}.json"
         path.parent.mkdir(parents=True, exist_ok=True)

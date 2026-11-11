@@ -146,6 +146,22 @@ impl NativeSoulpitHandoff {
             }
             after = bindings.last().map(|binding| binding.handoff_id);
         }
+        for registered in admission.activity_runtimes.activity_owners()? {
+            if registered.template.as_ref().is_none_or(|template| {
+                template.key != crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY
+                    || template.revision
+                        != crate::content::soulpit_activity::SOULPIT_TEMPLATE_REVISION
+            }) {
+                continue;
+            }
+            match super::owner_runtime::cleanup_terminal(admission, &registered).await {
+                Ok(()) => {}
+                Err(super::runtime::SoulpitRuntimeError::AdapterUnavailable) => {
+                    next = read_retry_deadline(now_micros, next);
+                }
+                Err(_) => return Err(()),
+            }
+        }
         Ok(next)
     }
 

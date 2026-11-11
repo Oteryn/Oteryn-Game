@@ -3,6 +3,8 @@ use super::*;
 
 pub(super) struct JoinAcceptance {
     pub(super) game_session_id: GameSessionId,
+    pub(super) world_id: [u8; 16],
+    pub(super) activity_scope: Option<activity_scope::ActivityScopeSnapshot>,
     pub(super) connection_generation: u64,
     pub(super) next_command_id: u64,
     pub(super) selected_capabilities: Vec<u32>,
@@ -14,7 +16,7 @@ impl<S: SessionStream> Session<S> {
         mut stream: S,
         deadline: Duration,
         appearance_items: Option<AppearanceItemDictionary<'_>>,
-        accepted_fields: JoinAcceptance,
+        mut accepted_fields: JoinAcceptance,
     ) -> Result<Self, SessionError> {
         let session_generation = accepted_fields.connection_generation;
         let selected_capabilities = accepted_fields.selected_capabilities.clone();
@@ -50,10 +52,45 @@ impl<S: SessionStream> Session<S> {
         let assembled_body =
             snapshot_transfer::read_body(&mut stream, deadline, session_generation, &begin).await?;
 
+        let projected_scope = activity_scope::current_projection(
+            &assembled_body,
+            accepted_fields.game_session_id.as_bytes(),
+            &accepted_fields.world_id,
+            session_generation,
+            &selected_capabilities,
+        )?;
+        if let Some(scope) = projected_scope {
+            if accepted_fields
+                .activity_scope
+                .as_ref()
+                .is_some_and(|old| old.session != scope.session)
+            {
+                return Err(SessionError::SessionUnusable);
+            }
+            accepted_fields.activity_scope = Some(scope);
+        }
+
         // Only now — every declared chunk arrived in order, the assembled length matched, and the
         // matching `SnapshotCommit` validated — is the assembled `SnapshotBody` decoded, exactly
         // once (FND-02 §16: "protobuf decode occurs only after a full bounded body is assembled" and
         // "apply is atomic only after all chunks and matching SnapshotCommit validate").
+        let decoded = snapshot_state::SnapshotState::decode(
+            &assembled_body,
+            begin.target_server_sequence,
+            &selected_capabilities,
+            appearance_items,
+            None,
+        )?;
+        let scope_events = if accepted_fields.activity_scope.is_some() {
+            Some(replacement_snapshot::replacement_events(
+                &assembled_body,
+                begin.target_server_sequence,
+                &snapshot_state::SnapshotState::default(),
+                &decoded,
+            )?)
+        } else {
+            None
+        };
         let snapshot_state::SnapshotState {
             world_spatial_observation,
             entities,
@@ -71,18 +108,15 @@ impl<S: SessionStream> Session<S> {
             container_views,
             inventory_revision,
             container_revision,
-            gated_snapshots,
+            mut gated_snapshots,
             gated_revisions,
             appearance,
             map_header,
-            events,
-        } = snapshot_state::SnapshotState::decode(
-            &assembled_body,
-            begin.target_server_sequence,
-            &selected_capabilities,
-            appearance_items,
-            None,
-        )?;
+            mut events,
+        } = decoded;
+        if let Some(scope_events) = scope_events {
+            events = scope_events;
+        }
         if let Some(row) = gated_snapshots
             .iter()
             .find(|row| row.domain_id == activity_scope::STATE_DOMAIN_ACTIVITY_SCOPE)
@@ -107,12 +141,41 @@ impl<S: SessionStream> Session<S> {
             ))?,
             world_object_overlay_revision: overlay_revision,
         };
+        if let Some(scope) = &accepted_fields.activity_scope {
+            if scope.session != *accepted_fields.game_session_id.as_bytes() {
+                return Err(SessionError::SessionUnusable);
+            }
+            if events.len() >= MAX_QUEUED_EVENTS {
+                return Err(SessionError::EventQueueOverflow {
+                    limit: MAX_QUEUED_EVENTS,
+                });
+            }
+            events.insert(
+                0,
+                SessionEvent::ActivityScope(AppliedDelta {
+                    server_sequence: begin.target_server_sequence,
+                    base_revision: 0,
+                    new_revision: session_generation,
+                    value: scope.clone(),
+                }),
+            );
+            gated_snapshots.retain(|snapshot| snapshot.domain_id != 99);
+            gated_snapshots.push(GatedSnapshot {
+                domain_id: 99,
+                snapshot_type: 1,
+                revision: 1,
+                payload: activity_scope::encode_activity_scope(scope)
+                    .map_err(|_| FoundationProtocolError::MalformedFrame)?,
+            });
+        }
         Ok(Self {
             bulletin: None,
             stream,
             deadline,
             last_received: tokio::time::Instant::now(),
             connection_generation: session_generation,
+            world_id: accepted_fields.world_id,
+            activity_scope: accepted_fields.activity_scope,
             first_command_id: accepted_fields.next_command_id,
             next_command_id: accepted_fields.next_command_id,
             last_server_sequence: begin.target_server_sequence,

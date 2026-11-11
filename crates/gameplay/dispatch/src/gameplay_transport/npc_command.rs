@@ -38,7 +38,8 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
-mod catalogue;
+mod cake_brutus;
+pub(super) mod catalogue;
 mod catalogue_track_mutation;
 mod classic_quests;
 mod coin_exchange;
@@ -54,6 +55,7 @@ pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
+mod magic_effects;
 mod marriage;
 mod monk;
 mod npc_item_exchanges;
@@ -61,10 +63,12 @@ mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
 mod quest_shop;
-mod reward_callbacks;
+pub(super) mod reward_callbacks;
+mod reward_facts;
 mod seasonal;
 mod service_context;
 mod session_transfer;
+mod stag_beaks;
 mod threatened_dreams;
 mod viola;
 mod wrath_sleeping_dragon;
@@ -131,6 +135,8 @@ pub struct NpcConversations {
     #[cfg(test)]
     fixture_callback_rows:
         std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>>,
+    #[cfg(test)]
+    fixture_offer_rows: std::sync::OnceLock<Vec<reward_callbacks::Offer>>,
 }
 
 #[cfg(test)]
@@ -639,7 +645,13 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                lines: vec![reply.text],
+                // Native conditional greetings may open focus without literal text.
+                // Empty lines are invalid on domain 7; an empty line list is valid.
+                lines: if reply.text.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![reply.text]
+                },
             }),
             window: None,
         }
@@ -695,6 +707,11 @@ pub(super) async fn npc_bank_talk(
     } else {
         None
     };
+    let stag_beaks = match stag_beaks::preview(admission, actor, command, &intent).await {
+        Ok(proof) => proof,
+        Err(()) => return unknown(),
+    };
+    let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -817,7 +834,52 @@ pub(super) async fn npc_bank_talk(
     }
     // Eligible reward callbacks own their exact keyword before dedicated NPC
     // dialogue; ineligible stages remain with that dialogue's native owner.
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+    let inventory = if reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime) {
+        let context = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        );
+        drop(runtime);
+        let Some(facts) = reward_facts::read(admission, command).await else {
+            return rejected();
+        };
+        runtime = admission.runtime.lock().await;
+        if !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+            || admission
+                .states
+                .spell_states
+                .try_lock()
+                .map_or(true, |states| states.is_dead(actor))
+        {
+            return rejected();
+        }
+        if admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        ) != context
+        {
+            return rejected();
+        }
+        Some(facts)
+    } else {
+        None
+    };
+    if let Some(step) = reward_callbacks::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        inventory.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
@@ -864,6 +926,11 @@ pub(super) async fn npc_bank_talk(
         )
         .await;
     }
+    if let Some(context) = cake_brutus::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake_brutus::apply(admission, actor, command, intent, context).await;
+    }
     if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
@@ -883,8 +950,16 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
+    if let Some(step) = catalogue::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        &ordinary,
+        stag_beaks.as_ref(),
+        source_appearance.as_ref(),
+    ) {
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;
@@ -892,12 +967,6 @@ pub(super) async fn npc_bank_talk(
     if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return viola::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
-    {
-        drop(runtime);
-        drop(_trade_permit);
-        return catalogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

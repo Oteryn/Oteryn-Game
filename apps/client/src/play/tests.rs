@@ -341,3 +341,6 @@ include!(concat!(env!("OUT_DIR"), "/play_feature_tests.rs"));
 
 #[path = "tests_additional.rs"]
 mod additional;
+
+#[path = "tests_marker_scope.rs"]
+mod marker_scope;

@@ -40,7 +40,7 @@ pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json"
 );
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "f782957438c7f83b04bd59ec714132157a49324694413e918125b6d38c08b5a1";
+    "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684";
 pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_414;
 pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_533;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";

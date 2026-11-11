@@ -161,15 +161,34 @@ async fn write_build(
     let mut versioned = vec![2];
     versioned.extend_from_slice(&binding);
     let outcome = match house {
-        Some(house) => character_build::apply_house_logout_in_transaction(
-            tx, house, &fence, request, context.formula.digest(),
-            context.formula.content_revision().to_owned(), versioned, offline,
-        ).await?,
-        None => character_build::apply_build_in_transaction(
-            tx, node, &fence, request, context.formula.digest(),
-            context.formula.content_revision().to_owned(), versioned, Some(offline),
-        ).await?,
-    }.map_err(unavailable)?;
+        Some(house) => {
+            character_build::apply_house_logout_in_transaction(
+                tx,
+                house,
+                &fence,
+                request,
+                context.formula.digest(),
+                context.formula.content_revision().to_owned(),
+                versioned,
+                offline,
+            )
+            .await?
+        }
+        None => {
+            character_build::apply_build_in_transaction(
+                tx,
+                node,
+                &fence,
+                request,
+                context.formula.digest(),
+                context.formula.content_revision().to_owned(),
+                versioned,
+                Some(offline),
+            )
+            .await?
+        }
+    }
+    .map_err(unavailable)?;
     let revision = match outcome {
         character_build::BuildCommitOutcome::Committed(receipt)
         | character_build::BuildCommitOutcome::AlreadyCommitted(receipt) => {
@@ -308,14 +327,20 @@ impl TrainingLogout {
         let house = self.origin_channel.map(|_| HouseLogout::of(self));
         match house {
             Some(house) => match house.fenced_root(tx).await? {
-                Ok(_) => {},
+                Ok(_) => {}
                 // Like the final position and condition checkpoints, known
                 // lost House custody cannot retain the current session's
                 // Account/Character claims. No marker or gain is written.
-                Err(super::character_progression::CharacterProgressionError::AuthorityRejected) => return Ok(()),
+                Err(super::character_progression::CharacterProgressionError::AuthorityRejected) => {
+                    return Ok(());
+                }
                 Err(error) => return Err(unavailable(error)),
             },
-            None => { assert_gameplay_fence(tx, &self.fence, &self.node).await?.map_err(unavailable)?; },
+            None => {
+                assert_gameplay_fence(tx, &self.fence, &self.node)
+                    .await?
+                    .map_err(unavailable)?;
+            }
         }
         if self.selected.is_some()
             && super::pvp_state::load_pvp_state(tx, self.fence.character_id)
@@ -332,7 +357,10 @@ impl TrainingLogout {
             "logout",
         )?;
         let now = insert_marker(tx, self.fence, "logout", self.selected, occurrence).await?;
-        let created = self.admission.training_login_clock_locked(tx, self.fence).await?;
+        let created = self
+            .admission
+            .training_login_clock_locked(tx, self.fence)
+            .await?;
         let online = created.map_or(0, |created| now.saturating_sub(created).max(0) / 1_000_000);
         let after = OfflineTrainingState {
             pool_seconds: u32::try_from((i64::from(offline.pool_seconds) + online).min(43200))

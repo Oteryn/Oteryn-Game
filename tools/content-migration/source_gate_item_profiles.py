@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+from build_spell_item_identities import historical_binding_bytes
 
 CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder",
            2572: None, 2573: None, 2574: None, 2575: None, 2576: None,
@@ -45,12 +46,15 @@ def capture(root=ROOT):
     raw = {}
     for path, sha in [(XML, XML_SHA), (CLIENT, CLIENT_SHA), (BINDINGS, BINDINGS_SHA)]:
         raw[path] = (root / path).read_bytes()
+        if path == BINDINGS:
+            # Retain this immutable capture across the one approved Cake addition.
+            raw[path] = historical_binding_bytes(raw[path], BINDINGS_SHA)
         if hashlib.sha256(raw[path]).hexdigest() != sha:
             raise ValueError('SOURCE_GATE_ITEM_PIN')
     xml = source.xml_index(raw[XML])
     objects = source.engine_items.load_appearance_objects(raw[CLIENT])
     physical = {r['server_item_id']: r for r in source.policies(raw[CLIENT], raw[XML], IDS)}
-    bindings = source.binding_index(raw[BINDINGS])
+    bindings = source.binding_index(raw[BINDINGS], expected_sha=BINDINGS_SHA)
     definitions = {r['definition']['identity']['key']: r['definition']
                    for p in (root / 'content/items/definitions').glob('items-*.json')
                    for r in json.loads(p.read_bytes())['records']

@@ -878,7 +878,8 @@ where
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let Some(selected) = fresh_capability_selection(authority, bootstrap.supported_capabilities)
+    let Some(selected) =
+        fresh_capability_selection(authority, bootstrap.supported_capabilities).await
     else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
@@ -959,7 +960,9 @@ where
 /// The existing fresh wire selection, shared with native saved-House admission.
 /// It is data only; the owner independently authenticates the grant and current
 /// required capabilities before any committed scope transition.
-pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissionAuthority>(
+pub(in crate::gameplay_transport) async fn fresh_capability_selection<
+    A: FreshAdmissionAuthority,
+>(
     authority: &A,
     supported: &[u32],
 ) -> Option<SelectedCapabilities> {
@@ -968,6 +971,39 @@ pub(in crate::gameplay_transport) fn fresh_capability_selection<A: FreshAdmissio
         authority.world_weather().is_some(),
     );
     let offered = mechanic_offers(authority, offered);
+    let offered = super::native_cue_offer::offered(
+        &offered,
+        authority.native_world_presentation_available().await,
+    );
+    SelectedCapabilities::select(&offered, supported)
+}
+
+/// Test observation of a current actor's optional offer. Production Fresh/
+/// House selection remains before its immutable acknowledgement; this helper
+/// neither installs a selection nor widens a transfer/resume.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn fresh_current_actor_capability_selection<
+    A: FreshAdmissionAuthority,
+>(
+    authority: &A,
+    supported: &[u32],
+    admitted: AdmittedSession,
+) -> Option<SelectedCapabilities> {
+    let (Some(actor), Some(_)) = (admitted.runtime_actor, admitted.controller) else {
+        return fresh_capability_selection(authority, supported).await;
+    };
+    let offered = with_weather_offer(
+        authority.offered_capabilities(),
+        authority.world_weather().is_some(),
+    );
+    let offered = mechanic_offers(authority, offered);
+    let offered = super::native_cue_offer::offered(
+        &offered,
+        authority
+            .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+            .await
+            .is_some(),
+    );
     SelectedCapabilities::select(&offered, supported)
 }
 

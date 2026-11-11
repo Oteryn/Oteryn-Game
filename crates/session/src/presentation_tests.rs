@@ -294,3 +294,41 @@ fn nx5_item_effects_negotiate_without_casting_and_reject_other_payload_kinds()
         Ok(())
     })?
 }
+
+#[test]
+fn srx3_native_map_epoch_basis_requires_negotiated_capability() -> Result<(), String> {
+    use oteryn_protocol_oteryn::presentation::*;
+    let snapshots = vec![
+        GatedSnapshot {
+            domain_id: 19,
+            revision: 0,
+            snapshot_type: 2,
+            payload: Vec::new(),
+        },
+        GatedSnapshot {
+            domain_id: 20,
+            revision: 0,
+            snapshot_type: 1,
+            payload: encode_actor_cooldowns(&ActorCooldowns {
+                server_now_ms: 1,
+                rtt_ms: None,
+                entries: vec![],
+            })
+            .map_err(|error| format!("{error:?}"))?,
+        },
+    ];
+    assert!(
+        crate::presentation::validate_join(&[6, 23, 30, 385], &snapshots).is_ok(),
+        "qualified native snapshot marker must install its explicit epoch basis"
+    );
+    assert!(crate::presentation::validate_join(&[6, 23, 30], &snapshots).is_err());
+    assert!(crate::presentation::validate_join(&[6, 23, 385], &snapshots).is_err());
+    assert!(crate::presentation::validate_join(&[6, 30, 385], &snapshots).is_err());
+    let mut malformed = snapshots.clone();
+    malformed[0].payload.push(0);
+    assert!(crate::presentation::validate_join(&[6, 23, 30, 385], &malformed).is_err());
+    let mut legacy = snapshots;
+    legacy[0].snapshot_type = 1;
+    assert!(crate::presentation::validate_join(&[6, 23], &legacy).is_ok());
+    Ok(())
+}

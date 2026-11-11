@@ -105,9 +105,12 @@ pub struct OneItemUseV1 {
     /// Hireling lamp only: the actual Inbox ordinal, exclusive with source_entry.
     #[prost(uint64, optional, tag = "13")]
     pub source_inbox_ordinal: Option<u64>,
-    /// Cause470 and House uses of471: actual named House; channel_id is origin provenance.
+    /// Causes470/471 and source essence4 in a House: named custody, Channel origin provenance.
     #[prost(string, optional, tag = "14")]
     pub house_key: Option<String>,
+    /// Closed source essence USE: actual Instance, exclusive with Channel/House provenance.
+    #[prost(bytes = "vec", optional, tag = "15")]
+    pub instance_id: Option<Vec<u8>>,
 }
 
 /// The shapes a use admits (decision §4.1).
@@ -279,18 +282,33 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         let house = value.house_key.as_deref().ok_or(AuditError::InvalidInput)?;
         if super::house_scope_handoff::HouseId::new(world, house).is_none()
             || before.quantity != 1
-            || before.key_number != 0 || after.key_number != 0
-            || before.definition.as_ref().is_none_or(|definition|
-                definition.family != "Item" || definition.production_key != super::house_hireling::HIRELING_LAMP_KEY)
+            || before.key_number != 0
+            || after.key_number != 0
+            || before.definition.as_ref().is_none_or(|definition| {
+                definition.family != "Item"
+                    || definition.production_key != super::house_hireling::HIRELING_LAMP_KEY
+            })
         {
             return Err(AuditError::InvalidInput);
         }
     } else if cause.kind == super::item_use::gourmet::GOURMET_CAUSE {
-        if before.key_number != 0 || after.key_number != 0
-            || before.definition.as_ref().is_none_or(|definition| definition.family != "Item"
-            || !super::item_use::gourmet::is_gourmet_key(&definition.production_key)) {
+        if before.key_number != 0
+            || after.key_number != 0
+            || before.definition.as_ref().is_none_or(|definition| {
+                definition.family != "Item"
+                    || !super::item_use::gourmet::is_gourmet_key(&definition.production_key)
+            })
+        {
             return Err(AuditError::InvalidInput);
         }
+        if let Some(house) = value.house_key.as_deref() {
+            let world = crate::foundation::WorldId::decode(&value.world_id)
+                .map_err(|_| AuditError::InvalidInput)?;
+            if super::house_scope_handoff::HouseId::new(world, house).is_none() {
+                return Err(AuditError::InvalidInput);
+            }
+        }
+    } else if cause.kind == super::item_use::rotten_essence::ESSENCE_CAUSE {
         if let Some(house) = value.house_key.as_deref() {
             let world = crate::foundation::WorldId::decode(&value.world_id)
                 .map_err(|_| AuditError::InvalidInput)?;
@@ -303,11 +321,14 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
     }
     match (entry, value.source_inbox_ordinal) {
         (Some(entry), None) => check_entry(entry)?,
-        (None, Some(ordinal)) if ordinal > 0
-            && cause.kind == super::house_hireling::LAMP_USE_CAUSE
-            && before.quantity == 1
-            && before.definition.as_ref().is_some_and(|definition|
-                definition.family == "Item" && definition.production_key == super::house_hireling::HIRELING_LAMP_KEY) => {}
+        (None, Some(ordinal))
+            if ordinal > 0
+                && cause.kind == super::house_hireling::LAMP_USE_CAUSE
+                && before.quantity == 1
+                && before.definition.as_ref().is_some_and(|definition| {
+                    definition.family == "Item"
+                        && definition.production_key == super::house_hireling::HIRELING_LAMP_KEY
+                }) => {}
         _ => return Err(AuditError::InvalidInput),
     }
     check_content_key(&cause.content_revision)?;
@@ -316,7 +337,48 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
     check_uuid_v7(&command.game_session_id)?;
     check_uuid_v7(&value.character_id)?;
     check_uuid_v7(&value.world_id)?;
-    check_uuid_v7(&value.channel_id)?;
+    match &value.instance_id {
+        None => check_uuid_v7(&value.channel_id)?,
+        Some(instance)
+            if value.channel_id.is_empty()
+                && value.house_key.is_none()
+                && matches!(
+                    cause.kind,
+                    super::item_use::rotten_essence::ESSENCE_CAUSE
+                        | super::item_use::soul_war_source::SOURCE_USE_CAUSE
+                ) =>
+        {
+            check_uuid_v7(instance)?
+        }
+        Some(_) => return Err(AuditError::InvalidInput),
+    }
+    if cause.kind == super::item_use::rotten_essence::ESSENCE_CAUSE
+        && !before.definition.as_ref().is_some_and(|definition| {
+            definition.family == "Item"
+                && definition.revision_ref == "definition-r1"
+                && matches!(
+                    definition.production_key.as_str(),
+                    "oteryn:item.tibia.i43501"
+                        | "oteryn:item.tibia.i43502"
+                        | "oteryn:item.tibia.i43503"
+                        | "oteryn:item.tibia.i43504"
+                )
+        })
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    if cause.kind == super::item_use::soul_war_source::SOURCE_USE_CAUSE
+        && !before.definition.as_ref().is_some_and(|definition| {
+            super::item_use::soul_war_source::source_use(&super::item_mint::TypedDefinitionRef {
+                family: definition.family.clone(),
+                production_key: definition.production_key.clone(),
+                revision_ref: definition.revision_ref.clone(),
+            })
+            .is_some()
+        })
+    {
+        return Err(AuditError::InvalidInput);
+    }
     check_uuid_v7(&value.expected_game_session_id)?;
     if !matches!(
         cause.kind,
@@ -326,6 +388,8 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::mount_taming::TAMING_CAUSE
             | super::item_use::proficiency_catalyst::CATALYST_CAUSE
             | super::item_use::proficiency_orb::ORB_CAUSE
+            | super::item_use::rotten_essence::ESSENCE_CAUSE
+            | super::item_use::soul_war_source::SOURCE_USE_CAUSE
             | super::item_use::concoction::CONCOCTION_CAUSE
             | super::item_use::drome_cube::DROME_CUBE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
@@ -363,6 +427,8 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::concoction::CONCOCTION_CAUSE
             | super::item_use::proficiency_catalyst::CATALYST_CAUSE
             | super::item_use::proficiency_orb::ORB_CAUSE
+            | super::item_use::rotten_essence::ESSENCE_CAUSE
+            | super::item_use::soul_war_source::SOURCE_USE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE,
             None,
@@ -420,7 +486,9 @@ pub fn decode_item_use_envelope(
         })),
     };
     if value.world_id.as_deref() != Some(item_use.world_id.as_slice())
-        || value.channel_id.as_deref() != Some(item_use.channel_id.as_slice())
+        || value.channel_id.as_deref()
+            != (!item_use.channel_id.is_empty()).then_some(item_use.channel_id.as_slice())
+        || value.instance_id.as_deref() != item_use.instance_id.as_deref()
         || value.game_session_id.as_deref() != Some(command.game_session_id.as_slice())
         || value.command_id != Some(command.command_id)
         || value.connection_generation != Some(item_use.expected_session_generation)
@@ -454,7 +522,9 @@ pub fn encode_item_use_event(
         return Err(AuditError::InvalidInput);
     }
     check_item_use(&item_use)?;
-    let (world_id, channel_id) = (item_use.world_id.clone(), item_use.channel_id.clone());
+    let world_id = item_use.world_id.clone();
+    let channel_id = (!item_use.channel_id.is_empty()).then(|| item_use.channel_id.clone());
+    let instance_id = item_use.instance_id.clone();
     let connection_generation = item_use.expected_session_generation;
     let command = item_use
         .cause
@@ -478,7 +548,8 @@ pub fn encode_item_use_event(
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
-        channel_id: Some(channel_id),
+        channel_id,
+        instance_id,
         game_session_id: Some(command.game_session_id.clone()),
         connection_generation: Some(connection_generation),
         command_id: Some(command.command_id),
@@ -599,6 +670,7 @@ mod tests {
             flask_missing: false,
             source_inbox_ordinal: None,
             house_key: None,
+            instance_id: None,
         }
     }
 
@@ -617,7 +689,8 @@ mod tests {
         lamp.source_inbox_ordinal = Some(17);
         lamp.house_key = Some("oteryn:content.house.fixture".into());
         assert_eq!(check_item_use(&lamp), Ok(ItemUseShape::Burn));
-        let wire = encode_item_use_event(identity(), lamp.clone(), mint::Type2EventTuple::V1).unwrap();
+        let wire =
+            encode_item_use_event(identity(), lamp.clone(), mint::Type2EventTuple::V1).unwrap();
         assert_eq!(decode_item_use_envelope(&wire).unwrap().1, lamp);
         for tamper in 0..8 {
             let mut other = lamp.clone();
@@ -632,10 +705,23 @@ mod tests {
                 }
                 4 => other.house_key = None,
                 5 => other.house_key = Some("oteryn:activity.instance.fixture".into()),
-                6 => other.source_before.as_mut().unwrap().definition.as_mut().unwrap().family = "ItemType".into(),
+                6 => {
+                    other
+                        .source_before
+                        .as_mut()
+                        .unwrap()
+                        .definition
+                        .as_mut()
+                        .unwrap()
+                        .family = "ItemType".into()
+                }
                 _ => other.source_before.as_mut().unwrap().key_number = 1,
             }
-            assert_eq!(check_item_use(&other), Err(AuditError::InvalidInput), "tamper {tamper}");
+            assert_eq!(
+                check_item_use(&other),
+                Err(AuditError::InvalidInput),
+                "tamper {tamper}"
+            );
         }
     }
 
@@ -650,7 +736,8 @@ mod tests {
         }
         assert_eq!(check_item_use(&food), Ok(ItemUseShape::Burn));
         food.house_key = Some("oteryn:content.house.fixture".into());
-        let wire = encode_item_use_event(identity(), food.clone(), mint::Type2EventTuple::V1).unwrap();
+        let wire =
+            encode_item_use_event(identity(), food.clone(), mint::Type2EventTuple::V1).unwrap();
         assert_eq!(decode_item_use_envelope(&wire).unwrap().1, food);
         food.house_key = Some("oteryn:activity.instance.fixture".into());
         assert_eq!(check_item_use(&food), Err(AuditError::InvalidInput));
@@ -662,21 +749,44 @@ mod tests {
 
     #[test]
     fn hireling_use_maximum_house_and_provenance_fit_existing_byte_rows() {
-        let house = format!("oteryn:content.house.{}",
-            "a".repeat(512 - "oteryn:content.house.".len()));
+        let house = format!(
+            "oteryn:content.house.{}",
+            "a".repeat(512 - "oteryn:content.house.".len())
+        );
         let build = "b".repeat(128);
-        for (kind, inbox, named_house) in [(470, true, true), (470, false, true),
-            (471, false, true), (471, false, false)] {
+        for (kind, inbox, named_house) in [
+            (470, true, true),
+            (470, false, true),
+            (471, false, true),
+            (471, false, false),
+        ] {
             let mut value = burn();
             let lamp = kind == 470;
-            value.source_before = Some(state(9, "source", if lamp { 1 } else { 100 }, ITEM_LIFECYCLE_LIVE));
-            value.source_after = Some(state(9, "source", if lamp { 0 } else { 99 },
-                if lamp { ITEM_LIFECYCLE_RETIRED } else { ITEM_LIFECYCLE_LIVE }));
+            value.source_before = Some(state(
+                9,
+                "source",
+                if lamp { 1 } else { 100 },
+                ITEM_LIFECYCLE_LIVE,
+            ));
+            value.source_after = Some(state(
+                9,
+                "source",
+                if lamp { 0 } else { 99 },
+                if lamp {
+                    ITEM_LIFECYCLE_RETIRED
+                } else {
+                    ITEM_LIFECYCLE_LIVE
+                },
+            ));
             for state in [&mut value.source_before, &mut value.source_after] {
                 let definition = state.as_mut().unwrap().definition.as_mut().unwrap();
                 definition.family = "Item".into();
-                definition.production_key = if lamp { super::super::house_hireling::HIRELING_LAMP_KEY }
-                    else { "oteryn:item.tibia.i29409" }.into();
+                definition.production_key = if lamp {
+                    super::super::house_hireling::HIRELING_LAMP_KEY
+                } else {
+                    "oteryn:item.tibia.i29409"
+                }
+                .into();
                 definition.revision_ref = "r".repeat(512);
             }
             value.source_entry = (!inbox).then(|| entry(u64::MAX));
@@ -693,10 +803,14 @@ mod tests {
             let payload_len = OneItemTransactionV1 {
                 interpretation_revision: mint::INTERPRETATION_REVISION,
                 operation: Some(OneItemOperationV1::ItemUse(value.clone())),
-            }.encoded_len();
+            }
+            .encoded_len();
             for tuple in [mint::Type2EventTuple::V1, mint::Type2EventTuple::V2] {
-                let event = ItemUseEventIdentity { server_build_id: &build,
-                    occurred_at_unix_ms: i64::MAX - mint::AUDIT_RETENTION_P90D_MS, ..identity() };
+                let event = ItemUseEventIdentity {
+                    server_build_id: &build,
+                    occurred_at_unix_ms: i64::MAX - mint::AUDIT_RETENTION_P90D_MS,
+                    ..identity()
+                };
                 let bytes = encode_item_use_event(event, value.clone(), tuple).unwrap();
                 let (envelope, decoded) = decode_item_use_envelope(&bytes).unwrap();
                 assert_eq!(decoded, value);
@@ -704,8 +818,13 @@ mod tests {
                 assert_eq!(envelope.encoded_len(), bytes.len());
                 assert!(payload_len <= ITEM_USE_RL07_PAYLOAD_BYTES_MAX);
                 assert!(bytes.len() <= ITEM_USE_RL07_ENVELOPE_BYTES_MAX);
-                eprintln!("Hireling USE cap measurement: cause={kind} inbox={inbox} house={named_house} schema={} payload_bytes={payload_len} envelope_bytes={} payload_cap={} envelope_cap={}",
-                    tuple.schema_revision(), bytes.len(), ITEM_USE_RL07_PAYLOAD_BYTES_MAX, ITEM_USE_RL07_ENVELOPE_BYTES_MAX);
+                eprintln!(
+                    "Hireling USE cap measurement: cause={kind} inbox={inbox} house={named_house} schema={} payload_bytes={payload_len} envelope_bytes={} payload_cap={} envelope_cap={}",
+                    tuple.schema_revision(),
+                    bytes.len(),
+                    ITEM_USE_RL07_PAYLOAD_BYTES_MAX,
+                    ITEM_USE_RL07_ENVELOPE_BYTES_MAX
+                );
             }
         }
     }
@@ -953,6 +1072,138 @@ mod tests {
         assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
         value.flask = flask_new().flask;
         assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+    }
+
+    fn srx3_essence_burn() -> OneItemUseV1 {
+        let mut value = burn();
+        value.cause.as_mut().unwrap().kind = 4;
+        for state in [&mut value.source_before, &mut value.source_after] {
+            let definition = state.as_mut().unwrap().definition.as_mut().unwrap();
+            definition.family = "Item".into();
+            definition.production_key = "oteryn:item.tibia.i43501".into();
+            definition.revision_ref = "definition-r1".into();
+        }
+        value
+    }
+
+    #[test]
+    fn srx3_rotten_essence_kind4_admits_only_its_exact_source_burn_without_flask() {
+        let mut value = srx3_essence_burn();
+        assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+        value.flask = flask_new().flask;
+        assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+        value.flask = None;
+        for state in [&mut value.source_before, &mut value.source_after] {
+            state
+                .as_mut()
+                .unwrap()
+                .definition
+                .as_mut()
+                .unwrap()
+                .production_key = "oteryn:item.tibia.i3031".into();
+        }
+        assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
+    fn srx3_rotten_essence_house_use_retains_named_house_and_origin_provenance() {
+        let mut value = srx3_essence_burn();
+        value.house_key = Some("oteryn:content.house.fixture".into());
+        assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+        value.instance_id = Some(uuid(6));
+        value.channel_id.clear();
+        assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
+    fn srx3_source_use_kind5_preserves_exact_source_and_instance_audit() {
+        for key in [
+            "oteryn:item.tibia.i33793",
+            "oteryn:item.tibia.i33891",
+            "oteryn:item.tibia.i33950",
+        ] {
+            let mut value = srx3_essence_burn();
+            value.cause.as_mut().unwrap().kind = 5;
+            for state in [&mut value.source_before, &mut value.source_after] {
+                state
+                    .as_mut()
+                    .unwrap()
+                    .definition
+                    .as_mut()
+                    .unwrap()
+                    .production_key = key.into();
+            }
+            assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+            value.channel_id.clear();
+            value.instance_id = Some(uuid(6));
+            assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+            value.channel_id = uuid(7);
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+            value.channel_id.clear();
+            value.house_key = Some("oteryn:content.house.fixture".into());
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+            value.house_key = None;
+            value.flask = flask_new().flask;
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+            value.flask = None;
+            for state in [&mut value.source_before, &mut value.source_after] {
+                state
+                    .as_mut()
+                    .unwrap()
+                    .definition
+                    .as_mut()
+                    .unwrap()
+                    .production_key = "oteryn:item.tibia.i43501".into();
+            }
+            assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+        }
+    }
+
+    fn srx3_raw_instance_essence_payload(channel: Vec<u8>, instances: &[Vec<u8>]) -> Vec<u8> {
+        let mut value = srx3_essence_burn();
+        value.channel_id = channel;
+        let mut nested = value.encode_to_vec();
+        for instance in instances {
+            prost::encoding::bytes::encode(15, instance, &mut nested);
+        }
+        let mut wire = Vec::new();
+        prost::encoding::uint32::encode(1, &mint::INTERPRETATION_REVISION, &mut wire);
+        prost::encoding::bytes::encode(10, &nested, &mut wire);
+        wire
+    }
+
+    #[test]
+    fn srx3_rotten_essence_instance_field15_round_trips_without_a_channel_alias() {
+        let wire = srx3_raw_instance_essence_payload(Vec::new(), &[uuid(6)]);
+        let decoded = decode_item_use_payload(&wire);
+        assert!(
+            decoded.is_ok(),
+            "valid source Instance USE field15 must decode: {decoded:?}"
+        );
+        let decoded = decoded.unwrap();
+        assert!(decoded.channel_id.is_empty());
+        let event =
+            encode_item_use_event(identity(), decoded.clone(), mint::Type2EventTuple::V2).unwrap();
+        let (envelope, round_trip) = decode_item_use_envelope(&event).unwrap();
+        assert_eq!(round_trip, decoded);
+        assert_eq!(envelope.instance_id, Some(uuid(6)));
+        assert_eq!(envelope.channel_id, None);
+    }
+
+    #[test]
+    fn srx3_rotten_essence_instance_field15_rejects_both_neither_duplicates_and_malformed() {
+        for wire in [
+            srx3_raw_instance_essence_payload(uuid(6), &[uuid(6)]),
+            srx3_raw_instance_essence_payload(Vec::new(), &[]),
+            srx3_raw_instance_essence_payload(Vec::new(), &[uuid(6), uuid(6)]),
+            srx3_raw_instance_essence_payload(Vec::new(), &[vec![1; 15]]),
+            srx3_raw_instance_essence_payload(Vec::new(), &[vec![0; 16]]),
+        ] {
+            assert_eq!(
+                decode_item_use_payload(&wire),
+                Err(AuditError::InvalidInput)
+            );
+        }
     }
 
     #[test]

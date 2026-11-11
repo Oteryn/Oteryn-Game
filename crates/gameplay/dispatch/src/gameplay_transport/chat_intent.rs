@@ -11,6 +11,7 @@
 
 mod cake_speech;
 mod item_actions;
+mod source_speech;
 
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;

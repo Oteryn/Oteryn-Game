@@ -100,23 +100,6 @@ pub(super) async fn prepare_channel(
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
     }
-    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
-    // The generation is the operator assignment just resolved above, not config.
-    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
-    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
-    let required_capabilities =
-        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-            &config.readiness.required_gameplay_capabilities,
-            scope,
-            generation,
-            &config.readiness.world_policy_revision,
-            crate::gameplay_transport::with_store_offer(
-                crate::gameplay_transport::world_required_capabilities::offered_for_scope(
-                    bundle.is_some(), active_content.active(),
-                ),
-                true, // The node's required Platform descriptor composes its Store client.
-            ),
-        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -176,6 +159,26 @@ pub(super) async fn prepare_channel(
             template.source_path()
         ));
     }
+    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
+    // The generation is the operator assignment just resolved above, not config.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
+    let required_capabilities =
+        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &config.readiness.required_gameplay_capabilities,
+            scope,
+            generation,
+            &config.readiness.world_policy_revision,
+            crate::gameplay_transport::world_required_capabilities::with_native_map_presentation_offer(
+             crate::gameplay_transport::with_store_offer(
+                crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                    bundle.is_some(), active_content.active(),
+                ),
+                true, // The node's required Platform descriptor composes its Store client.
+             ),
+             active_content.active(), combat_room.as_ref(), &channel_pin,
+            ),
+        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
         None => crate::spell::cast::v1_spell_book()
@@ -344,10 +347,17 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon,
         daily.flower_month,
     ));
-    let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot).with_seasonal(
-        npc_boot,
-        &seasonal,
-        |position| {
+    let npc_calendar = if reset_epoch == 0 {
+        None
+    } else {
+        Some(
+            root.world_change_calendar(material.world, reset_epoch)
+                .await
+                .map_err(|_| BootError::Readiness("conditional NPC calendar binding"))?,
+        )
+    };
+    let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot)
+        .with_seasonal(npc_boot, &seasonal, |position| {
             bundle.as_ref().is_some_and(|world| {
                 if (position.x, position.y, position.floor) == (33303, 32064, -7) {
                     // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:470 force=true bypasses collision on
@@ -364,8 +374,12 @@ pub(super) async fn prepare_channel(
                     world.enterable(position)
                 }
             })
-        },
-    );
+        })
+        .with_calendar(npc_calendar);
+    timed_npcs
+        .refresh_event_contacts(root, material.world)
+        .await
+        .map_err(|_| BootError::Readiness("event NPC presence"))?;
     timed_npcs.set_brutus_present(
         root.cake_brutus_present(material.world)
             .await
@@ -444,6 +458,7 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         world_counters: false,
         counter_stages: [0; 8],
         counter_generations: [0; 8],
+        counter_quest_occurrences: [0; 8],
         counter_progress: [[0; 3]; 8],
         shared_used_sources_mask: 0,
     }

@@ -10,6 +10,8 @@ use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
 use std::sync::Arc;
 
+pub(in crate::gameplay_transport) mod teleport;
+
 type Context = (u64, u64, String);
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct Conversation {
@@ -28,6 +30,7 @@ pub(super) enum Pending {
         intent: NpcTalkIntent,
         next: Conversation,
         fallback_lines: Vec<String>,
+        teleport: bool,
     },
 }
 pub(super) enum Step {
@@ -47,8 +50,74 @@ pub(super) struct CommitStep {
     next: Conversation,
     request: NpcProgramRequest,
     fallback_lines: Vec<String>,
+    teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
+    magic: usize,
 }
 
+pub(super) async fn appearance(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+) -> Option<(std::collections::BTreeMap<u16, u8>, u8)> {
+    use crate::domain::appearance::{AppearanceContent, Sex};
+    let needs = {
+        let runtime = admission.runtime.lock().await;
+        // A greeting establishes engagement later in talk_in. This prefetch is
+        // read-only; prepare rechecks the engaged NPC before using the snapshot.
+        let npc =
+            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
+        NpcRuleCatalog::runtime()
+            .ok()?
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .filter(|rule| rule.npc == npc.key)
+            .any(|rule| {
+                rule.guards.iter().any(|guard| {
+                    matches!(
+                        guard,
+                        oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Outfit { .. }
+                            | oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Sex { .. }
+                    )
+                }) || rule.effects.iter().any(|effect| {
+                    matches!(
+                        effect,
+                        NpcRuleEffect::Outfit { .. } | NpcRuleEffect::OutfitAddon { .. }
+                    )
+                })
+            })
+    };
+    if !needs {
+        return Some((Default::default(), 0));
+    }
+    let (_, content) = admission.appearance_context()?;
+    let fence =
+        super::super::character_gameplay_fence::current(admission, command.game_session_id, false)
+            .await?;
+    let state = admission
+        .root
+        .read_current_character_appearance_state(
+            admission.character,
+            admission.holder,
+            fence,
+            content.earned_grant_keys(),
+        )
+        .await
+        .ok()?;
+    Some((
+        crate::durability::character_appearance::npc_outfits::snapshot(&content, &state.earned),
+        match state.sex {
+            Sex::Female => 0,
+            Sex::Male => 1,
+        },
+    ))
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "NPC source preview includes a separately fenced appearance snapshot"
+)]
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -56,6 +125,8 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
+    stag_beaks: Option<&crate::durability::stag_beaks::StagBeakPreview>,
+    appearance: Option<&(std::collections::BTreeMap<u16, u8>, u8)>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -73,7 +144,7 @@ pub(super) fn prepare(
         return None;
     }
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let tracks = {
+    let mut tracks = {
         let sessions = admission.states.quest_sessions.lock().ok()?;
         let copy = sessions.get(&command.game_session_id)?.copy.as_ref()?;
         let mut tracks = copy.read_tracks(catalogue)?;
@@ -90,6 +161,15 @@ pub(super) fn prepare(
         }
         tracks
     };
+    let player_name = admission.states.chat.speaker_name(command.game_session_id);
+    if context.2 == crate::durability::stag_beaks::HARTFORD {
+        tracks.insert(crate::durability::stag_beaks::BEAKS.into(), 0);
+        if let Some(proof) = stag_beaks {
+            proof
+                .overlay(command.item_fence?.character_id, &mut tracks)
+                .ok()?;
+        }
+    }
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;
     if matches!(state.catalogue, Some(Pending::Commit { .. })) {
@@ -113,7 +193,15 @@ pub(super) fn prepare(
             ["hi", "hello", "hail"]
                 .iter()
                 .any(|g| word.eq_ignore_ascii_case(g))
-        });
+        })
+        && !source
+            .matches_player_name_message(
+                &context.2,
+                &intent.text,
+                previous.as_ref().map_or(0, |p| p.topic),
+                player_name.as_deref(),
+            )
+            .ok()?;
     let mut request = NpcProgramRequest {
         command: CommandRef::new(
             command.game_session_id,
@@ -138,7 +226,77 @@ pub(super) fn prepare(
         .duration_since(std::time::UNIX_EPOCH)
         .ok()
         .and_then(|d| i64::try_from(d.as_secs()).ok())?;
-    let plan = match npc_program::preview(&request, &tracks, catalogue, now) {
+    let eligibility = if source
+        .programs()
+        .iter()
+        .flat_map(|program| &program.document.rules)
+        .filter(|rule| rule.npc == request.npc)
+        .flat_map(|rule| &rule.guards)
+        .any(|guard| {
+            matches!(
+                guard,
+                oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Level { .. }
+                    | oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Vocation { .. }
+                    | oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Premium { .. }
+            )
+        }) {
+        let facts = admission
+            .states
+            .spell_states
+            .try_lock()
+            .ok()?
+            .get(runtime, actor, command.game_session_id)?
+            .character_facts();
+        let vocation = match facts.vocation {
+            crate::spell::Vocation::None => "none",
+            crate::spell::Vocation::Knight | crate::spell::Vocation::EliteKnight => "knight",
+            crate::spell::Vocation::Paladin | crate::spell::Vocation::RoyalPaladin => "paladin",
+            crate::spell::Vocation::Sorcerer | crate::spell::Vocation::MasterSorcerer => "sorcerer",
+            crate::spell::Vocation::Druid | crate::spell::Vocation::ElderDruid => "druid",
+            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk => "monk",
+        };
+        npc_program::NpcEligibility {
+            level: facts.level,
+            vocation: format!("oteryn:vocation.{vocation}"),
+            premium_current: admission
+                .session_account(command.game_session_id)
+                .zip(admission.premium_coordinator)
+                .is_some_and(|(account, owner)| {
+                    owner.view(account).premium_gate().premium_current()
+                }),
+        }
+    } else {
+        npc_program::NpcEligibility::default()
+    };
+    let Some(appearance) = appearance else {
+        return Some(Step::Refused);
+    };
+    let teleport =
+        npc_program::teleport::preview_teleport(&request, &tracks, catalogue, now, &eligibility)
+            .ok()
+            .flatten();
+    if teleport.as_ref().is_some_and(|p| {
+        !matches!(
+            p.source.quest.as_str(),
+            "oteryn:quest.the_paradox_tower_quest" | "oteryn:quest.in_service_of_yalahar_quest"
+        )
+    }) {
+        return Some(Step::Refused);
+    }
+    let plan = match teleport
+        .as_ref()
+        .map(|p| Ok(Some(p.source.clone())))
+        .unwrap_or_else(|| {
+            npc_program::preview_with_appearance(
+                &request,
+                &tracks,
+                catalogue,
+                now,
+                &eligibility,
+                player_name.as_deref(),
+                (&appearance.0, appearance.1),
+            )
+        }) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
             if greeting {
@@ -157,14 +315,23 @@ pub(super) fn prepare(
     };
     let has_track_mutation = super::catalogue_track_mutation::has_mutation(&plan);
     if !has_track_mutation
-        && plan
-            .effects
-            .iter()
-            .any(|effect| matches!(effect, NpcRuleEffect::Experience { .. }))
+        && !plan.completes
+        && plan.effects.iter().any(|effect| {
+            matches!(
+                effect,
+                NpcRuleEffect::Experience { .. }
+                    | NpcRuleEffect::Outfit { .. }
+                    | NpcRuleEffect::OutfitAddon { .. }
+            )
+        })
     {
         return Some(Step::Refused);
     }
-    if !has_track_mutation && request.npc != "oteryn:npc.pemaret" {
+    if teleport.is_none()
+        && !has_track_mutation
+        && !plan.completes
+        && request.npc != "oteryn:npc.pemaret"
+    {
         let end = plan
             .effects
             .iter()
@@ -207,6 +374,8 @@ pub(super) fn prepare(
         next,
         request,
         fallback_lines,
+        magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
+        teleport: teleport.map(|p| p.destination),
     })))
 }
 
@@ -297,6 +466,8 @@ pub(super) async fn apply(
         next,
         request,
         fallback_lines,
+        teleport,
+        magic,
     } = match step {
         Step::Reply {
             lines,
@@ -386,7 +557,34 @@ pub(super) async fn apply(
             intent: intent.clone(),
             next: next.clone(),
             fallback_lines: fallback_lines.clone(),
+            teleport: teleport.is_some(),
         });
+    }
+    if let Some(destination) = teleport {
+        let started = {
+            let mut runtime = admission.runtime.lock().await;
+            teleport::start(
+                admission,
+                actor,
+                command,
+                teleport::DepartureProof {
+                    request,
+                    catalogue: Arc::clone(catalogue),
+                    intent,
+                    context: next.context.clone(),
+                    magic,
+                },
+                destination,
+                &mut runtime,
+            )
+        };
+        drop(slot);
+        drop(item_permit);
+        if started.is_none() {
+            install(admission, command.game_session_id, None);
+            return rejected();
+        }
+        return resume(admission, command).await.unwrap_or_else(unknown);
     }
     let moves_items = (request.npc == "oteryn:npc.pemaret"
         && request.transition_key.ends_with("/deliver"))
@@ -429,6 +627,29 @@ pub(super) async fn apply(
                         | QuestTransitionOutcome::AlreadyCommitted(_)
                 ) =>
         {
+            if !commit.magic_effects.is_empty() {
+                let runtime = admission.runtime.lock().await;
+                if runtime
+                    .bound_attacker_lease(actor, command.game_session_id)
+                    .is_ok()
+                    && let Ok(at) = runtime.read_actor_position(actor)
+                    && let Some(map) = admission.bundle_map()
+                {
+                    let at = at.position();
+                    if let (Ok(x), Ok(y), Some(floor)) = (
+                        u16::try_from(at.x),
+                        u16::try_from(at.y),
+                        i8::try_from(at.floor).ok().and_then(i8::checked_neg),
+                    ) {
+                        for effect in &commit.magic_effects {
+                            map.facts.emit_movement_effect(
+                                crate::map::overlay::TilePos { x, y, floor },
+                                *effect,
+                            );
+                        }
+                    }
+                }
+            }
             install(
                 admission,
                 command.game_session_id,
@@ -492,6 +713,7 @@ pub(in crate::gameplay_transport) async fn resume(
         intent,
         next,
         fallback_lines,
+        teleport,
     } = pending
     else {
         return None;
@@ -503,6 +725,32 @@ pub(in crate::gameplay_transport) async fn resume(
         )
     {
         return None;
+    }
+    let quest_hold = admission
+        .states
+        .newhaven_travel
+        .holds
+        .lock()
+        .ok()?
+        .get(&command.game_session_id)
+        .is_some_and(|h| matches!(h.route, super::super::newhaven_travel::Departure::Quest(_)));
+    if quest_hold {
+        match admission
+            .reconcile_newhaven_travel(next.actor, command.game_session_id)
+            .await
+        {
+            None => {
+                return Some(NpcTalkOutcome {
+                    unknown: true,
+                    ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                });
+            }
+            Some(false) => admission
+                .states
+                .newhaven_travel
+                .forget(command.game_session_id),
+            Some(true) => {}
+        }
     }
     let moves_items = (request.npc == "oteryn:npc.pemaret"
         && request.transition_key.ends_with("/deliver"))
@@ -516,10 +764,13 @@ pub(in crate::gameplay_transport) async fn resume(
             .await
         {
             Ok(Some(commit)) => {
+                let engaged = !teleport
+                    || admission.states.chat.engaged(command.game_session_id)
+                        == Some(next.npc_actor);
                 install(
                     admission,
                     command.game_session_id,
-                    (!commit.end_conversation).then_some(Conversation {
+                    (!commit.end_conversation && engaged).then_some(Conversation {
                         topic: commit.next_topic,
                         ..next.clone()
                     }),
@@ -538,7 +789,7 @@ pub(in crate::gameplay_transport) async fn resume(
                     },
                 );
                 response.inventory_changed = commit.inventory_changed || moves_items;
-                if commit.end_conversation {
+                if commit.end_conversation || !engaged {
                     end_response(
                         admission,
                         command.game_session_id,

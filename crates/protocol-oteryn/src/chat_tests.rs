@@ -470,6 +470,13 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                     .to_owned(),
                 crate::vip_presence::MAX_BYTES as u64
             ),
+            (
+                u64::from(crate::native_map_cues::DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1),
+                "NATIVE_MAP_CHAT_LINE_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/native-map-cues-v1.md#native-local-chat"
+                    .to_owned(),
+                MAX_CHAT_LINE_BYTES as u64
+            ),
         ]
     );
     assert_eq!(

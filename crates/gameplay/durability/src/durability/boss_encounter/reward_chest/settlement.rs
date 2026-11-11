@@ -292,6 +292,17 @@ mod tests {
                 healing_others: 900,
             },
         });
+        // Crystal 201189f data/scripts/systems/reward_chest.lua:54-69,156-165:
+        // support-only contribution earns a chest, with the exact captured tuple.
+        assert!(validate_death(&value).is_none());
+        let support = &value.contributors[1];
+        value.chests.push(BossRewardChestPlan {
+            character_id: support.character_id,
+            session_id: support.session_id,
+            lease_generation: support.lease_generation,
+            contribution: support.contribution,
+            items: value.chests[0].items.clone(),
+        });
         assert!(validate_death(&value).is_some());
         let mut omitted = value.clone();
         omitted.chests.clear();

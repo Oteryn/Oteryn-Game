@@ -8,6 +8,8 @@ use super::{
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
 #[derive(Debug)]
 pub struct QuestSession {
+    pub map_marks_world: Option<crate::foundation::WorldId>,
+    pub map_marks: Vec<oteryn_protocol_oteryn::quest_log::QuestMapMark>,
     /// `None`: the load failed or exceeded a bound; quest actions fail closed.
     pub copy: Option<crate::durability::quest_state::QuestStateCopy>,
     /// Whether this session already reported an absent progression binding.
@@ -28,6 +30,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = self.current_quest_fence(session).await;
         #[cfg(test)]
         test_pause::after_fence().await;
+        let mut map_marks = None;
+        let mut map_marks_world = None;
         let (copy, retry) = match fence {
             Ok(Some(fence)) => {
                 let mut admission = crate::durability::quest_state::admit_character_quest_state(
@@ -65,6 +69,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         deferred = true;
                     }
                 }
+                map_marks_world = Some(fence.runtime_scope.world_id());
+                match self
+                    .root
+                    .read_character_quest_map_marks(self.character, self.holder, fence)
+                    .await
+                {
+                    Ok(snapshot) => {
+                        map_marks = Some(
+                            snapshot
+                                .marks
+                                .into_iter()
+                                .map(|m| oteryn_protocol_oteryn::quest_log::QuestMapMark {
+                                    x: m.marker.position.x,
+                                    y: m.marker.position.y,
+                                    floor: m.marker.position.floor,
+                                    text: m.marker.text,
+                                })
+                                .collect(),
+                        );
+                    }
+                    Err(_) => {
+                        map_marks = Some(Vec::new());
+                        retry = true;
+                    }
+                }
                 (Some(admission.copy), retry)
             }
             // A proven terminal session: no quest action and nothing to retry.
@@ -79,10 +108,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let entry = sessions.entry(session).or_insert(QuestSession {
                 copy: None,
+                map_marks: Vec::new(),
+                map_marks_world: None,
                 retry_at: None,
                 experience_deferred: false,
                 version: 0,
             });
+            if let Some(marks) = map_marks {
+                entry.map_marks = marks;
+                entry.map_marks_world = map_marks_world;
+            }
             if let Some(copy) = copy {
                 // Exhaustion fails this session closed; never reuse an observed version.
                 entry.copy = entry.version.checked_add(1).and_then(|version| {

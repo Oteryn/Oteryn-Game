@@ -4,11 +4,21 @@ use snapshot_state::SnapshotState;
 
 impl<S: SessionStream> Session<S> {
     pub(super) async fn replace_snapshot(&mut self, payload: &[u8]) -> Result<(), SessionError> {
+        self.replace_snapshot_with_scope_change(payload)
+            .await
+            .map(|_| ())
+    }
+
+    pub(super) async fn replace_snapshot_with_scope_change(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<Option<SessionError>, SessionError> {
         let expected = self
             .last_server_sequence
             .checked_add(1)
             .ok_or(FoundationProtocolError::ServerSequenceGap)?;
-        self.replace_snapshot_at(payload, expected).await
+        self.replace_snapshot_at_with_scope_change(payload, expected)
+            .await
     }
 
     pub(super) async fn replace_snapshot_at(
@@ -16,6 +26,16 @@ impl<S: SessionStream> Session<S> {
         payload: &[u8],
         expected: u64,
     ) -> Result<(), SessionError> {
+        self.replace_snapshot_at_with_scope_change(payload, expected)
+            .await
+            .map(|_| ())
+    }
+
+    async fn replace_snapshot_at_with_scope_change(
+        &mut self,
+        payload: &[u8],
+        expected: u64,
+    ) -> Result<Option<SessionError>, SessionError> {
         let begin = decode_snapshot_begin(payload)?;
         if begin.target_server_sequence != expected {
             return Err(SessionError::ServerSequenceMismatch {
@@ -30,8 +50,15 @@ impl<S: SessionStream> Session<S> {
             &begin,
         )
         .await?;
-        if self.adopt_activity_snapshot(&body).await? {
-            return Ok(());
+        if let Some(changed) = self.adopt_activity_snapshot(&body).await? {
+            return Ok(Some(changed));
+        }
+        if decode_snapshot_body(&body)?
+            .iter()
+            .any(|domain| domain.domain_id == 99)
+        {
+            self.replace_activity_scope(&body, expected).await?;
+            return Ok(Some(SessionError::ScopeChanged));
         }
         let old = SnapshotState::capture(self);
         let next = SnapshotState::decode(
@@ -51,7 +78,7 @@ impl<S: SessionStream> Session<S> {
         self.last_server_sequence = expected;
         self.last_received = tokio::time::Instant::now();
         self.events.extend(events);
-        Ok(())
+        Ok(None)
     }
 }
 

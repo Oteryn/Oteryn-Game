@@ -4,6 +4,206 @@
     "not_playable": 2,
     "supported_unqualified": 145
   },
+  "native_authored_claims": [
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.kingdom_of_kormarak.corpse",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.kingdom_of_kormarak.corpse",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 32552,
+            "y": 32200,
+            "z": 11
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.magic_sword.north",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.magic_sword.north",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 32411,
+            "y": 32247,
+            "z": 15
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.magic_sword.south",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.magic_sword.south",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 32412,
+            "y": 32247,
+            "z": 15
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.mastermind_potion.fire",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.mastermind_potion.fire",
+      "placements": [
+        {
+          "native_entry_ordinal": 2,
+          "position": {
+            "x": 32084,
+            "y": 31062,
+            "z": 10
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.mastermind_potion.wall",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.mastermind_potion.wall",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 32216,
+            "y": 31168,
+            "z": 11
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.mystery_of_the_valley.fragment1",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.mystery_of_the_valley.fragment1",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 32463,
+            "y": 31092,
+            "z": 5
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.mystery_of_the_valley.fragment2",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.mystery_of_the_valley.fragment2",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 33187,
+            "y": 31191,
+            "z": 6
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.mystery_of_the_valley.fragment3",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.mystery_of_the_valley.fragment3",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 33836,
+            "y": 31677,
+            "z": 4
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    },
+    {
+      "authored_source": {
+        "path": "docs/reference/content-prep/engclaim-m34/sources.md",
+        "pilot_key": "oteryn:reward-claim.authored.mystery_of_the_valley.guardian",
+        "pilot_revision": "engclaim-r1",
+        "sha256": "8382b4dbc50b994e55d1b47dd4a93efcf20c730ae60d44070ac65844f620a43f"
+      },
+      "claim": "oteryn:reward-claim.authored.mystery_of_the_valley.guardian",
+      "placements": [
+        {
+          "native_entry_ordinal": 1,
+          "position": {
+            "x": 33082,
+            "y": 32670,
+            "z": 3
+          },
+          "sources": []
+        }
+      ],
+      "reason": "requires exact World binding and native Item admission",
+      "status": "supported_unqualified"
+    }
+  ],
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
     {

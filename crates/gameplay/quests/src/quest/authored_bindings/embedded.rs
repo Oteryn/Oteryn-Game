@@ -6,6 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 include!(concat!(env!("OUT_DIR"), "/authored_binding_documents.rs"));
 const INDEX: &str = include_str!("../../../../../../content/quests/definitions/index.json");
+#[path = "native_claim_item_evidence.rs"]
+mod native_claim_item_evidence;
 
 impl Bindings {
     /// Combine a complete trusted binding snapshot; names never imply another source document.
@@ -62,6 +64,11 @@ struct Recipe {
     digest: Option<String>,
     complete: bool,
     data_holds: bool,
+    claim_only_pending: bool,
+    minimum_level: Option<u32>,
+    requires_premium: Option<bool>,
+    prerequisites: Option<Vec<String>>,
+    repeat: Option<String>,
 }
 
 impl RecipeEvidence {
@@ -118,9 +125,9 @@ impl RecipeEvidence {
         }
         let mut recipes = BTreeMap::new();
         for (key, definition) in definitions {
-            if definition["definition_profile"] != "oteryn_authored_v1" {
+            let Some(selected) = super::imported_recipe::select(&definition)? else {
                 continue;
-            }
+            };
             let missing = definition["missing_data"]
                 .as_array()
                 .ok_or("canonical Quest missing-data codes")?;
@@ -131,11 +138,44 @@ impl RecipeEvidence {
                         "quest_native_lowering_missing"
                             | "authored_trigger_and_delivery_bindings_missing"
                     )
-                )
+                ) && !(selected.original_source_gaps
+                    && entry["code"].as_str() == Some("reported_source_gap"))
+                    && !selected.resolves_original_level(entry)
             });
-            let digest = definition
-                .get("recipe")
-                .filter(|recipe| recipe.is_object())
+            // A missing legacy delivery owner must not prevent a safe first step.
+            // Every other data hold remains authoritative, as do nontrivial actor gates.
+            let claim_only_pending = missing
+                .iter()
+                .any(|entry| entry["code"] == "claim_native_lowering_missing")
+                && missing.iter().all(|entry| {
+                    matches!(
+                        entry["code"].as_str(),
+                        Some(
+                            "claim_native_lowering_missing"
+                                | "quest_native_lowering_missing"
+                                | "authored_trigger_and_delivery_bindings_missing"
+                        )
+                    ) || (selected.original_source_gaps && entry["code"] == "reported_source_gap")
+                        || native_claim_item_evidence::resolves(&definition, entry)
+                });
+            let minimum_level = selected
+                .recipe
+                .and_then(|recipe| recipe["requirements"]["min_level"].as_u64())
+                .and_then(|minimum| u32::try_from(minimum).ok());
+            let requires_premium = selected
+                .recipe
+                .and_then(|recipe| recipe["requirements"]["premium"].as_bool());
+            let prerequisites = selected
+                .recipe
+                .and_then(|recipe| recipe["requirements"]["prerequisites"].as_array())
+                .and_then(|values| {
+                    values
+                        .iter()
+                        .map(|value| value.as_str().map(str::to_owned))
+                        .collect::<Option<Vec<_>>>()
+                });
+            let digest = selected
+                .recipe
                 .map(|recipe| {
                     let bytes = serde_json::to_vec(recipe).map_err(|error| error.to_string())?;
                     Ok::<String, String>(
@@ -150,8 +190,16 @@ impl RecipeEvidence {
                 key,
                 Recipe {
                     digest,
-                    complete: definition["data_complete"] == true,
+                    complete: selected.complete,
                     data_holds,
+                    claim_only_pending,
+                    minimum_level,
+                    requires_premium,
+                    prerequisites,
+                    repeat: selected
+                        .recipe
+                        .and_then(|recipe| recipe["repeat"]["kind"].as_str())
+                        .map(str::to_owned),
                 },
             );
         }
@@ -173,11 +221,51 @@ impl RecipeEvidence {
                     quest.quest
                 ));
             }
-            if recipe.data_holds {
+            let native_observations = quest.stages.iter().all(|stage| {
+                matches!(
+                    stage.trigger,
+                    super::Trigger::TerrainUse { .. }
+                        | super::Trigger::DoorUse { .. }
+                        | super::Trigger::TaskBoardUse { .. }
+                        | super::Trigger::Collect { .. }
+                        | super::Trigger::Kill { .. }
+                )
+            });
+            let declared_prerequisites: Vec<_> = quest
+                .admission
+                .as_ref()
+                .into_iter()
+                .flat_map(|gate| &gate.prerequisites)
+                .map(|required| required.requirement.clone())
+                .collect();
+            let admission_matches = recipe.prerequisites.as_ref() == Some(&declared_prerequisites)
+                && recipe.requires_premium
+                    == Some(quest.admission.as_ref().is_some_and(|gate| gate.premium))
+                && recipe.minimum_level
+                    == Some(
+                        quest
+                            .admission
+                            .as_ref()
+                            .map_or(0, |gate| gate.minimum_level),
+                    );
+            if (native_observations || quest.admission.is_some()) && !admission_matches {
+                return Err(format!(
+                    "authored Quest requires its exact native actor admission: {}",
+                    quest.quest
+                ));
+            }
+            let pure_progress =
+                native_observations && quest.stages.iter().all(|stage| !stage.completes);
+            if recipe.data_holds
+                && !(recipe.claim_only_pending && admission_matches && pure_progress)
+            {
                 return Err(format!(
                     "authored Quest has unresolved data holds: {}",
                     quest.quest
                 ));
+            }
+            if quest.occurrence.is_some() && recipe.repeat.as_deref() != Some("daily") {
+                return Err("save occurrence requires a canonical daily recipe".into());
             }
             if recipe.digest.as_deref() != Some(quest.recipe_sha256.as_str()) {
                 return Err(format!(

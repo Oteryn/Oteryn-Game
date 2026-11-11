@@ -2032,10 +2032,14 @@ fn map_base_and_map_added_pickup_route_to_the_real_loop_owner() -> TestResult {
         for (key, target, supported) in [
             (source, LoopTarget::MainBackpack, true),
             (source, LoopTarget::Container(instance(2)), true),
-            (source, LoopTarget::Ground(TILE), false),
+            // Native map-base dragging reaches the same owner as pickup; its refusal
+            // must stay NoRoom rather than becoming a transport NotSupported result.
+            (source, LoopTarget::Ground(TILE), true),
             // Crystal data/scripts/movements/trap.lua:39-42 creates caught wolf 12369;
             // data/scripts/movements/thornfire_wolf.lua leaves that created item movable.
             (ItemKey::MapAdded(1), LoopTarget::MainBackpack, true),
+            // The map-base route does not widen created map items to ground dragging.
+            (ItemKey::MapAdded(1), LoopTarget::Ground(TILE), false),
         ] {
             let shown = inventory(&[2]);
             let mut view = wearing(shown.clone()).with_map_view();

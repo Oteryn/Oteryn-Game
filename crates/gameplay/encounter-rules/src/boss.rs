@@ -20,7 +20,7 @@ pub struct RewardParticipation {
 
 impl RewardParticipation {
     pub const fn eligible(self) -> bool {
-        self.damage_dealt != 0
+        self.damage_dealt != 0 || self.damage_received != 0 || self.healing_others != 0
     }
 }
 
@@ -56,49 +56,14 @@ pub fn reward_participation(
     })
 }
 
-/// Oteryn deviation (owner decision 2026-10-27): a damage-dealing character must also reach
-/// this percentage of the fair share `1 / n`, where `n` counts the damage-dealing characters.
-/// The pinned loot factor floors every nonzero score at `n^(-1/3)`, so a single hit earned
-/// about 0.55 of a full reward in a five-player team. See
-/// `docs/reference/news-history/boss-resilience-and-participation.md`.
-pub const REWARD_FAIR_SHARE_THRESHOLD_PERCENT: u64 = 10;
-
-const SHARE_SCALE: u128 = 1_000_000_000;
-
-fn share(value: u64, total: u128) -> u128 {
-    (u128::from(value) * SHARE_SCALE)
-        .checked_div(total)
-        .unwrap_or(0)
-}
-
-/// Returns, in input order, whether each resilience-adjusted participant earns a reward.
-///
-/// The score is the pinned three-dimension score `(d/D + r/R + h/H) / 3` in fixed point,
-/// with totals taken over every participant. A participant qualifies when it dealt damage
-/// and its score is at least `REWARD_FAIR_SHARE_THRESHOLD_PERCENT` of `1 / n`.
+/// Crystal 201189f `data/scripts/systems/reward_chest.lua:28-69` sums all
+/// three normalized contributions and rewards every nonzero score. Since each
+/// denominator is positive (seeded with 0.1), this is exactly a nonzero input
+/// in any dimension, without rounding tiny contributions away.
 pub fn reward_eligibility(participants: &[RewardParticipation]) -> Vec<bool> {
-    let total = |pick: fn(&RewardParticipation) -> u64| -> u128 {
-        participants.iter().map(|p| u128::from(pick(p))).sum()
-    };
-    let dealt = total(|p| p.damage_dealt);
-    let received = total(|p| p.damage_received);
-    let healed = total(|p| p.healing_others);
-    let damage_dealers: u128 = participants
-        .iter()
-        .filter(|p| p.eligible())
-        .map(|_| 1_u128)
-        .sum();
     participants
         .iter()
-        .map(|p| {
-            let score_sum = share(p.damage_dealt, dealt)
-                + share(p.damage_received, received)
-                + share(p.healing_others, healed);
-            // score_sum / (3 * SCALE) >= pct / (100 * n)
-            p.eligible()
-                && score_sum * 100 * damage_dealers
-                    >= u128::from(REWARD_FAIR_SHARE_THRESHOLD_PERCENT) * 3 * SHARE_SCALE
-        })
+        .map(|participant| participant.eligible())
         .collect()
 }
 
@@ -125,18 +90,15 @@ mod tests {
     }
 
     #[test]
-    fn single_hit_leech_is_excluded_and_team_keeps_rewards() {
+    fn crystal_nonzero_single_hit_and_team_keep_rewards() {
         let mut parts = team();
         parts.push(part(1, 0, 0));
-        assert_eq!(
-            reward_eligibility(&parts),
-            vec![true, true, true, true, true, false]
-        );
+        assert_eq!(reward_eligibility(&parts), vec![true; 6]);
     }
 
     #[test]
     fn weak_damage_dealer_and_healer_still_qualify() {
-        // The 50k dealer holds about 2.6% of the score, above 10% of the 20% fair share.
+        // Crystal reward_chest.lua:54-69: any nonzero contribution score qualifies.
         assert_eq!(reward_eligibility(&team()), vec![true; 5]);
         let healer_with_one_hit = [part(400_000, 100_000, 0), part(1, 0, 300_000)];
         assert_eq!(reward_eligibility(&healer_with_one_hit), vec![true, true]);
@@ -144,14 +106,20 @@ mod tests {
 
     #[test]
     fn support_only_and_solo_cases() {
+        // Crystal 201189f data/scripts/systems/reward_chest.lua:54-69,156-165.
+        // Healing-only and tanking-only scores qualify; zero contribution does not.
+        assert_eq!(
+            reward_eligibility(&[part(0, 0, 1), part(0, 1, 0), part(0, 0, 0)]),
+            vec![true, true, false]
+        );
         assert_eq!(
             reward_eligibility(&[part(500_000, 0, 0), part(0, 900_000, 900_000)]),
-            vec![true, false]
+            vec![true, true]
         );
         assert_eq!(reward_eligibility(&[part(1, 0, 0)]), vec![true]);
         assert_eq!(
             reward_eligibility(&[part(1_000_000, 300_000, 50_000), part(1, 0, 0)]),
-            vec![true, false]
+            vec![true, true]
         );
         assert!(reward_eligibility(&[]).is_empty());
     }

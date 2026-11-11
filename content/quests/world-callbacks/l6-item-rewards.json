@@ -85,7 +85,8 @@
         "magic": null,
         "portals": null,
         "item_cycle": null,
-        "encounter": null
+        "encounter": null,
+        "quest_completion": "oteryn:quest.authored.waterskin_of_mead_quest"
       }
     },
     {

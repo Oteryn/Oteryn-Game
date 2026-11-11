@@ -326,6 +326,9 @@ fn travel_route(key: &str) -> oteryn_gameplay_content::content::npc_catalogue::t
         yalahar_gate: false,
         yalahar_town_gate: None,
         quest_gate: None,
+        quest_clear_gate: None,
+        ticket: None,
+        return_origin: None,
         world_change: Some(key.into()),
     }
 }

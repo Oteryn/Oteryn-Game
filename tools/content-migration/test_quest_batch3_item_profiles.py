@@ -1,5 +1,6 @@
 """Bounds and source custody checks for the batch-three physical Item cohort."""
 import json
+import hashlib
 import copy
 import tempfile
 import unittest
@@ -111,6 +112,103 @@ class QuestBatchThreeItemProfiles(unittest.TestCase):
             self.assertIn(approved, paths)
             self.assertNotIn(withdrawn, paths)
             self.assertNotIn(transient, paths)
+
+
+class RetainedQn3CensusTests(unittest.TestCase):
+    KEY = 'oteryn:item.tibia.i27654'
+    SOURCE = 'content/dialogues/quest-rules/quest-batch3-qn3-dangerous_depths.json'
+
+    def test_retained_qn3_source_and_jar_match_all_existing_owners(self):
+        packet = json.loads((profiles.ROOT / profiles.PATH).read_bytes())
+        source = (profiles.ROOT / self.SOURCE).read_bytes()
+        descriptor = {'path': self.SOURCE, 'sha256': hashlib.sha256(source).hexdigest()}
+        self.assertEqual([row for row in packet['authoring_inputs']
+                          if row['path'] == self.SOURCE], [descriptor])
+        references, inputs = profiles.selected(profiles.ROOT)
+        self.assertIn(descriptor, inputs)
+        self.assertIn(self.KEY, references)
+        classified = [row for row in packet['classification'] if row['key'] == self.KEY]
+        self.assertEqual(len(classified), 1)
+        self.assertEqual(classified[0]['uses'], references[self.KEY])
+        self.assertEqual(classified[0]['classification'], 'EXISTING_NATIVE')
+        self.assertTrue(classified[0]['existing_native_profile'])
+        self.assertEqual(classified[0]['holds'], [])
+        self.assertIsNone(classified[0]['reason'])
+        rows = [row for row in packet['records']
+                if row['production_definition']['production_key'] == self.KEY]
+        self.assertEqual(len(rows), 1)
+        before = copy.deepcopy(packet)
+        self.assertNotIn('always_on_top', rows[0]['attributes'])
+        self.assertNotIn('always_on_top_order', rows[0]['attributes'])
+        expected_house = copy.deepcopy(rows)
+        expected_house[0]['attributes'].update(always_on_top=False, always_on_top_order=0)
+        from refresh_equipment_profile_pin import registered_source_document
+        house_rows = registered_source_document(
+            profiles.ROOT, {'records': copy.deepcopy(rows)})['records']
+        self.assertIs(house_rows[0]['attributes']['always_on_top'], False)
+        self.assertIs(type(house_rows[0]['attributes']['always_on_top_order']), int)
+        self.assertEqual(house_rows, expected_house)
+        self.assertNotIn('taxonomy', rows[0]['authoring'])
+        from refresh_equipment_profile_pin import registered_jar_taxonomy_document
+        taxonomy = json.loads((profiles.ROOT / 'content/items/taxonomy/items.json').read_bytes())
+        entries = [row for row in taxonomy['records'] if row['target']['key'] == self.KEY]
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]['target'],
+                         {'family': 'Item', 'key': self.KEY, 'revision': 'definition-r1'})
+        expected_taxonomy = copy.deepcopy(rows)
+        expected_taxonomy[0]['authoring']['taxonomy'] = copy.deepcopy(entries[0]['source_taxonomy'])
+        taxonomy_rows = registered_jar_taxonomy_document(
+            profiles.ROOT, {'records': copy.deepcopy(rows)})['records']
+        self.assertEqual(taxonomy_rows, expected_taxonomy)
+        complete_rows = registered_source_document(
+            profiles.ROOT, {'records': copy.deepcopy(taxonomy_rows)})['records']
+        expected_complete = copy.deepcopy(expected_taxonomy)
+        expected_complete[0]['attributes'].update(always_on_top=False, always_on_top_order=0)
+        self.assertIs(complete_rows[0]['attributes']['always_on_top'], False)
+        self.assertIs(type(complete_rows[0]['attributes']['always_on_top_order']), int)
+        self.assertEqual(complete_rows, expected_complete)
+        for path in (
+            profiles.NATIVE,
+            'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json',
+            'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',
+        ):
+            with self.subTest(owner=path):
+                owner = json.loads((profiles.ROOT / path).read_bytes())
+                owner_rows = [row for row in owner['records']
+                              if row['production_definition']['production_key'] == self.KEY]
+                self.assertEqual(len(owner_rows), 1)
+                if path == 'tools/content-schema/native-gameplay/engnpc-m05-item-profiles.json':
+                    self.assertEqual(owner_rows, rows)
+                    continue
+                has_taxonomy = 'taxonomy' in owner_rows[0]['authoring']
+                if has_taxonomy:
+                    self.assertIs(type(owner_rows[0]['authoring']['taxonomy']), dict)
+                    self.assertEqual(owner_rows[0]['authoring']['taxonomy'],
+                                     entries[0]['source_taxonomy'])
+                attributes = owner_rows[0]['attributes']
+                present = ('always_on_top' in attributes, 'always_on_top_order' in attributes)
+                self.assertIn(present, ((False, False), (True, True)))
+                if present[0]:
+                    self.assertIs(attributes['always_on_top'], False)
+                    self.assertIs(type(attributes['always_on_top_order']), int)
+                    self.assertEqual(attributes['always_on_top_order'], 0)
+                    expected_rows = complete_rows if has_taxonomy else house_rows
+                else:
+                    expected_rows = taxonomy_rows if has_taxonomy else rows
+                self.assertEqual(owner_rows, expected_rows)
+        self.assertEqual(packet, before)
+        self.assertFalse(packet['runtime_enabled'])
+
+    def test_retained_census_does_not_add_a_recipe_item_owner(self):
+        generated = {'profiles': json.dumps({'records': []}).encode(),
+                     'manifest': json.dumps({'item_profiles': {}}).encode()}
+        profiles.admit_recipes(profiles.ROOT, generated, 'profiles', 'manifest',
+                              lambda row: row['production_definition']['production_key'],
+                              profiles.grizzly.encode)
+        admitted = {row['production_definition']['production_key']
+                    for row in json.loads(generated['profiles'])['records']}
+        self.assertIn('oteryn:item.tibia.i3595', admitted)
+        self.assertNotIn(self.KEY, admitted)
 
 
 if __name__ == '__main__':

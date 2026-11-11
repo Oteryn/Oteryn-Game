@@ -1,6 +1,42 @@
 #![allow(clippy::expect_used)]
 
-use super::REGISTERED_ROUTES;
+use super::*;
+
+#[test]
+fn registered_router_does_not_embed_the_largest_handler_future() {
+    struct LargeLogout;
+    impl FreshAdmissionAuthority for LargeLogout {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn logout_command(&self, _: AdmittedSession, _: u64) -> LogoutReply {
+            let retained = [0_u8; 128 * 1024];
+            std::future::pending::<()>().await;
+            std::hint::black_box(retained);
+            LogoutReply::Unknown
+        }
+    }
+
+    // Inspect the real generated route without constructing an oversized future on
+    // the test stack, and without a connection, runtime or database fixture.
+    fn future_size<F: std::future::Future>(
+        _: impl FnOnce(
+            &'static mut tokio::io::DuplexStream,
+            &'static LargeLogout,
+            &'static mut ServeState,
+            oteryn_protocol_oteryn::ClientCommandView<'static>,
+            &'static mut CommandOutcome,
+        ) -> F,
+    ) -> usize {
+        std::mem::size_of::<F>()
+    }
+    let bytes = future_size(execute::<tokio::io::DuplexStream, LargeLogout>);
+    assert!(bytes < 4096, "router retained handler storage: {bytes}");
+}
 
 mod generator {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/build_mechanics.rs"));

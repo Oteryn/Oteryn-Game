@@ -62,6 +62,23 @@ fn reward_boss(runtime: &ChannelRuntimeV1, boss: ExactActorRef) -> bool {
 }
 
 impl BossContributions {
+    /// Deferred task BEGIN selects the actual current drop type. Participation
+    /// and the original death timestamp were already frozen on the lethal turn.
+    pub(super) fn replace_source_drop_reward(
+        &mut self,
+        actor: ExactActorRef,
+        reward: Arc<CreatureRewardRow>,
+    ) {
+        if let Some(frozen) = self
+            .fights
+            .iter_mut()
+            .find(|fight| fight.boss == actor)
+            .and_then(|fight| fight.frozen.as_mut())
+        {
+            frozen.reward = reward;
+        }
+    }
+
     pub(super) fn prune(&mut self, runtime: &ChannelRuntimeV1) {
         self.fights.retain(|fight| {
             reward_boss(runtime, fight.boss) || runtime.retains_corpse_projection(fight.boss)

@@ -1,0 +1,833 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_paradox_tower_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:129"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/keyword-paradox",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "paradox",
+        "tower"
+      ],
+      "guards": [],
+      "reply": [
+        "This tower, of course, silly one. It holds my {master'}s {treasure}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:160"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/keyword-master",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "master"
+      ],
+      "guards": [],
+      "reply": [
+        "His name is none of your business"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:163"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/keyword-treasure",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "treasure"
+      ],
+      "guards": [],
+      "reply": [
+        "I am guarding the treasures of the tower. Only those who pass the {test} of the three sigils may pass."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/keyword-name",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "name"
+      ],
+      "guards": [],
+      "reply": [
+        "I am known as the riddler. That is all you need to know."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/keyword-job",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "job"
+      ],
+      "guards": [],
+      "reply": [
+        "I am the guardian of the paradox tower."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:166"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/keyword-key",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "key",
+        "door"
+      ],
+      "guards": [],
+      "reply": [
+        "The key of this tower! You will never find it! A malicious plant spirit is guarding it!."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:167"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-57-1-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "test"
+      ],
+      "guards": [],
+      "reply": [
+        "Death awaits those who fail the test of the three seals! Do you really want me to test you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:57"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-60-2-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "FOOL! Now you're doomed! But well ... So be it! Let's start out with the Seal of Knowledge and the first question: What name did the necromant king choose for himself?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:60"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-69-3-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "goshnar"
+      ],
+      "guards": [],
+      "reply": [
+        "HOHO! You have learned your lesson well. Question number two then: Who or what is the feared Hugo?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:69"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-78-4-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "demonbunny"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "HOHO! Right again. All right. The final question of the first seal: Who was the first warrior to follow the path of the Mooh'Tah?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:78"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-77-5-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "demonbunny"
+      ],
+      "guards": [],
+      "reply": [
+        "Hmmm, so you think cheating will get you through that test? Then your final question of the first seal is: What is the meaning of life?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:77"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-85-6-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "tha'kull"
+      ],
+      "guards": [],
+      "reply": [
+        "HOHO! Lucky you. You have passed the first seal! So ... would you like to continue with the Seal of the Mind?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:85"
+      ],
+      "topics": [
+        4
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-88-7-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "As you wish, foolish one! Here is my first question: It's lighter then a feather but no living creature can hold it for ten minutes?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:88"
+      ],
+      "topics": [
+        6
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-91-8-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "breath"
+      ],
+      "guards": [],
+      "reply": [
+        "That was an easy one. Let's try the second: If you name it, you break it."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:91"
+      ],
+      "topics": [
+        7
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-94-9-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "silence"
+      ],
+      "guards": [],
+      "reply": [
+        "Hm. I bet you think you're smart. All right. How about this: What does everybody want to become but nobody to be?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:94"
+      ],
+      "topics": [
+        8
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-102-10-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "old"
+      ],
+      "guards": [],
+      "reply": [
+        "ARGH! You did it again! Well all right. Do you wish to break the Seal of Madness?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:102"
+      ],
+      "topics": [
+        9
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-105-11-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "GOOD! So I will get you at last. Answer this: What is your favourite colour?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:105"
+      ],
+      "topics": [
+        10
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-109-12-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "green"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "UHM UH OH ... How could you guess that? Are you mad??? All right. Penultimate question: What is the opposite?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:109",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:110"
+      ],
+      "topics": [
+        11
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-108-13-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "green"
+      ],
+      "guards": [],
+      "reply": [
+        "UHM UH OH ... How could you guess that? Are you mad??? All right. Penultimate question: What is the opposite?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:108"
+      ],
+      "topics": [
+        11
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-119-14-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "none"
+      ],
+      "guards": [],
+      "reply": [
+        "NO! NO! NO! That can't be true. You're not only mad, you are a complete idiot! Ah well. Here is the last question: What is 1 plus 1?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:119"
+      ],
+      "topics": [
+        12
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-135-15-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "DAMN YOUUUUUUUUUUUUUUUUUUUUUU!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "value": 2
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32478,
+            "y": 31905,
+            "floor": -1
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:135",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:132",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:136"
+      ],
+      "topics": [
+        13
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-131-16-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "DAMN YOUUUUUUUUUUUUUUUUUUUUUU!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "value": 2
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32478,
+            "y": 31905,
+            "floor": -1
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:131",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:132"
+      ],
+      "topics": [
+        13
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-135-17-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "DAMN YOUUUUUUUUUUUUUUUUUUUUUU!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/favorite_colour",
+          "value": 2
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32478,
+            "y": 31905,
+            "floor": -1
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:135",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:136"
+      ],
+      "topics": [
+        13
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-129-18-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "DAMN YOUUUUUUUUUUUUUUUUUUUUUU!"
+      ],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32478,
+            "y": 31905,
+            "floor": -1
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:129"
+      ],
+      "topics": [
+        13
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-128-19-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "guards": [],
+      "reply": [
+        "WRONG!"
+      ],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32725,
+            "y": 31589,
+            "floor": -12
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:128"
+      ],
+      "topics": [
+        13
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-127-20-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [
+        "1"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:127"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-148-21-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "WRONG! Next time get your own answers. To hell with thee, cheater Sischfried!"
+      ],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32725,
+            "y": 31589,
+            "floor": -12
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:148"
+      ],
+      "topics": [
+        5
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/the_paradox_tower_quest/riddler/branch-153-22-1-1",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "npc": "oteryn:npc.riddler",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "WRONG!"
+      ],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32725,
+            "y": 31589,
+            "floor": -12
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/riddler.lua:153"
+      ],
+      "any_message": true
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/riddler.lua",
+      "sha256": "198907507cb4bf3c40b7c00abdf75a5ebb0e260e6e1b18683a39b652b711dc8a",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

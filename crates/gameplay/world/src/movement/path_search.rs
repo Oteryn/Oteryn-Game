@@ -1,8 +1,7 @@
 //! CREATURE-MOVE-1 (CREATURE-AI-0 §5.3): the shared bounded path search of the Movement owner,
 //! for a player chase (RANGED-0 §8, `combat_attack::chase`) and later creatures.
 //!
-//! Cardinal neighbours in the order north, east, south, west (Movement admits no diagonal step,
-//! so §5.3's diagonals stay out); 10 per step plus the caller's extra tile cost (+40 over an
+//! This search retains cardinal neighbours in north, east, south, west order; 10 per step plus the caller's extra tile cost (+40 over an
 //! occupied tile); ties by lowest total, then lowest estimate, then neighbour order, then
 //! discovery order; at most `AI01-PATH-SEARCH-WORK` (1,024) expansions and `AI01-ROUTE-STEPS`
 //! (128) steps, within the caller's search distance (Chebyshev, 12 tiles for a chase). The goal
@@ -58,16 +57,7 @@ struct SearchBounds {
 }
 
 pub const fn delta(step: CardinalStep) -> (i32, i32) {
-    match step {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-        CardinalStep::NorthEast => (1, -1),
-        CardinalStep::SouthEast => (1, 1),
-        CardinalStep::SouthWest => (-1, 1),
-        CardinalStep::NorthWest => (-1, -1),
-    }
+    step.delta()
 }
 
 pub fn chebyshev(from: MovementLocalPosition, to: MovementLocalPosition) -> i64 {

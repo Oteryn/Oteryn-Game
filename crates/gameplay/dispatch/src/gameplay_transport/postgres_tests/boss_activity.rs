@@ -24,7 +24,8 @@ use oteryn_protocol_oteryn::boss_encounter::{
     self as wire, BossActivityRefusal, BossActivityReply,
 };
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, decode_command_result, decode_snapshot_chunk, encode_client_command,
+    ClientCommandValue, decode_command_result, decode_snapshot_chunk,
+    encode_client_command_for_session,
 };
 use tokio::io::AsyncWriteExt;
 
@@ -59,6 +60,7 @@ mod state_effects;
 enum Case {
     Entry,
     Difficulty,
+    EssenceUse,
     AwardContinuity,
     EndgameReceipts,
     Rewards,
@@ -85,6 +87,11 @@ enum Case {
 #[test]
 fn boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences() -> TestResult {
     run_scenario(Case::EndgameReceipts)
+}
+
+#[test]
+fn srx3_rotten_essence_activity_scope_real_handoff_postgres() -> TestResult {
+    run_scenario(Case::EssenceUse)
 }
 
 #[test]
@@ -330,6 +337,9 @@ fn scenario(case: Case) -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
                 .await?;
+        if case == Case::EssenceUse {
+            super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i43501", 2)]).await?;
+        }
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
@@ -368,6 +378,13 @@ fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.evidence = &evidence.evidence;
         owner.active_generation = controller.active();
+        if case == Case::EssenceUse {
+            let lowered =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+        }
+
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let endgame_creature = match case {
             Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat => {
@@ -813,6 +830,10 @@ fn scenario(case: Case) -> TestResult {
             boss_key = canonical;
         }
         let attack_continuity = if case == Case::Entry {
+            assert!(
+                owner.admit_hazard(admitted).await,
+                "source durable hazard projection"
+            );
             Some(state_continuity::prepare_attack(&owner, admitted).await?)
         } else {
             None
@@ -880,6 +901,17 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|_| "resolve Instance owner")?
             .ok_or("owner actually changed")?;
         let next_actor = admitted.runtime_actor.ok_or("destination actor")?;
+        if case == Case::Entry {
+            assert_eq!(
+                destination
+                    .runtime
+                    .lock()
+                    .await
+                    .hazard_level(next_actor, admitted.game_session_id),
+                Some(1),
+                "the actual Instance session must reload the durable hazard selection"
+            );
+        }
         assert!(
             destination
                 .refresh_pvp_locks(next_actor, admitted.game_session_id)
@@ -974,6 +1006,16 @@ fn scenario(case: Case) -> TestResult {
         match case {
             Case::EndgameReceipts => {
                 endgame_receipts::assert_receipts(&h, &destination, admitted).await?
+            }
+            Case::EssenceUse => {
+                super::srx3_rotten_essence::assert_scoped_use(
+                    &h,
+                    &destination,
+                    admitted,
+                    next_actor,
+                    None,
+                )
+                .await?;
             }
             Case::Difficulty => return Err("normalized difficulty case".into()),
             Case::Entry => {
@@ -1135,12 +1177,49 @@ pub(super) async fn exchange(
     .await
 }
 
+pub(super) async fn exchange_capture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+    expect_switch: bool,
+    capture: &mut Vec<Vec<u8>>,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_command_capture(
+        owner,
+        admitted,
+        boss,
+        expect_switch,
+        wire::COMMAND_TYPE_BOSS_LEVER,
+        capture,
+    )
+    .await
+}
+
 pub(super) async fn exchange_command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     boss: &str,
     expect_switch: bool,
     command_type: u32,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_command_capture(
+        owner,
+        admitted,
+        boss,
+        expect_switch,
+        command_type,
+        &mut Vec::new(),
+    )
+    .await
+}
+
+pub(super) async fn exchange_command_capture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+    expect_switch: bool,
+    command_type: u32,
+    capture: &mut Vec<Vec<u8>>,
 ) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
     let before = *admitted;
     let id = before.continuity.next_command_id;
@@ -1156,6 +1235,7 @@ pub(super) async fn exchange_command(
     let driving = async {
         loop {
             let frame = read_frame(&mut client).await?;
+            capture.push(frame.clone());
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if frames.len() == 16 {
                 frames.pop_front();
@@ -1172,13 +1252,14 @@ pub(super) async fn exchange_command(
         stage = "write boss command";
         write_frame(
             &mut client,
-            &encode_client_command(
+            &encode_client_command_for_session(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id: id,
                     command_type,
                     payload: &body,
                 },
+                before.game_session_id.as_bytes(),
             )
             .map_err(debug)?,
         )
@@ -1189,6 +1270,7 @@ pub(super) async fn exchange_command(
         let mut commits_after_barrier = 0;
         loop {
             let frame = read_frame(&mut client).await?;
+            capture.push(frame.clone());
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if frames.len() == 16 {
                 frames.pop_front();
@@ -1274,4 +1356,42 @@ pub(super) async fn exchange_command(
         )
         .into()
     })
+}
+
+pub(super) async fn capture_current_snapshot(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    capture: &mut Vec<Vec<u8>>,
+) -> TestResult {
+    let before = *admitted;
+    let (mut server, mut client) = tokio::io::duplex(16384);
+    let serving = async {
+        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            let complete = decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit;
+            capture.push(frame);
+            if complete {
+                break;
+            }
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let (ended, result): (_, TestResult) = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        fixture::join_two(serving, driving),
+    )
+    .await?;
+    match ended {
+        ConnectionEnd::AdmittedThenDisconnected(next)
+        | ConnectionEnd::AdmittedThenClosed(next, _) => *admitted = next,
+        _ => return Err("actual source observation stream did not retain admission".into()),
+    }
+    result
 }

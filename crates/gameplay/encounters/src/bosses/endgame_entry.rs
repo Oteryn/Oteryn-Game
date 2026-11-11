@@ -120,7 +120,8 @@ pub struct SourceEntryPolicy {
     pub retry_seconds: u64,
 }
 
-fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
+/// Pinned source lever and retry policy; this grants no room admission.
+pub fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
     // Crystal 201189f quests/rotten_blood_quest/rotten_{ichgahal,vemiath}.lua:22
     // inherit boss_lever.lua:64 -> config.lua.dist:658 (20h). Murcion:6,30 and
     // Chagorz:6,31 explicitly use 20h. Bakragore:7,23 is the accepted 68h path
@@ -180,9 +181,25 @@ pub enum EntryRefusal {
     ContentUnavailable,
 }
 
-/// Delegates to the one shared owner after checking every participant.
-/// The current base supplies a ContentUnavailable owner until W02 is composed (PR #2784,
-/// answer 6547426887). The callback is the integration seam, not another activity owner.
+// Crystal 201189f data/libs/functions/boss_lever.lua:183-218 checks the full roster.
+// The same failed prerequisite must retain its reason for a party member and
+// the initiating player; the activity owner remains the admission authority.
+impl From<EntryRefusal>
+    for oteryn_gameplay_durability::durability::activity_handoff::ActivityRefusal
+{
+    fn from(reason: EntryRefusal) -> Self {
+        match reason {
+            EntryRefusal::InvalidInput => Self::InvalidInput,
+            EntryRefusal::Level => Self::Level,
+            EntryRefusal::QuestAccess | EntryRefusal::BossChain => Self::AuthorityRejected,
+            EntryRefusal::ContentUnavailable => Self::ContentUnavailable,
+        }
+    }
+}
+
+/// Delegates to the shared activity owner after checking every participant.
+/// The callback consumes prerequisite facts; it must still revalidate current
+/// participants and perform the qualified native scope handoff.
 pub async fn enter<T, F, Fut>(
     encounter: Encounter,
     participants: &[EntryFacts],
@@ -198,9 +215,13 @@ where
         return Err(EntryRefusal::InvalidInput);
     }
     for (index, participant) in participants.iter().enumerate() {
-        if participants[..index]
-            .iter()
-            .any(|other| other.character == participant.character)
+        // The full-roster check above follows Crystal boss_lever.lua:183-218.
+        // A zero revision is not a current Character snapshot and must never
+        // be forwarded to the shared admission owner.
+        if participant.character_revision == 0
+            || participants[..index]
+                .iter()
+                .any(|other| other.character == participant.character)
         {
             return Err(EntryRefusal::InvalidInput);
         }

@@ -156,6 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self,
             attempt.supported_capabilities,
         )
+        .await
         .ok_or(AdmissionRefusal::RecoveryCapabilityRequired)?;
         if !selected.contains(wire::CAPABILITY_HOUSE_TRANSFER_V1) {
             return Err(AdmissionRefusal::RecoveryCapabilityRequired);

@@ -31,6 +31,8 @@ pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
 #[derive(Debug, Clone)]
 pub struct World {
     effects: oteryn_client_assets::EffectCatalog,
+    #[cfg(test)]
+    native_resolved_items: Vec<(oteryn_session::ActorPosition, u32)>,
     center: (i32, i32, i16),
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
@@ -56,6 +58,8 @@ impl World {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             effects: Default::default(),
+            #[cfg(test)]
+            native_resolved_items: Vec::new(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
             atlas,
             layers: BTreeMap::new(),
@@ -126,6 +130,8 @@ impl World {
         let atlas = atlas.into_image();
         Ok(Self {
             effects: Default::default(),
+            #[cfg(test)]
+            native_resolved_items: Vec::new(),
             center,
             atlas,
             tiles,
@@ -138,6 +144,15 @@ impl World {
     #[must_use]
     pub const fn atlas(&self) -> &AtlasImage {
         &self.atlas
+    }
+
+    #[cfg(test)]
+    pub(crate) fn native_item_resolved_at(
+        &self,
+        at: oteryn_session::ActorPosition,
+        reference: u32,
+    ) -> bool {
+        self.native_resolved_items.contains(&(at, reference))
     }
 
     /// The map tile at an absolute map position, if it lies in the loaded area.

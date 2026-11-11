@@ -1,11 +1,15 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing.",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sleeping_dragon",
+    "oteryn:npc.a_strange_chalice",
+    "oteryn:npc.a_swan",
+    "oteryn:npc.a_sweaty_cyclops",
     "oteryn:npc.al_dee",
     "oteryn:npc.aldo",
+    "oteryn:npc.amanda",
     "oteryn:npc.ambassador_manop",
     "oteryn:npc.amber",
     "oteryn:npc.anna",
@@ -14,6 +18,7 @@
     "oteryn:npc.avar_tar",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.brewster",
     "oteryn:npc.briasol",
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.cael",
@@ -21,48 +26,80 @@
     "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
     "oteryn:npc.charles",
+    "oteryn:npc.chip",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.dallheim",
     "oteryn:npc.dedoras",
+    "oteryn:npc.dermot",
     "oteryn:npc.dixi",
+    "oteryn:npc.domizian",
     "oteryn:npc.duncan",
+    "oteryn:npc.edala",
+    "oteryn:npc.elane",
     "oteryn:npc.emael",
     "oteryn:npc.enpa_deia_pema",
+    "oteryn:npc.eremo",
     "oteryn:npc.ezebeth",
     "oteryn:npc.frank_the_plank",
     "oteryn:npc.gail",
+    "oteryn:npc.gamon",
     "oteryn:npc.grizzly_adams",
+    "oteryn:npc.guide_jonathan",
+    "oteryn:npc.guide_tiko",
     "oteryn:npc.habdel",
+    "oteryn:npc.henricus",
     "oteryn:npc.hjaern",
+    "oteryn:npc.humphrey",
     "oteryn:npc.hyacinth",
     "oteryn:npc.irmana",
     "oteryn:npc.ishina",
+    "oteryn:npc.isimov",
+    "oteryn:npc.ivalisse",
+    "oteryn:npc.jorge",
+    "oteryn:npc.kasmir",
+    "oteryn:npc.kawill",
     "oteryn:npc.kepar",
+    "oteryn:npc.king_tibianus",
     "oteryn:npc.lai",
     "oteryn:npc.lily",
+    "oteryn:npc.maealil",
+    "oteryn:npc.marina",
+    "oteryn:npc.maris_mistrock",
     "oteryn:npc.mayor_pocaro",
+    "oteryn:npc.minzy",
     "oteryn:npc.miraia",
     "oteryn:npc.morgan",
     "oteryn:npc.muriel",
+    "oteryn:npc.norf",
     "oteryn:npc.norma",
     "oteryn:npc.norman_the_foreman",
     "oteryn:npc.obi",
     "oteryn:npc.palimuth",
+    "oteryn:npc.para_norbert",
     "oteryn:npc.paulie",
     "oteryn:npc.percybald",
+    "oteryn:npc.pydar",
+    "oteryn:npc.queen_eloise",
+    "oteryn:npc.quentin",
+    "oteryn:npc.rafzan",
+    "oteryn:npc.rahkem",
     "oteryn:npc.rashid",
     "oteryn:npc.raymond_striker",
     "oteryn:npc.razan",
+    "oteryn:npc.rhargu",
     "oteryn:npc.santiago",
     "oteryn:npc.scott_the_scout",
     "oteryn:npc.seymour",
     "oteryn:npc.snake_eye",
     "oteryn:npc.spectulus",
     "oteryn:npc.the_first_dragon",
+    "oteryn:npc.the_forgemaster",
     "oteryn:npc.the_oracle",
+    "oteryn:npc.tibra",
     "oteryn:npc.tom",
+    "oteryn:npc.tyrias",
     "oteryn:npc.uzgod",
     "oteryn:npc.vascalir",
     "oteryn:npc.viola",
@@ -70,36 +107,13 @@
     "oteryn:npc.willard",
     "oteryn:npc.willie",
     "oteryn:npc.yalahari",
-    "oteryn:npc.zalamon",
-    "oteryn:npc.zethra",
-    "oteryn:npc.zirella",
-    "oteryn:npc.zlak",
-    "oteryn:npc.a_strange_chalice",
-    "oteryn:npc.a_sweaty_cyclops",
-    "oteryn:npc.amanda",
-    "oteryn:npc.brewster",
-    "oteryn:npc.domizian",
-    "oteryn:npc.elane",
-    "oteryn:npc.gamon",
-    "oteryn:npc.henricus",
-    "oteryn:npc.isimov",
-    "oteryn:npc.ivalisse",
-    "oteryn:npc.jorge",
-    "oteryn:npc.kasmir",
-    "oteryn:npc.king_tibianus",
-    "oteryn:npc.maealil",
-    "oteryn:npc.marina",
-    "oteryn:npc.para_norbert",
-    "oteryn:npc.quentin",
-    "oteryn:npc.rahkem",
-    "oteryn:npc.rhargu",
-    "oteryn:npc.the_forgemaster",
-    "oteryn:npc.tibra",
-    "oteryn:npc.tyrias",
     "oteryn:npc.yana",
     "oteryn:npc.yberius",
-    "oteryn:npc.rafzan",
-    "oteryn:npc.dermot"
+    "oteryn:npc.zalamon",
+    "oteryn:npc.zarifan",
+    "oteryn:npc.zethra",
+    "oteryn:npc.zirella",
+    "oteryn:npc.zlak"
   ],
   "position_conflicts": [],
   "placement_cells": {
@@ -117,6 +131,13 @@
         "z": 7
       }
     ],
+    "oteryn:npc.a_swan": [
+      {
+        "x": 33185,
+        "y": 31732,
+        "z": 7
+      }
+    ],
     "oteryn:npc.dermot": [
       {
         "x": 32165,
@@ -124,6 +145,41 @@
         "z": 7
       }
     ]
+  },
+  "block_solid_contacts": [
+    "oteryn:npc.zarifan"
+  ],
+  "native_contacts": [
+    "oteryn:npc.chip",
+    "oteryn:npc.minzy"
+  ],
+  "placement_adjustments": {
+    "oteryn:npc.edala": {
+      "source": {
+        "x": 32697,
+        "y": 31718,
+        "z": 2
+      },
+      "target": {
+        "x": 32698,
+        "y": 31718,
+        "z": 2
+      },
+      "reason": "M01c collector route: original source cell contains BlockSolid item 3667; chosen adjacent native ground retains the donor position as provenance."
+    },
+    "oteryn:npc.humphrey": {
+      "source": {
+        "x": 32358,
+        "y": 31687,
+        "z": 6
+      },
+      "target": {
+        "x": 32358,
+        "y": 31688,
+        "z": 6
+      },
+      "reason": "M01c collector route: original source cell contains BlockSolid item 1855; chosen adjacent native ground retains the donor position as provenance."
+    }
   },
   "authored_placements": {
     "oteryn:npc.lai": {

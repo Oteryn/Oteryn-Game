@@ -134,7 +134,8 @@
       ],
       "exclude_keywords": [
         "marlin"
-      ]
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-npc/marlin_trophy_quest/pemaret/missing",

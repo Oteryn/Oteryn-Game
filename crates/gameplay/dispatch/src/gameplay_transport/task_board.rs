@@ -19,6 +19,8 @@ use oteryn_protocol_oteryn::task_board as wire;
 pub(super) mod bounty_talisman;
 #[path = "task_board_projection.rs"]
 mod projection;
+#[path = "task_board_quest_entries.rs"]
+mod quest_entries;
 #[path = "task_board/soulseals.rs"]
 pub(crate) mod soulseals;
 
@@ -229,6 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let programme_acceptance = matches!(action, TaskBoardAction::StartWeekly { .. });
         let request = TaskBoardCommand {
             fee_change,
             cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, command)),
@@ -247,6 +250,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         self.refresh_quest_session(admitted.game_session_id, false)
             .await;
+        if programme_acceptance
+            && result.refusal.is_none()
+            && let Some(actor) = admitted.runtime_actor
+        {
+            quest_entries::after_acceptance(
+                self,
+                actor,
+                super::connection::UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: id,
+                    item_fence: Some(item_fence),
+                },
+            )
+            .await;
+        }
         // Encode the immutable receipt view, not a new read that could change the replay response.
         let encoded = if legacy {
             projection::legacy(&result).and_then(|reply| wire::encode_task_board_reply(&reply).ok())

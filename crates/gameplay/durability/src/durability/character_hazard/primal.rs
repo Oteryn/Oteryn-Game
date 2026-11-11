@@ -250,3 +250,109 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+    type TestResult<T = ()> = std::result::Result<T, String>;
+    use crate::domain::CharacterId;
+    use crate::foundation::{
+        ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, WorldId,
+    };
+    fn id(n: u8) -> [u8; 16] {
+        [n, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n]
+    }
+    fn fence(instance: bool) -> TestResult<CurrentCharacterGameplayFence> {
+        Ok(CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(1)).map_err(|error| format!("{error:?}"))?,
+            game_session_id: GameSessionId::decode(&id(2)).map_err(|error| format!("{error:?}"))?,
+            connection_generation: ConnectionGeneration::new(1)
+                .map_err(|error| format!("{error:?}"))?,
+            character_lease_generation: 1,
+            runtime_scope: if instance {
+                RuntimeScopeRefV1::Instance {
+                    world_id: WorldId::decode(&id(3)).map_err(|error| format!("{error:?}"))?,
+                    instance_id: id(4),
+                }
+            } else {
+                RuntimeScopeRefV1::Channel {
+                    world_id: WorldId::decode(&id(3)).map_err(|error| format!("{error:?}"))?,
+                    channel_id: ChannelId::decode(&id(4)).map_err(|error| format!("{error:?}"))?,
+                }
+            },
+            scope_ownership_generation: ScopeOwnershipGeneration::new(7)
+                .map_err(|error| format!("{error:?}"))?,
+            expected_character_revision: CharacterRevision::new(1)
+                .map_err(|error| format!("{error:?}"))?,
+        })
+    }
+    #[test]
+    fn primal_death_scope_preserves_channel_and_accepts_only_exact_tagged_instance() -> TestResult {
+        let channel = fence(false)?;
+        let instance = fence(true)?;
+        let mut old = Vec::new();
+        old.extend(id(3));
+        old.extend(id(4));
+        old.extend(7u64.to_be_bytes());
+        old.extend(1u32.to_be_bytes());
+        old.extend(1u64.to_be_bytes());
+        let mut tagged = vec![2];
+        tagged.extend(&old);
+        let old: [u8; 52] = old
+            .try_into()
+            .map_err(|error| format!("legacy Channel death: {error:?}"))?;
+        let tagged: [u8; 53] = tagged
+            .try_into()
+            .map_err(|error| format!("tagged Instance death: {error:?}"))?;
+        assert!(death_matches_scope(
+            &old,
+            channel.runtime_scope,
+            channel.scope_ownership_generation.get()
+        ));
+        assert!(!death_matches_scope(
+            &old,
+            instance.runtime_scope,
+            instance.scope_ownership_generation.get()
+        ));
+        assert!(death_matches_scope(
+            &tagged,
+            instance.runtime_scope,
+            instance.scope_ownership_generation.get()
+        ));
+        assert!(!death_matches_scope(
+            &tagged,
+            channel.runtime_scope,
+            channel.scope_ownership_generation.get()
+        ));
+        for byte in [0, 1, 17, 33] {
+            let mut changed = tagged;
+            changed[byte] ^= 1;
+            assert!(
+                !death_matches_scope(
+                    &changed,
+                    instance.runtime_scope,
+                    instance.scope_ownership_generation.get()
+                ),
+                "wrong exact native death field at{byte}"
+            );
+        }
+        for span in [41..45, 45..53] {
+            let mut zero = tagged;
+            zero[span].fill(0);
+            assert!(!death_matches_scope(
+                &zero,
+                instance.runtime_scope,
+                instance.scope_ownership_generation.get()
+            ));
+        }
+        for n in [0, 1, 51, 52] {
+            assert!(!death_matches_scope(
+                &tagged[..n],
+                instance.runtime_scope,
+                instance.scope_ownership_generation.get()
+            ));
+        }
+        Ok(())
+    }
+}

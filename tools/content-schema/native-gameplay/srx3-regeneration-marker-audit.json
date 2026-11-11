@@ -1,0 +1,795 @@
+{
+  "consumers": [
+    {
+      "git_blob": "e0d446bb3bcbd237fd297b8305f4fdfe49677ccf",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif hp < 12.5 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 7000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua"
+        }
+      ],
+      "sha256": "ab715b9d27d98511d47707103860383766b579d71de567a6455aa0deabb3a12c"
+    },
+    {
+      "git_blob": "3daadea9c7a490612031b0d75d4be2f060ae854f",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\t\tif not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/creaturescripts/monster/hirintror_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/creaturescripts/monster/hirintror_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/creaturescripts/monster/hirintror_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/hirintror_heal.lua"
+        }
+      ],
+      "sha256": "15316485b3e6cfb4b6fefbaaaa9900a24ff58f22778bf81cdba9f2a6b5eaf5bd"
+    },
+    {
+      "git_blob": "645a06216a4c2af897169cb259daa5da517844f6",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 26,
+          "text": "\tif hp <= 50 and #summons < 4 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) and Game.getStorageValue(112416) < 2 then"
+        },
+        {
+          "line": 31,
+          "text": "\telseif hp <= 3 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 5000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/creaturescripts/monster/omrafir_explode.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/creaturescripts/monster/omrafir_explode.lua"
+        },
+        {
+          "path": "data-global/scripts/creaturescripts/monster/omrafir_explode.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/omrafir_explode.lua"
+        }
+      ],
+      "sha256": "bad7511af294bebc5a9d94345252d0ba03784172a73463d772be6350a467cbcf"
+    },
+    {
+      "git_blob": "68ccd47b0972986882c08ad0b5b3338cb6007363",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\t\tif not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/creaturescripts/monster/white_pale_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/creaturescripts/monster/white_pale_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/creaturescripts/monster/white_pale_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/white_pale_heal.lua"
+        }
+      ],
+      "sha256": "c180115e58f68d117195b689d98a301931a382693589e105b178d035712d329c"
+    },
+    {
+      "git_blob": "4dca7b3dcca75f7c88b0346a96b9035691b786ad",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.2 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/furyosa_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/furyosa_heal.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/furyosa_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/furyosa_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/furyosa_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/furyosa_heal.lua"
+        }
+      ],
+      "sha256": "418cd3e12ebab67d393a168b20993e1694c13112f2b40a0075bf4058d44535c2"
+    },
+    {
+      "git_blob": "64b5c25872721ac9af27e11ce9172e32098bbd8f",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 22,
+          "text": "\tif not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 10000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/glooth_bomb_walkthrough.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/glooth_bomb_walkthrough.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/glooth_bomb_walkthrough.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/glooth_bomb_walkthrough.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/glooth_bomb_walkthrough.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/glooth_bomb_walkthrough.lua"
+        }
+      ],
+      "sha256": "47230bef69df09e410747b6f60ddd939aa17c197152397f60f88d92884d257da"
+    },
+    {
+      "git_blob": "ff99f1a43d2da5c2662134eec17f70dd72e2ea13",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.1 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 30000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/glooth_fairy_healing.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/glooth_fairy_healing.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/glooth_fairy_healing.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/glooth_fairy_healing.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/glooth_fairy_healing.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/glooth_fairy_healing.lua"
+        }
+      ],
+      "sha256": "7781f1c8ea2d0879fd308adf0a5b7b324b2eed1b44c64f193c8564aa38a8aa81"
+    },
+    {
+      "git_blob": "132743fe284352ea4e4b93d581548d4fc50afc4a",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.2 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/hirintror_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/hirintror_heal.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/hirintror_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/hirintror_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/hirintror_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/hirintror_heal.lua"
+        }
+      ],
+      "sha256": "e610611c7cb1c9ee4bf7ca35223be888d59ccce315e466bb920ea8e6dbf5bbf1"
+    },
+    {
+      "git_blob": "c0eda49bb979e614034b6a19446fd7a3ddd4705a",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.07 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 6000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/lisa_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/lisa_heal.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/lisa_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/lisa_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/lisa_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/lisa_heal.lua"
+        }
+      ],
+      "sha256": "69cc197d06ae863a01d449ea0692ec861f94bb09f686464e03db382ca7fa77ba"
+    },
+    {
+      "git_blob": "f7d2f6a1db31e8548133f28c14c0de7bbbd3bf5c",
+      "lines": [
+        {
+          "line": 9,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 83,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.1 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 8,
+        "duration_ms": 600000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 9
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/mawhawk_ue.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/mawhawk_ue.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/mawhawk_ue.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/mawhawk_ue.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/mawhawk_ue.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/mawhawk_ue.lua"
+        }
+      ],
+      "sha256": "ff2da26361bde1ca74182d45c6b28984c82844cc51ef0dda838404d14aaf1eed"
+    },
+    {
+      "git_blob": "f34de0a9106ba3d9725d0a8fdff1d4c8f27bc610",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 22,
+          "text": "\tif not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 10000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua"
+        }
+      ],
+      "sha256": "c6c6a298ee87fff8b3836861d91b3d6eee4963b2c98c620d2a4efb7c3c9dedeb"
+    },
+    {
+      "git_blob": "c6401c746e69459b20b36cfba3520fae8648acc1",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 106,
+          "text": "\tif not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 5000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/omrafir_beam.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/omrafir_beam.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/omrafir_beam.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/omrafir_beam.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/omrafir_beam.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/omrafir_beam.lua"
+        }
+      ],
+      "sha256": "f87b630bdca5cf7ffc6167bc9301833e955f39586c7ff151322e0ae011e3d4ab"
+    },
+    {
+      "git_blob": "d215b3ea0dc0bfea00424e2ca339d0824b61c6b6",
+      "lines": [
+        {
+          "line": 3,
+          "text": "condition2:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 30,
+          "text": "\tif not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 2,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 3
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/terofar_curse.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/terofar_curse.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/terofar_curse.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/terofar_curse.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/terofar_curse.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/terofar_curse.lua"
+        }
+      ],
+      "sha256": "cebb3aa51d5fb1935263d0611a76e6a0ab82fa4a1d0b8ba75c1ffd29740bdc19"
+    },
+    {
+      "git_blob": "4661ec8671e0d22dee8392a14dd9c78caee57718",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.2 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/tyrn_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/tyrn_heal.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/tyrn_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/tyrn_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/tyrn_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/tyrn_heal.lua"
+        }
+      ],
+      "sha256": "d7dc7e8a032c9e4471ace81b34fc799e0d86fdda88463b54086e30ca8b991755"
+    },
+    {
+      "git_blob": "89bfa614653913cca728fba4bc9b986d7744c6a8",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.2 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/white_pale_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/white_pale_heal.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/white_pale_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/white_pale_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/white_pale_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/white_pale_heal.lua"
+        }
+      ],
+      "sha256": "1f61a1ec99bcdab18d2f15e397cfb567e24abe77f6177e54ac1caa331d114ee0"
+    },
+    {
+      "git_blob": "140378e1c326b257823cd5e5b7efa080e208379e",
+      "lines": [
+        {
+          "line": 2,
+          "text": "condition:setParameter(CONDITION_PARAM_SUBID, 88888)"
+        },
+        {
+          "line": 10,
+          "text": "\tif creature:getHealth() < creature:getMaxHealth() * 0.2 and not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then"
+        }
+      ],
+      "marker": {
+        "declaration_line": 1,
+        "duration_ms": 900000,
+        "health_gain": 0,
+        "sub_id": 88888,
+        "sub_id_line": 2
+      },
+      "paths": [
+        {
+          "path": "data-otservbr-global/scripts/spells/monster/zushuka_heal.lua",
+          "repo": "canary",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/spells/monster/zushuka_heal.lua"
+        },
+        {
+          "path": "data-crystal/scripts/spells/monster/zushuka_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/scripts/spells/monster/zushuka_heal.lua"
+        },
+        {
+          "path": "data-global/scripts/spells/monster/zushuka_heal.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/spells/monster/zushuka_heal.lua"
+        }
+      ],
+      "sha256": "93fb8fada1bcd0e0026158f32c9cefeabd9a778e0657327d2e2d9c8954f96ccd"
+    }
+  ],
+  "literal_monster_vector_references": {
+    "furyosa heal": [],
+    "glooth bomb walkthrough": [],
+    "glooth fairy healing": [
+      {
+        "git_blob": "4085e5eab867b7963a079aa7895058a712e4d68a",
+        "line": 107,
+        "path": "data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen.lua",
+        "repo": "canary",
+        "sha256": "cffc4fa5c55cab537dfa01be82fc32d32092d49bbb6f0da3f6e50d1e47ab4c83",
+        "text": "{ name = \"glooth fairy healing\", interval = 1000, chance = 100, target = false },"
+      },
+      {
+        "git_blob": "a784eb8cfa0d5b0df53330bbeec009f91735be06",
+        "line": 105,
+        "path": "data-crystal/monster/quests/hero_of_rathleton/professor_maxxen.lua",
+        "repo": "crystal",
+        "sha256": "e1fe4296930ec14c3f55295a33a01ee99b32b7514b4673c35b7f763cc8b4b986",
+        "text": "{ name = \"glooth fairy healing\", interval = 1000, chance = 100, target = false },"
+      },
+      {
+        "git_blob": "4085e5eab867b7963a079aa7895058a712e4d68a",
+        "line": 107,
+        "path": "data-global/monster/quests/hero_of_rathleton/professor_maxxen.lua",
+        "repo": "crystal",
+        "sha256": "cffc4fa5c55cab537dfa01be82fc32d32092d49bbb6f0da3f6e50d1e47ab4c83",
+        "text": "{ name = \"glooth fairy healing\", interval = 1000, chance = 100, target = false },"
+      }
+    ],
+    "hirintror heal": [],
+    "lisa heal": [
+      {
+        "git_blob": "2890e8d692a3154c27e7d3f8af18a57773510463",
+        "line": 110,
+        "path": "data-otservbr-global/monster/bosses/lisa.lua",
+        "repo": "canary",
+        "sha256": "751074257822534f2a338d5dda6620b4840fd0dbdc2bf48d343ab08dd71a3bce",
+        "text": "{ name = \"lisa heal\", interval = 1000, chance = 100, target = false },"
+      },
+      {
+        "git_blob": "a516aba2e43331f15dadaa7f8413476f8a29dca4",
+        "line": 110,
+        "path": "data-crystal/monster/bosses/lisa.lua",
+        "repo": "crystal",
+        "sha256": "a1228476c8235b9b18468b699f8a24e2c50577633682b6a43ae9d08d1da3be33",
+        "text": "{ name = \"lisa heal\", interval = 1000, chance = 100, target = false },"
+      },
+      {
+        "git_blob": "c31d1095eb91e9050a560d97fb7e1825e0b31536",
+        "line": 110,
+        "path": "data-global/monster/bosses/lisa.lua",
+        "repo": "crystal",
+        "sha256": "c63cc5b8fe1e96b39ed7801782628c257531e3a721b745aec9276e5c4d864b66",
+        "text": "{ name = \"lisa heal\", interval = 1000, chance = 100, target = false },"
+      }
+    ],
+    "mawhawk ue": [],
+    "minotaur wallbreaker walkthrough": [],
+    "omrafir beam": [
+      {
+        "git_blob": "03254912b7138cb6ca832a0960d27377cf720fe6",
+        "line": 114,
+        "path": "data-otservbr-global/monster/quests/roshamuul/omrafir.lua",
+        "repo": "canary",
+        "sha256": "d5d600fab74a3e4f56277552b1538f03a46bfcb067443257e4d7120e541fb798",
+        "text": "{ name = \"omrafir beam\", interval = 2000, chance = 15, minDamage = -7000, maxDamage = -10000, target = false },"
+      },
+      {
+        "git_blob": "03254912b7138cb6ca832a0960d27377cf720fe6",
+        "line": 114,
+        "path": "data-crystal/monster/quests/roshamuul/omrafir.lua",
+        "repo": "crystal",
+        "sha256": "d5d600fab74a3e4f56277552b1538f03a46bfcb067443257e4d7120e541fb798",
+        "text": "{ name = \"omrafir beam\", interval = 2000, chance = 15, minDamage = -7000, maxDamage = -10000, target = false },"
+      },
+      {
+        "git_blob": "03254912b7138cb6ca832a0960d27377cf720fe6",
+        "line": 114,
+        "path": "data-global/monster/quests/roshamuul/omrafir.lua",
+        "repo": "crystal",
+        "sha256": "d5d600fab74a3e4f56277552b1538f03a46bfcb067443257e4d7120e541fb798",
+        "text": "{ name = \"omrafir beam\", interval = 2000, chance = 15, minDamage = -7000, maxDamage = -10000, target = false },"
+      }
+    ],
+    "terofar curse": [],
+    "tyrn heal": [
+      {
+        "git_blob": "158a4e93833a0cc1628d15c4e0a2b614f9fadc0e",
+        "line": 111,
+        "path": "data-otservbr-global/monster/raids/tyrn.lua",
+        "repo": "canary",
+        "sha256": "533b984f023eabc92cc803a035cf94992873666960962b8d7b1cc601967bc9e8",
+        "text": "{ name = \"tyrn heal\", interval = 1000, chance = 100, target = false },"
+      },
+      {
+        "git_blob": "158a4e93833a0cc1628d15c4e0a2b614f9fadc0e",
+        "line": 111,
+        "path": "data-crystal/monster/raids/tyrn.lua",
+        "repo": "crystal",
+        "sha256": "533b984f023eabc92cc803a035cf94992873666960962b8d7b1cc601967bc9e8",
+        "text": "{ name = \"tyrn heal\", interval = 1000, chance = 100, target = false },"
+      },
+      {
+        "git_blob": "158a4e93833a0cc1628d15c4e0a2b614f9fadc0e",
+        "line": 111,
+        "path": "data-global/monster/raids/tyrn.lua",
+        "repo": "crystal",
+        "sha256": "533b984f023eabc92cc803a035cf94992873666960962b8d7b1cc601967bc9e8",
+        "text": "{ name = \"tyrn heal\", interval = 1000, chance = 100, target = false },"
+      }
+    ],
+    "white pale heal": [],
+    "zushuka heal": []
+  },
+  "pins": {
+    "canary": [
+      "opentibiabr/canary",
+      "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    ],
+    "crystal": [
+      "zimbadev/crystalserver",
+      "201189f871d23597b82caf88fd611454a2ddefb8"
+    ]
+  },
+  "schema": "OTERYN_SOURCE_REGENERATION88888_AUDIT/v2",
+  "scopes": [
+    {
+      "kind": "Lua",
+      "paths": 13566,
+      "unique_blobs": 8626,
+      "verified_blob_closure_sha256": "21f7abef556a48744afb23105ac3c85dae4d68025fbccd34fcecf165807da0d5"
+    },
+    {
+      "kind": "C++",
+      "paths": 933,
+      "unique_blobs": 929,
+      "verified_blob_closure_sha256": "a98d328c776c05c15b5298bde9015d8a51f6f634c423794d3458141f5486523c"
+    }
+  ],
+  "unrelated_uses": [
+    {
+      "git_blob": "5aa267092b90f054138e2043fc6db1802a424356",
+      "lines": [
+        {
+          "line": 541,
+          "text": "\t\tmonster:setStorageValue(88888, essenceCount)"
+        },
+        {
+          "line": 620,
+          "text": "\t\tlocal essenceCount = monster:getStorageValue(88888) or 0"
+        }
+      ],
+      "paths": [
+        {
+          "path": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/bakragore.lua"
+        }
+      ],
+      "reason": "monster storage namespace, essence count",
+      "sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178"
+    },
+    {
+      "git_blob": "15d5b8baf0ac482b566edd87a3f1674adecddb2c",
+      "lines": [
+        {
+          "line": 9,
+          "text": "\tlocal damage = math.random(66666, 88888)"
+        }
+      ],
+      "paths": [
+        {
+          "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_rum_barrel.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_rum_barrel.lua"
+        }
+      ],
+      "reason": "damage upper bound, not a condition ID",
+      "sha256": "fb66ec0509c037070661eb1523b20a865472ca77c473851ef04b958a1a73622a"
+    },
+    {
+      "git_blob": "0dc01ed19e5859e5580134b61254d120940a479b",
+      "lines": [
+        {
+          "line": 21,
+          "text": "\tlocal essenceCount = creature:getStorageValue(88888) or 0"
+        }
+      ],
+      "paths": [
+        {
+          "path": "data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua",
+          "repo": "crystal",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua"
+        }
+      ],
+      "reason": "monster storage namespace, essence count",
+      "sha256": "21ba33eb58d1b5a4a88ca0c950d49a8369b34f3a11fe39a7e549a8b3ab154b46"
+    }
+  ]
+}

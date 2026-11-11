@@ -14,6 +14,91 @@ spec.loader.exec_module(full)
 FAMILIARS = Path('/workspace/spells-r21-implemented/familiar-profiles')
 
 
+class CorpseSourceCohortTests(unittest.TestCase):
+    capture_path = full.ROOT / 'tools/content-schema/native-gameplay/boss-corpse-item-profiles.json'
+    pin_path = full.ROOT / 'tools/content-schema/native-gameplay/boss-corpse-item-profiles-pin.json'
+
+    @classmethod
+    def setUpClass(cls):
+        cls.capture = json.loads(cls.capture_path.read_bytes())
+
+    def test_current_complete_capture_qualifies_without_changing_source(self):
+        checked = full.checked_boss_corpse_capture()
+        self.assertEqual(checked, self.capture)
+        self.assertEqual(len(checked['roots']), 55)
+        self.assertEqual(len(checked['records']), 199)
+        terminal = [row for row in checked['records']
+                    if row['production_binding']['external_id'] == '43666']
+        self.assertEqual(len(terminal), 1)
+        self.assertEqual(terminal[0]['production_definition'], {
+            'family': 'Item', 'production_key': 'oteryn:item.tibia.i43666',
+            'revision_ref': 'definition-r1'})
+
+    def test_actual_elder_reference_retains_its_complete_source_profile_gate(self):
+        terminal = next(row for row in self.capture['records']
+                        if row['production_binding']['external_id'] == '43666')
+        catalog = {'bundles': [terminal['authoring']['item']]}
+        closure = full.qualify_item_closure(catalog, {'records': [terminal]})
+        self.assertEqual(closure['item_ref_count'], 1)
+        self.assertEqual(closure['exact_used_bindings'], [{
+            'authoring': terminal['authoring']['item'],
+            'binding': terminal['production_binding'],
+            'production_definition': terminal['production_definition']}])
+        changed = copy.deepcopy(terminal)
+        changed['semantics']['container'] = {
+            'state': 'KNOWN', 'value': {'capacity': {'state': 'KNOWN', 'value': 8}}}
+        with self.assertRaisesRegex(ValueError, 'Boss reward Item full source profile'):
+            full.qualify_item_closure(catalog, {'records': [changed]})
+
+    def reject_capture(self, capture, *, matching_pin=True):
+        raw = full.encoded(capture)
+        pin = full.encoded({'path': str(self.capture_path.relative_to(full.ROOT)),
+                            'sha256': full.digest(raw) if matching_pin else '0' * 64})
+        read_bytes = Path.read_bytes
+
+        def changed(path):
+            if path == self.capture_path:
+                return raw
+            if path == self.pin_path:
+                return pin
+            return read_bytes(path)
+
+        with patch.object(Path, 'read_bytes', changed):
+            with self.assertRaisesRegex(ValueError, 'Elder terminal source capture authority mismatch'):
+                full.checked_boss_corpse_capture()
+
+    def test_changed_capture_pin_is_rejected(self):
+        self.reject_capture(self.capture, matching_pin=False)
+
+    def test_matching_pin_cannot_substitute_the_complete_source_cohort(self):
+        for mutation in ('missing_record', 'duplicate_record', 'wrong_root',
+                         'duplicate_chain', 'missing_descendant', 'cycle',
+                         'foreign_record', 'source_digest', 'source_revision', 'schema'):
+            with self.subTest(mutation=mutation):
+                changed = copy.deepcopy(self.capture)
+                if mutation == 'missing_record':
+                    changed['records'].pop()
+                elif mutation == 'duplicate_record':
+                    changed['records'][-1] = copy.deepcopy(changed['records'][0])
+                elif mutation == 'wrong_root':
+                    changed['roots'][0] = 112
+                elif mutation == 'duplicate_chain':
+                    changed['decay_chains'][-1] = copy.deepcopy(changed['decay_chains'][0])
+                elif mutation == 'missing_descendant':
+                    changed['decay_chains'][0].pop()
+                elif mutation == 'cycle':
+                    changed['decay_chains'][0].append(changed['decay_chains'][0][0])
+                elif mutation == 'foreign_record':
+                    changed['records'][0]['production_binding']['external_id'] = '999999'
+                elif mutation == 'source_digest':
+                    changed['sources'][0]['sha256'] = '0' * 64
+                elif mutation == 'source_revision':
+                    changed['source_revision'] = '0' * 40
+                elif mutation == 'schema':
+                    changed['schema'] = 'UNQUALIFIED'
+                self.reject_capture(changed)
+
+
 @unittest.skipUnless(FAMILIARS.exists(), 'requires the explicit local Familiar source export')
 class SourceCompositionTests(unittest.TestCase):
     def test_actual_source_identity_and_custom_operation_preserved(self):

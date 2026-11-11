@@ -11,6 +11,7 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+mod bindings;
 pub mod callbacks;
 pub mod counters;
 
@@ -145,45 +146,8 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
 /// Authored W6 preconditions, consumed by the existing raid scheduler before any draw/write.
 /// This adds no firing owner and does not replace a raid's own schedule or eligibility.
 pub fn raid_requirements() -> Result<std::collections::BTreeMap<String, String>, DurabilityError> {
-    let catalogue: serde_json::Value =
-        serde_json::from_str(CATALOGUE_JSON).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let entries = catalogue["entries"]
-        .as_array()
-        .filter(|entries| entries.len() <= 256)
-        .ok_or(DurabilityError::InvalidStoredState)?;
-    let mut requirements = std::collections::BTreeMap::new();
-    for entry in entries {
-        let Some(binding) = entry
-            .get("binding")
-            .filter(|binding| binding["kind"] == "raid")
-        else {
-            continue;
-        };
-        let key = entry["key"]
-            .as_str()
-            .filter(|key| !key.is_empty() && key.len() <= 64)
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let raid = binding["raid_key"]
-            .as_str()
-            .filter(|raid| !raid.is_empty() && raid.len() <= 512)
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let requirement = if let Some(stage) = binding.get("stage") {
-            let stage = stage
-                .as_u64()
-                .filter(|stage| (1..=5).contains(stage))
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            if counters::CounterKind::from_key(key).is_none() {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            format!("{key}@{stage}")
-        } else {
-            key.to_owned()
-        };
-        if requirements.insert(raid.to_owned(), requirement).is_some() {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-    }
-    Ok(requirements)
+    oteryn_gameplay_world_change::bindings::raid_requirements()
+        .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 /// The UTC (month, day) of `unix_ms` (days-from-civil inverted).
@@ -214,14 +178,15 @@ pub(super) async fn record(
     world: WorldId,
     epoch: u64,
 ) -> Result<DailyWorldChanges, DurabilityError> {
-    let existing: Option<serde_json::Value> = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
+    let existing: Option<(serde_json::Value, bool)> = sqlx::query_as("SELECT decision,native_binding_required FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await?;
-    if let Some(existing) = existing {
+    if let Some((existing, required)) = existing {
         let mut day: DailyWorldChanges =
             serde_json::from_value(existing).map_err(|_| DurabilityError::InvalidStoredState)?;
         if day.reset_epoch != epoch {
             return Err(DurabilityError::InvalidStoredState);
         }
+        bindings::verify(tx, world, &day, required).await?;
         counters::project(tx, world, &mut day).await?;
         return Ok(day);
     }
@@ -239,13 +204,14 @@ pub(super) async fn record(
     counters::project(tx, world, &mut selected).await?;
     let decision =
         serde_json::to_value(selected).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT DO NOTHING")
+    sqlx::query("INSERT INTO game_world_change_days(world_id,reset_epoch,decision,native_binding_required) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,true) ON CONFLICT DO NOTHING")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(&decision).execute(&mut **tx).await?;
     let stored: serde_json::Value = sqlx::query_scalar("SELECT decision FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     if stored != decision {
         return Err(DurabilityError::InvalidStoredState);
     }
+    bindings::capture(tx, world, &selected).await?;
     Ok(selected)
 }
 

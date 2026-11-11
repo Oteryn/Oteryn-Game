@@ -1182,3 +1182,28 @@ pub(super) async fn read_chat_membership_in_transaction(
     }
     Ok(party)
 }
+
+/// Same strongly ordered membership resolver, using pre-await visible observations.
+pub async fn read_world_party_views_for_observations_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    observations: &[std::sync::Arc<
+        super::admission_journal::party_target_binding::CurrentVisibleActorObservation,
+    >],
+) -> Result<Vec<PartySnapshot>> {
+    super::spell_item_transaction::check_scope_transaction(tx, scope).await?;
+    let mut characters = std::collections::BTreeSet::new();
+    for observed in observations {
+        let character=super::admission_journal::party_target_binding::current_visible_character_for_source_read_in_transaction(tx,root,scope,observed).await?.ok_or(reject("party source observation"))?;
+        if !characters.insert(character) {
+            return Err(reject("party duplicate source Character"));
+        }
+    }
+    let world = scope.world_bytes();
+    sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
+        .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
+        .execute(&mut **tx)
+        .await?;
+    observe_world_party_batch(tx, world, characters.into_iter().collect()).await
+}

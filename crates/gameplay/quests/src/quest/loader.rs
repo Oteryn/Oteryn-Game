@@ -239,6 +239,12 @@ fn admit_native_bindings(
             }
         }
     }
+    lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 
@@ -251,6 +257,12 @@ pub(super) fn lower_embedded_quest_state(
         super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::kill_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::lions_rock::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::world_change_journals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
@@ -278,11 +290,15 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::rotten_blood::area_icons::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::soul_war::source_items::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
-        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+        super::source_deaths::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
@@ -297,6 +313,8 @@ pub(super) fn lower_embedded_quest_state(
     for callback in super::fire_feathered_native::callbacks()
         .into_iter()
         .chain(super::shared_world_progress::callbacks())
+        .chain(super::last_creep_native::callbacks().map_err(QuestLoadError::Json)?)
+        .chain(super::world_callbacks::load().map_err(QuestLoadError::Json)?)
     {
         for storage in callback.storage {
             lowered
@@ -542,6 +560,7 @@ mod tests {
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
+            include_str!("../../../../../content/quests/world-callbacks/feaster-phase-routes.json"),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();

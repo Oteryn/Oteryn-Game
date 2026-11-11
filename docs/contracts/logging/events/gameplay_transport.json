@@ -11,6 +11,16 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "bloodjaw_target_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "current_owner"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
+    },
+    {
       "event": "command_guard_failed",
       "level": "info",
       "span": false,
@@ -89,6 +99,16 @@
       "fields": [],
       "codes": [],
       "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "rotten_wave_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "current_owner"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
       "event": "serve_command_end",

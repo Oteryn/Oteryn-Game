@@ -17,6 +17,8 @@ fn explicit_carried_exchange_keeps_exact_selection_and_bounded_costs() -> Result
     exchange.outfit = None;
     exchange.outfits.clear();
     exchange.give = Some(ItemReward {
+        text: None,
+        additional: Vec::new(),
         premium: false,
         item: "oteryn:item.tibia.i3031".into(),
         count: 5,

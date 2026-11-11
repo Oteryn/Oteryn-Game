@@ -310,6 +310,7 @@ fn current_scope_issuer_failure_stays_authority_and_native_source_error_stays_so
 /// PostgreSQL cases use real native source MINT/TRANSFER writers and current
 /// Root/Node/recovery/scope predicates. Prospective insertions remain DATA.
 mod postgres {
+    include!("m02_ground_stack_postgres_tests.rs");
     mod field_capabilities {
         include!("field_capability_port_postgres_tests.rs");
     }
@@ -862,6 +863,8 @@ mod postgres {
                     &h.node,
                     fence,
                     MapItemMintRequest {
+                        flat_crate: None,
+                        key_number: None,
                         command: CommandRef::new(
                             GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?,
                             CommandId::new(900).map_err(debug)?,
@@ -1251,6 +1254,8 @@ mod postgres {
             let fence = harness::item_fence()?;
             let request = |number, ordinal| -> TestResult<MapItemMintRequest> {
                 Ok(MapItemMintRequest {
+                    flat_crate: None,
+                    key_number: None,
                     command: command(number)?,
                     base_bundle_digest: digest,
                     placement_key: oteryn_world_bundle::bundle::placement_key(-7, 120, 5, ordinal)
@@ -1430,6 +1435,148 @@ mod postgres {
             reloaded.rollback().await?;
             Ok(())
         })
+    }
+
+    #[test]
+    fn m49_arrival_corpse_postgres_requires_exact_arrived_identity_and_revision() -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), String> {
+                let started = std::time::Instant::now();
+                run("m49_arrival_corpse", async |h| {
+                    use crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY;
+                    use crate::durability::spell_item_transaction::{
+                        prepare_arrival_corpse_in_transaction,
+                        prepare_moved_arrival_corpse_in_transaction,
+                    };
+                    let mut candidate =
+                        frozen_mint(h, 100, &target(), CORPSE_MATERIALIZATION_PURPOSE_KEY).await?;
+                    let seal = h.recovery.seal_current().map_err(debug)?;
+                    let recovery = h
+                        .root
+                        .open_character_authority(&seal)
+                        .await
+                        .map_err(debug)?;
+                    let permit = candidate.fresh_death_lane_permit().await;
+                    let ItemMintOutcome::Committed(corpse) = h
+                        .root
+                        .commit_corpse_mint(
+                            &permit,
+                            &recovery,
+                            &h.node,
+                            &mut candidate,
+                            id(harness::CHARACTER),
+                        )
+                        .await
+                        .map_err(debug)?
+                    else {
+                        return Err("real corpse mint".into());
+                    };
+                    drop(permit);
+                    let before = mint_footprint(h).await?;
+                    let mut tx = h.pool.begin().await?;
+                    let (_permit, authority) = player_authority(&mut tx, h, command(4900)?).await?;
+                    let mut qualified = spell_definition();
+                    qualified.definition = definition();
+                    qualified.stack_maximum = 1;
+                    qualified.inventory_destination = false;
+                    qualified.container_capacity = Some(15);
+                    let reservation = prepare_arrival_corpse_in_transaction(
+                        &mut tx,
+                        &authority,
+                        &target(),
+                        &qualified,
+                        (corpse.item_instance_id, 1),
+                    )
+                    .await
+                    .map_err(debug)?;
+                    assert_eq!(reservation.item_instance_id, corpse.item_instance_id);
+                    assert_eq!(reservation.state_revision, 1);
+                    assert!(reservation.contents.is_empty());
+                    let mut moved = crate::durability::item_loop_move::LoopMoveReceipt {
+                        transaction_id: id(198),
+                        event_id: id(197),
+                        operation: 4,
+                        replayed: false,
+                        floor_effect: None,
+                    };
+                    // A real corpse already on this tile is not proof of a fresh arrival.
+                    assert!(matches!(
+                        prepare_moved_arrival_corpse_in_transaction(
+                            &mut tx,
+                            &authority,
+                            &target(),
+                            &qualified,
+                            (corpse.item_instance_id, 1),
+                            &moved
+                        )
+                        .await,
+                        Err(SpellItemError::Rejected(
+                            "arrival move is not current in this transaction"
+                        ))
+                    ));
+                    moved.replayed = true;
+                    assert!(matches!(
+                        prepare_moved_arrival_corpse_in_transaction(
+                            &mut tx,
+                            &authority,
+                            &target(),
+                            &qualified,
+                            (corpse.item_instance_id, 1),
+                            &moved
+                        )
+                        .await,
+                        Err(SpellItemError::Rejected(
+                            "arrival requires a fresh Ground drop"
+                        ))
+                    ));
+                    for arrived in [
+                        (id(199), 1),
+                        (corpse.item_instance_id, 2),
+                        (corpse.item_instance_id, 0),
+                    ] {
+                        assert!(
+                            prepare_arrival_corpse_in_transaction(
+                                &mut tx,
+                                &authority,
+                                &target(),
+                                &qualified,
+                                arrived
+                            )
+                            .await
+                            .is_err()
+                        );
+                    }
+                    qualified.content_generation_digest = [8; 32];
+                    assert!(
+                        prepare_arrival_corpse_in_transaction(
+                            &mut tx,
+                            &authority,
+                            &target(),
+                            &qualified,
+                            (corpse.item_instance_id, 1)
+                        )
+                        .await
+                        .is_err()
+                    );
+                    tx.rollback().await?;
+                    assert_eq!(mint_footprint(h).await?, before);
+                    Ok(())
+                })
+                .map_err(debug)?;
+                if harness::configured_admin().is_none() {
+                    return Ok(());
+                }
+                assert!(started.elapsed().as_secs_f64() > 0.01);
+                eprintln!(
+                    "M49_PG_EXECUTED arrival_corpse duration={:?}",
+                    started.elapsed()
+                );
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "M49 corpse test thread failed")?
+            .map_err(Into::into)
     }
 
     #[test]

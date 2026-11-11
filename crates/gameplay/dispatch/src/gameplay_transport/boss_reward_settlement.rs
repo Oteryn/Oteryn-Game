@@ -219,7 +219,11 @@ fn plan_personal_death_with_slots(
             let loot = plan_boss_loot_with_bonus(
                 death,
                 character,
-                &frozen.reward.loot_table_ref,
+                frozen
+                    .reward
+                    .loot_table_ref
+                    .as_ref()
+                    .ok_or(PlanError::ContentUnavailable)?,
                 &frozen.reward.loot_table,
                 factors[index],
                 top == Some(character),

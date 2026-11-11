@@ -488,11 +488,46 @@ impl CombatDeathFixture {
         )
     }
 
+    /// Death projection at the caller's explicit fixture cell; production paths are unchanged.
+    pub fn new_for_scope_at(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        at: MovementLocalPosition,
+    ) -> Result<Self, CarrierError> {
+        Self::build_at(
+            runtime_scope,
+            scope_generation,
+            Self::HEALTH,
+            1,
+            LocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+        )
+    }
+
     fn build_for_scope(
         runtime_scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
         health: i64,
         capacity: usize,
+    ) -> Result<Self, CarrierError> {
+        Self::build_at(
+            runtime_scope,
+            scope_generation,
+            health,
+            capacity,
+            Self::POSITION,
+        )
+    }
+
+    fn build_at(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        health: i64,
+        capacity: usize,
+        position: LocalPosition,
     ) -> Result<Self, CarrierError> {
         let position_scope = positions::PositionScope::new(runtime_scope)?;
         let mut owner =
@@ -509,7 +544,7 @@ impl CombatDeathFixture {
             map_revision_marker: 42,
             content_generation_marker: 43,
         };
-        carrier.initialize_position(&owner, actor, context, Self::POSITION)?;
+        carrier.initialize_position(&owner, actor, context, position)?;
         Ok(Self {
             owner,
             carrier,

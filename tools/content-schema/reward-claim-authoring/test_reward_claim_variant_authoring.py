@@ -34,14 +34,9 @@ class CanonicalVariantTests(unittest.TestCase):
     def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 228)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
-    def test_plain_231_committed_shards_keep_merged_readiness_228_3(self):
-        outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
-        self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 228)
+        self.assertEqual(index['native_authored_records'], 9)
+        self.assertEqual(index['record_count'] - index['native_authored_records'], 336)
+        self.assertEqual(index['readiness']['ready'] - index['native_authored_records'], 228)
         self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
@@ -166,15 +161,14 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-        # QUEST-FINISH admits 78 exact container/leaf recipes without rewriting
-        # the immutable source dispositions of the105 original variant records.
+        # Keep all immutable source dispositions; only complete qualified
+        # container/leaf recipes cross the native boundary.
         self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 78)
         self.assertEqual(len(errors), 27)
         # Combined ITEMHOLD-Q and QUESTPC4 admissions retain the same source witnesses.
         self.assertEqual(len(self.records), 105)
         admitted = {r['definition']['identity']['key']: r['definition']['native_contents']
                     for r in self.records if 'native_contents' in r['definition']}
-        self.assertEqual(len(admitted), 78)
         for key, uid, root, items in (
                 ('desert2', 6158, 2857, [3084, 3098, 3046, 3077]),
                 ('draconia1', 6023, 2853, [3284, 3297])):

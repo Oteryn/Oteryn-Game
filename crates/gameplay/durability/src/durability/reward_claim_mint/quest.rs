@@ -2,7 +2,7 @@
 
 use super::*;
 mod questpc7_counter_claim;
-use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
+use crate::domain::appearance::{AppearanceContent, EarnedCosmetic};
 use crate::durability::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantRequest, AchievementSourceEvent,
     FencedGrantingCharacter, record_achievement_grant,
@@ -10,7 +10,10 @@ use crate::durability::account_achievement::{
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::QuestTransitionRequest;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_quests::quest::reward_callbacks::{PROVENANCE, RewardCallback};
+use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
+
+mod claim;
+pub(crate) use claim::QuestMintClaim;
 
 pub(crate) fn prepare_achievement(
     callback: Option<&RewardCallback>,
@@ -55,42 +58,7 @@ pub(crate) fn prepare_achievement(
     }))
 }
 
-/// Both NPC and world rewards use the admitted generation's explicit mappings.
-pub(crate) fn outfit_compatible(
-    native: &NativeGameplayState,
-    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
-) -> bool {
-    let Some(cosmetics) = native.cosmetics() else {
-        return false;
-    };
-    (0..=2).all(|addon| {
-        if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
-            return true;
-        }
-        let key = reward.grant_key(addon);
-        let target = if addon == 0 {
-            EarnedCosmetic::Outfit(&reward.outfit)
-        } else {
-            EarnedCosmetic::Addon(&reward.outfit, addon)
-        };
-        (match reward.sex {
-            None => cosmetics.earned_unlock(&key, PROVENANCE, target),
-            Some(sex) => cosmetics.earned_unlock_for_sex(
-                &key,
-                PROVENANCE,
-                target,
-                match sex {
-                    oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female => {
-                        crate::domain::appearance::Sex::Female
-                    }
-                    oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male => {
-                        crate::domain::appearance::Sex::Male
-                    }
-                },
-            ),
-        }) == UnlockFact::Compatible
-    })
-}
+pub(crate) use super::super::character_appearance::quest_grants::outfit_compatible;
 
 /// Retained native coin/change identities; the source price remains in the callback.
 #[derive(Clone, Debug)]
@@ -109,6 +77,9 @@ pub struct QuestRewardFeePayment {
 #[serde(deny_unknown_fields)]
 pub struct QuestCarriedUse {
     pub source: [u8; 16],
+    /// Exact second carried instance; absent for legacy tools and peer actions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recipe_target: Option<[u8; 16]>,
     pub intent: Vec<u8>,
 }
 
@@ -120,6 +91,8 @@ pub struct QuestRewardAdmission<'a> {
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
     pub carried_use: Option<&'a QuestCarriedUse>,
+    pub creature_use: Option<&'a super::quest_creature::QuestCreatureUseProof<'a>>,
+    pub peer_use: Option<&'a super::quest_peer::QuestPeerUseProof>,
 }
 
 #[allow(
@@ -129,6 +102,10 @@ pub struct QuestRewardAdmission<'a> {
 pub(crate) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
+    owner: (
+        &super::super::DurabilityRoot,
+        &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    ),
     node: &NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     request: &QuestTransitionRequest,
@@ -138,15 +115,72 @@ pub(crate) async fn apply(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     reserve_primary_state: bool,
 ) -> std::result::Result<bool, DurabilityError> {
-    let super::super::quest_state::QuestCause::Command(command) = request.cause else {
-        return Ok(false);
+    let command = match request.cause {
+        super::super::quest_state::QuestCause::Command(command)
+            if callback.world_claim.is_none() =>
+        {
+            command
+        }
+        super::super::quest_state::QuestCause::Use(command) if callback.world_claim.is_some() => {
+            command
+        }
+        _ => return Ok(false),
     };
-    if callback.carried_item.is_some() != admission.carried_use.is_some()
+    if callback.carried_target.is_some()
+        != admission
+            .carried_use
+            .and_then(|u| u.recipe_target)
+            .is_some()
+        || admission.carried_use.is_some_and(|u| {
+            u.recipe_target
+                .is_some_and(|target| target == u.source || target == [0; 16])
+        })
+        || callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })
     {
         return Ok(false);
+    }
+    match (
+        callback.creature_target.is_some() || callback.self_target.is_some(),
+        admission.creature_use,
+        admission.carried_use,
+    ) {
+        (false, None, _) => {}
+        (true, Some(proof), Some(carried)) if callback.fresh_corpse => {
+            if !proof
+                .permits_corpse(
+                    tx,
+                    owner,
+                    node,
+                    fence,
+                    request,
+                    callback,
+                    carried,
+                    admission.native,
+                )
+                .await?
+            {
+                return Ok(false);
+            }
+        }
+        (true, Some(proof), Some(carried))
+            if !callback.fresh_corpse
+                && proof.corpse().is_some() == callback.corpse_target.is_some()
+                && proof.permits(fence, request, callback, carried) => {}
+        _ => return Ok(false),
+    }
+    if callback.capture_creature {
+        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
+            return Ok(false);
+        };
+        if !proof
+            .claim_capture(tx, fence, request, callback, carried)
+            .await?
+        {
+            return Ok(false);
+        }
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
@@ -169,6 +203,29 @@ pub(crate) async fn apply(
         if !earned {
             return Ok(false);
         }
+    }
+    match (
+        &callback.peer_requires,
+        admission.peer_use,
+        admission.carried_use,
+    ) {
+        (None, None, _) => {}
+        (Some(requirement), Some(peer), Some(carried)) => {
+            if !super::quest_peer::holds_in_transaction(
+                tx,
+                node,
+                fence,
+                peer,
+                requirement,
+                catalogue,
+                carried,
+            )
+            .await?
+            {
+                return Ok(false);
+            }
+        }
+        _ => return Ok(false),
     }
     if callback
         .cosmetic_targets()
@@ -389,18 +446,19 @@ pub(crate) async fn apply(
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
         grant_keys.extend(
-            super::super::character_appearance::grant_callback_outfit(
+            super::super::character_appearance::grant_content_outfit(
                 tx,
                 fence.character_id,
                 &occurrence,
                 reward,
+                admission.native,
             )
             .await?,
         );
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
-            mint(tx, tuple, node, fence, command, callback, reward, admission).await?
+            mint_npc(tx, tuple, node, fence, command, callback, reward, admission).await?
         else {
             return Ok(false);
         };
@@ -438,7 +496,25 @@ pub(crate) async fn apply(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(oteryn_gameplay_quests::quest::reward_callbacks::durable_plan(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+    if callback.corpse_target.is_some() {
+        let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
+            return Ok(false);
+        };
+        if !super::quest_corpse::record(
+            tx,
+            fence,
+            request,
+            callback,
+            carried,
+            proof,
+            admission.native,
+        )
+        .await?
+        {
+            return Ok(false);
+        }
+    }
     Ok(true)
 }
 
@@ -467,21 +543,12 @@ pub(crate) async fn give_world(
     let claim_key = if callback.has_repeating_clock()
         || callback.storage.iter().any(|storage| storage.add.is_some())
     {
-        let digest = Sha256::new()
-            .chain_update(b"oteryn:quest-exchange:v1\0")
-            .chain_update(fence.character_id.as_bytes())
-            .chain_update(command.game_session_id().as_bytes())
-            .chain_update(command.command_id().get().to_string().as_bytes())
-            .chain_update(b":")
-            .chain_update(callback.key.as_bytes())
-            .finalize();
-        format!(
-            "oteryn:quest-exchange/{}",
-            digest
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>()
-        )
+        claim::key(
+            fence.character_id,
+            command,
+            &callback.key,
+            QuestMintClaim::PaidExchange,
+        )?
     } else {
         callback.key.clone()
     };
@@ -495,6 +562,7 @@ pub(crate) async fn give_world(
         &claim_key,
         reward,
         admission,
+        None,
     )
     .await?
     else {
@@ -532,7 +600,7 @@ pub(crate) async fn give_world(
     clippy::too_many_arguments,
     reason = "the existing MINT owner requires the same Quest, authority, content and request tuple"
 )]
-async fn mint(
+async fn mint_npc(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     tuple: SelectedType2Tuple,
     node: &NodeIncarnationProof,
@@ -545,28 +613,28 @@ async fn mint(
     // The MINT owner still permits each claim exactly once. A repeatable paid
     // exchange supplies its own stable per-command occurrence, not a bypass of
     // the claim ledger or its pending/reservation checks.
-    let claim_key = if callback.counter.is_some() {
+    let claim_key = if let Some(binding) = &callback.world_claim {
+        if callback.counter.is_some()
+            || callback.repeatable
+            || callback.is_paid_exchange()
+            || callback.per_occurrence_mint
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        binding.key.clone()
+    } else if callback.counter.is_some() {
         questpc7_counter_claim::key(
             &callback.key,
             command.game_session_id().as_bytes(),
             command.command_id().get(),
         )
     } else if callback.repeatable || callback.is_paid_exchange() {
-        let digest = Sha256::new()
-            .chain_update(b"oteryn:quest-exchange:v1\0")
-            .chain_update(fence.character_id.as_bytes())
-            .chain_update(command.game_session_id().as_bytes())
-            .chain_update(command.command_id().get().to_string().as_bytes())
-            .chain_update(b":")
-            .chain_update(callback.key.as_bytes())
-            .finalize();
-        format!(
-            "oteryn:quest-exchange/{}",
-            digest
-                .iter()
-                .map(|b| format!("{b:02x}"))
-                .collect::<String>()
-        )
+        claim::key(
+            fence.character_id,
+            command,
+            &callback.key,
+            QuestMintClaim::PaidExchange,
+        )?
     } else if callback.per_occurrence_mint {
         let plan =
             serde_json::to_value(callback).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -588,6 +656,44 @@ async fn mint(
         &claim_key,
         reward,
         admission,
+        callback.world_claim.as_ref(),
+    )
+    .await
+}
+
+/// The typed World owner retains its original occurrence/epoch claim identity.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn mint(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    callback_key: &str,
+    claim: QuestMintClaim<'_>,
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
+    admission: QuestRewardAdmission<'_>,
+    native_claim: Option<&oteryn_gameplay_quests::quest::reward_callbacks::NativeClaimBinding>,
+) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+    if native_claim.is_some() && !matches!(claim, QuestMintClaim::Once) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let claim_key = if let Some(binding) = native_claim {
+        binding.key.clone()
+    } else {
+        claim::key(fence.character_id, command, callback_key, claim)?
+    };
+    mint_with_source(
+        tx,
+        tuple,
+        node,
+        fence,
+        command,
+        callback_key,
+        &claim_key,
+        reward,
+        admission,
+        native_claim,
     )
     .await
 }
@@ -603,7 +709,11 @@ async fn mint_with_source(
     claim_key: &str,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
+    native_claim: Option<&oteryn_gameplay_quests::quest::reward_callbacks::NativeClaimBinding>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+    if !reward.valid_literal_text() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     if reward.premium {
         let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -666,16 +776,33 @@ async fn mint_with_source(
             .map(|b| format!("{b:02x}"))
             .collect::<String>()
     );
-    // The MINT owner still permits each claim exactly once. A repeatable paid
-    // exchange supplies its own stable per-command occurrence, not a bypass of
-    // the claim ledger or its pending/reservation checks.
     let request = RewardClaimMintRequest {
         backpack_outputs: !reward.backpack_outputs.is_empty(),
+        additional_items: reward
+            .additional
+            .iter()
+            .map(|item| {
+                if item.fluid_subtype.is_some() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                Ok(RewardClaimMintContent {
+                    fluid_subtype: None,
+                    charges_remaining: None,
+                    item: resolve(&item.item)?,
+                    quantity: u32::from(item.count),
+                    key_number: None,
+                    text: None,
+                })
+            })
+            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
             production_key: claim_key.into(),
-            revision_ref: content_revision.clone(),
+            revision_ref: native_claim.map_or_else(
+                || content_revision.clone(),
+                |binding| binding.revision.clone(),
+            ),
         },
         source_placement: key.into(),
         item: resolve(&reward.item)?,
@@ -686,7 +813,8 @@ async fn mint_with_source(
             &reward.backpack_outputs
         })
         .iter()
-        .map(|i| {
+        .enumerate()
+        .map(|(index, i)| {
             if i.fluid_subtype.is_some() {
                 use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceItemFluid};
                 let policy = admission
@@ -704,15 +832,23 @@ async fn mint_with_source(
             }
             Ok(RewardClaimMintContent {
                 fluid_subtype: i.fluid_subtype,
+                charges_remaining: None,
                 item: resolve(&i.item)?,
                 quantity: u32::from(i.count),
                 key_number: None,
-                text: None,
-                charges_remaining: None,
+                text: reward
+                    .text
+                    .as_ref()
+                    .and_then(|text| text.content(index))
+                    .map(str::to_owned),
             })
         })
         .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
-        root_text: None,
+        root_text: reward
+            .text
+            .as_ref()
+            .and_then(|text| text.root())
+            .map(str::to_owned),
         root_fluid_subtype: None,
         root_charges_remaining: None,
         backpack: resolve(&backpack)?,

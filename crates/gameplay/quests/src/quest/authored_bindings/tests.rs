@@ -31,7 +31,7 @@ fn closed_binding_document_rejects_unknown_fields_and_foreign_storage() -> Resul
         Bindings::parse(&serde_json::to_vec(&unknown).map_err(|error| error.to_string())?).is_err()
     );
     let mut foreign = binding;
-    if let Trigger::NpcDialogue { callback } = &mut foreign.quests[0].stages[0].trigger {
+    if let Trigger::NpcDialogue { callback, .. } = &mut foreign.quests[0].stages[0].trigger {
         callback.storage[0].track = "oteryn:quest-progress/foreign".into();
     }
     assert!(foreign.validate().is_err());
@@ -45,7 +45,7 @@ fn native_binding_identity_and_recipe_digest_are_part_of_definition_hash() -> Re
     let catalogue = binding.attach(&base)?;
     let before = catalogue.definition_hash(QUEST).ok_or("hash")?;
     let mut changed = binding.clone();
-    if let Trigger::NpcDialogue { callback } = &mut changed.quests[0].stages[0].trigger {
+    if let Trigger::NpcDialogue { callback, .. } = &mut changed.quests[0].stages[0].trigger {
         callback.npc = "oteryn:npc.benjamin".into();
     }
     assert_ne!(changed.attach(&base)?.definition_hash(QUEST), Some(before));
@@ -93,7 +93,7 @@ fn base_callback_collisions_are_refused_before_catalogue_admission() -> Result<(
         .next()
         .ok_or("existing callback")?;
     let mut binding = fixture()?;
-    if let Trigger::NpcDialogue { callback } = &mut binding.quests[0].stages[0].trigger {
+    if let Trigger::NpcDialogue { callback, .. } = &mut binding.quests[0].stages[0].trigger {
         callback.key = existing.key;
     }
     assert!(binding.attach(&base).is_err());

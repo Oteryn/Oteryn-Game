@@ -15,6 +15,7 @@ use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
 mod lineage;
+pub(super) mod source_bundle;
 use lineage::{
     ActivityConnectionLineage, advance_lineage, current_connection, prune_delivered_lineage,
     same_connection,
@@ -134,6 +135,7 @@ pub struct ActivityConnectionSwitch {
     pub source: AdmittedSession,
     pub destination: AdmittedSession,
     pub payload: Vec<u8>,
+    pub movement_effect_start: Option<u64>,
 }
 
 #[derive(Default)]
@@ -141,6 +143,15 @@ pub struct ActivityRuntimeRegistry<'a> {
     pub(super) soulpit_transitions: tokio::sync::Mutex<()>,
     soulpit_template:
         Mutex<Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>>,
+    /// One source-script cache across this generation's derived room copies.
+    /// Values are detached helper DATA, never Player payloads or canonical KV/icons.
+    rotten_area_caches: Mutex<
+        HashMap<
+            super::monster_profile_cycle::rotten_area::CacheKey,
+            Arc<Mutex<super::monster_profile_cycle::rotten_area::SharedCache>>,
+        >,
+    >,
+    source_rooms: Mutex<HashMap<&'static str, &'a crate::content::QualifiedNativeEntryRoom>>,
     templates: Mutex<
         HashMap<
             String,
@@ -238,6 +249,70 @@ impl<'a> ActivityRuntimeRegistry<'a> {
     ) -> Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate> {
         *self.soulpit_template.lock().ok()?
     }
+    pub(super) fn gc_rotten_area_caches(&self, world: [u8; 16], now_us: u64) {
+        let Ok(mut caches) = self.rotten_area_caches.lock() else {
+            return;
+        };
+        caches.retain(|key, cache| {
+            if key.0 != world {
+                return true;
+            }
+            let Ok(mut current) = cache.lock() else {
+                return true;
+            };
+            if current.busy.is_some() {
+                return true;
+            }
+            current.data.gc(now_us);
+            !current.data.empty() || Arc::strong_count(cache) > 1
+        });
+    }
+    pub(super) fn rotten_area_cache(
+        &self,
+        key: super::monster_profile_cycle::rotten_area::CacheKey,
+    ) -> Option<Arc<Mutex<super::monster_profile_cycle::rotten_area::SharedCache>>> {
+        let mut caches = self.rotten_area_caches.lock().ok()?;
+        Some(Arc::clone(caches.entry(key).or_default()))
+    }
+    pub(super) fn register_source_room(
+        &self,
+        source: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
+        room: &'a crate::content::QualifiedNativeEntryRoom,
+    ) -> Result<(), ()> {
+        let mut rooms = self.source_rooms.lock().map_err(|_| ())?;
+        if let Some(previous) = rooms.get(source.name()) {
+            return std::ptr::eq(*previous, room).then_some(()).ok_or(());
+        }
+        rooms.insert(source.name(), room);
+        Ok(())
+    }
+
+    pub(super) fn source_room(
+        &self,
+        source: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
+    ) -> Option<&'a crate::content::QualifiedNativeEntryRoom> {
+        self.source_rooms.lock().ok()?.get(source.name()).copied()
+    }
+
+    /// A new mutable Map owner for a fresh Instance, rebuilt only from the sealed
+    /// donor capture and the current compatible Item/Content owner. No allocation
+    /// or placement grant is issued by this factual factory.
+    pub(super) fn fresh_source_room(
+        &self,
+        source: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
+        active: &crate::content::ActiveGeneration,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<Arc<crate::content::QualifiedNativeEntryRoom>, ()> {
+        if !matches!(scope, RuntimeScopeRefV1::Instance { .. }) {
+            return Err(());
+        }
+        let template = self.source_room(source).ok_or(())?;
+        let source_room = active
+            .qualify_activity_source_room(template, source)
+            .map_err(|_| ())?;
+        source_bundle::qualify_for_scope(&source_room, source, active, scope).map(Arc::new)
+    }
+
     pub(super) fn register_template(
         &self,
         template: &'a crate::content::bosses::activity_template::QualifiedActivityRoomTemplate,
@@ -721,7 +796,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .retire_and_remove(&owner, &mut runtime)
     }
 
-    pub(super) fn transfer_activity_session_state(
+    pub(super) async fn transfer_activity_session_state(
         &self,
         destination: &Self,
         source: AdmittedSession,
@@ -764,6 +839,26 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             old,
             new,
         )?;
+        // The frozen equipment witness belongs to the same contributor owner as
+        // later kills. Rebind only this authenticated physical successor; pending
+        // old deaths retain their original contributor/session witnesses.
+        let source_actor = source.runtime_actor.ok_or(())?;
+        let equipment = self
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .activity_proficiency_equipment(source_actor, old);
+        if let Some((revision, weapon)) = equipment {
+            destination
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .proficiency_equipment(actor, new, revision, weapon.as_deref());
+        }
         {
             let mut from = self.states.premium_sessions.lock().map_err(|_| ())?;
             let mut to = destination.states.premium_sessions.lock().map_err(|_| ())?;
@@ -815,6 +910,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         destination.states.gameplay_idle_presence.observe(next);
         self.states.gameplay_idle_presence.forget(old);
+        // The physical transfer clears session-bound projections. Reload the
+        // durable selection under the new actor/session fence before publishing
+        // an active successor; the old session's cache cannot authorize it.
+        // An offline return is hydrated by its ordinary fresh admission later.
+        if next.controller.is_some() && !destination.admit_hazard(next).await {
+            return Err(());
+        }
         Ok(())
     }
 
@@ -849,6 +951,89 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         runtime: ChannelRuntimeV1,
         door: crate::world_runtime::LocalObjectRuntime,
         assets: ActivityRuntimeAssets<'a>,
+    ) -> Result<(), ActivityRuntimeRegistrationError> {
+        self.register_activity_runtime_with_callbacks(
+            template, assignment, runtime, door, assets, None,
+        )
+        .await
+    }
+
+    pub(super) async fn register_activity_runtime_with_callbacks(
+        &self,
+        template: ActivityTemplateKey,
+        assignment: &RuntimeScopeAssignment,
+        runtime: ChannelRuntimeV1,
+        door: crate::world_runtime::LocalObjectRuntime,
+        assets: ActivityRuntimeAssets<'a>,
+        source_callbacks: Option<super::soul_war_callbacks::SoulWarCallbacks>,
+    ) -> Result<(), ActivityRuntimeRegistrationError> {
+        self.register_activity_runtime_with_room(
+            template,
+            assignment,
+            runtime,
+            door,
+            assets,
+            source_callbacks,
+            None,
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the source-qualified room accompanies independently owned runtime registration parts"
+    )]
+    pub(super) async fn register_source_activity_runtime(
+        &self,
+        template: ActivityTemplateKey,
+        assignment: &RuntimeScopeAssignment,
+        runtime: ChannelRuntimeV1,
+        door: crate::world_runtime::LocalObjectRuntime,
+        assets: ActivityRuntimeAssets<'a>,
+        source_callbacks: Option<super::soul_war_callbacks::SoulWarCallbacks>,
+        room: Arc<crate::content::QualifiedNativeEntryRoom>,
+    ) -> Result<(), ActivityRuntimeRegistrationError> {
+        let role = room
+            .pinned_activity_source_room()
+            .ok_or(ActivityRuntimeRegistrationError)?;
+        let pin = runtime.content_pin();
+        if template.key != format!("oteryn:room.{}-source", role.name())
+            || !matches!(
+                room.movement_cells().index(),
+                crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+            )
+            || room.frame_binding().digest() != pin.frame_binding_digest()
+            || room.map_revision_digest() != pin.map_revision_digest()
+            || room.compiled().server_digest() != pin.server_artifact_digest()
+            || room.compiled().client_digest() != pin.client_artifact_digest()
+        {
+            return Err(ActivityRuntimeRegistrationError);
+        }
+        self.register_activity_runtime_with_room(
+            template,
+            assignment,
+            runtime,
+            door,
+            assets,
+            source_callbacks,
+            Some(room),
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the existing independently qualified runtime owners remain one registration"
+    )]
+    async fn register_activity_runtime_with_room(
+        &self,
+        template: ActivityTemplateKey,
+        assignment: &RuntimeScopeAssignment,
+        runtime: ChannelRuntimeV1,
+        door: crate::world_runtime::LocalObjectRuntime,
+        assets: ActivityRuntimeAssets<'a>,
+        source_callbacks: Option<super::soul_war_callbacks::SoulWarCallbacks>,
+        source_room: Option<Arc<crate::content::QualifiedNativeEntryRoom>>,
     ) -> Result<(), ActivityRuntimeRegistrationError> {
         if template.key.is_empty()
             || template.key.len() > 512
@@ -922,7 +1107,42 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 &world_policy_revision,
             )
             .map_err(|_| ActivityRuntimeRegistrationError)?;
-        let states = self.states.for_activity();
+        // The source registration must retain the same immutable room already
+        // owned by its seam assets, not a second room authority beside them.
+        if source_room
+            .as_deref()
+            .is_some_and(|source| !std::ptr::eq(source, room))
+        {
+            return Err(ActivityRuntimeRegistrationError);
+        }
+        let mut states = self.states.for_activity();
+        if let Some(callbacks) = source_callbacks {
+            states.spell_states.get_mut().soul_war_callbacks = callbacks;
+        }
+        if let Some(source) = source_room.as_deref() {
+            let spells = states.spell_states.get_mut();
+            spells
+                .soul_war_callbacks
+                .prepare_ambient_entry(active, source)
+                .map_err(|_| ActivityRuntimeRegistrationError)?;
+            spells
+                .spite_global
+                .register_source_instance(
+                    &runtime,
+                    active
+                        .native_gameplay()
+                        .ok_or(ActivityRuntimeRegistrationError)?,
+                    source,
+                    self.owner_now().get(),
+                )
+                .map_err(|_| ActivityRuntimeRegistrationError)?;
+        }
+        states
+            .spell_states
+            .lock()
+            .await
+            .initialize_owner_bookkeeping(&runtime)
+            .ok_or(ActivityRuntimeRegistrationError)?;
         self.activity_runtimes
             .insert(RegisteredRuntime {
                 scope: assignment.scope,

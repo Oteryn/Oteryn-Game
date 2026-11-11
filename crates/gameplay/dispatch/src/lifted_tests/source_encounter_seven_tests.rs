@@ -174,6 +174,27 @@ fn policy(d: &ProjectV2Draft, key: &str) -> CompiledCreaturePolicy {
         blocked_by_nearby_players: detail.spawn_eligibility.blocked_by_nearby_players,
     }
 }
+fn policies(r: &ChannelRuntimeV1) -> CompiledCreaturePolicies {
+    // Retain native death metadata from the qualified source catalogue. Each
+    // runtime must bind its own outer artifact after cloning the immutable data.
+    static NATIVE: std::sync::OnceLock<CompiledCreaturePolicies> = std::sync::OnceLock::new();
+    let mut policies = NATIVE
+        .get_or_init(|| {
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            crate::content::native_gameplay::retained_callback_native_fixture_at(
+                r.binding().world_id(),
+                &manifest,
+            )
+            .policies()
+            .clone()
+        })
+        .clone();
+    policies
+        .bind_qualified_outer_artifact(r.content_pin().server_artifact_digest())
+        .expect("actual native policies preserve sealed metadata under fixture outer pin");
+    policies
+}
 pub(crate) fn fixture() -> (
     ChannelRuntimeV1,
     ProjectV2Draft,
@@ -183,18 +204,8 @@ pub(crate) fn fixture() -> (
 ) {
     let (mut r, _, _) = runtime_with_player(0x72);
     let d = draft(&r);
-    let policies = [BASE, BLAZING, FREEZING]
-        .iter()
-        .map(|k| policy(&d, k))
-        .collect();
-    r.install_companion_policies(
-        CompiledCreaturePolicies::from_active_artifact(
-            r.content_pin().server_artifact_digest(),
-            policies,
-        )
-        .expect("qualified fixture"),
-    )
-    .expect("qualified fixture");
+    r.install_companion_policies(policies(&r))
+        .expect("qualified fixture");
     let actor = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -479,18 +490,11 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
         OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
     };
     let (mut r, player, session) = runtime_with_player(0x72);
+    r.initialize_first_entry_position(player)
+        .expect("qualified player position");
     let d = draft(&r);
-    r.install_companion_policies(
-        CompiledCreaturePolicies::from_active_artifact(
-            r.content_pin().server_artifact_digest(),
-            [BASE, BLAZING, FREEZING]
-                .iter()
-                .map(|k| policy(&d, k))
-                .collect(),
-        )
-        .expect("qualified fixture"),
-    )
-    .expect("qualified fixture");
+    r.install_companion_policies(policies(&r))
+        .expect("qualified fixture");
     let a = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -639,17 +643,8 @@ fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
     )
     .expect("qualified fixture");
     let d = draft(&r);
-    r.install_companion_policies(
-        CompiledCreaturePolicies::from_active_artifact(
-            r.content_pin().server_artifact_digest(),
-            [BASE, BLAZING, FREEZING]
-                .iter()
-                .map(|k| policy(&d, k))
-                .collect(),
-        )
-        .expect("qualified fixture"),
-    )
-    .expect("qualified fixture");
+    r.install_companion_policies(policies(&r))
+        .expect("qualified fixture");
     let a = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {

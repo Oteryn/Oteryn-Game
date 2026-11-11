@@ -193,6 +193,27 @@ pub trait PlayerLethalVitals {
         true
     }
 
+    /// A retained native callback keeps its exact replay sequence independently
+    /// of the real attribution clock. Owners without that receipt port refuse.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source occurrence identity and actual execution time are independent"
+    )]
+    fn reflect_equipment_damage_at_occurrence(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _element: Option<&str>,
+        _magnitude: u32,
+        _stream: &[u8],
+        _sequence: u64,
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        false
+    }
+
     /// Source cast owns occurrence/replay and independently current tile/Combat admission.
     /// The actual Player and physical Creature stores are staged together or all refuse.
     fn apply_source_appearance_batch(
@@ -229,6 +250,17 @@ pub trait PlayerLethalVitals {
         _session: GameSessionId,
     ) -> Option<(u32, u32, u64)> {
         None
+    }
+
+    /// A registered HP0 Player can still be a native callback target. This read
+    /// grants no hit: the source owner must publish a known no-hit for that state.
+    fn source_player_health_including_dead(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        self.source_player_health(runtime, target, session)
     }
 
     /// Private source-qualified caller seam. Unsupported owners refuse, never synthesize HP.

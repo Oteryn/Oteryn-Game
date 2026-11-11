@@ -45,19 +45,19 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model.held_npcs().len(), 0);
     // NPC-ECON-1 Bank, PREM-5's services, BANK-3's Henricus blessing offer, and #2810's
     // Grizzly Adams rank shop, S10 services, and exact NPC-TRADE-3 subtype restoration.
-    assert_eq!(model.services().len(), 400);
-    assert_eq!(model.admitted_offer_count(), 12_565);
+    assert_eq!(model.services().len(), 404);
+    assert_eq!(model.admitted_offer_count(), 12_687);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
         // Exact subtype qualification preserves the existing arbitrage protection.
         ("ArbitragePaying", 0),
-        ("ChargedOrFluidPending", 0),
+        ("ChargedOrFluidPending", 2),
         ("CountOutOfRange", 0),
         ("NonGoldCurrency", 31),
         ("ParityPending", 0),
         ("SellPriceAboveCoinCapacity", 17),
-        ("TimedCountMismatch", 7),
+        ("TimedCountMismatch", 9),
         ("UnknownItem", 0),
     ]);
     assert_eq!(counts, expected);

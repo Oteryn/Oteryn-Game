@@ -57,6 +57,26 @@
       "fields": [],
       "codes": [],
       "note": "Durability holder usage diagnostics (NBDIAG-4, #3057)."
+    },
+    {
+      "event": "quest_experience_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
+    },
+    {
+      "event": "wheel_reset_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     }
   ]
 }

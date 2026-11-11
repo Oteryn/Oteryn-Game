@@ -8,6 +8,8 @@ pub(super) mod drome_cube;
 
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
+mod rotten_essence;
+mod soul_war_source;
 
 use std::num::NonZeroU32;
 use std::time::Duration;
@@ -78,6 +80,10 @@ struct ItemUseGate {
     last: Option<(u64, UseDisposition)>,
     /// W09: retain a Cube PREPARE across cancellation/unknown COMMIT, never re-plan it.
     cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
+    source_pending: Option<Box<soul_war_source::PendingSourceUse>>,
+    source_last: Option<(u64, [u8; 32], UseDisposition)>,
+    essence_pending: Option<Box<rotten_essence::PendingEssenceUse>>,
+    essence_last: Option<(u64, [u8; 32], [u8; 32], UseDisposition)>,
 }
 
 impl ItemUseGate {
@@ -124,7 +130,9 @@ impl ItemUseGate {
             | ItemUseKind::DromeCube { .. }
             | ItemUseKind::MountTaming
             | ItemUseKind::ProficiencyCatalyst
-            | ItemUseKind::ProficiencyOrb => {
+            | ItemUseKind::ProficiencyOrb
+            | ItemUseKind::RottenEssence
+            | ItemUseKind::SoulWarSourceUse { .. } => {
                 return Err(UseDisposition::Rejected);
             }
         };
@@ -252,6 +260,8 @@ impl ItemUseGates {
             if *present == actor && *session == source {
                 *session = destination;
                 gate.last = None;
+                gate.essence_last = None;
+                gate.source_last = None;
             }
         }
     }
@@ -391,6 +401,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let session = command.game_session_id;
         if !super::hireling::resolve_pending_lamp(self, actor, session).await {
             return Err(UseDisposition::Rejected);
+        }
+        if let Some(result) =
+            Box::pin(rotten_essence::use_essence(self, actor, command, &source)).await
+        {
+            return result;
         }
         // Bind the exact ingress before resolving live inventory. A replay after return/relog
         // answers from its record without selecting a different lamp or using a new tile.
@@ -1544,6 +1559,8 @@ impl ItemUseGates {
         for (_, _, mut gate) in token.0.drain(..) {
             // Deadlines/rate history survive. A fresh GameSession has a new CommandId sequence.
             gate.last = None;
+            gate.essence_last = None;
+            gate.source_last = None;
             self.0.push((actor, session, gate));
         }
     }

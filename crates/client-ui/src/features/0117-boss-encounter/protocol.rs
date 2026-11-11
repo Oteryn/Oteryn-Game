@@ -207,12 +207,25 @@ pub fn apply_result(panel: &mut BossEncounterPanel, result: &GatedCommandResult)
                 };
                 panel.feedback = None;
             }
-            boss_encounter::BossActivityReply::Refused(reason) => {
-                panel.summary = lfmt!("Boss request refused: {reason:?}", reason = reason);
-                panel.feedback = Some(tr!("The server refused the boss request"));
+            boss_encounter::BossActivityReply::Refused(reason) if !accepted => {
+                // Crystal boss_lever.lua:183-218 checks the whole roster; Level
+                // does not identify the lever user as the participant who failed.
+                panel.summary = match reason {
+                    boss_encounter::BossActivityRefusal::Level => {
+                        "A party member does not meet the level requirement.".into()
+                    }
+                    boss_encounter::BossActivityRefusal::PartyCount => {
+                        "The party does not meet this encounter's size requirement.".into()
+                    }
+                    boss_encounter::BossActivityRefusal::Position => {
+                        "A party member is not on a required entry tile.".into()
+                    }
+                    _ => format!("Boss request refused: {reason:?}"),
+                };
+                panel.feedback = Some("The server refused the boss request");
             }
             _ => {
-                panel.feedback = Some(tr!("The server refused the boss request"));
+                panel.feedback = Some("The server returned invalid boss activity data");
                 return false;
             }
         }

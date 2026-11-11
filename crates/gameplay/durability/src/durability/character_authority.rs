@@ -777,6 +777,8 @@ pub(super) async fn account_security(
 
 // UNION ALL arm order is irrelevant: the query checks only for the existence of an
 // invalid row; chain continuity and latest state are joined by Character revision.
+// The migration-expanded view includes premium, Cyclopedia, Atelier, Hazard, Prey,
+// home town, Primal, Soul War, Rotten Blood and Arena receipts exactly once.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_bazaar_character_revision_chain",
     "game_character_bestiary_kill_receipts",
@@ -784,9 +786,8 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_charm_receipts",
     "game_character_death_receipts",
     "game_character_familiar_receipts",
+    "game_character_hazard_revision_chain_rotten_blood_arena",
     "game_character_monk_state_receipts",
-    "game_character_premium_revision_chain",
-    "game_character_prey_receipts",
     "game_character_proficiency_receipts",
     "game_character_quest_receipts",
     "game_character_stance_receipts",
