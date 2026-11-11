@@ -133,29 +133,91 @@ async fn serve_joined<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(
         // callback is awaited before installing the next callback.
         let next = Arc::new(Mutex::new(sequence));
         let next_write = next.clone();
-        node.service.apply(Operation::Flush(id,Box::new(move |state,content| {
-                let Ok(mut sequence)=next_write.lock() else {return false};
-                let Some(value)=sequence.checked_add(1) else {return false};
-                *sequence=value;
-                let message=match content {
-                    Content::Metadata{viewers,delay_seconds}=>Message::State{revision:state.revision,epoch:state.epoch,delay:*delay_seconds,count:*viewers},
-                    Content::Clear=>Message::Ready{epoch:state.epoch,chat:chat_selected&&state.chat_enabled,delay:state.delay_seconds},
-                    Content::Slate=>Message::Slate{epoch:state.epoch,sequence:value},
-                    Content::Chat(line)=>Message::ChatLine{epoch:state.epoch,sequence:value,handle:line.handle,text:format!("{}: {}",line.name,line.text)},
-                    Content::Media(media)=>Message::Media{epoch:state.epoch,sequence:value,media:(**media).clone()},
-                    Content::Scene(scene)=>Message::Scene{epoch:state.epoch,sequence:value,scene:(**scene).clone()},
-                };
-                let Ok(body)=(Envelope{generation,message}).encode() else {return false};
-                let mut bytes=Vec::with_capacity(body.len()+4);
-                bytes.extend_from_slice(&(body.len() as u32).to_be_bytes());bytes.extend_from_slice(&body);
-                let Ok(mut writer)=output.lock() else {return false};
-                let mut context=Context::from_waker(Waker::noop());
-                matches!(Pin::new(&mut *writer).poll_write(&mut context,&bytes),Poll::Ready(Ok(n)) if n==bytes.len())
-                    && matches!(Pin::new(&mut *writer).poll_flush(&mut context),Poll::Ready(Ok(())))
-            }))).await?;
+        node.service
+            .apply(Operation::Flush(
+                id,
+                Box::new(move |state, content| {
+                    let Ok(mut sequence) = next_write.lock() else {
+                        return false;
+                    };
+                    let Some(value) = sequence.checked_add(1) else {
+                        return false;
+                    };
+                    *sequence = value;
+                    let message = match content {
+                        Content::Metadata {
+                            viewers,
+                            delay_seconds,
+                        } => Message::State {
+                            revision: state.revision,
+                            epoch: state.epoch,
+                            delay: *delay_seconds,
+                            count: *viewers,
+                        },
+                        Content::Clear => Message::Ready {
+                            epoch: state.epoch,
+                            chat: chat_selected && state.chat_enabled,
+                            delay: state.delay_seconds,
+                        },
+                        Content::Slate => Message::Slate {
+                            epoch: state.epoch,
+                            sequence: value,
+                        },
+                        Content::Chat(line) => Message::ChatLine {
+                            epoch: state.epoch,
+                            sequence: value,
+                            handle: line.handle,
+                            text: format!("{}: {}", line.name, line.text),
+                        },
+                        Content::Media(media) => Message::Media {
+                            epoch: state.epoch,
+                            sequence: value,
+                            media: (**media).clone(),
+                        },
+                        Content::Scene(scene) => Message::Scene {
+                            epoch: state.epoch,
+                            sequence: value,
+                            scene: (**scene).clone(),
+                        },
+                    };
+                    let Ok(body) = (Envelope {
+                        generation,
+                        message,
+                    })
+                    .encode() else {
+                        return false;
+                    };
+                    let mut bytes = Vec::with_capacity(body.len() + 4);
+                    bytes.extend_from_slice(&(body.len() as u32).to_be_bytes());
+                    bytes.extend_from_slice(&body);
+                    let Ok(mut writer) = output.lock() else {
+                        return false;
+                    };
+                    write_immediate_frame(&mut *writer, &bytes)
+                }),
+            ))
+            .await?;
         sequence = *next.lock().map_err(|_| Error::Unavailable)?;
     }
     Ok(())
+}
+
+fn write_immediate_frame<S: AsyncWrite + Unpin>(writer: &mut S, bytes: &[u8]) -> bool {
+    // Tokio may yield for its task budget even when the socket is writable.
+    // Only this one synchronous attempt is unconstrained: real backpressure,
+    // a partial write or a pending flush still terminates the observer while
+    // the final writer remains inside the revocation barrier.
+    let mut attempt = std::pin::pin!(tokio::task::unconstrained(std::future::poll_fn(|cx| {
+        Poll::Ready(
+            matches!(Pin::new(&mut *writer).poll_write(cx, bytes), Poll::Ready(Ok(n)) if n == bytes.len())
+                && matches!(Pin::new(&mut *writer).poll_flush(cx), Poll::Ready(Ok(()))),
+        )
+    })));
+    let mut context = Context::from_waker(Waker::noop());
+    matches!(
+        std::future::Future::poll(attempt.as_mut(), &mut context),
+        Poll::Ready(true)
+    )
 }
 
 fn observer_input_result(result: Result<Reply, Error>, chat: bool) -> Result<(), Error> {
@@ -168,6 +230,115 @@ fn observer_input_result(result: Result<Reply, Error>, chat: bool) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    async fn exhaust_cooperative_budget() {
+        for _ in 0..128 {
+            if !tokio::task::coop::has_budget_remaining() {
+                return;
+            }
+            tokio::task::coop::consume_budget().await;
+        }
+        assert!(!tokio::task::coop::has_budget_remaining());
+    }
+
+    #[test]
+    fn writable_observer_survives_exhausted_cooperative_budget()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use tokio::io::AsyncReadExt;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                tokio::spawn(async {
+                    let (mut client, server) = tokio::io::duplex(65536);
+                    let (_reader, mut writer) = tokio::io::split(server);
+                    let frame = b"\0\0\0\x04cast";
+                    exhaust_cooperative_budget().await;
+                    assert!(write_immediate_frame(&mut writer, frame));
+                    assert!(
+                        !tokio::task::coop::has_budget_remaining(),
+                        "the bounded write restores its caller's exhausted budget"
+                    );
+                    let mut received = [0; 8];
+                    client.read_exact(&mut received).await?;
+                    assert_eq!(&received, frame);
+                    Ok::<(), std::io::Error>(())
+                })
+                .await??;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })
+    }
+
+    #[test]
+    fn backpressured_partial_and_closed_observers_still_fail_closed()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use tokio::io::AsyncReadExt;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                tokio::spawn(async {
+                    for (initial, next, expected) in [
+                        (b"full".as_slice(), b"x".as_slice(), b"full"),
+                        (b"ab".as_slice(), b"xyz".as_slice(), b"abxy"),
+                    ] {
+                        let (mut client, server) = tokio::io::duplex(4);
+                        let (_reader, mut writer) = tokio::io::split(server);
+                        assert!(write_immediate_frame(&mut writer, initial));
+                        exhaust_cooperative_budget().await;
+                        assert!(!write_immediate_frame(&mut writer, next));
+                        assert!(!tokio::task::coop::has_budget_remaining());
+                        let mut received = [0; 4];
+                        client.read_exact(&mut received).await?;
+                        assert_eq!(&received, expected);
+                    }
+                    let (client, server) = tokio::io::duplex(4);
+                    let (_reader, mut writer) = tokio::io::split(server);
+                    drop(client);
+                    exhaust_cooperative_budget().await;
+                    assert!(!write_immediate_frame(&mut writer, b"x"));
+                    Ok::<(), std::io::Error>(())
+                })
+                .await??;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })
+    }
+
+    #[test]
+    fn pending_flush_is_not_retried() {
+        #[derive(Default)]
+        struct PendingFlush {
+            writes: usize,
+            flushes: usize,
+        }
+        impl AsyncWrite for PendingFlush {
+            fn poll_write(
+                mut self: Pin<&mut Self>,
+                _: &mut Context<'_>,
+                bytes: &[u8],
+            ) -> Poll<std::io::Result<usize>> {
+                self.writes += 1;
+                Poll::Ready(Ok(bytes.len()))
+            }
+            fn poll_flush(
+                mut self: Pin<&mut Self>,
+                _: &mut Context<'_>,
+            ) -> Poll<std::io::Result<()>> {
+                self.flushes += 1;
+                Poll::Pending
+            }
+            fn poll_shutdown(
+                self: Pin<&mut Self>,
+                _: &mut Context<'_>,
+            ) -> Poll<std::io::Result<()>> {
+                Poll::Ready(Ok(()))
+            }
+        }
+        let mut writer = PendingFlush::default();
+        assert!(!write_immediate_frame(&mut writer, b"frame"));
+        assert_eq!((writer.writes, writer.flushes), (1, 1));
+    }
+
     #[test]
     fn muted_or_throttled_chat_preserves_the_observer_session() {
         assert!(observer_input_result(Err(Error::Muted), true).is_ok());
