@@ -24,6 +24,8 @@ struct Program {
     phase_track: String,
     tracks: Vec<Track>,
     world_callbacks: Vec<serde_json::Value>,
+    #[serde(skip)]
+    compiled_world_callbacks: Vec<super::world_callbacks::Callback>,
     #[serde(default)]
     egress_callbacks: Vec<String>,
     npc_callbacks: Vec<serde_json::Value>,
@@ -230,7 +232,7 @@ fn parse(source: &'static str) -> Result<Document, String> {
             .to_string(),
         )?;
         let mut events = BTreeSet::new();
-        for callback in callbacks {
+        for callback in &callbacks {
             if callback.quest != program.quest
                 || !callback.requires_world_admission
                 || callback.world_change.is_some()
@@ -251,8 +253,9 @@ fn parse(source: &'static str) -> Result<Document, String> {
             {
                 return Err("personal journal callback ownership".into());
             }
-            events.insert(callback.key);
+            events.insert(callback.key.clone());
         }
+        program.compiled_world_callbacks = callbacks;
         let npc_callbacks = lower_npc_callbacks(program)?;
         for callback in &npc_callbacks {
             events.insert(callback.key.clone());
@@ -408,6 +411,51 @@ pub(super) fn callbacks() -> Result<Vec<super::world_callbacks::Callback>, Strin
         .flat_map(|p| p.world_callbacks.iter().cloned())
         .collect();
     super::world_callbacks::parse(&serde_json::json!({"schema":1,"callbacks":values}).to_string())
+}
+
+fn selected_personal_program(quest: &str) -> Option<&'static Program> {
+    document().ok()?.programs.iter().find(|program| {
+        program.runtime_enabled
+            && program.quest == quest
+            && program.mode == "personal_on_demand"
+            && program.repeat == "once"
+            && matches!(
+                (program.key.as_str(), program.quest.as_str()),
+                (
+                    "fire_from_the_earth",
+                    "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+                ) | (
+                    "hive_outpost",
+                    "oteryn:quest.authored.hive_outpost_mini_world_change"
+                )
+            )
+    })
+}
+
+/// These selected personal recipes are independent of the unavailable donor missions.
+/// The writer still proves the physical World cause and every bound admission input.
+pub fn selected_personal_world_transition(
+    transition: &super::QuestTransition,
+    callback: &super::world_callbacks::Callback,
+) -> bool {
+    selected_personal_program(&transition.quest).is_some_and(|program| {
+        program.compiled_world_callbacks.iter().any(|canonical| {
+            canonical == callback
+                && super::world_callbacks::primary_transition(canonical)
+                    .is_ok_and(|expected| expected == *transition)
+        })
+    })
+}
+
+/// A registered counter is only eligible with the writer's validated native death proof.
+pub fn selected_personal_counter_transition(transition: &super::QuestTransition) -> bool {
+    selected_personal_program(&transition.quest).is_some_and(|program| {
+        program
+            .counters
+            .iter()
+            .filter_map(|counter| counter.compiled)
+            .any(|counter| counter.transition() == *transition)
+    })
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {

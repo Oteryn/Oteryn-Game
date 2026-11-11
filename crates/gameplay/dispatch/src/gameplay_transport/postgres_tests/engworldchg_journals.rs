@@ -104,13 +104,20 @@ fn scenario(
                         |member| member.from,
                     ),
             );
+            let room = super::rust_lottery::bundle_action_room(
+                activated.qualified_room(),
+                &world,
+                deps.admitted.world_id,
+                &cells,
+            )?;
+            let bundle_frame = room.frame_binding().digest();
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
                 generation.identity().server_artifact_digest(),
                 generation.identity().client_artifact_digest(),
-                activated.frame_binding().digest(),
-                world.map_revision_digest(),
+                bundle_frame,
+                room.map_revision_digest(),
                 (origin.x, origin.y, origin.floor),
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -133,6 +140,7 @@ fn scenario(
                 .initialize_pinned_test_position(deps.actor, origin)
                 .map_err(debug)?;
             deps.runtime = tokio::sync::Mutex::new(runtime);
+            deps.combat_room = Some(room);
             let (consumer, clock, activation, _) =
                 crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
                     id(40),
@@ -198,7 +206,7 @@ fn scenario(
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
-            .bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(bundle_frame.as_slice()).execute(&h.pool).await?;
             let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
             h.root
                 .initialize_admission_equipment(
@@ -642,7 +650,10 @@ pub(super) async fn use_marker_at_depth(
     .map_err(debug)
 }
 
-pub(super) fn scene(entry: &Callback, marker: &Callback) -> TestResult<crate::map::boot::BundleWorld> {
+pub(super) fn scene(
+    entry: &Callback,
+    marker: &Callback,
+) -> TestResult<crate::map::boot::BundleWorld> {
     if entry.key.contains("/fury_gates/") {
         return super::engworldchg_fury::scene(entry, marker);
     }
