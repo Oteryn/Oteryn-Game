@@ -82,7 +82,8 @@ mod tests {
                 .ok_or("actor")?
                 .vitals();
             assert_eq!((vitals.health, vitals.mana), expected, "streak {streak}");
-            assert_eq!(vitals.soul, soul_before + u32::from(streak >= 7));
+            // Winter Update 2026: the projection's soul cadence no longer reads the streak.
+            assert_eq!(vitals.soul, soul_before + 1);
             // The stamina model recovers the top three hours at six minutes per minute.
             for (stamina, interval) in [(2339, 180), (2340, 360), (2341, 360)] {
                 projection.install(session, actor, streak);
@@ -97,7 +98,8 @@ mod tests {
                     projection
                         .cadence(session, actor, true, true, stamina, 120)
                         .0,
-                    streak >= 4
+                    true,
+                    "Winter Update 2026: stamina regenerates at every streak"
                 );
             }
         }
