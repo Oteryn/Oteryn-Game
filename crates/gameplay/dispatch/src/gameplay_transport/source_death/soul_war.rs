@@ -100,7 +100,13 @@ impl SoulWarAction {
         }
         killers.sort_by(|a, b| b.damage.cmp(&a.damage).then(a.character.cmp(&b.character)));
         let reward = attack.kills().source_death_experience(runtime, begin)?;
-        if reward.is_none() && (!killers.is_empty() || begin.has_reward_damage_credit()) {
+        if reward.is_none()
+            && (!killers.is_empty() || begin.has_reward_damage_credit())
+            && attack
+                .kills()
+                .source_drop_refusal(runtime, begin)?
+                .is_none()
+        {
             return Err(());
         }
         let actors = killers.iter().map(|killer| killer.actor).collect();
