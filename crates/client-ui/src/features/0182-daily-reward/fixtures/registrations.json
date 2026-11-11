@@ -49,38 +49,6 @@
   {
     "mechanic": "0182-daily-reward",
     "kind": "handlers",
-    "id": "0182-daily-reward-picker-claim",
-    "status": "supported",
-    "commands": [
-      6123
-    ],
-    "direction": "client_to_server",
-    "capability": 182,
-    "entry": "protocol.rs::request_picker",
-    "not_applicable": {
-      "settings": "Selection catalogue and allowance are server-owned.",
-      "input": "The native reward picker exposes catalogue and claim controls."
-    }
-  },
-  {
-    "mechanic": "0182-daily-reward",
-    "kind": "handlers",
-    "id": "0182-daily-reward-picker-query",
-    "status": "supported",
-    "commands": [
-      6122
-    ],
-    "direction": "client_to_server",
-    "capability": 182,
-    "entry": "protocol.rs::request_picker",
-    "not_applicable": {
-      "settings": "Selection catalogue and allowance are server-owned.",
-      "input": "The native reward picker exposes catalogue and claim controls."
-    }
-  },
-  {
-    "mechanic": "0182-daily-reward",
-    "kind": "handlers",
     "id": "0182-daily-reward-query",
     "status": "supported",
     "commands": [

@@ -99,7 +99,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         182 => match command.kind {
                             738=>outbox.daily_reward_details_result(&result),
                             oteryn_session::daily_reward::returner::QUERY | oteryn_session::daily_reward::returner::CLAIM =>outbox.daily_reward_returner_result(command.kind,&result),
-                            _=>outbox.daily_reward_picker_result(command.kind,&result),
+                            _ => {}
                         },
                         170 => outbox.arena_result(&result),
                         195 | 448 => outbox.weapon_proficiency_result(&result),
