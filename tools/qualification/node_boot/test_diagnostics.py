@@ -58,6 +58,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
             ('control_loss_reconcile_pending', 'item_effects'),
             ('control_loss_reconcile_pending', 'gourmet_checkpoint'),
             ('control_loss_reconcile_pending', 'native_cast'),
+            ('control_loss_reconcile_pending', 'soul_war_source_use'),
             ('control_loss_reconcile_pending', 'familiar_cast'),
             ('control_loss_reconcile_pending', 'world_items'),
             ('control_loss_reconcile_pending', 'parameters'),

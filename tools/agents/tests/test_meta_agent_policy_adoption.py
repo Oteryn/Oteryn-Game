@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import os
@@ -115,8 +116,11 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         }
         prefix = "docs/agents/tasks/active/"
 
-        def entry(name: str, blob: str, kind: str = "file") -> dict:
-            return {"path": prefix + name, "sha": blob * 40, "type": kind}
+        def entry(name: str, blob: str, kind: str = "blob") -> dict:
+            return {
+                "path": name, "sha": blob * 40, "type": kind,
+                "mode": "040000" if kind == "tree" else "100644",
+            }
 
         directories = {
             merge_base: [
@@ -130,17 +134,21 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
                 entry("OTV2-unchanged.md", "3"),
                 entry("OTV2-changed.md", "7"),
                 entry("OTV2-added.md", "8"),
-                entry("notes", "9", "dir"),
+                entry("notes", "9", "tree"),
             ],
         }
+
+        tree_responses = {}
+        for ref, entries in directories.items():
+            tree_responses.update(self.active_task_tree_responses(ref, entries))
 
         def request(url: str):
             if "/files?" in url:
                 raise AssertionError("pull-files listing must not be used above the API limit")
             if url.endswith(f"/compare/{base}...{head}"):
                 return {"merge_base_commit": {"sha": merge_base}}
-            if "/contents/docs/agents/tasks/active?ref=" in url:
-                return directories[url.rsplit("=", 1)[1]]
+            if url in tree_responses:
+                return tree_responses[url]
             if url.endswith("/pulls/81"):
                 return pull
             raise AssertionError(url)
@@ -162,6 +170,119 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         with mock.patch.object(adoption, "_request", side_effect=moving_request):
             with self.assertRaisesRegex(ValueError, "moved during live-state"):
                 adoption._pull_request_active_task_paths(81, head)
+
+    @staticmethod
+    def active_task_tree_responses(ref: str, entries: list[dict]) -> dict:
+        api = f"https://api.github.com/repos/{adoption.PROVIDER}"
+        trees = [ref[:36] + f"{index:04x}" for index in range(5)]
+        responses = {
+            f"{api}/git/commits/{ref}": {"sha": ref, "tree": {"sha": trees[0]}},
+        }
+        for index, name in enumerate(("docs", "agents", "tasks", "active")):
+            responses[f"{api}/git/trees/{trees[index]}"] = {
+                "sha": trees[index], "truncated": False,
+                "tree": [{
+                    "path": name, "mode": "040000", "type": "tree",
+                    "sha": trees[index + 1],
+                }],
+            }
+        responses[f"{api}/git/trees/{trees[-1]}"] = {
+            "sha": trees[-1], "truncated": False, "tree": entries,
+        }
+        return responses
+
+    def test_large_pull_request_mode_only_task_change_is_selected(self):
+        pull = self.live_scope_pull()
+        pull["changed_files"] = 3001
+        merge_base = "c" * 40
+        path = adoption.ACTIVE_TASK_PREFIX + "OTV2-mode.md"
+        api = f"https://api.github.com/repos/{adoption.PROVIDER}"
+        responses = {
+            f"{api}/pulls/82": pull,
+            f"{api}/compare/{MAIN}...{SHA}": {"merge_base_commit": {"sha": merge_base}},
+        }
+        for ref, mode in ((merge_base, "100644"), (SHA, "100755")):
+            entry = {"path": "OTV2-mode.md", "mode": mode, "type": "blob", "sha": "d" * 40}
+            responses.update(self.active_task_tree_responses(ref, [entry]))
+            # The former Contents response has the same blob on both sides.
+            # Keep it available so this case exposes the old omission directly.
+            responses[f"{api}/contents/docs/agents/tasks/active?ref={ref}"] = [
+                {"path": path, "sha": entry["sha"], "type": "file"},
+            ]
+        with mock.patch.object(adoption, "_request", side_effect=responses.__getitem__):
+            self.assertEqual(adoption._pull_request_active_task_paths(82, SHA), {path})
+
+    def test_active_task_tree_rejects_incomplete_or_malformed_inventory(self):
+        entry = {"path": "OTV2-selected.md", "mode": "100644", "type": "blob", "sha": MAIN}
+        good = self.active_task_tree_responses(SHA, [entry])
+        active_url = next(url for url, payload in good.items() if payload.get("tree") == [entry])
+        mutations = (
+            ("truncated", lambda p: p.update(truncated=True)),
+            ("missing completeness", lambda p: p.pop("truncated")),
+            ("nonboolean completeness", lambda p: p.update(truncated=0)),
+            ("wrong tree", lambda p: p.update(sha=MAIN)),
+            ("missing entries", lambda p: p.pop("tree")),
+            ("non-list entries", lambda p: p.update(tree={})),
+            ("non-object entry", lambda p: p.update(tree=[None])),
+            ("duplicate path", lambda p: p["tree"].append(dict(entry))),
+            ("nested path", lambda p: p["tree"][0].update(path="nested/OTV2-selected.md")),
+            ("parent path", lambda p: p["tree"][0].update(path="../OTV2-selected.md")),
+            ("empty path", lambda p: p["tree"][0].update(path="")),
+            ("invalid OID", lambda p: p["tree"][0].update(sha="short")),
+            ("missing mode", lambda p: p["tree"][0].pop("mode")),
+            ("unsupported mode", lambda p: p["tree"][0].update(mode="100664")),
+            ("unknown mode and type", lambda p: p["tree"][0].update(mode="unknown", type=None)),
+            ("mode/type mismatch", lambda p: p["tree"][0].update(type="tree")),
+        )
+        for label, mutate in mutations:
+            with self.subTest(case=label):
+                responses = copy.deepcopy(good)
+                mutate(responses[active_url])
+                with mock.patch.object(adoption, "_request", side_effect=responses.__getitem__):
+                    with self.assertRaises(ValueError):
+                        adoption._active_task_directory(SHA)
+        # A truncated ancestor is equally unusable, even if its visible entry matches.
+        responses = copy.deepcopy(good)
+        root_url = next(url for url, payload in responses.items()
+                        if isinstance(payload.get("tree"), list)
+                        and payload["tree"][0]["path"] == "docs")
+        responses[root_url]["truncated"] = True
+        with mock.patch.object(adoption, "_request", side_effect=responses.__getitem__):
+            with self.assertRaises(ValueError):
+                adoption._active_task_directory(SHA)
+
+    def test_active_task_tree_rejects_nonregular_packets_and_unbound_ancestors(self):
+        entry = {"path": "OTV2-selected.md", "mode": "100644", "type": "blob", "sha": MAIN}
+        for mode, kind in (("120000", "blob"), ("160000", "commit"), ("040000", "tree")):
+            with self.subTest(mode=mode, kind=kind):
+                responses = self.active_task_tree_responses(SHA, [dict(entry, mode=mode, type=kind)])
+                with mock.patch.object(adoption, "_request", side_effect=responses.__getitem__):
+                    with self.assertRaisesRegex(ValueError, "nonregular"):
+                        adoption._active_task_directory(SHA)
+        good = self.active_task_tree_responses(SHA, [entry])
+        commit_url = next(url for url in good if "/git/commits/" in url)
+        root_url = next(url for url, payload in good.items()
+                        if isinstance(payload.get("tree"), list)
+                        and payload["tree"][0]["path"] == "docs")
+        mutations = (
+            ("wrong commit", commit_url, lambda p: p.update(sha=MAIN)),
+            ("missing commit tree", commit_url, lambda p: p.pop("tree")),
+            ("invalid commit tree", commit_url, lambda p: p["tree"].update(sha="short")),
+            ("missing ancestor", root_url, lambda p: p.update(tree=[])),
+            ("file ancestor", root_url, lambda p: p["tree"][0].update(mode="100644", type="blob")),
+        )
+        for label, url, mutate in mutations:
+            with self.subTest(case=label):
+                responses = copy.deepcopy(good)
+                mutate(responses[url])
+                with mock.patch.object(adoption, "_request", side_effect=responses.__getitem__):
+                    with self.assertRaises(ValueError):
+                        adoption._active_task_directory(SHA)
+        entries = [dict(entry, path=f"OTV2-{index}.md") for index in range(1000)]
+        responses = self.active_task_tree_responses(SHA, entries)
+        with mock.patch.object(adoption, "_request", side_effect=responses.__getitem__):
+            with self.assertRaisesRegex(ValueError, "bounded size"):
+                adoption._active_task_directory(SHA)
 
     def test_pull_request_live_task_scope_rejects_malformed_file_paths(self):
         base = "4" * 40

@@ -158,29 +158,74 @@ PULL_FILES_API_LIMIT = 3000
 ACTIVE_TASK_PREFIX = "docs/agents/tasks/active/"
 
 
-def _active_task_directory(ref: str) -> dict[str, str]:
-    """Map each active task packet path at `ref` to its blob SHA."""
-    listing = _request(
-        f"https://api.github.com/repos/{PROVIDER}/contents/"
-        f"{ACTIVE_TASK_PREFIX.rstrip('/')}?ref={ref}"
-    )
-    if not isinstance(listing, list) or not all(isinstance(item, dict) for item in listing):
-        raise ValueError("invalid GitHub active-task directory response")
+def _git_tree_entries(tree_sha: str) -> dict[str, tuple[str, str, str]]:
+    """Read one complete, nonrecursive Git tree with its exact entry modes."""
+    payload = _request(f"https://api.github.com/repos/{PROVIDER}/git/trees/{tree_sha}")
+    if (
+        not isinstance(payload, dict)
+        or payload.get("sha") != tree_sha
+        or payload.get("truncated") is not False
+        or not isinstance(payload.get("tree"), list)
+    ):
+        raise ValueError("invalid or truncated GitHub active-task tree response")
+    modes = {
+        "040000": "tree",
+        "100644": "blob",
+        "100755": "blob",
+        "120000": "blob",
+        "160000": "commit",
+    }
+    entries: dict[str, tuple[str, str, str]] = {}
+    for item in payload["tree"]:
+        if not isinstance(item, dict):
+            raise ValueError("invalid GitHub active-task tree entry")
+        path, mode, kind, oid = (
+            item.get("path"), item.get("mode"), item.get("type"), item.get("sha")
+        )
+        if (
+            not _valid_repository_path(path)
+            or len(PurePosixPath(path).parts) != 1
+            or not isinstance(mode, str)
+            or mode not in modes
+            or modes[mode] != kind
+            or not isinstance(oid, str)
+            or SHA_RE.fullmatch(oid) is None
+            or path in entries
+        ):
+            raise ValueError("invalid or duplicate GitHub active-task tree entry")
+        entries[path] = (mode, kind, oid)
+    return entries
+
+
+def _active_task_directory(ref: str) -> dict[str, tuple[str, str, str]]:
+    """Map immediate regular task packets to their mode, type and blob SHA."""
+    commit = _request(f"https://api.github.com/repos/{PROVIDER}/git/commits/{ref}")
+    root = commit.get("tree") if isinstance(commit, dict) else None
+    tree_sha = root.get("sha") if isinstance(root, dict) else None
+    if (
+        not isinstance(commit, dict)
+        or commit.get("sha") != ref
+        or not isinstance(tree_sha, str)
+        or SHA_RE.fullmatch(tree_sha) is None
+    ):
+        raise ValueError("invalid GitHub active-task commit response")
+    for component in ACTIVE_TASK_PREFIX.rstrip("/").split("/"):
+        entry = _git_tree_entries(tree_sha).get(component)
+        if entry is None or entry[:2] != ("040000", "tree"):
+            raise ValueError("active-task directory ancestor is absent or nonregular")
+        tree_sha = entry[2]
+    listing = _git_tree_entries(tree_sha)
     if len(listing) >= 1000:
         raise ValueError("active-task directory listing exceeded the bounded size")
-    packets: dict[str, str] = {}
-    for item in listing:
-        path, blob = item.get("path"), item.get("sha")
-        if not _valid_repository_path(path) or not path.startswith(ACTIVE_TASK_PREFIX):
-            raise ValueError("invalid active-task directory entry")
-        if not isinstance(blob, str) or SHA_RE.fullmatch(blob) is None:
-            raise ValueError("invalid active-task directory entry")
-        if (
-            item.get("type") == "file"
-            and path.endswith(".md")
-            and path != ACTIVE_TASK_PREFIX + "README.md"
-        ):
-            packets[path] = blob
+    packets: dict[str, tuple[str, str, str]] = {}
+    for name, entry in listing.items():
+        if entry[:2] == ("040000", "tree") and not name.endswith(".md"):
+            # The consumer uses glob("*.md"), never a recursive task walk.
+            continue
+        if entry[0] not in {"100644", "100755"} or entry[1] != "blob":
+            raise ValueError("active-task directory contains a nonregular entry")
+        if name.endswith(".md") and name != "README.md":
+            packets[ACTIVE_TASK_PREFIX + name] = entry
     return packets
 
 

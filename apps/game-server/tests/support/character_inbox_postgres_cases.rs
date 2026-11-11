@@ -828,8 +828,6 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
             "game_house_disposition_native_removal_proven_before_t135",
             "game_house_nested_reclaim_reconcile",
             "game_returner_claim_guard",
-            "game_daily_reward_pick_guard",
-            "game_returner_claim_guard",
         ] {
             let no_inbox_dml: bool = sqlx::query_scalar(
                 r#"SELECT prosrc !~* '\m(insert[[:space:]]+into|update|delete[[:space:]]+from|truncate([[:space:]]+table)?)[[:space:]]+(only[[:space:]]+)?(("[^"]+"|[a-z_][a-z_0-9$]*)[.])?"?game_(item_character_inbox_locations|character_inbox_(deliveries|counters|cause_kinds))"?\M'

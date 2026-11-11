@@ -120,7 +120,7 @@
     },
     {
       "event": "control_loss_reconcile_pending",
-      "level": "info",
+      "level": "warn",
       "span": false,
       "fields": [
         "stage"
@@ -280,9 +280,11 @@
     },
     {
       "event": "step_rejected_movement",
-      "level": "info",
+      "level": "warn",
       "span": false,
-      "fields": [],
+      "fields": [
+        "kind"
+      ],
       "codes": [],
       "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },
