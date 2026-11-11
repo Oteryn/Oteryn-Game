@@ -207,3 +207,24 @@ fn wheel_named_presets_roundtrip_and_reject_corrupt_storage() -> Result<(), Erro
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn t120_named_presets_load_into_the_wheel_by_code_and_by_url() -> Result<(), Error> {
+    use super::super::presets::PresetBook;
+    let mut source = panel();
+    source.points[0] = 12;
+    let mut book = PresetBook::default();
+    book.insert("  Hunting ", &source.build_code())?;
+    book.insert("Boss", &panel().build_code())?;
+    let saved = book.0.get("Hunting").ok_or("trimmed preset name")?.clone();
+    assert_eq!(book.0.len(), 2);
+    let mut target = panel();
+    target.import_build(&saved)?;
+    assert_eq!(target.points[0], 12);
+    let mut by_url = panel();
+    by_url.import_build(&saved.replacen("OW1:", "oteryn://wheel/v1/", 1))?;
+    assert_eq!(by_url.points, target.points);
+    assert!(book.0.remove("Boss").is_some());
+    assert!(!book.0.contains_key("Boss"));
+    Ok(())
+}

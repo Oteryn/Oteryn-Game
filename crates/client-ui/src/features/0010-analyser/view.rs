@@ -331,6 +331,15 @@ pub(super) fn input_text(panel: &Panel, seconds: u64) -> String {
 }
 
 /// A report independent of which analyser tab is currently selected.
+/// Hours:minutes:seconds form of the confirmed session clock.
+pub(super) fn clock_text(seconds: u64) -> String {
+    format!(
+        "{}:{:02}:{:02}",
+        seconds / 3600,
+        seconds / 60 % 60,
+        seconds % 60
+    )
+}
 pub fn session_text(panel: &Panel) -> String {
     session_text_at(panel, panel.clock.seconds())
 }
@@ -342,7 +351,8 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     } else {
         balance * 3600 / i128::from(seconds)
     };
-    let mut text = lfmt!(
+    let mut text = format!("Session clock: {}\r\n", clock_text(seconds));
+    text.push_str(&lfmt!(
         "Hunting Session\r\nElapsed: {seconds} seconds\r\nXP/h: {}\r\nRaw XP/h: {}\r\nPriced balance: {balance} gold\r\nPriced balance/h: {balance_rate} gold\r\nOnly resolved, priced items and confirmed gold enter the balance.\r\n{}\r\nKills by creature race",
         super::state::per_hour(panel.gained_xp, seconds),
         super::state::per_hour(panel.raw_xp, seconds),
@@ -350,7 +360,7 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
         balance = balance,
         balance_rate = balance_rate,
         seconds = seconds
-    );
+    ));
     for (race, count) in &panel.kills_by_race {
         if *race == 0 {
             let _ = lwrite!(text, "\r\nRace unavailable: {count}", count = count);
