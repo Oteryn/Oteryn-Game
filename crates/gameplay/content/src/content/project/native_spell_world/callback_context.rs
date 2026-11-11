@@ -160,7 +160,7 @@ fn expected_scenes() -> Result<&'static [ExpectedScene], oteryn_world_bundle::Er
         .map_err(|error| oteryn_world_bundle::Error::Format(error.clone()))
 }
 
-fn source_attrs(expected: &super::SourceItem) -> Option<sector::Attrs> {
+fn source_attrs(expected: &super::SourceItem, family: bundle::Family) -> Option<sector::Attrs> {
     let mut attrs = sector::Attrs::default();
     for (key, value) in &expected.attributes {
         match key.as_str() {
@@ -180,7 +180,13 @@ fn source_attrs(expected: &super::SourceItem) -> Option<sector::Attrs> {
             _ => return None,
         }
     }
-    Some(attrs)
+    // Match the compiler's explicit adapter for legacy zero-count Items.
+    // Terrain attributes and positive counts retain their exact source value.
+    Some(if family == bundle::Family::Item {
+        attrs.with_legacy_default_item_count()
+    } else {
+        attrs
+    })
 }
 fn matches_tile(
     expected: &SourceTile,
@@ -218,7 +224,7 @@ fn matches_tile(
                 || (static_surface.is_some()
                     && crate::content::static_surface_definition_id(key) != Some(palette.id))
                 || u16::from(actual.depth) != expected.depth
-                || source_attrs(expected).as_ref() != Some(&actual.attrs)
+                || source_attrs(expected, expected_family).as_ref() != Some(&actual.attrs)
             {
                 return false;
             }
@@ -325,6 +331,38 @@ pub fn qualify_bundle_source_bases(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn callback_item_zero_count_matches_compiler_materialization()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let item = super::super::SourceItem {
+            server_item_id: 3115,
+            depth: 0,
+            attributes: BTreeMap::from([("15".into(), serde_json::json!(0))]),
+        };
+        assert_eq!(
+            source_attrs(&item, bundle::Family::Item)
+                .ok_or("Item attributes")?
+                .count,
+            None
+        );
+        assert_eq!(
+            source_attrs(&item, bundle::Family::Terrain)
+                .ok_or("Terrain attributes")?
+                .count,
+            Some(0)
+        );
+        let item = super::super::SourceItem {
+            attributes: BTreeMap::from([("15".into(), serde_json::json!(1))]),
+            ..item
+        };
+        assert_eq!(
+            source_attrs(&item, bundle::Family::Item)
+                .ok_or("positive Item count")?
+                .count,
+            Some(1)
+        );
+        Ok(())
+    }
     #[test]
     fn default_built_bundle_qualifies_literal_callback_contexts()
     -> Result<(), Box<dyn std::error::Error>> {

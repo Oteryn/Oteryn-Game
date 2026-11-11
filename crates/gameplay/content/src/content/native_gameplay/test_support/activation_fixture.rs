@@ -317,13 +317,11 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 policy.definition_key.as_str(),
                 "oteryn:creature.bazir"
                     | "oteryn:creature.infernatil"
-                    | "oteryn:creature.demodras"
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Loot regeneration refreshes their already qualified source body;
-            // The native-goal owner now qualifies these three identities;
-            // the other five still forbid this entire private loot table.
+            // Native-goal and quest Item admissions close some source yields;
+            // the remaining exact refusals still reject the complete private table.
             for key in [
                 "oteryn:item.tibia.i3061",
                 "oteryn:item.tibia.i3072",
@@ -339,22 +337,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 assert_eq!(facts.item.revision, "definition-r1");
             }
             let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
-                "oteryn:creature.demodras" => {
-                    ("oteryn:item.tibia.i5984", &["oteryn:item.tibia.i5919"])
+                "oteryn:creature.the_old_widow" => {
+                    ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
                 }
-                "oteryn:creature.the_old_widow" => (
-                    "oteryn:item.tibia.i5977",
-                    &["oteryn:item.tibia.i7416", "oteryn:item.tibia.i12320"],
-                ),
                 _ => (
                     "oteryn:item.tibia.i4097",
-                    &[
-                        "oteryn:item.tibia.i3002",
-                        "oteryn:item.tibia.i3070",
-                        "oteryn:item.tibia.i3069",
-                        "oteryn:item.tibia.i3116",
-                        "oteryn:item.tibia.i3309",
-                    ],
+                    &["oteryn:item.tibia.i3116", "oteryn:item.tibia.i3309"],
                 ),
             };
             assert_eq!(corpse.key, body);
@@ -403,7 +391,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.bazir"
                     | "oteryn:creature.dharalion"
-                    | "oteryn:creature.demodras"
                     | "oteryn:creature.earth_overlord"
                     | "oteryn:creature.energy_overlord"
                     | "oteryn:creature.fire_overlord"
@@ -556,7 +543,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 287, 18, 31)
+        (52, 283, 20, 33)
     );
     assert_eq!(
         admitted,
@@ -567,6 +554,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
+            "oteryn:creature.demodras",
             "oteryn:creature.dragonking_zyrtarch",
             "oteryn:creature.dreadful_disruptor",
             "oteryn:creature.eradicator",
@@ -601,7 +589,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         refreshed_body_loot_refusals,
         [
             "oteryn:creature.bazir",
-            "oteryn:creature.demodras",
             "oteryn:creature.infernatil",
             "oteryn:creature.the_old_widow"
         ]

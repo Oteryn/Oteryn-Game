@@ -3721,7 +3721,22 @@ mod tests {
     #[test]
     fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
         let world = test_source(1).unwrap().world_id;
-        let (controller, _) = activated_with_loot_tables(world, None);
+        // Bakragore's source loot is now fully admitted. Explicitly withhold a
+        // private yield so this regression still exercises missing-loot refusal.
+        let mut loot: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+        ))
+        .unwrap();
+        let yield_facts = loot["items"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|facts| facts["item"]["key"] == "oteryn:item.tibia.i43895")
+            .unwrap();
+        assert_eq!(yield_facts["materializable"], true);
+        yield_facts["materializable"] = false.into();
+        let bytes = serde_json::to_vec(&loot).unwrap();
+        let (controller, _) = activated_with_custom_loot_tables(world, None, Some(&bytes));
         let native = controller.active().unwrap().native_gameplay().unwrap();
         let rewards = native.reward_table();
         use crate::content::creature_reward::NoSettlementReason;
