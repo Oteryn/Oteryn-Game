@@ -857,7 +857,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             )
             .into());
         }
-        row.pass("invalid-equip-refused", &reply);
+        row.pass("invalid-equip-refused", reply);
 
         relog(&mut client, clients, 0xe1).await?;
         check_starter(
