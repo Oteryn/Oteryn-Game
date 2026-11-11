@@ -25,13 +25,15 @@ def capture(root, *, profiles_only=False):
     inputs = {}
     for path, sha in [(shared.XML, shared.XML_SHA), (shared.CLIENT, shared.CLIENT_SHA), (shared.BINDINGS, shared.BINDINGS_SHA)]:
         inputs[path] = (root / path).read_bytes()
+        if path == shared.BINDINGS:
+            inputs[path] = shared.historical_binding_bytes(inputs[path], shared.BINDINGS_SHA)
         if hashlib.sha256(inputs[path]).hexdigest() != sha:
             raise ValueError('Rotten Blood existing identity/client input pin differs')
     source = shared.source
     xml = source.xml_index(xml_raw)
     objects = source.engine_items.load_appearance_objects(inputs[shared.CLIENT])
     physical = {r['server_item_id']: r for r in source.policies(inputs[shared.CLIENT], xml_raw, IDS)}
-    bindings = source.binding_index(inputs[shared.BINDINGS])
+    bindings = source.binding_index(inputs[shared.BINDINGS], expected_sha=shared.BINDINGS_SHA)
     profiles = [source.profile(i, xml[i], objects[i], physical[i], bindings, None) for i in sorted(IDS)]
     bound = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': profiles}, bindings, IDS)['records']
     if profiles_only:

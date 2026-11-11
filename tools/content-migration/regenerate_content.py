@@ -181,6 +181,44 @@ def refresh_world_metadata() -> None:
         run(["python3", "tools/content-schema/world-authoring/" + name])
 
 
+def quest_donor_feedback_inputs() -> dict[str, str]:
+    """Verify the donor evidence already pinned by the current Quest tree."""
+    index = json.loads((ROOT / "content/quests/definitions/index.json").read_bytes())
+    sources = index.get("authoring_sources")
+    if not isinstance(sources, list):
+        raise ValueError("Quest donor feedback source inventory is missing")
+    prefix = "tools/content-schema/quest-authoring/samples/donor-source/"
+    inputs = {}
+    for descriptor in sources:
+        if not isinstance(descriptor, dict) or not isinstance(descriptor.get("path"), str):
+            raise ValueError("Quest donor feedback source descriptor is invalid")
+        relative = descriptor["path"]
+        if not relative.startswith(prefix):
+            continue
+        path = Path(relative)
+        digest = descriptor.get("sha256")
+        if (path.is_absolute() or ".." in path.parts or path.as_posix() != relative
+                or not (ROOT / path).resolve().is_relative_to(ROOT.resolve())
+                or relative in inputs or not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None):
+            raise ValueError("Quest donor feedback source is invalid or duplicated: " + relative)
+        if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
+            raise ValueError("Quest donor feedback digest differs: " + relative)
+        inputs[relative] = digest
+    if not inputs:
+        raise ValueError("Quest donor feedback source inventory is empty")
+    return inputs
+
+
+def refresh_quest_donor_capture() -> None:
+    # Whole-Quest capture pins may advance; evidence consumed by that Quest
+    # tree must remain unchanged. A changed feedback input needs explicit review.
+    before = quest_donor_feedback_inputs()
+    run(["python3", "tools/content-schema/quest-authoring/quest_donor_source_authoring.py"])
+    if quest_donor_feedback_inputs() != before:
+        raise ValueError("Quest donor feedback source inventory changed during capture")
+
+
 def git(*args: str) -> str:
     """Run git and fail closed: any error stops the script instead of reading as "nothing"."""
     result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
@@ -753,6 +791,10 @@ def main() -> int:
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    # These standalone compilers consume the final Quest and placement inputs;
+    # native qualification and its censuses must see their registered bindings.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_access.py"])
+    run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
     # Claims above may add complete native container recipes. Rebuild their
     # Item closure only after those final claims exist, before census and pins.
     run(["python3", "tools/content-migration/register_spell_families.py"])
@@ -766,6 +808,10 @@ def main() -> int:
     refresh_world_metadata()
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
+    for name in ("quest_explore_area_candidates.py", "quest_talk_npc_candidates.py",
+                 "quest_reward_only_binding_candidates.py"):
+        run(["python3", "tools/content-schema/quest-authoring/" + name])
+    refresh_quest_donor_capture()
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

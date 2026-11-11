@@ -431,7 +431,7 @@ def test_source_cohort_includes_installed_successors() -> None:
             raise AssertionError("the complete World cohort must be measured")
 
 
-def full_generation_trace(events, inspect_command) -> int:
+def full_generation_trace(events, inspect_command, *, prepare=None, checks=False) -> int:
     """Exercise the actual dispatcher without running any producer or Git write."""
     def record(command):
         command = tuple(command)
@@ -442,8 +442,21 @@ def full_generation_trace(events, inspect_command) -> int:
         root = Path(temp)
         for tool in rc.AUTHORING_TOOLS:
             write(root, tool, "")
+        feedback = "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json"
+        write(root, feedback, {"source_fixture": True})
+        write(root, "content/quests/definitions/index.json", {"authoring_sources": [{
+            "path": feedback, "sha256": hashlib.sha256((root / feedback).read_bytes()).hexdigest(),
+        }]})
+        check = ("python3", "fixture/final_check.py", "--check")
+        write(root, check[1], "")
+        if prepare is not None:
+            prepare(root)
+        argv = ["regenerate_content.py", "--no-stage"]
+        if not checks:
+            argv.append("--skip-checks")
         with patch.object(rc, "ROOT", root), \
-                patch.object(sys, "argv", ["regenerate_content.py", "--no-stage", "--skip-checks"]), \
+                patch.object(sys, "argv", argv), \
+                patch.object(rc, "CHECKS", [check]), \
                 patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}), \
                 patch.object(rc, "run", side_effect=record), \
                 patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
@@ -457,7 +470,8 @@ def full_generation_trace(events, inspect_command) -> int:
             result = rc.main()
             unresolved.assert_called_once_with()
         assert not any(command[0] in {"git", "cargo"} for command in events)
-        assert not any("--check" in command for command in events)
+        if not checks:
+            assert not any("--check" in command for command in events)
         return result
 
 
@@ -508,8 +522,121 @@ def test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs() ->
         assert max(index for index, command in enumerate(events) if command == source) < variant_index
 
 
+def downstream_quest_commands():
+    prefix = "tools/content-schema/quest-authoring/"
+    return tuple(("python3", prefix + name + ".py") for name in (
+        "qengine_access", "qmech_m24_kill_bindings", "quest_explore_area_candidates",
+        "quest_talk_npc_candidates", "quest_reward_only_binding_candidates",
+        "quest_donor_source_authoring",
+    ))
+
+
+def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> None:
+    commands = downstream_quest_commands()
+    native = ("python3", "tools/content-migration/register_spell_families.py")
+    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    check = ("python3", "fixture/final_check.py", "--check")
+
+    def consume(command, events):
+        if command == native:
+            assert all(producer in events[:-1] for producer in commands[:2]), "native consumer needs final Quest bindings"
+        if command == commands[-1]:
+            # Replaying unpinned capture metadata is allowed; pinned semantic
+            # feedback must remain exactly the evidence already in the Quest tree.
+            write(rc.ROOT, "tools/content-schema/quest-authoring/samples/donor-source/npc-index.json", {"fresh": True})
+
+    events = []
+    assert full_generation_trace(events, consume, checks=True) == 0
+    assert all(events.count(command) == 1 for command in commands)
+    authored = [("python3", tool, "content") for tool in rc.AUTHORING_TOOLS]
+    last_authored = max(i for i, command in enumerate(events) if command in authored)
+    assert last_authored < events.index(commands[0]) < events.index(commands[1]) < events.index(native)
+    final_inputs = max(events.index(native), events.index(("world-metadata",)), events.index(variant))
+    indices = [events.index(command) for command in commands[2:]]
+    assert indices == sorted(indices) and final_inputs < indices[0]
+    assert indices[-1] < events.index(check), "freshness checks must see all six real producers"
+
+
+def test_downstream_quest_producer_refusal_stops_later_work() -> None:
+    commands = downstream_quest_commands()
+    check = ("python3", "fixture/final_check.py", "--check")
+    for index, refused in enumerate(commands):
+        def refuse(command, _events):
+            if command == refused:
+                raise subprocess.CalledProcessError(1, list(command))
+
+        events = []
+        try:
+            full_generation_trace(events, refuse, checks=True)
+        except subprocess.CalledProcessError as error:
+            assert error.cmd == list(refused)
+        else:
+            raise AssertionError("a failed Quest producer must stop regeneration")
+        assert events.count(refused) == 1
+        assert not any(command in events for command in commands[index + 1:])
+        assert check not in events
+
+
+def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture() -> None:
+    donor = downstream_quest_commands()[-1]
+    index_path = "content/quests/definitions/index.json"
+    for invalid in ("empty", "duplicate", "stale", "escape"):
+        def prepare(root):
+            index = json.loads((root / index_path).read_bytes())
+            descriptor = index["authoring_sources"][0]
+            if invalid == "empty":
+                index["authoring_sources"] = []
+            elif invalid == "duplicate":
+                index["authoring_sources"].append(dict(descriptor))
+            elif invalid == "stale":
+                write(root, descriptor["path"], {"unexpected_source_change": True})
+            else:
+                descriptor["path"] = "tools/content-schema/quest-authoring/samples/donor-source/../outside.json"
+            write(root, index_path, index)
+
+        events = []
+        try:
+            full_generation_trace(events, lambda *_: None, prepare=prepare)
+        except ValueError as error:
+            assert "Quest donor feedback" in str(error)
+        else:
+            raise AssertionError("unproved donor feedback reached capture: " + invalid)
+        assert donor not in events
+
+
+def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks() -> None:
+    donor = downstream_quest_commands()[-1]
+    index_path = "content/quests/definitions/index.json"
+    check = ("python3", "fixture/final_check.py", "--check")
+    for checks in (False, True):
+        for repin in (False, True):
+            def change_feedback(command, _events):
+                if command != donor:
+                    return
+                index = json.loads((rc.ROOT / index_path).read_bytes())
+                descriptor = index["authoring_sources"][0]
+                write(rc.ROOT, descriptor["path"], {"unexpected_source_change": True})
+                if repin:
+                    descriptor["sha256"] = hashlib.sha256((rc.ROOT / descriptor["path"]).read_bytes()).hexdigest()
+                    write(rc.ROOT, index_path, index)
+
+            events = []
+            try:
+                full_generation_trace(events, change_feedback, checks=checks)
+            except ValueError as error:
+                assert "Quest donor feedback" in str(error)
+            else:
+                raise AssertionError("changed donor feedback was silently accepted")
+            assert events.count(donor) == 1
+            assert check not in events
+
+
 def main() -> None:
     tests = [
+        test_downstream_quest_producers_follow_inputs_and_precede_consumers,
+        test_downstream_quest_producer_refusal_stops_later_work,
+        test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture,
+        test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks,
         test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them,
         test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs,
         test_source_cohort_includes_installed_successors,

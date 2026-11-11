@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
+    "previous_published_head": "879303f499b7cfda2dd031bf6d728b1d2f000223",
     "integrated_main": "f01f18582443f482b7adcfaf32cae3f9d3616876"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -57,22 +57,23 @@
     }
   ],
   "last_checkpoint_execution": {
-    "head": "c8a3b3ca5326d808bf2e12df8956de395b2e4a3e",
-    "merge_run": 42941128183,
-    "generator_run": 42941128159,
-    "generator_job": 130262936969,
-    "generator_result": "Quest prerequisites passed; the materializer failed Rust compilation; no generated-content artifact was produced.",
-    "rust_result": "Clippy failed; all three unit shards failed test compilation before executing tests.",
-    "world_result": "Compiler build passed; pin-check rejected the stale tracked pin. No manual repin performed.",
-    "repair_scope": "Resolve the observed merged export, missing QuestWorldContext.party and optional reward-reference classes; retain cardinal-only Turn and unique numpad aliases; group existing corpse-admission arguments without changing qualification rules; pass an explicit absent Tutorial Corruptor claim in the ordinary nested-loot fixture. Complete the generic authored-binding fixture with its explicit absent occurrence/admission and empty dialogue alternatives.",
-    "qualification": "Pending on the successor head; source checks and formatting are not runtime or PostgreSQL evidence."
+    "head": "879303f499b7cfda2dd031bf6d728b1d2f000223",
+    "merge_run": 42946402737,
+    "generator_run": 42946402808,
+    "generator_job": 130280178376,
+    "generator_result": "Quest prerequisites passed; Rust materializer compilation failed on two missing qualify_origin direction arguments. Pin refresh, export and upload were skipped; artifact inventory was empty.",
+    "generator_log_sha256": "5e0367d7d95c7007223b47cb757cd402c3725b6d5f3debdb566cc7f8512d2a20",
+    "rust_policy_result": "Actual cache-miss execution passed in job 130280772376.",
+    "rust_result": "All three unit jobs failed compilation before executing tests. Clippy also rejected the stale validate_document test call and the unconstructed PaidExchange variant.",
+    "repair_scope": "Complete both scripted relocation calls, use the current full test validator with its unchanged 256-row bound, connect existing paid exchange branches to their byte-equivalent typed key helper, repair exact historical Item binding consumption, and complete downstream Quest generation.",
+    "qualification": "Source checks and bounded Python tests do not establish a passing Rust build, full generated content or PostgreSQL qualification."
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
     "path": "crates/gameplay/content/src/content/creature_reward_empty_corpse.rs",
     "finding": "The private row helper argument grouping missed its path-mounted empty-corpse child caller. The prior nine-call proof covered only the parent source file.",
     "repair": "Wrap the same u32::from(u16::MAX) capacity and exact borrowed verified-source corpse set in CorpseAdmission; preserve the independent ordinary-row capacity of 30.",
-    "verification": "Exact parent/child source closure and light scoped checks; compilation and full generation remain pending on the successor.",
+    "verification": "The complete ten-call parent/child closure passed source checks. The next generator reached the World crate, where two different qualify_origin calls blocked compilation; no complete build or runtime claim.",
     "actual_ci_evidence": {
       "head": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
       "run_id": 42944381067,
@@ -87,5 +88,49 @@
     "reward_claim_variants": "Run the canonical variant migration producer after final Claim, Item, Achievement and metadata generation; its existing independent CI --check rejected the stale packet.",
     "checks": "Two new prerequisite/order regressions failed on the prior script; all 17 lightweight dispatcher/merge checks passed after the two producer calls. No full provider generation or Rust/PG execution is claimed.",
     "remaining_guard": "Post-conversion Item binding/eligibility references remain subject to their existing strict source checks; no automatic evidence-pin bypass was added."
+  },
+  "identity_predecessor_repair": {
+    "path": "tools/content-schema/quest-authoring/questpc2_rotten_item_facts.py",
+    "finding": "The inherited helper expected the pre-Cake whole-table pin, while the approved successor adds only exact Item 48227.",
+    "repair": "Authenticate the existing exact historical predecessor before the original whole-table digest check; pass that same original expected digest to binding_index.",
+    "proof": "All 33971 predecessor bindings and all 12 retained Rotten identities are unchanged. XML, client, donor archive, both fact packets and all admission rules retain their previous bytes and pins.",
+    "checks": "The actual failure was reproduced. Five focused Item/membership tests passed in 19.717 seconds, including identical historical/successor outputs and refusal of four unauthorized binding mutations. Independent source review passed."
+  },
+  "quest_downstream_generation_repair": {
+    "after_final_authoring_before_native_registration": [
+      "qengine_access.py",
+      "qmech_m24_kill_bindings.py"
+    ],
+    "after_final_metadata_and_reward_variants": [
+      "quest_explore_area_candidates.py",
+      "quest_talk_npc_candidates.py",
+      "quest_reward_only_binding_candidates.py",
+      "quest_donor_source_authoring.py"
+    ],
+    "donor_feedback_guard": "The current Quest index must declare a nonempty unique set of safe donor input paths whose bytes match the recorded SHA256 values before generation. The identical validated map must remain afterward, even with --skip-checks. Changed evidence or simultaneous repinning fails closed.",
+    "current_feedback_inputs": 15,
+    "source_projection_proof": "All 352 ordered Quest identities and source_data projections match the integrated main. The observed stale final-shard pin differs only because of four authored recipes.",
+    "checks": "Four new regressions failed on the previous dispatcher. All 21 lightweight dispatcher checks passed in 0.866 seconds; the 17 prior test function ASTs are unchanged. Independent peer review passed.",
+    "remaining": "Actual full runner generation must pass strict source/reference checks and the donor feedback guard; no generated-output success is claimed."
+  },
+  "scripted_origin_call_repair": {
+    "paths": [
+      "crates/gameplay/world/src/map/floor/door_displacement.rs",
+      "crates/gameplay/world/src/map/floor/source_scene.rs"
+    ],
+    "repair": "Pass explicit None for scripted door USE teleport and captured scene relocation. These actions retain the ordinary no-control-loss check; they do not obtain the forced directional STEP allowance.",
+    "preserved": "Existing scope, revision, destination, collision and diagonal STEP guards are unchanged. Full private qualify_origin call closure checked; actual compilation remains pending."
+  },
+  "paid_claim_key_integration_repair": {
+    "path": "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs",
+    "repair": "Use the existing typed PaidExchange key helper in the two existing paid/repeatable branches instead of their duplicate hash bodies.",
+    "source_equivalence": "Identical character, session, decimal command ID, separator and callback bytes, identical hash domain, output prefix and lowercase hex encoding. Branch predicates, ledger writes and other claim kinds are unchanged; the helper and its exact legacy-key regression are unchanged.",
+    "formatting": "Scoped formatting is included; the entire resulting file equals the two intended replacements followed by the pinned formatter.",
+    "verification": "Source equivalence, real Syn parsing and scoped formatting checks passed. No Cargo, Rust test or database execution is claimed."
+  },
+  "test_validator_integration_repair": {
+    "path": "crates/gameplay/quests/src/quest/reward_callbacks/peer_tests.rs",
+    "repair": "Replace the removed wrapper with validate_document_with_capacity(document, questpc7_registry_bounds::PER_DOCUMENT). The named bound remains 256, exactly matching the old wrapper.",
+    "verification": "All seven existing tests and assertions are unchanged apart from the equivalent invocation. Whole-crate old-name scan, scoped parsing/formatting and independent source review passed."
   }
 }
