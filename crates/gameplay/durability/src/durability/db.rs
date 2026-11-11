@@ -1739,35 +1739,38 @@ pub(super) async fn lock_admission_domain(
 }
 
 /// Shared strongest relation fence, acquired before domain keys and semantic time.
+///
+/// One statement: PostgreSQL takes the listed locks one by one in the listed (lexical)
+/// order, so the order and mode are those of one statement per relation, without one holder
+/// round trip per relation (RC5: these were 44% of all statements).
 pub(super) async fn lock_admission_relations(
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> Result<(), DurabilityError> {
     // Lexical order, complete current ledger. Immediate FK/unique/index work on
     // these relations cannot introduce a new competing writer/row lock after L.
-    for relation in [
-        "game_durability_admission_account_guards",
-        "game_durability_admission_character_guards",
-        "game_durability_admission_guard_history",
-        "game_durability_admission_lifecycle_receipts",
-        "game_durability_admission_runtime_guards",
-        "game_durability_admission_signing_trust_guards",
-        "game_durability_control_loss_continuity",
-        "game_durability_executor_custody",
-        "game_durability_fresh_admission_receipts",
-        "game_durability_reconnect_attempts",
-        "game_durability_reconnect_pending_commands",
-        "game_durability_reconnect_sessions",
-        "game_durability_recovery_grant_consumptions",
-        "game_durability_session_replacements",
-        "game_durability_session_use_ledgers",
-        "game_durability_session_use_memberships",
-        "game_durability_transport_ref_reservations",
-    ] {
-        sqlx::query(sqlx::AssertSqlSafe(format!(
-            "LOCK TABLE {relation} IN EXCLUSIVE MODE"
-        )))
+    sqlx::query(ADMISSION_RELATIONS_LOCK)
         .execute(&mut **transaction)
         .await?;
-    }
     Ok(())
 }
+
+/// The admission relations in lexical order, locked by [`lock_admission_relations`].
+const ADMISSION_RELATIONS_LOCK: &str = "LOCK TABLE \
+     game_durability_admission_account_guards, \
+     game_durability_admission_character_guards, \
+     game_durability_admission_guard_history, \
+     game_durability_admission_lifecycle_receipts, \
+     game_durability_admission_runtime_guards, \
+     game_durability_admission_signing_trust_guards, \
+     game_durability_control_loss_continuity, \
+     game_durability_executor_custody, \
+     game_durability_fresh_admission_receipts, \
+     game_durability_reconnect_attempts, \
+     game_durability_reconnect_pending_commands, \
+     game_durability_reconnect_sessions, \
+     game_durability_recovery_grant_consumptions, \
+     game_durability_session_replacements, \
+     game_durability_session_use_ledgers, \
+     game_durability_session_use_memberships, \
+     game_durability_transport_ref_reservations \
+     IN EXCLUSIVE MODE";

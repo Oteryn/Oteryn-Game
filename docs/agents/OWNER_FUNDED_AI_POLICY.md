@@ -72,6 +72,16 @@ that only answers this review's findings is reviewed again only when it meets th
 second-review rule above. This authorization covers the review alone, not
 implementation, repair or any other Codex use.
 
+Owner decision 2026-11-11 (fix of confirmed findings): the review run itself stays
+read-only and never edits code. Findings the coordinator has verified against the
+code may then be handed, as one list, to a single code-writing Codex run at
+reasoning effort `medium` (on the PC: `codex-review.sh <worktree> <tag>
+--fix-confirmed <file>`). That run writes a red test per finding before any fix,
+reports a finding it cannot reproduce without changing code, changes no existing
+assertion, timeout or budget and nothing outside the list, and commits nothing;
+the coordinator reviews its diff before committing. This is ordinary code-writing
+Codex use under the 2026-11-11 effort decision, not a further review.
+
 The owner may revoke or narrow this standing authorization at any time by a later
 explicit instruction. A later protected policy may narrow execution further but
 cannot broaden this permission.
@@ -88,6 +98,13 @@ GitHub control-plane write and must obey one-writer routing.
   repository/PR/head review packet, but it must not emit the trigger itself.
 - For a standalone task with no programme control plane, only the exact task owner
   named by the live allocation may trigger review.
+- Owner decision 2026-11-11 (lanes that work alone): a Claude session, child
+  session or PC lane that owns a branch or PR, named as its owner in its packet
+  or allocation, is the exact task owner for the heads it pushes. It runs that
+  head's local `codex exec` review itself under the per-PR rule above and
+  reports the result (head SHA, findings, fixes) to its coordinator, which does
+  not run a second review of the same head. A Codex lane never reviews code; its
+  result is reviewed by the coordinator or the lane that takes it over.
 - If trigger ownership is ambiguous, fail closed and reconcile ownership; do not
   ask the owner for funding permission and do not race another agent.
 - Provider-native automatic review already running for the same exact head counts
