@@ -89,6 +89,17 @@ with CI and never blocks or delays it.
   the run that wrote it.
 - Its output is findings to verify with step 3, not a verdict; a failed or
   empty run means "not reviewed".
+- Fixing confirmed findings (owner decision 2026-11-11): the review run never
+  edits code. After you verify each finding (§6), write only the confirmed ones,
+  one per line as `P1|P2 path:line - problem - failure path`, to a file and hand
+  them to one code-writing Codex run at reasoning effort `medium`: on the PC
+  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
+  (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
+  the same list. Per finding it writes a red test first, reports `NOT
+  REPRODUCED` without a code change when the test cannot fail, then makes the
+  smallest fix and reruns the test green; it changes no existing assertion,
+  timeout or budget and nothing outside the listed findings. Nothing is
+  committed: you review that diff (§2-§3), then commit and push it.
 - Fixes made for a review do not get another review unless they meet the
   second-review rule above.
 - Merge: CI green and no open P0/P1 finding from the review.
