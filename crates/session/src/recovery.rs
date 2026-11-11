@@ -102,6 +102,13 @@ impl<S: SessionStream> Session<S> {
         .await?;
         let envelope = decode_wire_envelope(&frame)?;
         envelope.validate(Direction::ServerToClient, false)?;
+        // A resume the server took but cannot join (`SESSION_JOIN_UNAVAILABLE`) ends with its
+        // `ProtocolError`: keep its code and trace.
+        if let Some(error) =
+            session_exchange::terminal_protocol_error(&envelope, &previous.selected_capabilities)?
+        {
+            return Err(error);
+        }
         if envelope.message_type() != MessageType::ServerResumeAccepted {
             return Err(SessionError::UnexpectedMessage {
                 expected: MessageType::ServerResumeAccepted,
