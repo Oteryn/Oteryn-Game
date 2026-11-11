@@ -6,6 +6,8 @@ struct SpatialPhase {
     caster_position: TilePosition,
     origin: TilePosition,
     facing: Direction,
+    /// WU26-14: the direction comes from the aim, so it is available without a facing.
+    aimed: bool,
     bindings: Vec<LiveActorBinding>,
     chain_creatures: Vec<ChainCreature>,
     sight_origin: TilePosition,
@@ -19,7 +21,7 @@ struct SpatialPhase {
 /// WU26-14 (Winter Update 2026 test server): what `aim_at_target` with `NONE` or `POSITION` asks
 /// of a wave or beam spell, the old form of the `aim_mode` options TARGET and CURSOR.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Aim {
+pub(in crate::gameplay_transport) enum Aim {
     /// Towards the held attack target, or the facing without one.
     Target,
     /// Towards the tile under the cursor.
@@ -29,7 +31,7 @@ enum Aim {
 /// WU26-14: the target option of `intent`. A wave or beam (`needs_direction`) honours TARGET and
 /// CURSOR; a strike (`target_or_direction`) keeps the SPELL-D7 behaviour; any other spell refuses
 /// them. `ATTACK_TARGET` and casts without `aim_at_target` are unchanged.
-fn aim(
+pub(in crate::gameplay_transport) fn aim(
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
 ) -> Result<Option<Aim>, SpellCastDisposition> {
@@ -58,7 +60,7 @@ fn aim(
 /// WU26-14: the geometry origin and facing of a wave or beam aimed at `point`. The direction is
 /// the cardinal one towards it (east and west win a tie), else the caster's facing; the origin is
 /// the tile next to the caster. The character's own facing is not changed.
-fn aimed_origin(
+pub(in crate::gameplay_transport) fn aimed_origin(
     caster: TilePosition,
     facing: Option<Direction>,
     point: Option<TilePosition>,
@@ -70,6 +72,37 @@ fn aimed_origin(
         .ok_or(SpellCastDisposition::TargetRequired)?;
     let (dx, dy) = delta(d);
     Ok((offset(caster, dx, dy)?, d))
+}
+
+/// WU26-14: the tile an aimed cast turns toward. TARGET is the held target the caster sees;
+/// CURSOR is the cursor tile while it lies in the caster's view on its floor. Outside it, as
+/// without a seen target, there is none and the cast keeps the facing.
+pub(in crate::gameplay_transport) fn aim_point(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    caster: MovementLocalPosition,
+    aim: Aim,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    now: SemanticTimeMicros,
+) -> Option<TilePosition> {
+    match aim {
+        Aim::Target => aimed_target_tile(runtime, states, actor, caster, attack_target, now),
+        Aim::Cursor(p) => in_view(caster, p).then_some(p),
+    }
+}
+
+/// WU26-14: `p` is on the caster's floor and inside its view.
+fn in_view(caster: MovementLocalPosition, p: TilePosition) -> bool {
+    p.floor == caster.floor
+        && crate::gameplay_transport::attack::sees(
+            caster,
+            MovementLocalPosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            },
+        )
 }
 
 /// WU26-14 TARGET: the tile of the held attack target while it is a visible creature or player the
@@ -408,24 +441,17 @@ async fn prepare_spatial(
     };
     let attack_target_tile = attack_target_actor.map(|(_, t)| t);
     let attack_target_actor = attack_target_actor.map(|(a, _)| a);
-    // WU26-14: an aimed wave or beam picks only its direction; a cursor on another floor is illegal.
+    // WU26-14: an aimed wave or beam picks only its direction.
     let aimed = match aim {
-        Some(Aim::Cursor(p)) if p.floor != caster_position.floor => {
-            return Err(SpellCastDisposition::TargetIllegal);
-        }
-        Some(Aim::Cursor(p)) => Some(aimed_origin(
+        Some(aim) => Some(aimed_origin(
             caster_position,
             position.facing().map(direction),
-            Some(p),
-        )?),
-        Some(Aim::Target) => Some(aimed_origin(
-            caster_position,
-            position.facing().map(direction),
-            aimed_target_tile(
+            aim_point(
                 runtime,
                 states,
                 actor,
                 position.position(),
+                aim,
                 attack_target,
                 now,
             ),
@@ -594,6 +620,7 @@ async fn prepare_spatial(
         caster_position,
         origin,
         facing,
+        aimed: aimed.is_some(),
         bindings,
         chain_creatures,
         sight_origin,
@@ -630,6 +657,7 @@ async fn qualify_targets(
         caster_position,
         origin,
         facing,
+        aimed,
         bindings,
         chain_creatures,
         sight_origin,
@@ -775,7 +803,7 @@ async fn qualify_targets(
         line_of_sight_clear: Some(
             caster_position == origin || sight.contains(&(caster_position, origin)),
         ),
-        direction_available: position.facing().is_some(),
+        direction_available: position.facing().is_some() || aimed,
         wheel_unlocked: None,
         in_protection_zone: caster_protection,
         target_tile_solid: tiles.get(&origin).map(|t| t.solid),
