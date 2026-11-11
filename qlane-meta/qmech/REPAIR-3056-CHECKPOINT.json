@@ -3,7 +3,7 @@
   "pull_request": "https://github.com/Oteryn/Oteryn-Game/pull/3056",
   "status": "AUTHORING_CHECKPOINT_NOT_QUALIFIED",
   "parents": {
-    "previous_published_head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+    "previous_published_head": "183c6551efa22860c204513111318b442aa047d9",
     "integrated_main": "4e29529abacfcbff821bfb7560424c6684b936d7"
   },
   "purpose": "Preserve the reviewed source integration on the PR branch and produce canonical derived content on GitHub runners. This checkpoint is not a passing build, PostgreSQL result, or merge candidate.",
@@ -15,9 +15,10 @@
   },
   "pending": [
     "Complete exact-head canonical generation on GitHub; inspect bound artifact base/archive/patch/paths before applying generated content and final World pins.",
-    "Run the full migration parent after early validation gates, including Boss12/NPC2, M04_10, WorldChange15 and Lion14; local bounded evidence is not that result.",
+    "Run the full migration parent after early validation gates, including Boss12/NPC2/Yield10/Rotten2, M04_10, WorldChange15 and Lion14; bounded local results and prior production-call return do not establish full-suite success.",
     "Observe the actual full native registration output keyset/count and residual after the explicit proof/merged union; do not guess or blindly change43.",
     "After data materialization, qualify Rust/runtime failures, the actual boss inventory marker and private-drop behavior; retain actual execution versus cache/compile distinctions.",
+    "Verify final generated43501..43504 native0/canonical150 and complete the whole Rotten2 module on a runner. The final new test ended locally inside source.capture with SIGKILL of unknown cause; the existing outside-record digests are unchanged and require exact qualification, not blind replacement.",
     "Once code/data confidence is established, run the complete final PostgreSQL/Node qualification on GitHub. Current wrappers skipped DB; previous c74 evidence is historical.",
     "Keep the six deferred P2/P3 groups together for the final pass; external live client-capture inputs remain unverified until real producer/consumer evidence exists.",
     "Two allowed Codex reviews were already used; latest clean review applies only to41beb4536f0ea10b1d5fadfa066a5f310ae8b1f7. Later material changes have no fresh Codex approval. Do not trigger a third review or infer merge authorization."
@@ -70,66 +71,281 @@
     }
   ],
   "last_checkpoint_execution": {
-    "head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
-    "merge_run": 42987261419,
-    "generator_run": 42987261496,
-    "generator_job": 130411289700,
-    "generator_result": "Actual Quest prerequisites passed. Materializer compiled in3m09s and completed through npc_presence1122; imbuement authoring built24 types/72 tiers. First Lion512, M42 refresh/admission, M04532 and QNPC544 returned before QuestCorpse554 refused QUEST_CORPSE_EXISTING_NATIVE_CONFLICT. The runner did not expose the conflicting key/row. WorldChange568, House583 and the tail were not reached. Final pins/export/upload were skipped and artifacts were empty.",
-    "generator_log_sha256": "7bd28650ddc9372a467752e3a3cc807d5dc9692d82387edbb2fd5c90e0797090",
-    "generator_receipt": {
-      "path": "batch65-step-generator-terminal-evidence.json",
-      "sha256": "a91d89faf159dd38370db79d20ac8c3f37e9911dbf730e2d16cc363ab6b31618"
+    "head": "183c6551efa22860c204513111318b442aa047d9",
+    "merge_run": 42995700580,
+    "monitor_state": "ALL_RUNS_TERMINAL_NOT_QUALIFIED_GENERATOR_I7385",
+    "open_runs": [],
+    "terminal_monitor_receipt": {
+      "path": "batch66-ci-monitor.json",
+      "sha256": "70686b12af800c2118fb63a6ddc5fc13f377150f491fd785fdc30842464fe450"
     },
-    "registered_output_count": null,
-    "rust_policy_result": "Actual cache-miss cargo metadata, formatting, architecture boundaries, migration JSON and production closure checks passed. No unit or PostgreSQL execution is inferred from policy.",
-    "rust_policy_log_sha256": "1746f49da45092d69a8f3cbf4f31cda29ea83a23bbb8b4feb7f21170f3401a5c",
-    "rust_policy_key": "jobresult-v1-rust_policy-807feac4799d8cebc9a6da1d752c4f15de2a2a8c2d1a6cd4f9a23c44953a023a",
-    "rust_policy_last_actual_checks": {
-      "head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
-      "run_id": 42987261419,
-      "job_id": 130412760495,
-      "receipt": {
-        "path": "batch65-retained-policy-terminal-proof.json",
-        "sha256": "f0d2df0cd208935903eb835db1f9d0c906f6e64fde4214e86bc3d5492d88a2b8"
+    "final_run_summaries": {
+      "path": "batch66-final-run-summaries.json",
+      "sha256": "361797733d67bf541ea347f1d3046d91d39a50329f7fff8c69170dac7080ad56"
+    },
+    "terminal_run_conclusions": {
+      "generator": {
+        "run_id": 42995700411,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "merge": {
+        "run_id": 42995700580,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "native": {
+        "run_id": 42995700326,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "quest": {
+        "run_id": 42995700706,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "failure"
+      },
+      "pg": {
+        "run_id": 42995700336,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "authority": {
+        "run_id": 42995693113,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "g4": {
+        "run_id": 42995700858,
+        "attempt": 1,
+        "status": "completed",
+        "conclusion": "success"
       }
     },
-    "clippy_result": "Actual strict Clippy passed all67 selected packages, zero result-cache reuse; dev compilation5m00s. This is lint/compilation evidence, not a unit-suite pass.",
-    "clippy_job": 130412760617,
-    "clippy_log_sha256": "0f5ec5c2c460f470c281407a3a5d5b0c8300dea3b6468981dbfcae79e67af5f6",
-    "rust_unit_result": "Three disjoint actual shards contain12548 cases:11919 PASS and629 FAIL, zero result-cache reuse. Every629 previous failure identity and normalized semantic failure block persists; no existing identity changes status. Accepted main replaces one passing private architecture fixture with one passing public-scan fixture; their bodies are not claimed byte-identical.",
+    "generator_run": 42995700411,
+    "generator_job": 130439148431,
+    "generator_result": "The actual first converter/Prey registration pass reached register573 and refused BOSS_REWARD_YIELD_PROFILE_CONFLICT:oteryn:item.tibia.i7385. Prior QuestCorpse554, authoredNPC556 and WorldChange568 calls returned by source control flow. This is not full replay or runtime qualification. House583, the later tail, final standalone registration, pin refresh, patch export and upload were not reached; artifacts are empty. The previous runner row body was not logged.",
+    "generator_log_sha256": "25e84269122b81f3fe512afc82145eb4bfd752bba2271edb87d3dba6ee2b41c7",
+    "generator_receipt": {
+      "path": "batch66-step-generator-terminal-receipt.json",
+      "sha256": "98bc8c004e97f461f9ed6e933aa86a90bbed8d66388f56ff71e88d03d08e40bb"
+    },
+    "registered_output_count": null,
+    "rust_policy_result": "Actual cache-miss policy checks passed: cargo metadata, formatting, architecture boundaries, migration JSON and production closure checks. No unit or PostgreSQL execution is inferred from policy.",
+    "rust_policy_log_sha256": "7f7e77b4b461123550a259c89ca4c0b30e9030f3474199b39dd2c9eb25c35abc",
+    "rust_policy_key": "jobresult-v1-rust_policy-4242b1d03e5f3d5e36039ed3b48c432b9448365f5086a4b2d1a87f8be0087e91",
+    "rust_policy_last_actual_checks": {
+      "head": "183c6551efa22860c204513111318b442aa047d9",
+      "run_id": 42995700580,
+      "job_id": 130440077999,
+      "receipt": {
+        "path": "batch66-retained-policy-terminal-proof.json",
+        "sha256": "9560b6ffaf181b790b91ba43b403c648496b89eeb03c9977445d6dfb1cca4cbc"
+      }
+    },
+    "clippy_result": "Actual strict Clippy passed all67 selected packages, zero result-cache reuse; dev compilation3m57s. Cargo/build-cache restoration is separate from result reuse and testcase execution.",
+    "clippy_job": 130440077967,
+    "clippy_log_sha256": "09c0dca800ccb8757a50696c8d0a5bc0e0b14f6ba5790cd93c2c5fff4a87076a",
+    "clippy_receipt": {
+      "path": "batch66-rotten-clippy-terminal-proof.json",
+      "sha256": "d428672a8d35ff87cfc2a36fabeb3c871fdfd3c77e3277da6333b8ac07ff2fcd"
+    },
+    "rust_unit_result": "Three disjoint actual shards executed12509 cases:11880 PASS and629 FAIL. All629 failure identities and normalized semantic diagnostic blocks remain unchanged from head65. Exactly39 previously passing cases were not executed; every one belongs to a package with a literal cache-reuse notice in its shard. Cached cases are not counted as fresh PASS. No new failure identity or changed existing status was observed.",
     "rust_unit_jobs": [
       {
-        "job_id": 130412760570,
-        "executed": 4190,
-        "passed": 3967,
+        "job_id": 130440077974,
+        "executed": 4174,
+        "passed": 3951,
         "failed": 223,
-        "packages_to_run": 67,
-        "packages_reused": 0,
-        "log_sha256": "4d4c07772947b442dd8bdd65af5e663dcde743bbadfc3a7805c4a026a15beabe"
+        "packages_to_run": 59,
+        "packages_reused": 8,
+        "log_sha256": "077e0368393bfab40a48e0656e939cdb70282d5410e63a1435945881f9b4615f"
       },
       {
-        "job_id": 130412760575,
-        "executed": 4236,
-        "passed": 4037,
+        "job_id": 130440078062,
+        "executed": 4224,
+        "passed": 4025,
         "failed": 199,
-        "packages_to_run": 67,
-        "packages_reused": 0,
-        "log_sha256": "9d092169028b2b05cc83f58e06e7d9dd0cb25453fbc21d2ac8cd79233263408a"
+        "packages_to_run": 59,
+        "packages_reused": 8,
+        "log_sha256": "f651ced1153e12d441bf266269828eabea73a1cfe8f48e89fb7d04797636e508"
       },
       {
-        "job_id": 130412760445,
-        "executed": 4122,
-        "passed": 3915,
+        "job_id": 130440077944,
+        "executed": 4111,
+        "passed": 3904,
         "failed": 207,
-        "packages_to_run": 67,
-        "packages_reused": 0,
-        "log_sha256": "b7ce4519acbd9d465758ae7c3427a85ed4b72af29d68264e534876214e9b7a6b"
+        "packages_to_run": 61,
+        "packages_reused": 6,
+        "log_sha256": "9f093b2b6dbf3741d128dd13972fb9007e4483ad75976793869191a8df82b945"
       }
     ],
     "unit_result_cache_provenance": {
-      "1": [],
-      "2": [],
-      "3": []
+      "1": [
+        {
+          "package": "oteryn-client-domain",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2184456Z ##[notice]oteryn-client-domain passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-diagnostics",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2194081Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-foundation",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2196712Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-identity",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2199076Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-input-actions",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2201353Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-ntp-clock",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2203623Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-simulation-determinism",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2205990Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-synthetic-assets",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:37.2208510Z ##[notice]oteryn-synthetic-assets passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        }
+      ],
+      "2": [
+        {
+          "package": "oteryn-foundation",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4141739Z ##[notice]oteryn-foundation passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-gameplay-admission-evidence",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4152001Z ##[notice]oteryn-gameplay-admission-evidence passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-gameplay-source-critical-baseline",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4154817Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-identity",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4157356Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-input-actions",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4160201Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-ntp-clock",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4162881Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-platform-contracts",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4165443Z ##[notice]oteryn-platform-contracts passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-simulation-determinism",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:48.4167960Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        }
+      ],
+      "3": [
+        {
+          "package": "oteryn-diagnostics",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:35.0821362Z ##[notice]oteryn-diagnostics passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-gameplay-source-critical-baseline",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:35.0832019Z ##[notice]oteryn-gameplay-source-critical-baseline passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-identity",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:35.0834081Z ##[notice]oteryn-identity passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-input-actions",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:35.0839072Z ##[notice]oteryn-input-actions passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-ntp-clock",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:35.0840909Z ##[notice]oteryn-ntp-clock passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        },
+        {
+          "package": "oteryn-simulation-determinism",
+          "run_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419",
+          "run_id": 42987261419,
+          "reported_cache_sha": "8b90875542899f065186385ce59db57bcb969e39",
+          "literal_notice": "2026-11-11T09:33:35.0842680Z ##[notice]oteryn-simulation-determinism passed earlier in https://github.com/Oteryn/Oteryn-Game/actions/runs/42987261419 (sha 8b90875542899f065186385ce59db57bcb969e39); skipped"
+        }
+      ]
     },
     "unit_failure_groups": {
       "Item_updates_base_pin": 316,
@@ -137,142 +353,227 @@
       "other": 26
     },
     "unit_comparison": {
-      "parent_head": "1edcb499281c1dc1b4448f7041eaa64be29d38ae",
+      "parent_head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
       "counts": {
         "prior_fail_actual_pass": 0,
         "new_failure_identities": 0,
         "prior_fail_still_failed": 629,
         "prior_fail_not_executed": 0,
-        "new_actual_executed": 1,
-        "prior_pass_not_executed": 1,
+        "new_actual_executed": 0,
+        "prior_pass_not_executed": 39,
         "existing_identity_status_changes": 0
       },
       "case_reconciliation": {
-        "path": "batch65-root-unit-all-reconciliation.json",
-        "sha256": "8ecce26eafe29981d0683c9887cf5ae89ad032f4759e0516f4c94254ce651afa"
+        "path": "batch66-root-unit-all-reconciliation.json",
+        "sha256": "54ded90186ad72d5674112535b9152dda48788f0e7ae6d442faf8eab78562b52"
       },
       "semantic_failure_closure": {
-        "path": "batch65-root-unit-failure-comparison-closure.json",
-        "sha256": "14e3eac9a5f6205a08856ea3205af6f033080603d9abdadbd989daa958258c55"
+        "unit12": {
+          "path": "batch66-retained-unit12-terminal-proof.json",
+          "sha256": "dade2fa7f4b6973f88a8dbc7123ca25226d20b9339514ca41b74a4257fc47c44"
+        },
+        "unit3": {
+          "path": "batch66-rotten-unit3-terminal-proof.json",
+          "sha256": "d8fdd9aa6564edfe02e6f704c8c1208450be25e5f219ca85fc2a615ac971b90e"
+        },
+        "all_629_unchanged": true
+      },
+      "prior_pass_not_executed": 39,
+      "cache_covered_missing_count": 39,
+      "cache_notice_scope": "Literal notices name run42987261419 and advertised SHA8b90875542899f065186385ce59db57bcb969e39. Prior actual head65 checkout0b33 is independently bound; do not relabel notice metadata as a new execution.",
+      "independent_union_peer": {
+        "path": "batch67-retained-peer-unit66-union.json",
+        "sha256": "00674fa6548e75ffa326bf62724436b267f5c684202d8e36ab81ad91fb737ad6"
       }
     },
     "focused_source_regressions": {
       "npc_only_track_owners_keep_exact_existing_quest_predecessors": [
         {
           "status": "PASS",
-          "duration": "0.714s",
-          "ordinal": 3337,
-          "total": 4236,
+          "duration": "0.676s",
+          "ordinal": 3334,
+          "total": 4224,
           "binary": "oteryn-gameplay-quests",
           "test": "quest::npc_rules::tests::npc_only_track_owners_keep_exact_existing_quest_predecessors",
           "archive": null,
-          "line": 6498,
+          "line": 6457,
           "shard": 2,
-          "job_id": 130412760575
+          "job_id": 130440078062
         }
       ],
       "published_ungated_quest_hash_baseline": [
         {
           "status": "FAIL",
-          "duration": "0.979s",
-          "ordinal": 3350,
-          "total": 4122,
+          "duration": "0.775s",
+          "ordinal": 3349,
+          "total": 4111,
           "binary": "oteryn-gameplay-quests",
           "test": "quest::reward_callbacks::tests::published_ungated_quest_hash_baseline",
           "archive": null,
-          "line": 6916,
+          "line": 6899,
           "repeated_summary_lines": [
-            8372
+            8345
           ],
           "evidence": [
             {
-              "line": 6930,
+              "line": 6913,
               "text": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\""
             }
           ],
           "root_cause_group": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\"",
           "shard": 3,
-          "job_id": 130412760445
+          "job_id": 130440077944
         }
       ],
       "qn5_structured_premium_world_entry_requires_personal_world_fences": [
         {
           "status": "PASS",
-          "duration": "0.017s",
-          "ordinal": 3404,
-          "total": 4236,
+          "duration": "0.014s",
+          "ordinal": 3402,
+          "total": 4224,
           "binary": "oteryn-gameplay-quests",
           "test": "quest::world_callbacks::admission_tests::qn5_structured_premium_world_entry_requires_personal_world_fences",
           "archive": null,
-          "line": 6898,
+          "line": 6873,
           "shard": 2,
-          "job_id": 130412760575
+          "job_id": 130440078062
         }
       ],
       "core_extension_requires_exact_contract_command_binding_and_test": [
         {
           "status": "PASS",
-          "duration": "0.083s",
+          "duration": "0.051s",
           "ordinal": 17,
-          "total": 4122,
+          "total": 4111,
           "binary": "oteryn-architecture-check",
           "test": "client_structure::tests::core_extension_requires_exact_contract_command_binding_and_test",
           "archive": null,
-          "line": 826,
+          "line": 811,
           "shard": 3,
-          "job_id": 130412760445
+          "job_id": 130440077944
         }
       ]
     },
-    "existing_npc_catalogue_tests": "NPC predecessor and QN5 direct-admission regressions actually pass. NPC activation/published baseline tests still stop at Feaster callback admission.",
+    "existing_npc_catalogue_tests": "NPC predecessor and QN5 direct-admission regressions actually pass. NPC activation and published-baseline cases still refuse the Feaster callback before downstream catalogue assertions.",
     "native_entry": {
-      "run_id": 42987261440,
-      "job_id": 130411289628,
-      "result": "Actual3 PASS/0 FAIL; compilation4m35s and actual Platform issuer receipt. Native entry only.",
+      "run_id": 42995700326,
+      "job_id": 130439148051,
+      "result": "Actual3 PASS/0 FAIL with compilation2m50s and an actual Platform issuer receipt; Native entry only.",
       "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
-      "log_sha256": "3e1c468c363a2ce3f2ad458e68436fe725ff3cfe8aee12a051805ed36db1d26c",
+      "log_sha256": "03217356b083c165b8bb83e4a62f1f434a9e79498574abba5ea22f0877afd8cf",
       "receipt": {
-        "path": "batch65-rotten-native-terminal-proof.json",
-        "sha256": "57e20d114a2a296f0a23f28e5657954b63cd19016799427bb03758c20dfaf22f"
+        "path": "batch66-rotten-native-terminal-proof.json",
+        "sha256": "3d8eae8f8dd85985a2724619f92744f2e56e83dd893579103ae58b44d6e1f621"
       }
     },
-    "boss_inventory": "No actual qualification marker. Private-drop regression still fails at Item updates admission before its behavioral assertions; no new counts or distribution result are inferred.",
-    "postgres": "Wrapper42987261482 skipped harness-build, harness and Node legs; heavy-tests absent. No PostgreSQL execution on this head.",
-    "quest_authoring": {
-      "current_run_id": 42987261434,
-      "API_conclusion": "failure",
-      "current_log_intake": "Not repeated; no per-module result transfer from an earlier head.",
-      "last_full_observed_head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
-      "last_full_observation_receipt_sha256": "a057b5ae6db17114200533538d87608ff94dd3ee37017a9bf446432f6893c28a",
-      "last_full_observation": "Historical head62:182 modules,173PASS/9FAIL."
+    "boss_inventory": "No actual NATIVE_REWARD_BOSS_QUALIFICATION marker. Private-drop regression still fails Item updates admission before behavioral assertions. No new counts or loot-distribution result is inferred.",
+    "postgres": "Wrapper42995700336 skipped harness-build, harness and Node legs; heavy-tests absent. No PostgreSQL execution on this head.",
+    "postgres_receipt": {
+      "path": "batch66-root-pg-wrapper.json",
+      "sha256": "15bcb859ddc1e4516852e724d06c3905eb71b1d846534f8bacf9faf663eaf3eb"
     },
-    "migration_parent": "Validate130411290047 failed imbuement content check at step7; parent step14 was skipped. Full Lion14, M04_10 and WorldChange15 did not execute. New Boss/NPC module routing belongs to this later source checkpoint and has not executed in CI.",
-    "protected_authority": {
-      "run_id": 42987254796,
-      "job_id": 130411273236,
-      "result": "Actual protected-base authority PASS for exact head65.",
+    "quest_authoring": {
+      "current_run_id": 42995700706,
+      "API_conclusion": "failure",
+      "unit_job_id": 130439149889,
+      "current_log_intake": "Actual terminal raw logs were retained once.",
+      "counts": {
+        "total_modules": 182,
+        "passed_modules": 173,
+        "failed_modules": 9,
+        "individual_failure_cases": 8,
+        "individual_error_cases": 1
+      },
+      "comparison": {
+        "baseline_path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch62-rotten-quest-terminal-receipt.json",
+        "baseline_sha256": "a057b5ae6db17114200533538d87608ff94dd3ee37017a9bf446432f6893c28a",
+        "same_module_identity_set": true,
+        "module_status_changes": [],
+        "new_failure_identities": [],
+        "resolved_failure_identities": [],
+        "changed_exception_diagnostics": [],
+        "exact_failure_identity_set_match": true,
+        "exact_all_exception_text_match": true
+      },
+      "other_jobs": {
+        "checks": {
+          "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch66-root-quest-checks-terminal.json",
+          "sha256": "b003cac25c64f81a4e82f1f9306a5b34ff7e81b792cb317f55e65069443d223a",
+          "actual_failure": [
+            {
+              "line": 381,
+              "text": "2026-11-11T09:32:59.9237870Z variant migration packet is stale"
+            },
+            {
+              "line": 382,
+              "text": "2026-11-11T09:32:59.9537054Z ##[error]Process completed with exit code 1."
+            }
+          ]
+        },
+        "donor": {
+          "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch66-root-quest-donor-terminal.json",
+          "sha256": "c7d6f03c93be6b3544877d9bd8fbf40a1c3c05ac4dfd6e5a05c3f6ff265b1e57",
+          "actual_failure": [
+            {
+              "line": 511,
+              "text": "2026-11-11T09:38:15.1494524Z ValueError: stale donor Source capture: npc.json.gz"
+            },
+            {
+              "line": 512,
+              "text": "2026-11-11T09:38:15.1819246Z ##[error]Process completed with exit code 1."
+            }
+          ]
+        }
+      },
       "receipt": {
-        "path": "batch65-root-authority-terminal.json",
-        "sha256": "8146392c6271c4a3f72c16601b82b29a4f821fa2ec927e363f52537d88adbeb6"
+        "path": "batch66-root-quest-terminal-proof.json",
+        "sha256": "deaffba64a0d7997426b986bc21079eb8a2cfeb9d4dd07b2f817ae5f67767dcf"
+      },
+      "qualification": "182 Python modules:173PASS/9FAIL; exact same nine exception identities/text as preserved head62 full observation. Module totals are not an individual test-case total."
+    },
+    "migration_parent": "Actual validate130439148171 failed imbuement content check at step7; parent step14 was skipped. Boss12/NPC2, M04_10, WorldChange15 and Lion14 full routes did not execute. New whole Yield10 and Rotten2 routes belong to this later source checkpoint and have no CI execution yet.",
+    "migration_parent_receipt": {
+      "path": "batch66-step-validate-terminal-receipt.json",
+      "sha256": "57fe0b52f8b91cd9bf18991ffb23a9431da8e91795286be716c057b94b50b7b4"
+    },
+    "protected_authority": {
+      "run_id": 42995693113,
+      "job_id": 130439131989,
+      "result": "Actual protected-base authority PASS for exact head183c; not runtime/PG or new-head approval.",
+      "receipt": {
+        "path": "batch66-root-authority-terminal.json",
+        "sha256": "9ddadc4b795a4f10d5e8828f41b5c57c0469477faa01e9fe9cebb226d8425e03"
       }
     },
     "world_bundle": {
-      "job_id": 130412760432,
-      "result": "Actual pin-check digest mismatch; no artifact. Canonical regeneration and final pin refresh remain required.",
+      "job_id": 130440077840,
+      "result": "Actual pin-check mismatch; same pin/tree/input digests as65, no artifact or double-build qualification. Canonical regeneration and final pin refresh remain required.",
+      "digests": {
+        "pinned": "46277d7aba6fa0de09360eacea94b90d9db9f7e2969170b560f2a7c867375aa0",
+        "actual_tree": "f9d3b06e73b5a7eaf8fc002e32eefe264127c9b33d37c062af753f0b5cada226",
+        "inputs_digest": "ef7da8c68d883d520a27d2755e401b5a1003550940e32640baf49f271a3e524e"
+      },
       "receipt": {
-        "path": "batch65-root-world-terminal-proof.json",
-        "sha256": "b144f16ea8e58539ae268cdee46777f1512400d667d06036a511b5bbc94ee687"
+        "path": "batch66-root-world-terminal-proof.json",
+        "sha256": "526ffc08c98b392a90c36dbe0ebd51937f7919f24591cc865497ffd2fd441f93"
       }
     },
     "g4_identity_bindings": {
-      "run_id": 42987261859,
-      "result": "API reports successful job and all validation steps; no raw log/test-count intake.",
+      "run_id": 42995700858,
+      "result": "API reports every validation step successful; no raw log or actual testcase-count intake.",
       "receipt": {
-        "path": "batch65-root-g4-api-status.json",
-        "sha256": "a94fd06ca8b8dff0c63a83cd9c9206873de37fb0a1b0ad848f2fd0e51a951204"
+        "path": "batch66-root-g4-api-status.json",
+        "sha256": "f4563a26c7958055e9c522525d410f26439cb61dea26e844e2676afe8b998d8c"
       }
     },
-    "qualification": "Canonical generated content, full migration/native/runtime qualification and final PostgreSQL checks remain pending."
+    "other_26_failure_disposition": {
+      "receipt": {
+        "path": "batch66-rotten-prior65-other26-disposition.json",
+        "sha256": "590ea02ce65cba41a8bb1c5c2202f3a7ac95d52e6208bfbf6e29ae42679b00f1"
+      },
+      "limit": "Seven boot failures retain UNKNOWN first refusal; none is silently assigned to a proven generator-dependent cause."
+    },
+    "qualification": "NOT_QUALIFIED. Canonical generated content, complete migration/native/runtime qualification and final PostgreSQL checks remain pending."
   },
   "followup_source_repair": {
     "parent": "9ef8b879b37d41f2ef22cb4fc543cb077c2609b6",
@@ -459,108 +760,73 @@
     "qualification": "Independent bounded source peer passed. Actual canonical110+2 generation and Rust execution remain pending; no generated JSON was hand-edited."
   },
   "source_review_at_checkpoint": {
-    "base_head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
-    "source_files": 8,
-    "scope": "Four disjoint reviewed groups: a test diagnostic, closed Boss4027 owner composition and actual rebuilt packet/pins, a verified authoredNPC input-pin refresh, and an explicit14-case CI route. Evidence is bounded; complete new-head generation/runtime/PG is not claimed.",
+    "base_head": "183c6551efa22860c204513111318b442aa047d9",
+    "source_files": 4,
+    "scope": "Exact i7385 UNKNOWN-only custody completion and three regressions in two files; a closed-four-key Rotten native0/canonical150 test contract and real two-owner regression in one file; one parent file imports whole Yield10 and Rotten2 modules. Production Rotten owners, packets, pins and known-fact refusals remain unchanged. The Yield module actually completed4PASS/6FAIL. The final new Rotten regression did not complete locally; SIGKILL cause remains unknown.",
     "groups": [
       {
-        "name": "native_keyset_diagnostic",
-        "source_count": 1,
+        "name": "boss_yield_trader_custody",
+        "source_count": 2,
         "source_files": [
           {
-            "path": "tools/content-migration/test_monster_seven_spell_overlay.py",
-            "base_sha256": "9a1176637a3d7959c1a3aa09a8ed5587346b56f18ad52c119f1da7b375bd4749",
-            "sha256": "c7c65ece9bcdba5d002e17e4e56a438d1258d934b517f05dcbc32ffadee6b409",
-            "bytes": 19903
+            "path": "tools/content-migration/boss_reward_yield_profiles.py",
+            "base_sha256": "45af494407b098270fbc6307a5ddf14adbea7ecc917230f58bd2df3dc8e4ee78",
+            "sha256": "27e4bee388da54abf7113620ff47adba73e4c89e3b359d3811edbf2345b4ec37",
+            "bytes": 18916
+          },
+          {
+            "path": "tools/content-migration/test_boss_reward_yield_profiles.py",
+            "base_sha256": "fbd21f6ac9009b08c35c474b97f08b5ebb46154a91f0ce55d3fe3a12cf71a95b",
+            "sha256": "97045d45aff8ebac4358a7372da40b1fbc190ad5b5be2569923a0086f296bf70",
+            "bytes": 14430
           }
         ],
-        "author_manifest_sha256": "10d05d26ecd9c1228426698103524940d2e7e29198d50328239c3cd3e9ace1d9",
-        "independent_peer_sha256": "9824abac9c03f9e438e1f615b7c3c5c69b39f9986b0b2414abf3476a12bfd8cf"
+        "author_manifest_sha256": "736eb91daf1f2bc2e0c1d0cde9e2237a241e82e606b660cc811f0434e9712b7b",
+        "independent_peer_sha256": "a990a2094f3b7afbc443a2f85802f31f768347261e9acb6bc6fc5abd0d93fa99"
       },
       {
-        "name": "boss_terminal_owner",
-        "source_count": 5,
-        "source_files": [
-          {
-            "path": "tools/content-migration/boss_corpse_profiles.py",
-            "base_sha256": "1baf4c89e14bcac57d10b7ddcb7604eb90c4047ac65de1e5640e2e33fb279a4f",
-            "sha256": "0bb1f593988655b71e8eed19af977276a52413f85af5c23bf58c5348b2a60565",
-            "bytes": 14512
-          },
-          {
-            "path": "tools/content-migration/test_boss_corpse_profiles.py",
-            "base_sha256": "8945c2fab7acb8c9ef013ed62a7fc96c4dcd20e89ea2df3ef0e782402c184513",
-            "sha256": "a6f76a92eb385dc5ed874811926bb98d503c6660701c6a1ff2e0813de0118177",
-            "bytes": 16987
-          },
-          {
-            "path": "tools/content-schema/native-gameplay/boss-corpse-item-profiles.json",
-            "base_sha256": "859d7f78ed0d5b841ce0a993365e222cf63ce640d308202df715211959ec1e20",
-            "sha256": "27d842fbfe82c701046905c49fff1adb023a4c5ceef921695fb96e15dab234d2",
-            "bytes": 448595
-          },
-          {
-            "path": "tools/content-schema/native-gameplay/boss-corpse-item-profiles-pin.json",
-            "base_sha256": "463245f1de2d09774598d2e8905b3e09867268fe054e3f0646b37d4ba2b04892",
-            "sha256": "c62ffa41c469bb26e915e2021a4f52ef72920e0beae495690c00ba9cb06f46ae",
-            "bytes": 155
-          },
-          {
-            "path": "crates/gameplay/content/src/content/native_gameplay/boss_corpse_terminal_pin.rs",
-            "base_sha256": "8ce23db9ce539bb492d001cef275096113e83dd6444d7410eddcfe6dfd06f776",
-            "sha256": "0ff5c0f8ead078f83a38300edaf1b72842a128f17941d22b6dea376af8fbd930",
-            "bytes": 293
-          }
-        ],
-        "author_manifest_sha256": "5f950819be26302683a847ba848acaf85827a9ce87e31c4c7a43ce33416c394a",
-        "independent_peer_sha256": "793ce531aaa1c33902a1892f6f8900703b66a95607b9a7a693d8c1b8d8b2c725"
-      },
-      {
-        "name": "authored_npc_pin",
-        "source_count": 1,
-        "source_files": [
-          {
-            "path": "tools/content-schema/native-gameplay/authored-npc-item-custody.json",
-            "base_sha256": "9cb23790b9a6aa2e6b150b683e1c40e4d264cf8a0f9df82d860531f3cb8499fc",
-            "sha256": "146f88a3a268fc908715790e898c5426374340dfa97f03540dacbb2313e0dc59",
-            "bytes": 310
-          }
-        ],
-        "author_manifest_sha256": "b7de40cc1365e73ed5f92d5444fe923597dc69040319bd020021fe6b708ee624",
-        "independent_peer_sha256": "75d70d54b03a9957338c3136ea0e12a4244b53c3ee7fe3e618c2f3e3bb007b65"
-      },
-      {
-        "name": "migration_regression_route",
+        "name": "whole_yield_and_rotten_module_routes",
         "source_count": 1,
         "source_files": [
           {
             "path": "tools/content-migration/test_world_project_v2_to_tree.py",
-            "base_sha256": "7c9e65a3a25703d4e6b7f7e61a4f95ad1104b6926d03ca63f9b1bf9f6e653db3",
-            "sha256": "675825906dee5c7a0b939e4fff08480e5e8f163dd472143fe445590d15b28737",
-            "bytes": 26251
+            "base_sha256": "675825906dee5c7a0b939e4fff08480e5e8f163dd472143fe445590d15b28737",
+            "sha256": "a4ce134a3f685d1efdb6e05abe9e56b813340d81476f77433dcebc1cf84a87ff",
+            "bytes": 26596
           }
         ],
-        "author_manifest_sha256": "e6164440b62c16f3c005228b2dc73c907d26bcc0350e4e57b83798cb0d136e22",
-        "independent_peer_sha256": "f366d5f572ffa9c8cec1a2da45c15026cb66c10dcc58786914dcccd32d6a77ca"
+        "author_manifest_sha256": "5b4d889d02cceef4bcc406bd97d86f6c75ec321bf705dab817536a145d5095ed",
+        "independent_peer_sha256": "6dbe69aa9d5c956da57fc6da4ea3cd7120cf68791ec5b683c0cf6d75e4da66c1"
+      },
+      {
+        "name": "rotten_prior_physical_owner_regression",
+        "source_count": 1,
+        "source_files": [
+          {
+            "path": "tools/content-schema/native-gameplay/test_questpc2_rotten_loot_items.py",
+            "base_sha256": "1af4e2b205f88cbd8ceccbc949c4028731202b2f759b582fd1531252040d484c",
+            "sha256": "f9ade9f098381b9f62f85ec0b2d59024520fdd43775f31b5a1c03b3fea21b3d4",
+            "bytes": 6004
+          }
+        ],
+        "author_manifest_sha256": "e9a13fd2d016bf003d4b42da208c91d7f2e31d3e57f4d2b2950d61a27326c1ee",
+        "independent_peer_sha256": "35d2f07464181b8a4c25110d914a7dc184fae557d545b4cdf92a7161b01be1cb",
+        "qualification": "SOURCE_REVIEW_ONLY_FINAL_REGRESSION_AND_FULL_MODULE_RUNTIME_PENDING"
       }
     ],
-    "authorized_control_changes": [
-      {
-        "path": "tools/content-migration/test_world_project_v2_to_tree.py",
-        "prior_source65_and_diagnostic_author_control_sha256": "7c9e65a3a25703d4e6b7f7e61a4f95ad1104b6926d03ca63f9b1bf9f6e653db3",
-        "new_sha256": "675825906dee5c7a0b939e4fff08480e5e8f163dd472143fe445590d15b28737",
-        "owner_group": "migration_regression_route",
-        "basis": "Exact parent byte/AST inverse preserves the existing diagnostic/M04/World/Lion routes; one new whole-module Boss/NPC invocation."
-      }
-    ]
+    "authorized_control_changes": "No workflow, gate, permissions, secret, runner or label changes. The existing awaited parent test schedule gains one module argument and one unconditional whole-module call.",
+    "root_final_source_checks": {
+      "path": "batch67-root-source4-final-checks.json",
+      "sha256": "413e0b546647513fd1f657bce4f97d841401f11da619ef7d9d50870f0fc5d1d0"
+    }
   },
   "prior_source_checkpoint": {
-    "head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
-    "source_parent": "e03da682eafb3bdd662c4aecaef9ee67770a1043",
-    "main_parent": "4e29529abacfcbff821bfb7560424c6684b936d7",
-    "source_groups": 5,
-    "source_files": 10,
-    "source_review_matrix": "Prior approved-gate3, M04/World-route3, sys1, WorldChange prior-owner2 and binding-packet1 repairs remain recorded in their named sections and sourcee03/merge0b33. The accepted main inheritance contained25 paths."
+    "head": "183c6551efa22860c204513111318b442aa047d9",
+    "parent": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+    "main_ancestor": "4e29529abacfcbff821bfb7560424c6684b936d7",
+    "source_groups": 4,
+    "source_files": 8,
+    "source_review_matrix": "The exact prior eight-file review, last observed head65 execution and earlier source checkpoint are preserved in superseded_checkpoint_records; all named repair sections remain."
   },
   "grizzly_retained_pin_repair": {
     "cause": "The complete retained shop packet matched integrated main f01f1858. Its items-11000-11499 descriptor still referenced that main blob, while the merged HEAD shard includes a previously approved non-shop Item22008 materialization/stack change.",
@@ -637,7 +903,7 @@
     "local_verification": "Corrected actual two-cycle RED, then2 new and2 existing targeted tests PASS, each invocation under30s. Six wrong/partial/null/extra variants and unknown selected key refuse. Full14 suite remains pending.",
     "author_proof_sha256": "1bcf4311f241cb1cd6e744dcbcb92535ff5e8ecbbc01939d33f553055d152d75",
     "independent_peer_sha256": "04e0b9eee652a28b837ed11e293940397315db9dec6da09da1a6b7af04b23308",
-    "successor_ci": "Head65 first Lion512 returned; House583 was not reached. Full14 tests remained skipped behind the validation gate."
+    "successor_ci": "Head66 first Lion512 returned; House583 was not reached. Full14 tests remained skipped behind the validation gate."
   },
   "m42_canonical_refresh_repair": {
     "diagnosis": "The retained witness names packet541dc880 from the earlier branch, while current packet20998521 equals accepted f01. No reached writer changes packet or recipe before the failing first M42 consumer. Runner post-converter shard bytes remain unknown.",
@@ -649,7 +915,7 @@
     "local_verification": "Actual converter-prefix RED;8/8 M42 tests and existing sibling1/1 PASS.16 negative cases refuse before writes. A finite copy of34 real shards preserves72 rows/66profiles/6HELD and gives byte-identical replay in3.478s. All4 old test bodies remain unchanged. No derived repo data were written locally.",
     "author_proof_sha256": "8ae57a2f401d7d171f970ecc6b99310ee946ea0135ff6e1107d443d784376247",
     "independent_peer_sha256": "3a461f25026ca9c621b3527a72611bbdff216b3b262c2b4b833e075849d99541",
-    "successor_ci": "Head65 refresh and first M42 admission returned before the later QuestCorpse failure; final canonical output is still unavailable."
+    "successor_ci": "Head66 refresh and first M42 admission returned before Yield573 refused. Final canonical output and full source replay remain unavailable."
   },
   "qnpcfx_source_cohort_repair": {
     "diagnosis": "The unchanged strict adapter requires8 source records/classifications; incoming f01 packet has only venison i52636. Unconditional native registration and equipment refresh would refuse. This is a separate source-proven defect, not a later stage executed by CI63.",
@@ -660,7 +926,7 @@
     "local_verification": "Unchanged four tests: old packet1FAIL/2ERROR/1PASS, corrected packet4/4PASS. Actual strict adapter rejects old1 without writes, admits new8, repeats byte-identically and refuses six malformed cohort/classification cases without writes.",
     "packet_sha256": "cca8baa61c77a736934a3503a4284e5498b9d7db431b7ea5090f0ad5b696a134",
     "independent_peer_sha256": "94e6842c190e7b6df56d3cd12851d19e8ad460f19541827594d4d778444d5ec8",
-    "successor_ci": "Head65 first QNPCFX544 admission returned before QuestCorpse554 refused; no completed full generator or provider output is inferred."
+    "successor_ci": "Head66 first QNPCFX544 admission returned before Yield573 refused; no final provider output/full generator qualification is inferred."
   },
   "deferred_p2_latest_queue": {
     "path": "pr3056-final-p2p3-queue-8ea8cbe5.json",
@@ -951,7 +1217,7 @@
     "main_parent": "4e29529abacfcbff821bfb7560424c6684b936d7",
     "main": "4e29529abacfcbff821bfb7560424c6684b936d7",
     "main_changes_in_this_batch": 0,
-    "basis": "Head65 already integrated accepted main4e. Its ordered source/main parents and main ancestry were verified locally. This checkpoint adds reviewed source changes on that head.",
+    "basis": "Existing head0b33 integrated accepted main4e, which remains an ancestor of source head183c. Root reported a fresh main readback at10:05 UTC still4e. No new main integration or control-plane change is included in this source checkpoint.",
     "prior_inherited_paths": 25,
     "prior_inheritance_peer": {
       "path": "batch65-retained-peer-main4e-inheritance25.json",
@@ -969,10 +1235,10 @@
     "local_verification": "Zero-count regression RED on prior workflow; classifier16, cache31, PG/SIM unit10 and policy-core checks PASS in bounded invocations. Root independently repeated classifier16. The whole canonical PG/SIM chain was not run locally.",
     "manifest_sha256": "1a422ec6dc0b28ee3caa54a45c77fb4e8e412d3d08af200f54fabfee65b4e20c",
     "peer_sha256": "e27d6467777c7b51babbd5a2f2e808b051e5850e79afa076ceb5145b76e1fa3b",
-    "protected_execution": "Exact head0b33ee39 protected-base audit42987254796/job130411273236 actually passed. Workflow and protected audit pins are unchanged in this source batch; this is not a new-head approval.",
+    "protected_execution": "Exact head183c protected-base audit42995693113/job130439131989 actually passed. Workflow and protected audit pins are unchanged in this source batch; no future-head approval is inferred.",
     "protected_execution_receipt": {
-      "path": "batch65-root-authority-terminal.json",
-      "sha256": "8146392c6271c4a3f72c16601b82b29a4f821fa2ec927e363f52537d88adbeb6"
+      "path": "batch66-root-authority-terminal.json",
+      "sha256": "9ddadc4b795a4f10d5e8828f41b5c57c0469477faa01e9fe9cebb226d8425e03"
     }
   },
   "m04_diary_replay_repair": {
@@ -993,7 +1259,7 @@
     "final_parent_route": "Root subsequently adds one check=True WorldChange suite call to the same awaited pool. Removing that addition exactly restores the original M04 parent; removing both additions restores the base parent. M04 production/test2 remain byte-identical to the author freeze.",
     "manifest_sha256": "aa179aa0a3a68b3dcc547e6ab429750ef58d79cd0caa15e8a2dc780788d9c1fa",
     "peer_sha256": "35d0ee0b2e8308293c86b9b83d4c05b8b1ae4af1b3de3a93ac96ad44221b3597",
-    "successor_ci": "Head65 first M04 admission532 returned before QuestCorpse554 refused. Full10 tests did not execute because validation parent step14 was skipped."
+    "successor_ci": "Head66 first M04 admission532 returned before Yield573 refused. Its full10 tests did not execute because validation parent step14 was skipped."
   },
   "registration_sys_binding_repair": {
     "diagnosis": "In _outputs, sys.path was read before a later local import sys. Python therefore treated sys as an uninitialized local at the earlier read. This is independently established from exact source/bytecode, not a stage reached by CI64.",
@@ -1001,7 +1267,7 @@
     "verification": "Bounded extracted-binding RED/GREEN, exact whole-file inverse and compile/AST checks. No full outputs execution locally; canonical generator execution remains required.",
     "manifest_sha256": "33007eb138393e4771760686f087587e6298246890a130e7bf19aa7f46fcca7f",
     "peer_sha256": "720c0402475812894b7982308b9a45e92796b2d7d5ba9c8fe38d0287f0284fd2",
-    "successor_ci": "Head65 stopped before the later sys.path use; source/bytecode checks remain the established evidence."
+    "successor_ci": "Head66 stopped at Yield573 before the later sys.path use; exact source/bytecode checks remain the established evidence."
   },
   "world_change_prior_owner_repair": {
     "diagnosis": "Actual bounded SourceGate/QuickLoot and selected QENGINE prefixes reach the old unconditional duplicate refusal for i2576 and i22074. The closed44 cohort has only these two new earlier-owner intersections; existing i12369 ownership remains separate. Boss-yield i3583 is later in registration.",
@@ -1013,7 +1279,7 @@
     "local_verification": "Actual positive prefixes fail on the old adapter. Four new tests pass in22.55s, with real source capture in the positive path and captured fixtures for22 prior-owner mutations,4 canonical taxonomy identity mutations and17 independent World-fact mutations; all refuse without writes. Original11 first produced10PASS/1FAIL solely for separate binding metadata. Their post-packet result is recorded below.",
     "manifest_sha256": "6a753bd7d47e19d6629985f86de6e4d795c260832c9a3be8cd99e22e75784203",
     "peer_sha256": "cf7073a2992031bb99e766d602b3b8505049461a829acc5b8d1903c7f586c776",
-    "full_generator": "Head65 stopped at QuestCorpse554 before WorldChange568; the full15-case route also remained skipped. Bounded prior-owner proofs are not promoted to full generation.",
+    "full_generator": "Head66 first WorldChange568 admission returned before Yield573 refused. This production call is narrower than complete generation; the full15-case test route remained skipped.",
     "ci_route": "One check=True invocation of the whole15-method WorldChange file is added to the existing migration parent alongside M04. Existing pool wait/failure propagation remains unchanged; this is a source route, not evidence that the CI parent ran."
   },
   "world_change_binding_packet_repair": {
@@ -1088,7 +1354,7 @@
       "path": "batch66-root-boss-publication-review.json",
       "sha256": "68a72b6ac7b19e501e7d3cbb03a372223450251d59a08c2e3faf1fc246a2a75b"
     },
-    "qualification": "Full future canonical generation and native runtime remain pending. Five other observed canonical/Boss differences outside the Quest overlap were not generalized or changed."
+    "qualification": "Head66 first QuestCorpse554 admission returned before Yield573 refused. Full Boss12 test execution through the parent and final canonical/runtime/PG qualification remain pending. Five other canonical/Boss differences outside the Quest overlap were not generalized or changed."
   },
   "authored_npc_input_pin_repair": {
     "diagnosis": "The next actual source-input guard556 refuses the unchanged accepted Father source because its custody intent still pins the incoming-main version without mission completion. Direct admission and existing suite prove the refusal before any generated write.",
@@ -1104,7 +1370,7 @@
       "path": "batch66-root-peer-authored-npc-pin1.json",
       "sha256": "75d70d54b03a9957338c3136ea0e12a4244b53c3ee7fe3e618c2f3e3bb007b65"
     },
-    "qualification": "Selected composition only; intervening unrelated owners and full generator were not executed locally."
+    "qualification": "Head66 first authoredNPC556 admission returned before Yield573 refused. The full2-case CI route was skipped at the earlier validation gate; complete generation/runtime are not claimed."
   },
   "native_output_keyset_diagnostic": {
     "change": "Add one JSON print before existing membership/count assertions in test_registration_replays_all_current_outputs. Report sorted actual keys/count, source proof/merged/union sets and both residual keysets/counts; flush=True.",
@@ -1118,7 +1384,7 @@
       "path": "batch66-root-peer-native-keyset-diagnostic1.json",
       "sha256": "9824abac9c03f9e438e1f615b7c3c5c69b39f9986b0b2414abf3476a12bfd8cf"
     },
-    "qualification": "The new marker is not present in historical head65. It requires successful actual registration and the existing overlay route in future CI."
+    "qualification": "Head66 registration failed at Yield573 before returning a complete keyset, and validation parent step14 was skipped. Actual full keyset/count and residual43 remain UNKNOWN; no assertion changed."
   },
   "migration_ci_regression_route": {
     "change": "One unconditional schedule_check invokes python -m unittest -v test_boss_corpse_profiles test_authored_npc_item_profiles from tools/content-migration with check=True. Existing pool max_workers2, subprocess checks, shutdown(wait=True), every awaited future and all prior routes remain unchanged.",
@@ -1132,7 +1398,7 @@
       "path": "batch66-root-peer-boss-npc-route1.json",
       "sha256": "f366d5f572ffa9c8cec1a2da45c15026cb66c10dcc58786914dcccd32d6a77ca"
     },
-    "qualification": "These14 cases will run only after the earlier future-head validation gates pass; none is claimed executed through this new route yet."
+    "qualification": "Head66 full migration parent step14 was skipped; Boss12/NPC2 did not execute. The successor parent imports whole Yield10 and Rotten2 as recorded separately; source routing is not execution."
   },
   "bounded_registration_prefix_review": {
     "scope": "Existing calls556–566 after the reproduced blocker; no full generator or Creature reconstruction.",
@@ -1141,6 +1407,519 @@
     "receipt": {
       "path": "batch66-retained-prefix556-566-closure.json",
       "sha256": "f7ddcace74d8abb6ffca8c094de70d3e3cd8a27f3976669a0fff195cb3ad64c0"
+    }
+  },
+  "superseded_checkpoint_records": [
+    {
+      "checkpoint_source_head": "183c6551efa22860c204513111318b442aa047d9",
+      "checkpoint_file_sha256": "c5f7a3c6c019fa654ab1625a2ae11dc5169defe1fb9a5c368ae4777e486c3c6f",
+      "last_checkpoint_execution": {
+        "head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+        "merge_run": 42987261419,
+        "generator_run": 42987261496,
+        "generator_job": 130411289700,
+        "generator_result": "Actual Quest prerequisites passed. Materializer compiled in3m09s and completed through npc_presence1122; imbuement authoring built24 types/72 tiers. First Lion512, M42 refresh/admission, M04532 and QNPC544 returned before QuestCorpse554 refused QUEST_CORPSE_EXISTING_NATIVE_CONFLICT. The runner did not expose the conflicting key/row. WorldChange568, House583 and the tail were not reached. Final pins/export/upload were skipped and artifacts were empty.",
+        "generator_log_sha256": "7bd28650ddc9372a467752e3a3cc807d5dc9692d82387edbb2fd5c90e0797090",
+        "generator_receipt": {
+          "path": "batch65-step-generator-terminal-evidence.json",
+          "sha256": "a91d89faf159dd38370db79d20ac8c3f37e9911dbf730e2d16cc363ab6b31618"
+        },
+        "registered_output_count": null,
+        "rust_policy_result": "Actual cache-miss cargo metadata, formatting, architecture boundaries, migration JSON and production closure checks passed. No unit or PostgreSQL execution is inferred from policy.",
+        "rust_policy_log_sha256": "1746f49da45092d69a8f3cbf4f31cda29ea83a23bbb8b4feb7f21170f3401a5c",
+        "rust_policy_key": "jobresult-v1-rust_policy-807feac4799d8cebc9a6da1d752c4f15de2a2a8c2d1a6cd4f9a23c44953a023a",
+        "rust_policy_last_actual_checks": {
+          "head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+          "run_id": 42987261419,
+          "job_id": 130412760495,
+          "receipt": {
+            "path": "batch65-retained-policy-terminal-proof.json",
+            "sha256": "f0d2df0cd208935903eb835db1f9d0c906f6e64fde4214e86bc3d5492d88a2b8"
+          }
+        },
+        "clippy_result": "Actual strict Clippy passed all67 selected packages, zero result-cache reuse; dev compilation5m00s. This is lint/compilation evidence, not a unit-suite pass.",
+        "clippy_job": 130412760617,
+        "clippy_log_sha256": "0f5ec5c2c460f470c281407a3a5d5b0c8300dea3b6468981dbfcae79e67af5f6",
+        "rust_unit_result": "Three disjoint actual shards contain12548 cases:11919 PASS and629 FAIL, zero result-cache reuse. Every629 previous failure identity and normalized semantic failure block persists; no existing identity changes status. Accepted main replaces one passing private architecture fixture with one passing public-scan fixture; their bodies are not claimed byte-identical.",
+        "rust_unit_jobs": [
+          {
+            "job_id": 130412760570,
+            "executed": 4190,
+            "passed": 3967,
+            "failed": 223,
+            "packages_to_run": 67,
+            "packages_reused": 0,
+            "log_sha256": "4d4c07772947b442dd8bdd65af5e663dcde743bbadfc3a7805c4a026a15beabe"
+          },
+          {
+            "job_id": 130412760575,
+            "executed": 4236,
+            "passed": 4037,
+            "failed": 199,
+            "packages_to_run": 67,
+            "packages_reused": 0,
+            "log_sha256": "9d092169028b2b05cc83f58e06e7d9dd0cb25453fbc21d2ac8cd79233263408a"
+          },
+          {
+            "job_id": 130412760445,
+            "executed": 4122,
+            "passed": 3915,
+            "failed": 207,
+            "packages_to_run": 67,
+            "packages_reused": 0,
+            "log_sha256": "b7ce4519acbd9d465758ae7c3427a85ed4b72af29d68264e534876214e9b7a6b"
+          }
+        ],
+        "unit_result_cache_provenance": {
+          "1": [],
+          "2": [],
+          "3": []
+        },
+        "unit_failure_groups": {
+          "Item_updates_base_pin": 316,
+          "Feaster_callback": 287,
+          "other": 26
+        },
+        "unit_comparison": {
+          "parent_head": "1edcb499281c1dc1b4448f7041eaa64be29d38ae",
+          "counts": {
+            "prior_fail_actual_pass": 0,
+            "new_failure_identities": 0,
+            "prior_fail_still_failed": 629,
+            "prior_fail_not_executed": 0,
+            "new_actual_executed": 1,
+            "prior_pass_not_executed": 1,
+            "existing_identity_status_changes": 0
+          },
+          "case_reconciliation": {
+            "path": "batch65-root-unit-all-reconciliation.json",
+            "sha256": "8ecce26eafe29981d0683c9887cf5ae89ad032f4759e0516f4c94254ce651afa"
+          },
+          "semantic_failure_closure": {
+            "path": "batch65-root-unit-failure-comparison-closure.json",
+            "sha256": "14e3eac9a5f6205a08856ea3205af6f033080603d9abdadbd989daa958258c55"
+          }
+        },
+        "focused_source_regressions": {
+          "npc_only_track_owners_keep_exact_existing_quest_predecessors": [
+            {
+              "status": "PASS",
+              "duration": "0.714s",
+              "ordinal": 3337,
+              "total": 4236,
+              "binary": "oteryn-gameplay-quests",
+              "test": "quest::npc_rules::tests::npc_only_track_owners_keep_exact_existing_quest_predecessors",
+              "archive": null,
+              "line": 6498,
+              "shard": 2,
+              "job_id": 130412760575
+            }
+          ],
+          "published_ungated_quest_hash_baseline": [
+            {
+              "status": "FAIL",
+              "duration": "0.979s",
+              "ordinal": 3350,
+              "total": 4122,
+              "binary": "oteryn-gameplay-quests",
+              "test": "quest::reward_callbacks::tests::published_ungated_quest_hash_baseline",
+              "archive": null,
+              "line": 6916,
+              "repeated_summary_lines": [
+                8372
+              ],
+              "evidence": [
+                {
+                  "line": 6930,
+                  "text": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\""
+                }
+              ],
+              "root_cause_group": "Error: \"Json(\\\"invalid callback oteryn:quest-callback/questpc7-feaster-entry\\\")\"",
+              "shard": 3,
+              "job_id": 130412760445
+            }
+          ],
+          "qn5_structured_premium_world_entry_requires_personal_world_fences": [
+            {
+              "status": "PASS",
+              "duration": "0.017s",
+              "ordinal": 3404,
+              "total": 4236,
+              "binary": "oteryn-gameplay-quests",
+              "test": "quest::world_callbacks::admission_tests::qn5_structured_premium_world_entry_requires_personal_world_fences",
+              "archive": null,
+              "line": 6898,
+              "shard": 2,
+              "job_id": 130412760575
+            }
+          ],
+          "core_extension_requires_exact_contract_command_binding_and_test": [
+            {
+              "status": "PASS",
+              "duration": "0.083s",
+              "ordinal": 17,
+              "total": 4122,
+              "binary": "oteryn-architecture-check",
+              "test": "client_structure::tests::core_extension_requires_exact_contract_command_binding_and_test",
+              "archive": null,
+              "line": 826,
+              "shard": 3,
+              "job_id": 130412760445
+            }
+          ]
+        },
+        "existing_npc_catalogue_tests": "NPC predecessor and QN5 direct-admission regressions actually pass. NPC activation/published baseline tests still stop at Feaster callback admission.",
+        "native_entry": {
+          "run_id": 42987261440,
+          "job_id": 130411289628,
+          "result": "Actual3 PASS/0 FAIL; compilation4m35s and actual Platform issuer receipt. Native entry only.",
+          "platform_pin": "eb65ce453949a352fdc0e3ed0132d2cde0084fb7",
+          "log_sha256": "3e1c468c363a2ce3f2ad458e68436fe725ff3cfe8aee12a051805ed36db1d26c",
+          "receipt": {
+            "path": "batch65-rotten-native-terminal-proof.json",
+            "sha256": "57e20d114a2a296f0a23f28e5657954b63cd19016799427bb03758c20dfaf22f"
+          }
+        },
+        "boss_inventory": "No actual qualification marker. Private-drop regression still fails at Item updates admission before its behavioral assertions; no new counts or distribution result are inferred.",
+        "postgres": "Wrapper42987261482 skipped harness-build, harness and Node legs; heavy-tests absent. No PostgreSQL execution on this head.",
+        "quest_authoring": {
+          "current_run_id": 42987261434,
+          "API_conclusion": "failure",
+          "current_log_intake": "Not repeated; no per-module result transfer from an earlier head.",
+          "last_full_observed_head": "bf654a4f6a5264823c448027da11bbbd1bd4182c",
+          "last_full_observation_receipt_sha256": "a057b5ae6db17114200533538d87608ff94dd3ee37017a9bf446432f6893c28a",
+          "last_full_observation": "Historical head62:182 modules,173PASS/9FAIL."
+        },
+        "migration_parent": "Validate130411290047 failed imbuement content check at step7; parent step14 was skipped. Full Lion14, M04_10 and WorldChange15 did not execute. New Boss/NPC module routing belongs to this later source checkpoint and has not executed in CI.",
+        "protected_authority": {
+          "run_id": 42987254796,
+          "job_id": 130411273236,
+          "result": "Actual protected-base authority PASS for exact head65.",
+          "receipt": {
+            "path": "batch65-root-authority-terminal.json",
+            "sha256": "8146392c6271c4a3f72c16601b82b29a4f821fa2ec927e363f52537d88adbeb6"
+          }
+        },
+        "world_bundle": {
+          "job_id": 130412760432,
+          "result": "Actual pin-check digest mismatch; no artifact. Canonical regeneration and final pin refresh remain required.",
+          "receipt": {
+            "path": "batch65-root-world-terminal-proof.json",
+            "sha256": "b144f16ea8e58539ae268cdee46777f1512400d667d06036a511b5bbc94ee687"
+          }
+        },
+        "g4_identity_bindings": {
+          "run_id": 42987261859,
+          "result": "API reports successful job and all validation steps; no raw log/test-count intake.",
+          "receipt": {
+            "path": "batch65-root-g4-api-status.json",
+            "sha256": "a94fd06ca8b8dff0c63a83cd9c9206873de37fb0a1b0ad848f2fd0e51a951204"
+          }
+        },
+        "qualification": "Canonical generated content, full migration/native/runtime qualification and final PostgreSQL checks remain pending."
+      },
+      "source_review_at_checkpoint": {
+        "base_head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+        "source_files": 8,
+        "scope": "Four disjoint reviewed groups: a test diagnostic, closed Boss4027 owner composition and actual rebuilt packet/pins, a verified authoredNPC input-pin refresh, and an explicit14-case CI route. Evidence is bounded; complete new-head generation/runtime/PG is not claimed.",
+        "groups": [
+          {
+            "name": "native_keyset_diagnostic",
+            "source_count": 1,
+            "source_files": [
+              {
+                "path": "tools/content-migration/test_monster_seven_spell_overlay.py",
+                "base_sha256": "9a1176637a3d7959c1a3aa09a8ed5587346b56f18ad52c119f1da7b375bd4749",
+                "sha256": "c7c65ece9bcdba5d002e17e4e56a438d1258d934b517f05dcbc32ffadee6b409",
+                "bytes": 19903
+              }
+            ],
+            "author_manifest_sha256": "10d05d26ecd9c1228426698103524940d2e7e29198d50328239c3cd3e9ace1d9",
+            "independent_peer_sha256": "9824abac9c03f9e438e1f615b7c3c5c69b39f9986b0b2414abf3476a12bfd8cf"
+          },
+          {
+            "name": "boss_terminal_owner",
+            "source_count": 5,
+            "source_files": [
+              {
+                "path": "tools/content-migration/boss_corpse_profiles.py",
+                "base_sha256": "1baf4c89e14bcac57d10b7ddcb7604eb90c4047ac65de1e5640e2e33fb279a4f",
+                "sha256": "0bb1f593988655b71e8eed19af977276a52413f85af5c23bf58c5348b2a60565",
+                "bytes": 14512
+              },
+              {
+                "path": "tools/content-migration/test_boss_corpse_profiles.py",
+                "base_sha256": "8945c2fab7acb8c9ef013ed62a7fc96c4dcd20e89ea2df3ef0e782402c184513",
+                "sha256": "a6f76a92eb385dc5ed874811926bb98d503c6660701c6a1ff2e0813de0118177",
+                "bytes": 16987
+              },
+              {
+                "path": "tools/content-schema/native-gameplay/boss-corpse-item-profiles.json",
+                "base_sha256": "859d7f78ed0d5b841ce0a993365e222cf63ce640d308202df715211959ec1e20",
+                "sha256": "27d842fbfe82c701046905c49fff1adb023a4c5ceef921695fb96e15dab234d2",
+                "bytes": 448595
+              },
+              {
+                "path": "tools/content-schema/native-gameplay/boss-corpse-item-profiles-pin.json",
+                "base_sha256": "463245f1de2d09774598d2e8905b3e09867268fe054e3f0646b37d4ba2b04892",
+                "sha256": "c62ffa41c469bb26e915e2021a4f52ef72920e0beae495690c00ba9cb06f46ae",
+                "bytes": 155
+              },
+              {
+                "path": "crates/gameplay/content/src/content/native_gameplay/boss_corpse_terminal_pin.rs",
+                "base_sha256": "8ce23db9ce539bb492d001cef275096113e83dd6444d7410eddcfe6dfd06f776",
+                "sha256": "0ff5c0f8ead078f83a38300edaf1b72842a128f17941d22b6dea376af8fbd930",
+                "bytes": 293
+              }
+            ],
+            "author_manifest_sha256": "5f950819be26302683a847ba848acaf85827a9ce87e31c4c7a43ce33416c394a",
+            "independent_peer_sha256": "793ce531aaa1c33902a1892f6f8900703b66a95607b9a7a693d8c1b8d8b2c725"
+          },
+          {
+            "name": "authored_npc_pin",
+            "source_count": 1,
+            "source_files": [
+              {
+                "path": "tools/content-schema/native-gameplay/authored-npc-item-custody.json",
+                "base_sha256": "9cb23790b9a6aa2e6b150b683e1c40e4d264cf8a0f9df82d860531f3cb8499fc",
+                "sha256": "146f88a3a268fc908715790e898c5426374340dfa97f03540dacbb2313e0dc59",
+                "bytes": 310
+              }
+            ],
+            "author_manifest_sha256": "b7de40cc1365e73ed5f92d5444fe923597dc69040319bd020021fe6b708ee624",
+            "independent_peer_sha256": "75d70d54b03a9957338c3136ea0e12a4244b53c3ee7fe3e618c2f3e3bb007b65"
+          },
+          {
+            "name": "migration_regression_route",
+            "source_count": 1,
+            "source_files": [
+              {
+                "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+                "base_sha256": "7c9e65a3a25703d4e6b7f7e61a4f95ad1104b6926d03ca63f9b1bf9f6e653db3",
+                "sha256": "675825906dee5c7a0b939e4fff08480e5e8f163dd472143fe445590d15b28737",
+                "bytes": 26251
+              }
+            ],
+            "author_manifest_sha256": "e6164440b62c16f3c005228b2dc73c907d26bcc0350e4e57b83798cb0d136e22",
+            "independent_peer_sha256": "f366d5f572ffa9c8cec1a2da45c15026cb66c10dcc58786914dcccd32d6a77ca"
+          }
+        ],
+        "authorized_control_changes": [
+          {
+            "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+            "prior_source65_and_diagnostic_author_control_sha256": "7c9e65a3a25703d4e6b7f7e61a4f95ad1104b6926d03ca63f9b1bf9f6e653db3",
+            "new_sha256": "675825906dee5c7a0b939e4fff08480e5e8f163dd472143fe445590d15b28737",
+            "owner_group": "migration_regression_route",
+            "basis": "Exact parent byte/AST inverse preserves the existing diagnostic/M04/World/Lion routes; one new whole-module Boss/NPC invocation."
+          }
+        ]
+      },
+      "prior_source_checkpoint": {
+        "head": "0b33ee392d684b0a3f08dd2d191f3f00b1d8baec",
+        "source_parent": "e03da682eafb3bdd662c4aecaef9ee67770a1043",
+        "main_parent": "4e29529abacfcbff821bfb7560424c6684b936d7",
+        "source_groups": 5,
+        "source_files": 10,
+        "source_review_matrix": "Prior approved-gate3, M04/World-route3, sys1, WorldChange prior-owner2 and binding-packet1 repairs remain recorded in their named sections and sourcee03/merge0b33. The accepted main inheritance contained25 paths."
+      }
+    }
+  ],
+  "boss_reward_yield_trader_custody_repair": {
+    "actual_parent_failure": {
+      "head": "183c6551efa22860c204513111318b442aa047d9",
+      "run": 42995700411,
+      "job": 130439148431,
+      "marker": "BOSS_REWARD_YIELD_PROFILE_CONFLICT:oteryn:item.tibia.i7385",
+      "runtime_previous_row": "UNKNOWN: key only in actual runner log",
+      "receipt": {
+        "path": "batch66-step-generator-terminal-receipt.json",
+        "sha256": "98bc8c004e97f461f9ed6e933aa86a90bbed8d66388f56ff71e88d03d08e40bb"
+      }
+    },
+    "bounded_diagnosis": "Actual selected QuestCallback input7385 plus its four required Lion inputs reaches the same Yield refusal without output mutation. Canonical and source physics, exact identity, binding and admission agree; classification and stack_max/container/charges/temporal need source-qualified UNKNOWN completion. The selected proof is not a full389-request prefix or failed runner-row reconstruction.",
+    "change": "Only7385 joins the existing11-ID CLASSIFICATION_ENRICHMENT_IDS cohort. Existing recursive UNKNOWN completion, known-value refusal, exact source/binding/admission/physical checks and all other scope remain byte-identical. No whole-row replacement or known equipment/rune/fluid/imbuement/trade overwrite.",
+    "preserved": "All previous seven test identities/assertions, captured46 yields, source packets, JSON/Rust pins and other Item owners are unchanged.",
+    "local_verification": {
+      "result": "Actual full10 methods:4PASS/6FAIL. All3 new regressions and old timed-owner test pass. Five old cases stop at the unchanged native/update base-hash gate before enrichment; old Outburst reads stale committed native lacking23474 and does not call yield. No whole-module green claim.",
+      "actual_tests": {
+        "executed": 10,
+        "passed": 4,
+        "failed": 6,
+        "new_regressions_passed": 3,
+        "old_timed_owner_passed": 1,
+        "full_module_green": false,
+        "full_module_after_artifact_required": true
+      },
+      "raw": {
+        "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-yield2-tests.log",
+        "sha256": "05fcc48bfce206dd0ac2725a1e72ecff41bd95585692cf53ac1a58a5a5cc03fb"
+      },
+      "checks": "Exact file/AST inverse, syntax, scoped diff and15 input controls; no full producer/Cargo/PG.",
+      "required_next": "Run all10 against final canonical artifact before claiming qualification."
+    },
+    "manifest": {
+      "path": "batch67-step-yield2-frozen.json",
+      "sha256": "736eb91daf1f2bc2e0c1d0cde9e2237a241e82e606b660cc811f0434e9712b7b"
+    },
+    "proof": {
+      "path": "batch67-step-yield2-proof.json",
+      "sha256": "0497de8379eaa5855300cfe46c394554d3ea8bb2b47b7f7b09903269ef1a1d31"
+    },
+    "independent_peer": {
+      "path": "batch67-root-peer-yield2.json",
+      "sha256": "a990a2094f3b7afbc443a2f85802f31f768347261e9acb6bc6fc5abd0d93fa99"
+    },
+    "independent_owner_readback": {
+      "path": "batch67-rotten-i7385-owner-contract-peer.json",
+      "sha256": "5c7872dd9bc30698110148481e687c339e347aa3834f18a49acbbd01cda79839"
+    },
+    "qualification": "SOURCE_REPAIR_PEER_PASS_FULL_GENERATION_AND_RUNTIME_PENDING"
+  },
+  "boss_reward_yield_ci_route": {
+    "change": "Add test_boss_reward_yield_profiles to the existing unconditional unittest import beside Boss/NPC. Add one unconditional unittest import of test_questpc2_rotten_loot_items with cwd tools/content-schema/native-gameplay. Both use check=True. All existing routes, two-worker pool, shutdown wait, awaited futures and parent assertions remain unchanged.",
+    "coverage": "Whole Yield10 (7existing+3new), including its late class, plus existing Boss12/NPC2; whole Rotten2 includes both the original committed-data/outside-hash case and the new bounded production composition. No method filtering, skip or direct-script omission.",
+    "verification": "Independent complete byte/AST inverse to183c and to the prior Yield-only route; syntax, source discovery and diff checks. No parent/suite execution by route reviewers.",
+    "manifest": {
+      "path": "batch67-root-boss-yield-rotten-route2-frozen.json",
+      "sha256": "5b4d889d02cceef4bcc406bd97d86f6c75ec321bf705dab817536a145d5095ed"
+    },
+    "independent_peer": {
+      "path": "batch67-retained-peer-boss-yield-rotten-route2.json",
+      "sha256": "6dbe69aa9d5c956da57fc6da4ea3cd7120cf68791ec5b683c0cf6d75e4da66c1"
+    },
+    "qualification": "CI_ROUTE_AUTHORED_EXECUTION_PENDING",
+    "proof": {
+      "path": "batch67-root-boss-yield-rotten-route2-proof.json",
+      "sha256": "7262ef6b0d2256237c3f00134718ef897bfcd2fa62605c0927eded6ae3ba0a23"
+    }
+  },
+  "rotten_essence_weight_contract_gap": {
+    "ids": [
+      43501,
+      43502,
+      43503,
+      43504
+    ],
+    "read_only_disposition": {
+      "path": "batch67-rotten-essence4-owner-disposition.json",
+      "sha256": "8c6ea71b36cc1764472f543250d0567ea847e9eddc7840786d62fbb7604968e1"
+    },
+    "finding": "No proven fresh-prefix blocker before register573. These are Rotten essences, not Wheel gems. Existing canonical150 is accepted in World reference and full current wrappers equal incomingf01; both pinned source packets qualify0. Committed native150 is not a captured runner-prefix row.",
+    "bounded_actual_composition": {
+      "receipt": {
+        "path": "batch67-step-rotten4-composition.json",
+        "sha256": "c8034fa07cd90eb101f7e1da3353856e68a0e851653427e3278d51cf4a3c1ea4"
+      },
+      "elapsed_seconds": 4.538314099001582,
+      "counts": {
+        "boss": 46,
+        "late_rotten": 48
+      },
+      "all46_prior_full_rows_preserved": true,
+      "weights": {
+        "boss4": 0,
+        "late_rotten4": 0,
+        "current_canonical4": 150
+      },
+      "scope": "Actual BossYield.admit46 then real late questpc2 admission/source.capture6, no mocks/profile substitution. It preserves0 and adds only43899/43900; not full prefix/tail/artifact."
+    },
+    "test_contract": "Accepted historical contract preserves physical facts of an already admitted owner. The actual bounded BossYield46 to real QuestPC2 capture6 composition keeps all46 complete rows and adds2. The closed43501..43504 committed-data expectation now requires full native physical to equal canonical physical with only exact KNOWN weight0, while independently asserting canonical exact KNOWN weight150. The old43899/43900 branch, all unrelated assertions and both outside-record digests remain unchanged.",
+    "test_contract_receipt": {
+      "path": "batch67-retained-rotten-essence-test-contract.json",
+      "sha256": "0e9b0d1b68313bf887ee24bf9e231ff78102a19943cb8ec26ccb359d7844b43f"
+    },
+    "decision": "PRODUCTION_ZERO_PRESERVATION_ACCEPTED_TEST_SOURCE_REVIEWED_RUNTIME_PENDING",
+    "pending_source_test_repair": {
+      "owner": "step_finish",
+      "path": "tools/content-schema/native-gameplay/test_questpc2_rotten_loot_items.py",
+      "state": "SOURCE_FROZEN_PEER_REVIEWED_RUNTIME_PENDING",
+      "included_in_frozen_source_count": true,
+      "manifest": {
+        "path": "batch67-step-rotten-expectation1-frozen.json",
+        "sha256": "e9a13fd2d016bf003d4b42da208c91d7f2e31d3e57f4d2b2950d61a27326c1ee"
+      },
+      "proof": {
+        "path": "batch67-step-rotten-expectation1-proof.json",
+        "sha256": "e0f049ddee8245e0871b3dfed4b66ead1f930830462c42f5e20bc7ec778aaf8d"
+      },
+      "independent_peer": {
+        "path": "batch67-retained-peer-rotten-expectation1.json",
+        "sha256": "35d2f07464181b8a4c25110d914a7dc184fae557d545b4cdf92a7161b01be1cb"
+      }
+    },
+    "local_verification": {
+      "source_checks": "Complete file inverse, Python compile/AST, diff check and12 unchanged controls; no production/pin/canonical changes.",
+      "earlier_bounded_composition": "Separate actual production composition PASS4.54s; this is not a completed final regression.",
+      "executions": [
+        {
+          "receipt": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-tests.json",
+            "sha256": "e042acd568ebb7d3d2bf8ae169e5a686d7c416b0a757788709bb5f7d8d1e2fbf"
+          },
+          "raw": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-tests.log",
+            "sha256": "d09aa9591c03522da0a25f1087a51af9546fb48556b95c61e5f08c4ed27492d4"
+          },
+          "exit_code": -9,
+          "timeout": false,
+          "completed_case": {
+            "identity": "test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_exact_six_canonical_and_native_admissions_preserve_other_records",
+            "status": "FAIL",
+            "observed_subtest_failures": [
+              "i43501",
+              "i43502",
+              "i43503",
+              "i43504"
+            ],
+            "additional_failure": "Outside-record comparison after loop failed; final traceback unavailable after later signal"
+          },
+          "incomplete_case": "test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_prior_boss_yield_custody_survives_real_rotten_capture_and_replay"
+        },
+        {
+          "receipt": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-tests-final.json",
+            "sha256": "74f4b10b3b6a60d5b93f170dc5f424b6bbec10f4992cffaf625867e85d791ca0"
+          },
+          "raw": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-tests-final.log",
+            "sha256": "85e1b1a9d1d35eace339f9022ef1259e64dad77c070e88531b722d97960e4f2a"
+          },
+          "exit_code": -9,
+          "timeout": false,
+          "completed_cases": [],
+          "incomplete_case": "test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_boss_yield_custody_survives_real_rotten_capture_and_replay",
+          "old_case": "NOT_RUN"
+        },
+        {
+          "receipt": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-isolated.json",
+            "sha256": "40404fd57f1013279f1ca92e26096212bcda9832ae9c5866231e0370f5d8ee16"
+          },
+          "raw": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-isolated.log",
+            "sha256": "6ac33645860c8a869202c9d5b5019a5008d1460c845a4a566d78422ece01dd6c"
+          },
+          "harness": {
+            "path": "/workspace/scratch/3cf0e68f2ed5/pg824-logs/batch67-step-rotten-expectation1-isolated.py",
+            "sha256": "775cf627c36fb8c108d1e2d78aa8497964be587e134f138713e4af0f3aea49f0"
+          },
+          "exit_code": -9,
+          "timeout": false,
+          "completed_cases": [],
+          "incomplete_case": "test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_boss_yield_custody_survives_real_rotten_capture",
+          "old_case": "NOT_SELECTED",
+          "last_phases": [
+            "BossYield.admit returned0.504s",
+            "QuestPC2.admit_native entered0.505s",
+            "QuestPC2.source.capture entered0.505s; no return"
+          ]
+        }
+      ],
+      "signal_cause": "UNKNOWN: no direct evidence of OOM or product assertion failure for the killed new cases",
+      "final_new_regression_completed": false,
+      "full_module_pass": false,
+      "old_case": "First attempt reported four selected subtest failures and a final original-case FAIL on current committed data; final traceback was not emitted before the later signal.",
+      "required_next": "Complete whole Rotten2 on the runner with regenerated data; verify four final native0/canonical150 rows and qualify unchanged outside-record digest assertions from exact materialization evidence. No blind repin."
     }
   }
 }

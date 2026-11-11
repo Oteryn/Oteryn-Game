@@ -484,7 +484,7 @@ schedule_check(
     check=True,
 )
 
-# Import both modules so every Boss corpse and authored NPC custody case runs.
+# Import complete modules so every corpse, reward yield and NPC custody case runs.
 schedule_check(
     [
         sys.executable,
@@ -492,9 +492,23 @@ schedule_check(
         "unittest",
         "-v",
         "test_boss_corpse_profiles",
+        "test_boss_reward_yield_profiles",
         "test_authored_npc_item_profiles",
     ],
     cwd=ROOT / "tools/content-migration",
+    check=True,
+)
+
+# Check both committed Rotten custody and composition with earlier loot owners.
+schedule_check(
+    [
+        sys.executable,
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_rotten_loot_items",
+    ],
+    cwd=ROOT / "tools/content-schema/native-gameplay",
     check=True,
 )
 
