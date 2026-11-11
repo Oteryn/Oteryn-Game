@@ -249,6 +249,14 @@
       "after": 600000,
       "source": "https://tibia.fandom.com/wiki/Ichgahal?oldid=1208394",
       "note": "TibiaWiki hp; the sibling Rotten Blood bosses Chagorz, Murcion and Vemiath already carry 600000 (PAR-W11)."
+    },
+    {
+      "creature": "soul_sphere",
+      "field": "health",
+      "before": 15,
+      "after": 15000,
+      "source": "https://tibia.fandom.com/wiki/Soul_Sphere?oldid=1002465",
+      "note": "D15 accepted reference-date Infobox Creature.hp is 15.000 (line 6), with a thousands separator. Correct the numeric parsing loss; the admission manifest explicitly supersedes Canary 10000. Retained source SHA-256: 0a78bf485aeef1dd4eeeec5f487ae513e14ce2203a45b1173e0280eba6cfc79b; docs/agents/evidence/monster-field-fill-20261002/prepared-population.tar.gz, population/bundles/soul_sphere/manifest.json."
     }
   ],
   "gold_gain": [

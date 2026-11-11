@@ -17,6 +17,55 @@ impl Drop for CaseDuration {
         );
     }
 }
+
+fn assert_source_overlay_guard(
+    runtime: &ChannelRuntimeV1,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    caster: crate::foundation::ExactActorRef,
+    player: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::gameplay_transport::monster_profile_cycle::accepts_source_overlay;
+
+    assert!(matches!(
+        runtime.binding().runtime_scope(),
+        crate::foundation::RuntimeScopeRefV1::Channel { .. }
+    ));
+    let record = native
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|record| record.profile.target.key == "oteryn:creature.omrafir")
+        .ok_or("actual Omrafir source record")?;
+    let overlay = native
+        .omrafir_source_attacks(&record.profile.target)
+        .ok_or("qualified Omrafir source callbacks")?;
+    assert_eq!(overlay.abilities().len(), 2, "beam and exact-item healing");
+    for ability in overlay.abilities().keys() {
+        assert!(
+            !record
+                .attack_definitions
+                .as_ref()
+                .ok_or("source attack definitions")?
+                .profiles
+                .iter()
+                .any(|profile| &profile.target == ability),
+            "restored callbacks require the overlay admission path"
+        );
+        assert!(accepts_source_overlay(runtime, native, caster, ability));
+        assert!(
+            !accepts_source_overlay(runtime, native, player, ability),
+            "a live player cannot borrow a Creature callback"
+        );
+        let mut wrong_revision = ability.clone();
+        wrong_revision.revision = "unqualified-revision".into();
+        assert!(
+            !accepts_source_overlay(runtime, native, caster, &wrong_revision),
+            "the source ability revision remains exact"
+        );
+    }
+    Ok(())
+}
+
 fn omrafir_case(explode: bool, exact_wall: Option<bool>, terminal: bool) -> TestResult {
     omrafir_attachment_case(explode, exact_wall, terminal, true)
 }
@@ -80,6 +129,7 @@ fn omrafir_attachment_case(
                 origin).map_err(debug)?;
             let caster = runtime.spawn_arena_opponent("oteryn:creature.omrafir",
                 caster_at, |_,_|Some(true)).map_err(debug)?;
+            assert_source_overlay_guard(&runtime, native, caster, deps.actor)?;
             if explode {
                 let maximum=runtime.companion_snapshot(caster).map_err(debug)?.maximum_health;
                 runtime.set_test_creature_health(caster,if terminal {maximum*3/100} else {maximum/2}).map_err(debug)?;

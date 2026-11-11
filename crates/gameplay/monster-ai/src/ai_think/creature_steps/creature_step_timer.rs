@@ -89,14 +89,12 @@ impl CreatureAiTable {
                 self.step_timers = Some(timers);
                 return;
             };
-            let mut first = true;
-            let fired = timers.drain_due_matching(
+            let Some(timer) = timers.pop_next_due_deadline(
                 &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(through_us)),
                 fence,
+                StepFamily,
                 |actor| runtime.contains_live_creature(actor),
-                |_, _| std::mem::take(&mut first),
-            );
-            let Some(timer) = fired.into_iter().next() else {
+            ) else {
                 break;
             };
             let actor = timer.occurrence;

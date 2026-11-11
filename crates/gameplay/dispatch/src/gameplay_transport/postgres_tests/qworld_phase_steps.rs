@@ -222,6 +222,7 @@ pub(super) async fn exercise(
             .as_ref()
             .is_some_and(|guard| guard.premium)
     );
+    assert!(callback.requires_world_admission);
     let flag = callback
         .storage
         .iter()

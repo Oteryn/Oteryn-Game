@@ -119,7 +119,7 @@ mod e2ef1 {
         ActorPosition {
             x: i32::from(at.x),
             y: i32::from(at.y),
-            floor: -i16::from(at.floor),
+            floor: i16::from(at.floor),
         }
     }
     fn distance(a: TilePos, b: TilePos) -> u16 {

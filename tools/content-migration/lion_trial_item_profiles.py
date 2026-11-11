@@ -5,7 +5,9 @@ Crystal 201189f8 items.xml and the retained Canary XML have byte-identical
 must still select these records and regenerate the provider; this module does
 not change admission or invent decay rules from item descriptions.
 """
+import copy
 import hashlib
+import json
 import xml.etree.ElementTree as ET
 
 import grizzly_shop_profiles as owner
@@ -82,6 +84,15 @@ def records(root, xml, definitions):
     nodes = source.xml_index(xml)
     bindings = source.binding_index(
         (root / 'imports/crystalserver/bindings/items.json').read_bytes())
-    return {f'oteryn:item.tibia.i{item_id}': qualify(
+    result = {f'oteryn:item.tibia.i{item_id}': qualify(
         item_id, nodes[item_id], appearances[item_id], physical[item_id], bindings,
         definitions[f'oteryn:item.tibia.i{item_id}']) for item_id in SOURCE_RECORDS}
+    # Quick Loot attaches this canonical metadata before callback admission.
+    # Resolve the same owner instead of copying fields from the active profile.
+    taxonomy = json.loads((root / 'content/items/taxonomy/items.json').read_bytes())['records']
+    for key, record in result.items():
+        matches = [row for row in taxonomy if row['target']['key'] == key]
+        if len(matches) != 1 or matches[0]['target'] != definitions[key]['identity']:
+            raise ValueError('LION_TRIAL_ITEM_TAXONOMY')
+        record['authoring']['taxonomy'] = copy.deepcopy(matches[0]['source_taxonomy'])
+    return result

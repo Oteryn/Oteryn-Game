@@ -32,6 +32,7 @@ use oteryn_protocol_oteryn::world_map::{
     first_visible_floor_start, floors_in_view,
 };
 use oteryn_world_bundle::bundle::TerrainKind;
+use std::num::NonZeroU32;
 
 /// The facts of one composed entry that the view needs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,6 +77,22 @@ pub trait MapFacts {
     }
 
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts>;
+    /// The current native generation's qualified Ground-only amphora definition.
+    /// A static map alone grants no additional move handles.
+    fn ground_push_definition(&self) -> Option<NonZeroU32> {
+        None
+    }
+    /// Qualify the immutable empty source against that admitted definition.
+    fn base_ground_pushable(
+        &self,
+        _pos: TilePos,
+        _ordinal: u8,
+        _id: u32,
+        _depths: &[u8],
+        _definition: NonZeroU32,
+    ) -> bool {
+        false
+    }
     /// The facts of an overlay-added or Ground item, from its item content definition.
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts>;
     /// Whether `pos` is a house tile.
@@ -265,6 +282,16 @@ pub fn compose_into(
                 contents,
                 facts.house_tile(pos),
             );
+            let movable = movable
+                || facts.ground_push_definition().is_some_and(|definition| {
+                    entry.definition == MapDefinition::Item(definition)
+                        && !entry.bound
+                        && !contents
+                        && !facts.house_tile(pos)
+                        && placement_key(pos, ordinal)
+                            .is_some_and(|key| facts.object_revision(key) == 0)
+                        && facts.base_ground_pushable(pos, ordinal, *id, depths, definition)
+                });
             let openable_source =
                 openable_source && matches!(entry.definition, MapDefinition::Item(_));
             out.push(ComposedEntry {

@@ -1,7 +1,11 @@
 //! Registered source GlobalEvent; no Creature, Player cost or invented Ability.
 use super::scoped_global::{GlobalFireAction, ScopedGlobalGroundCause, ScopedGlobalIdentity};
 use super::*;
+use crate::durability::ground_cell_limit::{
+    GroundCellAdmissionError, GroundCellLimitError, check_ground_cell_root_insert_in_transaction,
+};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition, RuntimeScopeRefV1};
+use std::sync::OnceLock;
 
 #[derive(Debug)]
 pub struct SpiteGlobalFireCallback {
@@ -12,6 +16,9 @@ pub struct SpiteGlobalFireCallback {
     target: SpellGroundTarget,
     position: MovementLocalPosition,
     due_us: u64,
+    // This exact callback is retained by the owner before SQL. A known nil
+    // creation must survive cancellation before its result reaches dispatch.
+    create_no_space: OnceLock<()>,
 }
 /// Captured under the actual runtime before SQL. It grants no actor or new
 /// registration: the existing scope transaction independently re-proves Node
@@ -30,6 +37,12 @@ pub struct PreparedSpiteGlobalWrite {
 pub struct SpiteGlobalFireReceipt {
     pub receipt: CreatureGroundReceipt,
     pub removed: bool,
+}
+pub enum SpiteGlobalFireOutcome {
+    Committed(SpiteGlobalFireReceipt),
+    /// Source Game.createItem returned nil at the genuine Ground-root limit.
+    /// No physical receipt or expiry exists for this retained occurrence.
+    CreateNoSpace,
 }
 impl PreparedSpiteGlobalWrite {
     pub fn current_for(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -227,6 +240,7 @@ impl SpiteGlobalFireCallback {
             target,
             position,
             due_us,
+            create_no_space: OnceLock::new(),
         })
     }
     /// Capture the same registered timer at its original deadline. SQL retries
@@ -238,6 +252,7 @@ impl SpiteGlobalFireCallback {
         now_us: u64,
     ) -> Result<Self> {
         if self.cause.action != GlobalFireAction::Create
+            || self.create_no_space.get().is_some()
             || !self.current_for(runtime)
             || now_us < self.due_us
         {
@@ -277,6 +292,7 @@ impl SpiteGlobalFireCallback {
             target,
             position: self.position,
             due_us: self.due_us,
+            create_no_space: OnceLock::new(),
         })
     }
     pub fn position(&self) -> MovementLocalPosition {
@@ -313,7 +329,7 @@ pub async fn execute_spite_global_fire_in_transaction(
     authority: &SpellItemScopeAuthority,
     callback: &SpiteGlobalFireCallback,
     prepared: &PreparedSpiteGlobalWrite,
-) -> Result<SpiteGlobalFireReceipt> {
+) -> Result<SpiteGlobalFireOutcome> {
     if !prepared.matches(callback)
         || authority.runtime_scope() != callback.cause.identity.scope
         || authority.generation() != callback.cause.identity.ownership_generation
@@ -337,9 +353,41 @@ pub async fn execute_spite_global_fire_in_transaction(
     if let Some(receipt) =
         reconcile_scoped_ground_in_transaction(tx, authority, cause, current).await?
     {
-        return receipt_result(tx, callback, receipt).await;
+        return receipt_result(tx, callback, receipt)
+            .await
+            .map(SpiteGlobalFireOutcome::Committed);
+    }
+    if callback.create_no_space.get().is_some() {
+        return Ok(SpiteGlobalFireOutcome::CreateNoSpace);
     }
     let operations = if let Some(operation) = &callback.operation {
+        let SpellItemOperation::MintGround {
+            item_instance_id,
+            placement,
+            ..
+        } = operation
+        else {
+            return Err(SpellItemError::Rejected(
+                "Spite registered create operation",
+            ));
+        };
+        match check_ground_cell_root_insert_in_transaction(
+            tx,
+            authority,
+            placement,
+            item_instance_id,
+        )
+        .await
+        {
+            Ok(()) => {}
+            Err(GroundCellAdmissionError::Limit(GroundCellLimitError::NotEnoughRoom)) => {
+                // No write or COMMIT has occurred. Publish the exact terminal
+                // nil result before any await or return can lose this owner turn.
+                callback.create_no_space.get_or_init(|| ());
+                return Ok(SpiteGlobalFireOutcome::CreateNoSpace);
+            }
+            Err(error) => return Err(error.into_spell_error()),
+        }
         vec![operation.clone()]
     } else {
         if callback.cause.action != GlobalFireAction::Expire
@@ -400,7 +448,9 @@ pub async fn execute_spite_global_fire_in_transaction(
         current,
     )
     .await?;
-    receipt_result(tx, callback, receipt).await
+    receipt_result(tx, callback, receipt)
+        .await
+        .map(SpiteGlobalFireOutcome::Committed)
 }
 
 async fn receipt_result(
@@ -441,7 +491,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         callback: &SpiteGlobalFireCallback,
         prepared: &PreparedSpiteGlobalWrite,
-    ) -> Result<SpiteGlobalFireReceipt> {
+    ) -> Result<SpiteGlobalFireOutcome> {
         if !prepared.matches(callback)
             || node.fact().node_id().as_bytes() != &callback.cause.identity.node
             || node.fact().registration_revision()
@@ -464,7 +514,7 @@ impl DurabilityRoot {
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
                     let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
-                    let outcome: Result<SpiteGlobalFireReceipt> = async {
+                    let outcome: Result<SpiteGlobalFireOutcome> = async {
                         let authority = assert_spell_item_scope_with_recovery(
                             &mut tx,
                             context.permit,
@@ -485,9 +535,12 @@ impl DurabilityRoot {
                     }
                     .await;
                     match outcome {
-                        Ok(value) => {
+                        Ok(value @ SpiteGlobalFireOutcome::Committed(_)) => {
                             commit_creature_item_owner_transaction(tx, deadline).await?;
                             Ok(Ok(value))
+                        }
+                        Ok(SpiteGlobalFireOutcome::CreateNoSpace) => {
+                            Ok(Ok(SpiteGlobalFireOutcome::CreateNoSpace))
                         }
                         Err(error) => Ok(Err(error)),
                     }

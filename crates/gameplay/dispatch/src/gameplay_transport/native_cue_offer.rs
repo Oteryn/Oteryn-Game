@@ -1,7 +1,7 @@
 //! Native map presentation negotiation; it grants no cast or map mutation authority.
 use super::capabilities::OfferedCapability;
 use crate::content::{ActiveGeneration, QualifiedNativeEntryRoom};
-use crate::foundation::ChannelContentPin;
+use crate::foundation::{ChannelContentPin, ExactActorRef, GameSessionId, GameSessionState};
 
 pub(super) fn source_available(
     active: &ActiveGeneration,
@@ -72,6 +72,61 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         (runtime.owner_fence().is_ok() && source_available(active, room, runtime.content_pin()))
             .then_some(true)
+    }
+
+    /// Current custody selects the presentation frame independently of the
+    /// origin Channel's offer. A named House retains its existing positive-z wire.
+    pub(super) async fn current_actor_native_map_cue_frame(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<bool> {
+        use sha2::Digest as _;
+        let active = self.active_generation?;
+        let room = self.effective_rooms().gate_wire_position()?;
+        let (current, _) =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(session)
+                .await
+                .ok()?;
+        if current.session_state() != GameSessionState::Active {
+            return None;
+        }
+        let runtime = self.runtime.lock().await;
+        let pin = runtime.content_pin();
+        if runtime.owner_fence().is_err()
+            || !source_available(active, room, pin)
+            || self.wire_position_frame(&runtime).is_none()
+            || self.effective_movement_cells().scope().world_id != pin.world_id()
+            || self.effective_movement_cells().scope().generation_digest
+                != pin.server_artifact_digest()
+            || <[u8; 32]>::from(sha2::Sha256::digest(
+                self.effective_movement_cells()
+                    .scope()
+                    .map_revision
+                    .as_str()
+                    .as_bytes(),
+            )) != pin.map_revision_digest()
+        {
+            return None;
+        }
+        let lease = current.current_character_lease();
+        if let Ok(house) = runtime.house_actor_state(actor, session) {
+            return (house.scope == current.current_runtime_scope()
+                && house.generation == current.current_scope_generation()
+                && house.lease == lease
+                && runtime
+                    .house_player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none()))
+            .then_some(false);
+        }
+        (runtime.binding().runtime_scope() == current.current_runtime_scope()
+            && runtime.binding().scope_generation() == current.current_scope_generation()
+            && runtime.bound_attacker_lease(actor, session).ok() == Some(lease)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none()))
+        .then_some(true)
     }
 }
 

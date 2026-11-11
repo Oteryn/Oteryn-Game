@@ -369,6 +369,29 @@ async fn stages(
             )
             .await
             .ok_or("stage USE result")?;
+        if result.disposition != UseDisposition::Committed {
+            eprintln!(
+                "[DBG-3056-SCAVENGE] stage={stage} species={species} disposition={:?}",
+                result.disposition
+            );
+            if tokio::time::timeout(
+                std::time::Duration::from_secs(5),
+                report_skinning_operands(
+                    owner,
+                    harness,
+                    native,
+                    actor,
+                    command,
+                    [id(tool), corpse],
+                    [source, spent, output],
+                ),
+            )
+            .await
+            .is_err()
+            {
+                eprintln!("[DBG-3056-SCAVENGE] operand diagnostics timed out");
+            }
+        }
         assert_eq!(
             result.disposition,
             UseDisposition::Committed,
@@ -431,6 +454,89 @@ async fn stages(
     assert_eq!(footprint(harness).await?, before);
     provenance_refuses_late_binding(harness, corpse).await?;
     Ok(())
+}
+
+// Failure-only observations preserve the original assertion and never repeat the action.
+async fn report_skinning_operands(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    operands: [[u8; 16]; 2],
+    expected_definitions: [u32; 3],
+) {
+    let [tool, corpse] = operands;
+    eprintln!(
+        "[DBG-3056-SCAVENGE] command={command:?} actor={actor:?} tool={tool:02x?} corpse={corpse:02x?}"
+    );
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map(|position| position.position());
+    eprintln!("[DBG-3056-SCAVENGE] actor_position={position:?}");
+    // One statement observes only the two exact operands, without reproducing prepare's
+    // eligibility predicates. Missing rows stay null; each indexed lookup is bounded.
+    let rows = sqlx::query_scalar::<_, serde_json::Value>(
+        r#"SELECT jsonb_build_object(
+            'tool', (SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid LIMIT 1),
+            'corpse', (SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($2,'hex')::uuid LIMIT 1),
+            'tool_container', (SELECT to_jsonb(e) FROM game_item_container_entries e WHERE item_instance_id=encode($1,'hex')::uuid LIMIT 1),
+            'tool_nested', (SELECT to_jsonb(e) FROM game_item_nested_entries e WHERE item_instance_id=encode($1,'hex')::uuid LIMIT 1),
+            'ground', (SELECT to_jsonb(g) FROM game_item_ground_locations g WHERE item_instance_id=encode($2,'hex')::uuid LIMIT 1),
+            'race', (SELECT to_jsonb(p) FROM game_corpse_source_races p WHERE item_instance_id=encode($2,'hex')::uuid LIMIT 1),
+            'timed', (SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($2,'hex')::uuid LIMIT 1),
+            'field_temporal', (SELECT to_jsonb(t) FROM game_spell_field_temporal_schedules t WHERE item_instance_id=encode($2,'hex')::uuid LIMIT 1),
+            'prior_skinning', (SELECT to_jsonb(s) FROM game_corpse_skinning_records s WHERE corpse_item_instance_id=encode($2,'hex')::uuid LIMIT 1)
+        )"#,
+    )
+    .bind(tool.as_slice())
+    .bind(corpse.as_slice())
+    .fetch_one(&harness.pool)
+    .await;
+    match rows {
+        Ok(rows) => {
+            eprintln!("[DBG-3056-SCAVENGE] operand_rows={rows}");
+            for operand in ["tool", "corpse"] {
+                let key = rows[operand]["definition_production_key"].as_str();
+                let revision = rows[operand]["definition_revision_ref"].as_str();
+                let policy = key
+                    .zip(revision)
+                    .and_then(|(key, revision)| native.item_policy(key, revision));
+                let indexed_revision =
+                    key.and_then(|key| native.item_index().and_then(|index| index.revision(key)));
+                eprintln!(
+                    "[DBG-3056-SCAVENGE] operand={operand} key={key:?} stored_revision={revision:?} indexed_revision={indexed_revision:?} native_policy={}",
+                    policy.is_some()
+                );
+            }
+        }
+        Err(error) => eprintln!("[DBG-3056-SCAVENGE] operand snapshot failed: {error}"),
+    }
+    for (role, source_id) in ["source", "spent", "output"]
+        .into_iter()
+        .zip(expected_definitions)
+    {
+        let key = format!("oteryn:item.tibia.i{source_id}");
+        let revision = native.item_index().and_then(|index| index.revision(&key));
+        let policy = revision.and_then(|revision| native.item_policy(&key, revision));
+        let output = revision.and_then(|revision| {
+            oteryn_gameplay_items::item_craft::output_definition(
+                native,
+                &crate::content::ProjectV2DefinitionRef {
+                    family: crate::content::ProjectV2Family::Item,
+                    key,
+                    revision: revision.to_owned(),
+                },
+            )
+        });
+        eprintln!(
+            "[DBG-3056-SCAVENGE] expected={role} key=oteryn:item.tibia.i{source_id} indexed_revision={revision:?} native_policy={} output_qualification={output:?}",
+            policy.is_some()
+        );
+    }
 }
 
 fn skinning_intent() -> TestResult<UseIntent> {
@@ -789,7 +895,8 @@ async fn entity_target(
         floor: 7,
     };
     assert_eq!(
-        owner.movement_cells()
+        owner
+            .movement_cells()
             .index()
             .lookup(
                 owner.movement_cells().scope(),
@@ -829,7 +936,10 @@ async fn entity_target(
         .row("oteryn:creature.minotaur")
         .map_err(debug)?;
     let race = row.race.clone().ok_or("canonical minotaur race")?;
-    let corpse = row.corpse_item.as_ref().ok_or("canonical minotaur corpse")?;
+    let corpse = row
+        .corpse_item
+        .as_ref()
+        .ok_or("canonical minotaur corpse")?;
     seed_scavenge(h, 3, race.key()).await?;
     let definition = TypedDefinitionRef {
         family: corpse.family.clone(),

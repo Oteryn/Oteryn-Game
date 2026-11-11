@@ -24,12 +24,23 @@ fn engenc2_nomads_amphora_ground_relocation_refuses_inventory_postgres() -> Test
 fn engenc2_nomads_native_amphora_push_dispatch_postgres() -> TestResult {
     scenario(Scenario::SourceAmphora)
 }
+#[test]
+fn engenc2_nomads_actual_catalogue_selects_ground_and_replays_after_layout_drift_postgres()
+-> TestResult {
+    scenario(Scenario::Selection)
+}
+#[test]
+fn engenc2_nomads_pending_original_survives_ground_drift_postgres() -> TestResult {
+    scenario(Scenario::SelectionInterrupted)
+}
 #[derive(Clone, Copy)]
 enum Scenario {
     Window,
     Crate,
     Amphora,
     SourceAmphora,
+    Selection,
+    SelectionInterrupted,
 }
 fn scenario(mode: Scenario) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -148,14 +159,16 @@ fn scenario(mode: Scenario) -> TestResult {
                     .catalogue()
                     .clone(),
             ));
-            assert!(
-                owner
-                    .states
-                    .quest_callbacks
-                    .fixture
-                    .set(vec![callback.clone()])
-                    .is_ok()
-            );
+            if !matches!(mode, Scenario::Selection | Scenario::SelectionInterrupted) {
+                assert!(
+                    owner
+                        .states
+                        .quest_callbacks
+                        .fixture
+                        .set(vec![callback.clone()])
+                        .is_ok()
+                );
+            }
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -218,11 +231,32 @@ fn scenario(mode: Scenario) -> TestResult {
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
 
+            if matches!(mode, Scenario::Selection | Scenario::SelectionInterrupted) {
+                exercise_selection(
+                    &mut owner,
+                    &mut admitted,
+                    &h,
+                    matches!(mode, Scenario::SelectionInterrupted),
+                )
+                .await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+
             if matches!(mode, Scenario::SourceAmphora) {
                 use crate::gameplay_transport::item_move::{
-                    LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget,
+                    ItemMoveStep, LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget, item_move,
                 };
-                use crate::gameplay_transport::item_view::ItemKey;
+                use crate::gameplay_transport::item_view::{
+                    ItemKey, ItemViewContinuity, SessionItemView,
+                };
+                use crate::gameplay_transport::world_map::{MapUpdate, SessionMapView};
+                use oteryn_protocol_oteryn::item_view::{
+                    ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+                    WorldTilePosition, encode_item_move_intent_for,
+                };
                 let key = oteryn_world_bundle::bundle::placement_key(-9, 33218, 32853, 1)
                     .ok_or("amphora key")?;
                 let source = ItemKey::MapBase {
@@ -237,6 +271,105 @@ fn scenario(mode: Scenario) -> TestResult {
                         item_fence: Some(fence.item_fence()),
                     })
                 };
+                let mut observer = SessionMapView::default();
+                let mut items =
+                    SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+                let Some(MapUpdate::Snapshot(snapshot)) = owner
+                    .observe_world_map(deps.actor, &mut observer, &mut items)
+                    .await
+                    .ok_or("amphora source map")?
+                    .map_err(debug)?
+                else {
+                    return Err("amphora source snapshot".into());
+                };
+                let snapshot =
+                    oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
+                        .map_err(debug)?;
+                let handle = items
+                    .table()
+                    .handle(&source)
+                    .ok_or("native amphora handle")?;
+                let source_tile = snapshot
+                    .tiles
+                    .iter()
+                    .find(|tile| {
+                        tile.position.x == 33218
+                            && tile.position.y == 32853
+                            && tile.position.floor == -9
+                    })
+                    .ok_or("native amphora source tile")?;
+                assert!(source_tile.items.iter().any(|entry| {
+                    entry.appearance_id == 2904
+                        && entry.origin
+                            == oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle)
+                }));
+                let selection = ItemMoveSelection {
+                    equip_drop: false,
+                    container_tree: false,
+                    world_interaction: true,
+                };
+                let payload = encode_item_move_intent_for(
+                    &ItemMoveIntent {
+                        source: handle,
+                        destination: ItemMoveDestination::Ground(WorldTilePosition {
+                            x: 33216,
+                            y: 32854,
+                            floor: -9,
+                        }),
+                    },
+                    selection,
+                )
+                .map_err(debug)?;
+                let fixed_source = ItemKey::MapBase {
+                    bundle_digest: world.base().digest(),
+                    placement_key: oteryn_world_bundle::bundle::placement_key(-9, 33216, 32855, 1)
+                        .ok_or("fixed window key")?,
+                    reset_epoch: 0,
+                };
+                assert!(items.table().handle(&fixed_source).is_none());
+                assert_eq!(
+                    owner
+                        .move_loop_item(
+                            deps.actor,
+                            command(897)?,
+                            LoopMove {
+                                item: fixed_source,
+                                count: None,
+                                target: LoopTarget::Ground(WorldTilePosition {
+                                    x: 33216,
+                                    y: 32854,
+                                    floor: -9,
+                                }),
+                            },
+                        )
+                        .await,
+                    LoopMoveResult::Refused(LoopMoveRefusal::Stale),
+                    "a fixed source receives neither a move handle nor materialization authority"
+                );
+                let inventory_payload = encode_item_move_intent_for(
+                    &ItemMoveIntent {
+                        source: handle,
+                        destination: ItemMoveDestination::MainBackpack,
+                    },
+                    selection,
+                )
+                .map_err(debug)?;
+                assert!(
+                    matches!(
+                        item_move(
+                            &owner,
+                            deps.actor,
+                            command(898)?,
+                            &inventory_payload,
+                            selection,
+                            false,
+                            &mut items,
+                        )
+                        .await,
+                        ItemMoveStep::Result(ItemMoveOutcome::Stale, _)
+                    ),
+                    "an advertised Ground-push source must not gain inventory pickup"
+                );
                 let refused_count = owner
                     .move_loop_item(
                         deps.actor,
@@ -264,27 +397,21 @@ fn scenario(mode: Scenario) -> TestResult {
                     receipts_before, 0,
                     "unsupported quantity must not reserve or materialize the source"
                 );
-                let result = owner
-                    .move_loop_item(
-                        deps.actor,
-                        command(900)?,
-                        LoopMove {
-                            item: source,
-                            count: None,
-                            target: LoopTarget::Ground(
-                                oteryn_protocol_oteryn::item_view::WorldTilePosition {
-                                    x: 33216,
-                                    y: 32854,
-                                    floor: -9,
-                                },
-                            ),
-                        },
-                    )
-                    .await;
-                assert_eq!(
-                    result,
-                    LoopMoveResult::Committed,
-                    "native empty amphora must push through the real dispatcher"
+                assert!(
+                    matches!(
+                        item_move(
+                            &owner,
+                            deps.actor,
+                            command(900)?,
+                            &payload,
+                            selection,
+                            false,
+                            &mut items,
+                        )
+                        .await,
+                        ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
+                    ),
+                    "the advertised native empty amphora must push through fresh wire dispatch"
                 );
                 let (item, cell): (Vec<u8>, Vec<u8>) = sqlx::query_as(
                     "SELECT uuid_send(g.item_instance_id),g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i2904' LIMIT 2"
@@ -299,6 +426,21 @@ fn scenario(mode: Scenario) -> TestResult {
                     ]
                     .concat()
                 );
+                let custody: i64 = sqlx::query_scalar(
+                    "SELECT (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid) \
+                     +(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid) \
+                     +(SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid) \
+                     +(SELECT count(*) FROM game_item_container_slots WHERE item_instance_id=encode($1,'hex')::uuid)",
+                ).bind(item.as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(custody, 1);
+                let committed_state: (serde_json::Value, serde_json::Value) = sqlx::query_as(
+                    "SELECT to_jsonb(i),to_jsonb(g) FROM game_item_instances i \
+                     JOIN game_item_ground_locations g USING(item_instance_id) \
+                     WHERE i.item_instance_id=encode($1,'hex')::uuid",
+                )
+                .bind(item.as_slice())
+                .fetch_one(&h.pool)
+                .await?;
                 let repeated = owner
                     .move_loop_item(
                         deps.actor,
@@ -331,6 +473,78 @@ fn scenario(mode: Scenario) -> TestResult {
                         .fetch_one(&h.pool)
                         .await?;
                 assert_eq!(receipts, 1);
+                assert!(matches!(
+                    item_move(
+                        &owner,
+                        deps.actor,
+                        command(900)?,
+                        &payload,
+                        selection,
+                        false,
+                        &mut items,
+                    )
+                    .await,
+                    ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
+                ));
+                let Some(MapUpdate::Delta(delta)) = owner
+                    .observe_world_map(deps.actor, &mut observer, &mut items)
+                    .await
+                    .ok_or("materialized amphora map")?
+                    .map_err(debug)?
+                else {
+                    return Err("amphora materialization must publish a map delta".into());
+                };
+                let delta = oteryn_protocol_oteryn::world_map::decode_world_map_delta(
+                    &snapshot.header,
+                    &delta.payload,
+                )
+                .map_err(debug)?;
+                let retired_source = delta
+                    .tiles
+                    .iter()
+                    .find(|tile| {
+                        tile.position.x == 33218
+                            && tile.position.y == 32853
+                            && tile.position.floor == -9
+                    })
+                    .ok_or("retired amphora source delta")?;
+                assert!(
+                    !retired_source
+                        .items
+                        .iter()
+                        .any(|entry| entry.appearance_id == 2904)
+                );
+                assert!(items.table().handle(&source).is_none());
+                assert!(items.table().handle(&ItemKey::Instance(item)).is_some());
+                assert!(matches!(
+                    item_move(
+                        &owner,
+                        deps.actor,
+                        command(903)?,
+                        &payload,
+                        selection,
+                        false,
+                        &mut items,
+                    )
+                    .await,
+                    ItemMoveStep::Result(ItemMoveOutcome::Stale, _)
+                ));
+                let after_replay: (serde_json::Value, serde_json::Value) = sqlx::query_as(
+                    "SELECT to_jsonb(i),to_jsonb(g) FROM game_item_instances i \
+                     JOIN game_item_ground_locations g USING(item_instance_id) \
+                     WHERE i.item_instance_id=encode($1,'hex')::uuid",
+                )
+                .bind(item.as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(after_replay, committed_state);
+                let receipt_counts: (i64, i64) = sqlx::query_as(
+                    "SELECT (SELECT count(*) FROM game_map_item_mint_receipts), \
+                     (SELECT count(*) FROM game_item_loop_move_receipts)",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(receipt_counts, (1, 1));
                 drop(owner);
                 drop(authority);
                 drop(seal);
@@ -684,4 +898,125 @@ fn scenario(mode: Scenario) -> TestResult {
         result.is_ok()
     );
     result
+}
+
+async fn exercise_selection(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    h: &Harness,
+    interrupted: bool,
+) -> TestResult {
+    use super::qengine_m02_use::{assert_nomads_catalogue, mint, use_window};
+    const CALLBACK: &str = "oteryn:quest-callback/engenc2/nomads-land-window";
+    const TRACK: &str = "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured";
+    assert_nomads_catalogue(owner);
+    assert!(owner.states.quest_callbacks.fixture.get().is_none());
+    assert_eq!(
+        use_window(owner, admitted, 1).await?,
+        UseDisposition::Rejected
+    );
+    // Real Ground owners create the exact accepted three-cell layout. The
+    // source callbacks remain unmodified and both are loaded by production.
+    for (offset, (x, item)) in [(33215, 2471), (33216, 2471), (33216, 2904), (33217, 2471)]
+        .into_iter()
+        .enumerate()
+    {
+        if offset == 3 {
+            assert_eq!(
+                use_window(owner, admitted, 2).await?,
+                UseDisposition::Rejected,
+                "missing third pile cannot commit the personal observation"
+            );
+        }
+        mint(owner, h, x, item, 1300 + u32::try_from(offset)?).await?;
+    }
+    let items = ground_items(h).await?;
+    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(receipts, 0);
+    if interrupted {
+        owner
+            .states
+            .quest_callbacks
+            .interrupt_after_commit
+            .store(true, std::sync::atomic::Ordering::Release);
+        assert!(
+            use_window(owner, admitted, 3).await.is_err(),
+            "the committed but unknown result must disconnect without acknowledgement"
+        );
+        assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+    } else {
+        assert_eq!(
+            use_window(owner, admitted, 3).await?,
+            UseDisposition::Committed
+        );
+        assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+    }
+    let receipts: Vec<(String, String, Vec<String>, Vec<i64>)> = sqlx::query_as(
+        "SELECT transition_key,cause_ordinal::text,track_keys,values_after FROM game_character_quest_receipts WHERE cause_id=encode($1,'hex')::uuid ORDER BY transition_key",
+    )
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        receipts,
+        vec![(CALLBACK.into(), "3".into(), vec![TRACK.into()], vec![1])]
+    );
+    let progress: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(TRACK)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(progress, 1);
+    assert_eq!(
+        ground_items(h).await?,
+        items,
+        "observation preserves exact Ground identities, quantities and custody"
+    );
+
+    mint(owner, h, 33215, 2471, 1310).await?;
+    let changed = ground_items(h).await?;
+    assert_eq!(changed.len(), items.len() + 1);
+    if interrupted {
+        assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+    }
+    // For an interrupted command, ordinary ingress first reconciles the retained
+    // callback/cause. For a terminal command it returns the cached wire result.
+    // Neither path may choose a new callback from the now-invalid Ground layout.
+    assert_eq!(
+        use_window(owner, admitted, 3).await?,
+        UseDisposition::Committed
+    );
+    assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+    assert_eq!(
+        use_window(owner, admitted, 4).await?,
+        UseDisposition::Rejected
+    );
+    let after: Vec<(String, String, Vec<String>, Vec<i64>)> = sqlx::query_as(
+        "SELECT transition_key,cause_ordinal::text,track_keys,values_after FROM game_character_quest_receipts WHERE cause_id=encode($1,'hex')::uuid ORDER BY transition_key",
+    )
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        after, receipts,
+        "replay and fresh refusal cannot add progress or a different callback receipt"
+    );
+    let after_progress: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(TRACK)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(after_progress, progress);
+    assert_eq!(ground_items(h).await?, changed);
+    Ok(())
+}
+
+async fn ground_items(h: &Harness) -> TestResult<Vec<(String, i64, Vec<u8>)>> {
+    Ok(sqlx::query_as(
+        "SELECT i.item_instance_id::text,i.quantity,g.spatial_position FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) ORDER BY i.item_instance_id",
+    )
+    .fetch_all(&h.pool)
+    .await?)
 }

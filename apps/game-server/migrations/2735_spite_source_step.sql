@@ -2,6 +2,8 @@
 -- translation consumes exactly one CURRENT i33877 at a registered anchor and
 -- writes its existing Quest clock in the same transaction. SourceStep is the
 -- Rust owner's deterministic UUIDv8; existing command/death causes stay UUIDv7.
+-- committed_at remains statement time in milliseconds. The Quest owner's
+-- sampled clock in seconds is bound through the immutable consumption below.
 CREATE FUNCTION game_spite_source_step_receipt_shape(r game_character_quest_receipts)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
  SELECT coalesce(r.cause_kind='source_step' AND r.cause_ordinal=0
@@ -13,7 +15,6 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
   AND r.track_keys=ARRAY['oteryn:quest-progress/soul-war/goshnar-spite-fire']
   AND cardinality(r.values_before)=1 AND cardinality(r.values_after)=1
   AND r.values_before[1]>=0 AND r.values_after[1]::numeric>=r.values_before[1]::numeric+56
-  AND r.values_after[1]=r.committed_at
   AND r.level_after=r.level_before AND r.experience_after=r.experience_before,false)
 $$;
 
@@ -28,7 +29,7 @@ BEGIN
   AND track_keys=ARRAY['oteryn:quest-progress/soul-war/goshnar-spite-fire']
   AND cardinality(values_before)=1 AND cardinality(values_after)=1
   AND values_before[1]>=0 AND values_after[1]::numeric>=values_before[1]::numeric+56
-  AND values_after[1]=committed_at AND level_after=level_before AND experience_after=experience_before)$predicate$;
+  AND level_after=level_before AND experience_after=experience_before)$predicate$;
  FOREACH name IN ARRAY ARRAY['game_character_quest_receipts_cause_kind_check',
    'game_character_quest_receipt_cause_shape','game_character_quest_receipts_cause_id_check'] LOOP
   SELECT pg_get_constraintdef(oid) INTO STRICT prior FROM pg_constraint
@@ -69,6 +70,7 @@ BEGIN
    AND i.world_id=g.world_id AND i.definition_family='Item'
    AND i.definition_production_key='oteryn:item.tibia.i33877' AND i.definition_revision_ref='definition-r1'
    AND p->>'schema'='OTERYN_SPITE_SOURCE_STEP/v1'
+   AND jsonb_typeof(p->'quest_clock_seconds')='number'
    AND p->>'source_body'='9e1107dc41abc16b4f56e795180c1c17c917d8e73754547c443f070ed3167916'
    AND p->>'character'=r.character_id::text AND p->>'item'=i.item_instance_id::text
    AND p->>'cause'=r.cause_id::text AND p->>'world'=i.world_id::text
@@ -175,6 +177,7 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$
   AND c.before_item->>'quantity'='1' AND c.before_item->>'lifecycle'='1'
   AND c.created_xact_id=r.created_xact_id
   AND convert_from(c.proof,'UTF8')::jsonb->>'schema'='OTERYN_SPITE_SOURCE_STEP/v1'
+  AND convert_from(c.proof,'UTF8')::jsonb->'quest_clock_seconds'=to_jsonb(r.values_after[1])
   AND convert_from(c.proof,'UTF8')::jsonb->>'request_binding'=encode(r.request_binding,'hex'),false)
 $$;
 

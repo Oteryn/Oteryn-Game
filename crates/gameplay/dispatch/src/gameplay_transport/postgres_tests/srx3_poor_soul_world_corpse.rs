@@ -9,12 +9,22 @@ const POOR_SOUL: &str = "oteryn:creature.poor_soul";
 #[test]
 fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_postgres()
 -> TestResult {
+    world_corpse(false)
+}
+
+#[test]
+fn srx3_poor_soul_actual_world_uncredited_corpse_rejects_mismatched_bundle_reset_map_postgres()
+-> TestResult {
+    world_corpse(true)
+}
+
+fn world_corpse(mismatched_reset_map: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("srx3-poor-soul-world-corpse", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run("srx3-poor-soul-world-corpse", move || {
+        run(async move |admin| {
             super::reset();
             // Crystal201189f world-monster.xml:36787. Select the original
             // source from the actual published bundle; do not synthesize a
@@ -115,7 +125,7 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&scene.room));
-            issue_world_pins(&h, &entry_pin, &scene.pin, &world).await?;
+            issue_world_pins(&h, &entry_pin, &scene.pin, &world, mismatched_reset_map).await?;
             let mut admitted = deps.admitted;
             super::srx3_activity_source_fixture::prepare_player(&h, &owner, &mut admitted, 8)
                 .await?;
@@ -171,6 +181,13 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
                 assert_eq!(begin.frame_digest(), scene.pin.frame_binding_digest());
                 begin
             };
+            if mismatched_reset_map {
+                assert_fresh_mint_rejected(&h, &owner, native, &begin).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             super::srx3_native_source_cast::drain_source_death(&owner, poor_soul, now).await?;
             {
                 let runtime = owner.runtime.lock().await;
@@ -242,11 +259,152 @@ fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_po
             h.cleanup().await
         })
     })?;
-    eprintln!(
-        "SRX3_POOR_SOUL_WORLD_CORPSE_POSTGRES_CASE_EXECUTED duration={:?}",
-        started.elapsed()
+    if mismatched_reset_map {
+        eprintln!(
+            "SRX3_POOR_SOUL_WORLD_CORPSE_RESET_MAP_REFUSED_POSTGRES_CASE_EXECUTED duration={:?}",
+            started.elapsed()
+        );
+    } else {
+        eprintln!(
+            "SRX3_POOR_SOUL_WORLD_CORPSE_POSTGRES_CASE_EXECUTED duration={:?}",
+            started.elapsed()
+        );
+    }
+    Ok(())
+}
+
+async fn assert_fresh_mint_rejected(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    begin: &oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathSeal,
+) -> TestResult {
+    use crate::durability::item_mint::{
+        CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintError,
+        ItemMintRequest, TypedDefinitionRef,
+    };
+
+    assert!(receipts(h, begin.death_key()).await?.is_empty());
+    let permit = owner
+        .spell_lane_permit()
+        .await
+        .ok_or("source corpse MINT lane")?;
+    let completed = {
+        let mut runtime = owner.runtime.lock().await;
+        assert!(
+            begin.events().is_empty(),
+            "no copied handler may be skipped"
+        );
+        runtime
+            .pin_uncredited_source_corpse_projection(begin)
+            .map_err(debug)?;
+        runtime
+            .finish_source_creature_death_task(begin)
+            .map_err(debug)?
+    };
+    let row = native
+        .reward_table()
+        .row(begin.definition_key())
+        .map_err(debug)?;
+    let corpse = row
+        .corpse_item
+        .as_ref()
+        .ok_or("actual Poor Soul corpse definition")?;
+    assert_eq!(
+        Some(corpse.production_key.as_str()),
+        begin.uncredited_corpse_item_key()
+    );
+    let item = TypedDefinitionRef {
+        family: corpse.family.clone(),
+        production_key: corpse.production_key.clone(),
+        revision_ref: corpse.revision_ref.clone(),
+    };
+    let position = begin.position();
+    let mut spatial_position = Vec::with_capacity(10);
+    spatial_position.extend_from_slice(&position.x.to_be_bytes());
+    spatial_position.extend_from_slice(&position.y.to_be_bytes());
+    spatial_position.extend_from_slice(&position.floor.to_be_bytes());
+    let mut candidate = owner
+        .root
+        .freeze_item_mint(
+            owner.character,
+            owner.holder,
+            ItemMintRequest {
+                cause: ItemMintCause::from_creature_death(
+                    begin.death_key(),
+                    item.clone(),
+                    CORPSE_MATERIALIZATION_PURPOSE_KEY.into(),
+                    0,
+                )
+                .map_err(debug)?,
+                item,
+                quantity: 1,
+                ground: GroundPlacement {
+                    spatial_position,
+                    corpse_ref: crate::durability::party_kill_xp::encode_death_key(
+                        begin.death_key(),
+                    ),
+                    map_revision: format!("sha256:{}", hex(begin.map_digest())),
+                    content_revision: format!("sha256:{}", hex(begin.content_digest())),
+                    native_room_placement_context: begin.frame_digest().to_vec(),
+                },
+                content_revision: format!("sha256:{}", hex(begin.content_digest())),
+                ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION
+                    .into(),
+                sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    assert_eq!(mint_effect_counts(h, &candidate).await?, (0, 0, 0, 0, 0));
+    let result = owner
+        .root
+        .commit_uncredited_source_corpse_mint(
+            &permit,
+            owner.character,
+            owner.holder,
+            native,
+            &completed,
+            &mut candidate,
+        )
+        .await;
+    // Commit errors deliberately erase SQLSTATE/message. Require the typed
+    // deferred-SQL rejection, not an earlier Rust refusal or receipt replay.
+    assert!(
+        matches!(
+            &result,
+            Err(ItemMintError::Unavailable(
+                crate::durability::DurabilityError::CommitRejected
+            ))
+        ),
+        "fresh source corpse MINT must be rejected at COMMIT: {result:?}"
+    );
+    assert_eq!(mint_effect_counts(h, &candidate).await?, (0, 0, 0, 0, 0));
+    assert!(receipts(h, begin.death_key()).await?.is_empty());
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .corpse_projection_pinned(begin.actor())
     );
     Ok(())
+}
+
+async fn mint_effect_counts(
+    h: &Harness,
+    candidate: &crate::durability::item_mint::ItemMintCandidate,
+) -> TestResult<(i64, i64, i64, i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid), \
+         (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid), \
+         (SELECT count(*) FROM game_item_mint_receipts WHERE transaction_id=encode($2,'hex')::uuid), \
+         (SELECT count(*) FROM game_source_corpse_mints WHERE transaction_id=encode($2,'hex')::uuid), \
+         (SELECT count(*) FROM game_item_audit_outbox WHERE transaction_id=encode($2,'hex')::uuid)",
+    )
+    .bind(candidate.item_instance_id().as_slice())
+    .bind(candidate.transaction_id().as_slice())
+    .fetch_one(&h.pool).await?)
 }
 
 async fn issue_world_pins(
@@ -254,6 +412,7 @@ async fn issue_world_pins(
     entry: &ChannelContentPin,
     current: &ChannelContentPin,
     world: &crate::map::boot::BundleWorld,
+    mismatched_reset_map: bool,
 ) -> TestResult {
     let scope = super::fixture::fence(1)?.runtime_scope;
     let channel = scope.channel_id().ok_or("current World Channel")?;
@@ -264,15 +423,29 @@ async fn issue_world_pins(
         .bind(scope.world_id().as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
         .bind(entry.server_artifact_digest().as_slice()).bind(entry.client_artifact_digest().as_slice())
         .bind(entry.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+    let mut reset_map_revision = world.map_revision().to_owned();
+    if mismatched_reset_map {
+        // Intentionally invalid reset metadata for this negative case only.
+        // Actual runtime, activation and source-death pins remain unchanged;
+        // no accepted authority or source completion is fabricated.
+        let last = reset_map_revision
+            .pop()
+            .ok_or("actual Bundle map revision")?;
+        reset_map_revision.push(if last == '0' { '1' } else { '0' });
+        assert_ne!(reset_map_revision, world.map_revision());
+    }
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,$3,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
         .bind(scope.world_id().as_bytes().as_slice()).bind(world.base().digest().as_slice())
-        .bind(world.map_revision()).bind(current.server_artifact_digest().as_slice())
+        .bind(&reset_map_revision).bind(current.server_artifact_digest().as_slice())
         .bind(current.client_artifact_digest().as_slice()).bind(current.frame_binding_digest().as_slice())
         .execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
         .bind(scope.world_id().as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
+    if mismatched_reset_map {
+        return Ok(());
+    }
     let (old_entry_match, current_world_match): (bool, bool) = sqlx::query_as(
         "SELECT c.frame_binding_digest=$3, \
          game_world_reset_map_epoch_current(active.world_id,active.reset_epoch) \

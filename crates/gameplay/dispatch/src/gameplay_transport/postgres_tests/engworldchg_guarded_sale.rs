@@ -23,8 +23,11 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 const CHIP: &str = "oteryn:npc.chip";
-const PHASE: &str = "oteryn:quest-progress/world-change-journal/lumberjack/phase";
-const TRADE: &str = "oteryn:quest-reward/worldchg-m31/lumberjack/wood";
+const QUEST: &str = "oteryn:quest.fixture.guarded_wood_exchange";
+const ENTRY: &str = "oteryn:quest-callback/worldchg-m31/fixture-guarded-sale/entry";
+const WORK: &str = "oteryn:quest-reward/worldchg-m31/fixture-guarded-sale/work";
+const PHASE: &str = "oteryn:quest-progress/fixture/guarded-wood-exchange/phase";
+const TRADE: &str = "oteryn:quest-reward/worldchg-m31/fixture-guarded-sale/wood";
 const WOOD: &str = "oteryn:item.tibia.i5901";
 const GOLD: &str = "oteryn:item.tibia.i3031";
 
@@ -38,8 +41,16 @@ fn fixture() -> TestResult<(Callback, QuestStateCatalogue)> {
         .iter()
         .find(|p| p["key"] == "lumberjack")
         .ok_or("lumberjack")?;
-    let entry = p["world_callbacks"][0].clone();
-    let work = p["npc_callbacks"][0].clone();
+    // Keep the source mechanics, but do not borrow the held canonical quest's identity.
+    // The World callback prefix retains the existing journal-source admission contract.
+    let mut entry = p["world_callbacks"][0].clone();
+    entry["key"] = ENTRY.into();
+    entry["quest"] = QUEST.into();
+    entry["storage"][0]["track"] = PHASE.into();
+    let mut work = p["npc_callbacks"][0].clone();
+    work["key"] = WORK.into();
+    work["quest"] = QUEST.into();
+    work["storage"][0]["track"] = PHASE.into();
     let mut barter = work.clone();
     barter["key"] = TRADE.into();
     barter["keywords"] = serde_json::json!(["sell wood"]);
@@ -57,18 +68,14 @@ fn fixture() -> TestResult<(Callback, QuestStateCatalogue)> {
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect::<String>();
-    let tracks = p["tracks"]
-        .as_array()
-        .ok_or("tracks")?
-        .iter()
-        .map(|t| {
-            serde_json::json!({
-                "key":t["key"],"initial":t["initial"],"minimum":t["min"],"maximum":t["max"]
-            })
-        })
-        .collect::<Vec<_>>();
+    let [phase] = p["tracks"].as_array().ok_or("tracks")?.as_slice() else {
+        return Err("guarded exchange fixture requires one source phase track".into());
+    };
+    let tracks = serde_json::json!([{
+        "key":PHASE,"initial":phase["initial"],"minimum":phase["min"],"maximum":phase["max"]
+    }]);
     let document = serde_json::json!({"schema":1,"quests":[{
-        "quest":p["quest"],"recipe_sha256":digest,"tracks":tracks,"stages":stages,
+        "quest":QUEST,"recipe_sha256":digest,"tracks":tracks,"stages":stages,
         "sources":["M31 guarded exchange engine fixture; not canonical quest qualification",
             "https://tibiopedia.pl/npcs/Chip","https://tibiopedia.pl/items/Wood"]
     }]});
@@ -220,13 +227,20 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                         |member| member.from,
                     ),
             );
+            let room = super::rust_lottery::bundle_action_room(
+                activated.qualified_room(),
+                &world,
+                deps.admitted.world_id,
+                &cells,
+            )?;
+            let frame = room.frame_binding().digest();
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
                 generation.identity().server_artifact_digest(),
                 generation.identity().client_artifact_digest(),
-                activated.frame_binding().digest(),
-                world.map_revision_digest(),
+                frame,
+                room.map_revision_digest(),
                 (origin.x, origin.y, origin.floor),
             );
             let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -249,6 +263,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
                 .initialize_pinned_test_position(deps.actor, origin)
                 .map_err(debug)?;
             deps.runtime = tokio::sync::Mutex::new(runtime);
+            deps.combat_room = Some(room);
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
@@ -283,7 +298,7 @@ fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
-            .bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(frame.as_slice()).execute(&h.pool).await?;
             let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
             h.root
                 .initialize_admission_equipment(

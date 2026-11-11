@@ -44,6 +44,13 @@ pub(in crate::gameplay_transport) async fn assert_native_house_use(
         admitted.continuity.selected_capabilities.contains(23),
         "actual current House presentation23 must be selected before awaiting native egress"
     );
+    assert_eq!(
+        owner
+            .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+            .await,
+        Some(false),
+        "the current House proves its own presentation frame before native USE"
+    );
     let initial = admitted;
     let native = owner
         .active_generation
@@ -65,7 +72,7 @@ pub(in crate::gameplay_transport) async fn assert_native_house_use(
         command_id: admitted.continuity.next_command_id,
         item_fence: Some(fence),
     };
-    let (_,_,scope,payload)=super::super::guild_wire::exchange_capture_effect(owner,&mut admitted,command.command_id,
+    let (_,_,scope,payload)=super::super::guild_wire::exchange_capture_effect_replay(owner,&mut admitted,command.command_id,
         oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,|initial| {
             let mut handle=None;
             for raw in initial {let envelope=decode_wire_envelope(raw).map_err(debug)?;

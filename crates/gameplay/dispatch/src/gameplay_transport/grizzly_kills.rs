@@ -431,6 +431,7 @@ pub(super) fn capture(
             frozen.native.extend(super::quest_batch3_c::capture(
                 runtime,
                 entry,
+                principal_present,
                 live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
                     actor: snapshot.actor,
                     session: snapshot.session,

@@ -63,9 +63,12 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'world-policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'qm03-owned-purchase-fixture')")
         .bind(f::id(f::WORLD).as_slice()).execute(&h.pool).await?;
     // Use the retained production quest binding unchanged, including level and storage gates.
-    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-        .map_err(f::debug)?;
-    let catalogue = Arc::new(loaded.catalogue().clone());
+    let catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(f::debug)?
+            .catalogue()
+            .clone(),
+    );
     let callback = world_callbacks::load_for(&catalogue)?
         .into_iter()
         .find(|c| c.key == "oteryn:quest-callback/qm03/anniversary")

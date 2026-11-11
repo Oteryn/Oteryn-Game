@@ -1013,6 +1013,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             });
         }
+        let mut selection_permit = None;
+        let mut selection_deadline = None;
+        if selected.len() > 1
+            && selected.iter().all(|callback| {
+                !callback.requires_live_premium()
+                    && callback.item_reward().is_none_or(|reward| !reward.premium)
+                    && callback.world_requirements.iter().any(|requirement| {
+                        requirement.ground.is_some() || requirement.ground_stack.is_some()
+                    })
+            })
+        {
+            // Completed wire commands replay before this fresh route; pending
+            // reconciliation uses its retained callback identity. Ground is only
+            // selection advice here: both final participants still recheck it.
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+            let permit = tokio::time::timeout_at(deadline, async {
+                let permit = self.spell_lane_permit().await?;
+                if !self
+                    .retain_ground_candidates(&permit, map, &mut selected)
+                    .await
+                    || selected.is_empty()
+                {
+                    return None;
+                }
+                Some(permit)
+            })
+            .await;
+            let Ok(Some(permit)) = permit else {
+                return Some(UseOutcome::rejected());
+            };
+            selection_permit = Some(permit);
+            selection_deadline = Some(deadline);
+        }
         let callback = if let [callback] = selected.as_slice() {
             *callback
         } else {
@@ -1051,9 +1084,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Do not refuse here: exact historical receipts remain replayable.
             let _ = self.session_premium_gate(command.game_session_id).await;
         }
-        let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            let Some(permit) = self.spell_lane_permit().await else {
-                return UseDisposition::Rejected;
+        let deadline = selection_deadline
+            .unwrap_or_else(|| tokio::time::Instant::now() + std::time::Duration::from_secs(10));
+        let result = tokio::time::timeout_at(deadline, async {
+            let permit = match selection_permit {
+                Some(permit) => permit,
+                None => match self.spell_lane_permit().await {
+                    Some(permit) => permit,
+                    None => return UseDisposition::Rejected,
+                },
             };
             let fence = if character_fence_required(callback) {
                 self.current_quest_fence(command.game_session_id).await.ok().flatten()

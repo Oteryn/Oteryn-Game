@@ -155,8 +155,9 @@ ROOMS = {
                  [32973, 32364, 32980, 32366, 15, 15],
                  [33903, 31692, 33905, 31694, 15, 15]]},
     'rotten-blood-ichgahal': {'entry': [33004, 32341, 15],
-     # rotten_ichgahal.lua:18 raw exit34111 has pinned OTBM attribute8
-     # destination (34065,31717,15). Retain only its actual arrival tile.
+     # rotten_ichgahal.lua raw exit33004,32343,15 has Teleport34111 with
+     # the pinned OTBM destination34065,31717,15. Retain its actual arrival
+     # stack36344/292 without opening the unsupported raw Teleport tile.
      'regions': [[32998, 32326, 33018, 32343, 15, 15],
                  [32973, 32332, 32980, 32334, 15, 15],
                  [34065, 31717, 34065, 31717, 15, 15]]},

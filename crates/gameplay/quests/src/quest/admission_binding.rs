@@ -201,7 +201,7 @@ mod tests {
                 "{}",
                 callback.key
             );
-            validate(transition, false)?;
+            validate(transition, callback.world_claim.is_some())?;
         }
         Ok(())
     }

@@ -15,6 +15,15 @@ use crate::foundation::{
 };
 use oteryn_gameplay_entities::carrier::CombatDeathFixture;
 
+fn on_pg_thread(run: impl FnOnce() -> TestResult + Send + 'static) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || run().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "native corpse PostgreSQL test thread panicked")?
+        .map_err(Into::into)
+}
+
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -526,12 +535,14 @@ fn native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fen
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
-    fixture::runtime()?.block_on(async move {
+    on_pg_thread(move || {
+        fixture::runtime()?.block_on(async move {
         let h=fixture::Harness::create_with_admission_seed(admin,"encx_native_corpse",true,false).await?;
         eprintln!("Canonical PostgreSQL 18.6; physical Instance death, native corpse/loot owner, replay and namespace fences");
         let result=qualify(&h,false,false).await;
         h.cleanup().await?;
         result
+    })
     })
 }
 
@@ -671,12 +682,14 @@ fn native_instance_corpse_migration_preserves_committed_causes_and_replay_postgr
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
-    fixture::runtime()?.block_on(async move {
+    on_pg_thread(move || {
+        fixture::runtime()?.block_on(async move {
         let h=fixture::Harness::create_with_admission_seed(admin,"encx_corpse_migration",true,false).await?;
         eprintln!("Canonical PostgreSQL18.6:1152 preserves genuine committed Channel/Instance corpse and loot causes");
         let result=qualify(&h,true,false).await;
         h.cleanup().await?;
         result
+    })
     })
 }
 
@@ -686,12 +699,14 @@ fn native_instance_corpse_migration_preserves_legacy_v1_corpse_and_loot_replay_p
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
-    fixture::runtime()?.block_on(async move {
+    on_pg_thread(move || {
+        fixture::runtime()?.block_on(async move {
         let h=fixture::Harness::create_with_admission_seed(admin,"encx_corpse_legacy_migration",true,false).await?;
         eprintln!("Canonical PostgreSQL18.6:legacyv1/61 nativeInstance corpse+loot survives1152 and publicv2/53 replay");
         let result=qualify(&h,true,true).await;
         h.cleanup().await?;
         result
+    })
     })
 }
 

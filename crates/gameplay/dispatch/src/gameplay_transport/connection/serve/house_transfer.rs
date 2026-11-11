@@ -327,6 +327,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .await
                     {
                         route::StepAction::Wait(due) => {
+                            commands
+                                .buffer_step(command)
+                                .ok_or(ServeEnd::Disconnected)?;
                             integrity.observe(&Dispatch::Step(StepOutcome::too_early(), 0));
                             // The reserved original runs once when due. Release the input
                             // permit while the bounded queue keeps later frames in order.

@@ -88,6 +88,7 @@ pub(super) async fn exercise(
     eprintln!("M02_NATIVE_USE_POSTGRES {version} wrong_order={wrong_order}");
     assert_eq!(callback.key, format!("oteryn:quest-callback/{NAME}"));
     assert!(!callback.has_personal_state());
+    assert_nomads_catalogue(owner);
     let before = footprint(h).await?;
     assert_eq!(
         use_window(owner, admitted, 1).await?,
@@ -137,6 +138,11 @@ pub(super) async fn exercise(
     if !wrong_order {
         mint(owner, h, 33216, 2471, 1210).await?;
         assert_eq!(
+            use_window(owner, admitted, 4).await?,
+            UseDisposition::Committed,
+            "retained terminal wire replay precedes fresh selection after layout drift"
+        );
+        assert_eq!(
             use_window(owner, admitted, 5).await?,
             UseDisposition::Rejected,
             "an extra live root invalidates the previously accepted layout"
@@ -145,10 +151,31 @@ pub(super) async fn exercise(
     }
     Ok(())
 }
+pub(super) fn assert_nomads_catalogue(owner: &ComposedFreshAdmission<'_, '_, '_>) {
+    let mut keys: Vec<_> = owner
+        .callback_content()
+        .iter()
+        .filter(|callback| {
+            callback.selector.native.as_ref().is_some_and(|native| {
+                native.position == WINDOW && native.ordinal == 1 && native.appearance == 1744
+            })
+        })
+        .map(|callback| callback.key.as_str())
+        .collect();
+    keys.sort_unstable();
+    assert_eq!(
+        keys,
+        [
+            "oteryn:quest-callback/engenc2/nomads-land-window",
+            "oteryn:quest-callback/m02/nomads-land/window",
+        ],
+        "both actual callback contracts must reach the ordinary selector"
+    );
+}
 async fn footprint(h: &Harness) -> Result<(i64, i64), sqlx::Error> {
     sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_tracks),(SELECT count(*) FROM game_character_quest_receipts)").fetch_one(&h.pool).await
 }
-async fn use_window(
+pub(super) async fn use_window(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: u64,
@@ -183,7 +210,7 @@ async fn use_window(
     .await?;
     decode_use_result(&reply).map_err(debug)
 }
-async fn mint(
+pub(super) async fn mint(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
     x: u16,

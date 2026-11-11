@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Regenerate the successor Item/Mount/creature authoring tree from protected WorldProject/v2."""
+"""Regenerate the successor authoring tree from protected WorldProject/v2.
+
+--items-only refreshes the complete Item shards, index and ranged projection
+needed by the World materializer, using the same admission owners as full conversion.
+Other families, source receipts and registries remain the full converter's responsibility.
+"""
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -136,8 +142,8 @@ def refresh_bestiary_inventory(root: Path) -> None:
     golden = root / "tools/content-migration/test_world_project_v2_to_tree.py"
     golden_text = golden.read_text()
     for pattern in (
-        r"(?m)^(assert family_counts\['Creature'\] == )[0-9_]+$",
-        r'(assert lock\["source_binding_counts"\] == \{[^\n]*"Creature": )[0-9_]+',
+        r'''(?m)^(assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
+        r'(?m)^(assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
     ):
         golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
         if guarded != 1:
@@ -259,32 +265,8 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     questpc2_rotten_loot_items.apply_admissions(definitions, root)
 
 
-def main() -> int:
-    # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
-    # historical identity-only Mount/Outfit packets are never reinterpreted as authored facts.
-    cosmetics_source = ROOT / "content/cosmetics/outfits/authoring.json"
-    cosmetics_output = ROOT / "content/cosmetics/outfits/native-cosmetics.json"
-    cosmetics_outputs = {}
-    if cosmetics_source.exists() or cosmetics_output.exists():
-        tool = ROOT / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
-        spec = importlib.util.spec_from_file_location("canonical_cosmetics_authoring", tool)
-        if spec is None or spec.loader is None:
-            raise RuntimeError("COSMETICS_MATERIALIZER_MISSING")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        cosmetics_outputs = module.materialized_outputs(ROOT)
-    reference = load(LEGACY / "definitions" / "reference.json")
-    # Crystal's explicit monster.loot={} is distinct from unavailable loot data.
-    from primal_reference_overlay import apply_reference as apply_primal_reference
-    apply_primal_reference(reference["records"], ROOT)
-    declarations = load(LEGACY / "definitions" / "declarations.json")
-    editor = load(LEGACY / "editor" / "author.json")
-    sources = load(LEGACY / "provenance" / "sources.json")
-    imports = load(LEGACY / "provenance" / "imports.json")
-
-    family_assignments = load(FIELD_CENSUS)["family_assignments"]
-    wave1 = load(WAVE1_STAGED)
-    item_aliases = item_alias_targets()
+def materialize_item_tree(reference, declarations, editor, sources):
+    """Write the complete Item cohort through the normal admission owners."""
     authoring_by_target = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
     editors = {target_id(row["target"]): row for row in editor["entries"]}
     bindings: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
@@ -347,9 +329,74 @@ def main() -> int:
             "records": rows,
         })
 
+    # Ranged projection scans canonical Item shards directly. Remove only this
+    # owner's superseded numeric shards before it reads the new complete cohort.
+    retained = set(item_shards)
+    for stale in sorted((ROOT / "content/items/definitions").glob("items-*.json")):
+        if (re.fullmatch(r"items-[0-9]{5}-[0-9]{5}\.json", stale.name)
+                and stale.relative_to(ROOT).as_posix() not in retained):
+            stale.unlink()
+
     from ranged_item_profiles import outputs as ranged_outputs, RANGED_PROFILES
     ranged_generated = ranged_outputs(ROOT)
     (ROOT / RANGED_PROFILES).write_bytes(ranged_generated[RANGED_PROFILES])
+
+    item_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Item"]
+    write("content/items/index.json", {
+        "schema": "OTERYN_FAMILY_INDEX/v1",
+        "family": "Item",
+        **item_index_fields(ROOT, item_shards),
+        "legacy_source": {
+            "path": "content/world/definitions/reference.json",
+            "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "reference.json"),
+            "schema": reference["schema"],
+            "world_id": reference["world_id"],
+            "coordinate_frame": reference["coordinate_frame"],
+        },
+        "attached_editor_entries": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
+        "attached_source_bindings": len(item_bindings),
+        "attached_authoring_entries": len(authoring_by_target),
+    })
+    return item_records, item_shards, authoring_by_target, editors, bindings
+
+
+def main(*, items_only: bool = False) -> int:
+    if items_only:
+        records, shards, _, _, _ = materialize_item_tree(
+            load(LEGACY / "definitions/reference.json"),
+            load(LEGACY / "definitions/declarations.json"),
+            load(LEGACY / "editor/author.json"),
+            load(LEGACY / "provenance/sources.json"))
+        print(f"PASS Item prerequisites items={len(records)} item_shards={len(shards)}")
+        return 0
+    # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
+    # historical identity-only Mount/Outfit packets are never reinterpreted as authored facts.
+    cosmetics_source = ROOT / "content/cosmetics/outfits/authoring.json"
+    cosmetics_output = ROOT / "content/cosmetics/outfits/native-cosmetics.json"
+    cosmetics_outputs = {}
+    if cosmetics_source.exists() or cosmetics_output.exists():
+        tool = ROOT / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
+        spec = importlib.util.spec_from_file_location("canonical_cosmetics_authoring", tool)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("COSMETICS_MATERIALIZER_MISSING")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        cosmetics_outputs = module.materialized_outputs(ROOT)
+    reference = load(LEGACY / "definitions" / "reference.json")
+    # Crystal's explicit monster.loot={} is distinct from unavailable loot data.
+    from primal_reference_overlay import apply_reference as apply_primal_reference
+    apply_primal_reference(reference["records"], ROOT)
+    declarations = load(LEGACY / "definitions" / "declarations.json")
+    editor = load(LEGACY / "editor" / "author.json")
+    sources = load(LEGACY / "provenance" / "sources.json")
+    imports = load(LEGACY / "provenance" / "imports.json")
+
+    family_assignments = load(FIELD_CENSUS)["family_assignments"]
+    wave1 = load(WAVE1_STAGED)
+    item_aliases = item_alias_targets()
+    item_records, item_shards, authoring_by_target, editors, bindings = materialize_item_tree(
+        reference, declarations, editor, sources)
+    from ranged_item_profiles import RANGED_PROFILES
 
     declarations_blob_sha = git_blob_sha(LEGACY / "definitions" / "declarations.json")
 
@@ -499,21 +546,6 @@ def main() -> int:
     for relative, value in outputs.items():
         write(relative, value)
 
-    write("content/items/index.json", {
-        "schema": "OTERYN_FAMILY_INDEX/v1",
-        "family": "Item",
-        **item_index_fields(ROOT, item_shards),
-        "legacy_source": {
-            "path": "content/world/definitions/reference.json",
-            "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "reference.json"),
-            "schema": reference["schema"],
-            "world_id": reference["world_id"],
-            "coordinate_frame": reference["coordinate_frame"],
-        },
-        "attached_editor_entries": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
-        "attached_source_bindings": len(item_bindings),
-        "attached_authoring_entries": len(authoring_by_target),
-    })
     write("content/cosmetics/mounts/index.json", {
         "schema": "OTERYN_FAMILY_INDEX/v1",
         "family": "Mount",
@@ -843,9 +875,19 @@ def main() -> int:
                     "content"], cwd=ROOT, check=True)
     return 0
 
-if __name__ == "__main__":
-    if sys.argv[1:] == ["--refresh-bestiary-inventory"]:
+def cli(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--items-only", action="store_true",
+                      help="refresh Item prerequisites without other families or registry generation")
+    mode.add_argument("--refresh-bestiary-inventory", action="store_true")
+    args = parser.parse_args(argv)
+    if args.refresh_bestiary_inventory:
         refresh_bestiary_inventory(ROOT)
         print("PASS canonical Creature/Bestiary reader inventory refreshed")
-        raise SystemExit(0)
-    raise SystemExit(main())
+        return 0
+    return main(items_only=args.items_only)
+
+
+if __name__ == "__main__":
+    raise SystemExit(cli())

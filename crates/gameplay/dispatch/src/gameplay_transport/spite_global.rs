@@ -3,7 +3,9 @@
 use super::ComposedFreshAdmission;
 use crate::content::native_soul_war_global_events::QualifiedSpiteGlobalEvent;
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
-use crate::durability::creature_source_items::{PreparedSpiteGlobalWrite, SpiteGlobalFireCallback};
+use crate::durability::creature_source_items::{
+    PreparedSpiteGlobalWrite, SpiteGlobalFireCallback, SpiteGlobalFireOutcome,
+};
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{ChannelRuntimeV1, RuntimeScopeRefV1};
 use oteryn_gameplay_entities::{CompanionSnapshot, SourceActorReservation};
@@ -354,7 +356,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| ())?;
-        self.states.loop_ground.invalidate();
+        if matches!(&outcome, SpiteGlobalFireOutcome::Committed(_)) {
+            self.states.loop_ground.invalidate();
+        }
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.try_lock().map_err(|_| ())?;
         let registration = states.spite_global.registration.as_mut().ok_or(())?;
@@ -368,13 +372,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         }
         if let Some((next_us, next_tick)) = pending.next_create {
-            if outcome.removed || pending.callback.is_expiry() || registration.expiry.is_some() {
+            if pending.callback.is_expiry() || registration.expiry.is_some() {
                 return Err(());
             }
-            registration.expiry = Some(Arc::clone(&pending.callback));
+            match outcome {
+                SpiteGlobalFireOutcome::Committed(receipt) if !receipt.removed => {
+                    registration.expiry = Some(Arc::clone(&pending.callback));
+                }
+                SpiteGlobalFireOutcome::CreateNoSpace => {}
+                _ => return Err(()),
+            }
             registration.next_us = next_us;
             registration.tick = next_tick;
         } else {
+            let SpiteGlobalFireOutcome::Committed(receipt) = outcome else {
+                return Err(());
+            };
             let target = pending.expiry_target.as_ref().ok_or(())?;
             runtime
                 .complete_spite_global_action(
@@ -384,7 +397,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .target
                         .as_ref()
                         .map(|(snapshot, defense)| (snapshot, *defense)),
-                    outcome.removed,
+                    receipt.removed,
                 )
                 .map_err(|_| ())?;
             registration.expiry = None;
