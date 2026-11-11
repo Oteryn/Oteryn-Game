@@ -92,7 +92,7 @@ fn buffered_step_cancellation_retains_rejection_after_intervening_pushes() -> Te
         (1, CommandStatus::DuplicateReplay)
     );
     assert_eq!(
-        decode_step_result(result.payload)?,
+        decode_step_result(result.payload).map_err(|error| format!("{error:?}"))?,
         StepDisposition::Rejected
     );
     assert!(matches!(
