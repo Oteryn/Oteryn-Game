@@ -11,6 +11,10 @@ pub struct Panel {
     pub graphic_worker: bool,
     pub preview_requested: bool,
     pub selected: bool,
+    /// Capability 489 is selected: requests and projections carry the display flags.
+    pub flagged: bool,
+    /// The platform, outfit and mount switches of the draft display.
+    pub flags: oteryn_client_runtime::cui3::house_podium::DisplayFlags,
     pub open: bool,
     pub pending: bool,
     pub pending_kind: u32,

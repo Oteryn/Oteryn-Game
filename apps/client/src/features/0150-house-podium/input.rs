@@ -39,6 +39,12 @@ impl PlayLink {
             .house_podium
             .choose_display(kind, direction)
     }
+    pub fn house_podium_toggle(&self, part: oteryn_client_ui::house_podium_flags::Part) -> bool {
+        oteryn_client_ui::house_podium_flags::toggle(
+            &mut lock(&self.mailbox).properties.house_podium,
+            part,
+        )
+    }
     pub fn house_podium_edit(&self, field: usize, value: String) {
         edit(
             &mut lock(&self.mailbox).properties.house_podium,

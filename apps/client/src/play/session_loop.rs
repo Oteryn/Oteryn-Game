@@ -20,8 +20,12 @@ pub async fn run_session<T: Stepper>(
     commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
-    let modal =
-        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
+    let modal = super::feature_0450_server_modal::protocol::Driver::new(
+        session.feature_selected(450),
+    )
+    .with_input(session.feature_selected(
+        oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
+    ));
     run_session_with_modal(session, commands, outbox, modal).await;
 }
 

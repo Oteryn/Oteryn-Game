@@ -8,6 +8,8 @@ pub enum SessionEvent {
     CastCasterLine(AppliedDelta<cast_chat::CasterLine>),
     CastRoster(AppliedDelta<cast_chat::Roster>),
     AnalyserFacts(AppliedDelta<Vec<analyser_transport::AnalyserFact>>),
+    /// Domain 15 delta 1 of a session with capability 486: each fact with its optional attacker.
+    AnalyserAttributedFacts(AppliedDelta<Vec<analyser_transport::AttributedFact>>),
     WorldWeather(AppliedDelta<world_weather::WorldWeather>),
     /// Every replaced domain, including those with a typed projection event.
     GatedSnapshotReplaced(AppliedDelta<GatedSnapshot>),
@@ -76,7 +78,7 @@ impl SessionEvent {
     pub const fn domain_id(&self) -> u32 {
         match self {
             Self::CastCasterLine(_) | Self::CastRoster(_) => 103,
-            Self::AnalyserFacts(_) => 15,
+            Self::AnalyserFacts(_) | Self::AnalyserAttributedFacts(_) => 15,
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
             Self::GatedSnapshotReplaced(snapshot) => snapshot.value.domain_id,
             Self::WorldObjectOverlaySnapshot(_) => 2,

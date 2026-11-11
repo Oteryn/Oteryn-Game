@@ -2,14 +2,24 @@
   "mechanic": "0485-hotkey-equip-upgrade-tier",
   "kind": "handlers",
   "id": "0485-hotkey-equip-upgrade-tier-command348-extension",
-  "status": "unsupported",
-  "reason": "WU26 package 2 server side only: the native client tiered hotkey binding lands in the client lane.",
+  "status": "supported",
   "commands": [],
+  "shared_commands": [
+    348
+  ],
+  "direction": "server_to_client",
+  "capability": 485,
+  "entry": "protocol.rs::equip_payload",
+  "push_messages": [
+    "HotkeyEquipTierRequest"
+  ],
+  "reducer": "protocol.rs::equip_payload",
+  "test": "tests.rs::c0485_selected_appends_the_upgrade_tier_byte",
   "not_applicable": {
-    "state": "The equip intent is stateless per press.",
+    "state": "The equip intent is stateless per press; the action bar keeps its stored tier.",
     "protocol": "The shared command348 codec in oteryn-protocol-oteryn carries the trailing upgrade_tier byte.",
-    "view": "The tiered hotkey label lands with client support.",
-    "input": "The tiered hotkey binding input lands with client support.",
-    "settings": "The per-hotkey tier setting lands with client support."
+    "view": "The hotkey label is unchanged.",
+    "settings": "The tier is stored with the existing action bar assignment.",
+    "input": "The existing action bar and hotkey input trigger the equip request."
   }
 }

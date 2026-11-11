@@ -17,6 +17,11 @@ pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse) {
     };
     if let Some(window) = &reply.window {
         panel.window = Some(window.clone());
+        panel.success = if panel.success_selected {
+            response.success.clone()
+        } else {
+            Vec::new()
+        };
         panel.details = None;
         panel.details_pending = None;
         panel.details_attempted = false;
@@ -29,6 +34,7 @@ pub fn apply_result(panel: &mut ImbuePanel, response: &ImbueResponse) {
     ) {
         // Mutation replies carry no new slot snapshot. Never present the old quote as current.
         panel.window = None;
+        panel.success.clear();
         panel.details = None;
         panel.details_pending = None;
         panel.details_attempted = false;
@@ -62,6 +68,7 @@ fn catalogue_window_keeps_all_48_offers() -> Result<(), String> {
     let encoded = imbuement::encode_imbuement_reply(&reply).map_err(|e| format!("{e:?}"))?;
     let response = ImbueResponse {
         status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+        success: Vec::new(),
         reply: Some(imbuement::decode_imbuement_reply(&encoded).map_err(|e| format!("{e:?}"))?),
     };
     let mut panel = ImbuePanel::default();

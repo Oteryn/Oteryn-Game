@@ -50,6 +50,8 @@ pub mod house_furniture_wrap;
 pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]
 pub mod house_podium;
+#[path = "features/0489-house-podium-flags/protocol.rs"]
+pub mod house_podium_flags;
 #[path = "features/0086-house-transfer/mod.rs"]
 pub mod house_transfer;
 #[path = "features/0115-mail/mod.rs"]
@@ -127,6 +129,10 @@ pub mod chat_guild_room;
 pub mod chat_party_room;
 #[path = "features/0199-cyclopedia-character/mod.rs"]
 pub mod cyclopedia_character;
+#[path = "features/0487-cyclopedia-character-vocation/protocol.rs"]
+mod cyclopedia_character_vocation;
+#[path = "features/0488-cyclopedia-death-details/protocol.rs"]
+pub mod cyclopedia_death_details;
 #[path = "features/0197-cyclopedia-tracker/mod.rs"]
 pub mod cyclopedia_tracker;
 #[path = "features/0151-daily-boost/mod.rs"]
@@ -142,6 +148,8 @@ pub mod forge_creature;
 pub mod highscores;
 #[path = "features/0179-hotkey-equip/mod.rs"]
 pub mod hotkey_equip;
+#[path = "features/0485-hotkey-equip-upgrade-tier/protocol.rs"]
+mod hotkey_equip_upgrade_tier;
 #[path = "features/0152-item-forge/mod.rs"]
 pub mod item_forge;
 #[path = "features/0003-npc-service/mod.rs"]
@@ -199,6 +207,9 @@ pub mod logout {
 }
 #[path = "features/0010-analyser/mod.rs"]
 pub mod analyser;
+/// Capability 486: the attacker of a received hit and the own-character hit flash (N006).
+#[path = "features/0486-analyser-hit-attribution/protocol.rs"]
+pub mod analyser_hit_attribution;
 /// Local spell action-bar key intent mapping.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell_action_bar;
@@ -287,6 +298,8 @@ pub mod npc_shop;
 /// Imbuement shrine state, actions, and plain-text view.
 #[path = "features/0068-imbue/mod.rs"]
 pub mod imbue;
+#[path = "features/0491-imbuement-success-chance/protocol.rs"]
+pub mod imbuement_success_chance;
 
 /// VIP list, group, and consent panel state.
 #[path = "features/0043-vip/mod.rs"]
@@ -345,6 +358,8 @@ pub mod wheel_presentation;
 
 #[path = "features/0450-server-modal/mod.rs"]
 pub mod server_modal;
+#[path = "features/0490-server-modal-input/protocol.rs"]
+pub mod server_modal_input;
 
 #[path = "features/0479-store-cosmetic-tokens/mod.rs"]
 pub mod store_cosmetic_tokens;

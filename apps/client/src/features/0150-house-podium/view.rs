@@ -35,6 +35,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Creature",
                 "Turn clockwise",
                 "Preview artwork",
+                "Toggle platform",
+                "Toggle outfit",
+                "Toggle mount",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.house_podium;
@@ -65,6 +68,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         .filter(|v| *v < 4)
                         .unwrap_or(0);
                     super::input::edit(panel, 2, ((direction + 1) % 4).to_string());
+                    return;
+                }
+                if (8..=10).contains(&action) {
+                    use oteryn_client_ui::house_podium_flags::{Part, toggle};
+                    toggle(
+                        panel,
+                        [Part::Platform, Part::Outfit, Part::Mount][action - 8],
+                    );
                     return;
                 }
                 let intent = match action {

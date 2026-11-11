@@ -368,8 +368,12 @@ fn activate_inner(
         BarAction::Use { definition, mode } => {
             super::item_actions::use_item(mailbox, commands, definition, mode)
         }
-        BarAction::Equip { definition, .. } => {
+        BarAction::Equip {
+            definition,
+            upgrade_tier,
+        } => {
             mailbox.hotkey_equip.item_definition = definition.get();
+            mailbox.hotkey_equip.upgrade_tier = upgrade_tier;
             if let Some(command) =
                 oteryn_client_ui::hotkey_equip::control_request(&mut mailbox.hotkey_equip)
                 && commands

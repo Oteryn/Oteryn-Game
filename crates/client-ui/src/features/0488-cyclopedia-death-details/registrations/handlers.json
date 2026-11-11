@@ -2,14 +2,24 @@
   "mechanic": "0488-cyclopedia-death-details",
   "kind": "handlers",
   "id": "0488-cyclopedia-death-details-command388-extension",
-  "status": "unsupported",
-  "reason": "WU26 package 2 server side only: the native client structured death table lands in the client lane.",
+  "status": "supported",
   "commands": [],
+  "shared_commands": [
+    388
+  ],
+  "direction": "server_to_client",
+  "capability": 488,
+  "entry": "protocol.rs::history_label",
+  "push_messages": [
+    "CyclopediaDeathDetailsReply"
+  ],
+  "reducer": "protocol.rs::history_label",
+  "test": "tests.rs::c0488_selected_rows_carry_the_detailed_death_table",
   "not_applicable": {
-    "state": "The existing 0199 Cyclopedia character state holds the tab.",
-    "protocol": "The shared Cyclopedia character codec in oteryn-protocol-oteryn encodes the structured rows.",
-    "view": "The structured death table lands with client support.",
+    "state": "The existing 0199 history rows hold the death details.",
+    "protocol": "The shared Cyclopedia character codec in oteryn-protocol-oteryn encodes the death detail rows.",
     "input": "The existing command 388 request is unchanged.",
-    "settings": "The death details have no client setting."
+    "settings": "The death table has no client setting.",
+    "view": "The owning panel view and the native window show the result; this capability adds no view of its own."
   }
 }

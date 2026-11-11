@@ -1,15 +1,27 @@
 {
   "mechanic": "0489-house-podium-flags",
   "kind": "handlers",
-  "id": "0489-house-podium-flags-commands174-176-extension",
-  "status": "unsupported",
-  "reason": "WU26 package 2 server side only: the native client podium visibility toggles land in the client lane.",
+  "id": "0489-house-podium-flags-commands174-175-176-extension",
+  "status": "supported",
   "commands": [],
+  "shared_commands": [
+    174,
+    175,
+    176
+  ],
+  "direction": "server_to_client",
+  "capability": 489,
+  "entry": "protocol.rs::set_payload",
+  "push_messages": [
+    "HousePodiumFlagsExchange"
+  ],
+  "reducer": "protocol.rs::set_payload",
+  "test": "tests.rs::c0489_selected_set_request_appends_the_three_flags",
   "not_applicable": {
-    "state": "The existing 0150 house podium state holds the display.",
-    "protocol": "The shared house podium codec in oteryn-protocol-oteryn encodes the flags.",
-    "view": "The podium visibility toggles land with client support.",
-    "input": "The existing command 175 input carries the flags.",
-    "settings": "The flags are per podium display, not a client setting."
+    "protocol": "The shared house podium codec in oteryn-protocol-oteryn encodes the three trailing flag bytes.",
+    "input": "The existing 0150 podium buttons toggle the switches.",
+    "settings": "The switches are committed to the podium by the server.",
+    "state": "The existing owning panel state holds the data; this capability adds no state of its own.",
+    "view": "The owning panel view and the native window show the result; this capability adds no view of its own."
   }
 }

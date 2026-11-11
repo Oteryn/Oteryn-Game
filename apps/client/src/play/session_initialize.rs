@@ -95,6 +95,14 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
+    outbox.cyclopedia_character_extensions(
+        session.feature_selected(
+            oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+        ),
+        session.feature_selected(
+            oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
+        ),
+    );
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
     outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
@@ -104,6 +112,11 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.creature_push_initialize(session.feature_selected(82));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
     outbox.hotkey_equip_smart_mode(session.server_mechanic_selected(180));
+    outbox.hotkey_equip_tiered(
+        session.feature_selected(
+            oteryn_session::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1,
+        ),
+    );
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));

@@ -3,15 +3,29 @@
     "mechanic": "0486-analyser-hit-attribution",
     "kind": "handlers",
     "id": "0486-analyser-hit-attribution-domain15-extension",
-    "status": "unsupported",
-    "reason": "WU26 package 2 server side only: the native client per-hit attacker display lands in the client lane.",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 486,
+    "entry": "protocol.rs::own_hit_flash",
+    "push_messages": [
+      "AnalyserAttributedFacts"
+    ],
+    "reducer": "protocol.rs::own_hit_flash",
+    "test": "tests.rs::c0486_an_attributed_hit_with_an_attack_target_flashes",
     "not_applicable": {
-      "state": "The existing 0010 analyser stream holds the facts.",
+      "state": "The flash is a transient presentation timer in the world view.",
       "protocol": "The shared analyser codec in oteryn-protocol-oteryn decodes field 5 attacker.",
-      "view": "The per-hit attacker display lands with client support.",
       "input": "The fact stream is server pushed and takes no input.",
-      "settings": "Hit attribution has no client setting."
+      "settings": "Hit attribution has no client setting.",
+      "view": "The owning panel view and the native window show the result; this capability adds no view of its own."
     }
+  },
+  {
+    "mechanic": "0486-analyser-hit-attribution",
+    "kind": "panels",
+    "id": "0486-analyser-hit-attribution-panel",
+    "status": "supported",
+    "entry": "protocol.rs::hit_flash_visible"
   }
 ]

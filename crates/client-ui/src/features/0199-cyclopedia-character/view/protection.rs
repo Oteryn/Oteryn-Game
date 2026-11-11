@@ -64,15 +64,17 @@ pub fn protection_cards(f: &Forecast) -> Vec<(&'static str, String)> {
 }
 /// Promotion facts the server confirms through the forecast flag; the benefits follow Tibia 15.33
 /// (promoted title, faster regeneration, soul cap 200 with a 15 s soul tick, reduced death loss).
+/// `title` is the character's exact vocation title once capability 487 reported its id.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PromotionView {
     pub promoted: bool,
     pub soul_cap: u16,
     pub soul_tick_seconds: u16,
+    pub title: Option<&'static str>,
 }
 pub const NORMAL_SOUL_CAP: u16 = 100;
 pub const PROMOTED_SOUL_CAP: u16 = 200;
-pub fn promotion_view(f: &Forecast) -> PromotionView {
+pub fn promotion_view(f: &Forecast, vocation_id: Option<u8>) -> PromotionView {
     PromotionView {
         promoted: f.promotion_benefit,
         soul_cap: if f.promotion_benefit {
@@ -81,23 +83,31 @@ pub fn promotion_view(f: &Forecast) -> PromotionView {
             NORMAL_SOUL_CAP
         },
         soul_tick_seconds: if f.promotion_benefit { 15 } else { 120 },
+        title: vocation_id.and_then(crate::cyclopedia_character_vocation::vocation_title),
     }
 }
-pub fn promotion_text(f: &Forecast) -> String {
-    let v = promotion_view(f);
-    if v.promoted {
-        format!(
+pub fn promotion_text(f: &Forecast, vocation_id: Option<u8>) -> String {
+    let v = promotion_view(f, vocation_id);
+    match (v.promoted, v.title) {
+        (true, Some(title)) => format!(
+            "Promotion: promoted rank ({title}) · faster health/mana regeneration · soul cap {} with a {} s soul tick · reduced death loss",
+            v.soul_cap, v.soul_tick_seconds
+        ),
+        (true, None) => format!(
             "Promotion: promoted rank (promoted vocation title) · faster health/mana regeneration · soul cap {} with a {} s soul tick · reduced death loss",
             v.soul_cap, v.soul_tick_seconds
-        )
-    } else {
-        format!(
+        ),
+        (false, Some(title)) => format!(
+            "Promotion: not promoted · base vocation title ({title}) · soul cap {} with a {} s soul tick",
+            v.soul_cap, v.soul_tick_seconds
+        ),
+        (false, None) => format!(
             "Promotion: not promoted · base vocation title · soul cap {} with a {} s soul tick",
             v.soul_cap, v.soul_tick_seconds
-        )
+        ),
     }
 }
-pub fn protection_heading(f: &Forecast) -> String {
+pub fn protection_heading(f: &Forecast, vocation_id: Option<u8>) -> String {
     let state = |active| if active { "active" } else { "inactive" };
     let seconds = f.observed_at_unix_ms / 1000;
     format!(
@@ -105,7 +115,7 @@ pub fn protection_heading(f: &Forecast) -> String {
         f.level,
         f.regular_blessings,
         if f.twist { "owned" } else { "not owned" },
-        promotion_text(f),
+        promotion_text(f, vocation_id),
         state(f.red_or_black),
         state(f.adventurer),
         seconds / 3600 % 24,

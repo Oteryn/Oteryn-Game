@@ -152,6 +152,15 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // WU26-14 spell aim mode and WU26-10 Gem Atelier v2 (requires 148).
     actor_spell::CAPABILITY_SPELL_AIM_MODE_V1,
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
+    // WU26 package 2: tiered hotkey equip, hit attribution, promotion title, death details,
+    // podium flags, server modal input and imbuement success chance.
+    hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1,
+    analyser_transport::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1,
+    cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+    cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
+    property_services::house_podium::CAPABILITY_HOUSE_PODIUM_FLAGS_V1,
+    oteryn_protocol_oteryn::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
+    imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

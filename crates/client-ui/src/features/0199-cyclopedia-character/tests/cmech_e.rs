@@ -42,7 +42,7 @@ fn forecast(promoted: bool) -> Forecast {
 
 #[test]
 fn n007_promotion_view_shows_title_regeneration_and_soul_cap_200() {
-    let promoted = promotion_view(&forecast(true));
+    let promoted = promotion_view(&forecast(true), None);
     assert_eq!(
         (
             promoted.promoted,
@@ -51,14 +51,14 @@ fn n007_promotion_view_shows_title_regeneration_and_soul_cap_200() {
         ),
         (true, 200, 15)
     );
-    let text = promotion_text(&forecast(true));
+    let text = promotion_text(&forecast(true), None);
     assert!(text.contains("promoted vocation title"));
     assert!(text.contains("faster health/mana regeneration"));
     assert!(text.contains("soul cap 200"));
-    let base = promotion_view(&forecast(false));
+    let base = promotion_view(&forecast(false), None);
     assert_eq!((base.promoted, base.soul_cap), (false, 100));
-    assert!(promotion_text(&forecast(false)).contains("not promoted"));
-    assert!(protection_heading(&forecast(true)).contains("soul cap 200"));
+    assert!(promotion_text(&forecast(false), None).contains("not promoted"));
+    assert!(protection_heading(&forecast(true), None).contains("soul cap 200"));
 }
 
 #[test]

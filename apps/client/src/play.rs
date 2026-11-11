@@ -41,6 +41,8 @@ pub struct PlayView {
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
+    /// When the own character last took a hit from an attacker while attacking (N006).
+    hit_flash: Option<std::time::Instant>,
     spell_words: std::collections::BTreeMap<u32, String>,
     pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,

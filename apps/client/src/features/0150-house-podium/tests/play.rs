@@ -378,3 +378,41 @@ fn podium_creature_selector_updates_the_real_panel_without_sending()
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn c0489_podium_set_carries_the_flags_only_when_selected() -> Result<(), Box<dyn std::error::Error>>
+{
+    for flagged in [false, true] {
+        let (link, mut receiver, _) = play_channel();
+        {
+            let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+            let p = &mut mailbox.properties.house_podium;
+            p.selected = true;
+            p.flagged = flagged;
+            p.fields = [ID.into(), "1".into(), "2".into(), "citizen".into()];
+            p.loaded_item = ID.into();
+            p.revision = Some(5);
+        }
+        assert_eq!(
+            link.house_podium_toggle(oteryn_client_ui::house_podium_flags::Part::Mount),
+            flagged
+        );
+        link.house_podium_request(Intent::Set);
+        let crate::combat_input::PlayCommand::Feature(command) = receiver.try_recv()? else {
+            return Err("podium command missing".into());
+        };
+        let (request, flags) =
+            wire::SetRequest::decode_selected(flagged, &command.payload).ok_or("podium wire")?;
+        assert_eq!(request.key, "citizen");
+        assert_eq!(
+            flags,
+            flagged.then_some(wire::DisplayFlags {
+                show_platform: true,
+                show_outfit: true,
+                show_mount: false,
+            })
+        );
+        assert_eq!(command.payload.len(), 34 + if flagged { 3 } else { 0 });
+    }
+    Ok(())
+}
