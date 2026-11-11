@@ -1475,6 +1475,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         wiki_creature_source.evidence,
         ProjectV2EvidenceClass::Derived
     );
+    let thaian_source = source_for(&thaian.batch_id);
+    assert_eq!(thaian_source.key, "oteryn:source.tibiawiki");
+    assert_eq!(thaian_source.import_batch_id, thaian.batch_id);
+    assert_eq!(thaian_source.revision, thaian.source_revision);
+    assert_eq!(thaian_source.sha256, thaian.source_artifact_sha256);
+    assert_eq!(thaian_source.evidence, ProjectV2EvidenceClass::Derived);
     let summer_import = import_for("g4-npc-summer-definition-overlay-fandom-r13");
     assert_eq!(
         summer_import.batch_id,
@@ -1597,6 +1603,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
     let mut creature_files = BTreeSet::new();
+    let mut d44_wiki_bindings = 0;
+    let mut thaian_wiki_bindings = 0;
     let mut npc_bindings = 0;
     let mut crystal_creatures = 0;
     let mut encounter_bindings = 0;
@@ -1630,6 +1638,23 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             binding.disposition,
             ProjectV2SourceIdentityDisposition::Exact
         );
+        if binding.source_key == thaian_source.key
+            && binding.source_revision == thaian_source.revision
+        {
+            assert_eq!(binding.source_key, "oteryn:source.tibiawiki");
+            assert_eq!(binding.source_revision, thaian.source_revision);
+            assert_eq!(binding.identity_namespace, "mediawiki/page_id");
+            assert_eq!(binding.external_id, "48123");
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.key, "oteryn:creature.thaian");
+            assert_eq!(binding.target.revision, "definition-r1");
+            assert_eq!(
+                binding.disposition,
+                ProjectV2SourceIdentityDisposition::Exact
+            );
+            thaian_wiki_bindings += 1;
+            continue;
+        }
         if cake_bindings.contains(binding) {
             assert_eq!(binding.target.family, ProjectV2Family::Creature);
             assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
@@ -1641,6 +1666,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 // D44 wiki-authored creature, checked above.
                 assert_eq!(binding.source_revision, wiki_creature_source.revision);
                 assert!(binding.target.key.starts_with("oteryn:creature."));
+                d44_wiki_bindings += 1;
                 continue;
             }
             if binding.source_key == "oteryn:source.crystalserver" {
@@ -1775,7 +1801,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             _ => panic!("only Item, Outfit, Mount and Creature source bindings are populated"),
         }
     }
-    assert_eq!(creature_files.len(), CREATURES - 1);
+    assert_eq!(d44_wiki_bindings, 1);
+    assert_eq!(thaian_wiki_bindings, 1);
+    assert_eq!(
+        creature_files.len(),
+        CREATURES - d44_wiki_bindings - thaian_wiki_bindings
+    );
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
     assert_eq!(crystal_encounter_count, 4);

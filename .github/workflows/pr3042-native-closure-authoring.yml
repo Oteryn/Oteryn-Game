@@ -1,0 +1,378 @@
+name: Native content closure authoring evidence
+
+on:
+  push:
+    branches: [codex/pr3042-native-closure-93684]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: native-closure-authoring-93684
+  cancel-in-progress: false
+
+env:
+  CANONICAL_SHA: 93684c40a787d6e1a79aa49dfc77cd6d41cfcbbd
+  CANONICAL_WORLD_SHA256: 74ff1708c9f85dbe20997265430fff5e5b157fa7c47dbfc4e28cff209bfe8b13
+  RUSTUP_TOOLCHAIN: 1.99.1
+  PYTHONDONTWRITEBYTECODE: '1'
+  OTERYN_SPELL_SOURCE_ROOT: ''
+
+jobs:
+  generate:
+    if: github.repository == 'Oteryn/Oteryn-Game' && github.ref == 'refs/heads/codex/pr3042-native-closure-93684'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the exact authoring checkpoint
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify exact clean source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show -s --format=%P HEAD)" = "$CANONICAL_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Record the frozen output inventory and audit helper
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/native-closure-evidence"
+          cat > "$RUNNER_TEMP/native-closure-audit.py" <<'PY'
+          import hashlib, json, os, pathlib, shutil, stat, subprocess, sys
+
+          ROOT = pathlib.Path.cwd()
+          OUT = pathlib.Path(os.environ["RUNNER_TEMP"]) / "native-closure-evidence"
+          BASELINE = OUT / "baseline.json"
+
+          def git(*args):
+              return subprocess.check_output(["git", *args], cwd=ROOT)
+
+          def save(name, value):
+              (OUT / name).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+
+          def live_source_guard():
+              def api(path):
+                  return json.loads(subprocess.check_output(["gh", "api", "repos/Oteryn/Oteryn-Game/" + path]))
+              branch = api("git/ref/heads/codex/pr3042-native-closure-93684")
+              pr = api("pulls/3106")
+              if branch["object"]["sha"] != os.environ["GITHUB_SHA"]:
+                  raise ValueError("authoring checkpoint is no longer the live branch head")
+              if (pr["state"] != "open" or pr["draft"] is not True
+                      or pr["head"]["ref"] != "codex/pr3076-complete-e48f"
+                      or pr["head"]["sha"] != os.environ["CANONICAL_SHA"]
+                      or pr["head"]["repo"]["full_name"] != "Oteryn/Oteryn-Game"
+                      or pr["base"]["repo"]["full_name"] != "Oteryn/Oteryn-Game"
+                      or pr["base"]["ref"] != "main"):
+                  raise ValueError("canonical PR3106 identity or frozen predecessor changed")
+
+          def safe_path(name):
+              path = pathlib.PurePosixPath(name)
+              if path.is_absolute() or ".." in path.parts or not path.parts:
+                  raise ValueError(f"invalid repository path: {name!r}")
+              current = ROOT
+              for part in path.parts:
+                  current = current / part
+                  if current.is_symlink():
+                      raise ValueError(f"symlink is not an exportable output: {name}")
+              return current
+
+          def changed_rows():
+              names = set(git("diff", "--no-renames", "--name-only", "-z", "HEAD").decode().split("\0"))
+              names.update(git("ls-files", "--others", "--exclude-standard", "-z").decode().split("\0"))
+              rows = []
+              for name in sorted(names - {""}):
+                  row = {"path": name}
+                  try:
+                      path = safe_path(name)
+                      row["deleted"] = not path.exists()
+                      if path.exists():
+                          if not path.is_file():
+                              raise ValueError(f"output is not a regular file: {name}")
+                          raw = path.read_bytes()
+                          row.update(bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest(),
+                                     git_blob=git("hash-object", "--no-filters", "--", name).decode().strip(),
+                                     mode="100755" if path.stat().st_mode & stat.S_IXUSR else "100644")
+                  except (OSError, ValueError, subprocess.SubprocessError) as error:
+                      row["error"] = str(error)
+                  rows.append(row)
+              return rows
+
+          def guard(base, rows):
+              issues = []
+              live_source_guard()
+              if git("rev-parse", "HEAD").decode().strip() != base["source_sha"]:
+                  issues.append("HEAD changed")
+              allowed = set(base["allowed_generated_paths"])
+              issues.extend("unapproved output: " + row["path"] for row in rows if row["path"] not in allowed)
+              issues.extend(row["error"] for row in rows if "error" in row)
+              for name, digest in base["world_document_sha256"].items():
+                  path = safe_path(name)
+                  if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                      issues.append("canonical World changed: " + name)
+              for name, digest in base["checkpoint_source_sha256"].items():
+                  path = safe_path(name)
+                  if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                      issues.append("checkpoint source changed: " + name)
+              return issues
+
+          mode = sys.argv[1]
+          if mode == "baseline":
+              live_source_guard()
+              if git("rev-parse", "HEAD").decode().strip() != os.environ["GITHUB_SHA"]:
+                  raise SystemExit("wrong source HEAD")
+              if git("show", "-s", "--format=%P", "HEAD").decode().strip() != os.environ["CANONICAL_SHA"]:
+                  raise SystemExit("checkpoint must have exactly the frozen canonical parent")
+              if git("status", "--porcelain", "--untracked-files=all"):
+                  raise SystemExit("source worktree is not clean")
+              workflow = os.environ["GITHUB_WORKFLOW_REF"].split("@", 1)[0]
+              workflow_path = ".github/workflows/pr3042-native-closure-authoring.yml"
+              if workflow != "Oteryn/Oteryn-Game/" + workflow_path:
+                  raise SystemExit("unexpected checkpoint workflow path")
+              expected = {
+                  workflow_path,
+                  "tools/content-migration/refresh_season_creature_inventory.py",
+                  "tools/content-migration/test_refresh_season_creature_inventory.py",
+                  "apps/game-server/tests/content_world_project_repository.rs",
+              }
+              actual = set(git("diff", "--no-renames", "--name-only", "-z",
+                               os.environ["CANONICAL_SHA"], "HEAD").decode().split("\0")) - {""}
+              if actual != expected:
+                  raise SystemExit(f"checkpoint delta is not the approved four paths: {sorted(actual)}")
+              sys.path.insert(0, str(ROOT / "tools/content-migration"))
+              import regenerate_content as producer
+              from native_world_canonicalization import DOCUMENTS, read_documents
+              if tuple(producer.document_locators()) != DOCUMENTS or len(DOCUMENTS) != 11:
+                  raise SystemExit("canonical World inventory differs")
+              documents = read_documents(ROOT / "content/world")
+              tree = hashlib.sha256()
+              for locator, raw in documents.items():
+                  encoded = locator.encode()
+                  tree.update(len(encoded).to_bytes(8, "big") + encoded + len(raw).to_bytes(8, "big") + raw)
+              if tree.hexdigest() != os.environ["CANONICAL_WORLD_SHA256"]:
+                  raise SystemExit("canonical World digest differs")
+              subprocess.run(["git", "diff", "--exit-code", "--quiet", os.environ["CANONICAL_SHA"],
+                              "HEAD", "--", *("content/world/" + p for p in DOCUMENTS)], check=True)
+              allowed = producer.derived_paths()
+              # Mixed authoring inputs require owner review, even when listed in the manifest.
+              allowed = {p for p in allowed if p not in producer.HAND_MAINTAINED
+                         and not p.startswith(producer.HAND_MAINTAINED_PREFIXES)}
+              allowed.update(p for p in git("ls-files", "-z", "--", producer.WORLD_PINS).decode().split("\0")
+                             if p and producer.is_world_pin(p))
+              allowed.add(producer.PREPROD_MANIFEST)
+              allowed.add("tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json")
+              for name in allowed:
+                  safe_path(name)
+              save("baseline.json", {
+                  "canonical_sha": os.environ["CANONICAL_SHA"],
+                  "source_sha": os.environ["GITHUB_SHA"],
+                  "workflow_commit": os.environ["GITHUB_SHA"],
+                  "workflow_run": os.environ["GITHUB_RUN_ID"],
+                  "workflow_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                  "world_tree_sha256": tree.hexdigest(),
+                  "world_document_sha256": {"content/world/" + p: hashlib.sha256(b).hexdigest()
+                                            for p, b in documents.items()},
+                  "checkpoint_source_sha256": {p: hashlib.sha256(safe_path(p).read_bytes()).hexdigest()
+                                               for p in sorted(expected)},
+                  "allowed_generated_paths": sorted(allowed),
+                  "qualification": False,
+              })
+          elif mode in {"guard", "collect"}:
+              base = json.loads(BASELINE.read_bytes())
+              rows, issues = [], []
+              try:
+                  rows = changed_rows()
+                  issues = guard(base, rows)
+              except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+                  issues.append(str(error))
+              if mode == "guard":
+                  save("generated-state.json", {"changes": rows, "issues": issues})
+                  print(json.dumps({"changed_paths": len(rows), "issues": issues}))
+                  raise SystemExit(bool(issues))
+              state = OUT / "generated-state.json"
+              previous = (json.loads(state.read_bytes()) if state.is_file() else
+                          {"changes": [], "issues": ["pre-check output guard did not finish"]})
+              if rows != previous["changes"]:
+                  issues.append("a generated-output check changed the proposal")
+              issues.extend(previous["issues"])
+              for row in rows:
+                  row["declared_generated_output"] = row["path"] in base["allowed_generated_paths"]
+                  if "bytes" in row:
+                      # Retain unexpected source bytes for diagnosis; they always block eligibility.
+                      destination = OUT / "files" / row["path"]
+                      destination.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copy2(safe_path(row["path"]), destination)
+              outcomes = {name: os.environ[name] for name in
+                          ("FIXTURE", "GENERATION", "GUARD", "PREY", "REGISTRATION", "PINS", "WORLD_FIXTURE")}
+              eligible = not issues and all(value == "success" for value in outcomes.values())
+              report = {
+                  "canonical_sha": base["canonical_sha"],
+                  "source_sha": base["source_sha"],
+                  "world_tree_sha256": base["world_tree_sha256"],
+                  "generation_success": outcomes["GENERATION"] == "success",
+                  "step_outcomes": outcomes,
+                  "changes": rows,
+                  "issues": sorted(set(issues)),
+                  "eligible_for_owner_review": eligible,
+                  "source_accepted": False,
+                  "qualification": False,
+                  "next_action": "Review the pinned artifact before any source publication or qualification.",
+              }
+              save("manifest.json", report)
+              digest = hashlib.sha256((OUT / "manifest.json").read_bytes()).hexdigest()
+              (OUT / "manifest.json.sha256").write_text(digest + "  manifest.json\n")
+              print(json.dumps({"generation_success": report["generation_success"],
+                                "eligible_for_owner_review": eligible, "changed_paths": len(rows),
+                                "exported_bytes": sum(row.get("bytes", 0) for row in rows),
+                                "issues": report["issues"]}))
+          else:
+              raise SystemExit("unknown audit mode")
+          PY
+          python "$RUNNER_TEMP/native-closure-audit.py" baseline
+
+      - name: Install the pinned authoring dependencies
+        run: |
+          python -m pip install -r tools/content-schema/item-authoring/requirements.txt \
+            -r tools/content-schema/imbuement-authoring/requirements.txt
+
+      - name: Check the source repair before generation
+        id: fixture
+        run: |
+          set -euo pipefail
+          python3 tools/content-migration/test_refresh_season_creature_inventory.py -v \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/source-fixture.log"
+
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt
+
+      - name: Fetch only the existing producers' historical input commits
+        run: |
+          set -euo pipefail
+          # Grizzly/potion shared-shard rebinding and the immutable equipment census.
+          # The World materializer separately fetches its own pinned d78f0c80 predecessor.
+          for pin in ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb \
+                     1ae39c7fb9bef09c3cd50d16410374f4134b1676; do
+            if ! git cat-file -e "$pin^{commit}" 2>/dev/null; then
+              git fetch --no-tags --depth=1 origin "$pin"
+            fi
+          done
+
+      # This namespace is written only by the protected-main producer in rust.yml.
+      # Restore only: this workflow never saves a compilation or result cache.
+      - name: Restore Cargo compilation cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-native-closure-93684-restore-only
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Generate the existing content closure
+        id: generation
+        run: |
+          set -euo pipefail
+          # The existing producer stages its disposable index for native pin-refresh.
+          # No commit, push, remote ref update, or GitHub object write is performed.
+          python tools/content-migration/regenerate_content.py --resolve --skip-checks \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/generation.log"
+
+      - name: Fence the generated outputs before checking them
+        id: guard
+        if: ${{ !cancelled() && steps.baseline.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python "$RUNNER_TEMP/native-closure-audit.py" guard
+
+      - name: Check generated prey data
+        id: prey
+        if: ${{ !cancelled() && steps.generation.outcome == 'success' && steps.guard.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          python tools/content-migration/prey_difficulty.py --check \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/prey-check.log"
+
+      - name: Check generated native registration
+        id: registration
+        if: ${{ !cancelled() && steps.generation.outcome == 'success' && steps.guard.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          python tools/content-migration/register_spell_families.py --check \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/registration-check.log"
+
+      - name: Check generated World pins with the native compiler
+        id: pins
+        if: ${{ !cancelled() && steps.generation.outcome == 'success' && steps.guard.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- \
+            pin-check . "$RUNNER_TEMP/native-closure-world-bundle" \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/pin-check.log"
+
+      - name: Check the generated inventory and the fixed World repository fixture
+        id: world_fixture
+        if: ${{ !cancelled() && steps.generation.outcome == 'success' && steps.guard.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Exercise the season fixture against the generated native shape too.
+          python3 tools/content-migration/test_refresh_season_creature_inventory.py -v \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/generated-inventory-fixture.log"
+          cargo +1.99.1 test --locked -p oteryn-game-server --test content_world_project_repository \
+            2>&1 | tee "$RUNNER_TEMP/native-closure-evidence/world-repository-fixture.log"
+
+      - name: Collect exact bytes and outcomes, including failed generation or checks
+        id: collect
+        if: ${{ !cancelled() && steps.baseline.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURE: ${{ steps.fixture.outcome }}
+          GENERATION: ${{ steps.generation.outcome }}
+          GUARD: ${{ steps.guard.outcome }}
+          PREY: ${{ steps.prey.outcome }}
+          REGISTRATION: ${{ steps.registration.outcome }}
+          PINS: ${{ steps.pins.outcome }}
+          WORLD_FIXTURE: ${{ steps.world_fixture.outcome }}
+        run: python "$RUNNER_TEMP/native-closure-audit.py" collect
+
+      - name: Upload the unaccepted authoring evidence
+        if: ${{ !cancelled() && steps.baseline.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-closure-93684-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/native-closure-evidence
+          if-no-files-found: error
+          compression-level: 9
+          include-hidden-files: true
+          retention-days: 7
+
+      - name: Require a complete generation proposal, without claiming qualification
+        if: ${{ !cancelled() && steps.collect.outcome == 'success' }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          report = json.loads((pathlib.Path(os.environ["RUNNER_TEMP"]) /
+                               "native-closure-evidence/manifest.json").read_bytes())
+          if not report["eligible_for_owner_review"]:
+              raise SystemExit("Unaccepted evidence retained; generation or source/output checks failed.")
+          print("Generation proposal is ready for owner review; source acceptance and qualification remain pending.")
+          PY
