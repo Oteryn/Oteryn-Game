@@ -139,6 +139,7 @@ enum CaptureGoal {
     Reply,
     Switch,
     Effect(u16),
+    EffectReplay(u16),
     SwitchEffect(u16),
 }
 
@@ -170,6 +171,40 @@ pub(super) async fn exchange_capture_effect(
         kind,
         build_payload,
         CaptureGoal::Effect(effect),
+        capture,
+    )
+    .await
+}
+
+/// Replay the identical command only after its result and effect, on the same socket.
+pub(super) async fn exchange_capture_effect_replay(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    kind: u32,
+    build_payload: impl FnOnce(&[Vec<u8>]) -> TestResult<Vec<u8>>,
+    effect: u16,
+    capture: &mut Vec<Vec<u8>>,
+) -> TestResult<(
+    CommandStatus,
+    Vec<u8>,
+    Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot>,
+    Vec<u8>,
+)> {
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+    );
+    assert_eq!(id, admitted.continuity.next_command_id);
+    exchange_capture_goal(
+        owner,
+        admitted,
+        id,
+        kind,
+        build_payload,
+        CaptureGoal::EffectReplay(effect),
         capture,
     )
     .await
@@ -262,21 +297,20 @@ async fn exchange_capture_goal(
             }
         }
         let command_payload = build_payload(capture)?;
-        write_frame(
-            &mut client,
-            &oteryn_protocol_oteryn::encode_client_command_for_session(
-                before.continuity.connection_generation,
-                &ClientCommandValue {
-                    command_id: id,
-                    command_type: kind,
-                    payload: &command_payload,
-                },
-                before.game_session_id.as_bytes(),
-            )
-            .map_err(debug)?,
+        let wire_command = oteryn_protocol_oteryn::encode_client_command_for_session(
+            before.continuity.connection_generation,
+            &ClientCommandValue {
+                command_id: id,
+                command_type: kind,
+                payload: &command_payload,
+            },
+            before.game_session_id.as_bytes(),
         )
-        .await?;
-        let mut reply = None;
+        .map_err(debug)?;
+        write_frame(&mut client, &wire_command).await?;
+        let mut reply: Option<(CommandStatus, Vec<u8>)> = None;
+        let mut replay_sent = false;
+        let mut reply_count = 0;
         let mut barrier: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot> =
             None;
         let mut barrier_commits = 0;
@@ -296,7 +330,12 @@ async fn exchange_capture_goal(
                         )
                         .into());
                     }
-                    if matches!(goal, CaptureGoal::Effect(_) | CaptureGoal::SwitchEffect(_)) {
+                    if matches!(
+                        goal,
+                        CaptureGoal::Effect(_)
+                            | CaptureGoal::EffectReplay(_)
+                            | CaptureGoal::SwitchEffect(_)
+                    ) {
                         assert_eq!(result.status, CommandStatus::Accepted);
                         if kind == oteryn_protocol_oteryn::world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
                             assert_eq!(
@@ -310,7 +349,21 @@ async fn exchange_capture_goal(
                                 "the real effect producer must commit before awaiting native egress");
                         }
                     }
-                    reply = Some((result.status, result.payload.to_vec()));
+                    let answer = (result.status, result.payload.to_vec());
+                    if matches!(goal, CaptureGoal::EffectReplay(_))
+                        && let Some(first) = &reply
+                    {
+                        assert!(
+                            replay_sent,
+                            "second reply follows the identical live command"
+                        );
+                        assert_eq!(
+                            &answer, first,
+                            "live command replay preserves its exact result"
+                        );
+                    }
+                    reply_count += 1;
+                    reply = Some(answer);
                 }
                 MessageType::SnapshotChunk => {
                     let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(env.payload())
@@ -342,7 +395,10 @@ async fn exchange_capture_goal(
                     }
                 }
                 MessageType::StateDelta => {
-                    if let CaptureGoal::Effect(wanted) | CaptureGoal::SwitchEffect(wanted) = goal {
+                    if let CaptureGoal::Effect(wanted)
+                    | CaptureGoal::EffectReplay(wanted)
+                    | CaptureGoal::SwitchEffect(wanted) = goal
+                    {
                         let delta = oteryn_protocol_oteryn::decode_state_delta(env.payload())
                             .map_err(debug)?;
                         if delta.domain_id
@@ -374,11 +430,20 @@ async fn exchange_capture_goal(
                 acknowledge_captured_activity(&mut client, receipt, capture).await?;
                 acknowledged = true;
             }
+            if matches!(goal, CaptureGoal::EffectReplay(_))
+                && reply.is_some()
+                && effect_seen
+                && !replay_sent
+            {
+                write_frame(&mut client, &wire_command).await?;
+                replay_sent = true;
+            }
             if reply.is_some()
                 && match goal {
                     CaptureGoal::Reply => true,
                     CaptureGoal::Switch => barrier_commits == 2,
                     CaptureGoal::Effect(_) => effect_seen,
+                    CaptureGoal::EffectReplay(_) => effect_seen && reply_count == 2,
                     CaptureGoal::SwitchEffect(_) => barrier_commits == 2 && effect_seen,
                 }
             {
@@ -421,6 +486,13 @@ async fn exchange_capture_goal(
         if scope.requires_ack {
             assert_eq!(admitted.continuity.next_command_id, 2);
         }
+    }
+    if matches!(goal, CaptureGoal::EffectReplay(_)) {
+        assert_eq!(
+            admitted.continuity.next_command_id,
+            id + 1,
+            "same-socket replay does not allocate another command"
+        );
     }
     Ok(result)
 }

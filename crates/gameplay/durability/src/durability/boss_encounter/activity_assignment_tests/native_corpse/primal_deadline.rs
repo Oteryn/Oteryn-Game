@@ -6,22 +6,24 @@ fn primal_ordeal_instance_corpse_postgres_deadline_and_scope_fences() -> TestRes
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
-    fixture::runtime()?.block_on(async move {
-        let started = std::time::Instant::now();
-        let h = fixture::Harness::create_with_admission_seed(
-            admin,
-            "encx_primal_deadline",
-            true,
-            false,
-        )
-        .await?;
-        let result = prove(&h).await;
-        h.cleanup().await?;
-        eprintln!(
-            "M29 real PostgreSQL Primal Instance corpse deadline: {:?}",
-            started.elapsed()
-        );
-        result
+    on_pg_thread(move || {
+        fixture::runtime()?.block_on(async move {
+            let started = std::time::Instant::now();
+            let h = fixture::Harness::create_with_admission_seed(
+                admin,
+                "encx_primal_deadline",
+                true,
+                false,
+            )
+            .await?;
+            let result = prove(&h).await;
+            h.cleanup().await?;
+            eprintln!(
+                "M29 real PostgreSQL Primal Instance corpse deadline: {:?}",
+                started.elapsed()
+            );
+            result
+        })
     })
 }
 

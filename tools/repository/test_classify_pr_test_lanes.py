@@ -656,12 +656,17 @@ def test_scope_identity_drift():
         {"base": {"ref": "main", "sha": "c" * 40}},
         {"base": {"ref": "other", "sha": "b" * 40}},
     )
-    for second_count in (1, 2):
-        for change in changes:
-            after = dict(scope_pull(second_count), **change)
-            code, wire, errors, _ = run_scope(scope_pull(1), after, records)
-            assert code == 1 and wire == "", (second_count, change, code, wire, errors)
-    print("Scope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs")
+    for phase in ("before", "after"):
+        for second_count in (1, 2):
+            for change in changes:
+                before, after = scope_pull(1), scope_pull(second_count)
+                (before if phase == "before" else after).update(change)
+                code, wire, errors, _ = run_scope(before, after, records)
+                assert code == 1 and wire == "", (phase, second_count, change, code, wire, errors)
+    before = scope_pull(1, base="invalid")
+    code, wire, errors, _ = run_scope(before, scope_pull(1), records)
+    assert code == 1 and wire == "", (code, wire, errors)
+    print("Scope identity fences PASS: both reads reject identity changes and malformed base evidence without outputs")
 
 
 def test_metadata_events():
@@ -755,6 +760,44 @@ def test_metadata_events():
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
     assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
+
+
+def test_scope_policy_contract():
+    """The real policy accepts reviewed scope recovery and rejects altered guards."""
+    core_path = ROOT / "tools/repository/validate_repository_policy_core.py"
+    spec = importlib.util.spec_from_file_location("scope_policy_core", core_path)
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    gate_path = ROOT / ".github/workflows/merge-gate.yml"
+    gate = gate_path.read_text(encoding="utf-8")
+    scope = core.indented_yaml_mapping_block(gate, "scope", 2)
+    assert scope is not None
+    read_text = Path.read_text
+
+    def validate(candidate):
+        def candidate_text(path, *args, **kwargs):
+            return candidate if path == gate_path else read_text(path, *args, **kwargs)
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(Path, "read_text", candidate_text), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            status = core.main()
+        return status, stdout.getvalue() + stderr.getvalue()
+
+    status, diagnostic = validate(gate)
+    assert status == 0, diagnostic
+    for guard in (
+        "if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:",
+        "if type(changed_files) is not int or changed_files < 0:",
+        "elif not errors and changed_files_after != changed_files:",
+    ):
+        assert scope.count(guard) == 1, guard
+        replacement = "elif False:" if guard.startswith("elif ") else "if False:"
+        changed_scope = scope.replace(guard, replacement, 1)
+        status, diagnostic = validate(gate.replace(scope, changed_scope, 1))
+        assert status == 1, (guard, diagnostic)
+        assert "merge gate scope job must exactly match the canonical" in diagnostic, diagnostic
+    print("Scope policy PASS: reviewed scope accepted, identity/count/recovery mutations rejected")
 
 
 def test_aggregate():
@@ -999,6 +1042,7 @@ def main() -> int:
     test_scope_identity_drift()
     test_scope_invalid_file_counts()
     test_scope_stable_small_pr()
+    test_scope_policy_contract()
     test_aggregate()
     test_server_qualification(module)
     test_world_bundle(module)

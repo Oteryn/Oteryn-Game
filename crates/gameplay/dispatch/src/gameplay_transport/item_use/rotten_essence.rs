@@ -2,6 +2,43 @@
 use super::*;
 use crate::durability::quest_state::{QuestTransitionOutcome, rotten_essence::RottenEssenceUse};
 
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Classify a carried essence before the House transform's quantity-one source read.
+    /// The existing essence owner rechecks its exact native item and durable fence.
+    pub(in crate::gameplay_transport) async fn try_use_house_rotten_essence(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: ItemKey,
+    ) -> Option<UseOutcome> {
+        {
+            let runtime = self.runtime.lock().await;
+            super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+            crate::durability::consume_transform::HouseActionContext::from_native_owner(
+                &runtime,
+                actor,
+                command.game_session_id,
+                command.item_fence?,
+            )
+            .ok()?;
+        }
+        let disposition = match Box::pin(use_essence(
+            self,
+            actor,
+            command,
+            &UseSource::Handle(source),
+        ))
+        .await?
+        {
+            Ok(disposition) | Err(disposition) => disposition,
+        };
+        Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(super) struct PendingEssenceUse {
     actor: ExactActorRef,

@@ -390,6 +390,7 @@ pub struct RunUpdate {
     pub completed: u32,
     pub level: u32,
     pub ended: bool,
+    pub wave: u32,
 }
 
 impl DurabilityRoot {
@@ -407,6 +408,7 @@ impl DurabilityRoot {
             completed,
             level,
             ended,
+            wave,
         } = update;
         let recovery = authority
             .record_for(self)
@@ -425,6 +427,13 @@ impl DurabilityRoot {
                         state.progress.reached_level(level);
                         state.progress.start=state.progress.start.max(level);
                         state.progress.waves=state.progress.waves.saturating_add(count);
+                    }
+                    // A newer clear carries its actual physical wave; an older
+                    // snapshot cannot rewind a wave already acknowledged here.
+                    if completed>state.completed || ended {
+                        state.wave=wave;
+                    } else if completed==state.completed {
+                        state.wave=state.wave.max(wave);
                     }
                     state.completed=state.completed.max(completed);
                     if state.progress.waves>0 {

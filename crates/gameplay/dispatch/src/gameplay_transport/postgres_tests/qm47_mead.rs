@@ -10,7 +10,7 @@ use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
-use oteryn_gameplay_quests::quest::{QuestTransition, QuestEffect, QuestComparison, QuestEffectKind, QuestStateCatalogue, barbarian_mead as mead, world_callbacks};
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, barbarian_mead as mead, world_callbacks};
 use std::sync::Arc;
 
 #[test]
@@ -39,6 +39,125 @@ fn m47_postgres_mead_roll_is_fenced_and_exactly_replayed() -> TestResult {
     result
 }
 
+/// Historical Sven state outside the barrel operation under test. Only the four
+/// source counters are arranged; the durable barrel owner alone writes DRAW.
+pub(super) async fn seed_sven_state(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: [Option<i64>; 4],
+) -> TestResult {
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "Sven fixture fence")?
+        .ok_or("Sven fixture fence")?;
+    if fence.expected_character_revision.get() == 1 {
+        // Quest history starts at revision 2. Obtain it from the real sequencer
+        // and XP ledger rather than inventing a generic quest receipt or root.
+        let binding = owner
+            .progression_binding(admitted.game_session_id)
+            .ok_or("Sven fixture progression")?;
+        let outcome = owner
+            .revision_sequencer
+            .acquire(fence.character_id)
+            .await
+            .commit_experience(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                ExperienceAwardRequest {
+                    occurrence: ExperienceRewardOccurrence::from_bytes(super::fixture::id(175))
+                        .map_err(debug)?,
+                    amount: oteryn_simulation_determinism::ExactI64::new(1),
+                    context: binding.context.clone(),
+                    policy_revision: binding.policy_revision.clone(),
+                    reward_revision: binding.reward_revision.clone(),
+                    policy: binding.policy.clone(),
+                },
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        let ExperienceCommitOutcome::Committed(receipt) = outcome else {
+            return Err("Sven fixture revision did not commit".into());
+        };
+        assert_eq!(receipt.original_character_revision.get(), 1);
+        assert_eq!(receipt.committed_character_revision.get(), 2);
+        assert_eq!(receipt.level_before, receipt.level_after);
+    }
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("Sven catalogue")?;
+    let mut tx = h.pool.begin().await?;
+    let revision: String = sqlx::query_scalar(
+        "SELECT character_revision::text FROM game_character_roots \
+         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&mut *tx)
+    .await?;
+    assert!(revision.parse::<u64>()? >= 2);
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (key, value) in mead::TRACKS.into_iter().zip(values) {
+        let track = catalogue.track(key).ok_or("Sven source track")?;
+        assert_eq!(track.quest, mead::QUEST);
+        let Some(value) = value else {
+            let stored: Option<i64> = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks \
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(key)
+            .fetch_optional(&mut *tx)
+            .await?;
+            assert_eq!(stored, None, "first Sven entry must leave {key} absent");
+            continue;
+        };
+        assert!((track.min..=track.max).contains(&value));
+        let changed = sqlx::query(
+            "INSERT INTO game_character_quest_tracks \
+             (character_id,track_key,quest_key,value,committed_character_revision) \
+             SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots \
+             WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric \
+             ON CONFLICT(character_id,track_key) DO UPDATE \
+             SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision \
+             WHERE game_character_quest_tracks.quest_key=EXCLUDED.quest_key",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(key)
+        .bind(&track.quest)
+        .bind(value)
+        .bind(&revision)
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
+    tx.commit().await?;
+    // Historical counters share the current root revision. Reload the session
+    // explicitly before its next real barrel command can consult the quest copy.
+    owner
+        .refresh_quest_session(admitted.game_session_id, true)
+        .await;
+    let sessions = owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(|_| "Sven quest sessions")?;
+    let copy = sessions
+        .get(&admitted.game_session_id)
+        .and_then(|session| session.copy.as_ref())
+        .ok_or("Sven refreshed quest copy")?;
+    for (key, value) in mead::TRACKS.into_iter().zip(values) {
+        assert_eq!(copy.tracks().get(key).copied(), value);
+    }
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -47,63 +166,20 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    // M48 owns the shared questline through a physical binding. Arrange Sven's
-    // accepted round as fixture initials, without a generic write to that track.
     let tracks = mead::NATIVE_TRACKS
         .into_iter()
         .map(|k| base.track(k).cloned().ok_or("mead track"))
         .collect::<Result<Vec<_>, _>>()?;
-    let setup = QuestTransition {
-        key: "oteryn:quest-transition/m47-fixture-round".into(),
-        quest: mead::QUEST.into(),
-        // Sven writes questline, mission and total; the streak is absent on first entry.
-        effects: [
-            (mead::TRACKS[0], 2),
-            (mead::TRACKS[1], 2),
-            (mead::TRACKS[3], 0),
-        ]
-        .into_iter()
-        .map(|(track, value)| QuestEffect {
-            track: track.into(),
-            from: QuestComparison::Between(-1, i64::MAX),
-            effect: QuestEffectKind::Set(value),
-        })
-        .collect(),
-        completes: false,
-        experience: None,
-        world_change: None,
-    };
-    let seed = |key: &str, values: [i64; 4]| QuestTransition {
-        key: key.into(),
-        effects: mead::TRACKS
-            .into_iter()
-            .zip(values)
-            .map(|(track, value)| QuestEffect {
-                track: track.into(),
-                from: QuestComparison::Between(-1, i64::MAX),
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        ..setup.clone()
-    };
-    let passed = seed("oteryn:quest-transition/m47-fixture-passed", [3, 3, 9, 17]);
-    let exhausted = seed(
-        "oteryn:quest-transition/m47-fixture-exhausted",
-        [2, 2, 4, 21],
-    );
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
             tracks,
-            vec![
-                setup.clone(),
-                passed.clone(),
-                exhausted.clone(),
-                world_callbacks::primary_transition(callback)?,
-            ],
+            vec![world_callbacks::primary_transition(callback)?],
         )
         .map_err(debug)?,
     );
+    // Sven accepts the round without creating the streak on the first entry.
+    seed_sven_state(h, owner, admitted, [Some(2), Some(2), None, Some(0)]).await?;
     let request = |key: &str, n| -> TestResult<QuestTransitionRequest> {
         Ok(QuestTransitionRequest {
             transition_key: key.into(),
@@ -275,34 +351,18 @@ pub(super) async fn exercise(
             value
         );
     }
-    for (seed, n, line, message) in [
+    drop(slot);
+    for (values, n, line, message) in [
         (
-            &passed,
+            [3, 3, 9, 17],
             7100,
             3,
             "You already passed the test, no need to torture yourself anymore.",
         ),
-        (&exhausted, 7200, 1, "Ask Sven for another round."),
+        ([2, 2, 4, 21], 7200, 1, "Ask Sven for another round."),
     ] {
-        let setup_request = QuestTransitionRequest {
-            transition_key: seed.key.clone(),
-            cause: QuestCause::Command(CommandRef::new(
-                admitted.game_session_id,
-                CommandId::new(n).map_err(debug)?,
-            )),
-        };
-        assert!(matches!(
-            slot.commit_quest_transition(
-                owner.root,
-                owner.character,
-                owner.holder,
-                fence,
-                setup_request,
-                catalogue.clone()
-            )
-            .await?,
-            QuestTransitionOutcome::Committed(_)
-        ));
+        seed_sven_state(h, owner, admitted, values.map(Some)).await?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let attempt = request(mead::KEY, n + 1)?;
         let outcome = slot
             .commit_world_callback(
@@ -388,6 +448,7 @@ pub(super) async fn exercise(
     }
     // A late replay must return its original roll without undoing the round reset.
     let before: Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key=ANY($1::text[]) ORDER BY track_key").bind(mead::NATIVE_TRACKS.as_slice()).fetch_all(&h.pool).await?;
+    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let late = slot
         .commit_world_callback(
             owner.root,

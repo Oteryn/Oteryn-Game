@@ -348,6 +348,7 @@ impl SoulWarSourceStep {
         fence: &CurrentCharacterGameplayFence,
         node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
         request: &QuestTransitionRequest,
+        quest_clock_seconds: i64,
     ) -> serde_json::Value {
         let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
         let (scope_kind, scope) = match self.scope {
@@ -387,6 +388,7 @@ impl SoulWarSourceStep {
             "item": sqlx::types::Uuid::from_bytes(self.item.item).to_string(),
             "cause": sqlx::types::Uuid::from_bytes(*self.cause.as_bytes()).to_string(),
             "request_binding": hex(&self.binding(fence.character_id, request)),
+            "quest_clock_seconds": quest_clock_seconds,
         })
     }
 }

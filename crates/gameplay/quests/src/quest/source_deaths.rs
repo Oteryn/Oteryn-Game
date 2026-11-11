@@ -1,8 +1,9 @@
-//! Closed native quest death bindings retained from Crystal 201189f.
+//! Closed native quest death bindings with qualified source witnesses.
 //! HeartBossDeath: creaturescripts_heart_boss_death.lua:26-138 (room players);
 //! Court Warlock: court_warlock_fight.lua:323-329 (room players);
 //! MagmaBubbleDeath: creaturescripts_magma_bubble_death.lua:12-23 (damage map);
 //! GoblinLeaderDeath: creaturescripts_goblin_leader_kill.lua:3-8 (damaging players).
+//! Herald: Crystal 9f5a72c creaturescripts_herald_of_fire.lua:43-45, local top-damage recipient.
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
@@ -30,7 +31,9 @@ impl Comparison {
         match self.kind.as_str() {
             "any" => Ok(QuestComparison::Any),
             "eq" => Ok(QuestComparison::Eq(self.value)),
+            "ne" => Ok(QuestComparison::Ne(self.value)),
             "lt" => Ok(QuestComparison::Lt(self.value)),
+            "ge" => Ok(QuestComparison::Ge(self.value)),
             _ => Err("unknown source death comparison".into()),
         }
     }
@@ -38,7 +41,9 @@ impl Comparison {
         match self.kind.as_str() {
             "any" => true,
             "eq" => value == self.value,
+            "ne" => value != self.value,
             "lt" => value < self.value,
+            "ge" => value >= self.value,
             _ => false,
         }
     }
@@ -49,6 +54,9 @@ pub struct Rule {
     pub transition: String,
     pub effects: Vec<Effect>,
     pub room: Option<[i32; 5]>,
+    /// A qualified local source rule may require the present most-damage player.
+    #[serde(default)]
+    pub top_damage_only: bool,
     define_transition: bool,
     /// Only mission-start guards are revision predecessors for cumulative counters.
     /// Counter increments from earlier queued deaths must not invalidate later ones.
@@ -120,6 +128,9 @@ const DOCUMENTS: &[&[u8]] = &[
     ),
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/qmech-m24-ancient_tombs.json"
+    ),
+    include_bytes!(
+        "../../../../../content/quests/native-death-bindings/qmech-m24-targuna-herald.json"
     ),
     include_bytes!(
         "../../../../../content/quests/native-death-bindings/quest-batch3-c-heart_of_destruction.json"

@@ -197,6 +197,13 @@ fn uncredited_source_corpse_has_one_sealed_pin_independent_of_all_ordinary_pins(
             "definition-r1",
         )
         .unwrap();
+    assert!(
+        runtime
+            .release_unminted_source_corpse_projection(&completed)
+            .is_err(),
+        "a claimed absence cannot discard an existing physical Item binding"
+    );
+    assert!(runtime.corpse_projection_pinned(source));
     runtime
         .release_uncredited_source_corpse_projection(&completed)
         .unwrap();
@@ -219,6 +226,82 @@ fn uncredited_source_corpse_has_one_sealed_pin_independent_of_all_ordinary_pins(
             .iter()
             .all(|actor| runtime.corpse_projection_pinned(*actor))
     );
+}
+
+#[test]
+fn unminted_source_release_requires_exact_current_completion_and_preserves_the_next_pin() {
+    const OUTBURST: &str = "oteryn:creature.outburst";
+    let complete = |runtime: &mut ChannelRuntimeV1, actor| {
+        canonical_lethal(runtime, actor, OUTBURST);
+        let notice = runtime.next_source_creature_death().unwrap().unwrap();
+        let begin = runtime.begin_source_creature_death(&notice).unwrap();
+        runtime
+            .pin_uncredited_source_corpse_projection(&begin)
+            .unwrap();
+        for event in begin.events() {
+            runtime
+                .acknowledge_source_creature_death_event(&begin, event)
+                .unwrap();
+        }
+        runtime.finish_source_creature_death_task(&begin).unwrap()
+    };
+    let (mut runtime, source) = registered_source_fixture_for(25, OUTBURST);
+    let completed = complete(&mut runtime, source);
+    let (mut foreign, foreign_source) = registered_source_fixture_for(26, OUTBURST);
+    let foreign_completed = complete(&mut foreign, foreign_source);
+    assert!(
+        runtime
+            .release_unminted_source_corpse_projection(&foreign_completed)
+            .is_err()
+    );
+    assert!(runtime.corpse_projection_pinned(source));
+    assert!(runtime.visible_corpses().is_empty());
+    runtime
+        .release_unminted_source_corpse_projection(&completed)
+        .unwrap();
+    assert!(!runtime.corpse_projection_pinned(source));
+    assert!(
+        runtime.visible_corpses().is_empty(),
+        "no synthetic Item binding is needed"
+    );
+    assert!(
+        runtime
+            .release_unminted_source_corpse_projection(&completed)
+            .is_err()
+    );
+
+    let policy = runtime.companion_policy(OUTBURST).unwrap();
+    let second = ExactActorRef(
+        runtime
+            .admit_encounter_fixture_actor(
+                ActorState(1),
+                OUTBURST,
+                policy.maximum_health,
+                Some(LocalPosition {
+                    x: 33711,
+                    y: 31634,
+                    floor: 14,
+                }),
+            )
+            .unwrap(),
+    );
+    runtime.install_creature_policy(second, OUTBURST).unwrap();
+    let second_completed = complete(&mut runtime, second);
+    assert!(
+        runtime
+            .release_unminted_source_corpse_projection(&completed)
+            .is_err(),
+        "replay of the first absence cannot release a later source task"
+    );
+    assert!(runtime.corpse_projection_pinned(second));
+    runtime.retire_owner_cycle();
+    assert!(
+        runtime
+            .release_unminted_source_corpse_projection(&second_completed)
+            .is_err(),
+        "a retired owner cannot acknowledge even its exact historical completion"
+    );
+    assert!(runtime.corpse_projection_pinned(second));
 }
 
 #[test]

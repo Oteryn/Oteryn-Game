@@ -62,12 +62,17 @@ struct Input {
 
 /// The sealed source movement uses the same Ground consumption participant and
 /// Quest receipt. It never creates a client command or a second Item writer.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the sampled quest clock and current scope authority are independent owner inputs"
+)]
 pub(crate) async fn consume_soul_war_source_step(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     step: &super::quest_state::soul_war_source::step::SoulWarSourceStep,
+    quest_clock_seconds: i64,
     context: &QuestWorldToolContext,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
@@ -134,8 +139,9 @@ pub(crate) async fn consume_soul_war_source_step(
         count: 1,
         replacement: None,
     };
-    let proof = serde_json::to_vec(&step.audit_source(&fence, scope_guard.1, request))
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let proof =
+        serde_json::to_vec(&step.audit_source(&fence, scope_guard.1, request, quest_clock_seconds))
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
     let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
         .fetch_one(&mut **tx)
         .await?;

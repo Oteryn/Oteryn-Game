@@ -19,8 +19,8 @@ pub use source_step::{
     SourceGroundStep, SourceGroundStepKind, SourceGroundStepReceipt,
 };
 pub use spite_global::{
-    PreparedSpiteGlobalWrite, SpiteGlobalFireCallback, SpiteGlobalFireReceipt,
-    execute_spite_global_fire_in_transaction,
+    PreparedSpiteGlobalWrite, SpiteGlobalFireCallback, SpiteGlobalFireOutcome,
+    SpiteGlobalFireReceipt, execute_spite_global_fire_in_transaction,
 };
 mod rotten_footprint;
 mod rotten_portal;

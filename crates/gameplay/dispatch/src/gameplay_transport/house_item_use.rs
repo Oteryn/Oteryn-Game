@@ -45,6 +45,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(refuse(UseDisposition::NotPossible));
         };
+        if intent.use_with_map_item.is_none()
+            && let Some(item @ ItemKey::Instance(_)) = source
+            && let Some(outcome) = self
+                .try_use_house_rotten_essence(actor, command, item)
+                .await
+        {
+            return Ok(Some(outcome));
+        }
         let _lane = self.spell_lane_permit().await.ok_or(())?;
         let mut context = {
             let runtime = self.runtime.lock().await;

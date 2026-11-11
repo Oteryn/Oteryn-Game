@@ -399,6 +399,7 @@ pub(super) fn capture(
             frozen.native.extend(super::quest_batch3_c::capture(
                 runtime,
                 entry,
+                principal_present,
                 live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -408,25 +409,13 @@ pub(super) fn capture(
                     objectives: snapshot.source_objectives.clone(),
                 }),
             ));
-                frozen.native.extend(encounters::capture(
-                    runtime,
-                    entry,
-                    &live,
-                    runs,
-                    principal_present,
-                ));
-                frozen.native.extend(super::quest_batch3_c::capture(
-                    runtime,
-                    entry,
-                    live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
-                        actor: snapshot.actor,
-                        session: snapshot.session,
-                        character: snapshot.character,
-                        lease_generation: snapshot.lease_generation,
-                        observed_revision: snapshot.observed_revision,
-                        objectives: snapshot.source_objectives.clone(),
-                    }),
-                ));
+            frozen.native.extend(encounters::capture(
+                runtime,
+                entry,
+                &live,
+                runs,
+                principal_present,
+            ));
             frozen
         }),
     );

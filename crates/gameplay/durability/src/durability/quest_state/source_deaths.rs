@@ -1,6 +1,7 @@
 //! Captured native source eligibility is evidence, never current mutation authority.
 //! Crystal 201189f HeartBossDeath:26-138; Court Warlock:323-329;
 //! MagmaBubbleDeath:12-23; GoblinLeaderDeath:3-8. Current fences remain independently checked.
+//! Herald additionally binds the qualified most-damage character captured at death.
 use super::*;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 
@@ -13,7 +14,10 @@ pub struct SourceDeathContext {
     pub lease_generation: u64,
     pub position: [i32; 3],
     pub dealt_damage: bool,
+    /// Present most-damage identity frozen by the native lethal owner, if required.
+    pub top_damage_character: Option<[u8; 16]>,
 }
+
 impl SourceDeathContext {
     pub(super) fn bind(&self, binding: &mut [u8; 33]) {
         let mut digest = Sha256::new()
@@ -38,6 +42,11 @@ impl SourceDeathContext {
             digest.update(coordinate.to_be_bytes());
         }
         digest.update([u8::from(self.dealt_damage)]);
+        // Preserve every pre-existing source receipt byte when this proof is absent.
+        if let Some(character) = self.top_damage_character {
+            digest.update(b"source-top-damage-v1");
+            digest.update(character);
+        }
         binding[1..].copy_from_slice(&digest.finalize());
     }
     pub(super) async fn admit(
@@ -56,6 +65,7 @@ impl SourceDeathContext {
             || self.session != fence.game_session_id
             || self.lease_generation != fence.character_lease_generation
             || !rule.recipient(self.position, self.dealt_damage)
+            || (rule.top_damage_only && self.top_damage_character != Some(self.character))
         {
             return Ok(false);
         }
@@ -77,5 +87,54 @@ impl SourceDeathContext {
             }
         }
         Ok(true)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::foundation::{ChannelId, WorldId};
+
+    fn id(seed: u8) -> [u8; 16] {
+        [
+            seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+        ]
+    }
+
+    #[test]
+    fn source_death_receipt_keeps_legacy_binding_without_top_damage_proof() -> Result<(), String> {
+        let mut source = SourceDeathContext {
+            scope: RuntimeScopeRefV1::Channel {
+                world_id: WorldId::decode(&id(80)).map_err(|error| format!("{error:?}"))?,
+                channel_id: ChannelId::decode(&id(81)).map_err(|error| format!("{error:?}"))?,
+            },
+            scope_generation: 7,
+            character: id(83),
+            session: GameSessionId::decode(&id(82)).map_err(|error| format!("{error:?}"))?,
+            lease_generation: 9,
+            position: [33116, 32408, -7],
+            dealt_damage: true,
+            top_damage_character: None,
+        };
+        let mut legacy = [0xa5; 33];
+        source.bind(&mut legacy);
+        // Fixed digest from the pre-Herald source-quest-death-v1 byte layout.
+        assert_eq!(legacy[0], 0xa5);
+        assert_eq!(
+            legacy[1..],
+            [
+                231, 209, 29, 255, 142, 178, 9, 0, 250, 183, 13, 252, 70, 52, 230, 124, 95, 119,
+                207, 81, 24, 237, 25, 168, 2, 210, 227, 146, 201, 74, 90, 151,
+            ]
+        );
+        source.top_damage_character = Some(source.character);
+        let mut winner = [0xa5; 33];
+        source.bind(&mut winner);
+        assert_ne!(winner, legacy);
+        source.top_damage_character = Some(id(84));
+        let mut other = [0xa5; 33];
+        source.bind(&mut other);
+        assert_ne!(other, winner);
+        Ok(())
     }
 }

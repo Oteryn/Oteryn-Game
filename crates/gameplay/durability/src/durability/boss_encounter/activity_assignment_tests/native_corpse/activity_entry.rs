@@ -213,11 +213,6 @@ pub(super) async fn enter(h: &fixture::Harness, scope: RuntimeScopeRefV1) -> Tes
         signing_key_id: KEY.into(),
     };
     let signing = SigningKey::from_bytes(&[31; 32]);
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&h.pool)
-            .await?;
-    observe_source(h, &subject, &signing, now).await?;
     assert_eq!(
         h.root
             .publish_runtime_readiness(&h.node, &readiness(h, source_scope, 1, 1).await?)
@@ -225,6 +220,13 @@ pub(super) async fn enter(h: &fixture::Harness, scope: RuntimeScopeRefV1) -> Tes
             .map_err(fixture::debug)?,
         GuardPublicationDisposition::Applied,
     );
+    // The request clock must include the readiness observation even when its
+    // publication crosses a database-clock second boundary.
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    observe_source(h, &subject, &signing, now).await?;
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h
         .root

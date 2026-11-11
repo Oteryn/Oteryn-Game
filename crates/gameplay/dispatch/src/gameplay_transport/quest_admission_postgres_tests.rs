@@ -18,6 +18,7 @@ enum Case {
     Concurrent,
     Unbound,
     FailedReceipt,
+    MapMarksUnavailable,
     ReplacedGeneration,
     Removed,
     Terminal,
@@ -39,6 +40,10 @@ fn quest_admission_unbound_defers_once_then_bound_pays() -> TestResult {
 #[test]
 fn quest_admission_receipt_failure_retries_on_cadence() -> TestResult {
     scenario(Case::FailedReceipt)
+}
+#[test]
+fn quest_admission_map_marks_unavailable_retries_on_cadence() -> TestResult {
+    scenario(Case::MapMarksUnavailable)
 }
 #[test]
 fn quest_admission_replaced_generation_refuses_award() -> TestResult {
@@ -193,7 +198,10 @@ fn execute(case: Case) -> TestResult {
         assert!(matches!(pending, QuestTransitionOutcome::Committed(_)));
         assert_eq!(counts(&harness).await?, (0, 0, 1));
 
-        if matches!(case, Case::Unbound | Case::Terminal | Case::UnknownFence) {
+        if matches!(
+            case,
+            Case::Unbound | Case::MapMarksUnavailable | Case::Terminal | Case::UnknownFence
+        ) {
             owner
                 .states
                 .progression_sessions
@@ -216,6 +224,20 @@ fn execute(case: Case) -> TestResult {
             }
             Case::Bound | Case::RuntimeRole | Case::Concurrent => {
                 owner.admit_quest_session(&admitted).await;
+                if matches!(case, Case::Bound) {
+                    // The XP commit advances CharacterRevision after this refresh's
+                    // fence was captured. Its map read must retry with a fresh revision.
+                    assert_eq!(counts(&harness).await?, (50, 1, 0));
+                    {
+                        let mut entries = owner.states.quest_sessions.lock().map_err(debug)?;
+                        let entry = entries.get_mut(&session).ok_or("entry")?;
+                        assert!(entry.retry_at.is_some());
+                        entry.retry_at = Some(std::time::Instant::now());
+                    }
+                    owner.refresh_due_quest_sessions().await;
+                    let entries = owner.states.quest_sessions.lock().map_err(debug)?;
+                    assert!(entries.get(&session).ok_or("entry")?.retry_at.is_none());
+                }
             }
             Case::FailedReceipt => {
                 sqlx::query(
@@ -250,6 +272,33 @@ fn execute(case: Case) -> TestResult {
                     .ok_or("entry")?
                     .retry_at = Some(std::time::Instant::now());
                 owner.refresh_due_quest_sessions().await;
+            }
+            Case::MapMarksUnavailable => {
+                // Keep XP deferred so only the display reader fails in this pass.
+                sqlx::query(
+                    "ALTER TABLE game_character_quest_map_marks RENAME TO quest_unavailable_map_marks",
+                )
+                .execute(&harness.pool)
+                .await?;
+                owner.refresh_quest_session(session, false).await;
+                sqlx::query(
+                    "ALTER TABLE quest_unavailable_map_marks RENAME TO game_character_quest_map_marks",
+                )
+                .execute(&harness.pool)
+                .await?;
+                {
+                    let mut entries = owner.states.quest_sessions.lock().map_err(debug)?;
+                    let entry = entries.get_mut(&session).ok_or("entry")?;
+                    assert!(entry.retry_at.is_some());
+                    assert!(entry.map_marks.is_empty());
+                    assert_eq!(entry.copy.as_ref().ok_or("copy")?.xp_obligations().len(), 1);
+                    entry.retry_at = Some(std::time::Instant::now());
+                }
+                owner.refresh_due_quest_sessions().await;
+                let entries = owner.states.quest_sessions.lock().map_err(debug)?;
+                let entry = entries.get(&session).ok_or("entry")?;
+                assert!(entry.retry_at.is_none());
+                assert_eq!(entry.copy.as_ref().ok_or("copy")?.xp_obligations().len(), 1);
             }
             Case::Terminal => {
                 dependencies.loss(&harness, -10).await?;
@@ -332,17 +381,15 @@ fn execute(case: Case) -> TestResult {
                     );
                     assert!(owner.progression_binding(session).is_none());
                 } else {
-                    assert!(
-                        owner
-                            .states
-                            .quest_sessions
-                            .lock()
-                            .map_err(debug)?
-                            .get(&session)
-                            .ok_or("entry")?
-                            .retry_at
-                            .is_none()
-                    );
+                    {
+                        let entries = owner.states.quest_sessions.lock().map_err(debug)?;
+                        let entry = entries.get(&session).ok_or("entry")?;
+                        assert!(entry.retry_at.is_none());
+                        assert!(entry.map_marks.is_empty());
+                        assert_eq!(entry.copy.as_ref().ok_or("copy")?.xp_obligations().len(), 1);
+                    }
+                    owner.refresh_due_quest_sessions().await;
+                    assert_eq!(counts(&harness).await?, (0, 0, 1));
                 }
             }
         }

@@ -152,6 +152,7 @@ impl HeartAction {
                             lease_generation: lease.generation(),
                             position,
                             dealt_damage: false,
+                            top_damage_character: None,
                         }),
                     },
                 },

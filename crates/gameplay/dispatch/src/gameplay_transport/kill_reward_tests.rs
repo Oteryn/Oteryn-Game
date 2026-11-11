@@ -1556,6 +1556,97 @@ fn srx3_source_death_wait_precedes_loot_capacity_reservation_and_take() {
 }
 
 #[test]
+fn source_death_full_refusal_survives_capacity_release_without_an_extra_reward_entry() {
+    let queue = KillSettlementQueue::default();
+    for channel in 2..(2 + KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX as u8) {
+        assert_eq!(
+            queue.append(pending(channel, 50, 3, 0)),
+            AppendOutcome::Queued
+        );
+    }
+    assert_eq!(queue.append(pending(199, 51, 3, 0)), AppendOutcome::Full);
+    assert!(queue.state().source_refusals.is_empty());
+    let mut refused = pending(200, 51, 3, 0);
+    refused.source_death_pending = true;
+    assert_eq!(queue.append(refused.clone()), AppendOutcome::Full);
+    assert_eq!(queue.counts(), (64, 0, 0));
+    assert_eq!(
+        queue.state().source_refusals,
+        vec![RefusedSourceDrop {
+            actor: refused.target,
+            death: refused.facts.death,
+            reason: SourceDropRefusalReason::QueueFull,
+        }]
+    );
+    queue.discard_gone(session(50), None);
+    assert_eq!(queue.counts(), (0, 0, 0));
+    assert_eq!(queue.append(refused), AppendOutcome::Duplicate);
+    assert_eq!(queue.counts(), (0, 0, 0));
+    assert_eq!(queue.state().source_refusals.len(), 1);
+}
+
+#[test]
+fn source_death_principal_discard_retains_only_the_exact_terminal_refusal() {
+    for release in 0..3 {
+        let queue = KillSettlementQueue::default();
+        let mut entry = pending(2, 50, 3, 0);
+        entry.source_death_pending = true;
+        let refusal = RefusedSourceDrop {
+            actor: entry.target,
+            death: entry.facts.death,
+            reason: SourceDropRefusalReason::PrincipalGone,
+        };
+        if release == 0 {
+            assert_eq!(queue.append(entry.clone()), AppendOutcome::Queued);
+            queue.discard_gone(session(50), None);
+        } else {
+            let Seal::Sealed(hold) = queue.seal((session(50), 3)) else {
+                panic!("sealed");
+            };
+            assert!(queue.commit_point(hold));
+            assert_eq!(
+                queue.append(entry.clone()),
+                AppendOutcome::Parked(ReleasePhase::Committing)
+            );
+            if release == 1 {
+                hold.settle(&queue, ReleaseEnd::Committed);
+            } else {
+                hold.forget(&queue);
+            }
+        }
+        assert_eq!(queue.counts(), (0, 0, 0));
+        assert_eq!(queue.state().source_refusals, vec![refusal]);
+        assert_eq!(queue.append(entry), AppendOutcome::Duplicate);
+        assert_eq!(queue.counts(), (0, 0, 0));
+    }
+}
+
+#[test]
+fn source_death_unknown_release_keeps_its_entry_and_cannot_prove_refusal() {
+    let queue = KillSettlementQueue::default();
+    let Seal::Sealed(hold) = queue.seal((session(50), 3)) else {
+        panic!("sealed");
+    };
+    assert!(queue.commit_point(hold));
+    let mut entry = pending(2, 50, 3, 0);
+    entry.source_death_pending = true;
+    assert_eq!(
+        queue.append(entry),
+        AppendOutcome::Parked(ReleasePhase::Committing)
+    );
+    hold.settle(&queue, ReleaseEnd::Unknown);
+    assert!(queue.state().source_refusals.is_empty());
+    assert_eq!(queue.state().entries(), 1);
+    queue.release_orphaned(session(50));
+    assert_eq!(queue.counts(), (1, 0, 0));
+    assert!(queue.state().source_refusals.is_empty());
+    assert!(matches!(
+        queue.take_ordered(session(50), 3),
+        TakeOutcome::CapacityWait
+    ));
+}
+
+#[test]
 fn core_prefix_prunes_departed_head_and_conditionally_takes_its_successor() {
     let queue = KillSettlementQueue::default();
     let first = pending(2, 50, 3, 0);

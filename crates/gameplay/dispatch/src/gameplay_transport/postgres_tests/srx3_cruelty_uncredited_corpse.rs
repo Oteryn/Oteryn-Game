@@ -322,7 +322,9 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
             drop(owner);
             drop(authority);
             drop(seal);
-            h.cleanup().await
+            drop(evidence);
+            h.cleanup().await?;
+            Ok(())
         })
     })
 }
