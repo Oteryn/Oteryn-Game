@@ -7,11 +7,11 @@
 //! 2. Have the second player select the visible caster with ATTACK; assert the accepted reply and
 //!    exact combat-state target delta, then clear that target.
 //! 3. Cast `utana vid` through ACTOR_SPELL; assert Cast, the exact mana delta, and a nonzero server
-//!    sequence. Assert the rat produces no further attributed damage and the caster disappears
-//!    from the other player's entity view.
+//!    sequence. Immediately recast Invisible; assert the Cooldown refusal and no mana delta
+//!    (the negative/resource-free path). Assert the rat produces no further attributed damage
+//!    and the caster disappears from the other player's entity view.
 //! 4. Re-send ATTACK from the other player using the previously observed entity reference; assert
-//!    the TargetNotVisible refusal and that no target is installed. Immediately recast Invisible;
-//!    assert the Cooldown refusal and no mana delta (the negative/resource-free path).
+//!    the TargetNotVisible refusal and that no target is installed.
 //! 5. Log the invisible caster out and freshly admit the same character. Assert a new session with
 //!    the paid mana and position retained, and assert the observer still receives no caster entity
 //!    (durable active condition). Walk home, log both characters out, and report one row verdict.
@@ -285,6 +285,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=cast-and-cost observed=status:{:?}/disposition:{:?}/vitals:{:?} need=Cast-and-exact-mana-delta", cast.status, cast.disposition, cast.actor_vitals_delta).into());
     }
     row.pass("cast-and-cost", cast.result_server_sequence)?;
+    let paid = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("step=cooldown observed=vitals-absent")?;
+    let cooldown = caster
+        .cast_spell(spell_index(&book)?, SpellTarget::None, false)
+        .await?;
+    if cooldown.disposition != SpellCastDisposition::CoolingDown
+        || cooldown.actor_vitals_delta.is_some()
+        || caster
+            .actor_vitals()
+            .is_none_or(|v| v.mana != paid.mana || v.soul != paid.soul)
+    {
+        return Err(format!(
+            "step=cooldown-no-cost observed={cooldown:?} need=Cooldown-without-vitals-delta"
+        )
+        .into());
+    }
+    row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
     let lost_seq = wait_visible(&mut observer, caster_ref, false).await?;
     row.pass(
         "observer-loses-entity",
@@ -311,25 +330,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=known-reference-refused observed={refused:?}/state:{:?} need=TargetNotVisible-without-target", observer.session_mut().combat_state()).into());
     }
     row.pass("known-reference-refused", refused.result_server_sequence)?;
-    let paid = caster
-        .actor_vitals()
-        .copied()
-        .ok_or("step=cooldown observed=vitals-absent")?;
-    let cooldown = caster
-        .cast_spell(spell_index(&book)?, SpellTarget::None, false)
-        .await?;
-    if cooldown.disposition != SpellCastDisposition::CoolingDown
-        || cooldown.actor_vitals_delta.is_some()
-        || caster
-            .actor_vitals()
-            .is_none_or(|v| v.mana != paid.mana || v.soul != paid.soul)
-    {
-        return Err(format!(
-            "step=cooldown-no-cost observed={cooldown:?} need=Cooldown-without-vitals-delta"
-        )
-        .into());
-    }
-    row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     logout(&mut caster).await?;

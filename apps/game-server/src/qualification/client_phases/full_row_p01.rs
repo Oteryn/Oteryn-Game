@@ -14,8 +14,8 @@
 //! 5. Send ASSIGN for that unlocked charm and the completed race; expect
 //!    `Assigned`, the race assignment delta, and `effect_active=true`.
 //! 6. Walk back to a live creature, send ATTACK, and require a second credited
-//!    kill while the assignment is active, proving the production combat hook
-//!    is traversed without losing the assignment.
+//!    kill while the assignment is active. Retention does not prove execution;
+//!    fail closed until a charm-attributed combat effect is observed.
 //! 7. Send LOGOUT, obtain a fresh admission, then send QUERY; expect the kill
 //!    counts, charm-point balance, unlocked stage, and assigned race to equal
 //!    the pre-logout durable view.
@@ -397,7 +397,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         {
             return Err(format!("ASSIGN reply/delta mismatch: {assigned:?}").into());
         }
-        evidence("P01_CHECK assign-unlocked PASS assignment-and-active-hook");
+        evidence("P01_CHECK assign-unlocked PASS assignment-and-active-projection");
 
         row.at("assigned-combat-hook");
         let before_hook = next_count(&assigned, race);
@@ -410,7 +410,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         {
             return Err(format!("assigned combat hook lost durable state: {after_hook:?}").into());
         }
-        evidence("P01_CHECK assigned-combat-hook PASS native-attack-retained-active-assignment");
+        evidence("P01_OBSERVED native-attack-retained-active-assignment;charm-effect-unproven");
 
         row.at("logout-fresh-admission");
         let old_session = client.join_snapshot().game_session_id;
@@ -435,7 +435,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 return Err(format!("fresh QUERY lost durable state: {durable:?}").into());
             }
             evidence("P01_CHECK logout-fresh-admission PASS exact-durable-views");
-            Ok(())
+            // Neither a credited kill nor the active projection attributes a combat
+            // effect to this charm. Preserve the durable checks, but do not qualify it.
+            row.at("assigned-combat-effect-proof");
+            Err("needed:charm-attributed-combat-effect;retained-assignment-is-not-execution-evidence".into())
         })
         .await
         .unwrap_or_else(|error| Err(error.into()));

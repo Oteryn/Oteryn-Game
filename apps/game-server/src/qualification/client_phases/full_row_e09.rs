@@ -11,7 +11,7 @@
 //!    assert the accepted move and inventory delta, then post the parcel and assert `Posted`, its
 //!    removal, and an Inbox parcel delivery.
 //! 6. Logout normally, obtain a fresh admission for the recipient, and re-run depot searches for
-//!    the stamped letter and parcel; both durable Inbox counts must remain present.
+//!    the stamped letter and parcel; both durable Inbox counts must retain the posted-item delta.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind};
 use oteryn_protocol_oteryn::{depot_search, item_view, mail, npc_service};
@@ -483,15 +483,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     walk(&mut client, world, &path).await?;
     let mailbox_handle = visible_mailbox_handle(&mut client, &definitions, mailbox_at)?;
     let before_letters = units(&client, letter);
+    let expected_letters = inbox(&depot_search(&mut client, 3506).await?)
+        .checked_add(1)
+        .ok_or("step=letter-inbox observed=count-overflow")?;
     let outcome = post(&mut client, first.handle.get(), mailbox_handle).await?;
     if outcome != mail::MailOutcome::Posted {
         return Err(format!("step=post-letter observed={outcome:?} need=Posted").into());
     }
     wait_units(&mut client, letter, before_letters - 1).await?;
     let delivered = depot_search(&mut client, 3506).await?;
-    if inbox(&delivered) == 0 {
+    if inbox(&delivered) != expected_letters {
         return Err(
-            format!("step=letter-inbox observed={delivered:?} need=inbox-count-positive").into(),
+            format!("step=letter-inbox observed={delivered:?} need=inbox-count-{expected_letters}").into(),
         );
     }
     row.pass("letter-posted-and-delivered", delivered);
@@ -525,15 +528,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     wait_units(&mut client, label, 0).await?;
+    let expected_parcels = inbox(&depot_search(&mut client, 3504).await?)
+        .checked_add(1)
+        .ok_or("step=parcel-inbox observed=count-overflow")?;
     let outcome = post(&mut client, parcel_item.handle.get(), mailbox_handle).await?;
     if outcome != mail::MailOutcome::Posted {
         return Err(format!("step=post-parcel observed={outcome:?} need=Posted").into());
     }
     wait_units(&mut client, parcel, 0).await?;
     let parcel_delivery = depot_search(&mut client, 3504).await?;
-    if inbox(&parcel_delivery) == 0 {
+    if inbox(&parcel_delivery) != expected_parcels {
         return Err(format!(
-            "step=parcel-inbox observed={parcel_delivery:?} need=inbox-count-positive"
+            "step=parcel-inbox observed={parcel_delivery:?} need=inbox-count-{expected_parcels}"
         )
         .into());
     }
@@ -550,8 +556,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let letter_after = depot_search(&mut fresh, 3506).await?;
     let parcel_after = depot_search(&mut fresh, 3504).await?;
-    if inbox(&letter_after) == 0 || inbox(&parcel_after) == 0 {
-        return Err(format!("step=durable-inbox observed=letter-{letter_after:?}-parcel-{parcel_after:?} need=persisted-inbox-counts").into());
+    if inbox(&letter_after) != expected_letters || inbox(&parcel_after) != expected_parcels {
+        return Err(format!("step=durable-inbox observed=letter-{letter_after:?}-parcel-{parcel_after:?} need=persisted-letter-count-{expected_letters}-parcel-count-{expected_parcels}").into());
     }
     row.pass(
         "fresh-admission-durable-inbox",

@@ -14,7 +14,8 @@
 //! 5. Walk to the selected creature and use native ATTACK/corpse/loot actions.
 //!    After the server hunting cadence, attack it again; require real combat
 //!    deltas and a `Query` checkpoint with fewer bonus seconds while the
-//!    selected bonus and occurrence fence remain active.
+//!    selected bonus and occurrence fence remain active. This proves activity,
+//!    not bonus execution; fail closed without a Prey-attributed effect.
 //! 6. Logout, obtain a fresh admission, and send `Query`; require the selected
 //!    creature, bonus, remaining time, reroll deadline, and selection epoch to
 //!    equal the last acknowledged checkpoint.
@@ -261,7 +262,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("P03 step=final-logout observed=refused".into());
     }
-    Ok(())
+    // The hunting clock accounts for activity even if the selected bonus has
+    // no effect. Persistence of that clock cannot qualify modifier execution.
+    Err("needed:prey-attributed-combat-effect;spent-hunting-time-is-not-execution-evidence".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
