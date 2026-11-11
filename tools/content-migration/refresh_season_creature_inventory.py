@@ -23,10 +23,11 @@ def validate_inventory(root, rows, native, schedules):
     key = 'oteryn:creature.thaian'
     canonical = [row for row in rows if row['definition']['identity']['key'] == key]
     active = [row for row in native if row['profile']['target']['key'] == key]
-    # The typed World writer omits only the source's empty immunities and
-    # null reference level. Retain both complete source representations;
-    # the native source profile and behavior must remain raw-exact.
+    # The typed World writer omits empty immunities and a null reference level.
+    # world_project_v2_to_tree restores reference_level=None in Creature shards.
+    # Derive that complete tree form from source; native rows remain raw-exact.
     canonical_authoring = cake.source_profile(profiles['Creature'])['data']
+    canonical_authoring['profile']['details'].setdefault('reference_level', None)
     if (len(canonical) != 1 or len(active) != 1
             or canonical[0]['definition'] != records['Creature']
             or canonical[0]['authoring'] not in (

@@ -55,10 +55,9 @@ class SeasonalInventory(unittest.TestCase):
             self.assertEqual(profile['immunities'], [])
             self.assertIsNone(profile['details']['reference_level'])
             del profile['immunities']
-            del profile['details']['reference_level']
         return rows, index
 
-    def test_canonical_serializer_omissions_preserve_source_closure(self):
+    def test_tree_projection_preserves_source_closure(self):
         rows, index = self._rows_with_source_authoring(canonical=True)
         before = copy.deepcopy(rows[index])
         native, = [row for row in self.native
@@ -71,12 +70,13 @@ class SeasonalInventory(unittest.TestCase):
         self.assertEqual(native['profile']['data']['profile']['immunities'], [])
         self.assertIsNone(native['profile']['data']['profile']['details']['reference_level'])
 
-    def test_partial_canonical_default_omissions_are_rejected(self):
-        for field in ('immunities', 'reference_level'):
-            with self.subTest(field=field):
+    def test_unprojected_reference_level_omissions_are_rejected(self):
+        for fields in (('reference_level',), ('immunities', 'reference_level')):
+            with self.subTest(fields=fields):
                 rows, index = self._rows_with_source_authoring(canonical=False)
                 profile = rows[index]['authoring']['profile']
-                del (profile if field == 'immunities' else profile['details'])[field]
+                for field in fields:
+                    del (profile if field == 'immunities' else profile['details'])[field]
                 with self.assertRaisesRegex(ValueError, 'Thaian source authoring closure'):
                     inventory.validate_inventory(
                         self.root, rows, self.native, self.schedules)
