@@ -129,6 +129,16 @@
       "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
     },
     {
+      "event": "fresh_admission_pending",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase"
+      ],
+      "codes": [],
+      "note": "PR3106: post-commit admission continuation awaiting spell repair; phase is spell_facts or automatic_spells. No player identifiers, payloads or raw errors."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,
