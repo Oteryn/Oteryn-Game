@@ -1,3 +1,4 @@
+import copy
 import json
 import unittest
 from pathlib import Path
@@ -45,7 +46,18 @@ class RepairIntegrationProfiles(unittest.TestCase):
         reward = records('qengine-reward-item-profiles.json')
         crafting = records('qready1-craft-item-profiles.json')
         for key in ('oteryn:item.tibia.i21506', 'oteryn:item.tibia.i21507'):
-            self.assertEqual(reward[key], crafting[key], key)
+            with self.subTest(item=key):
+                expected = copy.deepcopy(crafting[key])
+                # QENGINE retains the accepted native taxonomy and House facts.
+                # The pinned Craft packet supplies the same remaining full body.
+                self.assertNotIn('taxonomy', expected['authoring'])
+                expected['authoring']['taxonomy'] = {'primary': 'Quest Items'}
+                for field, value in (('always_on_top', False), ('always_on_top_order', 0)):
+                    self.assertNotIn(field, expected['attributes'])
+                    expected['attributes'][field] = value
+                self.assertIs(reward[key]['attributes']['always_on_top'], False)
+                self.assertIs(type(reward[key]['attributes']['always_on_top_order']), int)
+                self.assertEqual(reward[key], expected, key)
 
 if __name__ == '__main__':
     unittest.main()

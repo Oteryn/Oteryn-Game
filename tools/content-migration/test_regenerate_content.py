@@ -67,6 +67,9 @@ def stopped_merge(root: Path, conflicting: list[str], *, moved_entry: bool = Fal
     write(root, DERIVED, {"items": ["base"]})
     write(root, INTERACTIONS, {"contract": "hand-written", "notes": "base"})
     write(root, WORLD_PIN, world_pin("base"))
+    for path in conflicting:
+        if not (root / path).exists():
+            write(root, path, {"items": ["base"]})
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "base")
     git(root, "checkout", "-q", "-b", "theirs")
@@ -145,6 +148,38 @@ def test_derived_only_conflict_is_resolved() -> None:
         assert json.loads((root / DERIVED).read_text(encoding="utf-8")) == {
             "items": ["base", "theirs"]
         }
+
+
+def test_terminal_quest_packet_conflicts_resolve_but_unmanaged_siblings_do_not() -> None:
+    directory = "tools/content-schema/quest-authoring/samples/"
+    paths = [directory + name for name in (
+        "binding_packets/index.json", "binding_packets/npc/authored68-npc-links.json",
+        "binding_packets/npc/quest-npc-dialogue-links.json", "binding_packets/recipes/supplementary-index.json",
+        "binding_packets/rewards/chosen-reward-item-candidates.json",
+        "binding_packets/rewards/perquest-352.json", "binding_packets/rewards/requirement-choices.json",
+        "binding_packets/rewards/reward-holds.json", "binding_packets/rewards/reward-only-105.json",
+        "binding_packets/source/crosswalk.json", "rollout/quest-rollout.json",
+        "server-completion/collect-claim-candidates.json",
+        "server-completion/reward-only-completion/candidates.json", "server-completion/use-trigger-candidates.json",
+    )]
+    sibling = "tools/content-schema/quest-authoring/samples/server-completion/authored-fixture.json"
+    for with_unmanaged in (False, True):
+        conflicts = paths + ([sibling] if with_unmanaged else [])
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            stopped_merge(root, conflicts)
+            before = {path: (root / path).read_bytes() for path in conflicts}
+            with patch.object(rc, "ROOT", root), patch.object(rc, "PIN_TEST", root / rc.PIN_PATH), \
+                    patch.object(rc, "WORLD", root / "content/world"):
+                code, resolved = resolve_in(root)
+            if with_unmanaged:
+                assert code == 2 and resolved == [], (code, resolved)
+                assert unmerged(root) == sorted(conflicts), unmerged(root)
+                assert {path: (root / path).read_bytes() for path in conflicts} == before
+            else:
+                assert code == 0 and resolved == paths, (code, resolved)
+                assert all(json.loads((root / path).read_bytes()) == {"items": ["base", "theirs"]}
+                           for path in paths)
 
 
 def test_world_pin_conflict_is_derived() -> None:
@@ -644,7 +679,9 @@ def test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs() ->
 def downstream_quest_commands():
     prefix = "tools/content-schema/quest-authoring/"
     return tuple(("python3", prefix + name + ".py") for name in (
-        "qengine_access", "qmech_m24_kill_bindings", "quest_explore_area_candidates",
+        "qengine_access", "qmech_m24_kill_bindings", "quest_rollout_authoring",
+        "quest_binding_authoring", "collect_claim_candidates", "use_trigger_candidates",
+        "quest_explore_area_candidates",
         "quest_talk_npc_candidates", "quest_reward_only_binding_candidates",
         "quest_donor_source_authoring",
     ))
@@ -780,7 +817,20 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
     final_inputs = max(events.index(native), events.index(("world-metadata",)), events.index(variant))
     indices = [events.index(command) for command in commands[2:]]
     assert indices == sorted(indices) and final_inputs < indices[0]
-    assert indices[-1] < events.index(check), "freshness checks must see all six real producers"
+    assert indices[-1] < events.index(check), "freshness checks must see all real producers"
+
+
+def test_terminal_quest_packets_refresh_after_inputs_when_checks_are_skipped() -> None:
+    commands = downstream_quest_commands()
+    variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
+    events = []
+    assert full_generation_trace(events, lambda *_: None, checks=False) == 0
+    assert all(events.count(command) == 1 for command in commands)
+    indices = [events.index(command) for command in commands[2:]]
+    assert indices == sorted(indices)
+    assert events.index(variant) < indices[0]
+    assert events.index(("world-metadata",)) < indices[0]
+    assert not any("--check" in command for command in events)
 
 
 def test_downstream_quest_producer_refusal_stops_later_work() -> None:
@@ -1034,6 +1084,7 @@ def main() -> None:
         test_rotten_death_witnesses_follow_final_native_provider_before_consumers,
         test_rotten_death_witness_refusal_stops_every_later_consumer,
         test_downstream_quest_producers_follow_inputs_and_precede_consumers,
+        test_terminal_quest_packets_refresh_after_inputs_when_checks_are_skipped,
         test_downstream_quest_producer_refusal_stops_later_work,
         test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture,
         test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks,
@@ -1047,6 +1098,7 @@ def main() -> None:
         test_import_conflict_fails_closed_and_keeps_both_sides,
         test_interactions_index_conflict_fails_closed,
         test_derived_only_conflict_is_resolved,
+        test_terminal_quest_packet_conflicts_resolve_but_unmanaged_siblings_do_not,
         test_world_pin_conflict_is_derived,
         test_world_pin_conflict_on_a_moved_entry_start_fails_closed,
         test_git_failure_while_enumerating_conflicts_fails_closed,
