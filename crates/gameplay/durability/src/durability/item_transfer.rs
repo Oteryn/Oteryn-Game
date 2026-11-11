@@ -21,7 +21,7 @@
 //! Content, and this component checks them against the stored items.
 //!
 //! Destinations (D80): the character's CharacterEquipment `container` slot
-//! (an empty container whose definition declares a complete `container`-slot
+//! (a canonical container whose definition declares a complete `container`-slot
 //! equip pattern, into an empty slot) and direct entries of the item in that
 //! slot, the main backpack. An entry's placement ordinal is the highest
 //! existing ordinal plus one, taken under the `character_root` row lock; the
@@ -31,7 +31,7 @@
 //! `current_entry_count < definition_capacity`. Weight (B3-3, BAGS0 §7): a
 //! TRANSFER into the character also needs the carried weight (every equipped
 //! item and the main backpack tree, re-read and locked at commit) plus the
-//! incoming unit weight times its quantity to stay within the Character's
+//! complete incoming tree weight to stay within the Character's
 //! derived capacity; weights come from the [`ItemWeightLookup`] of the admitted
 //! Content generation bound in the request, and an unknown weight is refused.
 //! Stacks (D82): the stack maximum is the definition's proven value or 100,
@@ -91,6 +91,8 @@ use crate::foundation::{
     ChannelId, CommandRef, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, WorldId,
 };
+mod container_slot_tree;
+
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -307,6 +309,7 @@ impl FrozenTransfer {
 }
 
 /// The corpse container entry a source item currently occupies (D3-4).
+#[derive(PartialEq)]
 struct CorpseEntrySource {
     corpse_item_instance_id: [u8; 16],
     placement_ordinal: u64,
@@ -314,6 +317,7 @@ struct CorpseEntrySource {
 
 /// The source item with the Ground that is its scope authority: its own
 /// Ground, or (`corpse` present) its parent corpse's Ground.
+#[derive(PartialEq)]
 struct SourceRow {
     item: InventoryItem,
     world_id: [u8; 16],
@@ -326,6 +330,7 @@ struct SourceRow {
 struct Admitted {
     plan: TransferPlan,
     source: SourceRow,
+    tree: Option<container_slot_tree::Tree>,
 }
 
 impl DurabilityRoot {
@@ -688,7 +693,8 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
-        self.issue_ready_semantic_pass().await?
+        self.issue_ready_semantic_pass()
+            .await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -1047,6 +1053,16 @@ async fn admit(
         return Ok(Err(ItemTransferError::AuthorityRejected));
     }
 
+    // ContainerSlot locks the complete incoming/carried union once, before
+    // load_source reacquires the already-held root Item lock.
+    let tree = if request.destination == ItemTransferDestination::ContainerSlot {
+        match container_slot_tree::lock_tree(tx, fence, request).await? {
+            Ok(tree) => Some(tree),
+            Err(error) => return Ok(Err(error)),
+        }
+    } else {
+        None
+    };
     let Some(source) = load_source(tx, request.source_item_instance_id).await? else {
         return Ok(Err(ItemTransferError::Refused(
             ItemTransferRefusal::SourceNotOnGround,
@@ -1144,13 +1160,19 @@ async fn admit(
             ItemTransferRefusal::WeightGenerationMismatch,
         )));
     }
-    if let Err(refusal) = check_incoming_capacity(
+    let incoming = tree.as_ref().map_or_else(
+        || std::slice::from_ref(&source.item),
+        |tree| tree.items.as_slice(),
+    );
+    if let Err(refusal) = check_incoming_capacity_core(
         tx,
         fence.character_id,
         world_id.as_bytes(),
         &request.item,
         &source.item,
         weights,
+        incoming,
+        tree.as_ref().map(|tree| &tree.locked),
     )
     .await?
     {
@@ -1173,7 +1195,7 @@ async fn admit(
     if let Err(error) = transfer_shape(&plan).usage().check() {
         return Ok(Err(error.into()));
     }
-    Ok(Ok(Admitted { plan, source }))
+    Ok(Ok(Admitted { plan, source, tree }))
 }
 
 /// Weigh the actual custody graph while the native Character root is locked.
@@ -1186,11 +1208,36 @@ pub(super) async fn check_incoming_capacity(
     source: &InventoryItem,
     weights: &dyn ItemWeightLookup,
 ) -> std::result::Result<std::result::Result<(), ItemTransferRefusal>, DurabilityError> {
-    let incoming = match weights.weight_of(&source.definition) {
+    check_incoming_capacity_core(
+        tx,
+        character,
+        world,
+        item,
+        source,
+        weights,
+        std::slice::from_ref(source),
+        None,
+    )
+    .await
+}
+
+// Reward claims retain singleton admission, including not-yet-minted sources.
+#[allow(clippy::too_many_arguments)] // Private core shares the existing singleton contract.
+async fn check_incoming_capacity_core(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    world: &[u8; 16],
+    item: &ItemDefinitionFacts,
+    source: &InventoryItem,
+    weights: &dyn ItemWeightLookup,
+    incoming_items: &[InventoryItem],
+    locked: Option<&std::collections::BTreeSet<[u8; 16]>>,
+) -> std::result::Result<std::result::Result<(), ItemTransferRefusal>, DurabilityError> {
+    let source_unit_weight = match weights.weight_of(&source.definition) {
         Ok(weight) => weight,
         Err(error) => return Ok(Err(weight_refusal(error))),
     };
-    if item.weight != Some(incoming) {
+    if item.weight != Some(source_unit_weight) {
         return Ok(Err(if item.weight.is_none() {
             ItemTransferRefusal::WeightUnknown
         } else {
@@ -1201,35 +1248,20 @@ pub(super) async fn check_incoming_capacity(
     // UNION ALL with an explicit path reports corrupt cycles instead of hiding them.
     // Every location is retained for duplicate/world validation; every actual instance
     // is locked, including non-container equipment and all backpack descendants.
-    let rows = sqlx::query(
-        "WITH RECURSIVE roots AS ( \
-           SELECT item_instance_id, world_id FROM game_item_container_slots \
-            WHERE character_id=encode($1,'hex')::uuid \
-           UNION ALL \
-           SELECT item_instance_id, world_id FROM game_character_equipment_slots \
-            WHERE character_id=encode($1,'hex')::uuid \
-         ), carried(item_instance_id,world_id,path,cycle) AS ( \
-           SELECT item_instance_id,world_id,ARRAY[item_instance_id],false FROM roots \
-           UNION ALL \
-           SELECT e.item_instance_id,e.world_id,c.path||e.item_instance_id, \
-                  e.item_instance_id=ANY(c.path) \
-             FROM carried c JOIN ( \
-                  SELECT item_instance_id,world_id,parent_item_instance_id \
-                    FROM game_item_container_entries \
-                  UNION ALL \
-                  SELECT item_instance_id,world_id,parent_item_instance_id \
-                    FROM game_item_nested_entries \
-                  ) e ON e.parent_item_instance_id=c.item_instance_id WHERE NOT c.cycle \
-         ) \
-         SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key, \
-                i.definition_revision_ref,i.quantity,i.lifecycle,i.world_id::text AS item_world, \
-                c.world_id::text AS custody_world,c.cycle \
-           FROM carried c JOIN game_item_instances i USING(item_instance_id) \
-          ORDER BY i.item_instance_id FOR UPDATE OF i",
-    )
-    .bind(character.as_bytes().as_slice())
-    .fetch_all(&mut **tx)
-    .await?;
+    let rows = if locked.is_some() {
+        container_slot_tree::carried_rows(tx, character).await?
+    } else {
+        load_carried_rows(tx, character).await?
+    };
+    if locked.is_some()
+        && rows
+            .len()
+            .checked_add(incoming_items.len())
+            .is_none_or(|count| count > 529)
+    {
+        // Admission already proved this bound under the complete lock set.
+        return Err(DurabilityError::Unavailable);
+    }
     let mut seen = std::collections::BTreeSet::new();
     let mut total = 0_u64;
     for row in rows {
@@ -1238,7 +1270,10 @@ pub(super) async fn check_incoming_capacity(
             || row.try_get::<i16, _>("lifecycle")? != 1
             || uuid_text(row.try_get("item_world")?)? != *world
             || uuid_text(row.try_get("custody_world")?)? != *world
-            || item == source.item_instance_id
+            || incoming_items
+                .iter()
+                .any(|incoming| incoming.item_instance_id == item)
+            || locked.is_some_and(|ids| !ids.contains(&item))
             || !seen.insert(item)
         {
             return Err(DurabilityError::InvalidStoredState);
@@ -1266,20 +1301,69 @@ pub(super) async fn check_incoming_capacity(
     use oteryn_gameplay_items::item_capacity::{
         CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity,
     };
-    let incoming = [IncomingWeight {
-        item: source,
-        weight_definition: &item.definition,
-        unit_weight: Some(incoming),
-    }];
+    let mut incoming_weights = Vec::with_capacity(incoming_items.len());
+    for node in incoming_items {
+        let unit = if node.item_instance_id == source.item_instance_id {
+            source_unit_weight
+        } else {
+            match weights.weight_of(&node.definition) {
+                Ok(weight) => weight,
+                Err(error) => return Ok(Err(weight_refusal(error))),
+            }
+        };
+        incoming_weights.push(IncomingWeight {
+            item: node,
+            weight_definition: if node.item_instance_id == source.item_instance_id {
+                &item.definition
+            } else {
+                &node.definition
+            },
+            unit_weight: Some(unit),
+        });
+    }
     match plan_capacity(CapacityMove::IntoCharacter {
         carried_weight: Some(total),
         capacity: Some(capacity),
-        incoming: &incoming,
+        incoming: &incoming_weights,
     }) {
         Ok(_) => Ok(Ok(())),
         Err(CapacityRefusal::Overweight { .. }) => Ok(Err(ItemTransferRefusal::Overweight)),
         Err(_) => Err(DurabilityError::InvalidStoredState),
     }
+}
+
+async fn load_carried_rows(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> std::result::Result<Vec<sqlx::postgres::PgRow>, DurabilityError> {
+    let sql = "WITH RECURSIVE roots AS ( \
+           SELECT item_instance_id, world_id FROM game_item_container_slots \
+            WHERE character_id=encode($1,'hex')::uuid \
+           UNION ALL \
+           SELECT item_instance_id, world_id FROM game_character_equipment_slots \
+            WHERE character_id=encode($1,'hex')::uuid \
+         ), carried(item_instance_id,world_id,path,cycle) AS ( \
+           SELECT item_instance_id,world_id,ARRAY[item_instance_id],false FROM roots \
+           UNION ALL \
+           SELECT e.item_instance_id,e.world_id,c.path||e.item_instance_id, \
+                  e.item_instance_id=ANY(c.path) \
+             FROM carried c JOIN ( \
+                  SELECT item_instance_id,world_id,parent_item_instance_id \
+                    FROM game_item_container_entries \
+                  UNION ALL \
+                  SELECT item_instance_id,world_id,parent_item_instance_id \
+                    FROM game_item_nested_entries \
+                  ) e ON e.parent_item_instance_id=c.item_instance_id WHERE NOT c.cycle \
+         ) \
+         SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key, \
+                i.definition_revision_ref,i.quantity,i.lifecycle,i.world_id::text AS item_world, \
+                c.world_id::text AS custody_world,c.cycle \
+           FROM carried c JOIN game_item_instances i USING(item_instance_id) \
+          ORDER BY i.item_instance_id FOR UPDATE OF i";
+    Ok(sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(character.as_bytes().as_slice())
+        .fetch_all(&mut **tx)
+        .await?)
 }
 
 fn weight_refusal(error: ItemWeightRefused) -> ItemTransferRefusal {
@@ -1332,23 +1416,32 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let vocation = vocation
         .as_deref()
         .unwrap_or(super::character_build::NO_VOCATION);
-    let base = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let base =
+        oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
     let wheel = if weights.wheel_premium_current(account) {
         super::character_wheel::read_capacity_bonus_in_transaction(tx, character, vocation, level)
             .await?
     } else {
         0
     };
-    base.checked_add(wheel).ok_or(DurabilityError::InvalidStoredState)
+    base.checked_add(wheel)
+        .ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn load_source(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     item_instance_id: [u8; 16],
 ) -> std::result::Result<Option<SourceRow>, DurabilityError> {
-    let row = sqlx::query(
-        "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
+    load_source_read(tx, item_instance_id, true).await
+}
+
+async fn load_source_read(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item_instance_id: [u8; 16],
+    lock: bool,
+) -> std::result::Result<Option<SourceRow>, DurabilityError> {
+    let sql = "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
                 i.definition_revision_ref, i.quantity, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
                 g.map_revision, g.content_revision, g.native_room_placement_context, \
@@ -1356,14 +1449,14 @@ async fn load_source(
            FROM game_item_instances i \
            JOIN game_item_ground_locations g USING (item_instance_id, world_id) \
            LEFT JOIN game_item_keys k USING (item_instance_id) \
-          WHERE i.item_instance_id = encode($1,'hex')::uuid AND i.lifecycle = 1 \
-          FOR UPDATE OF i",
-    )
-    .bind(item_instance_id.as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
+          WHERE i.item_instance_id = encode($1,'hex')::uuid AND i.lifecycle = 1";
+    let locked_sql = format!("{sql} FOR UPDATE OF i");
+    let row = sqlx::query(sqlx::AssertSqlSafe(if lock { &locked_sql } else { sql }))
+        .bind(item_instance_id.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
     let Some(row) = row else {
-        return load_corpse_entry_source(tx, item_instance_id).await;
+        return load_corpse_entry_source(tx, item_instance_id, lock).await;
     };
     source_row(&row, item_instance_id, None)
 }
@@ -1414,16 +1507,19 @@ fn source_row(
 async fn load_corpse_entry_source(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     item_instance_id: [u8; 16],
+    lock: bool,
 ) -> std::result::Result<Option<SourceRow>, DurabilityError> {
-    let locked = sqlx::query(
-        "SELECT 1 FROM game_item_instances \
+    if lock {
+        let locked = sqlx::query(
+            "SELECT 1 FROM game_item_instances \
           WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
-    )
-    .bind(item_instance_id.as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
-    if locked.is_none() {
-        return Ok(None);
+        )
+        .bind(item_instance_id.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        if locked.is_none() {
+            return Ok(None);
+        }
     }
     let row = sqlx::query(
         "SELECT i.world_id::text, i.definition_family, i.definition_production_key, \
@@ -1859,6 +1955,12 @@ async fn apply_transfer(
     .bind(committed_at)
     .execute(&mut **tx)
     .await?;
+    if let Some(tree) = &admitted.tree {
+        let binding = container_slot_tree::load_binding(tx, frozen.transaction_id).await?;
+        if binding != tree.binding() {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
     Ok(CommittedItemTransfer {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,
@@ -1970,7 +2072,7 @@ async fn load_receipt(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     command: CommandRef,
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
-    Ok(sqlx::query(
+    let row = sqlx::query(
         "SELECT intent_binding, character_id::text, transaction_id::text, event_id::text, \
                 shape, source_item_instance_id::text, source_quantity_before, source_quantity_after, \
                 receiver_item_instance_id::text, receiver_quantity_before, \
@@ -1983,7 +2085,11 @@ async fn load_receipt(
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
     .fetch_optional(&mut **tx)
-    .await?)
+    .await?;
+    if let Some(row) = &row {
+        container_slot_tree::load_binding(tx, uuid_text(row.try_get("transaction_id")?)?).await?;
+    }
+    Ok(row)
 }
 
 fn decode_receipt(

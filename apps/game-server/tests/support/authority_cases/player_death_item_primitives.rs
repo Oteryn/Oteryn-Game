@@ -1989,6 +1989,15 @@ async fn maximum_carried_death_tree(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult<MaximumDeathTree> {
+    carried_death_tree_at_item_count(h, authority, 501).await
+}
+
+async fn carried_death_tree_at_item_count(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    total: usize,
+) -> TestResult<MaximumDeathTree> {
+    assert!((500..=501).contains(&total));
     use crate::durability::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX;
     use crate::item_transfer_postgres_cases::{CHARACTER, STONE};
 
@@ -2012,24 +2021,27 @@ async fn maximum_carried_death_tree(
                 .await?,
         );
     }
-    // Two direct bags + twenty-four inner bags + 474 stones = 500 descendants.
+    // MAIN + two direct bags + twenty-four inner bags + the remaining stones.
     // Each parent has at most twenty entries; the main keeps a free staging
     // slot for every normal MINT -> pickup -> loop-move sequence.
-    for index in 0..474 {
+    for index in 0..(total - 27) {
         append_maximum_tree_item(h, authority, &mut tree, Some(leaf_bags[index / 20]), STONE)
             .await?;
     }
-    assert_eq!((tree.items.len(), tree.edges.len()), (501, 500));
+    assert_eq!((tree.items.len(), tree.edges.len()), (total, total - 1));
     let size: i64 = sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
         .bind(id(CHARACTER).as_slice())
         .fetch_one(&h.pool)
         .await?;
-    assert_eq!(size, ITEM_LOOP_TREE_ITEMS_MAX);
+    assert_eq!(size, i64::try_from(total - 1)?);
     let (owned, deepest): (i64, Option<i32>) = sqlx::query_as("SELECT count(*),max(o.depth) FROM game_item_instances i CROSS JOIN LATERAL game_item_loop_owner(i.item_instance_id) o WHERE o.owner_character=encode($1,'hex')::uuid")
         .bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!((owned, deepest), (501, Some(3)));
+    assert_eq!((owned, deepest), (i64::try_from(total)?, Some(3)));
     assert_eq!(h.count("game_item_container_entries").await?, 2);
-    assert_eq!(h.count("game_item_nested_entries").await?, 498);
+    assert_eq!(
+        h.count("game_item_nested_entries").await?,
+        i64::try_from(total - 3)?
+    );
     Ok(tree)
 }
 
@@ -2155,6 +2167,31 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     assert_eq!(nested_death_snapshot(&h, selected).await?, before_drop);
     assert_eq!(h.count("game_item_container_entries").await?, 0);
     assert_eq!(h.count("game_item_nested_entries").await?, 500);
+    // A legal 501-item death tree exceeds the separate ContainerSlot allowance.
+    // Refusal is ordinary, writes nothing, and precedes the retirement profile.
+    let refusal_footprint = h.footprint().await?;
+    assert!(matches!(
+        h.transfer(
+            &authority,
+            fence()?,
+            to_slot(command(230)?, selected, backpack_facts()),
+        )
+        .await,
+        Err(crate::durability::item_transfer::ItemTransferError::CapacityExceeded)
+    ));
+    assert_eq!(h.footprint().await?, refusal_footprint);
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before_drop);
+    assert!(h.on_ground(selected).await?);
+    assert_eq!(
+        h.count("game_item_transfer_container_promotion_receipts")
+            .await?,
+        0
+    );
+    assert_eq!(
+        h.count("game_item_transfer_container_promotion_edge_receipts")
+            .await?,
+        0
+    );
     let reset = prepare_nested_reset(&h, &h.root).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
     // Enable optional diagnostics on this private fixture's existing runtime
@@ -3761,4 +3798,520 @@ fn player_death_ground_drop_can_be_picked_up_by_item_loop() -> TestResult {
 #[test]
 fn player_death_ground_backpack_and_contents_retire_on_world_reset() -> TestResult {
     death_ground_case(true)
+}
+
+struct MissingDeepSlotWeight;
+impl crate::durability::item_transfer::ItemWeightLookup for MissingDeepSlotWeight {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xd1; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        use crate::durability::item_transfer::{ItemWeightLookup, ItemWeightRefused};
+        if definition.production_key == crate::item_transfer_postgres_cases::STONE {
+            Err(ItemWeightRefused::Unknown)
+        } else {
+            ItemWeightLookup::weight_of(&PickupContent, definition)
+        }
+    }
+}
+
+// ContainerSlot reentry is the native TRANSFER path, independently of the
+// Ground-to-entry loop pickup cases above. No production wire caller is assumed.
+async fn run_canonical_container_slot_reentry(admin: String, historical: bool) -> TestResult {
+    use crate::durability::item_transfer::{
+        ItemTransferError, ItemTransferOutcome, ItemTransferRefusal, ItemWeightLookup,
+    };
+    let h = Harness::create(
+        admin,
+        if historical {
+            "slot_tree_legacy_refusal"
+        } else {
+            "slot_tree_reentry"
+        },
+    )
+    .await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let items = carried_chain(&h, &authority, 2).await?;
+    drop_unselected_death_root(&h, &authority, items[0], historical).await?;
+    let before = nested_death_snapshot(&h, items[0]).await?;
+    let revision = h.character_revision().await?;
+    let root_revision: String = sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(items[0].as_slice()).fetch_one(&h.pool).await?;
+    let intent = to_slot(command(230)?, items[0], backpack_facts());
+    if historical {
+        assert!(matches!(
+            h.transfer(&authority, fence()?, intent).await,
+            Err(ItemTransferError::Refused(
+                ItemTransferRefusal::ContainerNotEmpty
+            ))
+        ));
+        assert_eq!(nested_death_snapshot(&h, items[0]).await?, before);
+    } else {
+        let (level, vocation): (i64, Option<String>) = sqlx::query_as("SELECT p.level,b.vocation FROM game_character_progression_state p LEFT JOIN game_character_build_state b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid")
+            .bind(fence()?.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        let capacity = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(
+            u32::try_from(level)?,
+            vocation.as_deref().unwrap_or("none"),
+        )
+        .map_err(debug)?;
+        // Root alone fits; the complete three-node tree exceeds capacity by one.
+        let overweight = WeightedDeathPickup {
+            stone_weight: u32::try_from(capacity - 1)?,
+        };
+        assert!(matches!(
+            h.root
+                .freeze_item_transfer(&authority, &h.node, fence()?, intent.clone(), &overweight)
+                .await,
+            Err(ItemTransferError::Refused(ItemTransferRefusal::Overweight))
+        ));
+        assert_eq!(nested_death_snapshot(&h, items[0]).await?, before);
+        assert_eq!(
+            h.count("game_item_transfer_container_promotion_receipts")
+                .await?,
+            0
+        );
+        assert!(matches!(
+            h.root
+                .freeze_item_transfer(
+                    &authority,
+                    &h.node,
+                    fence()?,
+                    intent.clone(),
+                    &MissingDeepSlotWeight
+                )
+                .await,
+            Err(ItemTransferError::Refused(
+                ItemTransferRefusal::WeightUnknown
+            ))
+        ));
+        assert_eq!(nested_death_snapshot(&h, items[0]).await?, before);
+        // Exact total: root and inner bag each weigh one, stone fills the rest.
+        let exact = WeightedDeathPickup {
+            stone_weight: u32::try_from(capacity - 2)?,
+        };
+        assert_eq!(exact.generation_digest(), intent.weight_generation_digest);
+        // Real current-receipt proof is present for each attack. The injected
+        // trigger runs after promotion; no copied guard algorithm is involved.
+        let attacks = [
+            "NEW.placement_ordinal:=NEW.placement_ordinal+1",
+            "NEW.placed_transaction_id:='fa020304-0506-7008-800a-0b0c0d0e0ffa'::uuid",
+            "UPDATE game_item_container_entries SET placement_ordinal=placement_ordinal+1 WHERE parent_item_instance_id=NEW.source_item_instance_id",
+            "UPDATE game_item_nested_entries SET parent_item_instance_id=NEW.source_item_instance_id WHERE item_instance_id=(SELECT item_instance_id FROM game_item_transfer_container_promotion_edge_receipts WHERE transaction_id=NEW.transaction_id AND depth=2)",
+            "DELETE FROM game_item_container_entries WHERE parent_item_instance_id=NEW.source_item_instance_id",
+            "DELETE FROM game_item_nested_entries WHERE item_instance_id=(SELECT item_instance_id FROM game_item_transfer_container_promotion_edge_receipts WHERE transaction_id=NEW.transaction_id AND depth=2)",
+            "UPDATE game_item_instances SET quantity=quantity+1 WHERE item_instance_id=(SELECT item_instance_id FROM game_item_transfer_container_promotion_edge_receipts WHERE transaction_id=NEW.transaction_id AND depth=2)",
+            "INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id FROM game_item_transfer_container_promotion_edge_receipts WHERE transaction_id=NEW.transaction_id AND depth=1",
+        ];
+        for (index, attack) in attacks.iter().enumerate() {
+            let before_insert = attack.starts_with("NEW.");
+            let returned = if before_insert { "NEW" } else { "NULL" };
+            let ddl = format!(
+                "CREATE OR REPLACE FUNCTION slot_tree_test_tamper() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $test$ BEGIN {attack}; RETURN {returned}; END $test$"
+            );
+            sqlx::query(sqlx::AssertSqlSafe(&ddl))
+                .execute(&h.pool)
+                .await?;
+            let create = if before_insert {
+                "CREATE TRIGGER zz_slot_tree_test_tamper BEFORE INSERT ON game_item_container_entries FOR EACH ROW EXECUTE FUNCTION slot_tree_test_tamper()"
+            } else {
+                "CREATE TRIGGER zz_slot_tree_test_tamper AFTER INSERT ON game_item_transfer_receipts FOR EACH ROW WHEN (NEW.shape=1) EXECUTE FUNCTION slot_tree_test_tamper()"
+            };
+            sqlx::query(sqlx::AssertSqlSafe(create))
+                .execute(&h.pool)
+                .await?;
+            let attack_intent = to_slot(
+                command(240 + u64::try_from(index)?)?,
+                items[0],
+                backpack_facts(),
+            );
+            let mut attack_candidate = h
+                .root
+                .freeze_item_transfer(&authority, &h.node, fence()?, attack_intent, &exact)
+                .await
+                .map_err(debug)?;
+            let attack_permit = SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await?;
+            assert!(
+                h.root
+                    .commit_item_transfer(
+                        &attack_permit,
+                        &authority,
+                        &h.node,
+                        fence()?,
+                        &mut attack_candidate,
+                        &exact
+                    )
+                    .await
+                    .is_err(),
+                "same-xact tamper: {attack}"
+            );
+            let drop_trigger = if before_insert {
+                "DROP TRIGGER zz_slot_tree_test_tamper ON game_item_container_entries"
+            } else {
+                "DROP TRIGGER zz_slot_tree_test_tamper ON game_item_transfer_receipts"
+            };
+            sqlx::query(sqlx::AssertSqlSafe(drop_trigger))
+                .execute(&h.pool)
+                .await?;
+            assert_eq!(nested_death_snapshot(&h, items[0]).await?, before);
+            assert!(h.on_ground(items[0]).await?);
+            assert_eq!(
+                h.count("game_item_transfer_container_promotion_receipts")
+                    .await?,
+                0
+            );
+            assert_eq!(
+                h.count("game_item_transfer_container_promotion_edge_receipts")
+                    .await?,
+                0
+            );
+        }
+        let mut candidate = h
+            .root
+            .freeze_item_transfer(&authority, &h.node, fence()?, intent.clone(), &exact)
+            .await
+            .map_err(debug)?;
+        let permit = SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await?;
+        // Force a failure after the real bridge, at deferred completion. The
+        // reservation/retry budget is deliberately not part of the footprint.
+        sqlx::query("CREATE FUNCTION slot_tree_test_abort() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected post-bridge failure' USING ERRCODE='23514'; END $$").execute(&h.pool).await?;
+        sqlx::query("CREATE CONSTRAINT TRIGGER slot_tree_test_abort AFTER INSERT ON game_item_transfer_container_promotion_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION slot_tree_test_abort()").execute(&h.pool).await?;
+        let audits = h.count("game_item_audit_outbox").await?;
+        let receipts = h.count("game_item_transfer_receipts").await?;
+        assert!(
+            h.root
+                .commit_item_transfer(
+                    &permit,
+                    &authority,
+                    &h.node,
+                    fence()?,
+                    &mut candidate,
+                    &exact
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(nested_death_snapshot(&h, items[0]).await?, before);
+        assert!(h.on_ground(items[0]).await?);
+        assert_eq!(h.count("game_item_audit_outbox").await?, audits);
+        assert_eq!(h.count("game_item_transfer_receipts").await?, receipts);
+        assert_eq!(
+            h.count("game_item_transfer_container_promotion_receipts")
+                .await?,
+            0
+        );
+        assert_eq!(
+            h.count("game_item_transfer_container_promotion_edge_receipts")
+                .await?,
+            0
+        );
+        sqlx::query(
+            "DROP TRIGGER slot_tree_test_abort ON game_item_transfer_container_promotion_receipts",
+        )
+        .execute(&h.pool)
+        .await?;
+        let result = h
+            .root
+            .commit_item_transfer(
+                &permit,
+                &authority,
+                &h.node,
+                fence()?,
+                &mut candidate,
+                &exact,
+            )
+            .await
+            .map_err(debug)?;
+        let ItemTransferOutcome::Committed(committed) = result else {
+            return Err("expected fresh slot reentry".into());
+        };
+        assert_eq!(nested_death_snapshot(&h, items[0]).await?, before);
+        assert_eq!(h.character_revision().await?, revision);
+        let after_revision: String = sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(items[0].as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            after_revision.parse::<u64>()?,
+            root_revision.parse::<u64>()? + 1
+        );
+        assert_eq!(h.count("game_item_container_entries").await?, 1);
+        assert_eq!(h.count("game_item_nested_entries").await?, 1);
+        let main = h
+            .root
+            .read_character_backpack(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("MAIN")?;
+        assert_eq!(main.backpack.item_instance_id, items[0]);
+        assert_eq!(main.entries.len(), 1);
+        assert_eq!(main.entries[0].item.item_instance_id, items[1]);
+        let inner = h
+            .root
+            .read_item_loop_container(&authority, fence()?.character_id, items[1])
+            .await?
+            .ok_or("inner bag")?;
+        assert_eq!(inner.entries.len(), 1);
+        assert_eq!(inner.entries[0].item.item_instance_id, items[2]);
+        let binding: (i16, Vec<u8>) = sqlx::query_as("SELECT tree_size,tree_sha256 FROM game_item_transfer_container_promotion_receipts WHERE transaction_id=encode($1,'hex')::uuid")
+            .bind(committed.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(binding.0, 3);
+        assert_eq!(binding.1.len(), 32);
+        // The old proof cannot authorize an unreceipted write in a later xact.
+        reject_unproven_custody_change(&h, items[2], false).await?;
+        for statement in [
+            "DELETE FROM game_item_transfer_container_promotion_receipts",
+            "TRUNCATE game_item_transfer_container_promotion_edge_receipts",
+            "SELECT game_item_transfer_container_promote()",
+            "INSERT INTO game_item_container_entries SELECT item_instance_id,world_id,encode($1,'hex')::uuid,parent_item_instance_id,placement_ordinal,placed_transaction_id FROM game_item_nested_entries LIMIT 1",
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            // Bind only the one statement with a parameter.
+            let attempted = if statement.contains("$1") {
+                sqlx::query(sqlx::AssertSqlSafe(statement))
+                    .bind(fence()?.character_id.as_bytes().as_slice())
+                    .execute(&mut *tx)
+                    .await
+            } else {
+                sqlx::query(sqlx::AssertSqlSafe(statement))
+                    .execute(&mut *tx)
+                    .await
+            };
+            let refused = match attempted {
+                Ok(_) => tx.commit().await,
+                Err(error) => {
+                    tx.rollback().await?;
+                    Err(error)
+                }
+            };
+            assert!(refused.is_err(), "private receipt/guard ACL: {statement}");
+        }
+        // A legitimate later child move changes the current tree. Replay must
+        // validate only immutable captured membership, and never promote again.
+        use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+        h.root
+            .commit_item_loop_move(
+                &permit,
+                &authority,
+                &h.node,
+                &fence()?,
+                command(231)?,
+                &exact,
+                LoopMoveRequest {
+                    item: items[2],
+                    count: None,
+                    pickup_cell: None,
+                    destination: LoopDestination::MainBackpack,
+                },
+            )
+            .await?
+            .map_err(debug)?;
+        let later = nested_death_snapshot(&h, items[0]).await?;
+        let mut replay = h
+            .root
+            .freeze_item_transfer(&authority, &h.node, fence()?, intent, &exact)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            h.root
+                .commit_item_transfer(&permit, &authority, &h.node, fence()?, &mut replay, &exact)
+                .await
+                .map_err(debug)?,
+            ItemTransferOutcome::AlreadyCommitted(committed.clone())
+        );
+        // Failure + retry + replay already consume all three RL08 units.
+        // The read-only receipt API reconciles without asking for a fourth.
+        assert_eq!(
+            h.root
+                .read_item_transfer_receipt(&authority, fence()?.character_id, command(230)?)
+                .await
+                .map_err(debug)?,
+            Some(committed)
+        );
+        assert_eq!(nested_death_snapshot(&h, items[0]).await?, later);
+        assert_eq!(
+            h.count("game_item_transfer_container_promotion_receipts")
+                .await?,
+            1
+        );
+        assert_eq!(
+            h.count("game_item_transfer_container_promotion_edge_receipts")
+                .await?,
+            2
+        );
+        assert_eq!(h.count("game_item_transfer_receipts").await?, receipts + 1);
+        assert_eq!(h.count("game_item_audit_outbox").await?, audits + 1);
+    }
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+fn canonical_container_slot_case(historical: bool) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_canonical_container_slot_reentry(admin, historical))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "slot reentry thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn player_death_canonical_container_slot_reentry_preserves_tree_weight_and_replay() -> TestResult {
+    canonical_container_slot_case(false)
+}
+
+#[test]
+fn player_death_container_slot_legacy_direct_edges_still_refuse() -> TestResult {
+    canonical_container_slot_case(true)
+}
+
+async fn run_canonical_container_slot_maximum(admin: String) -> TestResult {
+    use crate::durability::item_transfer::ItemTransferOutcome;
+
+    let h = Harness::create(admin, "slot_tree_maximum").await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let tree = carried_death_tree_at_item_count(&h, &authority, 500).await?;
+    let selected = tree.items[0];
+    drop_unselected_death_root(&h, &authority, selected, false).await?;
+    let before = nested_death_snapshot(&h, selected).await?;
+    assert_eq!((before.items.len(), before.placements.len()), (499, 499));
+    let character_revision = h.character_revision().await?;
+    let item_revision: String = sqlx::query_scalar(
+        "SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    ).bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    let audits = h.count("game_item_audit_outbox").await?;
+    let receipts = h.count("game_item_transfer_receipts").await?;
+    let intent = to_slot(command(230)?, selected, backpack_facts());
+    let mut candidate = h
+        .root
+        .freeze_item_transfer(
+            &authority,
+            &h.node,
+            fence()?,
+            intent.clone(),
+            &PickupContent,
+        )
+        .await
+        .map_err(debug)?;
+    let permit = SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await?;
+    // The real owner enforces its unchanged deadline and work budgets.
+    let outcome = h
+        .root
+        .commit_item_transfer(
+            &permit,
+            &authority,
+            &h.node,
+            fence()?,
+            &mut candidate,
+            &PickupContent,
+        )
+        .await
+        .map_err(debug)?;
+    let ItemTransferOutcome::Committed(committed) = outcome else {
+        return Err("expected fresh maximum slot promotion".into());
+    };
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before);
+    assert_eq!(h.character_revision().await?, character_revision);
+    let after_revision: String = sqlx::query_scalar(
+        "SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    ).bind(selected.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        after_revision.parse::<u64>()?,
+        item_revision.parse::<u64>()? + 1
+    );
+    assert!(!h.on_ground(selected).await?);
+    assert_eq!(h.item_state(selected).await?, (1, 1));
+    let binding: (i16, i16, i16) = sqlx::query_as(
+        "SELECT tree_size,height,immediate_count FROM game_item_transfer_container_promotion_receipts WHERE transaction_id=encode($1,'hex')::uuid",
+    ).bind(committed.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(binding, (500, 3, 2));
+    let captured: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_transfer_container_promotion_edge_receipts WHERE transaction_id=encode($1,'hex')::uuid",
+    ).bind(committed.transaction_id.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(captured, 499);
+    assert_eq!(h.count("game_item_container_entries").await?, 2);
+    assert_eq!(h.count("game_item_nested_entries").await?, 497);
+    let main = h
+        .root
+        .read_character_backpack(&authority, fence()?.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("maximum MAIN")?;
+    assert_eq!(main.backpack.item_instance_id, selected);
+    assert_eq!(main.entries.len(), 2);
+    let mut replay = h
+        .root
+        .freeze_item_transfer(&authority, &h.node, fence()?, intent, &PickupContent)
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        h.root
+            .commit_item_transfer(
+                &permit,
+                &authority,
+                &h.node,
+                fence()?,
+                &mut replay,
+                &PickupContent,
+            )
+            .await
+            .map_err(debug)?,
+        ItemTransferOutcome::AlreadyCommitted(committed),
+    );
+    assert_eq!(nested_death_snapshot(&h, selected).await?, before);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits + 1);
+    assert_eq!(h.count("game_item_transfer_receipts").await?, receipts + 1);
+    assert_eq!(
+        h.count("game_item_transfer_container_promotion_receipts")
+            .await?,
+        1
+    );
+    assert_eq!(
+        h.count("game_item_transfer_container_promotion_edge_receipts")
+            .await?,
+        499
+    );
+    drop(authority);
+    drop(seal);
+    h.cleanup().await
+}
+
+#[test]
+fn player_death_canonical_container_slot_500_item_boundary_preserves_every_child() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_canonical_container_slot_maximum(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "maximum slot promotion thread panicked")?
+        .map_err(Into::into)
 }
