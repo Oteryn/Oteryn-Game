@@ -194,6 +194,8 @@ fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn 
     Ok(())
 }
 
+#[path = "aim_fallback.rs"]
+mod aim_fallback;
 #[path = "directional.rs"]
 mod directional;
 

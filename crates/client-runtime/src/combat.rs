@@ -85,8 +85,11 @@ pub async fn run_combat<S: SessionStream>(
             )
             .await?;
             match aimed {
-                Some(outcome) => Ok(CombatReport::Cast(outcome.disposition)),
-                None => cast_facing(session, feedback, spell, direction).await,
+                // The server refuses CURSOR for a spell that is not a wave or beam.
+                Some(outcome) if outcome.disposition != SpellCastDisposition::Rejected => {
+                    Ok(CombatReport::Cast(outcome.disposition))
+                }
+                _ => cast_facing(session, feedback, spell, direction).await,
             }
         }
         CombatCommand::CastAt { spell, position } => {

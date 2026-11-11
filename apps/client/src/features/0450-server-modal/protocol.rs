@@ -78,6 +78,7 @@ impl Driver {
                 super::view::open(
                     dialog.clone(),
                     self.panel.active_input.clone(),
+                    self.panel.input,
                     (self.sender.clone(), self.entry.clone()),
                 );
                 self.shown = Some(dialog.id);

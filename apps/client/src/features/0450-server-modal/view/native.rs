@@ -73,6 +73,7 @@ fn read_text(edit: HWND) -> String {
 pub(super) fn run(
     dialog: Dialog,
     input: Option<DialogInput>,
+    remember: bool,
     sender: Sender<Submission>,
     entry: Arc<Mutex<Entry>>,
 ) {
@@ -114,10 +115,14 @@ pub(super) fn run(
             "LISTBOX",
             "",
             11,
-            [120, 204, 572, 210],
+            // A dialog with a value field leaves the space below the list for it.
+            [120, 204, 572, if input.is_some() { 90 } else { 210 }],
             WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32,
         );
-        // Capability 490: the value field takes the list's place when the dialog asks for one.
+        if input.is_some() && dialog.choices.is_empty() {
+            ShowWindow(list, SW_HIDE);
+        }
+        // Capability 490: the value field sits below the choice list, above the buttons.
         let field = input.as_ref().map(|input| {
             let multiline = input.kind == oteryn_client_runtime::server_modal::input::InputKind::Edit;
             let field = control(
@@ -125,7 +130,7 @@ pub(super) fn run(
                 "EDIT",
                 &oteryn_client_ui::server_modal_input::initial_text(input),
                 13,
-                [120, 232, 572, if multiline { 182 } else { 26 }],
+                [120, 326, 572, if multiline { 100 } else { 26 }],
                 WS_BORDER
                     | WS_TABSTOP
                     | if multiline {
@@ -139,12 +144,13 @@ pub(super) fn run(
                 "STATIC",
                 &oteryn_client_ui::server_modal_input::prompt(input),
                 15,
-                [120, 206, 572, 22],
+                [120, 300, 572, 22],
                 0,
             );
             field
         });
-        let remember = input.as_ref().map(|_| {
+        // Capability 490: the choice is independent of the value field.
+        let remember = remember.then(|| {
             control(
                 hwnd,
                 "BUTTON",

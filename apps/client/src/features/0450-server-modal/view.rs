@@ -7,6 +7,7 @@ use tokio::sync::mpsc::Sender;
 pub(super) fn open(
     dialog: Dialog,
     input: Option<DialogInput>,
+    remember: bool,
     (sender, entry): (Sender<Submission>, Arc<Mutex<Entry>>),
 ) {
     #[cfg(all(windows, not(test)))]
@@ -15,13 +16,13 @@ pub(super) fn open(
             .name("server-modal".into())
             .spawn(move || {
                 ACTIVE.store(true, std::sync::atomic::Ordering::Release);
-                native::run(dialog, input, sender, entry);
+                native::run(dialog, input, remember, sender, entry);
                 ACTIVE.store(false, std::sync::atomic::Ordering::Release);
             });
     }
     #[cfg(any(not(windows), test))]
     {
-        let _ = (dialog, input, sender, entry);
+        let _ = (dialog, input, remember, sender, entry);
     }
 }
 #[cfg(all(windows, not(test)))]

@@ -70,8 +70,12 @@ pub(crate) async fn run_cast<S: SessionStream>(
 ) -> Result<CombatReport, SessionError> {
     // Apply any domain-10 delta already on the wire before reading the target.
     session.service_liveness(PUMP_SLICE).await?;
-    // With 480 the server resolves the held attack target itself (TARGET).
-    if let Some(outcome) = cast_aimed(session, feedback, spell, AimedTarget::Target).await? {
+    // With 480 a wave or beam resolves the held attack target itself (TARGET). The server refuses
+    // TARGET for any other spell (a strike keeps its held target, a self spell takes none), so a
+    // refusal falls back to the plain cast below, which carries the held target as before.
+    if let Some(outcome) = cast_aimed(session, feedback, spell, AimedTarget::Target).await?
+        && outcome.disposition != SpellCastDisposition::Rejected
+    {
         return Ok(CombatReport::Cast(outcome.disposition));
     }
     // The server aims at its own attack target; the client only says whether to.
