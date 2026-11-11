@@ -102,7 +102,9 @@ class AcceptedOverlayTests(unittest.TestCase):
                 actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),
         }, sort_keys=True), flush=True)
         self.assertTrue((successor_proofs | merged_outputs) <= actual.keys())
-        self.assertEqual(len(actual.keys() - {qengine.PROOF} - successor_proofs),43)
+        # Retain the accepted main residual of 45; engnpc2-slug, m42-hot-ingredient,
+        # and questpc5-parchment add three distinct source proofs to the merged set.
+        self.assertEqual(len(actual.keys() - {qengine.PROOF} - (successor_proofs | merged_outputs)),45)
         self.assertIn(qengine.PROOF,actual)
         # Independently rebuild the packet from the producer's closed source IDs; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
