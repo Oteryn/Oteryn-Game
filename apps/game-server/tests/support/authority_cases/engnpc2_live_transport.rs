@@ -359,6 +359,22 @@ async fn exercise(h: &fixture::Harness, handle: bool, corpse: bool) -> TestResul
     .await?
     .ok_or("invalid-target caller fell through")?;
     assert_eq!(refusal, UseDisposition::Rejected);
+    if corpse {
+        let unresolved = call(
+            &owner,
+            actor,
+            UseCommand {
+                command_id: 13099,
+                ..command
+            },
+            intent.clone(),
+            handle,
+            (true, true, None),
+        )
+        .await?
+        .ok_or("unresolved corpse caller fell through")?;
+        assert_eq!(unresolved, UseDisposition::Rejected);
+    }
     let refused: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_callback_consumptions),(SELECT count(*) FROM game_character_quest_receipts),(SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid)")
         .bind(id(92).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(

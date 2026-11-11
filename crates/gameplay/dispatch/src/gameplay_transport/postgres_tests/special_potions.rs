@@ -286,7 +286,7 @@ fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(pin.server_artifact_digest().as_slice())
             .bind(pin.client_artifact_digest().as_slice())
-            .bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+            .bind(activation.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
         let current =

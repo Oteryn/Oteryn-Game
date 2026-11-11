@@ -726,6 +726,12 @@ impl NativeCallbacks {
         Ok(self.owner.try_lock().map_err(|_| ())?.next_due_time())
     }
     #[cfg(test)]
+    pub(in crate::gameplay_transport) fn gaz_heal_deadline_for_test(
+        &self,
+    ) -> Result<Option<u64>, ()> {
+        Ok(self.owner.try_lock().map_err(|_| ())?.gaz.next_due())
+    }
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn enable_omrafir_declared_think_review_for_test(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -908,6 +914,7 @@ impl NativeCallbackState {
                 self.spawns.next_due(),
                 self.vortex.next_due(),
                 self.outburst_events.next_due(),
+                self.gaz.next_due(),
                 self.death_items.next_due(),
             ];
             let Some((family, through)) = pending
@@ -996,7 +1003,10 @@ impl NativeCallbackState {
                         )
                         .await?;
                 }
-                9 => return Err(()),
+                9 => self
+                    .gaz
+                    .drive_due_through(runtime, room, native, through, now)?,
+                10 => return Err(()),
                 _ => return Err(()),
             }
             let after = match family {
@@ -1009,6 +1019,7 @@ impl NativeCallbackState {
                 6 => self.spawns.next_due(),
                 7 => self.vortex.next_due(),
                 8 => self.outburst_events.next_due(),
+                9 => self.gaz.next_due(),
                 _ => return Err(()),
             };
             if after.is_some_and(|due| due <= through) {

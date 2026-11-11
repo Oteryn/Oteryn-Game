@@ -431,6 +431,26 @@ def test_source_cohort_includes_installed_successors() -> None:
             raise AssertionError("the complete World cohort must be measured")
 
 
+def test_normal_generation_orders_native_callback_producers() -> None:
+    commands: list[tuple[str, ...]] = []
+    assert full_generation_trace(commands, lambda *_: None) == 0
+    native = "tools/content-schema/native-gameplay/"
+    tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
+    pairs = [
+        (("python3", native + producer), ("python3", native + consumer, "--refresh-native-pin"))
+        for producer, consumer in (
+            ("build_native_callback_witness.py", "build_native_death_event_witness.py"),
+            ("build_srx3_soul_war_witness.py", "build_srx3_soul_war_death_events.py"),
+            ("build_srx3_rotten_blood_witness.py", "build_srx3_rotten_death_events.py"),
+        )
+    ]
+    required = [tree, *(command for pair in pairs for command in pair)]
+    nonunique = {command[1]: commands.count(command) for command in required if commands.count(command) != 1}
+    assert not nonunique, nonunique
+    for producer, consumer in pairs:
+        assert commands.index(tree) < commands.index(producer) < commands.index(consumer), (producer, consumer)
+
+
 def full_generation_trace(events, inspect_command, *, prepare=None, checks=False) -> int:
     """Exercise the actual dispatcher without running any producer or Git write."""
     def record(command):
@@ -633,6 +653,7 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
 
 def main() -> None:
     tests = [
+        test_normal_generation_orders_native_callback_producers,
         test_downstream_quest_producers_follow_inputs_and_precede_consumers,
         test_downstream_quest_producer_refusal_stops_later_work,
         test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_capture,

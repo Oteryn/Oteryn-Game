@@ -34,6 +34,7 @@ native_case!(srvenc_m24_postgres_mahrdis_stage, "mahrdis");
 native_case!(srvenc_m24_postgres_vashresamun_stage, "vashresamun");
 native_case!(srvenc_m24_postgres_morguthis_stage, "morguthis");
 native_case!(srvenc_m24_postgres_rahemos_stage, "rahemos");
+native_case!(srvenc_m24_postgres_herald_top_damage, "herald_of_fire");
 
 fn scenario(name: &'static str, creature: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -295,6 +296,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 lease_generation: fence.character_lease_generation,
                 position,
                 dealt_damage: true,
+                top_damage_character: rule
+                    .top_damage_only
+                    .then_some(*fence.character_id.as_bytes()),
             }),
         };
         let outcome = slot
@@ -323,6 +327,38 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     owner.refresh_quest_session(session, false).await;
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
+    // This second current native actor really deals damage. It remains an invalid
+    // Herald recipient even with the same admitted mission snapshot as the winner.
+    let lesser_contributor = if rule.top_damage_only {
+        let mut runtime = owner.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: position[0] - 1,
+                    y: position[1],
+                    floor: i16::try_from(-position[2])?,
+                },
+            )
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(&id(78)).map_err(debug)?,
+                    1,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        Some((actor, session, id(78), 1))
+    } else {
+        None
+    };
     let kills = if rule.creature == "oteryn:creature.cake_golem" {
         20usize
     } else {
@@ -357,6 +393,30 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
+                assert!(
+                    health > 2,
+                    "Herald has distinct most-damage and lesser contributors"
+                );
+                runtime
+                    .borrow_exact_actor_commit_at(now)
+                    .commit_damage_for_bound_attacker(
+                        target,
+                        other_actor,
+                        CommandRef::new(other_session, CommandId::new(1).map_err(debug)?),
+                        0,
+                        crate::foundation::OwnerDamageCommand {
+                            target: rule.creature.as_bytes(),
+                            occurrence: other_session.as_bytes(),
+                            binding: b"srvenc-source-lesser-damage",
+                            damage: 1,
+                        },
+                    )
+                    .map_err(debug)?;
+                health - 1
+            } else {
+                health
+            };
             runtime
                 .borrow_exact_actor_commit_at(now)
                 .commit_damage_for_bound_attacker(
@@ -371,7 +431,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                         target: rule.creature.as_bytes(),
                         occurrence: session.as_bytes(),
                         binding: b"srvenc-source-native-death",
-                        damage: health,
+                        damage,
                     },
                 )
                 .map_err(debug)?;
@@ -395,6 +455,67 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                     now,
                     Some(observed),
                 );
+            }
+            if let Some((other_actor, other_session, other_character, other_lease)) =
+                lesser_contributor
+            {
+                use crate::gameplay_transport::{kill_reward::TakeOutcome, quest_batch3_c};
+                let TakeOutcome::Taken(taken) = queue.take(session, lease.generation()) else {
+                    return Err("captured Herald queue entry".into());
+                };
+                let entry = taken.entry().ok_or("captured Herald death")?;
+                let winner = entry
+                    .grizzly
+                    .as_ref()
+                    .ok_or("captured source recipients")?
+                    .native
+                    .iter()
+                    .find(|recipient| recipient.death.transition == rule.transition)
+                    .ok_or("captured Herald winner")?;
+                assert_eq!(entry.facts.principal.actor, actor);
+                assert!(entry.damage_shares.iter().any(|share| {
+                    share.character.as_bytes() == &other_character
+                        && share.total > 0
+                        && share.session == Some(other_session)
+                        && share.lease_generation == Some(other_lease)
+                }));
+                let objective = source_deaths::rule(&rule.transition)
+                    .ok_or("Herald rule")?
+                    .transition
+                    .as_str();
+                let snapshots = [
+                    quest_batch3_c::Snapshot {
+                        actor,
+                        session,
+                        character: *lease.character_id().as_bytes(),
+                        lease_generation: lease.generation(),
+                        observed_revision: winner.death.observed_revision,
+                        objectives: vec![objective],
+                    },
+                    quest_batch3_c::Snapshot {
+                        actor: other_actor,
+                        session: other_session,
+                        character: other_character,
+                        lease_generation: other_lease,
+                        observed_revision: winner.death.observed_revision,
+                        objectives: vec![objective],
+                    },
+                ];
+                let recipients =
+                    quest_batch3_c::capture(&runtime, entry, true, snapshots.iter().cloned());
+                assert_eq!(
+                    recipients.len(),
+                    1,
+                    "damage alone cannot earn Herald credit"
+                );
+                assert_eq!(recipients[0].actor, actor);
+                assert_eq!(recipients[0].character, *lease.character_id().as_bytes());
+                assert!(
+                    quest_batch3_c::capture(&runtime, entry, false, snapshots.into_iter())
+                        .is_empty(),
+                    "a lethal fallback is not the present most-damage player"
+                );
+                drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
         assert_eq!(

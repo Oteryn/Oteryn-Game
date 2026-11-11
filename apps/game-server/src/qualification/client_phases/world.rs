@@ -95,6 +95,7 @@ pub(crate) fn load_world(
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
+    // The qualified Bundle already projects its wire positions into native map floors.
     Ok(TilePos {
         x: u16::try_from(position.x)?,
         y: u16::try_from(position.y)?,
@@ -683,7 +684,7 @@ async fn shop_journey(
                     && npc.placements.iter().any(|placement| {
                         entity.position.x == i32::from(placement.x)
                             && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == -i16::from(placement.floor)
+                            && entity.position.floor == i16::from(placement.floor)
                     })
             })
         })

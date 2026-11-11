@@ -1503,6 +1503,7 @@ fn scenario_case(
             )
             || name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
+            || name == "catalogue-npc-end"
             || name == "qengine-rewards-m01a-sven"
             || (qm03 && name.ends_with("-premium"))
             || name.contains("l7-knight-")
@@ -1749,6 +1750,7 @@ fn scenario_case(
             || m44_lions
             || m07_realm
             || name == "npcfix-m38-mistrock"
+            || name == "catalogue-npc-end"
         {
             owner.admit_premium(id(40), admitted.game_session_id);
         }

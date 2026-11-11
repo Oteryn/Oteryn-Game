@@ -98,6 +98,12 @@ fn srx3_bakragore_credited_death_retains_actual_first_think_essence_postgres() -
     )
 }
 
+#[test]
+fn srx3_bakragore_full_reward_queue_finishes_copied_death_without_mint_or_xp_postgres() -> TestResult
+{
+    super::srx3_rotten_advanced::copied_death_with_full_queue()
+}
+
 pub(super) async fn exercise(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -105,6 +111,7 @@ pub(super) async fn exercise(
     key: &str,
     credited: bool,
     expected_essences: u8,
+    full_queue: bool,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("actual source death fence")?;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
@@ -158,6 +165,50 @@ pub(super) async fn exercise(
                     .is_some_and(|clock| clock.cycle_due.is_some()),
                 "actual retained original local teleport cycle"
             );
+        }
+        if full_queue {
+            assert!(credited);
+            assert_eq!(key, "oteryn:creature.bakragore");
+            assert_eq!(attack.kills().counts(), (0, 0, 0));
+            let rat = "oteryn:creature.rat";
+            let health = runtime.companion_policy(rat).map_err(debug)?.maximum_health;
+            let position = runtime
+                .read_actor_position(player)
+                .map_err(debug)?
+                .position();
+            let lease = runtime
+                .bound_attacker_lease(player, admitted.game_session_id)
+                .map_err(debug)?;
+            // Fill the actual queue through 64 real native lethal publications. Each
+            // dead Rat slot retires; its accepted, pinned reward projection remains.
+            for ordinal in 0..crate::gameplay_transport::kill_reward::KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
+                let target = runtime.admit_encounter_actor(rat, health, position).map_err(debug)?;
+                runtime.install_creature_policy(target, rat).map_err(debug)?;
+                let occurrence = format!("srx3:rotten:full-queue:{ordinal}");
+                let hit = runtime.borrow_exact_actor_commit_at_us(now.get())
+                    .commit_damage_for_bound_attacker(target, player, CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(32640 + u64::try_from(ordinal)?).map_err(debug)?,
+                    ), 0, crate::foundation::OwnerDamageCommand {
+                        target: rat.as_bytes(), occurrence: occurrence.as_bytes(),
+                        binding: b"srx3:rotten:full-queue:current-native-owner", damage: health,
+                    }).map_err(debug)?;
+                assert!(hit.applied && hit.health_before > 0 && hit.health_after == 0);
+                crate::gameplay_transport::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    crate::gameplay_transport::kill_reward::KillSink {
+                        prey: None, activity: &[], queue: attack.kills(),
+                        rewards: native.reward_table(), charms: None,
+                    }, target, crate::combat::CapturedRewardPrincipal {
+                        character: lease.character_id(), lease_generation: lease.generation(),
+                        session: admitted.game_session_id, actor: player,
+                    }, now.get() / 1000, Some(now),
+                );
+                assert_eq!(attack.kills().counts(), (ordinal + 1, 0, 0));
+                assert!(runtime.corpse_projection_pinned(target));
+                assert!(!runtime.has_pending_source_creature_deaths());
+                runtime.remove_encounter_actor(target).map_err(debug)?;
+            }
         }
         let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
         let damage = crate::foundation::OwnerDamageCommand {
@@ -242,7 +293,14 @@ pub(super) async fn exercise(
                 "the unloaded RottenBloodBossDeath declaration does not renumber the copied callback"
             );
         }
-        assert_eq!(attack.kills().has_source_drop(&begin), credited);
+        assert_eq!(
+            attack.kills().has_source_drop(&begin),
+            credited && !full_queue
+        );
+        if full_queue {
+            assert_eq!(attack.kills().counts(), (64, 0, 0));
+            assert!(!runtime.corpse_projection_pinned(boss));
+        }
         let loot = if key == "oteryn:creature.bakragore" {
             let count = states
                 .rotten_blood_callbacks
@@ -270,7 +328,7 @@ pub(super) async fn exercise(
     let (boss, begin, now, before_clock, loot) =
         captured.ok_or("real older source work must quiesce before the lethal fixture")?;
     super::srx3_native_source_cast::drain_source_death(&view, boss, now).await?;
-    if credited {
+    if credited && !full_queue {
         let outcome = view.drain_kill_rewards(admitted.game_session_id).await;
         assert_eq!(
             outcome,
@@ -314,6 +372,44 @@ pub(super) async fn exercise(
         }
     }
     let rows = receipts(h, instance_id, begin.death_key()).await?;
+    if full_queue {
+        assert!(
+            rows.is_empty(),
+            "the original capacity refusal creates no body or selected loot"
+        );
+        let death = crate::durability::party_kill_xp::encode_death_key(begin.death_key());
+        let xp: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_party_kill_xp_receipts WHERE death_key=$1",
+        )
+        .bind(death)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            xp, 0,
+            "the sealed damage credit is not a replacement reward entry"
+        );
+        {
+            let runtime = view.runtime.lock().await;
+            let attack = view.states.attack.lock().await;
+            assert!(begin.has_reward_damage_credit());
+            assert!(runtime.bound_corpse(boss.corpse_identity()).is_none());
+            assert_eq!(attack.kills().counts(), (64, 0, 0));
+        }
+        view.drain_monster_melee_at(now).await;
+        assert!(
+            receipts(h, instance_id, begin.death_key())
+                .await?
+                .is_empty()
+        );
+        assert!(
+            !view
+                .runtime
+                .lock()
+                .await
+                .has_pending_source_creature_deaths()
+        );
+        return Ok(());
+    }
     let selected = loot.as_ref().and_then(BakragoreDeathLoot::selected_item);
     assert_eq!(
         rows.len(),

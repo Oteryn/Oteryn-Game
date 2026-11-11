@@ -125,13 +125,35 @@ fn source_spawn_case_with_gaz_heal(
                 assert!(facts.movement_speech_since(0).iter().any(|(_,line)|
                     line.text=="Gaz'haragoth begins to draw on the nightmares to HEAL himself!"),"literal source start yell");
                 let cursor=facts.movement_speech_since(0).last().map_or(0,|entry|entry.0);
-                owner.clock_origin-=std::time::Duration::from_secs(7);
-                owner.drain_monster_melee().await;
+                let callbacks = owner.states.spell_states.lock().await.native_callbacks.clone();
+                let due = callbacks.gaz_heal_deadline_for_test().map_err(debug)?
+                    .ok_or("real retained Gaz heal deadline")?;
+                let early = due.checked_sub(1).ok_or("Gaz deadline lower bound")?;
+                owner.drain_monster_melee_at(
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(early),
+                ).await;
+                assert_eq!(callbacks.gaz_heal_deadline_for_test().map_err(debug)?, Some(due),
+                    "an earlier cutoff must retain the original Gaz heal");
+                assert!(!facts.movement_speech_since(cursor).iter().any(|(_,line)|
+                    line.text=="Gaz'haragoth HEALS himself!"), "the source heal cannot run before its deadline");
+                let due_clock = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(due);
+                for _ in 0..128 {
+                    owner.drain_monster_melee_at(due_clock).await;
+                    if callbacks.gaz_heal_deadline_for_test().map_err(debug)?.is_none() {
+                        break;
+                    }
+                }
+                assert_eq!(callbacks.gaz_heal_deadline_for_test().map_err(debug)?, None,
+                    "the native arbiter must consume the retained Gaz deadline within 128 owner turns");
                 let runtime=owner.runtime.lock().await;
                 let after=runtime.companion_snapshot(caster).map_err(debug)?;
                 assert!(after.health>=(before+300000).min(after.maximum_health),"real retained seven-second source heal300000");
                 assert!(facts.movement_speech_since(cursor).iter().any(|(_,line)|line.text=="Gaz'haragoth HEALS himself!"),"literal source completion yell");
                 drop(runtime);
+                owner.drain_monster_melee_at(due_clock).await;
+                assert_eq!(facts.movement_speech_since(cursor).iter().filter(|(_,line)|
+                    line.text=="Gaz'haragoth HEALS himself!").count(), 1,
+                    "retrying the consumed deadline cannot repeat the Gaz heal");
             } else {
             let mut selected = false;
             let mut created = false;

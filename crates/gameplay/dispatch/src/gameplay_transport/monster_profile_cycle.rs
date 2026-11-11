@@ -52,19 +52,15 @@ pub(super) fn publish_native_facing(
         .commit_turn(expected, facing);
 }
 
-// The bounded source overlay admits only the exact live Instance creature's
-// added callback; ordinary source abilities retain their existing closure gate.
-fn accepts_source_overlay(
+// Match the native scheduler's qualified overlays for the exact live creature.
+// Soul War remains Instance-only; Omrafir also owns its ordinary World callbacks.
+pub(super) fn accepts_source_overlay(
     runtime: &ChannelRuntimeV1,
     native: &NativeGameplayState,
     actor: crate::foundation::ExactActorRef,
     ability: &crate::content::ProjectV2DefinitionRef,
 ) -> bool {
-    if !matches!(
-        runtime.binding().runtime_scope(),
-        crate::foundation::RuntimeScopeRefV1::Instance { .. }
-    ) || native.source_digest() != runtime.content_pin().server_artifact_digest()
-    {
+    if native.source_digest() != runtime.content_pin().server_artifact_digest() {
         return false;
     }
     let Ok(key) = runtime.current_live_creature_identity(actor) else {
@@ -78,10 +74,19 @@ fn accepts_source_overlay(
     let Some(record) = records.next() else {
         return false;
     };
-    records.next().is_none()
-        && native
-            .soul_war_source_attacks(&record.profile.target)
-            .is_some_and(|source| source.accepts_ability(ability))
+    if records.next().is_some() {
+        return false;
+    }
+    if matches!(
+        runtime.binding().runtime_scope(),
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) && let Some(source) = native.soul_war_source_attacks(&record.profile.target)
+    {
+        return source.accepts_ability(ability);
+    }
+    native
+        .omrafir_source_attacks(&record.profile.target)
+        .is_some_and(|source| source.accepts_ability(ability))
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

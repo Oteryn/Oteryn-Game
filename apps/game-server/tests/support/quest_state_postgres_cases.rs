@@ -1503,6 +1503,9 @@ fn source_death_evidence(
             lease_generation: fence.character_lease_generation,
             position,
             dealt_damage: true,
+            top_damage_character: rule
+                .top_damage_only
+                .then_some(*fence.character_id.as_bytes()),
         }),
     })
 }
@@ -1574,6 +1577,32 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
         let mut slot = sequencer
             .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)
             .await;
+        let started = snapshot(&harness.pool).await?;
+        for top_damage_character in [None, Some(id(99))] {
+            let mut death = source_death_evidence(fence(2)?, source_key)?;
+            let crate::durability::quest_state::native_kills::NativeDeathSource::Source(source) =
+                &mut death.source
+            else {
+                return Err("Herald source proof".into());
+            };
+            source.top_damage_character = top_damage_character;
+            assert_eq!(
+                slot.commit_native_quest_kill(
+                    &harness.root,
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
+                    request.cause,
+                    &death,
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(debug),
+                Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)),
+                "a missing or other top-damage character cannot receive Herald progress"
+            );
+            assert_eq!(snapshot(&harness.pool).await?, started);
+        }
         let first = committed(
             slot.commit_native_quest_kill(
                 &harness.root,

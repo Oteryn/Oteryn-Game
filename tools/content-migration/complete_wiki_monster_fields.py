@@ -38,8 +38,14 @@ def normalize(value):
     return unicodedata.normalize('NFKD', str(value)).encode('ascii', 'ignore').decode().lower().strip()
 
 
-def numeric(raw):
-    value = str(raw).strip().replace('%', '').replace(',', '.').replace(' ', '')
+def numeric(raw, *, integer=False):
+    value = str(raw).strip()
+    if integer:
+        # WikiBR groups integer counts with dots; commas belong to decimal fields.
+        if not re.fullmatch(r'-?(?:\d+|[1-9]\d{0,2}(?:\.\d{3})+)', value):
+            return None
+        return Fraction(value.replace('.', ''))
+    value = value.replace('%', '').replace(',', '.').replace(' ', '')
     return Fraction(value) if re.fullmatch(r'-?\d+(?:\.\d+)?', value) else None
 
 
@@ -85,7 +91,7 @@ def patch_actor(actor, document, page, *, variant=False, estimated=False, helper
 
     stats = document['creature']['stats']
     for key, target in [('hp', 'max_health'), ('exp', 'experience'), ('speed', 'speed'), ('defense', 'armor'), ('mitigation', 'mitigation_percent')]:
-        value = numeric(fields.get(key, ''))
+        value = numeric(fields.get(key, ''), integer=key != 'mitigation')
         if value is None:
             deferred.append({'field': 'stats.' + target, 'reason': 'WIKI_CELL_ABSENT_EMPTY_OR_NONNUMERIC'})
             continue
@@ -148,7 +154,7 @@ def patch_actor(actor, document, page, *, variant=False, estimated=False, helper
     familiar = document['creature']['summoning']['is_familiar']
     mana_values = []
     for key, flag in [('summon', 'summonable'), ('convince', 'convinceable')]:
-        value = numeric(fields.get(key, ''))
+        value = numeric(fields.get(key, ''), integer=True)
         if familiar:
             if key == 'summon' and value is not None and value > 0 and value.denominator == 1:
                 emit('/creature/summoning/familiar/mana_cost', int(value), [key], 'Familiar owner summon ability mana; not ordinary Summon Creature eligibility.')
@@ -178,7 +184,7 @@ def patch_actor(actor, document, page, *, variant=False, estimated=False, helper
             bestiary['stars'] = list(THRESHOLDS).index(difficulty)
         if occurrence != 'very_rare' and 'difficulty' in helpers:
             bestiary['kill_thresholds'] = THRESHOLDS[difficulty]
-        charm = numeric(fields.get('charm', ''))
+        charm = numeric(fields.get('charm', ''), integer=True)
         if charm is not None and charm >= 0 and charm.denominator == 1:
             bestiary['charm_points'] = int(charm)
         if all(key in bestiary for key in ['class', 'taxonomy', 'difficulty', 'occurrence', 'kill_thresholds', 'charm_points']):

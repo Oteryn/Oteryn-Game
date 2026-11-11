@@ -693,7 +693,6 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.cults_of_tibia_quest",
         "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.blood_brothers_quest",
-        "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
         "oteryn:quest.forgotten_knowledge_quest",
         "oteryn:quest.elemental_spheres_quest",
@@ -724,7 +723,16 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .collect::<std::collections::BTreeSet<_>>(),
         expected_programmes
     );
-    assert_eq!(runtime.programs().len(), expected_programmes.len() + 1);
+    // Gnomus retains two source programs; the authored Mystery program is separate.
+    assert_eq!(runtime.programs().len(), expected_programmes.len() + 2);
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .filter(|program| program.document.quest == questpc2_gnomus_source::QUEST)
+            .count(),
+        2
+    );
     assert_eq!(
         runtime
             .programs()
@@ -773,14 +781,18 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
     );
-    // The historical frozen catalogue has no Draconia definition to alias.
+    // Draconia/Stag have no legacy adapter. The new Elemental Spheres and Citizen
+    // source tracks have no matching frozen source binding, so no alias is fabricated.
     let expected_legacy = expected_programmes
         .iter()
         .copied()
         .filter(|quest| {
             !matches!(
                 *quest,
-                "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
+                "oteryn:quest.draconia_quest"
+                    | "oteryn:quest.the_order_of_the_stag_quest"
+                    | "oteryn:quest.elemental_spheres_quest"
+                    | "oteryn:quest.outfit_and_addon_quests"
             )
         })
         .collect::<std::collections::BTreeSet<_>>();
@@ -1090,11 +1102,11 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        16
+        28
     );
-    // Canonical main adds the exact source cohort checked above; schema2
-    // Mystery has no fabricated legacy definition or absent-value mapping.
-    assert_eq!(active.npc_legacy.len(), 14);
+    // Both source lanes are present; two Gnomus programs share one legacy quest.
+    // Schema2 Mystery has no fabricated legacy definition or absent-value mapping.
+    assert_eq!(active.npc_legacy.len(), 23);
     // Main adds independently owned programmes; retain the exact original lane set.
     let original = [
         "oteryn:quest.a_father_s_burden_quest",
@@ -1130,7 +1142,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -1186,7 +1198,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 14);
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 23);
     assert!(
         !loaded
             .catalogue()

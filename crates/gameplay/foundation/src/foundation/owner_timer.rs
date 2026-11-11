@@ -426,6 +426,46 @@ where
         self.drain_due_matching(clock, owner_fence, target_is_current, |_, _| true)
     }
 
+    /// Deliver only the earliest due input of one `DeadlineState` family. This
+    /// lets a caller stop after a physical callback without removing or rebuilding
+    /// the remaining inputs. Selection is linear in the lane size and allocates
+    /// nothing; ordering is the same `(due, scheduling ordinal, sequence)` as a drain.
+    ///
+    /// A foreign/superseded owner or a non-`DeadlineState` family changes nothing.
+    /// Stale targets of the selected family are purged, even before their deadline;
+    /// other families retain their own catch-up policy and remain untouched.
+    pub fn pop_next_due_deadline(
+        &mut self,
+        clock: &impl OwnerClock,
+        owner_fence: &ScopeRuntimeFence,
+        family: Family,
+        mut target_is_current: impl FnMut(ExactActorRef) -> bool,
+    ) -> Option<FiredTimer<Family, Occurrence>> {
+        if !owner_fence.is_current_for_scope(self.scope, self.generation)
+            || self.policy_for_family(family).catch_up != CatchUpPolicy::DeadlineState
+        {
+            return None;
+        }
+        let now = clock.now();
+        self.entries.retain(|entry| {
+            entry.family != family || entry.target.is_none_or(&mut target_is_current)
+        });
+        let index = self
+            .entries
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| entry.family == family && entry.due <= now)
+            .min_by_key(|(_, entry)| (entry.due, entry.scheduling_stamp.ordinal(), entry.sequence))
+            .map(|(index, _)| index)?;
+        let entry = self.entries.remove(index);
+        Some(FiredTimer {
+            family: entry.family,
+            occurrence: entry.occurrence,
+            target: entry.target,
+            due: entry.due,
+        })
+    }
+
     /// Drain due occurrences whose source facts are ready, preserving unprepared entries
     /// with their original deadline, stamp and sequence. For skip-to-latest families the
     /// latest occurrence decides readiness for the whole key; an older ready occurrence
@@ -718,6 +758,233 @@ mod tests {
             ],
         )
         .expect("caps within their registered maximum")
+    }
+
+    #[test]
+    fn single_deadline_keeps_exact_order_and_suffix_when_the_consumer_stops() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let early = issue_stamp(&mut owner, generation);
+        let late = issue_stamp(&mut owner, generation);
+        let mut lane = generous_lane(scope, generation);
+        for (occurrence, stamp, due) in [
+            (10, early, 30),
+            (30, late, 10),
+            (20, early, 10),
+            (21, early, 10),
+            (40, late, 40),
+        ] {
+            lane.schedule(
+                &owner,
+                stamp,
+                TestFamily::Respawn,
+                occurrence,
+                None,
+                SemanticTimeMicros::from_micros(due),
+            )
+            .expect("schedule original deadline");
+        }
+        let originals = lane.entries.clone();
+        let sequence = lane.next_sequence;
+        let cutoff = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(30));
+        let first = lane
+            .pop_next_due_deadline(&cutoff, &owner, TestFamily::Respawn, |_| true)
+            .expect("earliest original input");
+        assert_eq!(first.occurrence, 20);
+        assert_eq!(first.due, SemanticTimeMicros::from_micros(10));
+
+        // A physical callback can retain this input and stop its caller here.
+        // No other due input has left the owner or acquired replacement evidence.
+        assert_eq!(lane.pending_len(), originals.len() - 1);
+        assert_eq!(lane.next_sequence, sequence);
+        for (actual, original) in lane
+            .entries
+            .iter()
+            .zip(originals.iter().filter(|entry| entry.occurrence != 20))
+        {
+            assert_eq!(actual.family, original.family);
+            assert_eq!(actual.occurrence, original.occurrence);
+            assert_eq!(actual.target, original.target);
+            assert_eq!(actual.due, original.due);
+            assert_eq!(actual.scheduling_stamp, original.scheduling_stamp);
+            assert_eq!(actual.sequence, original.sequence);
+        }
+        for (occurrence, due) in [(21, 10), (30, 10), (10, 30)] {
+            let fired = lane
+                .pop_next_due_deadline(&cutoff, &owner, TestFamily::Respawn, |_| true)
+                .expect("same retained suffix");
+            assert_eq!(fired.occurrence, occurrence);
+            assert_eq!(fired.due, SemanticTimeMicros::from_micros(due));
+        }
+        assert!(
+            lane.pop_next_due_deadline(&cutoff, &owner, TestFamily::Respawn, |_| true)
+                .is_none()
+        );
+        assert_eq!(lane.pending_len(), 1);
+        let later = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(1000));
+        let last = lane
+            .pop_next_due_deadline(&later, &owner, TestFamily::Respawn, |_| true)
+            .expect("later original deadline");
+        assert_eq!(last.occurrence, 40);
+        assert_eq!(last.due, SemanticTimeMicros::from_micros(40));
+        assert_eq!(lane.pending_len(), 0);
+    }
+
+    #[test]
+    fn single_deadline_refuses_foreign_or_superseded_owners_and_skip_to_latest() {
+        let gen1 = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, gen1);
+        let stamp = issue_stamp(&mut owner, gen1);
+        let mut lane = generous_lane(scope, gen1);
+        for family in [TestFamily::Respawn, TestFamily::AiThink] {
+            lane.schedule(
+                &owner,
+                stamp,
+                family,
+                1,
+                Some(actor(1)),
+                SemanticTimeMicros::from_micros(10),
+            )
+            .expect("schedule guarded family");
+        }
+        let sequence = lane.next_sequence;
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(100));
+        let foreign = fence(scope_for(2), gen1);
+        let mut queries = 0;
+        for (candidate, family) in [
+            (&foreign, TestFamily::Respawn),
+            (&owner, TestFamily::AiThink),
+        ] {
+            assert!(
+                lane.pop_next_due_deadline(&clock, candidate, family, |_| {
+                    queries += 1;
+                    false
+                })
+                .is_none()
+            );
+        }
+        owner
+            .apply_external_grant(generation(2))
+            .expect("real handoff supersedes the old timer lane");
+        assert!(
+            lane.pop_next_due_deadline(&clock, &owner, TestFamily::Respawn, |_| {
+                queries += 1;
+                false
+            })
+            .is_none()
+        );
+        assert_eq!(queries, 0);
+        assert_eq!(lane.pending_len(), 2);
+        assert_eq!(lane.next_sequence, sequence);
+    }
+
+    #[test]
+    fn single_deadline_purges_stale_future_targets_only_in_its_selected_family() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamp = issue_stamp(&mut owner, generation);
+        let mut lane = generous_lane(scope, generation);
+        for (family, occurrence, due) in [
+            (TestFamily::Respawn, 1, 10),
+            (TestFamily::Respawn, 2, 1000),
+            (TestFamily::AiThink, 3, 5),
+        ] {
+            lane.schedule(
+                &owner,
+                stamp,
+                family,
+                u64::from(occurrence),
+                Some(actor(occurrence)),
+                SemanticTimeMicros::from_micros(due),
+            )
+            .expect("schedule selected and unrelated families");
+        }
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(20));
+        let mut queried = Vec::new();
+        let fired = lane
+            .pop_next_due_deadline(&clock, &owner, TestFamily::Respawn, |target| {
+                queried.push(target);
+                target == actor(1)
+            })
+            .expect("live selected target");
+        assert_eq!(fired.occurrence, 1);
+        assert_eq!(queried, vec![actor(1), actor(2)]);
+        assert_eq!(lane.pending_len(), 1);
+        assert_eq!(lane.entries[0].family, TestFamily::AiThink);
+        assert_eq!(lane.entries[0].due, SemanticTimeMicros::from_micros(5));
+        let original_catch_up = lane.drain_due(&clock, &owner, |_| true);
+        assert_eq!(original_catch_up.len(), 1);
+        assert_eq!(original_catch_up[0].occurrence, 3);
+        assert_eq!(original_catch_up[0].due, clock.now());
+    }
+
+    #[test]
+    fn single_deadline_selection_has_bounded_work_for_a_ready_cohort() {
+        use std::cell::Cell;
+
+        #[derive(Clone, Copy)]
+        struct CountedFamily<'a>(&'a Cell<usize>);
+        impl PartialEq for CountedFamily<'_> {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.set(self.0.get() + 1);
+                std::ptr::eq(self.0, other.0)
+            }
+        }
+        impl Eq for CountedFamily<'_> {}
+        impl TimerFamily for CountedFamily<'_> {
+            fn registered_maximum(self) -> usize {
+                1
+            }
+        }
+
+        let comparisons = Cell::new(0);
+        let family = CountedFamily(&comparisons);
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamp = issue_stamp(&mut owner, generation);
+        let mut lane = OwnerTimerLane::for_generation(
+            scope,
+            generation,
+            [(
+                family,
+                FamilyPolicy {
+                    max_pending: 1,
+                    catch_up: CatchUpPolicy::DeadlineState,
+                },
+            )],
+        )
+        .expect("one pending deadline per actor");
+        const COHORT: u8 = 64;
+        for seed in 1..=COHORT {
+            lane.schedule(
+                &owner,
+                stamp,
+                family,
+                seed,
+                Some(actor(seed)),
+                SemanticTimeMicros::from_micros(10),
+            )
+            .expect("real owner timer");
+        }
+        comparisons.set(0);
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(10));
+        for seed in 1..=COHORT {
+            let fired = lane
+                .pop_next_due_deadline(&clock, &owner, family, |_| true)
+                .expect("one original ready input");
+            assert_eq!(fired.occurrence, seed);
+        }
+        assert_eq!(lane.pending_len(), 0);
+        let n = usize::from(COHORT);
+        assert!(
+            comparisons.get() <= 4 * n * n,
+            "single delivery must not repeatedly rebuild the unready cohort: {} family comparisons",
+            comparisons.get()
+        );
     }
 
     #[test]

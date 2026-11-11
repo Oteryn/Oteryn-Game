@@ -1,4 +1,4 @@
--- Closed historical successors of the original onMove MINT. No Item identity changes.
+-- Closed historical successors of source onMove/onDeath MINTs. No Item identity changes.
 WITH RECURSIVE source_move_paths AS (
  SELECT m.item_instance_id,m.transaction_id AS mint_transaction_id,
   m.definition_family,m.definition_production_key,m.definition_revision,
@@ -8,20 +8,25 @@ WITH RECURSIVE source_move_paths AS (
  JOIN game_item_instances i ON i.item_instance_id=m.item_instance_id AND i.minted_transaction_id=m.transaction_id
  JOIN game_spell_item_audit_outbox a USING(transaction_id)
  WHERE m.operation_kind=1 AND m.ordinal=1 AND r.operation_count=1 AND r.cause_kind=3
-  AND r.runtime_scope_kind=2 AND r.channel_id IS NULL AND m.runtime_scope_kind=2 AND m.channel_id IS NULL
-  AND (m.world_id,m.instance_id)=(r.world_id,r.instance_id) AND i.world_id=m.world_id
+  AND (m.world_id,m.runtime_scope_kind,m.channel_id,m.instance_id)
+   IS NOT DISTINCT FROM (r.world_id,r.runtime_scope_kind,r.channel_id,r.instance_id)
+  AND i.world_id=m.world_id
   AND m.quantity_before=0 AND m.quantity_after=1 AND m.state_revision_before=0 AND m.source_stack_ordinal IS NULL
   AND m.definition_family='Item' AND m.definition_revision='definition-r1'
-  AND (m.definition_production_key='oteryn:item.tibia.i43589'
-   OR (r.creature_definition_key='oteryn:creature.bakragore' AND m.definition_production_key='oteryn:item.tibia.i43294'))
-  AND r.creature_definition_key IN('oteryn:creature.vemiath','oteryn:creature.chagorz','oteryn:creature.bakragore')
   AND r.spell_family='Creature' AND r.spell_production_key=r.creature_definition_key
   AND r.spell_revision='definition-r1' AND r.creature_definition_revision='definition-r1'
   AND r.binding=sha256(r.intent) AND a.envelope=r.intent AND a.envelope_sha256=r.binding
   AND a.event_id=r.event_id AND a.created_xact_id=r.created_xact_id AND m.created_xact_id=r.created_xact_id
   AND a.occurred_at_unix_ms=r.occurred_at_unix_ms
   AND convert_from(r.intent,'UTF8')::jsonb->>'schema'='OTERYN_CREATURE_EVENT_GROUND_CAUSE/v1'
-  AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.footprint.create'
+  AND ((r.runtime_scope_kind=2 AND r.channel_id IS NULL AND r.instance_id IS NOT NULL
+    AND (m.definition_production_key='oteryn:item.tibia.i43589'
+     OR (r.creature_definition_key='oteryn:creature.bakragore' AND m.definition_production_key='oteryn:item.tibia.i43294'))
+    AND r.creature_definition_key IN('oteryn:creature.vemiath','oteryn:creature.chagorz','oteryn:creature.bakragore')
+    AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.footprint.create')
+   OR (game_w01_death_ground_shape(r) AND r.creature_definition_key='oteryn:creature.corrupted_soul'
+    AND m.definition_production_key='oteryn:item.tibia.i23726'
+    AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='w01.corrupted-soul.create'))
  UNION ALL
  SELECT n.item_instance_id,p.mint_transaction_id,n.definition_family,n.definition_production_key,n.definition_revision,
   n.state_revision_before+1,n.transaction_id,p.transactions||n.transaction_id,p.depth+1,n.source_stack_ordinal
@@ -43,16 +48,19 @@ WITH RECURSIVE source_move_paths AS (
   AND a.event_id=r.event_id AND a.created_xact_id=r.created_xact_id AND n.created_xact_id=r.created_xact_id
   AND a.occurred_at_unix_ms=r.occurred_at_unix_ms
   AND convert_from(r.intent,'UTF8')::jsonb->>'schema'='OTERYN_CREATURE_EVENT_GROUND_CAUSE/v1'
-  AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.footprint.transform'
   AND convert_from(r.intent,'UTF8')::jsonb->'operations'->0->>'kind'='transform_ground'
   AND convert_from(r.intent,'UTF8')::jsonb->'operations'->0->'before'=jsonb_build_object('family',p.definition_family,'key',p.definition_production_key,'revision',p.definition_revision)
   AND convert_from(r.intent,'UTF8')::jsonb->'operations'->0->'definition'=jsonb_build_object('family',n.definition_family,'key',n.definition_production_key,'revision',n.definition_revision)
   AND (convert_from(r.intent,'UTF8')::jsonb->'operations'->0->>'revision')=n.state_revision_before::text
   AND (convert_from(r.intent,'UTF8')::jsonb->'operations'->0->>'ordinal')=n.source_stack_ordinal::text
   AND convert_from(r.intent,'UTF8')::jsonb->'operations'->0->>'quantity'='1'
-  AND ((p.definition_production_key='oteryn:item.tibia.i43589' AND n.definition_production_key='oteryn:item.tibia.i43590')
-   OR (p.definition_production_key='oteryn:item.tibia.i43590' AND n.definition_production_key=CASE WHEN r.creature_definition_key='oteryn:creature.chagorz' THEN 'oteryn:item.tibia.i43625' ELSE 'oteryn:item.tibia.i43297' END)
-   OR (r.creature_definition_key='oteryn:creature.bakragore' AND p.definition_production_key='oteryn:item.tibia.i43294' AND n.definition_production_key='oteryn:item.tibia.i43295'))
+  AND ((convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.footprint.transform'
+    AND ((p.definition_production_key='oteryn:item.tibia.i43589' AND n.definition_production_key='oteryn:item.tibia.i43590')
+     OR (p.definition_production_key='oteryn:item.tibia.i43590' AND n.definition_production_key=CASE WHEN r.creature_definition_key='oteryn:creature.chagorz' THEN 'oteryn:item.tibia.i43625' ELSE 'oteryn:item.tibia.i43297' END)
+     OR (r.creature_definition_key='oteryn:creature.bakragore' AND p.definition_production_key='oteryn:item.tibia.i43294' AND n.definition_production_key='oteryn:item.tibia.i43295')))
+   OR (game_w01_death_ground_shape(r)
+    AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='w01.corrupted-soul.transform'
+    AND game_w01_death_transform_edge(r.creature_definition_key,p.definition_production_key,n.definition_production_key)))
 ), source_move_current AS (
  SELECT p.* FROM source_move_paths p JOIN game_item_instances i USING(item_instance_id)
  JOIN game_spell_item_lines m ON m.transaction_id=p.mint_transaction_id AND m.item_instance_id=p.item_instance_id AND m.operation_kind=1
@@ -75,5 +83,8 @@ WITH RECURSIVE source_move_paths AS (
      AND r.binding=sha256(r.intent) AND a.envelope=r.intent AND a.envelope_sha256=r.binding AND a.event_id=r.event_id
      AND a.created_xact_id=r.created_xact_id AND n.created_xact_id=r.created_xact_id AND a.occurred_at_unix_ms=r.occurred_at_unix_ms
      AND convert_from(r.intent,'UTF8')::jsonb->>'schema'='OTERYN_CREATURE_EVENT_GROUND_CAUSE/v1'
-     AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.footprint.remove')))
+     AND ((root.creature_definition_key IN('oteryn:creature.vemiath','oteryn:creature.chagorz','oteryn:creature.bakragore')
+       AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='rotten-blood.footprint.remove')
+      OR (game_w01_death_ground_shape(r) AND root.creature_definition_key='oteryn:creature.corrupted_soul'
+       AND convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'rule'='w01.corrupted-soul.expire')))))
 )

@@ -64,7 +64,7 @@ fn m06_player_ground_move_far_or_missing_tile_writes_nothing() -> TestResult {
 }
 
 #[test]
-fn m06_player_ground_move_authored_item_is_not_supported() -> TestResult {
+fn m06_player_ground_move_authored_item_materializes_once_and_replays() -> TestResult {
     player_ground_case(PlayerGroundCase::Authored)
 }
 
@@ -603,6 +603,41 @@ fn scenario(
                     }
                 }
                 PlayerGroundCase::Authored => {
+                    use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+                    use oteryn_protocol_oteryn::item_view::{
+                        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+                        encode_item_move_intent_for,
+                    };
+
+                    let mut observer = SessionMapView::default();
+                    let mut items =
+                        SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+                    let Some(MapUpdate::Snapshot(snapshot)) = owner
+                        .observe_world_map(deps.actor, &mut observer, &mut items)
+                        .await
+                        .ok_or("authored source map")?
+                        .map_err(debug)?
+                    else {
+                        return Err("authored source snapshot".into());
+                    };
+                    let header = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
+                        &snapshot.payload,
+                    )
+                    .map_err(debug)?
+                    .header;
+                    let selection = ItemMoveSelection {
+                        equip_drop: false,
+                        container_tree: false,
+                        world_interaction: true,
+                    };
+                    let payload = encode_item_move_intent_for(
+                        &ItemMoveIntent {
+                            source: items.table().handle(&item).ok_or("authored coin handle")?,
+                            destination: ItemMoveDestination::Ground(cell(6)),
+                        },
+                        selection,
+                    )
+                    .map_err(debug)?;
                     assert_eq!(
                         owner
                             .move_loop_item(
@@ -615,13 +650,135 @@ fn scenario(
                                 }
                             )
                             .await,
-                        LoopMoveResult::Refused(LoopMoveRefusal::NotSupported)
+                        LoopMoveResult::Committed
+                    );
+                    let ItemKey::MapBase { placement_key, .. } = item else {
+                        return Err("authored source identity".into());
+                    };
+                    let (minted, definition, quantity): (Vec<u8>, String, i64) = sqlx::query_as(
+                        "SELECT uuid_send(item_instance_id),definition_production_key,quantity \
+                         FROM game_map_item_mint_receipts \
+                         WHERE game_session_id=encode($1,'hex')::uuid AND command_id=101 \
+                         AND base_bundle_digest=$2 AND placement_key=$3::text::numeric \
+                         AND reset_epoch=$4::text::numeric",
+                    )
+                    .bind(next.game_session_id.as_bytes().as_slice())
+                    .bind(map.base().digest().as_slice())
+                    .bind(placement_key.to_string())
+                    .bind(owner.reset_epoch.to_string())
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    let minted: [u8; 16] = minted.try_into().map_err(|_| "minted coin identity")?;
+                    assert_eq!(
+                        (definition.as_str(), quantity),
+                        ("oteryn:item.tibia.i3031", 1)
+                    );
+                    let ground = owner
+                        .root
+                        .read_item_loop_ground(owner.world_id, owner.channel_id)
+                        .await?;
+                    let moved = ground
+                        .iter()
+                        .find(|entry| entry.item.item_instance_id == minted)
+                        .ok_or("materialized coin custody")?;
+                    assert_eq!(moved.item.quantity, 1);
+                    assert_eq!(
+                        moved.item.ground.spatial_position,
+                        [
+                            6_i32.to_be_bytes().as_slice(),
+                            0_i32.to_be_bytes().as_slice(),
+                            (-7_i16).to_be_bytes().as_slice(),
+                        ]
+                        .concat()
+                    );
+                    let custody: i64 = sqlx::query_scalar(
+                        "SELECT (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid) \
+                         +(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid) \
+                         +(SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid) \
+                         +(SELECT count(*) FROM game_item_container_slots WHERE item_instance_id=encode($1,'hex')::uuid)",
+                    )
+                    .bind(minted.as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    assert_eq!(
+                        custody, 1,
+                        "the minted coin must have exactly one custody owner"
+                    );
+                    let after = player_ground_state(&harness.pool).await?;
+                    assert_eq!(before["mint_receipts"], serde_json::json!([]));
+                    assert_eq!(
+                        after["mint_receipts"]
+                            .as_array()
+                            .ok_or("MINT receipts")?
+                            .len(),
+                        1
                     );
                     assert_eq!(
-                        player_ground_state(&harness.pool).await?,
-                        before,
-                        "authored refusal must not MINT"
+                        after["receipts"].as_array().ok_or("move receipts")?.len(),
+                        1
                     );
+                    assert_eq!(
+                        after["items"].as_array().ok_or("minted items")?.len(),
+                        before["items"].as_array().ok_or("prior items")?.len() + 1,
+                    );
+                    let ground = crate::gameplay_transport::loop_move::loop_ground(
+                        &owner,
+                        map.base(),
+                        Some(index),
+                    )
+                    .await
+                    .ok_or("materialized source overlay")?;
+                    assert!(
+                        ground
+                            .overlay()
+                            .tile(crate::map::overlay::TilePos {
+                                x: 7,
+                                y: 0,
+                                floor: -7,
+                            })
+                            .is_some_and(|tile| tile.is_hidden(1)),
+                        "the authored source must stay hidden"
+                    );
+                    for (command_id, expected) in
+                        [(101, ItemMoveOutcome::Moved), (102, ItemMoveOutcome::Stale)]
+                    {
+                        if command_id == 102 {
+                            // Inventory replay does not retire a Map handle. Publish the actual
+                            // changed map before testing reuse of its removed authored source.
+                            let Some(MapUpdate::Delta(delta)) = owner
+                                .observe_world_map(deps.actor, &mut observer, &mut items)
+                                .await
+                                .ok_or("materialized source map")?
+                                .map_err(debug)?
+                            else {
+                                return Err("materialization must publish a map delta".into());
+                            };
+                            let delta = oteryn_protocol_oteryn::world_map::decode_world_map_delta(
+                                &header,
+                                &delta.payload,
+                            )
+                            .map_err(debug)?;
+                            let source = delta
+                                .tiles
+                                .iter()
+                                .find(|tile| tile.position.x == 7 && tile.position.y == 0)
+                                .ok_or("removed authored source delta")?;
+                            assert!(!source.items.iter().any(|entry| entry.appearance_id == 3031));
+                            assert!(items.table().handle(&item).is_none());
+                        }
+                        assert!(matches!(
+                            item_move(
+                                &owner, deps.actor, command(command_id), &payload,
+                                selection, false, &mut items,
+                            ).await,
+                            ItemMoveStep::Result(actual, _) if actual == expected
+                        ));
+                        assert_eq!(
+                            player_ground_state(&harness.pool).await?,
+                            after,
+                            "replay and stale-source reuse must preserve exact custody and receipts"
+                        );
+                    }
                 }
             }
             eprintln!(
