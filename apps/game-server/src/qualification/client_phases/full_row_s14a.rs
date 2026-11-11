@@ -101,7 +101,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         target: TeamTarget::Quest(7),
         ..listing(22, 1_500, 4, 2)
     };
-    let mut client = connect_world(clients, 0xe0).await?;
+    let mut client = row_connect_world(clients, 0xe0).await?;
     expect(
         client
             .selected_capabilities()
@@ -183,7 +183,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(status == CommandStatus::Accepted, "recreate", status)?;
     logout(&mut client).await?;
 
-    let mut fresh = connect_world(clients, 0xe1).await?;
+    let mut fresh = row_connect_world(clients, 0xe1).await?;
     expect(
         rows(clients, 1, &template_sql(&first)).await? == 1,
         "template-after-relog",
@@ -216,7 +216,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -251,8 +251,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

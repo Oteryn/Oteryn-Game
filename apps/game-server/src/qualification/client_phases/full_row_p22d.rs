@@ -95,7 +95,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd6).await?;
+    let mut client = row_connect_world(clients, 0xd6).await?;
     selected(&client)?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
@@ -153,7 +153,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     }
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xd7).await?;
+    let mut fresh = row_connect_world(clients, 0xd7).await?;
     let list = read(&mut fresh, best).await?;
     let after = kills(&list, RAT);
     // Leave the tracker as found.
@@ -175,7 +175,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(360), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -210,8 +210,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

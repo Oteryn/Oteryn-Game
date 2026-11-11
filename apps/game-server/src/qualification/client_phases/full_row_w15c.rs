@@ -23,7 +23,7 @@ const REFUSALS: [&str; 2] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(150), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(Outcome::Started(task))) => (
             "PASS",
@@ -187,8 +187,8 @@ fn expect(lines: &[String], needle: &str, step: &str) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -206,7 +206,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let task = first_task()?;
-    let mut client = connect_world(clients, 0xe5).await?;
+    let mut client = row_connect_world(clients, 0xe5).await?;
     let actor = reach(&mut client, world, &bytes).await?;
     expect(&say(&mut client, actor, "hi").await?, "join", "hi")?;
     expect(&say(&mut client, actor, "join").await?, "Welcome", "join")?;
@@ -233,7 +233,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         }
     };
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xe5).await?;
+    let mut client = row_connect_world(clients, 0xe5).await?;
     let actor = reach(&mut client, world, &bytes).await?;
     expect(
         &say(&mut client, actor, "hi").await?,

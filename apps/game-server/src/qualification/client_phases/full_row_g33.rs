@@ -13,7 +13,7 @@ const WINDOWS: [((u32, u32), (u32, u32)); 2] = [((2, 21), (2, 27)), ((12, 12), (
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(60), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => detail,
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -48,9 +48,9 @@ fn in_window(date: (u32, u32)) -> bool {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<(&'static str, String)> {
-    let mut client = connect_world(clients, 0xe1).await?;
+    let mut client = row_connect_world(clients, 0xe1).await?;
     client.service_liveness(Duration::from_millis(50)).await?;
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout;observed=refused".into());

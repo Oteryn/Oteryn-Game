@@ -34,7 +34,7 @@ enum Verdict {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let verdict = match tokio::time::timeout(Duration::from_secs(210), journey(clients)).await {
+    let verdict = match row_complete_with_timeout(Duration::from_secs(210), journey(clients)).await {
         Ok(Ok(true)) => Verdict::Pass,
         Ok(Ok(false)) => Verdict::MissingServer,
         Ok(Err(error)) => Verdict::Fail(error.to_string()),
@@ -91,10 +91,10 @@ async fn snapshot(client: &mut DevClientSession, step: &str) -> TestResult<Loyal
     Ok(value)
 }
 
-async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
+async fn accepted_logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let observed = client.session_mut().logout().await?;
+        let observed = client.row_logout().await?;
         if observed.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         }
@@ -116,7 +116,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = row_connect_world(clients, 0xd3).await?;
     if !client.selected_capabilities().contains(&CAPABILITY_LOYALTY_SKILLS_V1) {
         return Err("step=baseline observed=capability-not-offered need=loyalty-skills-capability".into());
     }
@@ -143,7 +143,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
 
     accepted_logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xd4).await?;
+    let mut fresh = row_connect_world(clients, 0xd4).await?;
     if fresh.join_snapshot().game_session_id == initial_session {
         return Err("step=fresh-admission observed=reused-game-session need=new-admission".into());
     }

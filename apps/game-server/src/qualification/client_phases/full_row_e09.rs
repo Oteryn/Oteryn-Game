@@ -71,7 +71,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(900), journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(900), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step=journey observed=timeout-900s need=responsive-mail-route".into())
@@ -433,7 +433,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let letter = provisioning::item_reference(&definitions, 3505)?;
     let parcel = provisioning::item_reference(&definitions, 3503)?;
     let label = provisioning::item_reference(&definitions, 3507)?;
-    let mut client = connect_world(clients, 0xe9).await?;
+    let mut client = row_connect_world(clients, 0xe9).await?;
     let session = client.join_snapshot().game_session_id;
     let entities = client.world_entities().ok_or("own entities absent")?;
     let own_identity = *entities.own_identity();
@@ -538,13 +538,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("parcel-label-and-delivery", parcel_delivery);
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused need=accepted-logout".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xea).await?;
+    let mut fresh = row_connect_world(clients, 0xea).await?;
     if fresh.join_snapshot().game_session_id == session {
         return Err("step=fresh-admission observed=reused-session need=new-session".into());
     }
@@ -557,7 +557,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "fresh-admission-durable-inbox",
         (letter_after, parcel_after),
     );
-    if fresh.session_mut().logout().await?.result
+    if fresh.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=final-logout observed=refused need=accepted-logout".into());

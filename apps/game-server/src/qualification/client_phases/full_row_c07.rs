@@ -28,7 +28,7 @@ const FIELD_ID: u32 = 21465;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-240s need=server-complete-field-lifecycle".into()),
@@ -54,7 +54,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc7).await?;
+    let mut client = row_connect_world(clients, 0xc7).await?;
     let reference = provisioning::item_reference(&provisioning::item_index()?, RUNE_ID)?;
     let field = provisioning::item_reference(&provisioning::item_index()?, FIELD_ID)?;
     let purchase_sequence = acquire(&mut client, world, &metadata.npcs, reference).await?;
@@ -122,7 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let retained_position = client.world_spatial().actor_position;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc8).await?;
+    let mut fresh = row_connect_world(clients, 0xc8).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != retained_position
         || quantity(&fresh, reference)? != before_count - 1
@@ -209,9 +209,9 @@ async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference
     loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
-    loop { let reply = client.session_mut().logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
+    loop { let reply = client.row_logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
 }
 
 #[cfg(test)]

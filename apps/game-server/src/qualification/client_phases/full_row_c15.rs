@@ -136,10 +136,10 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
                 if reply.status == CommandStatus::Accepted =>
@@ -166,7 +166,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc5).await?;
+    let mut client = row_connect_world(clients, 0xc5).await?;
     let first_session = client.join_snapshot().game_session_id;
     let before = progress(&mut client).await?;
 
@@ -214,7 +214,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     drop(client);
 
     tokio::time::sleep(Duration::from_secs(780)).await;
-    let mut fresh = connect_world(clients, 0xc6).await?;
+    let mut fresh = row_connect_world(clients, 0xc6).await?;
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step-5 fresh admission reused the previous game session".into());
     }
@@ -234,7 +234,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(1_800), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(1_800), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("C15 journey deadline after a real native lifecycle attempt".into()),

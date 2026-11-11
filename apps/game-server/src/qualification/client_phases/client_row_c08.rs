@@ -66,7 +66,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0x30).await?;
-    let row_needs_logout_0 = true;
+    let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
         travel_to_spawn(
             &mut client,
@@ -79,7 +79,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         client.session_mut().attack_target(None).await?;
         client.take_events();
         let direct = next_damage(&mut client, before.health, 30).await?;
-        let delayed = next_damage(&mut client, direct.health, 15).await?;
+        row_isolate_poison(&mut client, world).await?;
+        let isolated = client.actor_vitals().ok_or("isolated vitals absent")?.health;
+        let delayed = next_damage(&mut client, isolated, 15).await?;
 
         let snapshot = client
             .session_mut()
@@ -104,6 +106,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         if cast.disposition != SpellCastDisposition::Cast {
             return Err(format!("C08 exana pox refused: {cast:?}").into());
         }
+        if row_poison_active(&mut client).await? { return Err("antidote left poison active".into()); }
         let dispelled = *client.actor_vitals().ok_or("C08 post-cast vitals absent")?;
         if dispelled.mana.checked_add(entry.mana) != Some(mana_before) {
             return Err(format!(
@@ -132,6 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         while tokio::time::Instant::now() < deadline {
             let reply = client.session_mut().logout().await?;
             if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+                row_needs_logout_0 = false;
                 break;
             }
             client.service_liveness(Duration::from_millis(250)).await?;

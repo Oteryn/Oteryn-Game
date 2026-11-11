@@ -109,10 +109,9 @@ fn stable(before: &wire::MapResult, after: &wire::MapResult) -> bool {
         && before.improved == after.improved
 }
 
-async fn logout(client: &mut DevClientSession, step: u8) -> Result<(), Box<Failure>> {
+async fn logout(client: &mut RowClient, step: u8) -> Result<(), Box<Failure>> {
     let reply = client
-        .session_mut()
-        .logout()
+        .row_logout()
         .await
         .map_err(|error| Failure::new(step, format!("logout-error={error}")))?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
@@ -122,7 +121,7 @@ async fn logout(client: &mut DevClientSession, step: u8) -> Result<(), Box<Failu
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
-    let mut client = connect_world(clients, 0xb8)
+    let mut client = row_connect_world(clients, 0xb8)
         .await
         .map_err(|error| Failure::new(1, format!("admission={error}")))?;
     let first_session = client.join_snapshot().game_session_id;
@@ -215,7 +214,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     logout(&mut client, 7).await?;
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xb9)
+    let mut fresh = row_connect_world(clients, 0xb9)
         .await
         .map_err(|error| Failure::new(7, format!("fresh-admission={error}")))?;
     if fresh.join_snapshot().game_session_id == first_session {
@@ -250,7 +249,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(360), journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W12.full status=PASS seconds={:.3}",

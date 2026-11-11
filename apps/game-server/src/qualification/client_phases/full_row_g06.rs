@@ -16,7 +16,7 @@ const SOURCE: &str = "source:docs/contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md:
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(60), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("MISSING-SERVER", SOURCE.to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -33,9 +33,9 @@ fn token(value: &str) -> String {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc7).await?;
+    let mut client = row_connect_world(clients, 0xc7).await?;
     client.service_liveness(Duration::from_millis(50)).await?;
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());

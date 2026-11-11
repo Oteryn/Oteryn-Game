@@ -69,7 +69,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 0,
     };
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("timeout-after-step-{}", row.step).into()),
@@ -278,9 +278,10 @@ async fn buy(
 }
 
 async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
+    let source = carried(client, key)?;
     let reply = client
         .move_item(&items::ItemMoveIntent {
-            source: carried(client, key)?,
+            source,
             destination: items::ItemMoveDestination::Equipment(slot),
         })
         .await?;
@@ -419,7 +420,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc2).await?;
+    let mut client = row_connect_world(clients, 0xc2).await?;
     earn_gold(&mut client, world, &metadata.spawns, 1430).await?;
     let mut purchase_sequences = Vec::new();
     for (id, n) in [(BOW, 1), (ARROW, 10), (WAND, 1), (ROD, 1)] {
@@ -487,7 +488,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc3).await?;
+    let mut fresh = row_connect_world(clients, 0xc3).await?;
     if fresh.join_snapshot().game_session_id == old
         || count(&fresh, arrow)? != 0
         || [bow, wand, rod]
@@ -501,10 +502,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut fresh).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let r = client.session_mut().logout().await?;
+        let r = client.row_logout().await?;
         if r.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         }

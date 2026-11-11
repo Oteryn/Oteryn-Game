@@ -60,7 +60,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("timeout-waiting-for-server-reply".into()),
@@ -152,8 +152,8 @@ async fn history(client: &mut DevClientSession) -> TestResult<wire::StoreHistory
     wire::decode_history_page(&bytes).map_err(|error| format!("history-decode-{error:?}").into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("logout-reply-{reply:?}").into());
     }
@@ -161,7 +161,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xe0).await?;
+    let mut client = row_connect_world(clients, 0xe0).await?;
     let original_session = client.join_snapshot().game_session_id;
 
     row.at("catalogue");
@@ -220,7 +220,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     drop(client);
 
     row.at("fresh-admission");
-    let mut fresh = connect_world(clients, 0xe3).await?;
+    let mut fresh = row_connect_world(clients, 0xe3).await?;
     if fresh.join_snapshot().game_session_id == original_session {
         return Err("fresh-admission-reused-session".into());
     }

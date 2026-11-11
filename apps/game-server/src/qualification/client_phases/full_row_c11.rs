@@ -79,7 +79,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    match tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
+    match row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("fresh-admission-monk", error),
         Err(_) => row.fail("fresh-admission-monk", "journey-timeout"),
@@ -96,7 +96,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xcb).await?;
+    let mut client = row_connect_world(clients, 0xcb).await?;
     if let Err(error) = choose_monk(&mut client, world, &bytes).await {
         row.fail("player-monk-choice", error);
     } else {
@@ -155,7 +155,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     battle_queries(row, &mut client).await;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xcc).await?;
+    let mut fresh = row_connect_world(clients, 0xcc).await?;
     match cast(&mut fresh, &book, "exori infir pug", Some(1)).await {
         Ok(reply) if fresh.actor_vitals().is_some_and(|v| v.serene) => {
             row.pass("fresh-admission-monk", reply)
@@ -353,8 +353,8 @@ async fn choose_monk(
     }
     Ok(())
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("C11 logout refused".into());

@@ -32,7 +32,7 @@ const APPROACH: ActorPosition = ActorPosition {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step-1:timeout-walking-to-authored-bed".into()),
@@ -54,7 +54,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut sleeper = connect_character(clients, 0xb7, 1).await?;
+    let mut sleeper = row_connect_character(clients, 0xb7, 1).await?;
     travel(&mut sleeper, "step-1").await?;
     let handle = bed_handle(&mut sleeper, "step-1")?;
     let saved_position = sleeper.world_spatial().actor_position;
@@ -69,7 +69,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
 
-    let mut peer = connect_character(clients, 0xb8, 0).await?;
+    sleeper.ended = true;
+    let mut peer = row_connect_character(clients, 0xb8, 0).await?;
     travel(&mut peer, "step-3").await?;
     let peer_bed = bed_handle(&mut peer, "step-3")?;
     let peer_position = peer.world_spatial().actor_position;
@@ -90,7 +91,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut peer, "step-3").await?;
 
-    let mut woke = connect_character(clients, 0xb9, 1).await?;
+    let mut woke = row_connect_character(clients, 0xb9, 1).await?;
     if woke.join_snapshot().game_session_id == sleeper.join_snapshot().game_session_id {
         return Err("step-4:fresh-admission-reused-sleep-session".into());
     }
@@ -106,6 +107,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if again != UseDisposition::OfflineTraining {
         return Err(format!("step-4:wake-release-observed-{again:?}-need-OfflineTraining").into());
     }
+    if woke.service_liveness(Duration::from_secs(2)).await.is_ok() {
+        return Err("step-4:sleep-session-still-live".into());
+    }
+    woke.ended = true;
     Ok(())
 }
 
@@ -187,8 +192,8 @@ async fn sleep(
         .map_err(|error| format!("{step}:bed-command-reply-decode-{error:?}").into())
 }
 
-async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient, step: &str) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("{step}:logout-observed-{:?}", reply.result).into());
     }

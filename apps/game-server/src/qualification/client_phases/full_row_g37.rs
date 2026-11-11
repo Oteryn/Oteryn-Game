@@ -32,7 +32,7 @@ const UNDRIVEN: &str =
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(150), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(failures)) if failures.is_empty() => ("FAIL", UNDRIVEN.to_owned()),
         Ok(Ok(failures)) => ("FAIL", token(&failures.join(";"))),
@@ -190,7 +190,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Vec<String>> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xe8).await?;
+    let mut client = row_connect_world(clients, 0xe8).await?;
     let mut failures = Vec::new();
     let result = highscores(&mut client).await;
     record(&mut failures, "highscores", result);
@@ -204,7 +204,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Vec<String>> {
     record(&mut failures, "support-intake", result);
     let result = party_list(&mut client).await;
     record(&mut failures, "party-list", result);
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         failures.push("probe=logout;observed=refused".to_owned());

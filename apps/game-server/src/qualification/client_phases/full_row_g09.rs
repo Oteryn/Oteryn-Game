@@ -21,7 +21,7 @@ const WATCHES: [u32; 2] = [2906, 6091];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "watch-time-line-and-not-consumed".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -246,8 +246,8 @@ async fn read_time(
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -257,7 +257,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let index = provisioning::item_index()?;
-    let mut client = connect_world(clients, 0xcd).await?;
+    let mut client = row_connect_world(clients, 0xcd).await?;
     let mut found = None;
     let mut observed = String::new();
     for id in WATCHES {
@@ -301,7 +301,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xce).await?;
+    let mut fresh = row_connect_world(clients, 0xce).await?;
     let again = carried(&fresh, definition)
         .first()
         .copied()

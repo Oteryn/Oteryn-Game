@@ -87,7 +87,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xa1).await?;
+    let mut client = row_connect_world(clients, 0xa1).await?;
     let initial_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client, "query").await?;
     let unlocked = initial
@@ -238,13 +238,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("P03 step=effect-checkpoint observed={checkpoint:?}").into());
     }
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("P03 step=logout observed=refused".into());
     }
     drop(client);
-    let mut client = connect_world(clients, 0xa2).await?;
+    let mut client = row_connect_world(clients, 0xa2).await?;
     if client.join_snapshot().game_session_id == initial_session {
         return Err("P03 step=fresh-admission observed=reused-session".into());
     }
@@ -256,7 +256,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("P03 step=final-logout observed=refused".into());
@@ -266,7 +266,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(360), journey(clients)).await;
     let error = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),

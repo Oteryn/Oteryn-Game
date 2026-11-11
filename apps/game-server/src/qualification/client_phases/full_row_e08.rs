@@ -67,7 +67,7 @@ impl Journey {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = match tokio::time::timeout(
+    let result = match row_complete_with_timeout(
         Duration::from_secs(180),
         run(&mut journey, clients),
     )
@@ -158,8 +158,8 @@ async fn to_locker(client: &mut DevClientSession, world: &BundleWorld) -> TestRe
     walk(client, world, &path).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout-refused".into());
@@ -177,7 +177,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let definitions = provisioning::item_index()?;
-    let mut client = connect_character(clients, 0xe8, 1).await?;
+    let mut client = row_connect_character(clients, 0xe8, 1).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_DEPOT_SEARCH_V1)
@@ -192,6 +192,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         .and_then(|inventory| inventory.entries.first())
         .copied()
         .ok_or("no-legitimately-provisioned-carried-item")?;
+    let carried_before = carried_count(&client, item.item_definition_ref);
     let (key, _) = definitions
         .definition_at(item.item_definition_ref)
         .ok_or("carried-item-definition-unknown")?;
@@ -274,7 +275,13 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved != expected {
         return Err("retrieve-all-count-mismatch".into());
     }
-    wait_carried(&mut client, item.handle, true).await?;
+    let inventory_deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    while carried_count(&client, item.item_definition_ref) != carried_before - u64::from(item.count.get()) + u64::from(retrieved.retrieved) {
+        if tokio::time::Instant::now() >= inventory_deadline {
+            return Err("retrieved-definition-count-delta-timeout".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
     let durable_count = carried_count(&client, item.item_definition_ref);
 
     journey.at("5-empty-retrieve-refusal");
@@ -298,7 +305,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xe9, 1).await?;
+    let mut fresh = row_connect_character(clients, 0xe9, 1).await?;
     if fresh.join_snapshot().game_session_id == old_session {
         return Err("fresh-admission-reused-session".into());
     }

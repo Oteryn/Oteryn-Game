@@ -65,7 +65,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row { passed: BTreeSet::new(), started: std::time::Instant::now() };
-    let result = tokio::time::timeout(Duration::from_secs(480), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(480), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step deadline after real player command; server supplied no completing frame".into()),
@@ -237,8 +237,8 @@ fn assert_consistent(stats: &Stats, skills: &SkillProgressSnapshot) -> TestResul
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("logout refusal after vocation commands".into());
     }
     Ok(())
@@ -250,7 +250,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     // Character zero is intentionally used: S16a owns Character one later in this phase.
-    let mut client = connect_character(clients, 0xb0, 0).await?;
+    let mut client = row_connect_character(clients, 0xb0, 0).await?;
     let initial_session = client.join_snapshot().game_session_id;
     let initial = stats(&mut client).await?;
     let initial_skills = trained(&mut client).await?;
@@ -269,7 +269,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     // Clear retained refused conversation through an ordinary fresh admission.
     logout(&mut client).await?;
-    client = connect_character(clients, 0xb1, 0).await?;
+    client = row_connect_character(clients, 0xb1, 0).await?;
     let earned = earn_level_eight(&mut client, world, &metadata.spawns).await?;
     row.pass("player-earned-level-eight", &earned);
     let before = stats(&mut client).await?;
@@ -304,7 +304,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("second-choice-refusal", "Rejected + unchanged frames");
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0xb2, 0).await?;
+    let mut fresh = row_connect_character(clients, 0xb2, 0).await?;
     if fresh.join_snapshot().game_session_id == initial_session
         || stats(&mut fresh).await? != after
         || trained(&mut fresh).await? != after_skills

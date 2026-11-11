@@ -84,7 +84,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {
@@ -179,8 +179,8 @@ async fn own_level(client: &mut DevClientSession) -> TestResult<u32> {
         .ok_or_else(|| "Wheel progression query returned level zero".into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("Wheel logout observed reply={reply:?}").into());
     }
@@ -188,7 +188,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd6).await?;
+    let mut client = row_connect_world(clients, 0xd6).await?;
     if !client
         .selected_capabilities()
         .contains(&wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
@@ -288,7 +288,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut client = connect_world(clients, 0xd7).await?;
+    let mut client = row_connect_world(clients, 0xd7).await?;
     let (_, reloaded) = send(&mut client, &query_request()).await?;
     if reloaded != saved_full || client.actor_vitals().copied() != Some(full_vitals) {
         return Err(format!(
@@ -373,7 +373,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut final_client = connect_world(clients, 0xd8).await?;
+    let mut final_client = row_connect_world(clients, 0xd8).await?;
     let (_, final_state) = send(&mut final_client, &query_request()).await?;
     if final_state != reset || final_client.actor_vitals().copied() != Some(baseline) {
         return Err(format!(

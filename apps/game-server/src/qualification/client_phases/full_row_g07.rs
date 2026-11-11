@@ -17,7 +17,7 @@ use oteryn_protocol_oteryn::house_rotation as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(75), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(75), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "rotation-committed-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -76,8 +76,8 @@ async fn first_entry(client: &mut DevClientSession) -> TestResult<Option<wire::E
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -86,7 +86,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc9).await?;
+    let mut client = row_connect_world(clients, 0xc9).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1)
@@ -123,7 +123,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xca).await?;
+    let mut fresh = row_connect_world(clients, 0xca).await?;
     let durable = first_entry_with(&mut fresh, &key).await;
     logout(&mut fresh).await?;
     if durable? != after {

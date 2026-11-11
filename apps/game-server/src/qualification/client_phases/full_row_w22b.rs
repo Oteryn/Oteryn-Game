@@ -185,7 +185,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.observed(1, step1);
 
     let first_loot = hunt_rat(&mut client, world).await;
-    row.observed(2, match first_loot { Ok(count) => { let after = prey_request(&mut client, &prey::Request::Query).await?; let expected = selected.ok_or("step 1 produced no selected prey state")?; let slot = after.slots.iter().find(|s| s.slot == expected.0 && s.selection_epoch == expected.1).ok_or("prey selection was not retained through kill")?; if slot.hunting_seconds > expected.2 { Err("prey hunting clock increased after credited kill".into()) } else { evidence(&format!("W22B_LOOT prey corpse_entries={count}")); Ok(()) } }, Err(e) => Err(e) });
+    row.observed(2, match first_loot { Ok(count) => { let after = prey_request(&mut client, &prey::Request::Query).await?; let expected = selected.ok_or("step 1 produced no selected prey state")?; let slot = after.slots.iter().find(|s| s.slot == expected.0 && s.selection_epoch == expected.1).ok_or("prey selection was not retained through kill")?; if slot.hunting_seconds > expected.2 { Err("prey hunting clock increased after credited kill".into()) } else { evidence(&format!("W22B_LOOT prey corpse_entries={count}")); Err("needed:prey-attributed-loot-effect;ordinary-corpse-count-is-not-modifier-evidence".into()) } }, Err(e) => Err(e) });
 
     let step3 = async {
         let reply = command(&mut client, daily_boost::CAPABILITY_DAILY_BOOST_V1, daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY, &[]).await?;
@@ -193,7 +193,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let key = decode_boosted_creature(&reply.payload)?;
         let count = hunt_rat(&mut client, world).await?;
         if key != "oteryn:creature.rat" { return Err(format!("boosted creature {key} is not the reachable rat actually killed; corpse_entries={count}").into()); }
-        evidence(&format!("W22B_LOOT daily-boost corpse_entries={count}")); Ok(())
+        evidence(&format!("W22B_LOOT daily-boost corpse_entries={count}")); Err("needed:daily-boost-attributed-extra-roll;ordinary-corpse-count-is-not-modifier-evidence".into())
     }.await;
     row.observed(3, step3);
 
@@ -207,7 +207,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?;
         let committed = after.charms.charms.iter().find(|state| state.charm == gut.charm).is_some_and(|state| state.assigned_race.is_some() && state.effect_active);
         if !committed { if before != after { return Err(format!("Gut refusal mutated state: unlock={:?} assign={:?}", unlock.outcome, assign.outcome).into()); } return Err(format!("Gut refused without mutation: unlock={:?} assign={:?}; need player-earned Bestiary charm points/race stage", unlock.outcome, assign.outcome).into()); }
-        let count = hunt_rat(&mut client, world).await?; evidence(&format!("W22B_LOOT gut corpse_entries={count}")); Ok(())
+        let count = hunt_rat(&mut client, world).await?; evidence(&format!("W22B_LOOT gut corpse_entries={count}")); Err("needed:Gut-attributed-creature-product-loot;ordinary-corpse-count-is-not-modifier-evidence".into())
     }.await;
     row.observed(4, step4);
 

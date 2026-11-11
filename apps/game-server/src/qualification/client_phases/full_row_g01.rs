@@ -20,7 +20,7 @@ const TOWNS: [&str; 5] = ["thais", "carlin", "venore", "edron", "ab_dendriel"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(75), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(75), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -72,7 +72,7 @@ async fn catalogue(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = row_connect_world(clients, 0xc1).await?;
     if !client.selected_capabilities().contains(&49) {
         return Err("step=admit observed=house-capability-not-selected".into());
     }
@@ -107,7 +107,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         let (disposition, revision) = house::result(&reply.payload)?;
         observed.push_str(&format!(";bid:{disposition}:rev{revision}"));
     }
-    let logout = client.session_mut().logout().await?;
+    let logout = client.row_logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=logout observed=refused".into());
     }
@@ -120,7 +120,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let Some(revision) = revision_after else {
         return Err(format!("step=acl observed={observed};needed=acl-revision-advance").into());
     };
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = row_connect_world(clients, 0xc2).await?;
     let mut again = panel_ui::Panel::default();
     again.admitted(*world.as_bytes(), fresh.selected_capabilities());
     again.town = town.ok_or("step=fresh observed=no-town")?;
@@ -130,7 +130,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .rows
         .get(owned.unwrap_or(0))
         .map(|row| row.acl_revision);
-    let out = fresh.session_mut().logout().await?;
+    let out = fresh.row_logout().await?;
     if out.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=logout observed=refused".into());
     }

@@ -122,7 +122,7 @@ fn item_count(client: &DevClientSession) -> TestResult<u32> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    let mut client = connect_character(clients, 0xd5, 0)
+    let mut client = row_connect_character(clients, 0xd5, 0)
         .await
         .map_err(|error| StepFailure { step: 1, observed: format!("admission-{error}") })?;
 
@@ -158,7 +158,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!("e2e_all scenario=P05.full status=PASS seconds={:.3}", started.elapsed().as_secs_f64())),
         Ok(Err(error)) => evidence(&format!("e2e_all scenario=P05.full status=FAIL seconds={:.3} evidence={error}", started.elapsed().as_secs_f64())),

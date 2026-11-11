@@ -73,7 +73,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout need=reachable-eligible-boss-and-reward-chest".into()),
@@ -98,7 +98,7 @@ async fn open(client: &mut DevClientSession) -> TestResult<boss_encounter::Rewar
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_character(clients, 0xf8, 1).await?;
+    let mut client = row_connect_character(clients, 0xf8, 1).await?;
     let before = open(&mut client).await?;
     let mut collected = false;
 
@@ -233,11 +233,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
 
-    let logout = client.session_mut().logout().await?;
+    let logout = client.row_logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?}").into());
     }
-    let mut fresh = connect_character(clients, 0xf9, 1).await?;
+    let mut fresh = row_connect_character(clients, 0xf9, 1).await?;
     let after = open(&mut fresh).await?;
     if collected && !after.entries.is_empty() {
         return Err("step=fresh-admission observed=collected-reward-group-still-present".into());
@@ -246,7 +246,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("step=fresh-admission observed=reward-chest-snapshot-changed-without-accepted-collection".into());
     }
     row.pass("fresh-admission-durable-state", after.entries.len());
-    let cleanup = fresh.session_mut().logout().await?;
+    let cleanup = fresh.row_logout().await?;
     if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=fresh-logout observed={cleanup:?}").into());
     }

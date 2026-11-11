@@ -21,7 +21,7 @@ const ANALYSER_CAPABILITY: u32 = 10;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("FAIL", NEEDED.to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -85,8 +85,8 @@ async fn cooldown_now(client: &mut DevClientSession) -> TestResult<u64> {
     Ok(snapshot.now)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout;observed=refused".into());
@@ -95,7 +95,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd1).await?;
+    let mut client = row_connect_world(clients, 0xd1).await?;
     if !client
         .selected_capabilities()
         .contains(&ANALYSER_CAPABILITY)
@@ -140,7 +140,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=cooldowns;observed=clock-{first}-then-{second}").into());
     }
     logout(&mut client).await?;
-    let mut again = connect_world(clients, 0xd2).await?;
+    let mut again = row_connect_world(clients, 0xd2).await?;
     let (_, persisted) = query(&mut again).await?;
     if persisted != chosen {
         return Err(format!("step=persist;observed={persisted};need={chosen}").into());

@@ -116,7 +116,7 @@ async fn expected_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let expected = expected_badges(clients).await?;
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = row_connect_world(clients, 0xc1).await?;
     let reply = reply_badges(&mut client).await?;
     let stored = stored_badges(clients).await?;
     expect(reply == stored, "reply-vs-durable", (&reply, &stored))?;
@@ -127,7 +127,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = row_connect_world(clients, 0xc2).await?;
     let again = reply_badges(&mut fresh).await?;
     expect(again == reply, "reply-after-relog", (&reply, &again))?;
     expect(
@@ -155,7 +155,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -190,8 +190,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

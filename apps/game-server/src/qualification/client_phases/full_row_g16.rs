@@ -11,15 +11,15 @@
 //! current lane day is not a pick day; it never alters server state outside player commands.
 
 use super::*;
-use crate::map::view::MapFacts;
 use oteryn_dev_client::DevClientSession;
+use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::daily_reward::{self as daily, details, picker};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -80,8 +80,8 @@ async fn accepted(
     Ok(payload)
 }
 
-async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn finish(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -250,12 +250,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0x7a, 0).await?;
+    let mut client = row_connect_character(clients, 0x7a, 0).await?;
     let outcome = body(&mut client, clients, world).await;
     let closed = finish(&mut client).await;
     let data = outcome?;
     closed?;
-    let mut fresh = connect_character(clients, 0x7b, 0).await?;
+    let mut fresh = row_connect_character(clients, 0x7b, 0).await?;
     let checked = verify(&mut fresh, clients, &data).await;
     let closed = finish(&mut fresh).await;
     checked?;

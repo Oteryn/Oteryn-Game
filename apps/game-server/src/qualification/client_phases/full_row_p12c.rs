@@ -114,10 +114,10 @@ async fn query(client: &mut DevClientSession, offset: u16, limit: u8) -> TestRes
     decode_page(&reply.payload, limit)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        match client.session_mut().logout().await?.result {
+        match client.row_logout().await?.result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::Busy | LogoutResult::InFight { .. })
                 if tokio::time::Instant::now() < deadline =>
@@ -145,7 +145,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0xca, 0).await?;
+    let mut client = row_connect_character(clients, 0xca, 0).await?;
     let baseline = query(&mut client, 0, 50).await?;
     if baseline.level == 0 || baseline.pvp_kills == 0 {
         return Err(format!("step 1 query-self: observed={baseline:?}; need nonzero native level and the preceding real PvP frag").into());
@@ -215,7 +215,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    client = connect_character(clients, 0xcb, 0).await?;
+    client = row_connect_character(clients, 0xcb, 0).await?;
     if client.join_snapshot().game_session_id == old_session {
         return Err("step 5 fresh admission: server reused GameSession".into());
     }
@@ -229,7 +229,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(360), journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=P12c.full status=PASS seconds={:.3}",

@@ -25,7 +25,7 @@ const ROW: &str = "S15b";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -72,7 +72,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        active_client = Some(connect_world(clients, 0x8b).await?);
+        active_client = Some(row_connect_world(clients, 0x8b).await?);
         let client = active_client.as_mut().ok_or("admission absent")?;
         travel_to_spawn(&mut *client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         let (monster, own) = actors(client)?;
@@ -93,13 +93,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .map(actor_position);
         let current = active_client.take().ok_or("reconnect session absent")?;
-        active_client = Some(
-            client_disconnect_resume::recover(current, clients, expected)
+        active_client = Some(RowClient::new(
+            client_disconnect_resume::recover(current.into_inner()?, clients, expected)
                 .await
                 .map_err(|error| {
                     format!("step=2 reconnect observed={error} need=committed CompleteReconnect")
                 })?,
-        );
+        ));
         let client = active_client
             .as_mut()
             .ok_or("replacement admission absent")?;
@@ -126,7 +126,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await?;
 
-        let refused = client.session_mut().logout().await?;
+        let refused = client.row_logout().await?;
         if !matches!(
             refused.result,
             Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
@@ -141,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         active_client = None;
 
         active_client = Some(
-            connect_world(clients, 0x8c)
+            row_connect_world(clients, 0x8c)
                 .await
                 .map_err(|error| format!("step=5 fresh admission observed={error}"))?,
         );
@@ -171,7 +171,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await
     .unwrap_or_else(|error| Err(error.into()));
     if let Some(client) = active_client.as_mut() {
-        row_logout(client).await?;
+        row_finish(client).await?;
     }
     result
 }
@@ -314,10 +314,10 @@ async fn require_damage(
     Err(format!("{step} observed=damage-frame:{frame},hp-before:{before},hp-after:{} need=monster-attributed damage frame and lower HP", health(client, own)?).into())
 }
 
-async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
+async fn logout_after_combat(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
             Some(

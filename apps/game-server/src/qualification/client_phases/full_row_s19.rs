@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::player_typing::{CAPABILITY_PLAYER_TYPING_V1, TypingU
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(60), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "typing-on-off-deltas-from-server".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -93,7 +93,7 @@ async fn typing_step(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = row_connect_world(clients, 0xc1).await?;
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_PLAYER_TYPING_V1)
@@ -113,7 +113,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());

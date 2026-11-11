@@ -22,7 +22,7 @@ use oteryn_protocol_oteryn::account_achievements::COMMAND_TYPE_ACCOUNT_ACHIEVEME
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline: achievement lifecycle timed out".into()),
@@ -68,7 +68,7 @@ async fn page(client: &mut DevClientSession, number: u32) -> TestResult<AccountA
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = row_connect_world(clients, 0xc1).await?;
     let before = page(&mut client, 0).await?;
     let notice_snapshot = client
         .session_mut()
@@ -115,7 +115,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         // Still complete the durable lifecycle so this is runtime evidence, not a source probe.
         let unchanged = page(&mut client, 0).await?;
         logout(&mut client).await?;
-        let mut fresh = connect_world(clients, 0xc2).await?;
+        let mut fresh = row_connect_world(clients, 0xc2).await?;
         let persisted = page(&mut fresh, 0).await?;
         logout(&mut fresh).await?;
         return Err(format!(
@@ -146,15 +146,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     logout(&mut client).await?;
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = row_connect_world(clients, 0xc2).await?;
     if page(&mut fresh, 0).await? != granted {
         return Err("step=relogin durable achievement page changed".into());
     }
     logout(&mut fresh).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());

@@ -54,7 +54,7 @@ impl Progress {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut progress = Progress::new();
-    let result = match tokio::time::timeout(
+    let result = match row_complete_with_timeout(
         Duration::from_secs(420),
         journey(clients, &mut progress),
     )
@@ -128,8 +128,8 @@ async fn wait_until(
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("logout reply={reply:?}").into());
     }
@@ -146,7 +146,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xb1).await?;
+    let mut client = row_connect_world(clients, 0xb1).await?;
     travel_to_spawn(
         &mut client,
         world,
@@ -263,7 +263,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     logout(&mut client).await?;
     progress.pass("logout", "Accepted");
     drop(client);
-    let mut fresh = connect_world(clients, 0xb2).await?;
+    let mut fresh = row_connect_world(clients, 0xb2).await?;
     let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })

@@ -116,8 +116,8 @@ fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
     Err("step-3 no reachable production daily shrine in town window".into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    match client.session_mut().logout().await?.result {
+async fn logout(client: &mut RowClient) -> TestResult {
+    match client.row_logout().await?.result {
         Some(LogoutResult::Accepted) => Ok(()),
         observed => Err(format!("step-7 logout observed={observed:?}").into()),
     }
@@ -132,7 +132,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc9).await?;
+    let mut client = row_connect_world(clients, 0xc9).await?;
     let initial = wall(&mut client).await?;
     if initial.claimed || initial.claim_enabled {
         return Err(format!("step-1 needs fresh unopened day observed={initial:?}").into());
@@ -183,7 +183,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step-6 duplicate changed wall or reward cards".into());
     }
     logout(&mut client).await?;
-    client = connect_world(clients, 0xca).await?;
+    client = row_connect_world(clients, 0xca).await?;
     if wall(&mut client).await? != claimed || wildcards(&mut client).await? != after_cards {
         return Err("step-7 fresh admission lost durable wall or reward cards".into());
     }
@@ -200,7 +200,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients))
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients))
         .await
         .unwrap_or_else(|_| Err("step timeout observed=no-reply-frame".into()));
     if let Err(error) = &result {

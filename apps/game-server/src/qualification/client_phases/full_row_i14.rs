@@ -59,7 +59,7 @@ fn next_step(passed: &BTreeSet<&str>) -> &'static str {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result { Ok(result) => result, Err(_) => Err("timeout waiting for server reply/delta".into()) });
 }
 
@@ -133,8 +133,8 @@ async fn use_one(client: &mut DevClientSession, reference: std::num::NonZeroU32)
     Ok((reply.disposition, before))
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("logout refused".into()); }
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("logout refused".into()); }
     Ok(())
 }
 
@@ -147,7 +147,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let meat = provisioning::item_reference(&index, 3577)?;
     let flask = provisioning::item_reference(&index, 285)?;
     let missing = provisioning::item_reference(&index, 268)?;
-    let mut client = connect_world(clients, 0xb4).await?;
+    let mut client = row_connect_world(clients, 0xb4).await?;
     let purchase_meat = acquire(&mut client, world, 3577, 2).await?;
     let purchase_potion = acquire(&mut client, world, 266, 2).await?;
     row.pass("npc-purchase", format!("meat_sequence={purchase_meat} potion_sequence={purchase_potion}"));
@@ -168,7 +168,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let vitals = client.actor_vitals().copied();
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    client = connect_world(clients, 0xb4).await?;
+    client = row_connect_world(clients, 0xb4).await?;
     if client.join_snapshot().game_session_id == session || quantities(&client)? != durable || client.actor_vitals().copied() != vitals { return Err("fresh admission changed durable consumable state/vitals".into()); }
     row.pass("fresh-admission", "new-session exact-inventory-and-vitals");
     // `use_item` requires a server-issued handle. The absence itself is established by the

@@ -30,7 +30,7 @@ const STATUES: [&str; 6] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => {
@@ -68,7 +68,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .collect::<TestResult<_>>()?;
     let positions = statue_positions(&bytes, &index)?;
-    let mut client = connect_world(clients, 0xb4).await?;
+    let mut client = row_connect_world(clients, 0xb4).await?;
     let offered = client
         .selected_capabilities()
         .contains(&CAPABILITY_TRAINING_V1);
@@ -129,7 +129,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         selected.pool_seconds,
     ));
 
-    let mut fresh = connect_world(clients, 0xb5).await?;
+    let mut fresh = row_connect_world(clients, 0xb5).await?;
     let fresh_pool = general_stats(&mut fresh).await?;
     let expected_minutes = u16::try_from(selected.pool_seconds / 60)?;
     if fresh.join_snapshot().game_session_id == before_session
@@ -143,7 +143,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if fresh.session_mut().logout().await?.result
+    if fresh.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=final-logout observed=refused need=accepted-ordinary-logout".into());

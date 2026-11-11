@@ -17,7 +17,7 @@ const KILLS: usize = 3;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(420), journey(clients)).await;
     let detail = match result {
         Ok(Ok(seen)) => describe(KILLS, seen),
         Ok(Err(error)) => compact(&error.to_string()),
@@ -78,7 +78,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let index = provisioning::item_index()?;
     let portal = provisioning::item_reference(&index, PORTAL_ITEM)?.get();
-    let mut client = connect_world(clients, 0xe3).await?;
+    let mut client = row_connect_world(clients, 0xe3).await?;
     let mut seen = false;
     for _ in 0..KILLS {
         travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
@@ -86,7 +86,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
         client.service_liveness(Duration::from_millis(200)).await?;
         seen |= portal_visible(&client, portal);
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());

@@ -18,7 +18,7 @@ use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "construction-mount-unlocked-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -88,8 +88,8 @@ async fn use_by_definition(
     Ok((reply.status, disposition))
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -100,7 +100,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let index = provisioning::item_index()?;
     let rules = crate::content::native_gameplay::mount_taming::rules();
-    let mut client = connect_world(clients, 0xcb).await?;
+    let mut client = row_connect_world(clients, 0xcb).await?;
     let mut tried = 0_u32;
     let mut observed = String::new();
     for rule in rules {
@@ -142,7 +142,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             }
             logout(&mut client).await?;
             drop(client);
-            let mut fresh = connect_world(clients, 0xcc).await?;
+            let mut fresh = row_connect_world(clients, 0xcc).await?;
             let durable = unlocked(clients, &rule.grant_key).await;
             let remaining = carried(&fresh, definition);
             logout(&mut fresh).await?;

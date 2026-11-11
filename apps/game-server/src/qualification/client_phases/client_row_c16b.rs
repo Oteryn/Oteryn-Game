@@ -29,14 +29,11 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(240);
     let mut caster = connect_world(clients, 0x16).await?;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
-        let outcome = capture(&mut caster, clients, world).await;
-        let cleanup = full_e2ef5::rune_cleanup(&mut caster, world).await;
-        outcome?;
-        cleanup
+        capture(&mut caster, clients, world).await
     })
     .await
     .unwrap_or_else(|error| Err(error.into()));
-    let logout_result = row_logout(&mut caster).await;
+    let logout_result = full_e2ef5::rune_cleanup(&mut caster, world).await;
     logout_result?;
     row_result
 }
@@ -142,8 +139,6 @@ async fn capture(
         cleanup
     }
     .await;
-    let logout_result = row_logout(&mut target).await;
-    logout_result?;
     row_result
 }
 

@@ -18,7 +18,7 @@ const PLAYED_TRUMPET: u32 = 6573;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(note)) => ("PASS", compact(&note)),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -228,8 +228,8 @@ async fn use_one(
     Ok((reply.disposition, before))
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout refused".into());
@@ -249,7 +249,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let index = provisioning::item_index()?;
     let trumpet = provisioning::item_reference(&index, TRUMPET)?;
     let played = provisioning::item_reference(&index, PLAYED_TRUMPET)?;
-    let mut client = connect_world(clients, 0xe6).await?;
+    let mut client = row_connect_world(clients, 0xe6).await?;
     let trumpet_base = quantity(&client, trumpet)?;
     let played_base = quantity(&client, played)?;
     let bought = acquire(&mut client, world, TRUMPET, 1).await?;
@@ -264,7 +264,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let durable = quantities(&client)?;
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xe6).await?;
+    let mut client = row_connect_world(clients, 0xe6).await?;
     if client.join_snapshot().game_session_id == session
         || quantities(&client)? != durable
         || quantity(&client, trumpet)? != trumpet_base + 1

@@ -72,7 +72,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("journey timeout after real player commands; server supplied no required next frame".into()),
@@ -89,7 +89,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = row_connect_world(clients, 0xc1).await?;
     let first_session = client.join_snapshot().game_session_id;
     travel_to_spawn(
         &mut client,
@@ -112,7 +112,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let damaged = wait_for_damage(&mut client, before.health).await?;
     row.pass("attack-command-and-vitals-delta", (cancel, damaged));
 
-    let refusal = client.session_mut().logout().await?;
+    let refusal = client.row_logout().await?;
     if !matches!(refusal.result, Some(LogoutResult::InFight { .. })) {
         return Err(format!("step 3: expected InFight logout refusal, observed {refusal:?}").into());
     }
@@ -129,7 +129,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("escaped-and-logout-accepted", (saved_position, saved));
     drop(client);
 
-    let mut client = connect_world(clients, 0xc2).await?;
+    let mut client = row_connect_world(clients, 0xc2).await?;
     let observed = *client.actor_vitals().ok_or("step 5: fresh admission supplied no ActorVitals snapshot")?;
     if client.join_snapshot().game_session_id == first_session
         || client.world_spatial().actor_position != saved_position
@@ -143,7 +143,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("fresh-admission-retains-state", (saved_position, observed));
-    let logout = client.session_mut().logout().await?;
+    let logout = client.row_logout().await?;
     if logout.result != Some(LogoutResult::Accepted) {
         return Err(format!("step 5: final logout refused: {logout:?}").into());
     }
@@ -176,12 +176,12 @@ async fn wait_for_damage(
 }
 
 async fn wait_for_logout(
-    client: &mut DevClientSession,
+    client: &mut RowClient,
 ) -> TestResult<oteryn_protocol_oteryn::actor_spell::ActorVitals> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
         let saved = *client.actor_vitals().ok_or("step 4: ActorVitals disappeared before logout")?;
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(LogoutResult::Accepted) => return Ok(saved),
             Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {

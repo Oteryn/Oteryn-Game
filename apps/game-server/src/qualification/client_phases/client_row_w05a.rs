@@ -1,5 +1,5 @@
 //! W05a client replay capture: the real domain-40 server-save countdown snapshot delivered at
-//! admission, the refused player reset command and, when the server's planned reset enters its
+//! admission, the locally refused player reset command and, when the server's planned reset enters its
 //! five-minute window during the poll, the countdown delta. The session retains typed deltas, so a
 //! delta capture is the server-delivered value encoded with the production encoder (the C09
 //! convention). The consumer is `Session::apply_state_delta` via
@@ -35,13 +35,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if snapshot.revision != 0 || snapshot.payload != wire::SERVER_SAVE_COUNTDOWN_SNAPSHOT {
         return Err(format!("unexpected countdown snapshot {snapshot:?}").into());
     }
-    let refusal = client
-        .session_mut()
-        .gated_command(wire::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, 1, &[])
-        .await?;
-    if refusal.status != CommandStatus::Rejected || !refusal.payload.is_empty() {
-        return Err(format!("player reset command was not refused: {refusal:?}").into());
-    }
     client.take_events();
     client.service_liveness(Duration::from_secs(7)).await?;
     let notice = client
@@ -72,6 +65,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         expected.push_str("countdown=absent\n");
     }
     capture("w05a-expected.txt", expected.as_bytes())?;
+    let refusal = client
+        .session_mut()
+        .gated_command(wire::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, 1, &[])
+        .await;
+    if !matches!(&refusal, Err(error) if format!("{error:?}") == "CapabilityNotSelected { capability: 75 }") {
+        return Err(format!("receive-only reset gate did not refuse locally: {refusal:?}").into());
+    }
+
     Ok(expected.replace('\n', ";"))
 
     }).await.unwrap_or_else(|error| Err(error.into()));

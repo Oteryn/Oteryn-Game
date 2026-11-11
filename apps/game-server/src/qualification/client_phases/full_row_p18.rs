@@ -165,8 +165,8 @@ fn validate_history(step: &str, observation: &Observation, applied: &[&Observati
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-7 ordinary logout refused".into());
@@ -175,13 +175,12 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd8).await?;
+    let mut client = row_connect_world(clients, 0xd8).await?;
     let initial = client
         .inventory()
         .cloned()
         .ok_or("step-1 inventory absent")?;
     let session = client.join_snapshot().game_session_id;
-    let pair = handles(&client)?;
     let first_history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
     validate_history("step-2", &first_history, &[])?;
 
@@ -197,7 +196,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     ];
     let mut observations = Vec::new();
     for (index, operation) in operations.into_iter().enumerate() {
-        let pair = operation.requires_pair().then_some(pair);
+        let pair = if operation.requires_pair() { Some(handles(&client)?) } else { None };
         let observed = command(
             &mut client,
             operation,
@@ -223,8 +222,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step-6 inventory absent")?;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xd9).await?;
-    if fresh.join_snapshot().game_session_id == session || fresh.inventory() != Some(&retained) {
+    let mut fresh = row_connect_world(clients, 0xd9).await?;
+    if fresh.join_snapshot().game_session_id == session || fresh.inventory().map(row_inventory_signature) != Some(row_inventory_signature(&retained)) {
         return Err("step-7 fresh admission session/inventory durability mismatch".into());
     }
     let fresh_history = command(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
@@ -251,7 +250,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("P18 journey timeout after real native commands".into()),

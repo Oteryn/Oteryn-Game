@@ -86,7 +86,7 @@ fn compact(detail: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), run(&mut journey, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(240), run(&mut journey, clients))
         .await
         .unwrap_or_else(|_| Err(format!("step-{}-timeout waiting for native arena reply", journey.completed + 1).into()));
     journey.finish(result);
@@ -126,8 +126,8 @@ async fn drome(
         .map_err(|error| format!("native Tibiadrome {action:?} malformed reply={:?}: {error:?}", reply.payload).into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step-8 logout observed={reply:?}").into());
     }
@@ -135,7 +135,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb7).await?;
+    let mut client = row_connect_world(clients, 0xb7).await?;
     if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
         return Err("step-1 selected-capabilities missing arena-v1".into());
     }
@@ -182,7 +182,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut client = connect_world(clients, 0xb8).await?;
+    let mut client = row_connect_world(clients, 0xb8).await?;
     let after_relog = command(&mut client, ArenaAction::Status).await?;
     if after_relog.state != initial.state {
         return Err(format!(

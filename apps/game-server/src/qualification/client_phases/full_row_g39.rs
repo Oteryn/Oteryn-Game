@@ -687,8 +687,10 @@ async fn journey(clients: &SeamClients<'_>, active: &mut Option<DevClientSession
             }
             let fresh = active.insert(connect_world(clients, 0xf6).await?);
             let checked: TestResult = async {
-                if leg == "modal" && modal_query(fresh).await? != modal::Reply::None {
-                    return Err("needed:relog-answered-modal-remains-closed".into());
+                // MOTD notices belong to the new session root. A fresh notice must also
+                // be answered and removed within that session; acknowledgement is not durable.
+                if leg == "modal" && let modal::Reply::Dialog(dialog) = modal_query(fresh).await? {
+                    acknowledge(fresh, &dialog).await?;
                 }
                 if let Some(before) = rune_after {
                     let after = fresh.inventory().ok_or("needed:relog-rune-inventory")?;

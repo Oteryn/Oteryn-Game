@@ -110,8 +110,8 @@ async fn query(client: &mut DevClientSession) -> TestResult<Titles> {
     titles(&reply.payload)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.status != CommandStatus::Accepted
         || reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -121,7 +121,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = row_connect_world(clients, 0xc1).await?;
     let initial_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client).await?;
     let earned = initial
@@ -187,7 +187,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc2).await?;
+    let mut fresh = row_connect_world(clients, 0xc2).await?;
     if fresh.join_snapshot().game_session_id == initial_session {
         return Err("step 6 fresh admission reused prior game session".into());
     }
@@ -221,7 +221,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=P12a.full status=PASS seconds={:.3}",

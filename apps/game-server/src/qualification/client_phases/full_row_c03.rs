@@ -104,7 +104,7 @@ fn token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await {
+    let result = match row_complete_with_timeout(Duration::from_secs(420), journey(&mut row, clients)).await {
         Ok(result) => result,
         Err(_) => Err("journey-timeout-420s-without-server-reply".into()),
     };
@@ -352,10 +352,10 @@ async fn strip(client: &mut DevClientSession) -> TestResult<(Vec<(items::Equipme
     Ok((stripped, clean))
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         }
@@ -375,7 +375,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let mut client = connect_world(clients, 0xc3).await?;
+    let mut client = row_connect_world(clients, 0xc3).await?;
     let first_session = client.join_snapshot().game_session_id;
     let me = own(&client)?;
 
@@ -504,9 +504,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let inventory = client.inventory().cloned();
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc4).await?;
+    let mut fresh = row_connect_world(clients, 0xc4).await?;
     let after = Stats::read(&mut fresh).await?;
-    let durable = fresh.join_snapshot().game_session_id != first_session && fresh.inventory().cloned() == inventory && after.same(&with);
+    let durable = fresh.join_snapshot().game_session_id != first_session && fresh.inventory().map(row_inventory_signature) == inventory.as_ref().map(row_inventory_signature) && after.same(&with);
     if refusal.disposition != AttackIntentDisposition::Ok && self_damage.is_empty() && durable {
         row.pass("refusal-relog", (refusal, before_vitals.health));
     } else {

@@ -10,7 +10,6 @@
 //!    row ends FAIL naming the precondition. It never provisions state.
 //! 4. Log out and require Accepted.
 use super::*;
-use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::world_object::{
     self, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
@@ -21,7 +20,7 @@ const OBELISK_KEY: &str = "oteryn:item.tibia.i47367";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(150), journey(clients)).await;
     let detail = match result {
         Ok(Ok(observed)) => {
             format!("needed:soul-core-in-custody-for-fight-entry;observed={observed}")
@@ -75,8 +74,8 @@ fn obelisk_ordinal(bytes: &[u8]) -> TestResult<Option<u8>> {
     Ok(found)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout;observed=refused".into());
@@ -102,7 +101,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .ok_or("step=content;needed=soul-core-source-id")?;
     let index = provisioning::item_index()?;
     let definition = provisioning::item_reference(&index, core)?;
-    let mut client = connect_world(clients, 0xe7).await?;
+    let mut client = row_connect_world(clients, 0xe7).await?;
     let here = tile(client.world_spatial().actor_position)?;
     let route_to_slot = route(world, here, |at| (at.x, at.y, at.floor) == ENTRY_SLOT);
     let walked = if let Some(path) = &route_to_slot {

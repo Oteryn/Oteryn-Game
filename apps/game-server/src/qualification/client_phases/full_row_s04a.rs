@@ -97,7 +97,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: Some(std::time::Instant::now()),
         ..Row::default()
     };
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {
@@ -208,8 +208,8 @@ async fn wait_presence(
     }
 }
 
-async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient, step: &str) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step={step} observed=logout-reply:{reply:?}").into());
     }
@@ -217,8 +217,8 @@ async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut watcher = connect_character(clients, 0xb0, 0).await?;
-    let mut target = connect_character(clients, 0xb1, 1).await?;
+    let mut watcher = row_connect_character(clients, 0xb0, 0).await?;
+    let mut target = row_connect_character(clients, 0xb1, 1).await?;
     for capability in [7, 43, 258] {
         if !watcher.selected_capabilities().contains(&capability) {
             return Err(format!(
@@ -386,7 +386,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .await?;
     row.pass("offline-presence", offline);
     drop(target);
-    let mut target = connect_character(clients, 0xb2, 1).await?;
+    let mut target = row_connect_character(clients, 0xb2, 1).await?;
     let login = wait_presence(
         &mut watcher,
         entry,
@@ -400,7 +400,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = watcher.join_snapshot().game_session_id;
     logout(&mut watcher, "watcher-logout-for-relog").await?;
     drop(watcher);
-    let mut watcher = connect_character(clients, 0xb3, 0).await?;
+    let mut watcher = row_connect_character(clients, 0xb3, 0).await?;
     if watcher.join_snapshot().game_session_id == old_session {
         return Err(
             "step=fresh-admission-durability observed=session-reused need=fresh-game-session"

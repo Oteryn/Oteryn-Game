@@ -77,7 +77,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step=journey observed=timeout need=responsive-party-spell-server".into())
@@ -140,8 +140,8 @@ async fn effects(client: &mut DevClientSession) -> TestResult<party_effects::Par
     })
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused need=accepted-logout".into());
@@ -206,8 +206,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut caster = connect_character(clients, 0xc3, 1).await?;
-    let mut peer = connect_character(clients, 0xc4, 0).await?;
+    let mut caster = row_connect_character(clients, 0xc3, 1).await?;
+    let mut peer = row_connect_character(clients, 0xc4, 0).await?;
     if caster.join_snapshot().game_session_id == peer.join_snapshot().game_session_id
         || !party(&mut caster, None).await?.members.is_empty()
         || !party(&mut peer, None).await?.members.is_empty()
@@ -347,8 +347,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut peer).await?;
     logout(&mut caster).await?;
     drop((caster, peer));
-    let mut caster = connect_character(clients, 0xc5, 1).await?;
-    let mut peer = connect_character(clients, 0xc6, 0).await?;
+    let mut caster = row_connect_character(clients, 0xc5, 1).await?;
+    let mut peer = row_connect_character(clients, 0xc6, 0).await?;
     if caster.join_snapshot().game_session_id == sessions[0]
         || peer.join_snapshot().game_session_id == sessions[1]
         || effects(&mut caster).await?.party_spell_remaining_ms[slot] == 0

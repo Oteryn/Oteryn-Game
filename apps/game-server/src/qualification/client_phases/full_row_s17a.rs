@@ -21,7 +21,7 @@ fn cast_selected(client: &DevClientSession) -> Vec<u32> {
 const TEXT_GAP: &str = "crates/protocol-oteryn/src/cast.rs:81";
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let mut client = connect_world(clients, 0xa1).await?;
+    let mut client = row_connect_world(clients, 0xa1).await?;
     let offered = cast_selected(&client);
     if !offered.contains(&cast::CAPABILITY_CAST_CONTROL_V1) {
         logout(&mut client).await?;
@@ -84,7 +84,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -119,8 +119,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

@@ -88,7 +88,7 @@ struct MapObject {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = row_complete(journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(600), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step deadline: M09 journey exceeded 600s; last server reply unavailable".into())
@@ -361,7 +361,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let index = provisioning::item_index()?;
-    let mut client = connect_world(clients, 0xb9).await?;
+    let mut client = row_connect_world(clients, 0xb9).await?;
     let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = async {
     let rod_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i3483", 1).await?;
@@ -525,14 +525,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     let old_session = client.join_snapshot().game_session_id;
     let durable = inventory_signature(&client)?;
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step 5 logout refused".into());
     }
     row_needs_logout_0 = false;
-    if row_needs_logout_0 { row_logout(&mut client).await?; row_needs_logout_0 = false; }
-    let mut fresh = connect_world(clients, 0xba).await?;
+    if row_needs_logout_0 { row_finish(&mut client).await?; row_needs_logout_0 = false; }
+    let mut fresh = row_connect_world(clients, 0xba).await?;
     let row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     if fresh.join_snapshot().game_session_id == old_session
@@ -549,12 +549,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { row_finish(&mut fresh).await?; }
     row_result
 
     }.await;
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        row_finish(&mut client).await?;
     }
     row_result
 }

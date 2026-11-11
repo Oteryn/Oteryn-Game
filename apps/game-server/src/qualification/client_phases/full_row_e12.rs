@@ -123,7 +123,7 @@ async fn talk(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    let mut client = connect_world(clients, 0xe1)
+    let mut client = row_connect_world(clients, 0xe1)
         .await
         .map_err(|error| StepFailure {
             step: 1,
@@ -275,7 +275,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(DEADLINE, journey(clients)).await;
+    let result = row_complete_with_timeout(DEADLINE, journey(clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=E12.full status=PASS seconds={:.3}",

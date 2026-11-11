@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::market_details as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -74,8 +74,8 @@ async fn accepted(
     Ok(payload)
 }
 
-async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn finish(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -184,7 +184,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x8a).await?;
+    let mut client = row_connect_world(clients, 0x8a).await?;
     let outcome = body(&mut client, clients).await;
     let closed = finish(&mut client).await;
     outcome?;

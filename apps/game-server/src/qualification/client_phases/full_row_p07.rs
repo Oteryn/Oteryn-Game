@@ -86,8 +86,8 @@ async fn query(
     Ok((state, resources))
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("P07 logout observed={reply:?}").into());
     }
@@ -95,7 +95,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResult {
-    let mut client = connect_world(clients, 0xa7).await?;
+    let mut client = row_connect_world(clients, 0xa7).await?;
     let session = client.join_snapshot().game_session_id;
     let (initial, initial_resources) = match query(&mut client).await {
         Ok(value) if !value.0.refused => {
@@ -370,7 +370,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         seen.fail("7-pre-logout-state", &durable);
     }
     logout(&mut client).await?;
-    let mut fresh = connect_world(clients, 0xa8).await?;
+    let mut fresh = row_connect_world(clients, 0xa8).await?;
     let fresh_state = query(&mut fresh).await;
     match (&durable, &fresh_state) {
         (Ok(before), Ok(after)) if before == after && !after.0.refused => {
@@ -389,7 +389,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut seen = Observations::default();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients, &mut seen)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(360), journey(clients, &mut seen)).await;
     if let Err(error) = &result {
         seen.fail("journey-deadline", error);
     }

@@ -41,7 +41,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: "admission",
     };
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15d.full status=PASS seconds={:.3}",
@@ -120,7 +120,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd4).await?;
+    let mut client = row_connect_world(clients, 0xd4).await?;
     row.step = "walk-to-guidance-shrine";
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == SHRINE.floor
@@ -166,17 +166,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     row.step = "logout-fresh-admission";
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout refused after callback".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xd5).await?;
+    let mut fresh = row_connect_world(clients, 0xd5).await?;
     if quest_list(&mut fresh).await? != after {
         return Err("fresh admission lost committed quest-log state".into());
     }
-    if fresh.session_mut().logout().await?.result
+    if fresh.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("fresh admission logout refused".into());

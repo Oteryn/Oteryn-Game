@@ -222,10 +222,10 @@ async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession, budget: Duration) -> TestResult {
+async fn logout(client: &mut RowClient, budget: Duration) -> TestResult {
     let deadline = tokio::time::Instant::now() + budget;
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
             Some(
@@ -249,8 +249,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut a = connect_character(clients, 0xb0, 0).await?;
-    let mut b = connect_character(clients, 0xb1, 1).await?;
+    let mut a = row_connect_character(clients, 0xb0, 0).await?;
+    let mut b = row_connect_character(clients, 0xb1, 1).await?;
     place_pair(&mut a, &mut b, world).await?;
     let (ar, av) = party(&mut a, None).await?;
     let (br, bv) = party(&mut b, None).await?;
@@ -370,8 +370,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut a, Duration::from_secs(920)).await?;
     logout(&mut b, Duration::from_secs(920)).await?;
     drop((a, b));
-    let mut a = connect_character(clients, 0xb2, 0).await?;
-    let mut b = connect_character(clients, 0xb3, 1).await?;
+    let mut a = row_connect_character(clients, 0xb2, 0).await?;
+    let mut b = row_connect_character(clients, 0xb3, 1).await?;
     if sessions
         == (
             a.join_snapshot().game_session_id,
@@ -398,7 +398,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(2_100), journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(2_100), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("step lifecycle timeout observed=no-reply-or-delta".into()));
     row.finish(&result);

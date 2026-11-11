@@ -81,7 +81,7 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<i64> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = row_connect_world(clients, 0xd3).await?;
     selected(&client)?;
     let (status, list) = call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?;
     expect(
@@ -96,7 +96,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut client = connect_world(clients, 0xd4).await?;
+    let mut client = row_connect_world(clients, 0xd4).await?;
     selected(&client)?;
     let list = read(&mut client, best).await?;
     expect(has(&list, RAT), "read-after-relog", "race-lost")?;
@@ -113,7 +113,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     logout(&mut client).await?;
 
-    let mut client = connect_world(clients, 0xd5).await?;
+    let mut client = row_connect_world(clients, 0xd5).await?;
     let list = read(&mut client, best).await?;
     expect(
         !has(&list, RAT),
@@ -136,7 +136,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(150), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -171,8 +171,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

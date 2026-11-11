@@ -67,9 +67,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut leader = connect_character(clients, 0x47, 0).await?;
+    let mut leader = row_connect_character(clients, 0x47, 0).await?;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
-    let peer = connect_character(clients, 0x48, 1).await;
+    let peer = row_connect_character(clients, 0x48, 1).await;
     let mut peer = peer?;
     let other = tile(peer.world_spatial().actor_position)?;
     let path = route(world, tile(leader.world_spatial().actor_position)?, |at| {
@@ -116,7 +116,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("s01-passed-view.bin", &passed.view)?;
     send(&mut leader, Some(PartyIntent::Leave)).await?;
 
-    row_logout(&mut peer).await?;
+    row_finish(&mut peer).await?;
     let expected = format!(
         "inviter={inviter}\njoiner={joiner_name}\nmembers={}\nshared_xp={}\nnew_leader={joiner_name}\n",
         joined.result.members.len(),
@@ -126,13 +126,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     Ok(expected.replace('\n', ";").replace(' ', "_"))
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    let logout_result = row_logout(&mut leader).await;
+    let logout_result = row_finish(&mut leader).await;
     logout_result?;
     row_result
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match row_complete(journey(clients)).await {
+    match row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S01.client status=CAPTURED evidence={expected}"
         )),

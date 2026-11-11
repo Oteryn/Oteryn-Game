@@ -81,7 +81,7 @@ async fn progress(clients: &SeamClients<'_>) -> TestResult<i64> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let mut client = connect_world(clients, 0xd2).await?;
+    let mut client = row_connect_world(clients, 0xd2).await?;
     selected(&client)?;
     let boss = tr::COMMAND_TYPE_BOSSTIARY_TRACKER;
     let credited = progress(clients).await?;
@@ -112,7 +112,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(has(&list, BOSS), "read-after-add", "boss-missing")?;
     // Durable: the entry survives logout and a fresh admission.
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = row_connect_world(clients, 0xd3).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
@@ -130,7 +130,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(!has(&list, BOSS), "read-after-remove", "boss-still-tracked")?;
     // Durable: the removal also survives logout and a fresh admission.
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xd4).await?;
+    let mut client = row_connect_world(clients, 0xd4).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
@@ -149,7 +149,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -184,8 +184,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

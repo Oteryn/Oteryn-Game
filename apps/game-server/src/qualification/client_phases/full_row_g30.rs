@@ -7,7 +7,7 @@ use oteryn_dev_client::DevClientSession;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -23,8 +23,8 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -100,11 +100,11 @@ async fn misc(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xda).await?;
+    let mut client = row_connect_world(clients, 0xda).await?;
     require_cyclopedia(&client)?;
     let (cards, _, raw) = misc(&mut client).await?;
     logout(&mut client).await?;
-    let mut fresh = connect_world(clients, 0xda).await?;
+    let mut fresh = row_connect_world(clients, 0xda).await?;
     let (again, bars_again, raw_again) = misc(&mut fresh).await?;
     logout(&mut fresh).await?;
     // Skill cards are durable character state; stamina may tick while the character is offline.

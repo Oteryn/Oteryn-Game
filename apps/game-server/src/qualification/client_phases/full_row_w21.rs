@@ -31,7 +31,7 @@ enum Verdict {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(Verdict::Fail(detail))) => ("FAIL", detail),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -96,7 +96,7 @@ async fn context_row(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let mut client = connect_world(clients, 0xd1).await?;
+    let mut client = row_connect_world(clients, 0xd1).await?;
     if !client
         .selected_capabilities()
         .contains(&CAPABILITY_BOSS_DIFFICULTY_V1)
@@ -166,7 +166,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     if context_row(clients, context).await?.map(|row| row.1) != Some(true) {
         return Err("step=cancel observed=durable-context-not-closed".into());
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());

@@ -23,7 +23,7 @@ const FLAGS: [&str; 6] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let detail = match result {
         Ok(Ok(flags)) => format!(
             "needed:daily-change-effect-observable-by-a-player-in-walk-range(decision-durable-and-immutable,flags={flags})"
@@ -94,8 +94,8 @@ async fn decision(clients: &SeamClients<'_>) -> TestResult<(String, String)> {
     Ok((row.try_get("epoch")?, row.try_get("decision")?))
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -104,13 +104,13 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xe1).await?;
+    let mut client = row_connect_world(clients, 0xe1).await?;
     client.service_liveness(Duration::from_millis(200)).await?;
     let (epoch, text) = decision(clients).await?;
     let parsed: serde_json::Value = serde_json::from_str(&text)?;
     let observed = flags(&parsed, &epoch)?;
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xe1).await?;
+    let mut client = row_connect_world(clients, 0xe1).await?;
     if decision(clients).await? != (epoch, text) {
         return Err("step=fresh-admission observed=decision-changed".into());
     }

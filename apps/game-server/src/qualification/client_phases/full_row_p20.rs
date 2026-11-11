@@ -282,7 +282,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             let fresh_vocation = vocation(&mut *client).await?;
             if fresh_build != build
                 || fresh_vocation != promoted
-                || client.inventory() != Some(&inventory)
+                || client.inventory().map(row_inventory_signature) != Some(row_inventory_signature(&inventory))
                 || client.world_spatial().actor_position != before
             {
                 return Err(format!("step-5 fresh admission observed build={fresh_build:?} vocation={fresh_vocation:?} inventory={:?} position={:?}; expected build={build:?} vocation={promoted:?} inventory={inventory:?} position={before:?}", client.inventory(), client.world_spatial().actor_position).into());

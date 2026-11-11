@@ -14,7 +14,7 @@ const COMMENT: &str = "G04 bug report: the depot chest closed by itself";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "report-accepted-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -80,8 +80,8 @@ fn request(category: u8, map: (u16, u16, u8)) -> wire::PlayerReportRequest {
     }
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -90,7 +90,7 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc5).await?;
+    let mut client = row_connect_world(clients, 0xc5).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_PLAYER_REPORT_V1)
@@ -147,7 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc6).await?;
+    let mut fresh = row_connect_world(clients, 0xc6).await?;
     let durable = rows(clients).await?;
     logout(&mut fresh).await?;
     if durable != stored {

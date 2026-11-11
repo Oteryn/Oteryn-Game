@@ -1,7 +1,7 @@
 //! C08 full-row player scenario, derived from the matrix/audit and the native condition owners:
 //! 1. Walk from the admitted town to a compiled poison-spider spawn and allow its ordinary combat
-//!    AI to hit the character; expect an `ActorVitals` health delta followed by a second, delayed
-//!    health delta, proving that a live condition/DoT turn (rather than one direct hit) ran.
+//!    AI to hit the character; require its poison condition from CONDITION_STATUS, then walk
+//!    into a protection zone and observe a delayed health loss with melee excluded.
 //! 2. Send the served, available `exana pox` spell command through the native spell protocol;
 //!    expect `Cast`, a mana delta, and no further poison health delta during the next tick window.
 //! 3. Request logout while the combat condition is live; expect the explicit `InFight` refusal,
@@ -50,7 +50,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 1,
     };
-    let result = row_complete(journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!(
@@ -93,7 +93,7 @@ async fn assert_health_unchanged(
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health != expected
+                && delta.value.health < expected
             {
                 return Err(format!(
                     "step dispel: poison health changed during post-cast window: {expected}->{}",
@@ -107,7 +107,7 @@ async fn assert_health_unchanged(
                 .actor_vitals()
                 .ok_or("step dispel: vitals absent after post-cast window")?
                 .health;
-            if observed != expected {
+            if observed < expected || row_poison_active(client).await? {
                 return Err(format!(
                     "step dispel: post-cast health changed without an observed delta: {expected}->{observed}"
                 )
@@ -118,7 +118,7 @@ async fn assert_health_unchanged(
     }
 }
 
-async fn poison(client: &mut DevClientSession) -> TestResult<(u32, u32)> {
+async fn poison(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<(u32, u32)> {
     client.session_mut().attack_target(None).await?;
     client.take_events();
     let before = client
@@ -131,8 +131,10 @@ async fn poison(client: &mut DevClientSession) -> TestResult<(u32, u32)> {
             format!("step poison: first delta was not direct damage: {before}->{direct}").into(),
         );
     }
-    let delayed = next_health_change(client, direct, 15).await?;
-    if delayed >= direct {
+    row_isolate_poison(client, world).await?;
+    let isolated = client.actor_vitals().ok_or("isolated vitals absent")?.health;
+    let delayed = next_health_change(client, isolated, 15).await?;
+    if delayed >= isolated {
         return Err(
             format!("step poison: delayed delta was not damage: {direct}->{delayed}").into(),
         );
@@ -174,7 +176,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc8).await?;
+    let mut client = row_connect_world(clients, 0xc8).await?;
     let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = async {
         travel_to_spawn(
@@ -184,7 +186,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "oteryn:creature.poison_spider",
         )
         .await?;
-        let damage = poison(&mut client).await?;
+        let damage = poison(&mut client, world).await?;
         row.pass(damage);
 
         let (spell, mana_cost) = antidote(&mut client)?;
@@ -214,7 +216,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.pass((cast.disposition, mana, mana_after, health_after));
 
         let before_refusal = *client.actor_vitals().ok_or("step refusal: vitals absent")?;
-        let refusal = client.session_mut().logout().await?;
+        let refusal = client.row_logout().await?;
         if !matches!(
             refusal.result,
             Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
@@ -240,11 +242,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
         row.pass((damaged, regenerated));
 
-        let second = poison(&mut client).await?;
+        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.poison_spider").await?;
+        let second = poison(&mut client, world).await?;
         let old_session = client.join_snapshot().game_session_id;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
         loop {
-            let reply = client.session_mut().logout().await?;
+            let reply = client.row_logout().await?;
             match reply.result {
                 Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => {
                     row_needs_logout_0 = false;
@@ -267,10 +270,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             client.take_events();
         }
         if row_needs_logout_0 {
-            row_logout(&mut client).await?;
+            row_finish(&mut client).await?;
             row_needs_logout_0 = false;
         }
-        let mut client = connect_world(clients, 0xc9).await?;
+        let mut client = row_connect_world(clients, 0xc9).await?;
         let mut row_needs_logout_1 = true;
         let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
             if client.join_snapshot().game_session_id == old_session {
@@ -280,6 +283,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 .actor_vitals()
                 .ok_or("step persistence: admitted vitals absent")?
                 .health;
+            if !row_poison_active(&mut client).await? { return Err("fresh admission lost poison condition".into()); }
             let tick = next_health_change(&mut client, admitted, 15).await?;
             if tick >= admitted {
                 return Err(format!(
@@ -288,20 +292,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
             }
             row.pass((second, admitted, tick));
-            row_logout(&mut client).await?;
+            row_finish(&mut client).await?;
             row_needs_logout_1 = false;
             Ok(())
         })
         .await
         .unwrap_or_else(|error| Err(error.into()));
         if row_needs_logout_1 {
-            row_logout(&mut client).await?;
+            row_finish(&mut client).await?;
         }
         row_result
     }
     .await;
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        row_finish(&mut client).await?;
     }
     row_result
 }

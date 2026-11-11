@@ -17,7 +17,7 @@ use oteryn_protocol_oteryn::daily_reward::{self as daily, returner};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "returner-reward-claimed-receipt-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -75,8 +75,8 @@ async fn accepted(
     Ok(payload)
 }
 
-async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn finish(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -180,12 +180,12 @@ async fn verify(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x7c).await?;
+    let mut client = row_connect_world(clients, 0x7c).await?;
     let outcome = body(&mut client, clients).await;
     let closed = finish(&mut client).await;
     let data = outcome?;
     closed?;
-    let mut fresh = connect_world(clients, 0x7d).await?;
+    let mut fresh = row_connect_world(clients, 0x7d).await?;
     let checked = verify(&mut fresh, clients, &data).await;
     let closed = finish(&mut fresh).await;
     checked?;

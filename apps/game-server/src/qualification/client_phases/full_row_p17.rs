@@ -92,7 +92,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(&mut row, clients))
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("step deadline: P17 journey timed out".into()));
     row.finish(result);
@@ -213,8 +213,8 @@ async fn cast(
     Ok((outcome.result_server_sequence, messages))
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("P17 target logout refused".into());
@@ -223,8 +223,8 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut target = connect_character(clients, 0xd4, 0).await?;
-    let mut caster = connect_character(clients, 0xd5, 1).await?;
+    let mut target = row_connect_character(clients, 0xd4, 0).await?;
+    let mut caster = row_connect_character(clients, 0xd5, 1).await?;
     if !target
         .selected_capabilities()
         .contains(&CAPABILITY_EXIVA_SETTINGS_V1)
@@ -275,7 +275,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let previous_session = target.join_snapshot().game_session_id;
     logout(&mut target).await?;
     drop(target);
-    let mut target = connect_character(clients, 0xd6, 0).await?;
+    let mut target = row_connect_character(clients, 0xd6, 0).await?;
     if target.join_snapshot().game_session_id == previous_session || list(&mut target).await? != allowed
     {
         return Err("step 6 fresh admission did not retain the durable allow-list".into());

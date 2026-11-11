@@ -49,6 +49,13 @@ impl Row {
         Self { started: std::time::Instant::now(), passed: Vec::new(), failure: None }
     }
 
+    fn require_attributed_augment(&mut self, samples: &[u64]) {
+        // ValueText identifies a cast, but contains no augment contribution or pre-roll
+        // magnitude. Random ordinary rolls (and the weapon's own attack value) can give
+        // these same means. Preserve that observation as a gap, never a passed effect.
+        self.failure.get_or_insert_with(|| ("augmented-cast", format!("needed=augment-attributed-damage-or-authoritative-unaugmented-bound;observed={samples:?};source=crates/protocol-oteryn/src/presentation.rs")));
+    }
+
     fn current(&self) -> &'static str {
         STEPS.get(self.passed.len()).copied().unwrap_or("journey")
     }
@@ -91,7 +98,7 @@ fn token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(480), journey(&mut row, clients)).await {
+    let result = match row_complete_with_timeout(Duration::from_secs(480), journey(&mut row, clients)).await {
         Ok(result) => result,
         Err(_) => Err("journey-timeout-480s-without-server-reply".into()),
     };
@@ -479,10 +486,10 @@ async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> T
     wait_inventory(client, "right-hand equipment", |c| equipped_right(c, definition)).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         }
@@ -501,7 +508,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let mut client = connect_world(clients, 0xc2).await?;
+    let mut client = row_connect_world(clients, 0xc2).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let (creature, health) = pick_creature(world, &metadata.spawns, from, &creature_health()?)?;
     let hunt = Hunt { world, spawns: &metadata.spawns, creature, health };
@@ -520,6 +527,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             mean(&baseline), mean(&augmented)
         ).into());
     }
+    row.require_attributed_augment(&augmented);
     row.pass("augmented-cast", (&augmented, mean(&augmented) / mean(&baseline), augment));
 
     let equipped = client
@@ -546,7 +554,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc3).await?;
+    let mut fresh = row_connect_world(clients, 0xc3).await?;
     if fresh.join_snapshot().game_session_id == old_session || !equipped_right(&fresh, definition) {
         return Err("fresh admission lost the right-hand item".into());
     }
@@ -562,6 +570,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ordinary_high_damage_rolls_do_not_prove_an_augment() {
+        let mut row = Row::new();
+        row.pass("baseline-cast", [90, 91, 92]);
+        row.pass("acquire-50271", "real-inventory-delta");
+        row.require_attributed_augment(&[108, 109, 110]);
+        row.pass("augmented-cast", [108, 109, 110]);
+        assert_eq!(row.passed.len(), 2);
+        assert!(row.failure.is_some());
+    }
 
     #[test]
     fn pass_requires_every_step_in_order() {

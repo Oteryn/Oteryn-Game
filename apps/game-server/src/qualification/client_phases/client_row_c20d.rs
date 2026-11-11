@@ -88,7 +88,7 @@ async fn journey(
             walk(&mut client, world, &path).await
         }
         .await;
-        result.and(restore).and(logout(&mut client).await)
+        result.and(restore)
     })
     .await
     .unwrap_or_else(|error| Err(error.into()));
@@ -110,13 +110,5 @@ fn capture(spatial: Vec<u8>, vitals: Vec<u8>, expected: String) -> TestResult {
         std::fs::write(path.join(name), bytes)?;
     }
 
-    Ok(())
-}
-
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C20d capture logout refused: {reply:?}").into());
-    }
     Ok(())
 }

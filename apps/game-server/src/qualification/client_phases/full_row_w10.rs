@@ -245,8 +245,8 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     let inventory_before = client
         .inventory()
         .ok_or_else(|| failed(4, "inventory_snapshot_missing", "the pre-loot inventory frame"))?
-        .entries
         .clone();
+    let old_corpses: Vec<_> = client.world_entities().into_iter().flat_map(|entities| entities.iter()).filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse).map(|entity| entity.entity).collect();
     let second = client
         .world_entities()
         .and_then(|entities| {
@@ -281,6 +281,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         ));
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let mut corpse_position = second.position;
     while client
         .world_entities()
         .is_some_and(|entities| entities.iter().any(|entity| entity.entity == second.entity))
@@ -293,21 +294,40 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
                 "a completable authored Hazard-area combat target",
             ));
         }
+        if let Some(entity) = client.world_entities().and_then(|entities| entities.get(&second.entity)) { corpse_position = entity.position; }
         client
             .service_liveness(Duration::from_millis(100))
             .await
             .map_err(|error| failed(4, error, "scaled combat/vitals frames"))?;
-        client.take_events();
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
+                && let Some(entity) = delta.value.update.iter().find(|entity| entity.entity == second.entity) {
+                corpse_position = entity.position;
+            }
+        }
     }
     client
         .session_mut()
         .attack_target(None)
         .await
         .map_err(|error| failed(4, error, "the scaled attack-stop reply"))?;
+    let corpse = client.world_entities().and_then(|entities| entities.iter().find(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse && entity.position == corpse_position && !old_corpses.contains(&entity.entity))).copied().ok_or_else(|| failed(4, "hazard_corpse_missing", "the killed creature's corpse"))?;
+    let oteryn_dev_client::EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else { return Err(failed(4, "corpse_handle_missing", "the server-issued corpse handle")); };
+    let used = client.use_item(handle).await.map_err(|error| failed(4, error, "accepted corpse use"))?;
+    if used.status != CommandStatus::Accepted || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed { return Err(failed(4, format!("{used:?}"), "committed corpse use")); }
+    let loot_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client.open_container().is_none_or(|container| container.container_handle != Some(handle)) {
+        if tokio::time::Instant::now() >= loot_deadline { return Err(failed(4, "corpse_view_timeout", "opened corpse delta")); }
+        client.service_liveness(Duration::from_millis(50)).await.map_err(|error| failed(4, error, "corpse view"))?;
+    }
+    let loot = client.open_container().ok_or_else(|| failed(4, "corpse_view_missing", "corpse inventory"))?.entries.clone();
+    for item in loot {
+        let moved = client.move_item(&oteryn_protocol_oteryn::item_view::ItemMoveIntent { source: item.handle, destination: oteryn_protocol_oteryn::item_view::ItemMoveDestination::MainBackpack }).await.map_err(|error| failed(4, error, "loot move"))?;
+        if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved { return Err(failed(4, format!("{moved:?}"), "committed loot move")); }
+    }
     let inventory_after = client
         .inventory()
         .ok_or_else(|| failed(4, "post_kill_inventory_missing", "the loot inventory delta"))?
-        .entries
         .clone();
     if inventory_after == inventory_before {
         return Err(failed(
@@ -342,7 +362,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
             .map_err(|error| failed(5, error, "the reloaded Hazard state"))?,
         [2, 2],
     )?;
-    if client.inventory().is_none_or(|inventory| inventory.entries != inventory_after) {
+    if client.inventory().is_none_or(|inventory| row_inventory_signature(inventory) != row_inventory_signature(&inventory_after)) {
         return Err(failed(
             5,
             "loot_inventory_changed_after_fresh_admission",

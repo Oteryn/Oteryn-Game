@@ -7,8 +7,8 @@
 //! 4. Without a route: send the nearest real command, USE the door placement from the spawn,
 //!    require the server's exact refusal (TooFar) and report the missing precondition.
 use super::*;
-use crate::map::view::{MapFacts, placement_key};
 use oteryn_dev_client::DevClientSession;
+use crate::map::view::{MapFacts, placement_key};
 use std::collections::{BTreeMap, VecDeque};
 
 const MAX_SEARCH: usize = 600_000;
@@ -136,7 +136,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
                 .to_owned(),
         ));
     }
-    let mut client = connect_world(clients, 0xf3).await?;
+    let mut client = row_connect_world(clients, 0xf3).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let near = |at: TilePos| {
         doors.iter().any(|(door, _, _)| {
@@ -205,7 +205,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(after.is_empty(), "prohibited-items-after-door", &after)?;
     logout(&mut client).await?;
 
-    let mut fresh = connect_world(clients, 0xf4).await?;
+    let mut fresh = row_connect_world(clients, 0xf4).await?;
     expect(
         fresh.world_spatial().actor_position == moved,
         "position-after-relog",
@@ -243,7 +243,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(420), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -278,8 +278,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

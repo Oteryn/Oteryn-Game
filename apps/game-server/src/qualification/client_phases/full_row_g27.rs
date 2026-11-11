@@ -10,7 +10,7 @@ use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -26,8 +26,8 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -107,8 +107,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         character_name(clients, 0).await?,
         character_name(clients, 1).await?,
     );
-    let mut a = connect_character(clients, 0xd7, 0).await?;
-    let mut b = connect_world(clients, 0xd8).await?;
+    let mut a = row_connect_character(clients, 0xd7, 0).await?;
+    let mut b = row_connect_world(clients, 0xd8).await?;
     for client in [&a, &b] {
         for capability in [vip::CAPABILITY_VIP_V1, 199] {
             if !client.selected_capabilities().contains(&capability) {
@@ -161,8 +161,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     logout(&mut a).await?;
     logout(&mut b).await?;
-    a = connect_character(clients, 0xa7, 1).await?;
-    b = connect_character(clients, 0xb7, 0).await?;
+    a = row_connect_character(clients, 0xa7, 1).await?;
+    b = row_connect_character(clients, 0xb7, 0).await?;
     let (_, persisted) = friends(&mut a, vip::Operation::FriendsQuery, 0, "").await?;
     if persisted["account_friends"][0]["main_character"].as_str() != Some(name_b.as_str()) {
         return Err("step=fresh-admission observed=accepted-friendship-lost".into());
@@ -196,7 +196,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("step=badge-hide observed=reply-not-applied".into());
         }
         logout(&mut a).await?;
-        a = connect_character(clients, 0xa7, 1).await?;
+        a = row_connect_character(clients, 0xa7, 1).await?;
         panel = cyc::CyclopediaCharacterPanel {
             selected: true,
             ..Default::default()
@@ -224,7 +224,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("step=badge-restore observed=reply-not-applied".into());
         }
         logout(&mut a).await?;
-        a = connect_character(clients, 0xa7, 1).await?;
+        a = row_connect_character(clients, 0xa7, 1).await?;
         panel = cyc::CyclopediaCharacterPanel {
             selected: true,
             ..Default::default()
@@ -259,8 +259,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let _ = name_a;
     logout(&mut a).await?;
     logout(&mut b).await?;
-    a = connect_character(clients, 0xa7, 1).await?;
-    b = connect_character(clients, 0xb7, 0).await?;
+    a = row_connect_character(clients, 0xa7, 1).await?;
+    b = row_connect_character(clients, 0xb7, 0).await?;
     for client in [&mut a, &mut b] {
         let (_, persisted) = friends(client, vip::Operation::FriendsQuery, 0, "").await?;
         if !persisted["account_friends"]

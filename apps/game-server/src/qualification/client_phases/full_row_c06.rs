@@ -28,7 +28,7 @@ const CONJURED_ID: u32 = 21470;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
@@ -61,7 +61,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let arrows = provisioning::item_reference(&index, CONJURED_ID)?;
-    let mut client = connect_world(clients, 0xc6).await?;
+    let mut client = row_connect_world(clients, 0xc6).await?;
     acquire(&mut client, world, &metadata.npcs, damage, DAMAGE_RUNE_ID).await?;
     acquire(&mut client, world, &metadata.npcs, healing, HEAL_RUNE_ID).await?;
     check(1, client.last_server_sequence());
@@ -179,7 +179,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc7).await?;
+    let mut fresh = row_connect_world(clients, 0xc7).await?;
     if fresh.join_snapshot().game_session_id == old
         || quantity(&fresh, damage)? != damage_before - 1
         || quantity(&fresh, healing)? != charges
@@ -484,10 +484,10 @@ async fn wait_target_health_below(
         }
     }
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let d = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
-        let r = client.session_mut().logout().await?;
+        let r = client.row_logout().await?;
         if r.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         }

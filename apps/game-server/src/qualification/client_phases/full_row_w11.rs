@@ -23,7 +23,7 @@ const SOURCE_GAP: &str =
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
         Ok(Err(error)) => ("FAIL", error.to_string()),
@@ -62,8 +62,8 @@ async fn taints(client: &mut DevClientSession) -> TestResult<client_boss::Taints
         .ok_or_else(|| format!("step=taint-query observed=missing-or-invalid-delta:{:?}", reply.payload).into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={reply:?}").into());
     }
@@ -71,7 +71,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xb1).await?;
+    let mut client = row_connect_world(clients, 0xb1).await?;
     let before = taints(&mut client).await?;
     evidence(&format!("W11_CHECK step=1 taints status=PASS observed={before:?}"));
 
@@ -109,7 +109,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xb2).await?;
+    let mut fresh = row_connect_world(clients, 0xb2).await?;
     let retained = taints(&mut fresh).await?;
     if fresh.join_snapshot().game_session_id == old_session || retained != before {
         return Err(format!(

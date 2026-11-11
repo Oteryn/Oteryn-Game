@@ -9,7 +9,7 @@ use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -25,8 +25,8 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -65,7 +65,7 @@ async fn catalogue(client: &mut DevClientSession) -> TestResult<sale::HouseSaleR
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let own = character_name(clients, 1).await?;
     let peer = character_name(clients, 0).await?;
-    let mut client = connect_world(clients, 0xd6).await?;
+    let mut client = row_connect_world(clients, 0xd6).await?;
     if !client.selected_capabilities().contains(&sale::CAPABILITY) {
         return Err(format!(
             "step=admit observed=capability-{}-not-selected",

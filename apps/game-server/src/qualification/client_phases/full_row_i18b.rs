@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -67,8 +67,8 @@ async fn wait_quantity(
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout refused".into());
@@ -242,7 +242,7 @@ fn has(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xf2).await?;
+    let mut client = row_connect_world(clients, 0xf2).await?;
     let at = here(&client);
     let (definition, count) = drop_first(&mut client, None).await?;
     let (outcome, view) = browse_open(&mut client, at).await?;
@@ -274,7 +274,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let held = quantity(&client, definition)?;
     let mut client = {
         logout(&mut client).await?;
-        connect_world(clients, 0xf2).await?
+        row_connect_world(clients, 0xf2).await?
     };
     if quantity(&client, definition)? != held || held < u64::from(count.get()) {
         return Err("step=fresh-admission observed=backpack-count-changed".into());

@@ -80,7 +80,7 @@ impl Row {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result =
-        match tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
+        match row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
             Ok(result) => result,
             Err(_) => Err(
                 "step=journey observed=timeout-after-180s need=responsive-spell/AI/visibility-path"
@@ -169,8 +169,8 @@ async fn wait_visible(
         client.service_liveness(Duration::from_millis(50)).await?;
     }
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={reply:?} need=accepted-logout").into());
     }
@@ -187,8 +187,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut caster = connect_character(clients, 0xb1, 1).await?;
-    let mut observer = connect_character(clients, 0xb2, 0).await?;
+    let mut caster = row_connect_character(clients, 0xb1, 1).await?;
+    let mut observer = row_connect_character(clients, 0xb2, 0).await?;
     travel_to_spawn(&mut caster, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let caster_tile = tile(caster.world_spatial().actor_position)?;
     let path = route(
@@ -333,7 +333,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     logout(&mut caster).await?;
-    caster = connect_character(clients, 0xb3, 1).await?;
+    caster = row_connect_character(clients, 0xb3, 1).await?;
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster

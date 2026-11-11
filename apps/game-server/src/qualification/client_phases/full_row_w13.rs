@@ -92,7 +92,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = row_connect_world(clients, 0xd3).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_DAILY_BOOST_V1)
@@ -160,12 +160,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
          step-6: boss bonus/unique-loot and respawn-clock deltas are not observable; observed {step_6_observed}"
     );
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-7: logout reply was not Accepted".into());
     }
-    let mut fresh = connect_world(clients, 0xd4).await?;
+    let mut fresh = row_connect_world(clients, 0xd4).await?;
     let durable = query(&mut fresh, 7).await?;
     if durable != selected {
         return Err(format!(
@@ -173,7 +173,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if fresh.session_mut().logout().await?.result
+    if fresh.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-7: fresh-admission logout reply was not Accepted".into());
@@ -184,7 +184,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(420), journey(clients)).await;
     let (status, gap) = match result {
         Ok(Ok(())) => ("PASS", None),
         Ok(Err(error)) => ("FAIL", Some(error.to_string())),

@@ -15,7 +15,7 @@ const NEEDED: &str = "needed:seasonal-event-active-in-the-calendar-for-the-run-d
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(state)) if state.active => (
             "PASS",
@@ -97,8 +97,8 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<(Option<bool>, Option<
     ))
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -107,7 +107,7 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<wire::WorldEventState> {
-    let mut client = connect_world(clients, 0xe2).await?;
+    let mut client = row_connect_world(clients, 0xe2).await?;
     let first = query(&mut client).await?;
     let (active, announcement, epoch) = durable(clients).await?;
     if !agrees(&first, active, announcement.as_deref(), &epoch) {
@@ -122,7 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<wire::WorldEventState>
         return Err("step=repeat-query observed=state-changed".into());
     }
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xe2).await?;
+    let mut client = row_connect_world(clients, 0xe2).await?;
     let fresh = query(&mut client).await?;
     if fresh != first {
         return Err("step=fresh-admission observed=state-changed".into());

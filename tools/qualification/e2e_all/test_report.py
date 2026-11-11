@@ -53,7 +53,18 @@ class ReportTests(unittest.TestCase):
             if match and line.split("|")[5].strip() in {"**DONE**", "**PARTIAL**"}:
                 expected.append(match.group(1))
         rows = matrix_rows((root / "apps/game-server/src/qualification/SCENARIO_MATRIX.md").read_text())
-        self.assertEqual([row_id for row_id, _ in rows], expected)
+        added = [
+            'C19b', 'G01', 'G02', 'G03', 'G04', 'G05', 'G06', 'G07', 'G08', 'G09',
+            'G10', 'G11', 'G12', 'G13', 'G14', 'G15', 'G16', 'G17', 'G18', 'G19',
+            'G20', 'G21', 'G22', 'G23', 'G24', 'G25', 'G26', 'G27', 'G28', 'G29',
+            'G30', 'G31', 'G32', 'G33', 'G34', 'G35', 'G36', 'G37', 'G38', 'G39',
+            'G40', 'I17a', 'I17b', 'I17c', 'I17d', 'I18a', 'I18b', 'I18c', 'I19', 'N01',
+            'N02', 'N03', 'N04', 'N07a', 'N07b', 'N07c', 'N07d', 'P12b', 'P22a', 'P22b',
+            'P22c', 'P22d', 'S14a', 'S14b', 'S14c', 'S15a', 'S16c', 'S16d', 'S17a', 'S17b',
+            'S17c', 'S19', 'W05b', 'W05d', 'W06', 'W07', 'W09', 'W15c', 'W19b', 'W19c',
+            'W19d', 'W19e', 'W21',
+        ]
+        self.assertEqual([row_id for row_id, _ in rows], expected + added)
         _, complete = summary(rows, {})
         self.assertFalse(complete)
 

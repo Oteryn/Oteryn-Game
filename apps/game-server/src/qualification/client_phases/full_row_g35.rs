@@ -19,7 +19,7 @@ const BOSSES: [&str; 2] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let detail = match result {
         Ok(Ok(observed)) => format!(
             "needed:quest-access-boss-chain-and-lever-position-then-boss-kill-private-loot-and-svargrond-arena;observed={observed}"
@@ -65,7 +65,7 @@ async fn lever(client: &mut DevClientSession, key: &str) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xe5).await?;
+    let mut client = row_connect_world(clients, 0xe5).await?;
     let mut observed = Vec::new();
     for key in BOSSES {
         let outcome = lever(&mut client, key).await?;
@@ -74,7 +74,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             key.rsplit('.').next().unwrap_or(key)
         ));
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout;observed=refused".into());

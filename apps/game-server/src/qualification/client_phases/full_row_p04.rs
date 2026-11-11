@@ -88,8 +88,8 @@ async fn query(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<R
     send(client, 4, 0).await
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("P04 logout refused: {reply:?}").into());
     }
@@ -98,7 +98,7 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), run(&mut journey, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), run(&mut journey, clients)).await;
     match result {
         Ok(Ok(())) => {}
         Ok(Err(error)) => journey.check(0, false, format!("journey-error:{error}")),
@@ -108,7 +108,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0x9a).await?;
+    let mut client = row_connect_world(clients, 0x9a).await?;
     let initial = query(&mut client).await?;
     journey.check(
         1,
@@ -216,7 +216,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     );
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0x9b).await?;
+    let mut fresh = row_connect_world(clients, 0x9b).await?;
     let persisted = query(&mut fresh).await?;
     journey.check(8, persisted == reset, (&reset, &persisted));
     logout(&mut fresh).await?;

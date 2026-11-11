@@ -109,10 +109,10 @@ fn quantity(client: &DevClientSession, definition: u32) -> TestResult<u64> {
         .sum())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+async fn logout(client: &mut RowClient) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Ok(());
         }
@@ -203,7 +203,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xb2).await?;
+    let mut client = row_connect_world(clients, 0xb2).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     row.pass("walk-to-rat", "STEP replies moved to authored rat spawn");
     let mut attempts = 1_u8;
@@ -294,7 +294,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let saved_quantity = quantity(&client, definition)?;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xb3).await?;
+    let mut fresh = row_connect_world(clients, 0xb3).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != saved_position
         || quantity(&fresh, definition)? != saved_quantity
@@ -307,7 +307,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(480), journey(&mut row, clients)).await {
+    let result = match row_complete_with_timeout(Duration::from_secs(480), journey(&mut row, clients)).await {
         Ok(result) => result,
         Err(_) => Err("journey-timeout-observed-before-full-lifecycle".into()),
     };

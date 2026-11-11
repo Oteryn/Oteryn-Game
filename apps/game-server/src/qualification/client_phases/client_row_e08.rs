@@ -111,6 +111,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .and_then(|inventory| inventory.entries.first())
         .copied()
         .ok_or("no carried item to deposit")?;
+    let carried_before = carried_count(client.inventory(), item.item_definition_ref);
     let (key, _) = definitions
         .definition_at(item.item_definition_ref)
         .ok_or("carried item definition unknown")?;
@@ -180,7 +181,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved != total {
         return Err(format!("retrieve reply {retrieved:?}").into());
     }
-    wait_carried(&mut client, item.handle, true).await?;
+    let inventory_deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    while carried_count(client.inventory(), item.item_definition_ref) != carried_before - u64::from(item.count.get()) + u64::from(retrieved.retrieved) {
+        if tokio::time::Instant::now() >= inventory_deadline {
+            return Err("retrieved-definition-count-delta-timeout".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
     let (empty, empty_bytes) = search_command(
         &mut client,
         wire::Request::Retrieve {
@@ -234,9 +241,28 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+
+fn carried_count(input: Option<&oteryn_dev_client::CharacterInventory>, definition: std::num::NonZeroU32) -> u64 {
+    input.map_or(0, |inventory| inventory.entries.iter().chain(inventory.main_backpack.iter()).chain(inventory.equipment.iter().map(|entry| &entry.item)).filter(|entry| entry.item_definition_ref == definition).map(|entry| u64::from(entry.count.get())).sum())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn retrieval_counts_definition_units_independently_of_reissued_handles() -> TestResult {
+        let definition = 2_u32.try_into()?;
+        let entry = oteryn_dev_client::ItemEntry { handle: 1_u64.try_into()?, item_definition_ref: definition, count: 3_u32.try_into()?, sub_type: 0 };
+        let mut inventory = oteryn_dev_client::CharacterInventory { entries: vec![entry], ..Default::default() };
+        assert_eq!(carried_count(None, definition), 0);
+        assert_eq!(carried_count(Some(&inventory), definition), 3);
+        inventory.entries[0].handle = 4_u64.try_into()?;
+        assert_eq!(carried_count(Some(&inventory), definition), 3);
+        inventory.entries[0].count = 2_u32.try_into()?;
+        assert_eq!(carried_count(Some(&inventory), definition), 2);
+        Ok(())
+    }
+
     #[test]
     fn absent_projection_cannot_supply_evidence() {
         assert!(!carried_from(None, std::num::NonZeroU64::MIN));

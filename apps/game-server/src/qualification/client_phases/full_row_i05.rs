@@ -55,7 +55,7 @@ impl Journey {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Journey::new();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("journey-timeout:no-server-reply-within-420s".into()),
@@ -232,7 +232,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin: serde_json::Value = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let mut client = connect_world(clients, 0xb0).await?;
+    let mut client = row_connect_world(clients, 0xb0).await?;
     let result: TestResult = async {
         if !client.selected_capabilities().contains(&timed::CAPABILITY_TIMED_ITEM_V1) {
             return Err("timed-item-capability-not-offered".into());
@@ -282,10 +282,10 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         row.passed(4, "inspect-ok+revision-zero+bounded-budget+stale-refusal+no-delta+current-revision-ok");
 
         let old_session = client.join_snapshot().game_session_id;
-        if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err("logout-refused-before-persistence-check".into());
         }
-        client = connect_world(clients, 0xb1).await?;
+        client = row_connect_world(clients, 0xb1).await?;
         if client.join_snapshot().game_session_id == old_session { return Err("fresh-admission-reused-session".into()); }
         let durable_handle = equipped_ring(&client, active)?;
         let durable = timed_command(&mut client, timed::TimedAction::Inspect, durable_handle, current.revision).await?;
@@ -297,7 +297,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     }.await;
     let release = async {
-        if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err("final-logout-refused".into());
         }
         Ok(())

@@ -30,7 +30,7 @@ const ROW: &str = "P23c";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let failure = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),
@@ -66,7 +66,7 @@ async fn command(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_character(clients, 0xc3, 1).await?;
+    let mut client = row_connect_character(clients, 0xc3, 1).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_TASK_BOARD_V1)
@@ -104,7 +104,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         // durable negative-path evidence, not a substitute for the missing claim.
         logout(&mut client).await?;
         drop(client);
-        let mut fresh = connect_character(clients, 0xc4, 1).await?;
+        let mut fresh = row_connect_character(clients, 0xc4, 1).await?;
         let persisted = command(&mut fresh, 0, 0).await?;
         logout(&mut fresh).await?;
         if persisted.status != CommandStatus::Accepted
@@ -132,8 +132,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Err("step-3 lifecycle-not-reached-after-supported-select;need=complete-combat-route".into())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(LogoutResult::Accepted) {
         return Err(format!("logout-refused;observed={reply:?}").into());
     }

@@ -19,7 +19,7 @@ const NEEDED: &str = "needed:level-8-character,soul-core-item-and-soulpit-obelis
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let detail = match result {
         // A held item would need the row's effect checks, which this driver does not implement.
         Ok(Ok(())) => "step=precondition-observed=item-present-effect-driver-missing".to_owned(),
@@ -91,7 +91,7 @@ async fn use_by_definition(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xe4).await?;
+    let mut client = row_connect_world(clients, 0xe4).await?;
     let before = quantities(&client)?;
     let index = provisioning::item_index()?;
     let mut observed = Vec::new();
@@ -103,7 +103,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if before.contains_key(&reference.get()) {
             // The character holds it: the effect steps of this row are not driven here. Close the
             // session with an accepted logout so the next admission does not wait on loss/grace.
-            if client.session_mut().logout().await?.result
+            if client.row_logout().await?.result
                 != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
             {
                 return Err("step=logout observed=refused".into());
@@ -136,7 +136,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if quantities(&client)? != before {
         return Err("step=refused-use observed=inventory-changed".into());
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());

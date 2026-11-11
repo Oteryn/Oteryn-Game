@@ -134,9 +134,9 @@ async fn pair(
     clients: &SeamClients<'_>,
     tags: (u8, u8),
     want: LeaderListing,
-) -> TestResult<(DevClientSession, DevClientSession, u64)> {
-    let mut lead = connect_character(clients, tags.0, 0).await?;
-    let mut member = connect_world(clients, tags.1).await?;
+) -> TestResult<(RowClient, RowClient, u64)> {
+    let mut lead = row_connect_character(clients, tags.0, 0).await?;
+    let mut member = row_connect_world(clients, tags.1).await?;
     capable(&lead, leader::CAPABILITY_TEAM_FINDER_LEADER_V1)?;
     capable(&lead, tf::CAPABILITY_TEAM_FINDER_MEMBERS_V1)?;
     capable(&member, tf::CAPABILITY_TEAM_FINDER_MEMBERS_V1)?;
@@ -248,7 +248,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -283,8 +283,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

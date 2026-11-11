@@ -33,6 +33,10 @@ fn summary(bytes: &[u8]) -> TestResult<String> {
     if bytes.first() != Some(&0) || bytes.len() < 71 {
         return Err(format!("malformed character-info reply len={}", bytes.len()).into());
     }
+    let titles = usize::from(bytes[69]);
+    if bytes.len() != 71 + titles {
+        return Err("malformed character-info title length".into());
+    }
     let mut values = Vec::new();
     for at in 0..8 {
         values.push(i64::from_le_bytes(bytes[1 + at * 8..9 + at * 8].try_into()?).to_string());
@@ -109,6 +113,9 @@ mod tests {
         assert!(summary(&[]).is_err());
         let mut payload = vec![0; 71];
         assert!(summary(&payload).is_ok());
+        payload[70] = 1; // Selected title is separate from the one-byte title count.
+        assert!(summary(&payload).is_ok());
+        payload[70] = 0;
         payload[69] = 1;
         assert!(summary(&payload).is_err());
         payload.push(0);

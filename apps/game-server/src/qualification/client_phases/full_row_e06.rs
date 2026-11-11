@@ -70,7 +70,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_character(clients, 0xe6, 1).await?;
+    let mut client = row_connect_character(clients, 0xe6, 1).await?;
     at_market(&mut client, world).await?;
 
     let mut definitions = Vec::new();
@@ -155,12 +155,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     }
     evidence("E06_CHECK step=5 status=PASS cancelled-refund-history");
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("E06 step 6: logout refused".into());
     }
-    let mut client = connect_character(clients, 0xe7, 1).await?;
+    let mut client = row_connect_character(clients, 0xe7, 1).await?;
     at_market(&mut client, world).await?;
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
     let history = command(&mut client, request(4, 0, [0; 16], 0)).await?;
@@ -175,7 +175,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
         )
         .into());
     }
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("E06 step 6: final logout refused".into());
@@ -186,7 +186,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     match result {
         Ok(Ok(source)) => evidence(&format!(
             "e2e_all scenario=E06.full status=MISSING-SERVER seconds={:.3} evidence={source}",

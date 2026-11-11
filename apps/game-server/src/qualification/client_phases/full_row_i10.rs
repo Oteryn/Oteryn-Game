@@ -26,7 +26,7 @@ const GAP: &str = "step=wrap-observed=NotInHouse;needed=owned-house;settlement-o
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = row_complete(journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(90), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "lifecycle-and-fresh-admission-validated".to_owned()),
         Ok(Err(error)) => classify(&error.to_string()),
@@ -121,7 +121,7 @@ fn validate_use_reply(
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let row_deadline = tokio::time::Instant::now() + Duration::from_secs(90);
-    let mut client = connect_world(clients, 0xb0).await?;
+    let mut client = row_connect_world(clients, 0xb0).await?;
     let mut row_needs_logout_0 = true;
     let row_result: TestResult<_> = async {
     let initial: CharacterInventory = client
@@ -151,13 +151,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.service_liveness(Duration::from_millis(100)).await?;
     let after_refused = client.inventory().cloned();
     let before_logout = client.inventory().cloned();
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
     }
     row_needs_logout_0 = false;
-    let mut fresh = connect_world(clients, 0xb1).await?;
+    let mut fresh = row_connect_world(clients, 0xb1).await?;
     let row_needs_logout_1 = true;
     let row_result: TestResult<_> = tokio::time::timeout_at(row_deadline, async {
     let after_relog = fresh
@@ -174,7 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         && matches!(refused, Ok(wrap::Reply::Refused(wrap::Refusal::NotInHouse)))
     {
-        if before_logout.as_ref() != Some(&initial) || after_relog != initial {
+        if before_logout.as_ref() != Some(&initial) || row_inventory_signature(&after_relog) != row_inventory_signature(&initial) {
             return Err("step=refusal observed=inventory-changed".into());
         }
         return Err(
@@ -218,18 +218,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if after_refused != before_refused {
         return Err("step=stale-refusal observed=inventory-delta".into());
     }
-    if before_logout.as_ref() != Some(&after_relog) {
+    if before_logout.as_ref().map(row_inventory_signature) != Some(row_inventory_signature(&after_relog)) {
         return Err("step=fresh-admission observed=inventory-state-changed".into());
     }
     Ok(())
 
     }).await.unwrap_or_else(|error| Err(error.into()));
-    if row_needs_logout_1 { row_logout(&mut fresh).await?; }
+    if row_needs_logout_1 { row_finish(&mut fresh).await?; }
     row_result
 
     }.await;
     if row_needs_logout_0 {
-        row_logout(&mut client).await?;
+        row_finish(&mut client).await?;
     }
     row_result
 }

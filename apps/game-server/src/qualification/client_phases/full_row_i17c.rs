@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(600), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -182,8 +182,8 @@ async fn acquire(
     wait_quantity(client, reference, expected).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout refused".into());
@@ -293,12 +293,12 @@ async fn quiver_arrows(clients: &SeamClients<'_>) -> TestResult<i64> {
 }
 
 async fn relog(
-    client: &mut DevClientSession,
+    client: &mut RowClient,
     clients: &SeamClients<'_>,
     tag: u8,
-) -> TestResult<DevClientSession> {
+) -> TestResult<RowClient> {
     logout(client).await?;
-    connect_world(clients, tag).await
+    row_connect_world(clients, tag).await
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -308,7 +308,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let sword = reference(3265)?;
     let quiver = reference(35562)?;
     let arrow = reference(3447)?;
-    let mut client = connect_world(clients, 0xe3).await?;
+    let mut client = row_connect_world(clients, 0xe3).await?;
     let shield_base = quantity(&client, shield)?;
     buy(&mut client, world, 3412, 1).await?;
     buy(&mut client, world, 3265, 1).await?;

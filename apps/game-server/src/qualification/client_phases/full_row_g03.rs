@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::{depot, depot_search as wire};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "list-and-retrieval-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -106,8 +106,8 @@ async fn to_locker(client: &mut DevClientSession, world: &BundleWorld) -> TestRe
     walk(client, world, &path).await
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -141,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let definitions = provisioning::item_index()?;
-    let mut client = connect_character(clients, 0xc3, 1).await?;
+    let mut client = row_connect_character(clients, 0xc3, 1).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_DEPOT_SEARCH_V1)
@@ -251,7 +251,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    let mut fresh = connect_character(clients, 0xc4, 1).await?;
+    let mut fresh = row_connect_character(clients, 0xc4, 1).await?;
     to_locker(&mut fresh, world).await?;
     let durable = open_list(&mut fresh).await?;
     let carried = carried_count(&fresh, item.item_definition_ref);

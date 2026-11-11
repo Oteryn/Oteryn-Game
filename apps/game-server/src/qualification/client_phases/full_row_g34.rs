@@ -26,7 +26,7 @@ struct Offer {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(150), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -151,8 +151,8 @@ async fn bound_receipts(clients: &SeamClients<'_>, track: &str, set: i64) -> Tes
     Ok(count)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout;observed=refused".into());
@@ -173,7 +173,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let offers = load_offers()?;
-    let mut client = connect_world(clients, 0xe4).await?;
+    let mut client = row_connect_world(clients, 0xe4).await?;
     let here = tile(client.world_spatial().actor_position)?;
     let (offer, npc, path) = offers
         .iter()
@@ -249,7 +249,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    let mut fresh = connect_world(clients, 0xe5).await?;
+    let mut fresh = row_connect_world(clients, 0xe5).await?;
     let durable = track_value(clients, &offer.track).await;
     let durable_bound = bound_receipts(clients, &offer.track, offer.set).await;
     logout(&mut fresh).await?;

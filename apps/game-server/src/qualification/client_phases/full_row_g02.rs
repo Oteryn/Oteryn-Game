@@ -17,7 +17,7 @@ const POINTS: u16 = 10;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "named-build-code-saved-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -65,8 +65,8 @@ fn admitted_panel(client: &DevClientSession) -> WheelPanel {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("step=logout observed=refused".into());
     }
@@ -74,7 +74,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xe1).await?;
+    let mut client = row_connect_world(clients, 0xe1).await?;
     let mut panel = admitted_panel(&client);
     if !panel.selected {
         return Err("step=admit observed=wheel-capability-not-selected".into());
@@ -127,7 +127,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xe2).await?;
+    let mut fresh = row_connect_world(clients, 0xe2).await?;
     let mut again = admitted_panel(&fresh);
     press(&mut fresh, &mut again, Intent::Refresh, 3, "fresh-refresh").await?;
     let durable = again

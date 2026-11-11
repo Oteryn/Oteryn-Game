@@ -88,7 +88,7 @@ fn compact(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(1_800), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(1_800), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {
@@ -298,8 +298,8 @@ async fn refusal(
     Ok(())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={reply:?} need=Accepted").into());
     }
@@ -314,7 +314,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         y: destination.y,
         floor: -destination.floor,
     };
-    let mut client = connect_world(clients, 0xe5).await?;
+    let mut client = row_connect_world(clients, 0xe5).await?;
     let first_session = client.join_snapshot().game_session_id;
     let actor = approach(&mut client, world, target).await?;
     row.pass("walk-weekday-destination");
@@ -325,7 +325,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xe6).await?;
+    let mut fresh = row_connect_world(clients, 0xe6).await?;
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step=fresh-admission observed=reused-game-session need=new-session".into());
     }

@@ -60,7 +60,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         passed: Default::default(),
         started: std::time::Instant::now(),
     };
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-240s need=bounded-server-replies".into()),
@@ -137,7 +137,7 @@ fn blocked_edge(world: &BundleWorld, at: TilePos) -> Option<StepDirection> {
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
-    let mut client = connect_character(clients, 0x24, 1).await?;
+    let mut client = row_connect_character(clients, 0x24, 1).await?;
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
@@ -212,13 +212,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("city-reentry");
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused need=Accepted".into());
     }
 
-    let mut fresh = connect_character(clients, 0x25, 1).await?;
+    let mut fresh = row_connect_character(clients, 0x25, 1).await?;
     let fresh_cues = ambient(&mut fresh);
     if fresh.world_spatial().actor_position != expected_position
         || !fresh_cues.iter().any(|cue| *cue != 0)
@@ -226,7 +226,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=fresh-admission observed=position:{:?},ambient:{fresh_cues:?} need=position:{expected_position:?}+nonzero-replacement", fresh.world_spatial().actor_position).into());
     }
     row.pass("fresh-admission");
-    if fresh.session_mut().logout().await?.result
+    if fresh.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=final-logout observed=refused need=Accepted".into());

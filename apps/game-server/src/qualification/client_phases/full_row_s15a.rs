@@ -22,7 +22,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0x8d).await?;
+    let mut client = row_connect_world(clients, 0x8d).await?;
     let admitted = tokio::time::Instant::now();
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let (monster, own) = actors(&client)?;
@@ -161,11 +161,11 @@ async fn require_damage(
 }
 
 /// A logout refused for combat is retried until the combat lock expires.
-async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
+async fn logout_after_combat(client: &mut RowClient) -> TestResult {
     use oteryn_protocol_oteryn::logout::LogoutResult;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let reply = client.session_mut().logout().await?;
+        let reply = client.row_logout().await?;
         match reply.result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::InFight { .. } | LogoutResult::Busy)
@@ -182,7 +182,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(240), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -217,8 +217,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

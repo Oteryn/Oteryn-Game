@@ -9,8 +9,8 @@
 //! 4. Without a route: send the nearest real command, a STEP toward the nearest trial tile,
 //!    record the server's reply and report the missing precondition.
 use super::*;
-use crate::map::view::{MapFacts, placement_key};
 use oteryn_dev_client::DevClientSession;
+use crate::map::view::{MapFacts, placement_key};
 use sqlx::Connection;
 use std::collections::{BTreeMap, VecDeque};
 
@@ -167,7 +167,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
             "content:no-dawnport-trial-tile-action-25000-25008-in-compiled-world".to_owned(),
         ));
     }
-    let mut client = connect_world(clients, 0xf1).await?;
+    let mut client = row_connect_world(clients, 0xf1).await?;
     let before = vocation(clients).await?;
     let level = level(clients).await?;
     let from = tile(client.world_spatial().actor_position)?;
@@ -216,7 +216,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     expect(now == target, "trial-vocation", (&before, &now, target))?;
     logout(&mut client).await?;
 
-    let mut fresh = connect_world(clients, 0xf2).await?;
+    let mut fresh = row_connect_world(clients, 0xf2).await?;
     expect(
         vocation(clients).await? == target,
         "vocation-after-relog",
@@ -243,7 +243,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(420), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -278,8 +278,8 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let reply = client.session_mut().logout().await?;
+async fn logout(client: &mut RowClient) -> TestResult {
+    let reply = client.row_logout().await?;
     expect(
         reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         "logout",

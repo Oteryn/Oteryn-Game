@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -38,8 +38,8 @@ fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
     Ok(values)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout refused".into());
@@ -67,7 +67,7 @@ fn kit_report(client: &DevClientSession) -> TestResult<(Vec<u32>, usize)> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xc9).await?;
+    let mut client = row_connect_world(clients, 0xc9).await?;
     let (missing, worn) = kit_report(&client)?;
     if !missing.is_empty() || worn != 0 {
         return Err(format!("step=none-kit observed=missing:{missing:?};worn={worn};needed=rope3003-shovel3457-and-no-equipment").into());
@@ -75,7 +75,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let held = quantities(&client)?;
     let mut client = {
         logout(&mut client).await?;
-        connect_world(clients, 0xc9).await?
+        row_connect_world(clients, 0xc9).await?
     };
     if quantities(&client)? != held {
         return Err("step=fresh-admission observed=starter-kit-changed".into());

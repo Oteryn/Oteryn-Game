@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::{analyser_catalogue as items, analyser_party as hunt
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(120), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -77,8 +77,8 @@ async fn accepted(
     Ok(payload)
 }
 
-async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn finish(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -303,8 +303,8 @@ async fn body(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut a = connect_character(clients, 0x78, 0).await?;
-    let mut b = match connect_character(clients, 0x79, 1).await {
+    let mut a = row_connect_character(clients, 0x78, 0).await?;
+    let mut b = match row_connect_character(clients, 0x79, 1).await {
         Ok(b) => b,
         Err(error) => {
             finish(&mut a).await.ok();

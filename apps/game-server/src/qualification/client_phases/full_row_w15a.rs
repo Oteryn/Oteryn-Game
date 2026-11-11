@@ -56,7 +56,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("deadline:timeout-waiting-for-server-frame".into()),
@@ -164,7 +164,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let mut client = connect_world(clients, 0xa1).await?;
+    let mut client = row_connect_world(clients, 0xa1).await?;
 
     let initial = query(&mut client, &wire::QuestLogQuery::List).await?;
     let initial_list = match &initial.view {
@@ -236,11 +236,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass(6, &changed);
 
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("logout:server-refused".into());
     }
     drop(client);
-    let mut client = connect_world(clients, 0xa2).await?;
+    let mut client = row_connect_world(clients, 0xa2).await?;
     let durable_list = listed(&query(&mut client, &wire::QuestLogQuery::List).await?)?;
     if durable_list.iter().all(|entry| entry.quest_index != changed_index) {
         return Err(format!("fresh-admission:list-missing-quest={changed_index}:observed={durable_list:?}").into());
@@ -251,7 +251,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh-admission:durable-mismatch:expected={changed:?}:observed={durable:?}").into());
     }
     row.pass(7, &durable);
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if client.row_logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err("final-logout:server-refused".into());
     }
     Ok(())

@@ -2280,12 +2280,117 @@ async fn row_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestRes
     Ok(())
 }
 
-// The row itself owns its deadline so it can await logout after cancellation.
-// Keep the existing packet's outcome shape while cleanup errors remain failures.
-async fn row_complete<F: std::future::Future>(
+// Keep cancelled/refused journeys' connections alive until the verdict has awaited cleanup.
+tokio::task_local! {
+    static ROW_PENDING_LOGOUT: std::cell::RefCell<Vec<oteryn_dev_client::DevClientSession>>;
+}
+
+struct RowClient {
+    // Exactly one while active; consuming recovery and Drop remove it.
+    inner: Vec<oteryn_dev_client::DevClientSession>,
+    ended: bool,
+}
+impl std::ops::Deref for RowClient {
+    type Target = oteryn_dev_client::DevClientSession;
+    fn deref(&self) -> &Self::Target {
+        &self.inner[0]
+    }
+}
+impl std::ops::DerefMut for RowClient {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner[0]
+    }
+}
+#[derive(Debug)]
+struct RowLogout {
+    status: CommandStatus,
+    result: Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+}
+impl RowClient {
+    fn new(client: oteryn_dev_client::DevClientSession) -> Self {
+        Self {
+            inner: vec![client],
+            ended: false,
+        }
+    }
+    fn into_inner(mut self) -> TestResult<oteryn_dev_client::DevClientSession> {
+        self.inner
+            .pop()
+            .ok_or_else(|| "row session already consumed".into())
+    }
+    async fn row_logout(&mut self) -> TestResult<RowLogout> {
+        let reply = self.session_mut().logout().await?;
+        self.ended = reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted);
+        Ok(RowLogout {
+            status: reply.status,
+            result: reply.result,
+        })
+    }
+}
+impl Drop for RowClient {
+    fn drop(&mut self) {
+        if !self.ended
+            && let Some(client) = self.inner.pop()
+        {
+            let _ = ROW_PENDING_LOGOUT.try_with(|pending| pending.borrow_mut().push(client));
+        }
+    }
+}
+async fn row_connect_world(clients: &SeamClients<'_>, tag: u8) -> TestResult<RowClient> {
+    ROW_PENDING_LOGOUT
+        .try_with(|_| ())
+        .map_err(|_| "row admission requires its cleanup scope")?;
+    Ok(RowClient::new(connect_world(clients, tag).await?))
+}
+async fn row_connect_character(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+) -> TestResult<RowClient> {
+    ROW_PENDING_LOGOUT
+        .try_with(|_| ())
+        .map_err(|_| "row admission requires its cleanup scope")?;
+    Ok(RowClient::new(
+        connect_character(clients, tag, index).await?,
+    ))
+}
+async fn row_finish(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("row logout refused".into());
+    }
+    Ok(())
+}
+async fn row_complete_with_timeout<F: std::future::Future>(
+    duration: Duration,
     future: F,
-) -> Result<F::Output, tokio::time::error::Elapsed> {
-    Ok(future.await)
+) -> TestResult<F::Output> {
+    Ok(row_complete(tokio::time::timeout(duration, future)).await??)
+}
+// Capture journeys already bound their operation and retain their client outside it.
+// Full journeys use row_complete_with_timeout with their declared whole-row budget.
+async fn row_complete<F: std::future::Future>(future: F) -> TestResult<F::Output> {
+    ROW_PENDING_LOGOUT
+        .scope(std::cell::RefCell::new(Vec::new()), async {
+            let result = future.await;
+            let pending =
+                ROW_PENDING_LOGOUT.with(|pending| std::mem::take(&mut *pending.borrow_mut()));
+            let mut cleanup = Ok(());
+            for mut client in pending {
+                let ended =
+                    tokio::time::timeout(Duration::from_secs(10), row_logout(&mut client)).await;
+                if let Err(error) = ended
+                    .map_err(|error| -> Box<dyn std::error::Error> { error.into() })
+                    .and_then(|result| result)
+                {
+                    cleanup = Err(error);
+                }
+            }
+            cleanup?;
+            Ok(result)
+        })
+        .await
 }
 
 #[cfg(test)]
@@ -2302,4 +2407,161 @@ fn row_helper_world() -> TestResult<BundleWorld> {
         ChannelId::decode(&v7(1, 3))?,
         floor_items,
     )?)
+}
+
+// Handles name the current admission/custody only. Compare durable item values and slots.
+fn row_inventory_signature(
+    inventory: &oteryn_dev_client::CharacterInventory,
+) -> Vec<(u32, u32, u32, u32)> {
+    let item = |slot, entry: &oteryn_dev_client::ItemEntry| {
+        (
+            slot,
+            entry.item_definition_ref.get(),
+            entry.count.get(),
+            entry.sub_type,
+        )
+    };
+    let mut values: Vec<_> = inventory
+        .entries
+        .iter()
+        .map(|entry| item(0, entry))
+        .chain(inventory.main_backpack.iter().map(|entry| item(1, entry)))
+        .chain(
+            inventory
+                .equipment
+                .iter()
+                .map(|entry| item(2 + entry.slot as u32, &entry.item)),
+        )
+        .collect();
+    values.sort_unstable();
+    values
+}
+
+#[cfg(test)]
+#[test]
+fn full_row_inventory_signature_preserves_slots_and_values_but_not_handles() -> TestResult {
+    use oteryn_protocol_oteryn::item_view::*;
+    let entry = ItemEntry {
+        handle: 1_u64.try_into()?,
+        item_definition_ref: 2_u32.try_into()?,
+        count: 3_u32.try_into()?,
+        sub_type: 4,
+    };
+    let before = CharacterInventory {
+        entries: vec![entry],
+        ..Default::default()
+    };
+    let mut after = before.clone();
+    after.entries[0].handle = 5_u64.try_into()?;
+    assert_eq!(
+        row_inventory_signature(&before),
+        row_inventory_signature(&after)
+    );
+    after.entries[0].sub_type = 0;
+    assert_ne!(
+        row_inventory_signature(&before),
+        row_inventory_signature(&after)
+    );
+    after.entries.clear();
+    after.main_backpack = Some(entry);
+    assert_ne!(
+        row_inventory_signature(&before),
+        row_inventory_signature(&after)
+    );
+    Ok(())
+}
+
+async fn row_poison_active(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<bool> {
+    use oteryn_protocol_oteryn::condition_status as wire;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CONDITION_STATUS_V1,
+            wire::COMMAND_TYPE_CONDITION_STATUS_QUERY,
+            &[],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err("condition-status query refused".into());
+    }
+    row_has_poison(&reply.payload)
+}
+fn row_has_poison(payload: &[u8]) -> TestResult<bool> {
+    let status = oteryn_protocol_oteryn::condition_status::ConditionStatus::decode(payload)
+        .ok_or("invalid condition-status reply")?;
+    Ok(status
+        .conditions
+        .iter()
+        .any(|condition| condition.icon == 1))
+}
+async fn row_isolate_poison(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    while !row_poison_active(client).await? {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("needed:server-reported-poison-condition".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+    })
+    .ok_or("needed:protection-zone-to-isolate-poison-from-melee")?;
+    walk(client, world, &path).await?;
+    if !row_poison_active(client).await? {
+        return Err("poison expired before isolated tick observation".into());
+    }
+    client.take_events();
+    Ok(())
+}
+#[cfg(test)]
+#[test]
+fn full_row_poison_requires_the_poison_catalogue_entry() -> TestResult {
+    use oteryn_protocol_oteryn::condition_status::*;
+    assert!(row_has_poison(&[]).is_err());
+    assert!(!row_has_poison(&[0])?);
+    for (icon, expected) in [(1, true), (2, false), (14, false)] {
+        let payload = ConditionStatus {
+            conditions: vec![ActiveCondition {
+                icon,
+                sub_id: 0,
+                remaining_ms: 1000,
+            }],
+        }
+        .encode()
+        .ok_or("condition encode")?;
+        assert_eq!(row_has_poison(&payload)?, expected);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn full_row_timeout_drops_the_journey_inside_its_cleanup_scope() -> TestResult {
+    struct Probe(std::rc::Rc<std::cell::Cell<bool>>);
+    impl Drop for Probe {
+        fn drop(&mut self) {
+            self.0.set(ROW_PENDING_LOGOUT.try_with(|_| ()).is_ok());
+        }
+    }
+    let dropped_in_scope = std::rc::Rc::new(std::cell::Cell::new(false));
+    let probe = Probe(dropped_in_scope.clone());
+    tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?
+        .block_on(async {
+            let result = row_complete_with_timeout(Duration::ZERO, async move {
+                let _probe = probe;
+                std::future::pending::<()>().await;
+            })
+            .await;
+            assert!(result.is_err());
+            assert!(dropped_in_scope.get());
+        });
+    Ok(())
 }

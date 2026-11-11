@@ -26,7 +26,7 @@ const ROPE_TOPS: &[u32] = &[12935];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(180), journey(clients)).await;
     let (status, evidence_text) = match result {
         Ok(Ok(())) => ("PASS", None),
         Ok(Err(error)) => {
@@ -105,7 +105,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let spots = rope_spots(&bytes)?;
-    let mut client = connect_character(clients, 0xb1, 1).await?;
+    let mut client = row_connect_character(clients, 0xb1, 1).await?;
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| spots.binary_search(&at).is_ok())
         .ok_or("step-1:no reachable compiled-world rope spot within player route budget")?;
@@ -166,21 +166,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("M11B_CHECK step=3 status=PASS unchanged-position-and-mana");
 
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-4:logout refused".into());
     }
     let old_session = client.join_snapshot().game_session_id;
     drop(client);
-    let mut fresh = connect_character(clients, 0xb2, 1).await?;
+    let mut fresh = row_connect_character(clients, 0xb2, 1).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || tile(fresh.world_spatial().actor_position)? != refused_at
     {
         return Err("step-4:fresh admission lost durable final position or reused session".into());
     }
     evidence("M11B_CHECK step=4 status=PASS fresh-admission-retained-position");
-    if fresh.session_mut().logout().await?.result
+    if fresh.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step-4:fresh cleanup logout refused".into());

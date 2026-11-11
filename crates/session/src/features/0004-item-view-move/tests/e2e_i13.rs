@@ -45,39 +45,35 @@ fn visible(inventory: &CharacterInventory) -> String {
 #[test]
 fn random_reward_inventory_payload_replays() -> Result<(), BoxError> {
     block_on(async {
-        let (before_payload, after_payload, revisions, expected) =
-            // The server row reports SKIPPED (no grant path for the bag) and
-            // writes no capture; the fixture replay below then stands in.
-            if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-                .map(std::path::PathBuf::from)
-                .filter(|path| path.join("i13-before.bin").exists())
-            {
-                (
-                    std::fs::read(path.join("i13-before.bin"))?,
-                    std::fs::read(path.join("i13-after.bin"))?,
-                    std::fs::read_to_string(path.join("i13-revisions.txt"))?,
-                    std::fs::read_to_string(path.join("i13-expected.txt"))?,
-                )
-            } else {
-                let before = CharacterInventory {
-                    main_backpack: Some(entry(1, 2854, 1)),
-                    entries: vec![entry(2, 43895, 1)],
-                    equipment: vec![],
-                };
-                let after = CharacterInventory {
-                    main_backpack: before.main_backpack,
-                    entries: vec![entry(3, 43864, 1)],
-                    equipment: vec![],
-                };
-                (
-                    item_view::encode_character_inventory_with_equip_drop(&before, true)
-                        .map_err(|error| format!("{error:?}"))?,
-                    item_view::encode_character_inventory_with_equip_drop(&after, true)
-                        .map_err(|error| format!("{error:?}"))?,
-                    "3 3 4 41".into(),
-                    visible(&after),
-                )
+        let (before_payload, after_payload, revisions, expected) = if let Some(path) =
+            std::env::var_os("E2E_ALL_CAPTURE_DIR").map(std::path::PathBuf::from)
+        {
+            (
+                std::fs::read(path.join("i13-before.bin"))?,
+                std::fs::read(path.join("i13-after.bin"))?,
+                std::fs::read_to_string(path.join("i13-revisions.txt"))?,
+                std::fs::read_to_string(path.join("i13-expected.txt"))?,
+            )
+        } else {
+            let before = CharacterInventory {
+                main_backpack: Some(entry(1, 2854, 1)),
+                entries: vec![entry(2, 43895, 1)],
+                equipment: vec![],
             };
+            let after = CharacterInventory {
+                main_backpack: before.main_backpack,
+                entries: vec![entry(3, 43864, 1)],
+                equipment: vec![],
+            };
+            (
+                item_view::encode_character_inventory_with_equip_drop(&before, true)
+                    .map_err(|error| format!("{error:?}"))?,
+                item_view::encode_character_inventory_with_equip_drop(&after, true)
+                    .map_err(|error| format!("{error:?}"))?,
+                "3 3 4 41".into(),
+                visible(&after),
+            )
+        };
         let numbers = revisions
             .split_whitespace()
             .map(str::parse::<u64>)

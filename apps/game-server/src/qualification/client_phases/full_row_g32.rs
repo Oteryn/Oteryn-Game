@@ -20,7 +20,7 @@ const COMMENT: &str = "G32 bug report: the depot chest closed by itself";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = row_complete_with_timeout(Duration::from_secs(150), journey(clients)).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -86,8 +86,8 @@ fn request(category: u8, map: (u16, u16, u8)) -> wire::PlayerReportRequest {
     }
 }
 
-async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
+async fn logout(client: &mut RowClient) -> TestResult {
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
@@ -96,7 +96,7 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 }
 
 async fn bug_leg(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xdc).await?;
+    let mut client = row_connect_world(clients, 0xdc).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_PLAYER_REPORT_V1)
@@ -153,7 +153,7 @@ async fn bug_leg(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xdd).await?;
+    let mut fresh = row_connect_world(clients, 0xdd).await?;
     let durable = rows(clients).await?;
     logout(&mut fresh).await?;
     if durable != stored {
@@ -164,7 +164,7 @@ async fn bug_leg(clients: &SeamClients<'_>) -> TestResult {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     bug_leg(clients).await?;
-    let mut client = connect_world(clients, 0xde).await?;
+    let mut client = row_connect_world(clients, 0xde).await?;
     let item = client
         .inventory()
         .and_then(|inventory| inventory.entries.first())
@@ -199,7 +199,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         format!("status:{:?}", response.status)
     };
     let unchanged = client.inventory().map(|inventory| inventory.entries.len()) == before;
-    if client.session_mut().logout().await?.result
+    if client.row_logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout observed=refused".into());
