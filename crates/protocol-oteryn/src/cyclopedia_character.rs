@@ -38,6 +38,10 @@ pub const CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1: u32 = 487;
 /// The highest vocation id; ids follow the spellbook details vocation order
 /// (`none`=1 … `exalted_monk`=11).
 pub const MAX_VOCATION_ID: u8 = 11;
+/// Capability 488: Recent Deaths rows carry structured death details.
+pub const CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1: u32 = 488;
+/// The byte bound of a killer name in a structured death row.
+pub const MAX_DEATH_NAME_BYTES: usize = 64;
 pub const MAX_BADGES_REQUEST_BYTES: usize = 0;
 /// One count byte and one byte per admitted badge.
 pub const MAX_BADGES_RESULT_BYTES: usize = 1 + BADGE_COUNT;
@@ -490,19 +494,67 @@ pub fn vocation_id(key: &str) -> Option<u8> {
     .and_then(|index| u8::try_from(index + 1).ok())
 }
 
+/// Capability 488: the structured facts of one Recent Deaths row. An empty name is unknown.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DeathDetails {
+    /// The character level at death.
+    pub level: u32,
+    /// The final-blow killer.
+    pub killer: String,
+    /// The killer that dealt the most damage.
+    pub most_damage: String,
+    /// The death counted as an unjustified kill for a killer.
+    pub unjustified: bool,
+}
+
+/// `name` cut to at most [`MAX_DEATH_NAME_BYTES`] at a character boundary.
+pub fn bounded_death_name(name: &str) -> String {
+    let mut end = name.len().min(MAX_DEATH_NAME_BYTES);
+    while !name.is_char_boundary(end) {
+        end -= 1;
+    }
+    name[..end].to_owned()
+}
+
+fn push_death_name(bytes: &mut Vec<u8>, name: &str) -> Result<(), TabWireError> {
+    if name.len() > MAX_DEATH_NAME_BYTES {
+        return Err(TabWireError);
+    }
+    push_text(bytes, name)
+}
+
 /// The fields a tab reply appends when a session selected the matching extension
 /// capability. Each field is `None` when its capability is not selected.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TabExtension {
     /// Capability 487, General Stats only: the vocation id (`1..=MAX_VOCATION_ID`).
     pub vocation_id: Option<u8>,
+    /// Capability 488, Recent Deaths only: one entry per row, in row order.
+    pub deaths: Option<Vec<DeathDetails>>,
 }
 
 impl TabView {
     /// The tab reply with the selected extension fields. With an empty extension it is
     /// byte-identical to [`TabView::encode`]. An extension field for another tab is rejected.
     pub fn encode_extended(&self, extension: &TabExtension) -> Result<Vec<u8>, TabWireError> {
-        let mut bytes = self.encode()?;
+        let mut bytes = match (self, &extension.deaths) {
+            (_, None) => self.encode()?,
+            (Self::RecentDeaths(entries), Some(details)) if details.len() == entries.len() => {
+                // `at:i64, cause, level:u32, killer, most_damage, unjustified:u8` per row.
+                let mut bytes = vec![self.tab() as u8];
+                push_count(&mut bytes, entries.len())?;
+                for ((at, cause), detail) in entries.iter().zip(details) {
+                    bytes.extend_from_slice(&at.to_le_bytes());
+                    push_text(&mut bytes, cause)?;
+                    bytes.extend_from_slice(&detail.level.to_le_bytes());
+                    push_death_name(&mut bytes, &detail.killer)?;
+                    push_death_name(&mut bytes, &detail.most_damage)?;
+                    bytes.push(u8::from(detail.unjustified));
+                }
+                bytes
+            }
+            _ => return Err(TabWireError),
+        };
         if let Some(vocation) = extension.vocation_id {
             if !matches!(self, Self::GeneralStats(_)) || !(1..=MAX_VOCATION_ID).contains(&vocation)
             {
@@ -641,6 +693,7 @@ mod tests {
         let extended = stats
             .encode_extended(&TabExtension {
                 vocation_id: Some(3),
+                deaths: None,
             })
             .unwrap_or_default();
         assert_eq!(extended.len(), plain.len() + 1);
@@ -650,6 +703,7 @@ mod tests {
             assert_eq!(
                 stats.encode_extended(&TabExtension {
                     vocation_id: Some(invalid),
+                    deaths: None,
                 }),
                 Err(TabWireError)
             );
@@ -658,6 +712,7 @@ mod tests {
         assert_eq!(
             deaths.encode_extended(&TabExtension {
                 vocation_id: Some(1),
+                deaths: None,
             }),
             Err(TabWireError),
             "a vocation belongs to General Stats only"
@@ -666,6 +721,85 @@ mod tests {
         assert_eq!(vocation_id("sorcerer"), Some(4));
         assert_eq!(vocation_id("exalted_monk"), Some(MAX_VOCATION_ID));
         assert_eq!(vocation_id("Sorcerer"), None);
+    }
+
+    #[test]
+    fn recent_deaths_rows_carry_structured_details_only_when_extended() {
+        let deaths = TabView::RecentDeaths(vec![(5, "Died at Level 8 by a rat".into())]);
+        let plain = deaths.encode().unwrap_or_default();
+        assert_eq!(
+            deaths.encode_extended(&TabExtension::default()),
+            Ok(plain.clone())
+        );
+        let detail = DeathDetails {
+            level: 8,
+            killer: "Rat".into(),
+            most_damage: "Pvpci".into(),
+            unjustified: true,
+        };
+        let extended = deaths.encode_extended(&TabExtension {
+            vocation_id: None,
+            deaths: Some(vec![detail.clone()]),
+        });
+        let mut expected = plain.clone();
+        expected.extend_from_slice(&8_u32.to_le_bytes());
+        expected.push(3);
+        expected.extend_from_slice(b"Rat");
+        expected.push(5);
+        expected.extend_from_slice(b"Pvpci");
+        expected.push(1);
+        assert_eq!(
+            extended,
+            Ok(expected),
+            "details follow the cause of each row"
+        );
+        let mismatched = TabExtension {
+            vocation_id: None,
+            deaths: Some(Vec::new()),
+        };
+        assert_eq!(deaths.encode_extended(&mismatched), Err(TabWireError));
+        let stats = TabView::GeneralStats(GeneralStats::default());
+        assert_eq!(
+            stats.encode_extended(&TabExtension {
+                vocation_id: None,
+                deaths: Some(Vec::new()),
+            }),
+            Err(TabWireError),
+            "details belong to Recent Deaths only"
+        );
+        let long = DeathDetails {
+            killer: "x".repeat(MAX_DEATH_NAME_BYTES + 1),
+            ..detail
+        };
+        assert_eq!(
+            deaths.encode_extended(&TabExtension {
+                vocation_id: None,
+                deaths: Some(vec![long]),
+            }),
+            Err(TabWireError)
+        );
+        let bounded = bounded_death_name(&"\u{e9}".repeat(MAX_DEATH_NAME_BYTES));
+        assert!(bounded.len() <= MAX_DEATH_NAME_BYTES);
+        assert_eq!(bounded.chars().count(), MAX_DEATH_NAME_BYTES / 2);
+        let worst = TabView::RecentDeaths((0..50).map(|at| (at, "x".repeat(255))).collect());
+        let full = TabExtension {
+            vocation_id: None,
+            deaths: Some(vec![
+                DeathDetails {
+                    level: u32::MAX,
+                    killer: "k".repeat(MAX_DEATH_NAME_BYTES),
+                    most_damage: "m".repeat(MAX_DEATH_NAME_BYTES),
+                    unjustified: true,
+                };
+                50
+            ]),
+        };
+        assert!(
+            worst
+                .encode_extended(&full)
+                .is_ok_and(|bytes| bytes.len() <= MAX_EXTENDED_TAB_RESULT_BYTES),
+            "a full extended page fits the extended bound"
+        );
     }
 
     #[test]

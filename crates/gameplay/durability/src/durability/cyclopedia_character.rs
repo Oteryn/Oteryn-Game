@@ -26,8 +26,8 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::character_info::{HISTORY_WINDOW_MS, PageRequest};
 use oteryn_protocol_oteryn::cyclopedia_character::{
-    CharacterTab, EquippedItem, GeneralStats, KillStatus, StoreSummary, TabExtension, TabView,
-    death_cause, pvp_kill_description, vocation_id,
+    CharacterTab, DeathDetails, EquippedItem, GeneralStats, KillStatus, StoreSummary,
+    TabExtension, TabView, bounded_death_name, death_cause, pvp_kill_description, vocation_id,
 };
 use sqlx::Row;
 
@@ -38,8 +38,15 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
  LEFT JOIN game_character_last_positions l ON l.character_id=p.character_id WHERE p.character_id=encode($1,'hex')::uuid";
 
 /// Deaths in the history window, newest first, with the Character killers the PvP owners
-/// recorded for the same death (unjustified points and guild war frags).
-const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before,ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
+/// recorded for the same death (unjustified points and guild war frags). `killer` is the
+/// public final-blow killer (ordinal 0 when its kind matches the death classification), empty
+/// when the final blow is unknown; `unjustified` is true when the death awarded unjustified
+/// points to any killer.
+const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
+ COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id \
+   WHERE k.death_occurrence_id=d.death_occurrence_id AND k.ordinal=0 AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player'))),'') AS killer, \
+ EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified, \
+ ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
    UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) k JOIN game_character_roots r ON r.character_id=k.killer ORDER BY r.name) AS killers \
  FROM game_character_death_receipts d WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
 
@@ -100,7 +107,8 @@ impl DurabilityRoot {
     }
 
     /// [`Self::read_cyclopedia_character_tab`] with every extension field the tab carries
-    /// (capability 487 vocation id); the caller keeps only the fields its session selected.
+    /// (capability 487 vocation id, capability 488 death details); the caller keeps only the
+    /// fields its session selected.
     #[allow(
         clippy::too_many_arguments,
         reason = "the current viewer fence and target remain explicit at the durable privacy boundary"
@@ -161,11 +169,22 @@ impl DurabilityRoot {
                 CharacterTab::RecentDeaths => {
                     let rows = sqlx::query(DEATHS_SQL).bind(&id).bind(window).bind(now_unix_ms).bind(offset).bind(limit).fetch_all(&mut *tx).await?;
                     let mut entries = Vec::with_capacity(rows.len());
+                    let mut details = Vec::with_capacity(rows.len());
                     for row in rows {
                         let level: i64 = row.try_get("level_before")?;
                         let killers: Vec<String> = row.try_get("killers")?;
                         entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
+                        let killer: String = row.try_get("killer")?;
+                        // No owner records per-killer damage amounts, so the most-damage
+                        // killer stays unknown (empty).
+                        details.push(DeathDetails {
+                            level: narrow(level)?,
+                            killer: bounded_death_name(&killer),
+                            most_damage: String::new(),
+                            unjustified: row.try_get("unjustified")?,
+                        });
                     }
+                    extension.deaths = Some(details);
                     TabView::RecentDeaths(entries)
                 }
                 CharacterTab::RecentPvpKills => {

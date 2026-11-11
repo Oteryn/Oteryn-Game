@@ -203,6 +203,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     extension.vocation_id = None;
                 }
+                if !admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1)
+                {
+                    extension.deaths = None;
+                }
                 view.encode_extended(&extension).map_err(|_| ())
             }
             _ => Err(()),
