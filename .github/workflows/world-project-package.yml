@@ -1,0 +1,242 @@
+name: WorldProject canonical package
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - content/world/**
+      - deploy/synology-game/preprod-topology.toml
+      - apps/game-server/examples/materialize_content_world_project_v2.rs
+      - apps/game-server/tests/content_world_project_repository.rs
+      - apps/game-server/tests/content_npc_catalogue.rs
+      - apps/game-server/tests/content_npc_service_model.rs
+      - crates/gameplay/content/src/bin/oteryn-world-project-canonicalize.rs
+      - crates/gameplay/content/src/content/project.rs
+      - crates/gameplay/content/src/content/project/**
+      - crates/gameplay/content/src/content/project_fs.rs
+      - crates/gameplay/content/src/content/project_fs/**
+      - crates/gameplay/content/src/content/npc_catalogue.rs
+      - crates/gameplay/content/src/content/npc_catalogue/**
+      - .github/workflows/world-project-package.yml
+      - tools/content-migration/native_world_canonicalization.py
+      - tools/content-migration/test_native_world_canonicalization.py
+      - tools/content-migration/questpc7_thaian_authoring.py
+      - tools/content-migration/questpc7_world_seal.py
+      - tools/content-migration/regenerate_content.py
+      - tools/content-migration/creature_admission_stage.py
+      - tools/content-schema/quest-authoring/questpc7-thaian-authoring.json
+      - tools/content-schema/validate_materialized_game_tree.py
+      - docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json
+      - docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1.json
+      - docs/agents/tasks/active/OTV2-20260925-g4-canonical-worldproject-package-seed.md
+      - docs/agents/evidence/OTV2-20260925-g4-canonical-worldproject-package-seed.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: world-project-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
+
+      # Restore only, as in the merge gate: the protected-main producer in rust.yml is the
+      # only cache writer, and every step below still builds and checks this exact head.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.99.1-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python3 tools/repository/normalize_cargo_mtimes.py
+
+      - name: Check canonical completion guards
+        run: |
+          python3 -m unittest discover -s tools/content-migration -p test_native_world_canonicalization.py
+          cargo +1.99.1 test --locked -p oteryn-gameplay-content --bin oteryn-world-project-canonicalize
+
+      - name: Export pinned predecessor package
+        run: |
+          set -euo pipefail
+          # The #1807 monster/spell delta was authored outside the materializer, so the package is
+          # reproduced from the pinned parent of #1830 (the materializer digest-verifies it) plus
+          # the D3-7 corpse admission. The tracked content/world is never its own input.
+          pin=d78f0c80e6efe7b5d2fea6dae010eaf236ccd7a1
+          git fetch --no-tags --depth=1 origin "$pin"
+          mkdir -p "$RUNNER_TEMP/predecessor/world"
+          # Exactly the 11 package documents; successor shards (worlds/index.json, ...) are not inputs.
+          for f in project.json manifest.json content.lock.json assets/catalog.json \
+            definitions/declarations.json definitions/reference.json editor/author.json \
+            presentations/bindings.json provenance/imports.json provenance/sources.json \
+            worlds/world.json; do
+            mkdir -p "$(dirname "$RUNNER_TEMP/predecessor/world/$f")"
+            git show "$pin:content/world/$f" > "$RUNNER_TEMP/predecessor/world/$f"
+          done
+          test "$(find "$RUNNER_TEMP/predecessor/world" -type f | wc -l)" -eq 11
+
+      - name: Materialize and complete twice
+        id: materialize
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          cargo +1.99.1 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          python3 tools/content-migration/native_world_canonicalization.py --repo-root "$GITHUB_WORKSPACE" --input-root "$RUNNER_TEMP/world-a"
+          python3 tools/content-migration/native_world_canonicalization.py --repo-root "$GITHUB_WORKSPACE" --input-root "$RUNNER_TEMP/world-b"
+          diff --brief --no-dereference --recursive "$RUNNER_TEMP/world-a" "$RUNNER_TEMP/world-b"
+          # Completing an already canonical package must retain every managed byte.
+          python3 tools/content-migration/native_world_canonicalization.py --repo-root "$GITHUB_WORKSPACE" --input-root "$RUNNER_TEMP/world-a"
+          diff --brief --no-dereference --recursive "$RUNNER_TEMP/world-a" "$RUNNER_TEMP/world-b"
+          test "$(find "$RUNNER_TEMP/world-a" -type f | wc -l)" -eq 11
+          test -z "$(find "$RUNNER_TEMP/world-a" -type l -print -quit)"
+
+      - name: Generate World pins from the reproduced package
+        id: pins
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib, shutil, subprocess
+          paths = [
+              "content/world/pins/oteryn.identity.json",
+              "content/world/pins/oteryn.json",
+              "deploy/synology-game/preprod-topology.toml",
+          ]
+          locators = [
+              "assets/catalog.json", "content.lock.json", "definitions/declarations.json",
+              "definitions/reference.json", "editor/author.json", "manifest.json",
+              "presentations/bindings.json", "project.json", "provenance/imports.json",
+              "provenance/sources.json", "worlds/world.json",
+          ]
+          inputs = [f"content/world/{locator}" for locator in locators]
+          candidate = pathlib.Path(os.environ["RUNNER_TEMP"]) / "world-pin-candidate"
+          candidate.mkdir()
+          source = pathlib.Path(os.environ["RUNNER_TEMP"]) / "world-a"
+          subprocess.run(["git", "diff", "--exit-code", "HEAD"], check=True)
+          try:
+              # pin-refresh reads staged identities. Build from the independently reproduced
+              # package, then restore the exact PR head before any integration test runs.
+              for locator, destination in zip(locators, inputs):
+                  shutil.copyfile(source / locator, destination)
+              subprocess.run(["git", "add", "--", *inputs], check=True)
+              with (candidate / "report.json").open("w") as report:
+                  subprocess.run([
+                      "cargo", "+1.99.1", "run", "--locked", "--release", "-p",
+                      "oteryn-world-bundle-compiler", "--", "pin-refresh", ".",
+                  ], check=True, stdout=report)
+              changed = subprocess.check_output(["git", "diff", "HEAD", "--name-only", "-z"]).decode().split("\0")
+              changed = {path for path in changed if path}
+              unexpected = changed - set(paths) - set(inputs)
+              if unexpected:
+                  raise SystemExit(f"pin-refresh changed unexpected files: {sorted(unexpected)}")
+              for relative in paths:
+                  raw = pathlib.Path(relative).read_bytes()
+                  target = candidate / relative
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(raw)
+                  print("WORLD_PIN_CANDIDATE " + json.dumps({
+                      "path": relative, "sha256": hashlib.sha256(raw).hexdigest(),
+                      "base64": base64.b64encode(raw).decode("ascii"),
+                  }, sort_keys=True))
+          finally:
+              subprocess.run(["git", "restore", "--source=HEAD", "--staged", "--worktree", "--", *paths, *inputs], check=True)
+          subprocess.run(["git", "diff", "--exit-code", "HEAD"], check=True)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"drift={'true' if changed & set(paths) else 'false'}\n")
+          PY
+
+      - name: Validate the spawn family
+        if: ${{ hashFiles('content/world/spawns/index.json') != '' }}
+        run: |
+          set -euo pipefail
+          # The spawn shards are excluded from the package comparison below, so pin them here:
+          # fetch the pinned CrystalServer spawn file (convert_spawns.py rejects any other sha256) and
+          # require content/world/spawns to be exactly its conversion.
+          xml="$RUNNER_TEMP/world-monster.xml"
+          curl --fail --silent --show-error --location --retry 4 --retry-all-errors --output "$xml" \
+            https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world-monster.xml
+          python3 tools/world-bundle-compiler/convert_spawns.py --xml "$xml" --check
+
+      - name: Compare tracked package
+        if: ${{ hashFiles('content/world/project.json') != '' }}
+        run: |
+          set -euo pipefail
+          # Successor authoring-tree markers and their validated family shards are not
+          # WorldProject locators. Remove exactly that set (each must exist), then require an
+          # exact package.
+          tracked="$RUNNER_TEMP/tracked-legacy"
+          cp -a content/world "$tracked"
+          python3 tools/content-schema/validate_materialized_game_tree.py --print-world-markers > "$RUNNER_TEMP/world-markers.txt"
+          test "$(wc -l < "$RUNNER_TEMP/world-markers.txt")" -eq 10
+          python3 tools/content-schema/validate_materialized_game_tree.py
+          python3 tools/content-schema/validate_materialized_game_tree.py --print-world-successor-files > "$RUNNER_TEMP/world-successors.txt"
+          while IFS= read -r successor; do rm -- "${tracked:?}/${successor:?}"; done < "$RUNNER_TEMP/world-successors.txt"
+          # WO-2 and Area catalogue shards are not WorldProject locators either;
+          # build_catalogue.py --check (item-authoring-schema) and build_areas.py build
+          # --check (area-authoring-schema) pin their bytes.
+          rm -- "$tracked"/terrain/terrain-*.json "$tracked"/objects/objects-*.json
+          rm -- "$tracked"/areas/cities/areas-*.json "$tracked"/areas/regions/areas-*.json
+          # content/world/pins/ (pin tables, #1805) is not WorldProject package content.
+          rm -r -- "${tracked:?}/pins"
+          find "$tracked" -mindepth 1 -type d -empty -delete
+          diff --brief --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
+
+      - name: Focused validation
+        if: ${{ !cancelled() && steps.materialize.outcome == 'success' && steps.pins.outcome == 'success' && hashFiles('content/world/project.json') != '' }}
+        run: |
+          python3 tools/content-schema/validate_materialized_game_tree.py
+          cargo +1.99.1 test --locked --no-fail-fast -p oteryn-game-server \
+            --test content_world_project_repository \
+            --test content_npc_catalogue \
+            --test content_npc_service_model \
+            --test content_world_project_v2 \
+            --test content_world_cw2_b1_import
+          cargo +1.99.1 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
+          cargo +1.99.1 fmt --all -- --check
+
+      - name: Upload canonical package candidate
+        if: ${{ !cancelled() && steps.materialize.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: world-project-canonical-package-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/world-a
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 7
+
+      - name: Upload native World pin candidate
+        if: ${{ !cancelled() && steps.pins.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: world-project-native-pins-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/world-pin-candidate
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify committed World pins
+        if: ${{ !cancelled() && steps.pins.outcome == 'success' }}
+        env:
+          PIN_DRIFT: ${{ steps.pins.outputs.drift }}
+        run: test "$PIN_DRIFT" = false
