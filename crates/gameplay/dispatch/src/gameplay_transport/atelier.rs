@@ -65,6 +65,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .atelier_resources_wire(admitted, expected, payload)
                 .await;
         }
+        // Switch Domain is retired with the gem domain (Winter Update 2026): a capability 148
+        // client still decodes it and receives a refusal without any write.
+        let mut refused = false;
         let request = match kind {
             wire::COMMAND_TYPE_ATELIER_QUERY => {
                 if wire::decode_query(payload).is_err() {
@@ -90,19 +93,23 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(request) = wire::decode_mutate(payload) else {
                     return AtelierWireReply::Rejected;
                 };
-                let Some(mutation) = paid_wire_mutation(request.mutation) else {
-                    return AtelierWireReply::Rejected;
-                };
-                Some(crate::durability::character_atelier::AtelierRequest {
-                    occurrence: request.occurrence,
-                    expected_atelier_revision: request.expected_revision,
-                    mutation,
-                    resources: None,
-                })
+                if matches!(request.mutation, wire::Mutation::SwitchDomain { .. }) {
+                    refused = true;
+                    None
+                } else {
+                    let Some(mutation) = paid_wire_mutation(request.mutation) else {
+                        return AtelierWireReply::Rejected;
+                    };
+                    Some(crate::durability::character_atelier::AtelierRequest {
+                        occurrence: request.occurrence,
+                        expected_atelier_revision: request.expected_revision,
+                        mutation,
+                        resources: None,
+                    })
+                }
             }
             _ => return AtelierWireReply::Rejected,
         };
-        let mut refused = false;
         let mut recorded = None;
         if let Some(mut request) = request {
             let Some(permit) = self.spell_lane_permit().await else {
@@ -287,6 +294,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .collect()
         };
+        let legacy = oteryn_gameplay_progression::atelier::vessels::legacy_cells(
+            &oteryn_gameplay_progression::atelier::vessels::from_state(&state),
+        );
         let gems = state
             .gems
             .values()
@@ -297,12 +307,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
                     oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
                 },
-                domain: match gem.domain {
-                    oteryn_gameplay_progression::wheel::WheelDomain::Green => 0,
-                    oteryn_gameplay_progression::wheel::WheelDomain::Red => 1,
-                    oteryn_gameplay_progression::wheel::WheelDomain::Purple => 2,
-                    oteryn_gameplay_progression::wheel::WheelDomain::Blue => 3,
-                },
+                // Gems have no domain. Capability 148 clients index their four vessel
+                // cells by this field, so a socketed gem reports its legacy cell.
+                domain: legacy
+                    .iter()
+                    .position(|cell| *cell == Some(gem.id.to_be_bytes()))
+                    .and_then(|cell| u8::try_from(cell).ok())
+                    .unwrap_or(0),
                 locked: gem.locked,
                 vessel: gem.vessel,
                 modifiers: gem.mods.clone(),
@@ -510,7 +521,7 @@ fn paid_wire_mutation(
             },
         },
         Mutation::Dismantle { gem } => AtelierMutation::Dismantle { gem },
-        Mutation::SwitchDomain { gem } => AtelierMutation::SwitchDomain { gem },
+        Mutation::SwitchDomain { .. } => return None,
         Mutation::GradeUp { kind, mod_id } => AtelierMutation::GradeUp {
             kind: match kind {
                 0 => FragmentKind::Basic,
@@ -627,10 +638,7 @@ pub(super) use composed_methods;
 #[allow(clippy::unwrap_used, reason = "test fixtures")]
 mod tests {
     use super::*;
-    use oteryn_gameplay_progression::{
-        atelier::{FragmentKind, GemQuality},
-        wheel::WheelDomain,
-    };
+    use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
 
     fn funded_state() -> AtelierState {
         AtelierState {
@@ -703,15 +711,7 @@ mod tests {
 
     fn reveal(state: &mut AtelierState, id: u128, quality: GemQuality, mods: Vec<u16>) {
         apply(state, AtelierAction::Drop { quality });
-        apply(
-            state,
-            AtelierAction::Reveal {
-                id,
-                quality,
-                domain: WheelDomain::Green,
-                mods,
-            },
-        );
+        apply(state, AtelierAction::Reveal { id, quality, mods });
     }
 
     fn refused(state: &mut AtelierState, action: AtelierAction, expected: AtelierRefusal) {
@@ -757,7 +757,6 @@ mod tests {
                 AtelierAction::Reveal {
                     id: 4,
                     quality: GemQuality::Greater,
-                    domain: WheelDomain::Green,
                     mods,
                 },
                 AtelierRefusal::InvalidDraw,
@@ -769,7 +768,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 4,
                 quality: GemQuality::Greater,
-                domain: WheelDomain::Green,
                 mods: vec![3, 1, 0],
             },
             AtelierRefusal::InsufficientGold,
@@ -777,50 +775,33 @@ mod tests {
     }
 
     #[test]
-    fn atelier_one_socket_per_domain_and_remove_releases_the_vessel() {
+    fn atelier_gems_of_one_quality_socket_together_and_remove_releases_the_vessel() {
+        // Slot occupancy and quality belong to the Gem Vessel owner; gems have no domain.
         let mut state = funded_state();
         reveal(&mut state, 1, GemQuality::Lesser, vec![3]);
         reveal(&mut state, 2, GemQuality::Lesser, vec![3]);
         apply(&mut state, AtelierAction::Socket { id: 1 });
+        apply(&mut state, AtelierAction::Socket { id: 2 });
         refused(
             &mut state,
             AtelierAction::Socket { id: 2 },
-            AtelierRefusal::VesselOccupied,
-        );
-        refused(
-            &mut state,
-            AtelierAction::SwitchDomain { id: 1 },
-            AtelierRefusal::InVessel,
+            AtelierRefusal::AlreadySocketed,
         );
         apply(&mut state, AtelierAction::Remove { id: 1 });
-        apply(&mut state, AtelierAction::Socket { id: 2 });
         assert!(!state.gems[&1].vessel);
         assert!(state.gems[&2].vessel);
     }
 
     #[test]
-    fn atelier_switch_lock_dismantle_ranges_and_last_domain_guards() {
+    fn atelier_lock_and_dismantle_ranges_guards() {
         let mut state = funded_state();
         reveal(&mut state, 1, GemQuality::Regular, vec![3, 1]);
-        refused(
-            &mut state,
-            AtelierAction::Dismantle {
-                id: 1,
-                yield_amount: 2,
-            },
-            AtelierRefusal::LastDomainGem,
-        );
         apply(
             &mut state,
             AtelierAction::Lock {
                 id: 1,
                 locked: true,
             },
-        );
-        refused(
-            &mut state,
-            AtelierAction::SwitchDomain { id: 1 },
-            AtelierRefusal::Locked,
         );
         refused(
             &mut state,
@@ -837,17 +818,6 @@ mod tests {
                 locked: false,
             },
         );
-        let before = state.gold;
-        for domain in [
-            WheelDomain::Red,
-            WheelDomain::Purple,
-            WheelDomain::Blue,
-            WheelDomain::Green,
-        ] {
-            apply(&mut state, AtelierAction::SwitchDomain { id: 1 });
-            assert_eq!(state.gems[&1].domain, domain);
-        }
-        assert_eq!(state.gold, before - 4 * 250_000);
         reveal(&mut state, 2, GemQuality::Lesser, vec![3]);
         // Crystal 201189f player_wheel.cpp:1311-1312: Regular yields 2..=10.
         for yield_amount in [1, 11] {
@@ -961,7 +931,6 @@ mod tests {
                 locked: true,
             },
             AtelierAction::Remove { id: 1 },
-            AtelierAction::SwitchDomain { id: 1 },
             AtelierAction::Dismantle {
                 id: 1,
                 yield_amount: 1,
@@ -1009,7 +978,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 226,
                 quality: GemQuality::Lesser,
-                domain: WheelDomain::Green,
                 mods: vec![3],
             },
             AtelierRefusal::Full,
@@ -1051,7 +1019,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 1,
                 quality: GemQuality::Greater,
-                domain: WheelDomain::Green,
                 mods: vec![3, 1, 0],
             },
         )
@@ -1085,7 +1052,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 2,
                 quality: GemQuality::Lesser,
-                domain: WheelDomain::Green,
                 mods: vec![3],
             },
         )

@@ -12,7 +12,7 @@ use crate::domain::CharacterRevision;
 use oteryn_gameplay_progression::atelier::{
     AtelierAction, AtelierState, FragmentKind, Gem, GemQuality,
 };
-use oteryn_gameplay_progression::wheel::{WheelDomain, base_vocation};
+use oteryn_gameplay_progression::wheel::base_vocation;
 use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -49,7 +49,6 @@ pub enum AtelierMutation {
     Initialize,
     SetLock { gem: [u8; 16], locked: bool },
     Reveal { quality: GemQuality },
-    SwitchDomain { gem: [u8; 16] },
     Dismantle { gem: [u8; 16] },
     GradeUp { kind: FragmentKind, mod_id: u16 },
 }
@@ -307,12 +306,8 @@ fn initialize_gems(
     hash.update(data.revision().as_bytes());
     let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
     let mut index = 0_u64;
-    for domain in [
-        WheelDomain::Green,
-        WheelDomain::Red,
-        WheelDomain::Purple,
-        WheelDomain::Blue,
-    ] {
+    // The initial grant keeps its four pairs and draw order; gems no longer carry a domain.
+    for _pair in 0..4 {
         for quality in [GemQuality::Lesser, GemQuality::Regular] {
             let mut mods = Vec::new();
             let count = if quality == GemQuality::Lesser { 1 } else { 2 };
@@ -353,10 +348,10 @@ fn initialize_gems(
                 Gem {
                     id,
                     quality,
-                    domain,
                     mods,
                     locked: false,
                     vessel: false,
+                    slot: None,
                     ruleset_revision: data.revision().to_owned(),
                 },
             );
@@ -375,9 +370,7 @@ pub(super) async fn load_in_transaction(
     let mut state = json.map(decode_state).transpose()?;
     if let Some(state) = &mut state {
         let vessels = super::character_wheel::read_vessels(tx, character).await?;
-        for gem in state.gems.values_mut() {
-            gem.vessel = vessels.contains(&Some(gem.id.to_be_bytes()));
-        }
+        oteryn_gameplay_progression::atelier::vessels::project(state, &vessels);
     }
     Ok(state)
 }

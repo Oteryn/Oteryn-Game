@@ -6,11 +6,13 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{wheel::WheelDomain, wheel_gem_data::WheelGemData};
+use crate::wheel_gem_data::WheelGemData;
 
 #[cfg(test)]
 #[path = "atelier/parity_tests.rs"]
 mod parity_tests;
+#[path = "atelier/vessels.rs"]
+pub mod vessels;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum GemQuality {
@@ -56,10 +58,13 @@ pub struct Gem {
     #[serde(with = "gem_identity")]
     pub id: u128,
     pub quality: GemQuality,
-    pub domain: WheelDomain,
     pub mods: Vec<u16>,
     pub locked: bool,
     pub vessel: bool,
+    /// The Gem Vessel slot holding this gem, projected from the vessel owner on load like
+    /// `vessel`; never stored in the Atelier state.
+    #[serde(skip)]
+    pub slot: Option<u8>,
     pub ruleset_revision: String,
 }
 
@@ -87,16 +92,12 @@ pub enum AtelierAction {
     Reveal {
         id: u128,
         quality: GemQuality,
-        domain: WheelDomain,
         mods: Vec<u16>,
     },
     Socket {
         id: u128,
     },
     Remove {
-        id: u128,
-    },
-    SwitchDomain {
         id: u128,
     },
     Lock {
@@ -121,9 +122,7 @@ pub enum AtelierRefusal {
     Full,
     Locked,
     InVessel,
-    LastDomainGem,
     AlreadySocketed,
-    VesselOccupied,
     NotSocketed,
     InsufficientGold,
     InsufficientFragments,
@@ -160,12 +159,7 @@ impl AtelierState {
                 let count = next.unrevealed.entry(quality).or_default();
                 *count = count.checked_add(1).ok_or(AtelierRefusal::InvalidDraw)?;
             }
-            AtelierAction::Reveal {
-                id,
-                quality,
-                domain,
-                mods,
-            } => {
+            AtelierAction::Reveal { id, quality, mods } => {
                 let limit = catalogue["atelier"]["operation_policy"]["revealed_gem_limit"]
                     .as_u64()
                     .ok_or(AtelierRefusal::InvalidDraw)? as usize;
@@ -210,10 +204,10 @@ impl AtelierState {
                     Gem {
                         id,
                         quality,
-                        domain,
                         mods,
                         locked: false,
                         vessel: false,
+                        slot: None,
                         ruleset_revision: current.to_owned(),
                     },
                 );
@@ -223,15 +217,8 @@ impl AtelierState {
                 if gem.vessel {
                     return Err(AtelierRefusal::AlreadySocketed);
                 }
-                let domain = gem.domain;
-                if next
-                    .gems
-                    .values()
-                    .any(|other| other.vessel && other.domain == domain)
-                {
-                    return Err(AtelierRefusal::VesselOccupied);
-                }
-                current_gem(&mut next, id, current)?.vessel = true;
+                // Slot occupancy and quality belong to the vessel owner (`vessels`).
+                gem.vessel = true;
             }
             AtelierAction::Remove { id } => {
                 let gem = current_gem(&mut next, id, current)?;
@@ -239,34 +226,6 @@ impl AtelierState {
                     return Err(AtelierRefusal::NotSocketed);
                 }
                 gem.vessel = false;
-            }
-            AtelierAction::SwitchDomain { id } => {
-                let gem = current_gem(&mut next, id, current)?;
-                if gem.locked {
-                    return Err(AtelierRefusal::Locked);
-                }
-                if gem.vessel {
-                    return Err(AtelierRefusal::InVessel);
-                }
-                let quality = gem.quality;
-                let domains = [
-                    WheelDomain::Green,
-                    WheelDomain::Red,
-                    WheelDomain::Purple,
-                    WheelDomain::Blue,
-                ];
-                let index = domains
-                    .iter()
-                    .position(|domain| *domain == gem.domain)
-                    .ok_or(AtelierRefusal::InvalidDraw)?;
-                gem.domain = domains[(index + 1) % domains.len()];
-                let fee = catalogue["atelier"]["fees"]["switch_domain"][quality.key()]
-                    .as_u64()
-                    .ok_or(AtelierRefusal::InvalidDraw)?;
-                next.gold = next
-                    .gold
-                    .checked_sub(fee)
-                    .ok_or(AtelierRefusal::InsufficientGold)?;
             }
             AtelierAction::Lock { id, locked } => {
                 current_gem(&mut next, id, current)?.locked = locked
@@ -280,16 +239,6 @@ impl AtelierState {
                     return Err(AtelierRefusal::InVessel);
                 }
                 let quality = gem.quality;
-                let domain = gem.domain;
-                if next
-                    .gems
-                    .values()
-                    .filter(|other| other.domain == domain)
-                    .count()
-                    <= 1
-                {
-                    return Err(AtelierRefusal::LastDomainGem);
-                }
                 let row = &catalogue["atelier"]["fragment_yields"][quality.key()];
                 let (low, high) = quality.revealed_fragment_yield();
                 if !(low..=high).contains(&yield_amount) {
@@ -456,13 +405,13 @@ mod crystal_yield_tests {
                             Gem {
                                 id,
                                 quality,
-                                domain: WheelDomain::Green,
                                 mods: vec![31, 0, 5]
                                     .into_iter()
                                     .take(quality.mod_count())
                                     .collect(),
                                 locked: false,
                                 vessel: false,
+                                slot: None,
                                 ruleset_revision: data.revision().into(),
                             },
                         )

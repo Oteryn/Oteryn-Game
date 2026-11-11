@@ -133,7 +133,7 @@ pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffec
 mod tests {
     use super::*;
     use crate::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
-    use crate::wheel::{WheelAllocation, WheelDomain, WheelSlots};
+    use crate::wheel::{WheelAllocation, WheelSlots};
     use crate::wheel_gem_data::WheelGemData;
 
     type Error = Box<dyn std::error::Error>;
@@ -300,23 +300,20 @@ mod tests {
         };
         state.grades.insert((FragmentKind::Supreme, 4), 1);
         let mut effects = WheelRuntimeEffects::default();
-        for (id, domain, resonance) in [
-            (1, WheelDomain::Green, "vessel_resonance_top_left"),
-            (2, WheelDomain::Red, "vessel_resonance_top_right"),
-        ] {
+        effects.sockets.gem_vessel_nodes = 6;
+        for (id, slot) in [(1, 2), (2, 5)] {
             state.gems.insert(
                 id,
                 Gem {
                     id,
                     quality: GemQuality::Greater,
-                    domain,
                     mods: vec![31, 0, 4],
                     locked: false,
                     vessel: true,
+                    slot: Some(slot),
                     ruleset_revision: data.revision().into(),
                 },
             );
-            effects.sockets.resonance_stages.insert(resonance.into(), 3);
         }
         effects
             .contribute_gems(&state, &data, &allocation)

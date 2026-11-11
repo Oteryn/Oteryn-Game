@@ -25,8 +25,13 @@ its existing four fields. Paid mutations carry only intent:
 All fields required by an action must be present. Unknown or duplicate fields,
 irrelevant fields, out-of-range values and malformed lengths are rejected.
 The server derives prices, inventory and bank custody, native item revisions,
-vocation-compatible random modifiers, random domain and fragment yield. The
-client cannot choose a price, draw, resource balance or mint identity.
+vocation-compatible random modifiers and fragment yield. The client cannot choose
+a price, draw, resource balance or mint identity.
+
+Winter Update 2026 removed the gem domain ([Gem Atelier v2](gem-atelier-v2-v1.md)).
+Switch domain (action 2) still decodes and returns `refused=true` without a write. A
+gem row's `domain` field now carries the gem's position among the first four
+socketed gems in slot order, or zero, so old clients keep their four vessel cells.
 
 Mutations use the existing Character revision sequencer and the session-generation
 fenced Atelier writer. Material burns/mints, coin and bank debits, Character revision,
