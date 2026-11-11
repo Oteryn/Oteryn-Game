@@ -1,4 +1,5 @@
 """Admit the closed, source-normalized world-change item family through the native provider."""
+import copy
 import hashlib
 import json
 
@@ -80,6 +81,40 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # policy only when the World-change custody facts agree; retain its
         # presentation, trade facts and provenance unchanged.
         existing = present[key]
+        if key in {"oteryn:item.tibia.i2576", "oteryn:item.tibia.i22074"}:
+            if sum(current["production_definition"]["production_key"] == key
+                   for current in document["records"]) != 1:
+                raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+            if key == "oteryn:item.tibia.i2576":
+                # SourceGate owns this exact carpet; QuickLoot may already have
+                # added its independently qualified canonical taxonomy.
+                expected = copy.deepcopy(row)
+                if "taxonomy" in existing.get("authoring", {}):
+                    taxonomy = json.loads((root / "content/items/taxonomy/items.json").read_bytes())
+                    matches = [entry for entry in taxonomy["records"]
+                               if entry.get("target", {}).get("key") == key]
+                    if (len(matches) != 1 or matches[0]["target"] != {
+                            "family": "Item", "key": key, "revision": "definition-r1"}):
+                        raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+                    expected["authoring"]["taxonomy"] = copy.deepcopy(matches[0]["source_taxonomy"])
+            else:
+                # QENGINE owns the carried trap. Reproduce that owner's full
+                # record and require agreement with every World custody fact.
+                import qengine_reward_item_profiles
+                qualified = qengine_reward_item_profiles.capture(root, item_ids={22074})["records"]
+                if len(qualified) != 1:
+                    raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+                expected = qualified[0]
+                if (any(expected[field] != row[field] for field in (
+                        "production_definition", "production_binding", "production_binding_qualification", "admission"))
+                        or any(expected["semantics"][group] != row["semantics"][group]
+                               for group in ("physical", "stack", "container", "temporal", "charges"))
+                        or any(field not in expected["attributes"] or expected["attributes"][field] != value
+                               for field, value in row["attributes"].items())):
+                    raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+            if existing != expected:
+                raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+            continue
         if (key != "oteryn:item.tibia.i12369"
                 or existing["production_definition"] != row["production_definition"]
                 or existing["admission"] != row["admission"]

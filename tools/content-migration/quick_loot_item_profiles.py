@@ -7,9 +7,9 @@ rule. No source asset or identity is introduced.
 import copy
 import hashlib
 import json
+import xml.etree.ElementTree as ET
 
 from native_profile_composition import encode_native_profile
-import xml.etree.ElementTree as ET
 
 IDS = {23721, 35524, 35562, 35848, 35849, 36666, 39150, 39160, 45644}
 SOURCE = 'imports/canary/items-xml/items.xml'

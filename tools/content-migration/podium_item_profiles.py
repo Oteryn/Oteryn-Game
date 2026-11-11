@@ -12,9 +12,9 @@ owner, never a character inventory.
 import copy
 import hashlib
 import json
+import xml.etree.ElementTree as ET
 
 from native_profile_composition import encode_native_profile
-import xml.etree.ElementTree as ET
 
 # Item id -> (podium kind, use-transform partner, wrap kit). Kind 1 renown, 2 vigour, 3 tenacity.
 PODIUMS = {

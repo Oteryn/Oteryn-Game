@@ -8,10 +8,10 @@ to 100 with no XML override. Optional Canary comparison requires its exact
 import argparse
 import hashlib
 import json
-
-from native_profile_composition import encode_native_profile
 import sys
 from pathlib import Path
+
+from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
