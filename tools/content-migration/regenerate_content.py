@@ -764,15 +764,17 @@ def main() -> int:
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
     run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
+    run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
+    run(["python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build"])
+    # The materializer validates ranged facts against the complete Item tree.
+    # Repair that derived prerequisite through its normal owner before reading it.
+    run(["python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only"])
     materialize_world()
     import questpc7_thaian_authoring
     questpc7_thaian_authoring.install(ROOT)
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
-    run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
-    # The tree converter validates this source candidate before importing it.
-    run(["python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.

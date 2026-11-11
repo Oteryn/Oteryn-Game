@@ -481,7 +481,7 @@ def full_generation_trace(events, inspect_command, *, prepare=None, checks=False
                 patch.object(rc, "run", side_effect=record), \
                 patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
                 patch.object(rc, "refresh_quest_callback_proof"), \
-                patch.object(rc, "materialize_world"), \
+                patch.object(rc, "materialize_world", side_effect=lambda: events.append(("materialize-world",))), \
                 patch("questpc7_thaian_authoring.install"), \
                 patch.object(rc, "refresh_source_cohort_extent"), \
                 patch.object(rc, "repin_rust_inventory"), \
@@ -651,8 +651,37 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
             assert check not in events
 
 
+def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> None:
+    store = ("python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers")
+    imbuement = ("python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build")
+    bootstrap = ("python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only")
+    materializer = ("materialize-world",)
+    tree = ("python3", "tools/content-migration/world_project_v2_to_tree.py")
+    ordered = (store, imbuement, bootstrap, materializer, tree)
+    events = []
+    assert full_generation_trace(events, lambda *_: None) == 0
+    assert all(events.count(step) == 1 for step in ordered)
+    assert [events.index(step) for step in ordered] == sorted(events.index(step) for step in ordered)
+    for refused in ordered[:3]:
+        def refuse(command, _events):
+            if command == refused:
+                raise subprocess.CalledProcessError(1, list(command))
+
+        events = []
+        try:
+            full_generation_trace(events, refuse)
+        except subprocess.CalledProcessError as error:
+            assert error.cmd == list(refused)
+        else:
+            raise AssertionError("a failed Item prerequisite must stop before materializing World")
+        assert events.count(refused) == 1
+        assert materializer not in events and tree not in events
+        assert not any(command in events for command in downstream_quest_commands())
+
+
 def main() -> None:
     tests = [
+        test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
         test_downstream_quest_producers_follow_inputs_and_precede_consumers,
         test_downstream_quest_producer_refusal_stops_later_work,
