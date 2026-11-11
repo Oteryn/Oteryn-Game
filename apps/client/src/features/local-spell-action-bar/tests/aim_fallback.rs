@@ -1,5 +1,5 @@
-//! Capability 480: TARGET and CURSOR aim modes are refused by the server for a spell that is not a
-//! wave or beam. The client keeps the plain cast (with the held target) for those spells.
+//! Normal casts keep the legacy attack-target intent even with capability 480 selected.
+//! Refused CURSOR casts fall back to facing for spells that are not waves or beams.
 use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat};
 use oteryn_client_runtime::spell::SpellFeedback;
 use oteryn_protocol_oteryn::actor_spell::{
@@ -177,7 +177,10 @@ fn run(
                     .await?;
                     let mut feedback = SpellFeedback::default();
                     let report = run_combat(&mut session, &mut feedback, command).await?;
-                    Ok((report, peer.await??))
+                    Ok((
+                        report,
+                        tokio::time::timeout(Duration::from_secs(5), peer).await???,
+                    ))
                 })
         })?
         .join()
@@ -199,26 +202,19 @@ fn plain_cast_with_held_target(intent: &AimedSpellCastIntent) -> Result<bool, Er
 }
 
 #[test]
-fn a_refused_target_aim_falls_back_to_the_plain_cast_with_the_held_target() -> Result<(), Error> {
+fn a_refused_normal_cast_is_sent_once_with_the_held_target() -> Result<(), Error> {
     let (report, seen) = run(
         CombatCommand::Cast(spell()?),
-        vec![
-            SpellCastDisposition::Rejected,
-            SpellCastDisposition::TargetIllegal,
-        ],
+        vec![SpellCastDisposition::Rejected],
     )?;
-    assert_eq!(
-        report,
-        CombatReport::Cast(SpellCastDisposition::TargetIllegal)
-    );
-    assert_eq!(seen.len(), 2);
-    assert_eq!(seen[0].aim_mode, Some(SpellAimMode::Target));
-    assert!(plain_cast_with_held_target(&seen[1])?);
+    assert_eq!(report, CombatReport::Cast(SpellCastDisposition::Rejected));
+    assert_eq!(seen.len(), 1);
+    assert!(plain_cast_with_held_target(&seen[0])?);
     Ok(())
 }
 
 #[test]
-fn an_accepted_target_aim_is_sent_once() -> Result<(), Error> {
+fn an_accepted_normal_cast_is_sent_once_with_the_held_target() -> Result<(), Error> {
     let (report, seen) = run(
         CombatCommand::Cast(spell()?),
         vec![SpellCastDisposition::TargetIllegal],
@@ -228,7 +224,7 @@ fn an_accepted_target_aim_is_sent_once() -> Result<(), Error> {
         CombatReport::Cast(SpellCastDisposition::TargetIllegal)
     );
     assert_eq!(seen.len(), 1);
-    assert_eq!(seen[0].aim_mode, Some(SpellAimMode::Target));
+    assert!(plain_cast_with_held_target(&seen[0])?);
     Ok(())
 }
 

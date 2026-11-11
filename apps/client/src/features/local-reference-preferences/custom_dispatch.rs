@@ -86,6 +86,9 @@ impl PlayLink {
                     return false;
                 }
                 mailbox.chat.lines.remove(0);
+                if !mailbox.chat.recipients.is_empty() {
+                    mailbox.chat.recipients.remove(0);
+                }
                 true
             }
             UtilityAction::ShowIgnoreList => {

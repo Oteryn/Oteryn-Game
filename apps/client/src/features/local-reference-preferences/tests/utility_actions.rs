@@ -268,3 +268,42 @@ fn global_chat_chords_drive_channels_the_list_and_the_lens() -> Result<(), Box<d
     assert!(fire(false, 23, false, true));
     Ok(())
 }
+
+#[test]
+fn clear_oldest_message_keeps_private_echo_recipients_aligned() {
+    use crate::play::UtilityAction;
+    use oteryn_client_ui::chat::{ChatExtras, panel_text};
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.chat_public_state(
+        oteryn_session::ChatRoomSet::default(),
+        vec![
+            oteryn_session::ChatLine::Private {
+                speaker_name: "Ari".into(),
+                text: "old to Bo".into(),
+            },
+            oteryn_session::ChatLine::Private {
+                speaker_name: "Ari".into(),
+                text: "new to Cy".into(),
+            },
+        ],
+    );
+    lock(&link.mailbox).chat.apply_extras(
+        "Ari",
+        None,
+        ChatExtras {
+            recipients: Some(vec![Some("Bo".into()), Some("Cy".into())]),
+            ..Default::default()
+        },
+    );
+    assert!(link.chat_open_conversation("Bo"));
+    assert!(panel_text(&link.chat_panel()).contains("old to Bo"));
+    assert!(bare().run_utility(&link, UtilityAction::ClearOldestMessage));
+    assert!(!panel_text(&link.chat_panel()).contains("new to Cy"));
+    assert!(link.chat_open_conversation("Cy"));
+    assert!(panel_text(&link.chat_panel()).contains("To Cy: new to Cy"));
+    assert_eq!(link.chat_panel().recipients, vec![Some("Cy".into())]);
+    assert!(bare().run_utility(&link, UtilityAction::ClearOldestMessage));
+    assert!(link.chat_panel().recipients.is_empty());
+    assert!(!bare().run_utility(&link, UtilityAction::ClearOldestMessage));
+}

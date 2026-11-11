@@ -309,7 +309,8 @@ impl Outbox {
                     mailbox.chat.console.notices.push(class, &text, received);
                 }
                 oteryn_session::SessionEvent::ChatSnapshot(_) => {
-                    mailbox.chat.console.metadata.reset_history()
+                    mailbox.chat.console.metadata.reset_history();
+                    mailbox.chat.console.reset_extensions();
                 }
                 _ => {}
             }

@@ -547,3 +547,56 @@ fn usable_channel_tabs_enable_composer_after_unavailable_guild()
     }
     Ok(())
 }
+
+#[test]
+fn chat_snapshot_restarts_extension_notices_and_joined_tabs() {
+    use crate::play::mailbox::lock;
+    use oteryn_client_ui::chat::{ChannelTab, ChatExtras};
+    use oteryn_client_ui::chat_channel_participants::{NoticeKind, NoticeLine};
+    let (link, _, outbox) = play_channel();
+    let extras = |serial, name: &str| ChatExtras {
+        joined: Some(vec![120]),
+        notices: Some(vec![NoticeLine {
+            serial,
+            channel_id: 120,
+            kind: NoticeKind::Joined,
+            name: name.into(),
+        }]),
+        ..Default::default()
+    };
+    lock(&link.mailbox)
+        .chat
+        .apply_extras("Ari", None, extras(9, "Before"));
+    assert!(
+        link.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Private(120))
+    );
+    outbox.push(vec![oteryn_session::SessionEvent::ChatSnapshot(
+        oteryn_session::AppliedDelta {
+            server_sequence: 10,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::ChatLog::default(),
+        },
+    )]);
+    {
+        let mut mailbox = lock(&link.mailbox);
+        // The replacement's empty private-channel list removes the old tabs.
+        mailbox.chat.console.sync_private(None);
+        assert!(
+            !mailbox
+                .chat
+                .console
+                .channels
+                .contains(&ChannelTab::Private(120))
+        );
+        mailbox.chat.apply_extras("Ari", None, extras(1, "After"));
+        mailbox.chat.apply_extras("Ari", None, extras(1, "After"));
+    }
+    let panel = link.chat_panel();
+    assert_eq!(panel.console.channel_notices.len(), 1);
+    assert_eq!(panel.console.channel_notices[0].name, "After");
+    assert!(panel.console.channels.contains(&ChannelTab::Private(120)));
+}

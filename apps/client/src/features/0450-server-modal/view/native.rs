@@ -150,16 +150,20 @@ pub(super) fn run(
             field
         });
         // Capability 490: the choice is independent of the value field.
-        let remember = remember.then(|| {
-            control(
-                hwnd,
-                "BUTTON",
-                "Don't show again",
-                14,
-                [420, 540, 272, 24],
-                WS_TABSTOP | BS_AUTOCHECKBOX as u32,
-            )
-        });
+        let (remember, feedback) = super::footer_controls(
+            remember,
+            |rect| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    "Don't show again",
+                    14,
+                    rect,
+                    WS_TABSTOP | BS_AUTOCHECKBOX as u32,
+                )
+            },
+            |rect| control(hwnd, "STATIC", "", 12, rect, 0),
+        );
         for (_, label) in &dialog.choices {
             SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
@@ -179,7 +183,6 @@ pub(super) fn run(
                 WS_TABSTOP,
             ));
         }
-        let feedback = control(hwnd, "STATIC", "", 12, [12, 535, 680, 40], 0);
         let mut pending: Option<oneshot::Receiver<bool>> = None;
         let mut message: MSG = std::mem::zeroed();
         while IsWindow(hwnd) != 0 && !sender.is_closed() {
