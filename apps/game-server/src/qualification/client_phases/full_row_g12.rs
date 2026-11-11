@@ -4,7 +4,8 @@
 //! 2. Query the state projection (command 732) for each definition and require the echoed
 //!    definition; this proves the read route.
 //! 3. A perk can only be chosen on a slot whose proficiency level the server granted from weapon
-//!    experience. When a slot with offers exists, select the first perk (command 378) and require
+//!    experience. For an unlocked, unselected, unmodified catalogue level, select the first perk
+//!    (command 378) and require
 //!    a newer state revision; otherwise fail naming the missing experience.
 //!
 //! The row never grants experience.
@@ -113,32 +114,48 @@ async fn catalogue_page(
         .ok_or_else(|| "step=catalogue observed=decode-failed".into())
 }
 
-/// Select the first perk on a slot with offers; returns `(definition, level, revision)`.
+/// Find an unlocked, unselected catalogue level outside the shaping slots.
+fn selectable_level(
+    entry: &catalogue::ProficiencyCatalogueEntry,
+    state: &wire::State,
+) -> Option<u8> {
+    entry
+        .levels
+        .iter()
+        .zip(entry.thresholds)
+        .enumerate()
+        .find_map(|(index, (level, threshold))| {
+            let index = u8::try_from(index).ok()?;
+            (entry.experience >= threshold
+                && level.selected.is_none()
+                && !level.perks.is_empty()
+                && !state.slots.iter().flatten().any(|slot| slot.level == index))
+            .then_some(index)
+        })
+}
+
+/// Select the first ordinary unlocked perk; returns `(definition, level, revision)`.
 async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
     let page = catalogue_page(client).await?;
-    let definitions: Vec<(u32, u32)> = page
+    let definitions: Vec<_> = page
         .entries
         .iter()
         .filter(|entry| entry.definition != 0)
-        .map(|entry| (entry.definition, entry.experience))
         .collect();
     if definitions.is_empty() {
         return Err("step=catalogue observed=no-weapon-definitions needed=weapon-catalogue".into());
     }
     let mut slotless = Vec::new();
-    for (definition, experience) in definitions {
+    for entry in definitions {
+        let definition = entry.definition;
         let before = state(client, definition).await?;
-        let Some((index, slot)) = before.slots.iter().enumerate().find_map(|(index, slot)| {
-            slot.as_ref()
-                .filter(|s| !s.offers.is_empty())
-                .map(|s| (index, s))
-        }) else {
-            slotless.push(format!("{definition}:xp{experience}"));
+        let Some(level) = selectable_level(entry, &before) else {
+            slotless.push(format!("{definition}:xp{}", entry.experience));
             continue;
         };
         let request = catalogue::SelectPerkRequest {
             definition: std::num::NonZeroU32::new(definition).ok_or("step=perk observed=zero")?,
-            level: slot.level,
+            level,
             perk: Some(0),
         };
         let payload = accepted(
@@ -151,7 +168,7 @@ async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
         let reply = catalogue::SelectPerkReply::decode(&payload)
             .ok_or("step=perk observed=reply-decode-failed")?;
         let after = state(client, definition).await?;
-        let chosen = reply.selections.get(usize::from(slot.level)).copied();
+        let chosen = reply.selections.get(usize::from(level)).copied();
         if reply.result != catalogue::SelectPerkResult::Accepted || chosen != Some(Some(0)) {
             return Err(format!(
                 "step=perk observed=reply:{:?}-selection:{chosen:?} needed=accepted-selection-of-perk-0",
@@ -161,15 +178,15 @@ async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
         }
         if after.revision <= before.revision {
             return Err(format!(
-                "step=perk observed=slot{index}-reply:{:?}-revision:{}->{} needed=state-revision-advance",
+                "step=perk observed=level{level}-reply:{:?}-revision:{}->{} needed=state-revision-advance",
                 reply.result, before.revision, after.revision
             )
             .into());
         }
-        return Ok((definition, slot.level, after.revision));
+        return Ok((definition, level, after.revision));
     }
     Err(format!(
-        "step=state observed=no-slot-with-offers:{} needed=weapon-proficiency-experience",
+        "step=state observed=no-selectable-level:{} needed=unlocked-unselected-unmodified-proficiency-level",
         slotless.join(",")
     )
     .into())
@@ -224,6 +241,54 @@ async fn durable_selection(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ordinary_selection_uses_catalogue_unlocks_and_excludes_modified_levels() {
+        let mut entry = catalogue::ProficiencyCatalogueEntry {
+            definition: 1,
+            weapon: "weapon".into(),
+            name: "Weapon".into(),
+            experience: 10,
+            thresholds: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+            levels: vec![
+                catalogue::ProficiencyCatalogueLevel {
+                    selected: None,
+                    perks: vec!["perk".into()]
+                };
+                2
+            ],
+        };
+        let mut state = wire::State {
+            definition: 1,
+            revision: 1,
+            slots: [None, None],
+            modify_dust: [0; 2],
+            rank_dust: [0; 10],
+            reshape_dust: 0,
+            clear_dust: 0,
+            orbs: 0,
+        };
+        assert_eq!(selectable_level(&entry, &state), Some(0));
+        entry.experience = 9;
+        assert_eq!(selectable_level(&entry, &state), None);
+        entry.experience = 10;
+        entry.levels[0].selected = Some(0);
+        assert_eq!(selectable_level(&entry, &state), None);
+        entry.levels[0].selected = None;
+        state.slots[0] = Some(wire::Slot {
+            level: 0,
+            rank: 0,
+            current: "current".into(),
+            next: "next".into(),
+            maximum: "maximum".into(),
+            offers: vec!["offer".into(); 3],
+        });
+        assert_eq!(selectable_level(&entry, &state), None);
+        entry.experience = 20;
+        assert_eq!(selectable_level(&entry, &state), Some(1));
+        entry.levels[1].perks.clear();
+        assert_eq!(selectable_level(&entry, &state), None);
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {

@@ -5,14 +5,13 @@
 //!    `npc-offers/*.json`), the nearest NPC whose first-step offer (topic 0, plain keyword,
 //!    track write) a fresh character can trigger, reachable by walking.
 //! 2. Walk to it, say "hi" and the offer keyword through the real NPC talk command; require
-//!    `Ok` replies and the NPC's reply text in the chat log.
+//!    `Ok` replies and the NPC's reply text in the conversation events.
 //! 3. Read the track before the talk (it must differ from the offer's `set`), then require the
 //!    durable track (`game_character_quest_tracks`, read-only SQL) to hold `set` and a receipt
 //!    that wrote that track from another value at the track's own last-write revision.
 //! 4. Log out, freshly admit and require the track value and that receipt again.
 use super::*;
-use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::chat::ChatLine;
+use oteryn_dev_client::SessionEvent;
 use sqlx::Connection;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,15 +104,13 @@ fn load_offers() -> TestResult<Vec<Offer>> {
     Ok(offers)
 }
 
-/// Whether the chat log holds a line that starts with the reply's first words.
-fn reply_seen(client: &DevClientSession, reply: &str) -> bool {
+/// Whether the NPC conversation contains the reply's first words.
+fn reply_seen(
+    conversation: &oteryn_protocol_oteryn::npc_service::NpcConversation,
+    reply: &str,
+) -> bool {
     let head: String = reply.chars().take(24).collect();
-    client.chat_log().is_some_and(|log| {
-        log.lines().any(|line| match line {
-            ChatLine::Local { text, .. } | ChatLine::Private { text, .. } => text.contains(&head),
-            _ => false,
-        })
-    })
+    conversation.lines.iter().any(|text| text.contains(&head))
 }
 
 async fn track_value(clients: &SeamClients<'_>, track: &str) -> TestResult<Option<i64>> {
@@ -212,6 +209,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .map(|entry| entry.entity)
         .ok_or("step=walk;observed=npc-not-visible")?;
+    client.take_events();
     for text in ["hi", offer.keyword.as_str()] {
         let reply = runtime::talk(
             client.session_mut(),
@@ -226,7 +224,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while !reply_seen(&client, &offer.reply) {
+    loop {
+        if client.take_events().iter().any(|event| {
+            matches!(event, SessionEvent::NpcConversation(delta) if reply_seen(&delta.value, &offer.reply))
+        }) {
+            break;
+        }
         if tokio::time::Instant::now() >= deadline {
             let _ = logout(&mut client).await;
             return Err(format!(
@@ -236,7 +239,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
     }
     let value = track_value(clients, &offer.track).await?;
     let bound = bound_receipts(clients, &offer.track, offer.set).await?;
@@ -262,6 +264,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reply_is_read_from_npc_conversation() {
+        let conversation = oteryn_protocol_oteryn::npc_service::NpcConversation {
+            lines: vec!["The quest has begun.".into()],
+            ..Default::default()
+        };
+        assert!(reply_seen(&conversation, "The quest has begun."));
+        assert!(!reply_seen(&conversation, "A different reply."));
+        assert!(!reply_seen(&Default::default(), "The quest has begun."));
+    }
 
     #[test]
     fn parse_offers_keeps_only_fresh_first_step_offers() {

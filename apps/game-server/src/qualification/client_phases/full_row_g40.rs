@@ -3,8 +3,8 @@
 //! quest_state/npc_program.rs and item_forge.rs. Source rules provide expected
 //! writes, but only native replies, changed tracks, exact receipts and relog prove them.
 use super::*;
-use oteryn_dev_client::{DevClientSession, client_runtime::npc_shop};
-use oteryn_protocol_oteryn::{chat::ChatLine, npc_service as npc};
+use oteryn_dev_client::{DevClientSession, SessionEvent, client_runtime::npc_shop};
+use oteryn_protocol_oteryn::npc_service as npc;
 use sqlx::Connection;
 
 const LEGS: &[(&str, &str, &[&str], &str)] = &[
@@ -245,6 +245,7 @@ async fn quest(
     {
         return Err("needed:unstarted-quest-step".into());
     }
+    client.take_events();
     talk(client, actor, "hi").await?;
     for word in words {
         talk(client, actor, word).await?;
@@ -257,7 +258,11 @@ async fn quest(
     let head: String = reply.chars().take(32).collect();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
     loop {
-        if client.chat_log().is_some_and(|log| log.lines().any(|line| matches!(line, ChatLine::Local { text, .. } | ChatLine::Private { text, .. } if text.contains(&head)))) { break; }
+        if client.take_events().iter().any(|event| {
+            matches!(event, SessionEvent::NpcConversation(delta) if delta.value.lines.iter().any(|text| text.contains(&head)))
+        }) {
+            break;
+        }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
                 "needed:quest-guards-and-reply;rule:{};guards:{}",
@@ -267,7 +272,6 @@ async fn quest(
             .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
     }
     for (key, after, before) in &proof {
         if track(clients, key).await? != Some(*after)
