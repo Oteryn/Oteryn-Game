@@ -1,4 +1,7 @@
 // Included topic files share this module so test paths and private access stay stable.
+#[path = "tests/buffered_step_recovery.rs"]
+mod buffered_step_recovery;
+
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
 

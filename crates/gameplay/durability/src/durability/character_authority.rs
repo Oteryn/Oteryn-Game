@@ -779,6 +779,8 @@ pub(super) async fn account_security(
 // invalid row; chain continuity and latest state are joined by Character revision.
 // Keep the composite arm aligned with the installed progression consistency guard.
 // Its Premium and Prey descendants must not also appear as separate arms.
+// Keep the additive view aligned with game_character_progression_consistency_guard.
+// It includes premium and prey receipts, so neither may be repeated as another arm.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_bazaar_character_revision_chain",
     "game_character_bestiary_kill_receipts",
@@ -802,6 +804,8 @@ const DECLARATION_REVISION_MATCH_SQL: &str =
       OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
           AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf'))";
 
+// Migration 0539 changes only declaration metadata and preserves immutable receipts.
+// Both receipt comparisons retain its exact legacy-to-current exception.
 static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
     let chain = RECEIPT_CHAIN_TABLES
         .iter()

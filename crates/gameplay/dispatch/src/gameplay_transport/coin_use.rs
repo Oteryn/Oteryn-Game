@@ -15,6 +15,12 @@ use oteryn_gameplay_economy::coin_exchange::CoinExchange;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CONVERTER_COMMIT_LANE_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 const GOLD_CONVERTER: &str = "oteryn:item.tibia.i23722";
 const TEMPORARY_GOLD_CONVERTER: &str = "oteryn:item.tibia.i25719";
 const GOLD_COIN: &str = "oteryn:item.tibia.i3031";
@@ -400,6 +406,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 });
             }
         };
+        #[cfg(test)]
+        if let Ok(barrier) = CONVERTER_COMMIT_LANE_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        // Checkpoint savers hold the spell lane before taking runtime.
+        let permit = self.spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         {
             let states = self.states.spell_states.lock().await;
@@ -408,7 +421,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(UseOutcome::rejected());
             }
         }
-        let permit = self.spell_lane_permit().await?;
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let coins =
             super::npc_command::bank_coin_definitions(self, &runtime).map(|(a, b, c)| [a, b, c]);

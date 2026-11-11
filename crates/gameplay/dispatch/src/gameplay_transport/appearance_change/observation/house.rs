@@ -1,14 +1,14 @@
 //! Observation-only adaptation of the existing appearance owner to native House custody.
 use super::*;
-use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
 use crate::foundation::HouseHirelingEntity;
 
 pub(super) async fn read_state(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     fence: CurrentCharacterGameplayFence,
     grant_keys: Vec<String>,
-    unavailable: &mut Option<DurabilityError>,
-) -> Option<CurrentCharacterAppearance> {
+) -> Result<Option<CurrentCharacterAppearance>, super::ReadFailure> {
+    // Each owner attempts holder acquisition once. A caller may wait only after
+    // returning from its projection attempt and releasing the runtime guards.
     let result = match fence.runtime_scope {
         RuntimeScopeRefV1::Channel { .. } => {
             admission
@@ -35,15 +35,19 @@ pub(super) async fn read_state(
         }
     };
     match result {
-        Ok(current) => Some(current),
+        Ok(state) => Ok(Some(state)),
         Err(
             AppearanceWriteError::Unavailable(error)
-            | AppearanceWriteError::Fence(CharacterProgressionError::Unavailable(error)),
-        ) => {
-            *unavailable = Some(error);
-            None
-        }
-        Err(_) => None,
+            | AppearanceWriteError::Fence(
+                crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    error,
+                ),
+            ),
+        ) => Err(super::ReadFailure::Durable(error)),
+        Err(AppearanceWriteError::Fence(
+            crate::durability::character_progression::CharacterProgressionError::RespawnPending,
+        )) => Err(super::ReadFailure::RespawnPending),
+        Err(_) => Ok(None),
     }
 }
 
@@ -57,11 +61,17 @@ pub(super) fn current_runtime_for_read(
     if matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
         return current_runtime(runtime, actor, session, fence, content);
     }
-    runtime.house_actor_state(actor, session).is_ok_and(|state| {
-        state.scope == fence.runtime_scope && state.generation == fence.scope_ownership_generation
-            && state.lease.character_id().as_bytes() == fence.character_id.as_bytes()
-            && state.lease.generation() == fence.character_lease_generation
-    }) && runtime.house_player_control_facts(actor, session).is_ok_and(|facts| facts.control_loss.is_none())
+    runtime
+        .house_actor_state(actor, session)
+        .is_ok_and(|state| {
+            state.scope == fence.runtime_scope
+                && state.generation == fence.scope_ownership_generation
+                && state.lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                && state.lease.generation() == fence.character_lease_generation
+        })
+        && runtime
+            .house_player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
         && runtime.content_pin().server_artifact_digest() == content.source_digest()
 }
 
@@ -72,12 +82,28 @@ pub(super) fn census(
     session: GameSessionId,
 ) -> Option<(ActorCensus, Vec<HouseHirelingEntity>)> {
     if runtime.house_actor_state(observer, session).is_ok() {
-        let players = runtime.house_visible_players(observer, session).ok()?.into_iter().map(|entry| {
-            let (session, _) = runtime.house_observer(entry.actor).ok()??;
-            Some((entry.actor, Some(session)))
-        }).collect::<Option<Vec<_>>>()?;
-        Some((players, runtime.house_hireling_entities(observer, session).ok()?))
+        let players = runtime
+            .house_visible_players(observer, session)
+            .ok()?
+            .into_iter()
+            .map(|entry| {
+                let (session, _) = runtime.house_observer(entry.actor).ok()??;
+                Some((entry.actor, Some(session)))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        Some((
+            players,
+            runtime.house_hireling_entities(observer, session).ok()?,
+        ))
     } else {
-        Some((runtime.positioned_melee_census().ok()?.into_iter().map(|(actor, _, session)| (actor, session)).collect(), Vec::new()))
+        Some((
+            runtime
+                .positioned_melee_census()
+                .ok()?
+                .into_iter()
+                .map(|(actor, _, session)| (actor, session))
+                .collect(),
+            Vec::new(),
+        ))
     }
 }

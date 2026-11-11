@@ -1,5 +1,7 @@
 //! LOOP-TRAIN-1 server composition. No client-selected skill, rate, clock or charge count.
 mod exercise;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use exercise::EXERCISE_READBACK_BARRIER;
 pub(super) mod wire;
 use super::capabilities::OfferedCapability;
 use super::connection::{AdmittedSession, FirstEntryOutcome, UseCommand};
@@ -99,20 +101,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         expected: CurrentCharacterItemFence,
     ) -> Option<CurrentCharacterGameplayFence> {
+        self.training_fence_durable(expected).await.ok().flatten()
+    }
+    /// Only a successfully read different authority proves this trainer stale.
+    /// Holder contention and failed reads leave its retained work uncertain.
+    async fn training_fence_durable(
+        &self,
+        expected: CurrentCharacterItemFence,
+    ) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
+        use crate::durability::character_authority::CharacterAuthorityError;
         let current = FreshAdmissionStore::from_root(self.root.clone())
             .current_session(expected.game_session_id)
-            .await
-            .ok()?;
-        if super::item_fence_of(current) != Some(expected) {
-            return None;
+            .await?;
+        if current.session_state() == crate::foundation::GameSessionState::Terminal
+            || super::item_fence_of(current) != Some(expected)
+        {
+            return Ok(None);
         }
         let revision = self
             .root
             .read_current_character(self.character, expected.character_id)
             .await
-            .ok()?
+            .map_err(|error| match error {
+                CharacterAuthorityError::Unavailable(error) => error,
+                CharacterAuthorityError::Rejected
+                | CharacterAuthorityError::Conflict
+                | CharacterAuthorityError::NameUnavailable => {
+                    crate::durability::DurabilityError::CommitRejected
+                }
+            })?
             .revision;
-        Some(CurrentCharacterGameplayFence {
+        Ok(Some(CurrentCharacterGameplayFence {
             expected_character_revision: revision,
             character_id: expected.character_id,
             game_session_id: expected.game_session_id,
@@ -120,7 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             character_lease_generation: expected.character_lease_generation,
             runtime_scope: expected.runtime_scope,
             scope_ownership_generation: expected.scope_ownership_generation,
-        })
+        }))
     }
     pub(in crate::gameplay_transport) async fn admit_loop_training(
         &self,

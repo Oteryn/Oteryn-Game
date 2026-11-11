@@ -1,7 +1,9 @@
 use super::*;
 use crate::domain::timed_item::TimedValues;
 use crate::durability::character_build::BuildOccurrence;
-use crate::durability::exercise_training::{ExerciseCheckpoint, ExerciseDummyKey, TrainingWeapon};
+use crate::durability::exercise_training::{
+    ExerciseCheckpoint, ExerciseCommitted, ExerciseDummyKey, TrainingWeapon,
+};
 use crate::durability::item_timed_state::TimedDefinitionFacts;
 use oteryn_protocol_oteryn::loop_training::ExerciseIntent;
 
@@ -18,7 +20,23 @@ pub(super) struct Run {
     spent: u32,
     next_tick: u64,
     checkpoint_due: u64,
-    pending: Option<(CurrentCharacterGameplayFence, ExerciseCheckpoint)>,
+    pending: Option<Checkpoint>,
+}
+
+/// One retained occurrence: a known receipt replaces its write request, so a
+/// later readback never replays the checkpoint or accrues the same ticks again.
+enum Checkpoint {
+    Pending(CurrentCharacterGameplayFence, ExerciseCheckpoint),
+    Committed {
+        result: ExerciseCommitted,
+        checkpoint_due: u64,
+    },
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static EXERCISE_READBACK_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
 
 // Crystal 201189f exercise_training_weapons.lua:1,200-203,211.
@@ -30,7 +48,17 @@ impl Run {
     }
 
     fn remaining_charges(&self) -> u32 {
-        remaining_charges(self.durable.charges, self.spent)
+        match self.pending.as_ref() {
+            Some(Checkpoint::Committed { result, .. }) => result.weapon.charges,
+            _ => remaining_charges(self.durable.charges, self.spent),
+        }
+    }
+
+    fn latest_weapon(&self) -> &TrainingWeapon {
+        match self.pending.as_ref() {
+            Some(Checkpoint::Committed { result, .. }) => &result.weapon,
+            _ => &self.durable,
+        }
     }
 }
 fn remaining_charges(durable: u32, pending: u32) -> u32 {
@@ -92,7 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let result = self.advance_exercise(&mut run, stop).await;
         match result {
             Some(running) => {
-                state.last_weapon = Some(run.durable.clone());
+                state.last_weapon = Some(run.latest_weapon().clone());
                 if running {
                     state.exercise = Some(run);
                 } else {
@@ -140,7 +168,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_some_and(|percentage| {
                 context.rates.exercise_gain(run.family, *percentage) == Ok(run.gain_per_charge)
             });
-        let current = self.training_fence(run.fence).await;
+        if matches!(run.pending, Some(Checkpoint::Committed { .. })) {
+            return self.finish_exercise_checkpoint(run, stop, qualified).await;
+        }
+        let current = self.training_fence_durable(run.fence).await.ok()?;
         if current.is_none() && run.pending.is_none() {
             return Some(false);
         }
@@ -222,7 +253,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if run.pending.is_none() {
             let event_id = *occurrence()?.as_bytes();
             let occurrence = occurrence()?;
-            run.pending = Some((
+            run.pending = Some(Checkpoint::Pending(
                 current?,
                 ExerciseCheckpoint {
                     occurrence,
@@ -236,39 +267,109 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             ));
         }
-        let (fence, request) = run.pending.as_ref()?.clone();
+        let Checkpoint::Pending(fence, request) = run.pending.as_ref()? else {
+            return None;
+        };
+        let checkpoint_due = now.checked_add(60_000_000)?;
         let result = self
             .root
-            .commit_exercise_training(self.character, self.holder, fence, context, request)
+            .commit_exercise_training(
+                self.character,
+                self.holder,
+                *fence,
+                context,
+                request.clone(),
+            )
             .await;
         slot.observe_loop_training();
         #[cfg(test)]
         if let Err(error) = &result {
             eprintln!("LOOP-TRAIN-1 exercise checkpoint: {error:?}");
         }
-        let result = result.ok()?;
-        run.pending = None;
-        run.spent = 0;
-        run.durable = result.weapon;
-        run.checkpoint_due = now.checked_add(60_000_000)?;
+        run.pending = Some(Checkpoint::Committed {
+            result: result.ok()?,
+            checkpoint_due,
+        });
+        #[cfg(test)]
+        if let Ok(barrier) = EXERCISE_READBACK_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        let finished = self.finish_exercise_checkpoint(run, stop, qualified).await;
+        drop(permit);
+        finished
+    }
+
+    /// Complete only the retained receipt. Failed reads keep it in the same
+    /// session owner; there is no retry wait or checkpoint write in this path.
+    async fn finish_exercise_checkpoint(
+        &self,
+        run: &mut Run,
+        stop: bool,
+        qualified: bool,
+    ) -> Option<bool> {
+        let Checkpoint::Committed {
+            result,
+            checkpoint_due,
+        } = run.pending.as_ref()?
+        else {
+            return None;
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime
+                .player_control_facts(run.actor, run.fence.game_session_id)
+                .is_err()
+            || runtime.binding().runtime_scope() != run.fence.runtime_scope
+            || runtime.binding().scope_generation() != run.fence.scope_ownership_generation
+        {
+            return Some(false);
+        }
+        let state = states.get_mut(&runtime, run.actor, run.fence.game_session_id)?;
+        let Some(current) = self.training_fence_durable(run.fence).await.ok()? else {
+            return Some(false);
+        };
+        if current.expected_character_revision != result.revision {
+            // A receipt can outlive an unrelated Character write. It may still
+            // install only if its build is current under an unchanged fence.
+            let build = self
+                .root
+                .read_character_build_state(self.character, run.fence.character_id)
+                .await
+                .ok()?;
+            if build != result.build {
+                return Some(false);
+            }
+            if self.training_fence_durable(run.fence).await.ok()? != Some(current) {
+                return None;
+            }
+        }
+        // Resolve session authority last: the revision/build reads above are
+        // historical evidence and cannot authorize a successor connection.
+        let fresh = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session(run.fence.game_session_id)
+            .await
+            .ok()?;
+        if fresh.session_state() == crate::foundation::GameSessionState::Terminal
+            || super::super::item_fence_of(fresh) != Some(run.fence)
+        {
+            return Some(false);
+        }
         if let Some(key) = run.house_dummy
             && !self
                 .root
-                .reserve_exercise_dummy(self.character, self.holder, fence, key)
+                .reserve_exercise_dummy(self.character, self.holder, current, key)
                 .await
                 .ok()?
         {
             return Some(false);
         }
-        // Replays are historical completion. Only independently current authority may rebase live state.
-        if self.training_fence(run.fence).await.is_none() {
-            return Some(false);
-        }
-        let runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        let state = states.get_mut(&runtime, run.actor, run.fence.game_session_id)?;
         state.rebase_after_death(&result.build);
-        drop(permit);
+        run.durable = result.weapon.clone();
+        run.spent = 0;
+        run.checkpoint_due = *checkpoint_due;
+        run.pending = None;
         Some(!stop && qualified && run.durable.charges > 0)
     }
 

@@ -1,8 +1,6 @@
 //! Current session and Character fence, shared by native gameplay consumers.
 use super::*;
 use crate::domain::CharacterId;
-use crate::durability::DurabilityError;
-use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 
 pub(super) async fn current(
@@ -10,18 +8,19 @@ pub(super) async fn current(
     session_id: GameSessionId,
     reconnectable: bool,
 ) -> Option<CurrentCharacterGameplayFence> {
-    current_read(admission, session_id, reconnectable)
+    current_once(admission, session_id, reconnectable)
         .await
         .ok()
         .flatten()
 }
 
-/// Keep storage availability distinct from a refused fence for bounded read retries.
-pub(super) async fn current_read(
+/// One durable read attempt with non-blocking holder acquisition. Callers retain a busy
+/// error until their runtime guards are dropped, then retry without weakening fences.
+pub(super) async fn current_once(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     session_id: GameSessionId,
     reconnectable: bool,
-) -> Result<Option<CurrentCharacterGameplayFence>, DurabilityError> {
+) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
     let (session, _) = FreshAdmissionStore::from_root(admission.root.clone())
         .current_session_at(session_id)
         .await?;
@@ -39,12 +38,12 @@ pub(super) async fn current_read(
         .await
     {
         Ok(record) => record,
-        Err(CharacterAuthorityError::Unavailable(error)) => return Err(error),
-        Err(
-            CharacterAuthorityError::Rejected
-            | CharacterAuthorityError::Conflict
-            | CharacterAuthorityError::NameUnavailable,
-        ) => return Ok(None),
+        Err(crate::durability::character_authority::CharacterAuthorityError::Unavailable(
+            error,
+        )) => {
+            return Err(error);
+        }
+        Err(_) => return Ok(None),
     };
     Ok(Some(CurrentCharacterGameplayFence {
         character_id: character,
