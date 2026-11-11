@@ -1,0 +1,15 @@
+{
+  "mechanic": "0492-boss-difficulty-pity",
+  "kind": "handlers",
+  "id": "0492-boss-difficulty-pity-command431-extension",
+  "status": "unsupported",
+  "reason": "WU26 T188/T197 server side only: the native client pity tracker display lands in the client lane.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The tracker arrives with each boss difficulty progress window; the client keeps no pity state.",
+    "protocol": "The shared boss difficulty codec in oteryn-protocol-oteryn encodes window fields 11-13.",
+    "view": "The pity tracker display lands with client support.",
+    "input": "No new input; the existing command 431 Open with progress carries it.",
+    "settings": "No client setting controls the pity tracker."
+  }
+}

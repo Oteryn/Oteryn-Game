@@ -9,6 +9,7 @@ pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_difficulty;
 pub mod boss_encounter;
+pub mod boss_pity;
 pub mod cake_event;
 pub mod character_condition_snapshot;
 pub mod character_hazard;
