@@ -185,7 +185,10 @@ fn srx3_all52_source_corpse_policy_exact_postgres() -> TestResult {
                 43844, 44012, 44015, 44018, 44021, 44024,
             ];
             assert_eq!(chains.len(), 55);
-            assert_eq!(capture["roots"], serde_json::json!(expected_roots));
+            assert_eq!(
+                capture["roots"],
+                serde_json::json!(expected_roots.as_slice())
+            );
             for (chain, root) in chains.iter().zip(expected_roots) {
                 let expected = chain
                     .as_array()

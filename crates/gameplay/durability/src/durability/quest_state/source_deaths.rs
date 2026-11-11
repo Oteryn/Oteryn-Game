@@ -102,7 +102,8 @@ mod tests {
     }
 
     #[test]
-    fn source_death_receipt_keeps_legacy_binding_without_top_damage_proof() -> Result<(), String> {
+    fn source_death_receipt_keeps_legacy_binding_without_top_damage_proof()
+    -> std::result::Result<(), String> {
         let mut source = SourceDeathContext {
             scope: RuntimeScopeRefV1::Channel {
                 world_id: WorldId::decode(&id(80)).map_err(|error| format!("{error:?}"))?,
