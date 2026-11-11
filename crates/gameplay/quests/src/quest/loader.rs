@@ -367,9 +367,18 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    restrict_runtime_scope(lowered, content_revision)
+}
+
+fn restrict_runtime_scope(
+    mut lowered: LoweredQuestState,
+    content_revision: &str,
+) -> Result<LoweredQuestState, QuestLoadError> {
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+    let mut predecessors = std::mem::take(&mut lowered.catalogue.predecessors);
+    predecessors.retain(|quest, _| super::in_runtime_scope(quest));
     lowered.catalogue = QuestStateCatalogue::new(
         content_revision,
         lowered
@@ -389,6 +398,7 @@ pub(super) fn lower_embedded_quest_state(
     )
     .map_err(QuestLoadError::Catalogue)?;
     lowered.catalogue.npc_legacy = npc_legacy;
+    lowered.catalogue.predecessors = predecessors;
     lowered
         .source_tracks
         .retain(|key, _| lowered.catalogue.track(key).is_some());
@@ -527,6 +537,69 @@ mod tests {
 
     fn embedded() -> LoweredQuestState {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
+    }
+
+    #[test]
+    fn runtime_scope_preserves_only_admitted_predecessors() -> Result<(), String> {
+        const MARLIN: &str = "oteryn:quest.marlin_trophy_quest";
+        const DAWNPORT: &str = "oteryn:quest.dawnport_quest";
+        let mut lowered = parse_quest_state(EMBEDDED, "scope-predecessors")
+            .map_err(|error| format!("{error:?}"))?;
+        let cases = [
+            (QUEST, [1u8; 32]),
+            (MARLIN, [2u8; 32]),
+            (DAWNPORT, [3u8; 32]),
+        ];
+        for (quest, hash) in cases {
+            assert!(lowered.catalogue.definition_hash(quest).is_some());
+            lowered.catalogue.predecessors.insert(
+                quest.into(),
+                vec![super::super::NpcDefinitionPredecessor {
+                    hash,
+                    defaults: BTreeMap::new(),
+                }],
+            );
+        }
+        let expected = lowered.catalogue.predecessors.clone();
+        let scoped = restrict_runtime_scope(lowered, "scope-predecessors")
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(scoped.catalogue.predecessors.len(), 2);
+        for (quest, hash) in cases {
+            let defaults =
+                super::super::npc_rules::legacy_defaults(scoped.catalogue(), quest, &hash);
+            if quest == DAWNPORT {
+                assert!(defaults.is_none());
+                assert!(!scoped.catalogue.predecessors.contains_key(quest));
+                assert!(scoped.catalogue.definition_hash(quest).is_none());
+                assert!(
+                    scoped
+                        .catalogue
+                        .tracks
+                        .values()
+                        .all(|track| track.quest != quest)
+                );
+                assert!(
+                    scoped
+                        .catalogue
+                        .transitions
+                        .values()
+                        .all(|rule| rule.quest != quest)
+                );
+            } else {
+                assert!(defaults.ok_or("retained predecessor")?.is_empty());
+                assert_eq!(
+                    scoped.catalogue.predecessors.get(quest),
+                    expected.get(quest)
+                );
+                let mut invalid = hash;
+                invalid[0] ^= 1;
+                assert!(
+                    super::super::npc_rules::legacy_defaults(scoped.catalogue(), quest, &invalid)
+                        .is_none()
+                );
+            }
+        }
+        Ok(())
     }
 
     #[test]

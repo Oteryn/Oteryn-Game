@@ -1440,6 +1440,7 @@ fn extend_callbacks(
     let mut updated = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))?;
     updated.npc_legacy = npc_legacy;
+    updated.predecessors = catalogue.predecessors;
     Ok(updated)
 }
 
@@ -2283,6 +2284,71 @@ mod lane_tests {
             !loaded.catalogue().npc_legacy.is_empty(),
             "adding rewards must preserve the native NPC source binding owner"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn reward_extension_keeps_registered_predecessor_lookup_exact() -> Result<(), String> {
+        let loaded = super::super::loader::parse_quest_state(
+            include_str!("../../../../../content/quests/missions/quest-state.json"),
+            "reward-predecessors",
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let mut base = loaded.catalogue().clone();
+        let fixture: BTreeMap<String, String> = serde_json::from_str(include_str!(
+            "npc_rules/fixtures/m04_pre_completion_hashes.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        for (quest, text) in fixture {
+            let mut hash = [0u8; 32];
+            for (index, byte) in hash.iter_mut().enumerate() {
+                *byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16)
+                    .map_err(|error| error.to_string())?;
+            }
+            base.predecessors.insert(
+                quest,
+                vec![super::super::NpcDefinitionPredecessor {
+                    hash,
+                    defaults: BTreeMap::new(),
+                }],
+            );
+        }
+        let expected = base.predecessors.clone();
+        assert_eq!(expected.len(), 2);
+        let extended = extend_document(
+            base,
+            parse_document(include_str!(
+                "../../../../../content/quests/npc-callbacks/fibula.json"
+            ))?,
+        )?;
+        assert!(
+            extended
+                .transition("oteryn:quest-reward/fibula-key-repeat")
+                .is_some(),
+            "the real reward extension must add its callback"
+        );
+        assert_eq!(extended.predecessors, expected);
+        for (quest, entries) in &expected {
+            for entry in entries {
+                assert_eq!(
+                    super::super::npc_rules::legacy_defaults(&extended, quest, &entry.hash),
+                    Some(&entry.defaults)
+                );
+                let mut invalid = entry.hash;
+                invalid[0] ^= 1;
+                assert!(
+                    super::super::npc_rules::legacy_defaults(&extended, quest, &invalid).is_none()
+                );
+                assert!(
+                    super::super::npc_rules::legacy_defaults(
+                        &extended,
+                        "oteryn:quest.unknown_predecessor",
+                        &entry.hash,
+                    )
+                    .is_none()
+                );
+            }
+        }
         Ok(())
     }
 
