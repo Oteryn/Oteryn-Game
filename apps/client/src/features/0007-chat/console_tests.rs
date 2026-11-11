@@ -287,9 +287,9 @@ fn native_chat_keys_dispatch_saved_bindings_while_composing()
     link.chat_open_conversation("Bryn");
     let mut input = crate::play::PreferenceInput::default();
     let mut key = |vk, mods| {
-        let consumed = super::console::native_key(&link, &mut input, vk, mods, true, false);
+        let consumed = super::console::native_key(&link, &mut input, vk, mods, true, false, false);
         assert!(super::console::native_key(
-            &link, &mut input, vk, mods, false, false
+            &link, &mut input, vk, mods, false, false, false
         ));
         consumed
     };
@@ -325,10 +325,10 @@ fn native_chat_keys_dispatch_saved_bindings_while_composing()
             .insert("ALT+O".into(), action);
     }
     assert!(!super::console::native_key(
-        &link, &mut input, 0x4f, ctrl, true, false
+        &link, &mut input, 0x4f, ctrl, true, false, false
     ));
     assert!(!super::console::native_key(
-        &link, &mut input, 0x4f, ctrl, false, false
+        &link, &mut input, 0x4f, ctrl, false, false, false
     ));
     assert!(super::console::native_key(
         &link,
@@ -336,6 +336,7 @@ fn native_chat_keys_dispatch_saved_bindings_while_composing()
         0x4f,
         Modifiers::one(Modifier::Alt),
         true,
+        false,
         false
     ));
     crate::play::mailbox::lock(&link.mailbox)
@@ -353,6 +354,7 @@ fn native_chat_keys_dispatch_saved_bindings_while_composing()
         0x41,
         Modifiers::NONE,
         true,
+        false,
         false
     ));
     Ok(())
@@ -373,4 +375,76 @@ fn native_chat_tabs_refresh_renamed_captions_with_the_same_count() {
     assert!(super::console::update_tab_labels(&mut held, &labels));
     assert_eq!(held, labels);
     assert!(!super::console::update_tab_labels(&mut held, &labels));
+}
+
+#[test]
+fn native_chat_keys_dispatch_saved_editing_and_keypad_bindings()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    for (chord, vk, extended) in [
+        ("ENTER", 0x0d, false),
+        ("ESCAPE", 0x1b, false),
+        ("KEYPADENTER", 0x0d, true),
+        ("ARROWLEFT", 0x25, true),
+        ("ARROWUP", 0x26, true),
+        ("ARROWRIGHT", 0x27, true),
+        ("ARROWDOWN", 0x28, true),
+        ("KEYPAD1", 0x61, false),
+        ("KEYPAD3", 0x63, false),
+        ("KEYPAD7", 0x67, false),
+        ("KEYPAD9", 0x69, false),
+        ("KEYPAD1", 0x23, false),
+        ("KEYPAD3", 0x22, false),
+        ("KEYPAD7", 0x24, false),
+        ("KEYPAD9", 0x21, false),
+    ] {
+        let (link, _, outbox) = play_channel();
+        outbox.chat_initialize(true);
+        {
+            let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+            let action = mailbox
+                .local_preferences
+                .custom_hotkeys
+                .remove("CTRL+O")
+                .ok_or("binding")?;
+            mailbox
+                .local_preferences
+                .custom_hotkeys
+                .insert(format!("ALT+{chord}"), action);
+        }
+        let mut input = crate::play::PreferenceInput::default();
+        let alt = Modifiers::one(Modifier::Alt);
+        assert!(
+            !super::console::native_key(
+                &link,
+                &mut input,
+                vk,
+                Modifiers::NONE,
+                true,
+                false,
+                extended
+            ),
+            "{chord}"
+        );
+        assert!(!link.chat_channel_dialog().0.open);
+        assert!(!super::console::native_key(
+            &link,
+            &mut input,
+            vk,
+            Modifiers::NONE,
+            false,
+            false,
+            extended
+        ));
+        assert!(
+            super::console::native_key(&link, &mut input, vk, alt, true, false, extended),
+            "{chord}"
+        );
+        assert!(link.chat_channel_dialog().0.open, "{chord}");
+        assert!(
+            super::console::native_key(&link, &mut input, vk, alt, false, false, extended),
+            "{chord}"
+        );
+    }
+    Ok(())
 }

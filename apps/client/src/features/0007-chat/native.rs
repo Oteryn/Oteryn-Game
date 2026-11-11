@@ -138,6 +138,7 @@ unsafe fn keyboard(
             modifiers,
             matches!(msg.message, WM_KEYDOWN | WM_SYSKEYDOWN),
             msg.lParam & (1 << 30) != 0,
+            msg.lParam & (1 << 24) != 0,
         )
     }
 }

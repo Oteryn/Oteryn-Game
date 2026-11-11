@@ -37,3 +37,58 @@ fn sanction_window_requests_only_when_selected_and_shows_the_reply()
     assert!(incoming.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn activity_handoff_releases_cancelled_sanction_request() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.sanction_initialize(true);
+    link.sanctions_request();
+    assert!(link.sanctions_panel().pending);
+    use oteryn_session::activity_scope::{
+        ActivityScope, ActivityScopeSnapshot, STATE_DOMAIN_ACTIVITY_SCOPE, encode_activity_scope,
+    };
+    let mut id = [1; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    let mut successor = id;
+    successor[15] = 2;
+    let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        handoff: id,
+        source_session: id,
+        session: successor,
+        scope: ActivityScope::Instance {
+            world: id,
+            instance: id,
+        },
+        scope_generation: 1,
+        connection_generation: 1,
+        lease_generation: 2,
+        selection: vec![7, 80, 117, 493, 494, 495, 496, 497],
+        requires_ack: false,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    outbox.push(vec![oteryn_session::SessionEvent::GatedSnapshotReplaced(
+        oteryn_session::AppliedDelta {
+            server_sequence: 3,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::GatedSnapshot {
+                domain_id: STATE_DOMAIN_ACTIVITY_SCOPE,
+                snapshot_type: 1,
+                revision: 1,
+                payload,
+            },
+        },
+    )]);
+    assert_eq!(
+        outbox.death_command(&mut incoming),
+        Err(tokio::sync::mpsc::error::TryRecvError::Empty)
+    );
+    assert!(!link.sanctions_panel().pending);
+    link.sanctions_request();
+    assert!(
+        matches!(outbox.death_command(&mut incoming)?, PlayCommand::Feature(c) if c.capability == 497 && c.kind == 6240)
+    );
+    Ok(())
+}

@@ -139,7 +139,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             dwICC: ICC_PROGRESS_CLASS,
         };
         InitCommonControlsEx(&common);
-        let cards: Vec<_> = (0..14)
+        let cards: Vec<_> = (0..super::super::OVERVIEW_CARD_COUNT)
             .map(|i| {
                 control(
                     hwnd,

@@ -2,6 +2,8 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
+pub(in crate::play) const OVERVIEW_CARD_COUNT: usize = 15;
+
 pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
     format!(

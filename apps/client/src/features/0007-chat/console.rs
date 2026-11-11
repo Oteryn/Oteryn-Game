@@ -366,6 +366,7 @@ pub(super) fn native_key(
     modifiers: oteryn_input_actions::Modifiers,
     pressed: bool,
     repeat: bool,
+    extended: bool,
 ) -> bool {
     use oteryn_input_actions::{ButtonState, KeyCode, NormalizedInputEvent};
     let code = match virtual_key {
@@ -373,6 +374,22 @@ pub(super) fn native_key(
         0x31..=0x39 => virtual_key - 0x31 + 30,
         0x30 => 39,
         0x70..=0x7b => virtual_key - 0x70 + 58,
+        0x0d if extended => 88,
+        0x0d => 40,
+        0x1b => 41,
+        0x25 => 80,
+        0x26 => 82,
+        0x27 => 79,
+        0x28 => 81,
+        0x61 => 89,
+        0x63 => 91,
+        0x67 => 95,
+        0x69 => 97,
+        // With Num Lock off these keypad keys report navigation virtual keys.
+        0x23 if !extended => 89,
+        0x22 if !extended => 91,
+        0x24 if !extended => 95,
+        0x21 if !extended => 97,
         0x09 => 43,
         0x20 => 44,
         _ => return false,
