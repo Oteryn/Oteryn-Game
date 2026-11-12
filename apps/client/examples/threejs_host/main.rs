@@ -5,8 +5,10 @@ mod presentation;
 use oteryn_client::input::StepDir;
 use oteryn_client::play::{PlayView, play_channel, run_session};
 use oteryn_protocol_oteryn::CharacterId;
-use oteryn_renderer::TileCoord;
-use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session};
+use oteryn_renderer::{BatchError, TileCoord};
+use oteryn_session::{
+    ActorPosition, Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, WorldObjectOverlayEntry,
+};
 use oteryn_session_tcp::{TcpConnect, connect};
 use rustls::pki_types::CertificateDer;
 use std::error::Error;
@@ -83,10 +85,10 @@ fn run() -> Result<()> {
             // No B3/offline map substitution when a live map has not been admitted.
             let map = session.world_map_snapshot().ok_or("live map unavailable")?;
             let own = session.world_spatial().actor_position;
-            let mut view = PlayView::new(
-                TileCoord::new(own.x, own.y),
-                own.floor,
+            let mut view = initial_view(
+                own,
                 session.world_object_overlay(),
+                session.world_entities().map(|entities| *entities.own_identity()),
             )?;
             view.set_live_map(&map)?;
             let (link, commands, outbox) = play_channel();
@@ -113,6 +115,18 @@ fn run() -> Result<()> {
                 } => result,
             }
         })
+}
+
+fn initial_view(
+    own: ActorPosition,
+    overlay: &[WorldObjectOverlayEntry],
+    own_identity: Option<[u8; 16]>,
+) -> std::result::Result<PlayView, BatchError> {
+    let mut view = PlayView::new(TileCoord::new(own.x, own.y), own.floor, overlay)?;
+    if let Some(identity) = own_identity {
+        view.set_own_identity(identity);
+    }
+    Ok(view)
 }
 
 fn read_capped(path: &Path, cap: u64) -> Result<Vec<u8>> {
@@ -165,6 +179,84 @@ fn input_reader() -> Result<Receiver<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn initial_view_draws_own_identity_once_after_movement() -> Result<()> {
+        use oteryn_session::{
+            ActorPosition, AppliedDelta, CommandStatus, EntityDetail, EntityKind, EntityRef,
+            StepDirection, StepDisposition, StepOutcome, VisibleAppearance, WorldSpatialEntity,
+            WorldSpatialObservation,
+        };
+
+        let position = ActorPosition {
+            x: 100,
+            y: 200,
+            floor: 0,
+        };
+        let own = VisibleAppearance {
+            forge_stacks: None,
+            light: None,
+            entity: WorldSpatialEntity {
+                display_name: None,
+                kind: EntityKind::Player,
+                entity: EntityRef {
+                    identity: [1; 16],
+                    generation: 1,
+                },
+                position,
+                detail: EntityDetail::Actor {
+                    direction: StepDirection::South,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+            },
+            look: None,
+        };
+        let moved = StepOutcome {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            disposition: StepDisposition::Moved,
+            result_server_sequence: 1,
+            world_spatial_delta: Some(AppliedDelta {
+                server_sequence: 2,
+                base_revision: 1,
+                new_revision: 2,
+                value: WorldSpatialObservation {
+                    content_generation: [0; 32],
+                    actor_position: ActorPosition { x: 101, ..position },
+                },
+            }),
+            world_object_overlay_delta: None,
+            gate_message_id: None,
+        };
+        let mut unbound = PlayView::new(TileCoord::new(position.x, position.y), 0, &[])?;
+        unbound.set_presentations(vec![own.clone()])?;
+        assert_eq!(unbound.scene().sprites().len(), 2);
+        unbound.apply(&moved)?;
+        assert!(unbound.scene().sprites().instances().iter().any(|sprite| {
+            sprite.position
+                == unbound
+                    .scene()
+                    .view()
+                    .tile_to_screen(TileCoord::new(100, 200))
+        }));
+
+        let mut view = initial_view(position, &[], Some([1; 16]))?;
+        view.set_presentations(vec![own.clone()])?;
+        assert_eq!(view.scene().sprites().len(), 1);
+        view.apply(&moved)?;
+        assert_eq!(view.own(), TileCoord::new(101, 200));
+        assert_eq!(view.scene().sprites().len(), 1, "no stale-position ghost");
+        assert_eq!(
+            view.scene().sprites().instances()[0].position,
+            view.scene().view().tile_to_screen(TileCoord::new(101, 200))
+        );
+        let mut updated = own;
+        updated.entity.position.x = 101;
+        view.set_presentations(vec![updated])?;
+        assert_eq!(view.scene().sprites().len(), 1);
+        Ok(())
+    }
 
     #[test]
     fn input_and_character_parse_fail_closed() -> Result<()> {
