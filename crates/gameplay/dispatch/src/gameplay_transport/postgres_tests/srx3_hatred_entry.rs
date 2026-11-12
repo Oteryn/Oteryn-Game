@@ -49,8 +49,12 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
                 .ok_or("actual Hatred source candidate")?;
             let template = scene
                 .controller
-                .qualify_activity_template(&scene.room, &scene.room, "content-1", &candidate)
+                .qualify_soul_war_activity_template(&scene.room, "content-1", source)
                 .map_err(|error| format!("actual Hatred source template: {error:?}"))?;
+            assert_eq!(
+                Some(template.creature_key()),
+                candidate.creature_key.as_deref()
+            );
             assert_eq!(template.minimum_level(), 250);
             let deps = scene.dependencies()?;
             let h = Harness::create_with_admission_seed(admin, "srx3_hatred_entry", false, false)

@@ -127,7 +127,8 @@ fn srx3_drome_legacy_lifetime_baseline_remains_explicitly_unknown() -> Result<()
 #[test]
 fn srx3_drome_lifetime_highscores_category_is_served_from_existing_world_job() {
     use crate::durability::highscore_snapshot::{
-        TIBIADROME_LIFETIME_CATEGORY, TIBIADROME_ROTATION_CATEGORY, served_category,
+        LOYALTY_CATEGORY, TIBIADROME_LIFETIME_CATEGORY, TIBIADROME_ROTATION_CATEGORY,
+        served_category,
     };
     // Main's ranking owner supersedes SRX-3's provisional category13; see
     // SRX-3-2026-11-05's shipping-merge reconciliation (categories14/17).
@@ -135,5 +136,9 @@ fn srx3_drome_lifetime_highscores_category_is_served_from_existing_world_job() {
     assert_eq!(TIBIADROME_ROTATION_CATEGORY, 17);
     assert!(served_category(TIBIADROME_LIFETIME_CATEGORY));
     assert!(served_category(TIBIADROME_ROTATION_CATEGORY));
-    assert!(!served_category(13));
+    assert_eq!(LOYALTY_CATEGORY, 13);
+    assert!(served_category(LOYALTY_CATEGORY));
+    assert_ne!(TIBIADROME_LIFETIME_CATEGORY, LOYALTY_CATEGORY);
+    assert_ne!(TIBIADROME_ROTATION_CATEGORY, LOYALTY_CATEGORY);
+    assert!(!served_category(15));
 }
