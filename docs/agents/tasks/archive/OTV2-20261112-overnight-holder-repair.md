@@ -4,24 +4,24 @@
 task_id: OTV2-20261112-overnight-holder-repair
 title: Repair shared PostgreSQL holder contention blocking PR integration
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/overnight-main-repair-20261112
-pr: null
+pr: 3125
 base_sha: 3a50a9e6f6e3e817d28dd3bd5bf17449d0c18e4a
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Codex overnight integration lead
 created_at: 2026-11-12T00:00:00Z
-updated_at: 2026-11-12T00:00:00Z
+updated_at: 2026-11-12T00:35:30Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/durability/src/durability/cast_privacy.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/autowalk.rs
   - apps/game-server/tests/support/authority_cases/s17_cast_privacy_holder_retry.rs
-  - docs/agents/tasks/OTV2-20261112-overnight-holder-repair.md
+  - docs/agents/tasks/archive/OTV2-20261112-overnight-holder-repair.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -101,3 +101,26 @@ no cause or fix for it is claimed by this batch.
 - Focused offline durability test could not resolve missing cached `schemars`;
   compilation and database execution are not claimed. Heavy validation belongs
   to GitHub runners under the owner's task instruction.
+
+
+## Validation
+
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass, 129 tests.
+- `cargo fmt --all --check`: pass.
+- `cargo test --locked -p oteryn-gameplay-durability --lib budgeted_pass_never_outlives_its_outer_budget --quiet`: pass, 1 test.
+- Scoped Rustfmt and `git diff --check`: pass.
+- Full native/strict Clippy and PostgreSQL/Node cases are delegated to GitHub under
+  the owner's instruction; exact final-head results remain pending.
+- Codex review of executable predecessor `bd61638049ad7599d9dc715ad68df6dbfdc8c933`:
+  native fresh-context gpt-6.1-sol/high, read-only; no concrete findings. The
+  archive successor changes documentation only and adds no executable risk.
+
+## Closeout
+
+Implementation authoring is complete. This record is archived in its own PR's
+final authoring commit as required by the archive README; it is not an assertion
+that integration or runtime qualification succeeded. The final exact head is the
+subsequent FREEZE_SHA comment. Required CI, protected merge and post-merge full
+gate remain outstanding. Intended merge/result: squash merge of #3125 (resolve
+only after actual protected-main readback).
