@@ -163,7 +163,7 @@ def generate():
 
 def csv_text(rows):
     output = io.StringIO(newline='')
-    writer = csv.DictWriter(output, fieldnames=COLUMNS)
+    writer = csv.DictWriter(output, fieldnames=COLUMNS, lineterminator="\n")
     writer.writeheader()
     writer.writerows(rows)
     return output.getvalue()

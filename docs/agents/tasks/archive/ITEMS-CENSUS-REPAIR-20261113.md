@@ -4,11 +4,11 @@
 task_id: ITEMS-CENSUS-REPAIR-20261113
 title: Repair structural Item census and retain bounded Basic110 evidence
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-census-repair-cloud-20261113
-pr: null
+pr: 3150
 base_sha: 83be72ad403ebc221dadba4b161c85fa1d47219a
 head_sha: null
 final_head_sha: null
@@ -99,5 +99,6 @@ Not triggered by worker. Review packet returned to the coordinator; no paid revi
 
 ## PR and closeout
 
-Draft PR pending. No merge authorization; the coordinator owns freeze/readback
+Draft PR: https://github.com/Oteryn/Oteryn-Game/pull/3150.
+Merge commit/result: squash merge of #3150 only if separately authorized. No merge authorization; the coordinator owns freeze/readback
 and subsequent independent review decisions. This is an evidence-authoring slice.
