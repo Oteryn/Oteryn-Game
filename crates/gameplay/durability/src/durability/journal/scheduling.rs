@@ -1,4 +1,4 @@
-//! One bounded batch, distributed across at most four serial consumers.
+//! One bounded batch, distributed across at most four serial lanes.
 use super::*;
 use oteryn_gameplay_native_admission_source::{
     SourceError,

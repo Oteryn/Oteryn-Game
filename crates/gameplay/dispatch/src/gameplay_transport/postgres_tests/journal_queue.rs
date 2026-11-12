@@ -274,6 +274,7 @@ struct Peer {
 }
 impl JournalPeer for Peer {
     async fn exchange(&mut self, op: Operation, bytes: &[u8]) -> Result<Vec<u8>, Failure> {
+        let _exchange = self.gate.acquire_exchange().await;
         assert_eq!(
             self.inflight.fetch_add(1, Ordering::SeqCst),
             0,
@@ -318,6 +319,7 @@ fn pool(streams: &[ReadGameJournalCursorV1], denied: bool) -> TestResult<PeerPoo
         .collect::<TestResult<BTreeMap<_, _>>>()?;
     let state = Arc::new(Mutex::new(Remote { seen: vec![], ends }));
     let gate = JournalRateGate::default();
+    let inflight = Arc::new(AtomicUsize::new(0));
     let publishers = (0..4)
         .map(|_| {
             Publisher::new(
@@ -328,7 +330,7 @@ fn pool(streams: &[ReadGameJournalCursorV1], denied: bool) -> TestResult<PeerPoo
                 Peer {
                     state: state.clone(),
                     gate: gate.clone(),
-                    inflight: Arc::new(AtomicUsize::new(0)),
+                    inflight: inflight.clone(),
                     denied,
                 },
                 SOURCE.into(),

@@ -129,8 +129,8 @@ pub(super) async fn run(
         else {
             continue;
         };
-        // The shared peer gate limits the pool to 120 requests/minute; each
-        // consumer has one in-flight exchange. Drain a bounded due batch, not
+        // The shared peer gate limits the pool to 120 requests/minute and
+        // one in-flight exchange for the consumer peer. Drain a bounded due batch, not
         // one stream per timer tick. Cancellation leaves expiring claims.
         if first(
             outbox.deliver_due(&journal.source_authority, publishers),

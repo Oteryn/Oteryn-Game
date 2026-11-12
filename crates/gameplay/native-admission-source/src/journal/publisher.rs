@@ -54,8 +54,15 @@ struct GateState {
     pause: Option<(tokio::time::Instant, Duration)>,
 }
 #[derive(Clone, Default)]
-pub struct JournalRateGate(std::sync::Arc<tokio::sync::Mutex<GateState>>);
+pub struct JournalRateGate(
+    std::sync::Arc<tokio::sync::Mutex<GateState>>,
+    std::sync::Arc<tokio::sync::Mutex<()>>,
+);
 impl JournalRateGate {
+    /// Held for the entire exchange by every lane targeting this consumer peer.
+    pub async fn acquire_exchange(&self) -> tokio::sync::MutexGuard<'_, ()> {
+        self.1.lock().await
+    }
     pub async fn wait(&self) {
         loop {
             let delay = {
@@ -119,6 +126,7 @@ impl JournalPeer for MtlsJournalPeer {
         ) {
             return Err(Failure::Quarantine);
         }
+        let _exchange = self.gate.acquire_exchange().await;
         self.gate.wait().await;
         let body = std::str::from_utf8(bytes).map_err(|_| Failure::Quarantine)?;
         let mut permit = self
