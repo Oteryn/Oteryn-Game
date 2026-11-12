@@ -1733,7 +1733,6 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
-            native_pre_admission_enabled: true,
             bulletin_source: None,
             server_motd: String::new(),
             certificates: vec![certificate.clone()],

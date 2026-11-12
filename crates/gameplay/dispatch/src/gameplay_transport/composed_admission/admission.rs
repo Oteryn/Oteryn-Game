@@ -8,9 +8,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Classified, Rejected, Unavailable};
         use FoundationProtocolError as N8;
-        if self.states.native_pre_admission_disabled {
-            return Err(Unavailable);
-        }
         // OPS-SAVE-2: no session begins while the node quiesces for its shutdown save.
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(Unavailable);

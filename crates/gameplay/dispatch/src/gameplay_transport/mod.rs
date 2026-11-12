@@ -434,8 +434,6 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
-    /// Explicit FND-04 fresh-entry opt-in from the node configuration.
-    pub native_pre_admission_enabled: bool,
     pub bulletin_source: Option<std::sync::Arc<bulletin::BulletinSource>>,
     pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,

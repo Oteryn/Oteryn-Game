@@ -64,9 +64,6 @@ pub struct ChannelSessionStates {
     pub lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
     /// Wakes a resume that observed the durable loss before `lost` publication finished.
     pub(super) lost_changed: tokio::sync::Notify,
-    /// Set by the production listener from its explicit fresh-entry opt-in.
-    /// Internal composed owners have no node rollout configuration.
-    pub(super) native_pre_admission_disabled: bool,
     pub(super) newhaven_travel: newhaven_travel::NewhavenTravel,
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,

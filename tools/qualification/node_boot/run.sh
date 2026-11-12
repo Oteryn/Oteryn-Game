@@ -485,7 +485,6 @@ DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() { # launch-file
   cat > "$WORK/node.toml" <<TOML
 qualification_fixture = true
-native_pre_admission_enabled = true
 [listener]
 address = "127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}"
 entry_deadline_ms = 20000

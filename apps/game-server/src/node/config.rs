@@ -344,10 +344,6 @@ impl Default for AuditCollectorConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
-    /// FND-04 fresh entry is opt-in. Missing configuration admits no new grant.
-    /// Existing-session reconnect and recovery use their separate authority.
-    #[serde(default)]
-    pub native_pre_admission_enabled: bool,
     #[serde(default)]
     pub audit_collector: AuditCollectorConfig,
     /// Explicit disposable node-boot fixture opt-in; never enabled by default.
@@ -1012,19 +1008,6 @@ impl OpsConfig {
 pub(crate) mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
-
-    #[test]
-    fn preadm_configuration_defaults_off_and_requires_explicit_boolean() -> Result<(), ConfigError>
-    {
-        assert!(!NodeConfig::parse(NODE.as_bytes())?.native_pre_admission_enabled);
-        let enabled = format!("native_pre_admission_enabled = true\n{NODE}");
-        assert!(NodeConfig::parse(enabled.as_bytes())?.native_pre_admission_enabled);
-        let disabled = format!("native_pre_admission_enabled = false\n{NODE}");
-        assert!(!NodeConfig::parse(disabled.as_bytes())?.native_pre_admission_enabled);
-        let malformed = format!("native_pre_admission_enabled = \"true\"\n{NODE}");
-        assert!(NodeConfig::parse(malformed.as_bytes()).is_err());
-        Ok(())
-    }
 
     pub(crate) const NODE: &str = r#"
 [listener]

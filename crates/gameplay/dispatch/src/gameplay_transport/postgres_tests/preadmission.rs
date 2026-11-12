@@ -1,4 +1,4 @@
-//! Native fresh-entry configuration and grant custody at the real handshake.
+//! Native grant custody and durable single-consume at the real handshake.
 use super::{
     TestResult,
     fixture::{debug, id},
@@ -27,7 +27,7 @@ fn preadm_attempt_debug_never_exposes_grant_material() -> TestResult {
 }
 
 #[test]
-fn preadm_disabled_is_unconsumed_and_enabled_handshake_has_one_concurrent_winner() -> TestResult {
+fn preadm_handshake_has_one_concurrent_winner_and_rejects_consumed_grant_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -38,7 +38,7 @@ fn preadm_disabled_is_unconsumed_and_enabled_handshake_has_one_concurrent_winner
     std::thread::Builder::new().name("preadm-handshake".into()).stack_size(64 << 20)
         .spawn(move || {
             let result = super::fixture::run(async move |admin| {
-                use crate::gameplay_transport::connection::{admit_frame, AdmissionRefusal, ConnectionEnd, FirstEntryOutcome};
+                use crate::gameplay_transport::connection::{admit_frame, FirstEntryOutcome};
                 use tokio::io::AsyncReadExt;
                 let h = super::fixture::Harness::create_with_admission_seed(admin, "preadm_handshake", true, false).await?;
                 let result: TestResult = async {
@@ -63,21 +63,12 @@ fn preadm_disabled_is_unconsumed_and_enabled_handshake_has_one_concurrent_winner
                     )?;
                     let mut owner = deps.owner(&h, &authority);
                     owner.evidence = &source.evidence;
-                    Arc::get_mut(&mut owner.states).ok_or("exclusive fixture state")?.native_pre_admission_disabled = true;
                     let token = race_grant()?;
                     let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
                         schema_revision: 1, character_id: CharacterId::decode(&id(41)).map_err(debug)?,
                         admission_material: token.as_bytes(), client_build_id: "preadm-contract", supported_capabilities: &[],
                     }).map_err(debug)?;
-                    *stage.lock().map_err(|_| "stage lock")? = "disabled handshake";
-                    let (mut server, client) = tokio::io::duplex(1 << 20);
-                    assert!(matches!(admit_frame(&mut server, &frame, &owner, &Identifiers(91)).await,
-                        Err(ConnectionEnd::AdmissionRefused(AdmissionRefusal::Unavailable))));
-                    drop(server); drop(client);
-                    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts").fetch_one(&h.pool).await?;
-                    assert_eq!(count, 0, "disabled entry must not consume the grant");
-                    Arc::get_mut(&mut owner.states).ok_or("exclusive fixture state")?.native_pre_admission_disabled = false;
-                    *stage.lock().map_err(|_| "stage lock")? = "concurrent enabled handshakes";
+                    *stage.lock().map_err(|_| "stage lock")? = "concurrent fresh handshakes";
                     let (mut server_a, mut client_a) = tokio::io::duplex(1 << 20);
                     let (mut server_b, mut client_b) = tokio::io::duplex(1 << 20);
                     let (a, b) = tokio::time::timeout(std::time::Duration::from_secs(40), async {
