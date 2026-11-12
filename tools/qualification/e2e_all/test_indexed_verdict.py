@@ -20,6 +20,24 @@ def packet_body(source):
 
 
 class IndexedVerdictTests(unittest.TestCase):
+    def test_shared_result_adapter_preserves_concrete_errors_and_elapsed(self):
+        source = (PHASES / 'indexed_result.rs').read_text()
+        self.assertIn('Future<Output = Result<T, E>>', source)
+        self.assertIn('Result<Result<T, E>, tokio::time::error::Elapsed>', source)
+        self.assertNotIn('Future<Output = TestResult<T>>', source)
+        self.assertIn('source: Box<dyn Error>', source)
+        self.assertIn('Some(self.source.as_ref())', source)
+
+    def test_remembered_failure_has_a_verdict_even_when_reporter_emits_only_gap(self):
+        source = (PHASES / 'indexed_verdict.rs').read_text()
+        self.assertIn('state.stall.is_some() && state.pending.is_empty()', source)
+        self.assertIn('watch.ensure_failure_verdict();', source)
+        self.assertIn('observed-error-without-verdict', source)
+
+    def test_expired_wait_is_excluded_from_next_phase_idle_time(self):
+        source = (PHASES / 'verdict.rs').read_text()
+        self.assertRegex(source, r'idle_until\s*\.map_or\(last, \|until\| last\.max\(until\)\)\s*\.elapsed\(\)')
+
     def test_every_indexed_dispatch_enters_its_scenario_watch(self):
         source = (PHASES / 'world.rs').read_text()
         calls = set(re.findall(r'((?:full|client)_row_\w+)::run_packet', source))

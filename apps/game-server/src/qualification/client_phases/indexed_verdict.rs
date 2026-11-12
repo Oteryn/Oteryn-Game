@@ -2,7 +2,7 @@
 use super::*;
 
 impl Watch {
-    fn remember(&self, error: &(dyn Error + 'static)) {
+    pub(super) fn remember(&self, error: &(dyn Error + 'static)) {
         let cause = classify(error);
         let mut state = self.state();
         if state.stall.is_none() {
@@ -24,6 +24,16 @@ impl Watch {
             _ => format!("{}/{}", self.row, state.phase),
         });
         (cause, root)
+    }
+
+    fn ensure_failure_verdict(&self) {
+        let mut state = self.state();
+        if state.stall.is_some() && state.pending.is_empty() {
+            let scenario = self.scenario.unwrap_or(self.row);
+            state.pending.push(format!(
+                "e2e_all scenario={scenario} status=FAIL seconds=0.000 evidence=observed-error-without-verdict"
+            ));
+        }
     }
 
     fn take_verdicts(&self) -> Vec<String> {
@@ -57,31 +67,6 @@ impl Watch {
     }
 }
 
-/// Observe the typed error before a custom reporter turns it into free text.
-pub(crate) async fn observe<T>(journey: impl Future<Output = TestResult<T>>) -> TestResult<T> {
-    let result = journey.await;
-    if let Err(error) = &result {
-        let watch = Harness::global().active().clone();
-        if let Some(watch) = watch.filter(|watch| watch.scenario.is_some()) {
-            watch.remember(error.as_ref());
-        }
-    }
-    result
-}
-
-/// Keep the reporter's exact wall-clock budget and its nested Result shape.
-/// A Watch deadline remains a typed inner error instead of a stringified Elapsed.
-pub(crate) async fn indexed_timeout<T>(
-    budget: Duration,
-    journey: impl Future<Output = TestResult<T>>,
-) -> Result<TestResult<T>, tokio::time::error::Elapsed> {
-    let watch = Harness::global().active().clone();
-    match watch.filter(|watch| watch.scenario.is_some()) {
-        Some(watch) => Ok(observe(watch.bound(budget, "indexed journey deadline", journey)).await),
-        None => tokio::time::timeout(budget, journey).await,
-    }
-}
-
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
 pub(crate) async fn indexed(scenario: &'static str, journey: impl Future<Output = TestResult>) {
     let mut watch = Watch::new(scenario, Harness::global());
@@ -97,6 +82,7 @@ pub(crate) async fn indexed(scenario: &'static str, journey: impl Future<Output 
             ));
         }
     }
+    watch.ensure_failure_verdict();
     // `run` restored the previous active Watch, so flushing cannot recapture itself.
     for line in watch.take_verdicts() {
         evidence(&line);
@@ -195,6 +181,11 @@ mod tests {
                 }
             );
             assert_eq!(root, "C03.full/fixture1-released");
+            watch.ensure_failure_verdict();
+            let missing = watch.take_verdicts();
+            assert_eq!(missing.len(), 1);
+            assert!(missing[0].contains("status=FAIL"));
+            assert!(missing[0].contains("root=C03.full/fixture1-released"));
             watch.state().pending.push("e2e_all scenario=C03.full status=PASS seconds=1".to_owned());
             watch.state().failed_exit = true;
             let lines = watch.take_verdicts();
@@ -226,6 +217,27 @@ mod tests {
                 })
                 .await?;
             assert_eq!(started.elapsed(), Duration::from_secs(130));
+            let release = new_watch(harness);
+            let started = tokio::time::Instant::now();
+            let error: TestResult = release
+                .bound(Duration::from_secs(180), "release wall deadline", async {
+                    harness.bounded_wait(
+                        tokio::time::Instant::now() + Duration::from_secs(160),
+                        "fixture-release",
+                    );
+                    tokio::time::sleep(Duration::from_secs(160)).await;
+                    // The bounded diagnostic after release expiry may finish before
+                    // fixture_failed records health and its originating row.
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    Err(harness.fixture_failed(0, &std::io::Error::other("release expired")))
+                })
+                .await;
+            assert_eq!(started.elapsed(), Duration::from_secs(162));
+            assert!(matches!(
+                error.as_ref().err().map(|error| classify(error.as_ref())),
+                Some(Cause::Precondition { .. })
+            ));
+            assert!(harness.fixture_gate(0).is_err());
             let idle = new_watch(harness);
             let error = idle
                 .run(None, "no wall bound", std::future::pending::<TestResult>())

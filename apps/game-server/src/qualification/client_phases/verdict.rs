@@ -16,8 +16,13 @@ use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
 #[path = "indexed_verdict.rs"]
 mod indexed;
+pub(super) use indexed::indexed;
 pub(crate) use indexed::indexed_evidence;
-pub(super) use indexed::{indexed, indexed_timeout, observe};
+#[path = "indexed_result.rs"]
+mod indexed_result;
+pub(crate) use indexed_result::{
+    IndexedError, context, indexed_timeout, observe, record_assertion, record_error,
+};
 
 /// Why a row failed; `kind` is the wire token.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -333,7 +338,10 @@ impl Watch {
                     }
                     continue;
                 }
-                let idle = last.elapsed();
+                // The permitted interval is excluded from idle time even after
+                // expiry, leaving the bounded operation's diagnostics/transition
+                // to finish under the unchanged outer wall-clock deadline.
+                let idle = idle_until.map_or(last, |until| last.max(until)).elapsed();
                 if idle >= limit {
                     return (idle, phase);
                 }

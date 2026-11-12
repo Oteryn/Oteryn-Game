@@ -7,7 +7,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) 
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let result = verdict::observe(async {
+    let result: TestResult = verdict::observe(async {
         let mut client = connect_world(clients, 0xd5).await?;
         let observed = client.world_entities().map_or(0, |entities| entities.iter().count());
         let logout = client.session_mut().logout().await?;
