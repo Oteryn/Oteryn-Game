@@ -15,9 +15,10 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Codex overnight integration lead
 created_at: 2026-11-12T00:00:00Z
-updated_at: 2026-11-12T00:35:30Z
+updated_at: 2026-11-12T01:55:00Z
 execution_policy: continuous_progress
 owned_paths:
+  - crates/gameplay/social/src/cast/service.rs
   - crates/gameplay/durability/src/durability/cast_privacy.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/autowalk.rs
   - apps/game-server/tests/support/authority_cases/s17_cast_privacy_holder_retry.rs
@@ -115,6 +116,30 @@ no cause or fix for it is claimed by this batch.
 - Codex review of executable predecessor `bd61638049ad7599d9dc715ad68df6dbfdc8c933`:
   native fresh-context gpt-6.1-sol/high, read-only; no concrete findings. The
   archive successor changes documentation only and adds no executable risk.
+
+## Collected qualification repair
+
+Exact079 qualification passed22 PostgreSQL partitions but failed two consent
+cases. PG15's new expiry regression returned an unused held pass by dropping
+it, which retires its ready holder; all three releases now explicitly run an
+empty successful operation. The held pass has the existing two-second DB pass
+deadline; the tested privacy lease still expires after its original one second.
+No expiry assertion is removed or widened.
+
+PG21's existing `nbcast_busy_observer_retry_preserves_consent_lease_postgres`
+exposed a circular wait: the caller holds the root until the observer request
+replies, while waiting refresh prevented the service reaching its existing
+600ms-remaining rejection boundary. Join/Renew/Ban now use a nonwaiting refresh
+entrypoint sharing the exact SQL body and authority checks. Idle/other refresh
+and ACK retain bounded FIFO waiting. This preserves the 250ms pulse, one-second
+local lease, two-second DB lease and existing command rejection behavior.
+A busy acquisition never retries a storage transaction.
+
+The complete batch forward-merges accepted main096e0afd without conflicts.
+Source changes and the archived record form a new candidate;079 results do not
+qualify it. Source-only formatting/governance and independent material-delta
+review are recorded on the PR; all24 PG, S17b, native/Clippy and post-merge
+qualification must run on the successor. No current runtime success is claimed.
 
 ## Closeout
 
