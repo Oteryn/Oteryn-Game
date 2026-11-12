@@ -18,12 +18,14 @@ pub(super) struct HolderPriority {
 /// Dropping the owner future also drops its demand; no holder is reserved.
 #[must_use = "foreground preference ends when the guard is dropped"]
 pub(super) struct ForegroundDemand {
-    priority: Arc<HolderPriority>,
+    priority: Option<Arc<HolderPriority>>,
 }
 
 impl Drop for ForegroundDemand {
     fn drop(&mut self) {
-        if let Ok(mut state) = self.priority.state.lock() {
+        if let Some(priority) = &self.priority
+            && let Ok(mut state) = priority.state.lock()
+        {
             state.foreground -= 1;
         }
     }
@@ -35,13 +37,18 @@ impl HolderPriority {
         now: Instant,
         window: Duration,
     ) -> Option<ForegroundDemand> {
+        // Shared observation helpers may request foreground preference, but a
+        // scheduled caller must neither promote itself nor block its own passes.
+        if super::holder_queue::is_background() {
+            return Some(ForegroundDemand { priority: None });
+        }
         let mut state = self.state.lock().ok()?;
         state.foreground = state.foreground.checked_add(1)?;
         // Arrivals never extend a window, even if the previous demand just ended.
         // Only a successful background checkout can renew or clear it.
         state.until.get_or_insert(now + window);
         Some(ForegroundDemand {
-            priority: Arc::clone(self),
+            priority: Some(Arc::clone(self)),
         })
     }
 
@@ -68,6 +75,76 @@ mod tests {
     use super::*;
 
     const WINDOW: Duration = Duration::from_secs(5);
+
+    #[test]
+    fn nbhold_background_observation_does_not_create_foreground_demand()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        runtime.block_on(async {
+            let priority = Arc::new(HolderPriority::default());
+            let now = Instant::now();
+            super::super::DurabilityRoot::with_background_holder(async {
+                let demand = priority.foreground(now, WINDOW);
+                assert!(demand.is_some());
+                assert_eq!(priority.background(now, WINDOW, || Some(())), Some(()));
+                let owner = super::super::holder_queue::current_owner();
+                super::super::DurabilityRoot::with_background_holder(async {
+                    assert_ne!(super::super::holder_queue::current_owner(), owner);
+                })
+                .await;
+                assert_eq!(super::super::holder_queue::current_owner(), owner);
+            })
+            .await;
+            let demand = priority.foreground(now, WINDOW);
+            assert!(demand.is_some());
+            assert_eq!(priority.background(now, WINDOW, || Some(())), None);
+        });
+        Ok(())
+    }
+
+    #[test]
+    fn nbhold_background_scope_inherits_root_tasks_and_cancels_without_a_ticket()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+        runtime.block_on(async {
+            use super::super::{DurabilityRoot, holder_queue};
+            let root = DurabilityRoot::connect_test_runtime("postgres://oteryn@127.0.0.1:1/oteryn")?;
+            let owner = holder_queue::current_owner();
+            let ready = std::cell::Cell::new(false);
+            let mut background = Box::pin(DurabilityRoot::with_background_holder(async {
+                let background_owner = holder_queue::current_owner();
+                assert_ne!(background_owner, owner);
+                assert!(root.holder_waiter().is_none());
+                let spawned = root.clone();
+                let inherited = root.spawn_task(async move {
+                    assert!(spawned.holder_waiter().is_none());
+                    holder_queue::current_owner()
+                }).await?;
+                assert_eq!(inherited, background_owner);
+                ready.set(true);
+                std::future::pending::<()>().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }));
+            // Poll until the spawned task has completed and the scope is parked.
+            tokio::time::timeout(Duration::from_secs(1), std::future::poll_fn(|cx| {
+                if let std::task::Poll::Ready(result) = background.as_mut().poll(cx) {
+                    return std::task::Poll::Ready(result.and(
+                        Err("background scope ended instead of parking".into()),
+                    ));
+                }
+                if ready.get() {
+                    std::task::Poll::Ready(Ok(()))
+                } else {
+                    std::task::Poll::Pending
+                }
+            })).await??;
+            drop(background);
+            assert_eq!(holder_queue::current_owner(), owner);
+            let ticket = root.holder_waiter();
+            assert!(ticket.is_some(), "cancellation restores ordinary FIFO ownership");
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+    }
 
     #[test]
     fn returned_holder_cannot_be_retaken_by_background_before_foreground() {

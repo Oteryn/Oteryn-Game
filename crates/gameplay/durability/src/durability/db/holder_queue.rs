@@ -18,9 +18,14 @@ use tokio::sync::Notify;
 /// An independent future scope, its owning task, or the thread driving it outside any task.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum OwnerKey {
+    Background(u64),
     Scoped(u64),
     Task(tokio::task::Id),
     Thread(std::thread::ThreadId),
+}
+
+pub(super) fn is_background() -> bool {
+    matches!(current_owner(), OwnerKey::Background(_))
 }
 
 tokio::task_local! {

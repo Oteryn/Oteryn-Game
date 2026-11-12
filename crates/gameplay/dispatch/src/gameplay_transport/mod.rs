@@ -1425,7 +1425,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
-            _foreground: None,
+            _foreground: root.foreground_demand().ok(),
             waiter: std::sync::OnceLock::new(),
         }
     }

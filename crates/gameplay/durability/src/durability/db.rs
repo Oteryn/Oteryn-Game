@@ -1311,6 +1311,18 @@ impl Drop for BootPassDeadline {
 }
 
 impl DurabilityRoot {
+    /// Classifies scheduled work, including its ordinary semantic passes, as background.
+    /// Its independent owner key survives awaits and is inherited by `spawn_task`.
+    /// Shared helpers cannot promote it to foreground or keep a retry ticket.
+    pub async fn with_background_holder<F: Future>(future: F) -> F::Output {
+        static NEXT_BACKGROUND: AtomicU64 = AtomicU64::new(0);
+        holder_queue::spawned_for(
+            holder_queue::OwnerKey::Background(NEXT_BACKGROUND.fetch_add(1, Ordering::Relaxed)),
+            future,
+        )
+        .await
+    }
+
     /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).
     pub const MAX_BOOT_PASS_DEADLINE: Duration = Duration::from_secs(60);
 
@@ -1480,7 +1492,11 @@ impl DurabilityRoot {
     /// Checkout only an already-idle holder. This method never establishes a connection.
     /// While an owner refused earlier still waits, a later owner is refused too, so the idle
     /// holder goes to the oldest waiting owner (see [`HolderWaiter`]).
+    /// A scheduled owner instead observes the bounded background preference policy.
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        if holder_queue::is_background() {
+            return self.try_acquire_background_ready();
+        }
         let owner = holder_queue::current_owner();
         let now = Instant::now();
         let mut queue = self
@@ -1507,6 +1523,9 @@ impl DurabilityRoot {
     /// retries. `None` when the queue is full, or an outer retry of the same owner already
     /// holds the place.
     pub fn holder_waiter(&self) -> Option<HolderWaiter> {
+        if holder_queue::is_background() {
+            return None;
+        }
         HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
     }
 
@@ -1763,8 +1782,20 @@ impl DurabilityRoot {
         &self,
     ) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let holder = self
-            .holder_priority
+        let holder = self.try_acquire_background_ready().inspect_err(|_| {
+            record_holder_usage(Some(caller), None);
+        })?;
+        let issued = Instant::now();
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: issued + self.pass_deadline(),
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
+        })
+    }
+
+    fn try_acquire_background_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        self.holder_priority
             .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
                 // Priority already granted this pass its fairness turn. The ticket
                 // queue must not reserve an idle holder against that grant.
@@ -1774,17 +1805,7 @@ impl DurabilityRoot {
                 }
                 holder
             })
-            .ok_or_else(|| {
-                record_holder_usage(Some(caller), None);
-                DurabilityError::RootUnavailable
-            })?;
-        let issued = Instant::now();
-        Ok(IssuedSemanticPass {
-            root: self.clone(),
-            holder,
-            deadline: issued + self.pass_deadline(),
-            owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
-        })
+            .ok_or(DurabilityError::RootUnavailable)
     }
 
     #[track_caller]

@@ -318,3 +318,60 @@ fn background_fairness_window_serves_idle_holder_despite_a_waiting_ticket() -> T
         database.cleanup().await
     })
 }
+
+// NBHOLD-1: scheduled work also uses ordinary passes (journal, Character, etc.).
+#[test]
+fn nbhold_scheduled_ordinary_passes_yield_to_foreground_within_command_window() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = migrated_database("nbhold_ordinary_background").await?;
+        let root = ready_root(&url).await?;
+        let held = root.try_issue_semantic_pass()?;
+        let foreground = root.foreground_demand()?;
+        let ticket = root.holder_waiter();
+        let (returned, release) = tokio::sync::oneshot::channel();
+        let background = root.spawn_task({
+            let root = root.clone();
+            async move {
+                super::DurabilityRoot::with_background_holder(async {
+                    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                    // Reproduce a background continuation polled first on every return.
+                    // Its journal reads spawn onto the root runtime as well.
+                    for _ in 0..16 {
+                        let root_in = root.clone();
+                        let acquired = root.spawn_task(async move {
+                            match root_in.try_issue_semantic_pass() {
+                                Ok(pass) => {
+                                    pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                                    Ok(true)
+                                }
+                                Err(crate::durability::DurabilityError::RootUnavailable) => Ok(false),
+                                Err(error) => Err(error),
+                            }
+                        }).await.map_err(|_| crate::durability::DurabilityError::RootTaskFailed)??;
+                        assert!(!acquired, "scheduled ordinary pass overtook queued foreground");
+                    }
+                    let _ = returned.send(());
+                    Ok::<(), crate::durability::DurabilityError>(())
+                }).await
+            }
+        });
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+        // Observe that background yielded before allowing the foreground to run.
+        let released = tokio::time::timeout_at(deadline, release).await?;
+        background.await??;
+        released?;
+        root.wait_holder_turn(tokio::time::Instant::now(), deadline).await;
+        let value: i32 = tokio::time::timeout_at(deadline,
+            root.try_issue_semantic_pass()?.run(|holder, _| Box::pin(async move {
+                Ok(sqlx::query_scalar("SELECT 1").fetch_one(&mut **holder).await?)
+            }))
+        ).await??;
+        assert_eq!(value, 1);
+        drop(ticket);
+        drop(foreground);
+        super::DurabilityRoot::with_background_holder(async {
+            root.try_issue_semantic_pass()?.run(|_, _| Box::pin(async { Ok(()) })).await
+        }).await?;
+        database.cleanup().await
+    })
+}

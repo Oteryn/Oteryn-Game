@@ -328,7 +328,22 @@ where
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
             let inbound_phase = next.phase();
-            let input = match inbound::receive(stream, authority, &mut session, next).await {
+            let background = matches!(
+                next,
+                poll::Next::Serene
+                    | poll::Next::QuestLog
+                    | poll::Next::Chat
+                    | poll::Next::Visibility
+                    | poll::Next::Combat
+                    | poll::Next::Npc
+            );
+            let receiving = inbound::receive(stream, authority, &mut session, next);
+            let received = if background {
+                crate::durability::DurabilityRoot::with_background_holder(receiving).await
+            } else {
+                receiving.await
+            };
+            let input = match received {
                 Ok(Some(input)) => input,
                 Ok(None) => continue,
                 Err(end) => {
