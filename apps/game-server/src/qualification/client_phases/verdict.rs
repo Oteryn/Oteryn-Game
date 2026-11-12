@@ -681,6 +681,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
+    ("rows", &[]),
 ];
 
 /// The selected journey groups; `None` runs every group.
@@ -1021,6 +1022,9 @@ mod verdict_tests {
         assert!(some.runs("f6") && some.runs("f7run"));
         assert!(!some.runs("core") && !some.runs("f7clock"));
         assert!(Groups::parse(Some("f6,nope"), GROUPS).is_err());
+        let rows = Groups::parse(Some("rows"), GROUPS)?;
+        assert!(rows.runs("rows") && !rows.runs("core") && !rows.runs("f6"));
+        assert!(!some.runs("rows"));
         const CHAIN: &[(&str, &[&str])] = &[("a", &["b"]), ("b", &["c"]), ("c", &[]), ("d", &[])];
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));

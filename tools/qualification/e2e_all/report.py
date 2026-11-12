@@ -1,6 +1,7 @@
 """Fail closed on absent scenario evidence; legacy skip messages are not verdicts."""
 
 import argparse
+import json
 import math
 from pathlib import Path
 import re
@@ -163,9 +164,37 @@ def results(text):
     return found
 
 
-def summary(rows, found, node_status=0, client_status=0, map_evidence=None):
+def supplemental_rows(text):
+    """Register later journeys separately from the immutable re-audit matrix.
+
+    Client capture IDs are bounded slices; registering one never requires or
+    qualifies a nonexistent full journey with that ID.
+    """
+    registry = json.loads(text)
+    if not isinstance(registry, dict) or registry.keys() != {"full", "client"}:
+        raise ValueError("invalid supplemental row registry")
+    seen = set()
+    for rows in registry.values():
+        if not isinstance(rows, list):
+            raise ValueError("invalid supplemental row list")
+        for row in rows:
+            if (not isinstance(row, list) or len(row) != 2
+                    or not all(isinstance(value, str) for value in row)
+                    or not re.fullmatch(r"[A-Z]\d\d[a-z]?", row[0]) or not row[1].strip()
+                    or row[0] in seen):
+                raise ValueError("invalid or duplicate supplemental row")
+            seen.add(row[0])
+    return registry["full"], registry["client"]
+
+
+def summary(rows, found, node_status=0, client_status=0, map_evidence=None,
+            additional_rows=(), client_rows=()):
+    rows = [*rows, *additional_rows]
     known = {key for key, _ in rows}
-    if any(scenario.split(".")[0] not in known for scenario in found):
+    clients = {f"{key}.client" for key, _ in client_rows}
+    if len(known) != len(rows) or any(key.split(".")[0] in known for key in clients):
+        raise ValueError("duplicate mechanic in the row registries")
+    if any(scenario.split(".")[0] not in known and scenario not in clients for scenario in found):
         raise ValueError("result is not a mechanic in the matrix")
     output = ["mechanic | status | seconds | evidence / gap"]
     complete = True
@@ -197,12 +226,16 @@ def main():
     parser.add_argument("--log", required=True, type=Path)
     parser.add_argument("--node-status", required=True, type=int)
     parser.add_argument("--client-status", required=True, type=int)
+    parser.add_argument("--supplemental-rows", type=Path,
+                        default=Path(__file__).with_name("supplemental_rows.json"))
     args = parser.parse_args()
     try:
         log = args.log.read_text()
+        extra, clients = supplemental_rows(args.supplemental_rows.read_text())
         output, complete = summary(
             matrix_rows(args.matrix.read_text()), results(log),
             args.node_status, args.client_status, map_results(log),
+            additional_rows=extra, client_rows=clients,
         )
     except (OSError, ValueError) as error:
         parser.exit(1, f"E2E-ALL FAIL: {error}\n")

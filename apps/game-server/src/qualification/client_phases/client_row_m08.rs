@@ -29,7 +29,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         evidence(&format!("M08_GAP {error}"));
     }
     evidence(&format!(
-        "e2e_all scenario=M08.full status={} seconds={:.3}{}",
+        "e2e_all scenario=M08.client status={} seconds={:.3}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
         result
