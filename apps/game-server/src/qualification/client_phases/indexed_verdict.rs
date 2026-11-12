@@ -68,25 +68,32 @@ impl Watch {
 }
 
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
-pub(crate) async fn indexed(scenario: &'static str, journey: impl Future<Output = TestResult>) {
-    let mut watch = Watch::new(scenario, Harness::global());
-    watch.scenario = Some(scenario);
-    let result = watch.run(None, "indexed row", journey).await;
-    if let Err(error) = result {
-        watch.remember(error.as_ref());
-        watch.state().failed_exit = true;
-        // The cancelled reporter did not get to serialize its typed failure.
-        if watch.state().pending.is_empty() {
-            watch.state().pending.push(format!(
+pub(crate) fn indexed(
+    scenario: &'static str,
+    journey: impl Future<Output = TestResult>,
+) -> impl Future<Output = ()> {
+    // Each row owns its future on the heap; hundreds of inline row temporaries
+    // otherwise accumulate in journeys' debug-build poll frame.
+    Box::pin(async move {
+        let mut watch = Watch::new(scenario, Harness::global());
+        watch.scenario = Some(scenario);
+        let result = watch.run(None, "indexed row", journey).await;
+        if let Err(error) = result {
+            watch.remember(error.as_ref());
+            watch.state().failed_exit = true;
+            // The cancelled reporter did not get to serialize its typed failure.
+            if watch.state().pending.is_empty() {
+                watch.state().pending.push(format!(
                 "e2e_all scenario={scenario} status=FAIL seconds=0.000 evidence=watch-aborted-before-verdict"
             ));
+            }
         }
-    }
-    watch.ensure_failure_verdict();
-    // `run` restored the previous active Watch, so flushing cannot recapture itself.
-    for line in watch.take_verdicts() {
-        evidence(&line);
-    }
+        watch.ensure_failure_verdict();
+        // `run` restored the previous active Watch, so flushing cannot recapture itself.
+        for line in watch.take_verdicts() {
+            evidence(&line);
+        }
+    })
 }
 
 /// Called after legacy line normalization, before output. Buffer only this
