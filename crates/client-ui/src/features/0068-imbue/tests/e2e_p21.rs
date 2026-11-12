@@ -1,9 +1,8 @@
 //! P21 replay: the server's IMBUEMENT query replies applied through the production `request`,
 //! `apply_result` and `panel_text`.
 //!
-//! The reply bytes are decoded by `imbuement::decode_imbuement_reply`, exactly as the client
-//! transport `send` in `crates/client-runtime/src/features/0068-imbue/protocol.rs` does before it
-//! hands the reply to `apply_result`.
+//! The recorded capability-491 selection chooses the same reply decoder as the client
+//! transport `send`; success percentages come from the captured wire payload.
 use super::*;
 use oteryn_client_runtime::imbue::CommandStatus;
 use std::num::NonZeroU64;
@@ -64,29 +63,44 @@ fn load() -> Result<Capture, Error> {
     Ok((
         encode(window)?,
         Some(encode(refused)?),
-        "slot_count=2\nclear_gold=15000\napplied=0\noffers=2\noffer_0=1,1,5000,false\noffer_1=4,2,25000,true\nrefused_status=Accepted\nrefused_result=NotAllowed\n".into(),
+        "success_selected=false\nslot_count=2\nclear_gold=15000\napplied=0\noffers=2\noffer_0=1,1,5000,false\noffer_1=4,2,25000,true\nrefused_status=Accepted\nrefused_result=NotAllowed\n".into(),
     ))
 }
 
-fn response(status: CommandStatus, bytes: &[u8]) -> Result<ImbueResponse, Error> {
+fn response(
+    status: CommandStatus,
+    bytes: &[u8],
+    success_selected: bool,
+) -> Result<ImbueResponse, Error> {
     let accepted = matches!(
         status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     );
+    let (reply, success) = if !accepted {
+        (None, Vec::new())
+    } else if success_selected {
+        let (reply, success) =
+            imbuement::decode_imbuement_reply_with_success(bytes).map_err(|e| format!("{e:?}"))?;
+        (Some(reply), success)
+    } else {
+        (
+            Some(imbuement::decode_imbuement_reply(bytes).map_err(|e| format!("{e:?}"))?),
+            Vec::new(),
+        )
+    };
     Ok(ImbueResponse {
         status,
-        reply: if accepted {
-            Some(imbuement::decode_imbuement_reply(bytes).map_err(|e| format!("{e:?}"))?)
-        } else {
-            None
-        },
+        reply,
+        success,
     })
 }
 
 #[test]
 fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
     let (window, refused, expected) = load()?;
+    let success_selected: bool = value(&expected, "success_selected")?.parse()?;
     let mut panel = ImbuePanel {
+        success_selected,
         selected: true,
         item: NonZeroU64::new(7),
         ..ImbuePanel::default()
@@ -95,7 +109,10 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
     assert_eq!(command.0.action, imbuement::ImbuementAction::Query);
 
     // The window: exact slot count, clear cost and every offer the server listed.
-    apply_result(&mut panel, &response(CommandStatus::Accepted, &window)?);
+    apply_result(
+        &mut panel,
+        &response(CommandStatus::Accepted, &window, success_selected)?,
+    );
     let shown = panel.window.clone().ok_or("window absent")?;
     let slots: u8 = value(&expected, "slot_count")?.parse()?;
     let clear: u32 = value(&expected, "clear_gold")?.parse()?;
@@ -128,9 +145,19 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
         assert_eq!(shown.offers[index].gold.to_string(), *gold);
         let name = family_name(shown.offers[index].family);
         let suffix = if *premium == "true" { " (premium)" } else { "" };
+        let success = if success_selected {
+            let percent: u8 = value(&expected, &format!("offer_{index}_success"))?.parse()?;
+            assert_eq!(panel.success.get(index), Some(&percent));
+            format!(", {percent}% success")
+        } else {
+            assert!(panel.success.is_empty());
+            String::new()
+        };
         assert!(
             text.lines().any(|row| row
-                == format!("Offer {index}: family {name}, tier {tier}, {gold} gold{suffix}")),
+                == format!(
+                    "Offer {index}: family {name}, tier {tier}, {gold} gold{suffix}{success}"
+                )),
             "offer {index} row missing in {text}"
         );
     }
@@ -139,8 +166,8 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
     let before = panel.window.clone();
     panel.pending = true;
     let refusal = match &refused {
-        Some(bytes) => response(CommandStatus::Accepted, bytes)?,
-        None => response(CommandStatus::Rejected, &[])?,
+        Some(bytes) => response(CommandStatus::Accepted, bytes, success_selected)?,
+        None => response(CommandStatus::Rejected, &[], success_selected)?,
     };
     apply_result(&mut panel, &refusal);
     assert_eq!(panel.window, before);
@@ -157,6 +184,44 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
     assert_eq!(panel.feedback, Some(feedback));
 
     // A truncated payload is not a reply: the transport never reaches `apply_result`.
-    assert!(response(CommandStatus::Accepted, &window[..window.len() - 1]).is_err());
+    assert!(
+        response(
+            CommandStatus::Accepted,
+            &window[..window.len() - 1],
+            success_selected
+        )
+        .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn selected_success_decoder_preserves_server_percentages() -> Result<(), Error> {
+    // Local codec regression only: these bytes are never written as a live capture.
+    let reply = imbuement::ImbuementReply {
+        result: imbuement::ImbuementResult::Ok,
+        window: Some(imbuement::ImbuementWindow {
+            slot_count: 1,
+            applied: Vec::new(),
+            offers: vec![imbuement::ImbuementOffer {
+                family: 1,
+                tier: 1,
+                gold: 5_000,
+                requires_premium: false,
+            }],
+            clear_gold: 15_000,
+        }),
+    };
+    let bytes = imbuement::encode_imbuement_reply_with_success(&reply, &[42])
+        .map_err(|error| format!("{error:?}"))?;
+    let decoded = response(CommandStatus::Accepted, &bytes, true)?;
+    assert_eq!(decoded.reply, Some(reply.clone()));
+    assert_eq!(decoded.success, [42]);
+    assert!(response(CommandStatus::Accepted, &bytes, false).is_err());
+    let legacy = imbuement::encode_imbuement_reply(&reply).map_err(|error| format!("{error:?}"))?;
+    let decoded = response(CommandStatus::Accepted, &legacy, false)?;
+    assert_eq!(decoded.reply, Some(reply));
+    assert!(decoded.success.is_empty());
+    assert!(response(CommandStatus::Accepted, &legacy, true).is_err());
     Ok(())
 }

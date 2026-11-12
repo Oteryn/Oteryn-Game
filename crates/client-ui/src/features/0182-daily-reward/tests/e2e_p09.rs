@@ -92,8 +92,20 @@ fn e2e_p09_replays_wall_and_claim_refusal() -> Result<(), Error> {
     };
     let text = panel_text(&panel);
     let lines: Vec<&str> = text.lines().collect();
+    let lane_day: u8 = value(e, "lane_day")?.parse()?;
+    let cycle_day = match lane_day {
+        1 | 8 | 15 | 22 | 29 => 1,
+        2 | 9 | 16 | 23 | 30 => 2,
+        3 | 10 | 17 | 24 => 3,
+        4 | 11 | 18 | 25 => 4,
+        5 | 12 | 19 | 26 => 5,
+        6 | 13 | 20 | 27 => 6,
+        7 | 14 | 21 | 28 => 7,
+        other => return Err(format!("invalid one-based server lane day {other}").into()),
+    };
+    assert_eq!(panel.wall.map(|wall| wall.lane_day), Some(lane_day));
     for line in [
-        format!("Day {} of 30", value(e, "lane_day")?),
+        format!("Day {cycle_day} of 7"),
         format!("Streak: {}", value(e, "streak")?),
         format!("Jokers: {}", value(e, "jokers")?),
         format!("Status: {status}"),

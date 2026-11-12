@@ -122,7 +122,13 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
         .try_into()
         .map_err(|_| "catalogue_first fields")?;
     let text = panel_text(&p);
-    let weapon = format!("{name} (weapon id {definition}): {experience} XP");
+    let entry = p
+        .catalogue
+        .as_ref()
+        .and_then(|page| page.entries.first())
+        .ok_or("catalogue entry")?;
+    assert_eq!(entry.definition, definition.parse::<u32>()?);
+    let weapon = format!("{name}: {experience} XP");
     assert!(text.lines().any(|line| line == weapon));
     assert_eq!(
         p.catalogue.as_ref().map(|c| c.total.to_string()).as_deref(),
