@@ -15,9 +15,7 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::target_move::{WalkDisposition, send};
 use oteryn_protocol_oteryn::bed::COMMAND_TYPE_BED_SLEEP_INTENT;
 use oteryn_protocol_oteryn::item_view::{ItemHandle, encode_item_target};
-use oteryn_protocol_oteryn::world_object::{
-    CAPABILITY_ITEM_USE_V1, UseDisposition, decode_use_result,
-};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
 
 const BED: ActorPosition = ActorPosition {
     x: 32311,

@@ -3,7 +3,8 @@
 //! Concrete player scenario derived from the P11 matrix/re-audit row and the routed owner:
 //! 1. Admit the provisioned character and send account-achievement page 0; expect an accepted,
 //!    internally consistent page and an achievement-notice watermark snapshot.
-//! 2. Send a malformed account-achievements command; expect a rejected reply with no state delta.
+//! 2. Refuse malformed query bytes at the local codec boundary without submission, then
+//!    re-query unchanged state. The typed core API cannot submit a malformed wire query.
 //! 3. Perform an ordinary player item-use action, the first reachable event/granter-shaped action
 //!    available to the node-boot starter (its genuinely granted backpack); expect the command's
 //!    real reply and, if it grants, an AchievementEarned delta plus a changed query result.
@@ -12,13 +13,14 @@
 //! 5. Log out, obtain a fresh admission, and query again; expect the exact earned facts, point
 //!    total, and fact count from step 3 to survive. A server that does not connect this legitimate
 //!    player action to a source granter is reported FAIL from the observed reply/missing delta;
-//!    the remaining quest/event granters are not claimed.
+//!    the remaining quest/event granters and malformed wire refusal remain unproven, so the
+//!    full row stays FAIL even if this bounded lifecycle succeeds.
 use super::*;
 use oteryn_dev_client::client_runtime::account_achievements::{
     AccountAchievementsResult, Response,
 };
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::account_achievements::COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY;
+use oteryn_protocol_oteryn::account_achievements as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -82,20 +84,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .map_err(|error| format!("step=query malformed notice snapshot: {error:?}"))?;
 
     client.take_events();
-    let refused = client
-        .session_mut()
-        .gated_command(0, COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, &[0x08])
-        .await?;
-    if refused.status != CommandStatus::Rejected {
-        return Err(format!("step=refusal observed={refused:?}").into());
+    let next_command = client.next_command_id();
+    let sequence = client.last_server_sequence();
+    if wire::decode_account_achievements_query(&[0x08]).is_ok()
+        || client.next_command_id() != next_command
+        || client.last_server_sequence() != sequence
+    {
+        return Err("step=local-codec-refusal observed=submitted-or-not-refused".into());
     }
     if client
         .take_events()
         .iter()
         .any(|event| matches!(event, SessionEvent::AchievementEarned(_)))
+        || page(&mut client, 0).await? != before
     {
-        return Err("step=refusal observed=unexpected-achievement-delta".into());
+        return Err("step=local-codec-refusal observed=unexpected-achievement-delta".into());
     }
+    evidence(
+        "P11_CHECK step=malformed-query boundary=local-codec-refusal wire_submission=false command-and-sequence=unchanged reread=unchanged",
+    );
 
     let backpack = client
         .inventory()
@@ -150,7 +157,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if page(&mut fresh, 0).await? != granted {
         return Err("step=relogin durable achievement page changed".into());
     }
-    logout(&mut fresh).await
+    logout(&mut fresh).await?;
+    Err("step=coverage observed=bounded-grant-relogin-validated;unproven=malformed-wire-query-refusal,remaining-quest-event-granters".into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {

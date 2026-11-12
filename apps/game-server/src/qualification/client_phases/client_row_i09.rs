@@ -6,7 +6,7 @@ use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
 use oteryn_protocol_oteryn::world_object::{
-    CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget,
+    UseDisposition, UseIntent, UseTarget,
     WorldObjectTarget, decode_use_result, encode_item_use_intent,
 };
 

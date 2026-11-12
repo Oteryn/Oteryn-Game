@@ -37,7 +37,7 @@ fn fixture() -> Result<Captured, BoxError> {
         page: wire::encode_account_achievements_result(&page).map_err(|e| format!("{e:?}"))?,
         wrong_page: wire::encode_account_achievements_result(&wrong)
             .map_err(|e| format!("{e:?}"))?,
-        expected: "page=0\ntotal_points=15\nfact_count=2\nhas_more=false\nrows=oteryn:achievement/first_steps:1:5|oteryn:achievement/rat_hunter:2:10\nrefused_status=Rejected\n".into(),
+        expected: "page=0\ntotal_points=15\nfact_count=2\nhas_more=false\nrows=oteryn:achievement/first_steps:1:5|oteryn:achievement/rat_hunter:2:10\nmalformed_query=local-codec-refusal\nmalformed_wire_submission=false\n".into(),
     })
 }
 
@@ -133,16 +133,17 @@ fn e2e_p11_replays_achievement_page_refusal_and_wrong_page() -> Result<(), BoxEr
         .spawn(move || {
             block_on(async {
                 let e = captured.expected.as_str();
-                let refused_status = match value(e, "refused_status")? {
-                    "Rejected" => CommandStatus::Rejected,
-                    other => return Err(format!("unexpected refused_status {other}").into()),
-                };
+                // Capture facts cover the typed page and a local codec boundary.
+                // Server rejection below is a separate synthetic session regression.
+                assert_eq!(value(e, "malformed_query")?, "local-codec-refusal");
+                assert_eq!(value(e, "malformed_wire_submission")?, "false");
+                assert!(wire::decode_account_achievements_query(&[0x08]).is_err());
                 let (client, server) = tokio::io::duplex(65536);
                 let task = tokio::spawn(peer(
                     server,
                     vec![
                         (CommandStatus::Accepted, captured.page.clone()),
-                        (refused_status, Vec::new()),
+                        (CommandStatus::Rejected, Vec::new()),
                         (CommandStatus::Accepted, captured.wrong_page.clone()),
                     ],
                 ));
@@ -164,7 +165,7 @@ fn e2e_p11_replays_achievement_page_refusal_and_wrong_page() -> Result<(), BoxEr
                     .collect();
                 assert_eq!(rows.join("|"), value(e, "rows")?);
 
-                // A rejected query is refused without poisoning the session.
+                // Independent synthetic check: a server-rejected query is refused without poisoning.
                 assert_eq!(
                     session.account_achievements(0).await?,
                     account_achievements::Response::Refused

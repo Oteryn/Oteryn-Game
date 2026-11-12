@@ -4,8 +4,9 @@
 //!    server-save-countdown snapshot at revision zero and retain its session identity.
 //! 2. Send an ordinary STEP player command; expect `Accepted`, a `Moved` disposition and
 //!    the matching world-spatial delta. This produces player-owned durable state before save.
-//! 3. Send a capability-75 command (there is intentionally no player command for a Control-owned
-//!    reset); expect `Rejected`, an empty reply and no countdown delta or position mutation.
+//! 3. Attempt the invalid capability-75/core-STEP pairing; expect local CapabilityNotSelected
+//!    without a wire submission or command/sequence, countdown or position mutation. Control
+//!    owns reset; no player reset command exists.
 //! 4. Service the native connection through the reset-owner polling interval; when a planned
 //!    reset is in its five-minute window, expect a domain-40 delta whose revisions advance by
 //!    one, whose epoch is nonzero and whose remaining minute is in 5..=1.
@@ -78,19 +79,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "W05a_CHECK step=walk direction={direction:?} reply={moved:?}"
     ));
 
+    // Capability 75 is snapshot-only. Pairing it with core STEP (type 1)
+    // deliberately probes local ownership rejection; this is no reset command
+    // and must consume neither a command id nor any server sequence.
+    let next_command = client.next_command_id();
+    let sequence = client.last_server_sequence();
+    let position = client.world_spatial().actor_position;
+    let countdown_before = client
+        .session_mut()
+        .gated_snapshot(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
+        .cloned();
     let refusal = client
         .session_mut()
         .gated_command(CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, 1, &[])
-        .await?;
-    if refusal.status != CommandStatus::Rejected
-        || !refusal.payload.is_empty()
-        || client.world_spatial().actor_position != saved
+        .await;
+    if !matches!(refusal, Err(oteryn_dev_client::SessionError::CapabilityNotSelected { capability })
+        if capability == CAPABILITY_SERVER_SAVE_COUNTDOWN_V1)
+        || client.next_command_id() != next_command
+        || client.last_server_sequence() != sequence
+        || client.world_spatial().actor_position != position
+        || client
+            .session_mut()
+            .gated_snapshot(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN)
+            .cloned()
+            != countdown_before
     {
-        return Err(format!("step=player-reset-refusal observed={refusal:?}").into());
+        return Err(format!("step=local-route-refusal observed={refusal:?}").into());
     }
-    evidence(&format!(
-        "W05a_CHECK step=player-reset-refusal reply={refusal:?}"
-    ));
+    evidence(
+        "W05a_CHECK step=player-reset-boundary observed=local-ownership-refusal wire_submission=false command-and-sequence=unchanged countdown-and-position=unchanged",
+    );
 
     client.take_events();
     client.service_liveness(Duration::from_secs(7)).await?;
@@ -114,17 +132,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         // an earlier disconnect is some other failure.
         let noticed = tokio::time::Instant::now();
         let minutes = u64::from(delta.value.minutes_remaining);
-        let earliest = Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
+        let earliest =
+            Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
         let latest = Duration::from_secs(minutes * 60 + 30);
         let close = client.service_liveness(latest).await;
         let elapsed = noticed.elapsed();
         if close.is_ok() {
-            return Err(format!("step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice", latest.as_secs()).into());
+            return Err(format!(
+                "step=reset-close observed=session-still-live-{}s-after-{minutes}-minute-notice",
+                latest.as_secs()
+            )
+            .into());
         }
         if elapsed < earliest {
             return Err(format!("step=reset-close observed=closed-after-{}s-before-the-{minutes}-minute-window error={close:?}", elapsed.as_secs()).into());
         }
-        evidence(&format!("W05a_CHECK step=reset-close after={}s reply={close:?}", elapsed.as_secs()));
+        evidence(&format!(
+            "W05a_CHECK step=reset-close after={}s reply={close:?}",
+            elapsed.as_secs()
+        ));
         client = connect_world(clients, 0xa6).await?;
         if client.join_snapshot().game_session_id == admitted_session
             || client.world_spatial().actor_position != saved
