@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::world_object::{
 const BEFORE: &str = "oteryn:item.tibia.i2358";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(
             "SEAM_EVIDENCE e2e_all scenario=I09.client status=PASS evidence=domain-17-furniture-rotation-replay-captured",

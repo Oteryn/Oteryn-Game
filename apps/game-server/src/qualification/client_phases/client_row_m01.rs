@@ -3,7 +3,7 @@ use super::*;
 use oteryn_protocol_oteryn::target_move::*;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = journey(clients).await {
+    if let Err(error) = verdict::observe(journey(clients)).await {
         evidence(&format!("M01_CLIENT_CAPTURE_GAP {error}"));
     }
 }

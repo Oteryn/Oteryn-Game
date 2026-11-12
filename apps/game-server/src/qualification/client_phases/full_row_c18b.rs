@@ -88,7 +88,7 @@ impl Attempt {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut attempt = Attempt::new();
-    let result = tokio::time::timeout(
+    let result = verdict::indexed_timeout(
         Duration::from_secs(180),
         journey(&mut attempt, clients),
     )

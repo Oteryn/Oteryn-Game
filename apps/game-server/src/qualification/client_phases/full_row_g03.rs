@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::{depot, depot_search as wire};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "list-and-retrieval-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),

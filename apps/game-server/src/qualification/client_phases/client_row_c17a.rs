@@ -10,7 +10,7 @@ use oteryn_protocol_oteryn::condition_status::{
 use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntent, ChatSpeechMode};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(30), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C17a.client status=PASS"),
         Ok(Err(error)) => evidence(&format!(

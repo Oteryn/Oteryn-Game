@@ -55,7 +55,7 @@ const LEVERS: &[TilePos] = &[
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W02.full status=PASS seconds={:.3} evidence=lever-instance-defeat-cooldown-participation-reward-fresh-admission",
@@ -210,6 +210,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     let defeat_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    verdict::Harness::global().bounded_wait(defeat_deadline, "bounded-observation");
     while client
         .world_entities()
         .is_some_and(|entities| entities.iter().any(|entity| entity.entity == target.entity))

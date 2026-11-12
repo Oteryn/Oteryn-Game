@@ -206,6 +206,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while durable.selected == Some(drome) || durable.earned.contains(&drome) {
         if tokio::time::Instant::now() >= deadline {
             logout(&mut fresh).await?;
@@ -221,7 +222,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=P12a.full status=PASS seconds={:.3}",

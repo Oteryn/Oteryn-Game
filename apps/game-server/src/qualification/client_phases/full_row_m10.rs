@@ -65,7 +65,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         step: 0,
         error: None,
     };
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(&mut row, clients))).await;
     row.error = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),

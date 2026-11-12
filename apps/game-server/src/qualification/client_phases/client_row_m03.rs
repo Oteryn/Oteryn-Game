@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_spatial::{encode_step_result, encode_world_spatial};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = journey(clients).await;
+    let result = verdict::observe(journey(clients)).await;
     let evidence_detail = match &result {
         Ok(()) => "floor-spatial-and-exhaust-refusal".to_owned(),
         Err(error) => error.to_string(),

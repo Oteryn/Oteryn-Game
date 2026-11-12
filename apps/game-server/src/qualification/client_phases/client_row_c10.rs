@@ -11,7 +11,7 @@ use std::time::Duration;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     let status = match result {
         Ok(Ok(())) => "PASS",
         Ok(Err(error)) => {
@@ -77,6 +77,7 @@ async fn wait_soul(
     duration: Duration,
 ) -> TestResult<oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>> {
     let deadline = tokio::time::Instant::now() + duration;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {

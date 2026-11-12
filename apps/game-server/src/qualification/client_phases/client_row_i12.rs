@@ -12,7 +12,7 @@ const SHINY_STONE: u32 = 10310;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(30), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
         Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),

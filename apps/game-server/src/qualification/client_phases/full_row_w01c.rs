@@ -72,7 +72,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("journey timeout after real player commands; server supplied no required next frame".into()),

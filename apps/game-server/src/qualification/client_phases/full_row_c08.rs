@@ -50,7 +50,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 1,
     };
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(&mut row, clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!(

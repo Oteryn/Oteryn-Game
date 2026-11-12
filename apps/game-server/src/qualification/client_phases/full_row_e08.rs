@@ -67,7 +67,7 @@ impl Journey {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = match tokio::time::timeout(
+    let result = match verdict::indexed_timeout(
         Duration::from_secs(180),
         run(&mut journey, clients),
     )

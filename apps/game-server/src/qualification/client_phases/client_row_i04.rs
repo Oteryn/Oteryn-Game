@@ -12,7 +12,7 @@ const WRITTEN: u32 = 2834;
 const REWRITABLE: u32 = 2817;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     match result.unwrap_or_else(|_| Err("I04 client capture timed out".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=I04.client status=PASS evidence=mail-write-once-too-long-and-rewrite",

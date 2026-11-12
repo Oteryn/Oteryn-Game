@@ -7,7 +7,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let result = tokio::time::timeout(Duration::from_secs(20), capture(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(20), verdict::observe(capture(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C01.client status=PASS evidence=domain-10-snapshot-and-fight-mode-delta"),
         Ok(Err(error)) => evidence(&format!("SEAM_EVIDENCE e2e_all scenario=C01.client status=FAIL evidence={error}")),

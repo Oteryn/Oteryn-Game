@@ -295,7 +295,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
     };
-    let result: TestResult = async {
+    let result: TestResult = verdict::observe(async {
         let path = Path::new(&directory);
         let mut client = connect_world(clients, 0xc1).await?;
         let snapshot = client
@@ -376,7 +376,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
         }
         capture_write(path, "c16a-expected.txt", expected);
         Ok(())
-    }
+    })
     .await;
     match result {
         Ok(()) => evidence(

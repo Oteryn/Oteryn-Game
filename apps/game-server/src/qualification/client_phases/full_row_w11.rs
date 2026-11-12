@@ -23,7 +23,7 @@ const SOURCE_GAP: &str =
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
         Ok(Err(error)) => ("FAIL", error.to_string()),

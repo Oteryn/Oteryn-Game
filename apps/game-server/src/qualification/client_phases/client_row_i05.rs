@@ -11,7 +11,7 @@ use oteryn_protocol_oteryn::item_view as items;
 const ACTIVE_ENERGY_RING: u32 = 3088;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = capture(clients).await;
+    let result = verdict::observe(capture(clients)).await;
     evidence(&format!(
         "e2e_all scenario=I05.client status={}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },

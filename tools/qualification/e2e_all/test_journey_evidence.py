@@ -1,6 +1,7 @@
 """Focused guards for reviewed G16/M10/G33 evidence ownership and coverage."""
 import unittest
 from pathlib import Path
+from report import results
 
 ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / 'apps/game-server/src/qualification/client_phases'
@@ -35,6 +36,14 @@ class JourneyEvidenceTests(unittest.TestCase):
             self.assertIn(owner, source)
         self.assertIn('server-active-seasonal-window-closed', source)
         self.assertIn('missing-active-seasonal-decision', source)
+
+    def test_g33_closed_decision_token_is_accepted_by_strict_report_parser(self):
+        found = results(
+            'SEAM_EVIDENCE e2e_all scenario=G33.full status=SKIPPED seconds=1 '
+            'evidence=content:server-active-seasonal-window-closed-epoch-42-activated-date-11-12'
+        )
+        self.assertEqual(found['G33.full'][0], 'SKIPPED')
+        self.assertNotIn(';epoch=', (PHASES / 'full_row_g33.rs').read_text())
 
 if __name__ == '__main__':
     unittest.main()

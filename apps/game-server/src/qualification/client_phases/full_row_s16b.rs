@@ -65,7 +65,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row { passed: BTreeSet::new(), started: std::time::Instant::now() };
-    let result = tokio::time::timeout(Duration::from_secs(480), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step deadline after real player command; server supplied no completing frame".into()),
@@ -189,6 +189,7 @@ async fn earn_level_eight(
 ) -> TestResult<Stats> {
     use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut before = stats(client).await?;
     while before.level < 8 {
         if tokio::time::Instant::now() >= deadline {

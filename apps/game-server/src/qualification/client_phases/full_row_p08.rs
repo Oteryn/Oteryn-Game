@@ -332,7 +332,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut observed = Observations::default();
     let result =
-        tokio::time::timeout(Duration::from_secs(240), journey(clients, &mut observed)).await;
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients, &mut observed))).await;
     match result {
         Ok(Err(error)) => observed.failures.push(error.to_string()),
         Err(_) => observed.failures.push("step-deadline:timeout".into()),

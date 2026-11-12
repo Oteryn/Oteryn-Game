@@ -184,7 +184,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
     let (status, gap) = match result {
         Ok(Ok(())) => ("PASS", None),
         Ok(Err(error)) => ("FAIL", Some(error.to_string())),

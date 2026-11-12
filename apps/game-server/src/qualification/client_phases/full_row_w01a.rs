@@ -78,7 +78,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {

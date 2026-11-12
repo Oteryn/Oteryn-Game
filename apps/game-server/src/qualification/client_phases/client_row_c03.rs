@@ -89,7 +89,7 @@ fn capture(name: &str, bytes: &[u8]) {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result: TestResult = async {
+    let result: TestResult = verdict::observe(async {
         let mut client = connect_world(clients, 0xc3).await?;
         let (offence, offence_stats) =
             combat_page(&mut client, wire::CharacterTab::Offence).await?;
@@ -119,7 +119,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         );
         evidence("e2e_all scenario=C03.client status=PASS payload=cyclopedia-combat-pages");
         Ok(())
-    }
+    })
     .await;
     if let Err(error) = result {
         evidence(&format!(

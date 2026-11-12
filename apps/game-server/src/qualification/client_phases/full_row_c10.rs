@@ -72,7 +72,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(420), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("step deadline: C10 journey timed out waiting for a server reply/delta".into()));
     row.finish(result);
@@ -179,6 +179,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
 async fn wait_soul(client: &mut DevClientSession, from: u32, wanted: impl Fn(u32) -> bool, step: &str, duration: Duration) -> TestResult<u32> {
     let deadline = tokio::time::Instant::now() + duration;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {

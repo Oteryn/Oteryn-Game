@@ -222,7 +222,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result: TestResult = async {
+    let result: TestResult = verdict::observe(async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
         let world = load_world(
@@ -231,8 +231,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        journey(clients, world, &bytes).await
-    }
+        verdict::observe(journey(clients, world, &bytes)).await
+    })
     .await;
     if let Err(error) = &result {
         evidence(&format!("M06_GAP {error}"));

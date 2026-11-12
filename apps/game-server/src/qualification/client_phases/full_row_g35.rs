@@ -19,7 +19,7 @@ const BOSSES: [&str; 2] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let detail = match result {
         Ok(Ok(observed)) => format!(
             "needed:quest-access-boss-chain-and-lever-position-then-boss-kill-private-loot-and-svargrond-arena;observed={observed}"

@@ -14,7 +14,7 @@ const COMMENT: &str = "G04 bug report: the depot chest closed by itself";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "report-accepted-and-durable".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),

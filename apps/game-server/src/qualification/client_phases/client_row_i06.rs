@@ -63,6 +63,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("I06 attack refused: {attack:?}").into());
     }
     let kill_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(kill_deadline, "bounded-observation");
     let (corpse, introduced) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         let mut found = None;
@@ -128,7 +129,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = journey(clients).await {
+    if let Err(error) = verdict::observe(journey(clients)).await {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=I06.client status=FAIL evidence={}",
             error.to_string().replace([' ', '\n'], "_")

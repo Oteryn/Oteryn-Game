@@ -28,7 +28,7 @@ const FIELD_ID: u32 = 21465;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-240s need=server-complete-field-lifecycle".into()),
@@ -206,6 +206,7 @@ async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestRe
 }
 async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
 }
 

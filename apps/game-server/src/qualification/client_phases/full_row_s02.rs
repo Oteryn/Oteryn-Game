@@ -224,6 +224,7 @@ async fn set_open_attack(client: &mut DevClientSession) -> TestResult {
 
 async fn logout(client: &mut DevClientSession, budget: Duration) -> TestResult {
     let deadline = tokio::time::Instant::now() + budget;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
         let reply = client.session_mut().logout().await?;
         match reply.result {
@@ -334,6 +335,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // The production aggression/skull lock is intentionally real.  Poll the same Accept command;
     // every refused reply is an observed negative path, and only server expiry permits progress.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let joined = loop {
         pump(&mut a, &mut b).await?;
         let (_, state) = party(&mut b, None).await?;
@@ -398,7 +400,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(2_100), journey(&mut row, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(2_100), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| Err("step lifecycle timeout observed=no-reply-or-delta".into()));
     row.finish(&result);

@@ -12,7 +12,7 @@ pub(super) async fn run_packet(
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let result = tokio::time::timeout(
+    let result = verdict::indexed_timeout(
         Duration::from_secs(240),
         capture_journey(clients, world, spawns),
     )
@@ -77,6 +77,7 @@ async fn capture_journey(
         .health;
     let encounter = client.world_spatial().actor_position;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;

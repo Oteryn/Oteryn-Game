@@ -17,7 +17,7 @@ const KILLS: usize = 3;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
     let detail = match result {
         Ok(Ok(seen)) => describe(KILLS, seen),
         Ok(Err(error)) => compact(&error.to_string()),

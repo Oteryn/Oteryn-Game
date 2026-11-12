@@ -15,7 +15,7 @@ use oteryn_protocol_oteryn::{gem_presentation as gem, wheel_presentation as whee
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "wheel-and-gem-presentation-validated".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),

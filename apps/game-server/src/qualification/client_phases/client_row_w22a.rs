@@ -59,6 +59,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
         return Err(format!("step=attack refused {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut last_position = target.position;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
@@ -164,7 +165,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match tokio::time::timeout(Duration::from_secs(300), journey(clients, world)).await {
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients, world))).await {
         Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W22a.client status=CAPTURED evidence={observed}")),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W22a.client status=FAIL evidence={}",

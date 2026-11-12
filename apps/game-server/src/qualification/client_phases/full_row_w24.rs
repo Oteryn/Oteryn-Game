@@ -60,7 +60,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         passed: Default::default(),
         started: std::time::Instant::now(),
     };
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-240s need=bounded-server-replies".into()),

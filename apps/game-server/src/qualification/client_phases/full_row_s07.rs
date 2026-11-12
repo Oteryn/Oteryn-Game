@@ -30,7 +30,7 @@ const APPROACH: ActorPosition = ActorPosition {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step-1:timeout-walking-to-authored-bed".into()),
@@ -109,6 +109,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 async fn travel(client: &mut DevClientSession, step: &str) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     if client.world_spatial().actor_position == APPROACH {
         return Err(
             format!("{step}:walk-observed-already-at-approach-no-required-command-ran").into(),

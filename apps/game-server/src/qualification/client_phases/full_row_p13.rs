@@ -34,7 +34,7 @@ enum Verdict {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let verdict = match tokio::time::timeout(Duration::from_secs(210), journey(clients)).await {
+    let verdict = match verdict::indexed_timeout(Duration::from_secs(210), verdict::observe(journey(clients))).await {
         Ok(Ok(true)) => Verdict::Pass,
         Ok(Ok(false)) => Verdict::MissingServer,
         Ok(Err(error)) => Verdict::Fail(error.to_string()),

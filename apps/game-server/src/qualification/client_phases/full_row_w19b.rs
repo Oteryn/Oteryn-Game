@@ -21,7 +21,7 @@ const NEEDED: &str = "needed:ice-flower-seeds-13844-in-inventory;only-source=tha
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let detail = match result {
         // A held item would need the row's effect checks, which this driver does not implement.
         Ok(Ok(())) => "step=precondition-observed=item-present-effect-driver-missing".to_owned(),

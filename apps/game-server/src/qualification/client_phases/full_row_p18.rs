@@ -251,7 +251,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("P18 journey timeout after real native commands".into()),

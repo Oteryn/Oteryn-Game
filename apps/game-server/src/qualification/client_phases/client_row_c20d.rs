@@ -10,7 +10,7 @@ pub(super) async fn run_packet(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients, world, spawns)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients, world, spawns))).await;
     let result = result.unwrap_or_else(|_| Err("C20d client capture timed out".into()));
     if let Err(error) = &result {
         evidence(&format!("C20D_CLIENT_GAP {error}"));
@@ -45,6 +45,7 @@ async fn journey(
         client.session_mut().attack_target(None).await?;
         let mut damaged = false;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
         loop {
             client.service_liveness(Duration::from_millis(100)).await?;
             for event in client.take_events() {

@@ -105,7 +105,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(30), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
     if let Err(error) = result.unwrap_or_else(|_| Err("I01 client capture timeout".into())) {
         evidence(&format!(
             "e2e_all scenario=I01.client status=FAIL evidence={}",

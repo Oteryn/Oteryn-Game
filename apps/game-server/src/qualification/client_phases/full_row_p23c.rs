@@ -30,7 +30,7 @@ const ROW: &str = "P23c";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let failure = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),

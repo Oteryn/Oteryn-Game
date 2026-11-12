@@ -2,14 +2,12 @@
 
 use super::*;
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
+pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    // The existing real-world packet owns the minimal Chameleon/Disintegrate action helpers.
-    // Run it unchanged, then capture the native entity snapshot received by a fresh client.
-    full_e2ef5::run(clients, world).await;
-    if let Err(error) = capture(clients).await {
+    // Capture this admission only; full F5 journeys retain their own dispatch and verdicts.
+    if let Err(error) = verdict::observe(capture(clients)).await {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C16d.client capture_error={error}"
         ));

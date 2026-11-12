@@ -3,7 +3,7 @@ use super::*;
 use oteryn_protocol_oteryn::{actor_spell, item_view};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(240), capture(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(capture(clients))).await;
     match result {
         Ok(Ok(())) => evidence("e2e_all scenario=C06.client status=PASS evidence=inventory-and-vitals-payloads"),
         Ok(Err(error)) => evidence(&format!("e2e_all scenario=C06.client status=FAIL evidence={error}")),

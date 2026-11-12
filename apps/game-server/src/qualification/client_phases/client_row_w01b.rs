@@ -230,6 +230,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("W01b client capture: attack refused: {attack:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut last = target.position;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
@@ -271,6 +272,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
+    verdict::Harness::global().bounded_wait(until, "bounded-observation");
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
@@ -324,7 +326,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(420), journey(clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W01b.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")

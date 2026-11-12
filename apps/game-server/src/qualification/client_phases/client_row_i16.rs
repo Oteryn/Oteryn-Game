@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::inspection as inspect;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(30), capture(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(capture(clients))).await;
     let (status, evidence_detail) = match result {
         Ok(Ok(item)) => ("PASS", format!("definition={};name={}", item.definition_ref, item.name)),
         Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),

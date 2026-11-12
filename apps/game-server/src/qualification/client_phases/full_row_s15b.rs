@@ -25,7 +25,7 @@ const ROW: &str = "S15b";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -257,6 +257,7 @@ async fn require_quiet(
 ) -> TestResult {
     let before = health(client, own)?;
     let deadline = tokio::time::Instant::now() + duration;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(25)).await?;
         if client
@@ -281,6 +282,7 @@ async fn require_damage(
     let before = health(client, own)?;
     client.take_events();
     let deadline = tokio::time::Instant::now() + duration;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut frame = false;
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(25)).await?;

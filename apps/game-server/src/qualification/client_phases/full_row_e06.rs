@@ -186,7 +186,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(source)) => evidence(&format!(
             "e2e_all scenario=E06.full status=MISSING-SERVER seconds={:.3} evidence={source}",

@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, Spe
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(
             "e2e_all scenario=C09.client status=PASS evidence=food-funded-HP-mana-payloads",

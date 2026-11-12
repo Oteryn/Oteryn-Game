@@ -91,7 +91,7 @@ fn token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(480), journey(&mut row, clients)).await {
+    let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
         Err(_) => Err("journey-timeout-480s-without-server-reply".into()),
     };
@@ -404,6 +404,7 @@ async fn acquire(
         .cloned()
         .ok_or_else(|| format!("needed=acquisition-route-for-{ITEM_ID};content-sellers={};reachable-sellers=0;loot-and-quest-routes=none-declared", offers.len()))?;
     let hunt_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(hunt_deadline, "bounded-observation");
     let mut hunts = 0_u32;
     loop {
         let have = player_gold(client).await?;

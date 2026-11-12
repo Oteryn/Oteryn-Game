@@ -35,7 +35,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(60), journey(clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=P19.client status=MISSING-CLIENT evidence={observed};searched=crates/session/src/appearance_state.rs,crates/session/src/tests/appearance_session_tests.rs,apps/client/src/features/0006-world-spatial-entities,crates/client-ui/src,crates/client-runtime/src,tools/dev-client/src;gap=no-raw-appearance-delta-retention"
         )),

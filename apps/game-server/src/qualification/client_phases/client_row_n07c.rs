@@ -47,6 +47,7 @@ async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
     }
     let mut facts = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while !facts.iter().any(|fact| matches!(fact, AnalyserFact::Kill { .. })) {
         client.service_liveness(Duration::from_millis(100)).await?;
         collect(client, &mut facts);
@@ -128,7 +129,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(300), journey(clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N07c.client status=CAPTURED evidence=raw-delta-not-retained-by-dev-client;{observed}"
         )),

@@ -250,7 +250,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W12.full status=PASS seconds={:.3}",

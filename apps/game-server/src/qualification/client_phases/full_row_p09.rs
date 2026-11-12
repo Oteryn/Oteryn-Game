@@ -200,7 +200,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(240), journey(clients))
         .await
         .unwrap_or_else(|_| Err("step timeout observed=no-reply-frame".into()));
     if let Err(error) = &result {

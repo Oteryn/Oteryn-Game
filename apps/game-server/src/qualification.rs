@@ -87,7 +87,9 @@ fn required(name: &str) -> Result<String, io::Error> {
 }
 
 fn evidence(line: &str) {
-    println!("SEAM_EVIDENCE {}", e2e_result_line(line));
+    if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
+        println!("SEAM_EVIDENCE {line}");
+    }
 }
 
 /// Row reporters write `e2e_all` lines in several shapes. `report.py` accepts

@@ -389,7 +389,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut seen = Observations::default();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients, &mut seen)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients, &mut seen))).await;
     if let Err(error) = &result {
         seen.fail("journey-deadline", error);
     }

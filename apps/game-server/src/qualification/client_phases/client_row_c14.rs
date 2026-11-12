@@ -8,7 +8,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
     };
-    if let Err(error) = capture(clients, Path::new(&path)).await {
+    if let Err(error) = verdict::observe(capture(clients, Path::new(&path))).await {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence={}",
             error.to_string().replace(['\n', '\r'], " ")

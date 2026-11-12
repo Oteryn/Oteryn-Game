@@ -202,7 +202,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row {
         completed: BTreeSet::new(),
     };
-    let result: TestResult = tokio::time::timeout(Duration::from_secs(90), async {
+    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(90), async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -213,7 +213,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             ChannelId::decode(&clients.channel)?,
         )?;
         let mut client = connect_world(clients, 0xd0).await?;
-        let result: TestResult = async {
+        let result: TestResult = verdict::observe(async {
             let npc = approach_king(&mut client, world, &metadata.npcs).await?;
             let greeting = talk(&mut client, npc, "hi").await?;
             if greeting.is_empty() {
@@ -307,7 +307,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             }
             row.complete("step-6", (before, after, temple));
             Ok(())
-        }
+        })
         .await;
         let _ = logout(&mut client).await;
         result

@@ -80,7 +80,7 @@ impl Row {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result =
-        match tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
+        match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await {
             Ok(result) => result,
             Err(_) => Err(
                 "step=journey observed=timeout-after-180s need=responsive-spell/AI/visibility-path"

@@ -79,7 +79,7 @@ fn compact(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(DEADLINE, journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(DEADLINE, verdict::observe(journey(&mut row, clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("deadline while executing {}", row.step).into()),
@@ -166,6 +166,7 @@ async fn kill_adjacent(client: &mut DevClientSession) -> TestResult {
         return Err(format!("ATTACK refused: {attack:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;

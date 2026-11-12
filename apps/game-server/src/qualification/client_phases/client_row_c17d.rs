@@ -8,7 +8,7 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, enc
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, encode_presentation_batch};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C17d.client status=PASS"),
         Ok(Err(error)) => evidence(&format!("SEAM_EVIDENCE e2e_all scenario=C17d.client status=FAIL evidence={error}")),

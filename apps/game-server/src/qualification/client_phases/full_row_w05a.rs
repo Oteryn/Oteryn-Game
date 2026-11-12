@@ -28,7 +28,7 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
     let status = match result {
         Ok(Ok(Outcome::ResetObserved)) => "PASS",
         Ok(Ok(Outcome::ResetNotScheduled)) => "FAIL",
@@ -135,6 +135,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         let earliest =
             Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
         let latest = Duration::from_secs(minutes * 60 + 30);
+        verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + latest, "reset-countdown");
         let close = client.service_liveness(latest).await;
         let elapsed = noticed.elapsed();
         if close.is_ok() {

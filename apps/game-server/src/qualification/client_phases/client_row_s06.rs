@@ -136,7 +136,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(120), flow(clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), flow(clients)).await {
         Ok(Ok(observed)) => {
             if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
                 let root = Path::new(&root);

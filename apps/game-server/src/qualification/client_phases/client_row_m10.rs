@@ -14,7 +14,7 @@ const UNDERWATER: [u16; 12] = [
 ];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=M10.client status=PASS evidence=real-drowning-ActorVitals-payload-captured"),
         Ok(Err(error)) => evidence(&format!("SEAM_EVIDENCE e2e_all scenario=M10.client status=FAIL evidence={error}")),

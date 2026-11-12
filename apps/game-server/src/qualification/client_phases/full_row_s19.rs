@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::player_typing::{CAPABILITY_PLAYER_TYPING_V1, TypingU
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "typing-on-off-deltas-from-server".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),

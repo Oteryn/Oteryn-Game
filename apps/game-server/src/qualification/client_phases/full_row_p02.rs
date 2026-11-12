@@ -62,7 +62,7 @@ impl Row {
 }
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let r = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients)).await;
+    let r = verdict::indexed_timeout(Duration::from_secs(600), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match r {
         Ok(v) => v,
         Err(_) => Err("step deadline: no server reply within 600s".into()),
@@ -152,6 +152,7 @@ async fn kill(
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(until, "bounded-observation");
     loop {
         c.service_liveness(Duration::from_millis(50)).await?;
         c.take_events();

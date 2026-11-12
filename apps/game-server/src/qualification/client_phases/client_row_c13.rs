@@ -19,7 +19,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 const FIELD_CAPABILITIES: &[u32] = &[6, 286];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(240), capture(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(capture(clients))).await;
     match result.unwrap_or_else(|_| Err("C13.client journey timeout".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=C13.client status=PASS evidence=observer-summon-enter-and-owner-end-leave",

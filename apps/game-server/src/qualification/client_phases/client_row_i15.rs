@@ -4,7 +4,7 @@ use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::{actor_spell, item_view as items};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("e2e_all scenario=I15.client status=PASS evidence=actor-vitals-2-to-1-mana-shield"),
         Ok(Err(error)) => evidence(&format!("e2e_all scenario=I15.client status=FAIL evidence={error}")),

@@ -147,7 +147,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = journey(clients).await {
+    if let Err(error) = verdict::observe(journey(clients)).await {
         evidence(&format!(
             "e2e_all scenario=C04.client status=FAIL evidence={error}"
         ));

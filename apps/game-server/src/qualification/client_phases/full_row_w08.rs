@@ -93,7 +93,7 @@ fn evidence_token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(90), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(&mut row, clients))).await;
     match result {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("journey", error),

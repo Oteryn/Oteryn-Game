@@ -54,7 +54,7 @@ impl Progress {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut progress = Progress::new();
-    let result = match tokio::time::timeout(
+    let result = match verdict::indexed_timeout(
         Duration::from_secs(420),
         journey(clients, &mut progress),
     )
@@ -188,6 +188,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.pass("kill-command", attack);
     progress.step = "kill-deltas";
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
     let mut last = spawn;
     let corpse = loop {
@@ -224,6 +225,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     progress.step = "nearby-refusal";
     let blocked_until = tokio::time::Instant::now()
         + Duration::from_millis(u64::from(respawn_ms) + 1_000);
+    verdict::Harness::global().bounded_wait(blocked_until, "bounded-observation");
     while tokio::time::Instant::now() < blocked_until {
         pump(&mut client).await?;
         if creature_at(&client, spawn).is_some() {
@@ -241,6 +243,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
+    verdict::Harness::global().bounded_wait(until, "bounded-observation");
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }

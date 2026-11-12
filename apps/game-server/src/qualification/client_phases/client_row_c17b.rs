@@ -12,7 +12,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    if let Err(error) = journey(clients).await {
+    if let Err(error) = verdict::observe(journey(clients)).await {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C17b.client status=FAIL evidence={error}"
         ));

@@ -132,6 +132,7 @@ async fn cast_through_cooldown(
     index: std::num::NonZeroU32,
 ) -> TestResult<oteryn_dev_client::CastOutcome> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
         let outcome = client
             .cast_spell(index, casts::SpellTarget::None, false)
@@ -268,15 +269,19 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
 
 /// The shared observation, computed at most once per process.
 pub(super) async fn observed(clients: &SeamClients<'_>) -> &'static Result<Observed, String> {
-    OBSERVED
+    let result = OBSERVED
         .get_or_init(|| async {
-            match tokio::time::timeout(Duration::from_secs(420), flow(clients)).await {
+            match verdict::indexed_timeout(Duration::from_secs(420), flow(clients)).await {
                 Ok(Ok(value)) => Ok(value),
                 Ok(Err(error)) => Err(error.to_string().replace(' ', "_")),
                 Err(_) => Err("timeout".to_owned()),
             }
         })
-        .await
+        .await;
+    if result.is_err() {
+        verdict::Harness::global().shared_failure("S13-party-observation");
+    }
+    result
 }
 
 pub(super) fn report(row: &str, observed: &Result<Observed, String>, detail: impl FnOnce(&Observed) -> String) {

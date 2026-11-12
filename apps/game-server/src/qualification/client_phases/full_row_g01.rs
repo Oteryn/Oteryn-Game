@@ -20,7 +20,7 @@ const TOWNS: [&str; 5] = ["thais", "carlin", "venore", "edron", "ab_dendriel"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(75), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(75), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",

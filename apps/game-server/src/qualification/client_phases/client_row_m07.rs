@@ -7,7 +7,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    let result = capture(clients).await;
+    let result = verdict::observe(capture(clients)).await;
     if let Err(error) = result {
         evidence(&format!("M07_CLIENT_CAPTURE_ERROR {error}"));
     }

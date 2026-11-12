@@ -189,6 +189,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step 4 combat: missing entry vitals")?
         .health;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
@@ -229,7 +230,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=P12c.full status=PASS seconds={:.3}",

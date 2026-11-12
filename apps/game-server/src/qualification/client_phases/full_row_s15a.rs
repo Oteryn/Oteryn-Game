@@ -143,6 +143,7 @@ async fn require_damage(
     let before = health(client, own)?;
     client.take_events();
     let deadline = tokio::time::Instant::now() + duration;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut frame = false;
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(25)).await?;
@@ -182,7 +183,7 @@ type Verdict = (&'static str, String);
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok((status, detail))) => (status, token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),

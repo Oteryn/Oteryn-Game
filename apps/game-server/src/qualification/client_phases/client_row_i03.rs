@@ -85,7 +85,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("e2e_all scenario=I03.client status=PASS"),
         Ok(Err(error)) => evidence(&format!(

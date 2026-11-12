@@ -98,7 +98,7 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), run(&mut journey, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), run(&mut journey, clients)).await;
     match result {
         Ok(Ok(())) => {}
         Ok(Err(error)) => journey.check(0, false, format!("journey-error:{error}")),

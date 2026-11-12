@@ -29,7 +29,7 @@ fn position(at: TilePos) -> ActorPosition {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("M04.client capture timed out".into()),

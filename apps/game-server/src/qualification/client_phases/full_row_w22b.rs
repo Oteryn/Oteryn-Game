@@ -55,7 +55,7 @@ fn sanitize(value: &str) -> String { value.chars().map(|c| if c.is_whitespace() 
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
     match result {
         Err(_) => row.failures.push("packet-timeout:remaining-steps-not-executed".into()),
         Ok(Err(error)) => row.failures.push(format!("admission:{error}")),

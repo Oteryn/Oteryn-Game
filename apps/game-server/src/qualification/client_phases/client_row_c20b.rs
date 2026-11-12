@@ -63,7 +63,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         return;
     }
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(
+    let result = verdict::indexed_timeout(
         Duration::from_secs(480),
         journey::run_and_capture(clients),
     )

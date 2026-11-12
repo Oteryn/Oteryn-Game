@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::exiva;
 const NEW_MODES: u8 = 0b1_0101;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     match result.unwrap_or_else(|_| Err("C05 client capture timed out".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=C05.client status=PASS evidence=exiva-mode-change-and-player-list",

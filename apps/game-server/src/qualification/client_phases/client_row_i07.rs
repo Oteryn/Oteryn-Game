@@ -6,7 +6,7 @@ use oteryn_protocol_oteryn::quick_loot::{
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(30), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
     let result = result.unwrap_or_else(|_| Err("I07 client capture timed out".into()));
     evidence(&format!(
         "e2e_all scenario=I07.client status={}",

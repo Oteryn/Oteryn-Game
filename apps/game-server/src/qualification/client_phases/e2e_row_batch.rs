@@ -26,11 +26,19 @@ fn e2e_row_selected(index: usize) -> bool {
 
 // A failed row can leave its socket open or its session in loss/grace; the
 // next row must not inherit that state.
-async fn release_row_characters(clients: &SeamClients<'_>) {
+async fn release_row_characters(clients: &SeamClients<'_>) -> TestResult {
+    let mut failure = None;
     for index in 0..clients.accounts.len() {
         if let Err(error) = wait_character_released(clients, index).await {
             evidence(&format!("e2e_row_release account={index} error={error}"));
+            if failure.is_none() {
+                failure = Some(error);
+            }
         }
+    }
+    match failure {
+        Some(error) => Err(error),
+        None => Ok(()),
     }
 }
 

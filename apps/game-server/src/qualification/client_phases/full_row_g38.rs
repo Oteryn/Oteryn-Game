@@ -14,7 +14,7 @@ const SOURCE: &str = "source:apps/client/src/features/0233-touch-controls/input.
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("MISSING-CLIENT", SOURCE.to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),

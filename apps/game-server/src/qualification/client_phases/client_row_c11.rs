@@ -3,7 +3,7 @@
 use super::*;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if let Err(error) = capture(clients).await {
+    if let Err(error) = verdict::observe(capture(clients)).await {
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C11.client status=FAIL evidence={error}"
         ));

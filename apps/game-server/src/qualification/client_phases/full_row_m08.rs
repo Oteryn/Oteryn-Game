@@ -40,7 +40,7 @@ const CASES: [(&str, u32, u16, u16); 6] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(300), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout-after-300s need=responsive-server".into()),

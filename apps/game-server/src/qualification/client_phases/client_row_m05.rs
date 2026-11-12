@@ -144,7 +144,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = journey(clients).await;
+    let result = verdict::observe(journey(clients)).await;
     evidence(&format!(
         "e2e_all scenario=M05.client status={} seconds={:.3}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },

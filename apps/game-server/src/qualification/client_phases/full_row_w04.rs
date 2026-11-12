@@ -78,7 +78,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(190), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(190), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err(
@@ -156,6 +156,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     client.take_events();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(175);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut noticed = false;
     let mut running = None;
     let mut spawned = None;

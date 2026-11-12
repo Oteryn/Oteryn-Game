@@ -29,7 +29,7 @@ const OVENS: [&str; 4] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(120), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "client-inventory-payload-captured".to_owned()),
         Ok(Err(error)) if error.to_string().contains("MISSING-SERVER:") => {

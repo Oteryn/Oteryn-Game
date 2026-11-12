@@ -117,6 +117,7 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(920);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop {
         let reply = client.session_mut().logout().await?;
         match reply.result {
@@ -184,6 +185,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
 
+    verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(780), "offline-recovery");
     tokio::time::sleep(Duration::from_secs(780)).await;
     let mut fresh = connect_world(clients, 0xc6).await?;
     if fresh.join_snapshot().game_session_id == first_session {
@@ -202,7 +204,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(1_800), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(1_800), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err("C15 journey deadline after a real native lifecycle attempt".into()),

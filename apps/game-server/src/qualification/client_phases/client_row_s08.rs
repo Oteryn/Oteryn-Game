@@ -33,8 +33,8 @@ async fn poll(a: &mut DevClientSession, b: &mut DevClientSession) -> TestResult 
     Ok(())
 }
 
-async fn observe(clients: &SeamClients<'_>) -> Result<(Vec<u8>, String), String> {
-    flow(clients).await.map_err(|e| e.to_string().replace(' ', "_"))
+async fn observe(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
+    flow(clients).await
 }
 
 async fn flow(clients: &SeamClients<'_>) -> TestResult<(Vec<u8>, String)> {
@@ -180,7 +180,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match observe(clients).await {
+    match verdict::observe(observe(clients)).await {
         Ok((payload, expected)) => {
             if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
                 let root = Path::new(&root);

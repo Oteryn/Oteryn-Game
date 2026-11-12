@@ -77,7 +77,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(240), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step=journey observed=timeout need=responsive-party-spell-server".into())

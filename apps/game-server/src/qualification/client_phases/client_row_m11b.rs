@@ -12,7 +12,7 @@ const ROPE_TOPS: &[u32] = &[12935];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     let status = match result {
         Ok(Ok(())) => "PASS",
         Ok(Err(error)) => { evidence(&format!("M11B_CLIENT_GAP observed={error}")); "FAIL" }

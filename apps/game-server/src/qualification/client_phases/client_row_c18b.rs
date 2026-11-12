@@ -14,7 +14,7 @@ const SPELLS: [&str; 5] = [
 ];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = tokio::time::timeout(Duration::from_secs(90), capture(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(capture(clients))).await;
     match result {
         Ok(Ok(())) => evidence(
             "SEAM_EVIDENCE e2e_all scenario=C18b.client status=PASS evidence=real-position-cast-payloads",

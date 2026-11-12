@@ -6,7 +6,7 @@ use oteryn_protocol_oteryn::death_protection::{
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = capture(clients).await;
+    let result = verdict::observe(capture(clients)).await;
     let (status, evidence_value) = match result {
         Ok(visible) => ("PASS", visible),
         Err(error) => ("FAIL", error.to_string()),

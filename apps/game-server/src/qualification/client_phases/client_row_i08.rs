@@ -111,7 +111,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         return;
     };
     let started = std::time::Instant::now();
-    let result = journey(clients, Path::new(&path)).await;
+    let result = verdict::observe(journey(clients, Path::new(&path))).await;
     evidence(&format!(
         "e2e_all scenario=I08.client status={} seconds={:.3} evidence={}",
         if result.is_ok() { "PASS" } else { "FAIL" },

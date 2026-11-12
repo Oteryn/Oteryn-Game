@@ -70,7 +70,7 @@ struct MapObject {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(600), journey(&mut row, clients))
         .await
         .unwrap_or_else(|_| {
             Err("step deadline: M09 journey exceeded 600s; last server reply unavailable".into())

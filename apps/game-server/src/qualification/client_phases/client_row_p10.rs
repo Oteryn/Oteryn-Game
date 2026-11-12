@@ -49,7 +49,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match tokio::time::timeout(Duration::from_secs(120), journey(clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=P10.client status=MISSING-CLIENT evidence={observed};searched=crates/session,crates/client-ui/src/features/0182-daily-reward,crates/client-runtime/src/features/*daily-reward*,tools/dev-client,apps/client/src/features/0182-daily-reward;gap=resting_regen_needs_seven_epoch_streak_not_reachable_in_run"
         )),

@@ -16,7 +16,7 @@ const SOURCE: &str = "source:docs/contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md:
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("MISSING-SERVER", SOURCE.to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),

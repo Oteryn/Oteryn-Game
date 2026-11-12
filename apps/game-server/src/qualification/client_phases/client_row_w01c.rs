@@ -75,7 +75,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match tokio::time::timeout(Duration::from_secs(240), journey(clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W01c.client status=CAPTURED evidence={:?}",
             expected.replace('\n', ";")

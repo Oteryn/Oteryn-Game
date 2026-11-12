@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(300), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -281,6 +281,7 @@ async fn buy(
 
 async fn wait_for(client: &mut DevClientSession, window: Duration) -> TestResult<()> {
     let deadline = tokio::time::Instant::now() + window;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(100)).await?;
     }

@@ -198,6 +198,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     evidence("W10_CHECK step=3 status=PASS reply=ATTACK_OK combat-delta=present");
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while client
         .world_entities()
         .is_some_and(|entities| entities.iter().any(|entity| entity.entity == target.entity))
@@ -355,7 +356,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W10.full status=PASS seconds={:.3}",

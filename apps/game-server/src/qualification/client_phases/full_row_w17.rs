@@ -86,7 +86,7 @@ fn compact(detail: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = tokio::time::timeout(Duration::from_secs(240), run(&mut journey, clients))
+    let result = verdict::indexed_timeout(Duration::from_secs(240), run(&mut journey, clients))
         .await
         .unwrap_or_else(|_| Err(format!("step-{}-timeout waiting for native arena reply", journey.completed + 1).into()));
     journey.finish(result);

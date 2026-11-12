@@ -104,7 +104,7 @@ fn token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await {
+    let result = match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
         Err(_) => Err("journey-timeout-420s-without-server-reply".into()),
     };

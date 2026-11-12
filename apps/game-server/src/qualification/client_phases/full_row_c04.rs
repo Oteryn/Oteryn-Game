@@ -374,7 +374,7 @@ async fn journey(
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result: TestResult = async {
+    let result: TestResult = verdict::observe(async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
         let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -384,13 +384,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             WorldId::decode(&clients.world)?,
             ChannelId::decode(&clients.channel)?,
         )?;
-        tokio::time::timeout(
+        verdict::indexed_timeout(
             Duration::from_secs(120),
             journey(&mut row, clients, world, &metadata.spawns),
         )
         .await
         .map_err(|_| "C04 journey deadline after real player commands")?
-    }
+    })
     .await;
     row.finish(result);
 }

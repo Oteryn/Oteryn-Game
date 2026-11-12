@@ -109,7 +109,7 @@ fn token(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    match tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await {
+    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await {
         Ok(Ok(())) => {}
         Ok(Err(error)) => row.fail("journey", error),
         Err(_) => row.fail("journey", "timeout-180s"),

@@ -75,7 +75,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(360), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result { Ok(result) => result, Err(_) => Err("step deadline: no server reply within 360s; need the server to complete the pending NPC/travel command".into()) });
 }
 
@@ -223,6 +223,7 @@ async fn earn(
         })
         .collect();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while carried_gold(client)? < needed {
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("step earn-fare: combat/loot budget expired; observed carried_gold={}, required={needed}; need sufficient authored player-obtainable loot", carried_gold(client)?).into());

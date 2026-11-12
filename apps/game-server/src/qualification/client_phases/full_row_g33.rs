@@ -10,7 +10,7 @@ use super::*;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(60), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => detail,
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -80,7 +80,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(&'static str, String)
     let (status, detail) = seasonal_verdict(&events);
     Ok((
         status,
-        format!("{detail};epoch={epoch};activated-date={month:02}-{day:02}"),
+        format!("{detail}-epoch-{epoch}-activated-date-{month:02}-{day:02}"),
     ))
 }
 

@@ -142,6 +142,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<Vec<ItemEntr
         return Err(format!("step-2-attack-refused-observed={reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
     let mut last_position = target.position;
     let corpse = loop {
@@ -307,7 +308,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(480), journey(&mut row, clients)).await {
+    let result = match verdict::indexed_timeout(Duration::from_secs(480), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
         Err(_) => Err("journey-timeout-observed-before-full-lifecycle".into()),
     };

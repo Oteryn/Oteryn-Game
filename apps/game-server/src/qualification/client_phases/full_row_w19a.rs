@@ -57,6 +57,7 @@ async fn earn_price(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while carried_gold(client)? < 160 {
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -348,7 +349,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W19a.full status=PASS seconds={:.3}",

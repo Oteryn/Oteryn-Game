@@ -69,7 +69,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 0,
     };
-    let result = tokio::time::timeout(Duration::from_secs(420), journey(&mut row, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("timeout-after-step-{}", row.step).into()),
@@ -153,6 +153,7 @@ async fn earn_gold(
             .sum())
     };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while value(client)? < needed {
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(

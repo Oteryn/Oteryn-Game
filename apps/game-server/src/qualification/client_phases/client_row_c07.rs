@@ -207,6 +207,7 @@ async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestRe
 }
 async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present {
         capture_map_delta(&delta, present);
         return Ok(delta.server_sequence);

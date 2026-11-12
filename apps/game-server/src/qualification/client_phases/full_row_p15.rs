@@ -61,7 +61,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         failure: None,
     };
     let result =
-        tokio::time::timeout(Duration::from_secs(90), journey(&mut verdict, clients)).await;
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(&mut verdict, clients))).await;
     if let Err(error) = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline; observed=timeout; need=responsive exercise owner".into()),

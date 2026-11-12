@@ -21,7 +21,7 @@ const OBELISK_KEY: &str = "oteryn:item.tibia.i47367";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(150), journey(clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
     let detail = match result {
         Ok(Ok(observed)) => {
             format!("needed:soul-core-in-custody-for-fight-entry;observed={observed}")

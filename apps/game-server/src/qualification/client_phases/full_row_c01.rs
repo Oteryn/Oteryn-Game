@@ -54,7 +54,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match tokio::time::timeout(Duration::from_secs(900), journey(&mut row, clients)).await {
+    let result = match verdict::indexed_timeout(Duration::from_secs(900), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout need=responsive-combat-lifecycle".into()),
     };

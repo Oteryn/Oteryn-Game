@@ -14,7 +14,7 @@ use oteryn_protocol_oteryn::condition_status::{
 const PARALYSED_ICON: u8 = 14;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    let result = tokio::time::timeout(Duration::from_secs(240), journey(clients, world)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients, world))).await;
     match result.unwrap_or_else(|_| Err("C16b.client journey timeout".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=C16b.client status=PASS evidence=paralyze-condition-status-reply",
