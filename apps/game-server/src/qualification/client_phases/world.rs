@@ -5,6 +5,9 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+#[path = "general_stats.rs"]
+mod general_stats;
+
 include!("character_core.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
