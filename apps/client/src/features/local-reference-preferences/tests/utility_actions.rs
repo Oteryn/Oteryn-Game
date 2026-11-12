@@ -65,7 +65,9 @@ fn n022_session_utilities_use_existing_callers() -> Result<(), Box<dyn std::erro
     };
     lock(&link.mailbox).chat.lines = vec![line("old"), line("new")];
     assert!(settings.run_utility(&link, UtilityAction::ClearOldestMessage));
-    assert_eq!(lock(&link.mailbox).chat.lines, vec![line("new")]);
+    assert_eq!(commands.try_recv()?, PlayCommand::ChatClearOldest);
+    // The Session owner clears history; this caller only queues its request.
+    assert_eq!(lock(&link.mailbox).chat.lines, vec![line("old"), line("new")]);
 
     lock(&link.mailbox)
         .chat
@@ -82,9 +84,14 @@ fn n022_session_utilities_use_existing_callers() -> Result<(), Box<dyn std::erro
             .is_some_and(|text| text.contains("Pest"))
     );
 
-    let shown = lock(&link.mailbox).chat.console.show_messages;
+    let transcript_shown = lock(&link.mailbox).chat.console.show_messages;
+    let shown = lock(&link.mailbox).chat.console.show_server_messages;
     assert!(settings.run_utility(&link, UtilityAction::ToggleServerMessages));
-    assert_eq!(lock(&link.mailbox).chat.console.show_messages, !shown);
+    assert_eq!(lock(&link.mailbox).chat.console.show_server_messages, !shown);
+    assert_eq!(
+        lock(&link.mailbox).chat.console.show_messages,
+        transcript_shown
+    );
 
     assert!(!settings.run_utility(&link, UtilityAction::QuickLootArea));
     lock(&link.mailbox).discovery.loot.selected = true;

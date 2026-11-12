@@ -109,3 +109,28 @@ Formatting, locked metadata, governance validation and its 129 tests, and diff
 checks pass for this composition. No full native or runtime pass is claimed.
 The new combined candidate requires its own runner results; #3115 must land
 before #3098, with accepted-main composition and post-merge gates still required.
+
+## Utility caller fixture repair after native execution
+
+The native tests 3/3 job 131117755857 on composed head
+5f117b87bf4e8090dec896151beef0f3f8b1c316 completed 3,781 tests with one
+failure in `n022_session_utilities_use_existing_callers`. Its old assertion
+expected Clear Oldest Message to mutate the mailbox projection immediately,
+although the repaired production caller queues a Session-owner command. The
+same fixture also retained the old Toggle Server Messages assertion against
+the general player-chat filter; the first panic had prevented reaching it.
+
+The caller fixture now requires the actual `ChatClearOldest` request, retains
+both old/new projected lines until the owner processes it, toggles the separate
+server-notice flag, and requires the player transcript flag to stay unchanged.
+It consumes that exact request before the existing QuickLoot command assertion.
+The owner-effect assertion belongs to the existing Session/chat integration
+regressions, rather than a fake fixture pop. No production behavior changes.
+All Clear Oldest/Toggle Server Messages fixture references were swept together.
+
+A lightweight probe compiled the actual utility-action body and the two affected
+fixture fragments with bounded shell collaborators. Both stale assertions failed
+before this repair; both corrected caller contracts passed afterward. This probe
+does not execute the real Session/chat loop and is not a new native runtime pass.
+The full chat-loop regression's runner result remains unconfirmed here; final
+composition requires its own native/Windows, PostgreSQL and Node CI evidence.
