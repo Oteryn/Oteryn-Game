@@ -685,6 +685,15 @@ fn scenario(case: Case) -> TestResult {
                 SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
             }
             .ok_or("Atelier capabilities")?;
+        if matches!(case, Case::Reshape) {
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::v2::CAPABILITY_GEM_ATELIER_V2),
+                "the real bundle offer must negotiate Atelier v2 before the first request"
+            );
+        }
         if matches!(case, Case::Resources) {
             assert!(admitted.continuity.selected_capabilities.contains(148));
             assert!(admitted.continuity.selected_capabilities.contains(272));

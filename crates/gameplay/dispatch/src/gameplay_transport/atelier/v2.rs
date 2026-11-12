@@ -20,10 +20,6 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .selected_capabilities
             .contains(wire::CAPABILITY_GEM_ATELIER_V2)
         {
-            #[cfg(test)]
-            if kind == wire::COMMAND_TYPE_ATELIER_V2_RESHAPE {
-                super::trace_reshape_qualification("v2=cap483_unselected");
-            }
             return AtelierWireReply::Rejected;
         }
         // Lock and paid requests carry the v1 bytes and run through the one Atelier writer.
@@ -45,8 +41,6 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             }
             wire::COMMAND_TYPE_ATELIER_V2_RESHAPE => {
                 let Ok(request) = wire::decode_reshape(payload) else {
-                    #[cfg(test)]
-                    super::trace_reshape_qualification("v2=reshape_decode_refused");
                     return AtelierWireReply::Rejected;
                 };
                 (v1::COMMAND_TYPE_ATELIER_MUTATE, None, Some(request))
@@ -150,20 +144,14 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .selected_capabilities
             .contains(v1::CAPABILITY_WHEEL_ALLOCATION_V1)
         {
-            #[cfg(test)]
-            super::trace_reshape_qualification("reshape=cap148_unselected");
             return AtelierWireReply::Rejected;
         }
         let (Some(expected), Some(actor)) = (admitted.item_fence, admitted.runtime_actor) else {
-            #[cfg(test)]
-            super::trace_reshape_qualification("reshape=actor_or_fence_absent");
             return AtelierWireReply::Rejected;
         };
         if expected.game_session_id != admitted.game_session_id
             || expected.connection_generation.get() != admitted.continuity.connection_generation
         {
-            #[cfg(test)]
-            super::trace_reshape_qualification("reshape=session_or_connection_mismatch");
             return AtelierWireReply::Rejected;
         }
         let in_temple = crate::gameplay_transport::wheel_allocation::removal_permitted(
@@ -179,11 +167,6 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         // a replay probe, so a committed occurrence whose reply was lost replays its receipt
         // after Premium lapsed or combat began.
         let refused = reshape::admitted(in_temple, read.premium_permitted).is_err();
-        #[cfg(test)]
-        super::trace_reshape_qualification(&format!(
-            "reshape_preflight in_temple={in_temple} premium={} replay_only={refused}",
-            read.premium_permitted,
-        ));
         let request = Some(crate::durability::character_atelier::AtelierRequest {
             occurrence: request.occurrence,
             expected_atelier_revision: request.expected_revision,

@@ -249,19 +249,6 @@ where
     {
         session.target_walk = None;
     }
-    #[cfg(test)]
-    if command.command_type == oteryn_protocol_oteryn::atelier::v2::COMMAND_TYPE_ATELIER_V2_RESHAPE
-    {
-        crate::gameplay_transport::atelier::trace_reshape_qualification(&format!(
-            "outer_dispatch input_permit={} command_selected={}",
-            input_permit.is_some(),
-            session
-                .admitted
-                .continuity
-                .selected_capabilities
-                .command_selected(command.command_type),
-        ));
-    }
     let mut dispatch = if let Some(outcome) = retained_bank {
         Dispatch::Npc(
             outcome.disposition,

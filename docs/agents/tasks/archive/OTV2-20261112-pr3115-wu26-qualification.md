@@ -27,6 +27,11 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/atelier.rs
   - crates/gameplay/dispatch/src/gameplay_transport/atelier/v2.rs
   - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/command.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/capability_offers_golden_tests.rs
+  - crates/protocol-oteryn/capabilities/0483-gem-atelier-v2.json
+  - crates/protocol-oteryn/src/tests/capabilities_golden/0483-gem-atelier-v2.json
+  - docs/contracts/protocol-oteryn/v1/gem-atelier-v2-v1.md
+  - docs/contracts/protocol-oteryn/v1/registry/capabilities/0483-gem-atelier-v2.json
   - docs/agents/tasks/archive/OTV2-20261112-pr3115-wu26-qualification.md
 ```
 
@@ -109,11 +114,11 @@ cases failed. Their complete logs were collected before this next generation:
   the energy/holy assertions and the production cap.
 - The first non-Premium command-6214 step returned outer Rejected instead of its
   required Accepted refusal payload in two independent existing compositions.
-  Its exact rejecting branch is still UNKNOWN. Temporary cfg(test)-only
-  DBG-PR3115-6214 markers attribute outer permit/selection, decoder/fence, runtime
+  Its exact rejecting branch was not yet known at that freeze. Temporary cfg(test)-only
+  DBG-PR3115-6214 markers attributed outer permit/selection, decoder/fence, runtime
   predicate and commit-error branches without changing their return conditions.
-  They must be removed after a matched diagnosis and before final integration.
-  This is a diagnostic qualification candidate, not a claim that this case is
+  They were removed after the matched diagnosis below. That generation was a
+  diagnostic qualification candidate, not a claim that this case was
   repaired or that a failing candidate may merge.
 - The Activity cancellation case failed at its initial entry COMMIT, before the
   cancellation barrier, with an indeterminate outcome after 2001 milliseconds.
@@ -129,3 +134,44 @@ evidence, not execution of the complete Rust scenarios. Formatting, locked
 metadata, governance and whitespace checks are repeated on the successor. The
 unchanged Quest source is not rebuilt locally. Final native/PostgreSQL/Node
 checks remain with GitHub runners, and the unresolved cases remain explicit.
+
+## Matched capability-offer repair and diagnostic removal
+
+Composed client head `5f117b87`, PostgreSQL 12 job `131123799450`, reported the exact
+outer predicate: input_permit=true, command_selected=false. Its 42 E2E tests
+passed; 204 of 205 library tests passed and the sole failure was the 6214 case.
+The decoder, runtime and durable Atelier owner had not been reached.
+
+The real registry 483 had every offer profile disabled and no dynamic offer
+hook. Fresh negotiation therefore silently discarded 483 despite support for
+148 and 483. The paired native client implements both the capability allowlist
+and Vessel/Reshape callers. All 17 changed capability fragments were checked:
+the only other all-false fragment, 182, already has its independent dynamic
+Daily Reward offer hook and is unchanged.
+
+Capability 483 is now offered only by bundle Worlds, retaining requirement 148,
+the false production/item-view profiles and the contract's legacy offered=false
+field. Existing 148 clients do not select 483 or gain its commands. The owning
+contract now describes the implemented optional bundle/client path. The one
+runtime golden was regenerated with `tools/contracts/update_capability_golden.py`;
+no generated table or aggregate was hand-edited.
+
+A new focused regression drives the actual SelectedCapabilities methods and all
+five 6210..6214 command gates, legacy/missing-parent refusals, both non-bundle
+profiles and the complete 137-capability bundle selection against capacity 160.
+The lightweight probe compiles and runs the actual current protocol build.rs and
+build_capabilities.rs against cached serde_json, then compiles the generated
+tables, actual selection code/constants and that regression. It reproduced
+RED ([148] instead of [148,483]) before the flag change and passed GREEN afterward.
+This proves negotiation and command gating, not the complete native wire/SQL
+scenario. The real 6214 scenario additionally asserts negotiated 483 before its
+first request; its strict refusal, burn, fee and replay assertions are unchanged.
+
+All temporary DBG-PR3115-6214 code was removed. The three diagnostic source files
+are byte-identical to their pre-diagnostic `f5d051b8` content. Earlier batch evidence
+now includes server PG11/23 passes and client PG14/23 passes for the confirmed
+identity, capped-token and Templar fixtures. Those results belong to their exact
+earlier heads, not this repair. Activity's earlier indeterminate COMMIT remains
+unexplained unless the new exact-head results classify it; no retry or waiver is
+introduced. Independent repair-delta review and final native/PostgreSQL/Node CI
+remain required before integration.
