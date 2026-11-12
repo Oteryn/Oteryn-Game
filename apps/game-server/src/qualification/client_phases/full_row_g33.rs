@@ -1,15 +1,12 @@
 //! G33: seasonal Cake and Santa (W05d). Both producers are gated by committed annual windows
 //! in `content/encounters/event-schedule/schedule.json`: piece_of_cake Feb 21 to Feb 27 and
 //! christmas Dec 12 to Dec 31 (end exclusive). The server evaluates them on the reset epoch's
-//! calendar (`crates/gameplay/foundation/src/scheduled_events.rs`), i.e. the wall clock.
+//! immutable Europe/Berlin activated_at decision, retained across restart and clock passage.
 //! 1. Admit the node-boot character and log out (proves the run can reach the world).
-//! 2. Outside both windows the mechanic is closed by content: SKIPPED with `content:`.
-//!    Inside a window the Cake extraction spot and the Santa NPC dialogue need scripted
-//!    placement that no player route provides in this run: FAIL with `needed:`.
+//! 2. Read the active epoch's persisted seasonal keys through read-only evidence SQL.
+//! 3. Only a verified closed server-active decision is content SKIPPED. Missing/unknown
+//!    decisions and active seasons without scripted Cake/Santa placements remain FAIL.
 use super::*;
-
-/// Annual windows (month, day) start inclusive, end exclusive, from the committed schedule.
-const WINDOWS: [((u32, u32), (u32, u32)); 2] = [((2, 21), (2, 27)), ((12, 12), (12, 31))];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -29,22 +26,21 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-/// Civil (month, day) of a unix time in UTC (days-from-civil inverse).
-fn month_day(unix_secs: u64) -> (u32, u32) {
-    let z = i64::try_from(unix_secs / 86_400).unwrap_or(0) + 719_468;
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let day = u32::try_from(doy - (153 * mp + 2) / 5 + 1).unwrap_or(1);
-    let month = u32::try_from(if mp < 10 { mp + 3 } else { mp - 9 }).unwrap_or(1);
-    (month, day)
-}
-
-fn in_window(date: (u32, u32)) -> bool {
-    WINDOWS
+fn seasonal_verdict(events: &[String]) -> (&'static str, String) {
+    if events
         .iter()
-        .any(|(start, end)| date >= *start && date < *end)
+        .any(|key| matches!(key.as_str(), "piece_of_cake" | "christmas"))
+    {
+        (
+            "FAIL",
+            "needed:scripted-cake-extraction-spot-and-santa-npc-placement".to_owned(),
+        )
+    } else {
+        (
+            "SKIPPED",
+            "content:server-active-seasonal-window-closed".to_owned(),
+        )
+    }
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<(&'static str, String)> {
@@ -55,21 +51,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(&'static str, String)
     {
         return Err("step=logout;observed=refused".into());
     }
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_secs();
-    let (month, day) = month_day(now);
-    if in_window((month, day)) {
-        Ok((
-            "FAIL",
-            "needed:scripted-cake-extraction-spot-and-santa-npc-placement".to_owned(),
-        ))
-    } else {
-        Ok((
-            "SKIPPED",
-            format!("content:annual-windows-feb21-27-and-dec12-31-closed-at-{month:02}-{day:02}"),
-        ))
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let decision: Option<(String, i16, Vec<String>, i16, i16)> = sqlx::query_as(
+        "SELECT a.reset_epoch::text,e.seasonal_calendar_revision,e.seasonal_event_keys, \
+         extract(month FROM r.activated_at AT TIME ZONE 'Europe/Berlin')::smallint, \
+         extract(day FROM r.activated_at AT TIME ZONE 'Europe/Berlin')::smallint \
+         FROM game_world_reset_active a JOIN game_world_reset_epochs r USING(world_id,reset_epoch) \
+         JOIN game_world_event_epochs e USING(world_id,reset_epoch) \
+         WHERE a.world_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.world.as_slice())
+    .fetch_optional(&mut connection)
+    .await?;
+    let (epoch, revision, events, month, day) =
+        decision.ok_or("step=seasonal observed=missing-active-seasonal-decision")?;
+    if revision != 1 {
+        return Err(format!("step=seasonal observed=epoch-{epoch}-calendar-revision-{revision} needed=committed-seasonal-calendar-v1").into());
     }
+    let month = u8::try_from(month)?;
+    let day = u8::try_from(day)?;
+    let expected =
+        oteryn_gameplay_foundation::scheduled_events::content_schedule().seasonal_at(month, day);
+    if events.iter().map(String::as_str).collect::<Vec<_>>() != expected {
+        return Err(
+            format!("step=seasonal observed=epoch-{epoch}-decision-calendar-mismatch").into(),
+        );
+    }
+    let (status, detail) = seasonal_verdict(&events);
+    Ok((
+        status,
+        format!("{detail};epoch={epoch};activated-date={month:02}-{day:02}"),
+    ))
 }
 
 #[cfg(test)]
@@ -77,14 +89,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn month_day_matches_known_dates() {
-        assert_eq!(month_day(0), (1, 1));
-        assert_eq!(month_day(1_773_000_000), (3, 8));
-        assert_eq!(month_day(1_794_268_800), (11, 10));
+    fn active_epoch_seasonal_keys_control_verdict_instead_of_process_date() {
+        for season in ["piece_of_cake", "christmas"] {
+            assert_eq!(seasonal_verdict(&[season.into()]).0, "FAIL");
+        }
+        let closed = seasonal_verdict(&["halloween".into()]);
+        assert_eq!(closed.0, "SKIPPED");
+        assert!(
+            closed
+                .1
+                .starts_with("content:server-active-seasonal-window-closed")
+        );
+        assert_eq!(seasonal_verdict(&[]).0, "SKIPPED");
     }
 
     #[test]
     fn windows_are_start_inclusive_end_exclusive() {
+        let in_window = |(month, day)| {
+            let events = oteryn_gameplay_foundation::scheduled_events::content_schedule()
+                .seasonal_at(month, day)
+                .into_iter()
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            seasonal_verdict(&events).0 == "FAIL"
+        };
         assert!(in_window((2, 21)) && in_window((2, 26)) && !in_window((2, 27)));
         assert!(in_window((12, 12)) && in_window((12, 30)) && !in_window((12, 31)));
         assert!(!in_window((11, 10)));

@@ -3,9 +3,9 @@
 //! 2. Walk to the production daily shrine and USE it so the claim is enabled.
 //! 3. Query the picker (6122): on a pick day it offers items and a maximum count.
 //! 4. Claim a pick (6123); the reply must be the "new" disposition and the character's durable
-//!    item quantity (read-only SQL) must rise by exactly the picked count.
+//!    claim-bound Inbox/pick quantity (read-only SQL) must equal the picked count.
 //! 5. Claim again: duplicate disposition, no further delivery. Log out, freshly admit and
-//!    re-check the durable quantity and that the picker offers nothing more.
+//!    re-check the same transaction, Inbox/pick proof and exhausted picker.
 //!
 //! The row fails when the day was already claimed (it shares the character with P09) or when the
 //! current lane day is not a pick day; it never alters server state outside player commands.
@@ -108,15 +108,57 @@ async fn wall(client: &mut DevClientSession) -> TestResult<daily::DailyRewardWal
     }
 }
 
-async fn units(clients: &SeamClients<'_>, tibia: u32) -> TestResult<i64> {
+/// Read-only evidence of the receipt and every selected output of this exact claim.
+#[derive(Debug)]
+struct ClaimEvidence {
+    transaction: [u8; 16],
+    epoch: u64,
+    day: u8,
+    item: u32,
+    count: u8,
+    proof: (i64, i64, i64, i64),
+}
+
+async fn claim_count(clients: &SeamClients<'_>, epoch: u64) -> TestResult<i64> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     Ok(sqlx::query_scalar(
-        "SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2",
-    )
-    .bind(clients.characters[0].as_slice())
-    .bind(format!("oteryn:item.tibia.i{tibia}"))
-    .fetch_one(&mut connection)
-    .await?)
+        "SELECT count(*) FROM game_character_daily_reward_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND reset_epoch=$3::text::numeric",
+    ).bind(clients.characters[0].as_slice()).bind(clients.world.as_slice())
+        .bind(epoch.to_string()).fetch_one(&mut connection).await?)
+}
+
+async fn delivery(
+    clients: &SeamClients<'_>,
+    data: &ClaimEvidence,
+) -> TestResult<(i64, i64, i64, i64)> {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    // The epoch receipt binds the returned transaction to this character/world/day.
+    // Picks bind each selected instance; custody, lifecycle and mint provenance must all agree.
+    Ok(sqlx::query_as(
+        "SELECT COALESCE(sum(p.quantity),0)::bigint, \
+         COALESCE(sum(i.quantity) FILTER (WHERE i.lifecycle=1 AND i.minted_transaction_id=c.transaction_id AND b.character_id=c.character_id AND l.character_id=c.character_id),0)::bigint, \
+         (SELECT count(*) FROM game_daily_reward_picks outputs WHERE outputs.claim_id=encode($4,'hex')::uuid), \
+         (SELECT COALESCE(sum(minted.quantity),0)::bigint FROM game_daily_reward_picks outputs JOIN game_item_instances minted USING(item_instance_id) WHERE outputs.claim_id=encode($4,'hex')::uuid) \
+         FROM game_character_daily_reward_claims c \
+         JOIN game_daily_reward_picks p ON p.claim_id=c.transaction_id AND p.source_id=$6 \
+         LEFT JOIN game_item_instances i ON i.item_instance_id=p.item_instance_id AND i.world_id=c.world_id AND i.definition_production_key=$7 \
+         LEFT JOIN game_item_bindings b ON b.item_instance_id=i.item_instance_id AND b.world_id=c.world_id \
+         LEFT JOIN game_item_character_inbox_locations l ON l.item_instance_id=i.item_instance_id AND l.world_id=c.world_id \
+         WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.reset_epoch=$3::text::numeric AND c.transaction_id=encode($4,'hex')::uuid AND c.lane_day=$5",
+    ).bind(clients.characters[0].as_slice()).bind(clients.world.as_slice())
+        .bind(data.epoch.to_string()).bind(data.transaction.as_slice()).bind(i16::from(data.day))
+        .bind(i64::from(data.item)).bind(format!("oteryn:item.tibia.i{}", data.item))
+        .fetch_one(&mut connection).await?)
+}
+
+fn claim_result(payload: &[u8]) -> TestResult<daily::DailyRewardResult> {
+    use oteryn_dev_client::client_runtime::daily_reward::{
+        DailyRewardCommand, DailyRewardReply, decode_reply,
+    };
+    match decode_reply(DailyRewardCommand::Claim, payload)? {
+        DailyRewardReply::Result(value) => Ok(value),
+        observed => Err(format!("step=claim observed={observed:?}").into()),
+    }
 }
 
 fn shrine_tile(world: &BundleWorld, start: TilePos) -> TestResult<TilePos> {
@@ -156,7 +198,7 @@ async fn body(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
-) -> TestResult<(u32, i64)> {
+) -> TestResult<ClaimEvidence> {
     let table = accepted(client, CAPABILITY, details::COMMAND_TYPE, &[]).await?;
     let table = details::Details::decode(&table)?;
     let initial = wall(client).await?;
@@ -201,7 +243,11 @@ async fn body(
         .find(|item| *item != 0)
         .ok_or("step=picker observed=no-offered-item")?;
     let count = offer.maximum;
-    let before = units(clients, item).await?;
+    if claim_count(clients, offer.epoch).await? != 0 {
+        return Err(
+            "step=claim observed=preexisting-epoch-receipt needed=fresh-entitlement".into(),
+        );
+    }
     let claim = picker::Claim {
         epoch: offer.epoch,
         day: offer.day,
@@ -209,30 +255,60 @@ async fn body(
     }
     .encode()?;
     let reply = accepted(client, CAPABILITY, picker::CLAIM, &claim).await?;
-    if reply.first() != Some(&1) {
-        return Err(format!("step=claim observed=reply:{reply:?} needed=new-disposition").into());
+    let result = claim_result(&reply)?;
+    if result.disposition != 1 {
+        return Err(format!("step=claim observed={result:?} needed=new-disposition").into());
     }
-    let after = units(clients, item).await?;
-    if after != before + i64::from(count) {
-        return Err(format!("step=claim observed=units:{before}->{after} needed=+{count}").into());
+    let mut data = ClaimEvidence {
+        transaction: result
+            .transaction_id
+            .ok_or("step=claim observed=no-transaction")?,
+        epoch: offer.epoch,
+        day: offer.day,
+        item,
+        count,
+        proof: (0, 0, 0, 0),
+    };
+    data.proof = delivery(clients, &data).await?;
+    if claim_count(clients, data.epoch).await? != 1
+        || data.proof.0 != i64::from(count)
+        || data.proof.1 != i64::from(count)
+    {
+        return Err(format!(
+            "step=claim observed=proof:{:?} needed=claim-bound-pick-and-Inbox-quantity-{count}",
+            data.proof
+        )
+        .into());
     }
     if !wall(client).await?.claimed {
         return Err("step=claim observed=wall-not-claimed".into());
     }
     let reply = accepted(client, CAPABILITY, picker::CLAIM, &claim).await?;
-    if reply.first() != Some(&2) || units(clients, item).await? != after {
-        return Err(format!("step=duplicate observed=reply:{reply:?}-or-units-changed").into());
+    let duplicate = claim_result(&reply)?;
+    if duplicate.disposition != 2
+        || duplicate.transaction_id.is_some()
+        || claim_count(clients, data.epoch).await? != 1
+        || delivery(clients, &data).await? != data.proof
+    {
+        return Err(
+            format!("step=duplicate observed={duplicate:?}-or-claim-Inbox-proof-changed").into(),
+        );
     }
-    Ok((item, after))
+    Ok(data)
 }
 
 async fn verify(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    data: &(u32, i64),
+    data: &ClaimEvidence,
 ) -> TestResult {
-    if units(clients, data.0).await? != data.1 || !wall(client).await?.claimed {
-        return Err("step=relog observed=units-or-wall-lost".into());
+    if claim_count(clients, data.epoch).await? != 1
+        || delivery(clients, data).await? != data.proof
+        || data.proof.0 != i64::from(data.count)
+        || data.proof.1 != i64::from(data.count)
+        || !wall(client).await?.claimed
+    {
+        return Err("step=relog observed=claim-Inbox-proof-or-wall-lost".into());
     }
     let offer = accepted(client, CAPABILITY, picker::QUERY, &[]).await?;
     if picker::Offer::decode(&offer)?.maximum != 0 {
@@ -274,5 +350,27 @@ mod tests {
         );
         assert!(!compact(&"x ".repeat(500)).contains(' '));
         assert!(compact(&"y".repeat(900)).len() <= 400);
+    }
+
+    #[test]
+    fn claim_result_uses_tagged_shared_payload_and_transaction_provenance() -> TestResult {
+        let mut id = [1; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let claimed = daily::DailyRewardResult {
+            disposition: 1,
+            transaction_id: Some(id),
+        };
+        let payload = claimed.encode()?;
+        assert_eq!(payload.first(), Some(&0x08));
+        assert_eq!(claim_result(&payload)?, claimed);
+        let duplicate = daily::DailyRewardResult {
+            disposition: 2,
+            transaction_id: None,
+        };
+        assert_eq!(claim_result(&duplicate.encode()?)?, duplicate);
+        assert!(claim_result(&[1]).is_err());
+        assert!(claim_result(&[0x08, 1]).is_err());
+        Ok(())
     }
 }
