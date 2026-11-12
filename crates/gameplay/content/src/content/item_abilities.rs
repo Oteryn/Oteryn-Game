@@ -875,19 +875,21 @@ mod elemental_protection_tests {
             numerator: 4,
             denominator: 1,
         };
-        let mut item = ReferenceItemSemantics::default();
-        item.protection = ReferenceItemField::Known(ReferenceItemProtection {
-            armor: ReferenceItemField::Unknown,
-            resistances: ReferenceItemField::Known(
-                [Kind::Fire, Kind::Ice, Kind::Earth, Kind::Energy]
-                    .into_iter()
-                    .map(|kind| ReferenceResistance {
-                        kind,
-                        percent: ReferenceItemField::Known(percent),
-                    })
-                    .collect(),
-            ),
-        });
+        let item = ReferenceItemSemantics {
+            protection: ReferenceItemField::Known(ReferenceItemProtection {
+                armor: ReferenceItemField::Unknown,
+                resistances: ReferenceItemField::Known(
+                    [Kind::Fire, Kind::Ice, Kind::Earth, Kind::Energy]
+                        .into_iter()
+                        .map(|kind| ReferenceResistance {
+                            kind,
+                            percent: ReferenceItemField::Known(percent),
+                        })
+                        .collect(),
+                ),
+            }),
+            ..ReferenceItemSemantics::default()
+        };
         let profile = item_ability_profile(&item).ok();
         assert_eq!(
             profile.map(|profile| profile.abilities),

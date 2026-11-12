@@ -1,6 +1,7 @@
 """Contract tests for the offline elemental balance proposal (no Item mutations)."""
 import unittest
 from fractions import Fraction
+
 from elemental_balance import propose
 
 
