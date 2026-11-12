@@ -138,4 +138,3 @@ try {
   process.stderr.write(`ERROR: ${error.message}\n`);
   process.exitCode=1;
 }
-
