@@ -1,6 +1,11 @@
 use super::super::*;
 use crate::device_sessions::{DeviceCredential, DeviceSession, SessionKey, now};
 use serde::Deserialize;
+#[derive(serde::Serialize)]
+struct OperationRequest<'a> {
+    protocol_version: u32,
+    client_id: &'a str,
+}
 const DEVICE_BASE: &str = "/api/v1/game-auth/device-sessions";
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -53,7 +58,7 @@ impl NativeLoginClient {
         &self,
         suffix: &str,
         authorization: String,
-        body: serde_json::Value,
+        body: impl serde::Serialize + Send + Sync,
         cancellation: CancellationToken,
     ) -> Result<Vec<u8>, NativeLoginError> {
         if self.platform.scheme() != "https"
@@ -132,7 +137,10 @@ impl NativeLoginClient {
             .device_post(
                 suffix,
                 format!("OterynDevice {}", session.device_credential.expose()),
-                serde_json::json!({"protocol_version":1,"client_id":self.oauth_client_id}),
+                OperationRequest {
+                    protocol_version: 1,
+                    client_id: &self.oauth_client_id,
+                },
                 cancel,
             )
             .await?;
@@ -212,7 +220,10 @@ impl NativeLoginClient {
             .device_post(
                 "/revoke",
                 format!("OterynDevice {}", credential.expose()),
-                serde_json::json!({"protocol_version":1,"client_id":self.oauth_client_id}),
+                OperationRequest {
+                    protocol_version: 1,
+                    client_id: &self.oauth_client_id,
+                },
                 cancel,
             )
             .await?;
@@ -252,6 +263,22 @@ impl NativeLoginClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn operation_request_matches_contract_fixture_bytes() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let bytes = serde_json::to_vec(&OperationRequest {
+            protocol_version: 1,
+            client_id: "019a5f4a-1000-7000-8000-000000000001",
+        })?;
+        assert_eq!(
+            bytes,
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../docs/contracts/fixtures/remembered-device-v1/rotate.json"
+            ))
+        );
+        Ok(())
+    }
     #[test]
     fn pinned_site_error_envelope_is_exact() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(

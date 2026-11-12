@@ -1,5 +1,5 @@
 //! Real portal process controls and mTLS publication; never a response producer.
-use super::support::*;
+use super::{device_capture::RequestProof, support::*};
 use oteryn_platform_client::{
     PlatformClientConfig,
     device_sessions::DeviceSession,
@@ -44,7 +44,14 @@ pub fn contract_gap(enrollment: bool, refusal: DeviceRefusal, before: &str, afte
             rotation_gap(refusal.status, &body)
         }
 }
-pub fn blocked(t: &Topology, enrollment: bool, refusal: DeviceRefusal, before: &str) -> TestResult {
+pub fn blocked(
+    t: &Topology,
+    enrollment: bool,
+    refusal: DeviceRefusal,
+    before: &str,
+    proof: &RequestProof,
+) -> TestResult {
+    proof.require(enrollment)?;
     check(
         contract_gap(enrollment, refusal, before, &device_state(t)?),
         "unexpected_device_refusal_or_state_change",

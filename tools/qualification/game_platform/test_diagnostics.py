@@ -12,28 +12,56 @@ REASON = "enrollment_transport_or_payload_failed"
 
 class Diagnostics(unittest.TestCase):
     def test_each_secret_class_is_removed(self):
-        for index, secret_line in enumerate([
-            "Authorization: Bearer bearer-secret",
-            "Authorization: OterynDevice device-secret",
-            "otd1." + "x" * 43,
-            '{"code":"oauth-code", "access_token":"oauth-token", "refresh_token":"refresh-secret"}',
-            "Cookie: session=cookie-secret; other=another-secret",
-            "Set-Cookie: session=cookie-secret; HttpOnly",
-            "password=password-secret",
-            "postgresql://user:database-secret@localhost/private",
-            "postgres://user:database-secret@localhost/private",
-            '"password":\n"multiline-secret"',
-            "unlabeled-opaque-secret",
-            'Error: "bearer_secret"',
-        ]):
-            with self.subTest(secret_class=index):
-                result = redact(f'Error: "{REASON}"\n{secret_line}\n', {REASON})
-                self.assertEqual(result.splitlines()[0], f'Error: "{REASON}"')
-                self.assertTrue(all(line == "[REDACTED]" for line in result.splitlines()[1:]))
+        for line, secret in [
+            ("Authorization: Bearer bearer-secret", "bearer-secret"),
+            ("Authorization: OterynDevice device-secret", "device-secret"),
+            ("otd1." + "x" * 43, "otd1." + "x" * 43),
+            ('{"code":"oauth-code"}', "oauth-code"),
+            ("?code=oauth-code&state=oauth-state", "oauth-code"),
+            ("?state=oauth-state", "oauth-state"),
+            ('{"access_token":"oauth-token"}', "oauth-token"),
+            ('{"refresh_token":"refresh-value"}', "refresh-value"),
+            ("Cookie: session=cookie-value; other=other-value", "cookie-value"),
+            ("Set-Cookie: session=cookie-value; HttpOnly", "cookie-value"),
+            ("password=password-value", "password-value"),
+            ('"password":\n"multiline-value"', "multiline-value"),
+            ('{"secret":"private-value"}', "private-value"),
+            ("secret=private-value", "private-value"),
+            ('{"Cookie":"session=cookie-json-value"}', "cookie-json-value"),
+            ("postgresql://user:database-value@localhost/private", "database-value"),
+            ("postgres://user:database-value@localhost/private", "database-value"),
+            ("9ad3" * 8, "9ad3" * 8),
+            ("xY2_gH3-lK4_mN5-pQ6_rS7-tU8_vW9-zA0", "xY2_gH3-lK4_mN5-pQ6_rS7-tU8_vW9-zA0"),
+        ]:
+            with self.subTest(secret_class=len(secret)):
+                result = redact(f'Error: "{REASON}"\n{line}\n')
+                self.assertNotIn(secret, result)
+                self.assertIn(f'Error: "{REASON}"', result)
+
+    def test_diagnostics_survive_unchanged(self):
+        text = ("   Compiling oteryn-platform-client v0.1.0\n"
+                "thread 'journey' panicked at tests/flow.rs:42:7:\n"
+                "assertion `left == right` failed: unexpected response\n"
+                "  left: 400\n right: 401\n"
+                "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n"
+                "error[E0308]: mismatched types\n"
+                "test blocker_requires_byte_exact_shipping_request ... FAILED\n")
+        self.assertEqual(redact(text), text)
+
+    def test_no_test_name_exemption_and_explicit_evidence_only(self):
+        digest = "b57a092c" * 8
+        line = "test " + digest + " ... FAILED"
+        self.assertEqual(redact(line), "test [REDACTED] ... FAILED")
+        self.assertEqual(redact(line, [digest]), line)
+        self.assertNotIn(digest, redact("test_prefix_" + digest + " ... FAILED"))
+        sha = "09a7" * 10
+        self.assertEqual(redact("pins game=" + sha), "pins game=[REDACTED]")
+        self.assertEqual(redact("pins game=" + sha, [sha]), "pins game=" + sha)
+        self.assertNotIn(digest, redact("password=" + digest, [digest]))
 
     def test_fixed_sqlstate_reason_survives(self):
         line = 'Error: "postgres_assertion_query_failed:device_state:42P01"'
-        self.assertEqual(redact(line, {"postgres_assertion_query_failed", "device_state"}), line + "\n")
+        self.assertEqual(redact(line + "\n"), line + "\n")
 
     def test_failure_retains_each_step_log(self):
         root = Path(__file__).resolve().parents[3]
@@ -50,7 +78,7 @@ class Diagnostics(unittest.TestCase):
                 )
                 self.assertEqual(completed.returncode, 1)
                 self.assertEqual(completed.stdout, b"")
-                self.assertEqual((diagnostics / name).read_text(), f'Error: "{REASON}"\n[REDACTED]\n')
+                self.assertEqual((diagnostics / name).read_text(), f'Error: "{REASON}"\nAuthorization: Bearer [REDACTED]\n')
                 self.assertEqual((diagnostics / name).stat().st_mode & 0o777, 0o600)
 
 

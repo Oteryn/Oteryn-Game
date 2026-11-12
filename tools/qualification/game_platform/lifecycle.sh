@@ -6,11 +6,19 @@ GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_retain_test_logs() {
   [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -n "${WORK:-}" ]] || return 0
-  local log
+  local log value
+  local -a evidence_args=()
+  for value in "$GAME_PLATFORM_SHA" "$(git -C "$GAME_SOURCE" rev-parse HEAD)" "${WORLD_DIGEST:-}"; do
+    [[ -z "$value" ]] || evidence_args+=(--evidence "$value")
+  done
+  if [[ -n "${NODE_BOOT_SPELL_MANIFEST:-}" && -f "$NODE_BOOT_SPELL_MANIFEST" ]]; then
+    value="$(sha256sum "$NODE_BOOT_SPELL_MANIFEST")"
+    evidence_args+=(--evidence "${value%% *}")
+  fi
   for log in identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log; do
     [[ -f "$WORK/$log" ]] || continue
     python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
-      "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" || return 1
+      "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" "${evidence_args[@]}" || return 1
   done
 }
 game_platform_fail() {

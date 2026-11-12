@@ -1,4 +1,6 @@
 //! Contract protocol 1 through shipping Game transport and portal-rs TLS routes.
+#[path = "support/device_capture.rs"]
+mod device_capture;
 #[path = "support/devices.rs"]
 mod devices;
 mod support;
@@ -35,17 +37,19 @@ fn successor(previous: &DeviceSession, next: &DeviceSession) -> TestResult {
 async fn journey(t: Topology) -> TestResult {
     t.no_admissions()?;
     let origin = &t.input.native_origin;
-    let client = native(&t, origin, &t.input.client)?;
+    let (mut capture, client) = device_capture::Capture::start(&t).await?;
     let http = http(&t)?;
     let token = t.oauth(0).await?;
     let before_enrollment = device_state(&t)?;
     let enrolled = client
         .enroll_device(&token, true, None, CancellationToken::new())
         .await;
+    let enrollment_proof = capture.request().await?;
+    enrollment_proof.require(true)?;
     let first = match enrolled {
         Ok(session) => session,
         Err(NativeLoginError::DeviceRefused(refusal)) => {
-            blocked(&t, true, refusal, &before_enrollment)?;
+            blocked(&t, true, refusal, &before_enrollment, &enrollment_proof)?;
             return Ok(());
         }
         Err(_) => return Err("enrollment_transport_or_payload_failed".into()),
@@ -58,10 +62,12 @@ async fn journey(t: Topology) -> TestResult {
     let rotated = client
         .device_characters(&first, CancellationToken::new())
         .await;
+    let rotation_proof = capture.request().await?;
+    rotation_proof.require(false)?;
     let (second, characters) = match rotated {
         Ok(value) => value,
         Err(NativeLoginError::DeviceRefused(refusal)) => {
-            blocked(&t, false, refusal, &before_rotation)?;
+            blocked(&t, false, refusal, &before_rotation, &rotation_proof)?;
             return Ok(());
         }
         Err(_) => return Err("rotation_transport_or_payload_failed".into()),
@@ -339,6 +345,92 @@ fn protocol_blocker_rejects_every_state_change() -> TestResult {
                 )?;
             }
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn blocker_requires_byte_exact_shipping_request() -> TestResult {
+    let client = "019a5f4a-1000-7000-8000-000000000001";
+    let base = "/api/v1/game-auth/device-sessions";
+    for (enrollment, path, scheme, body) in [
+        (
+            true,
+            base.to_owned(),
+            "Bearer",
+            br#"{"protocol_version":1,"remember_device":true}"#.as_slice(),
+        ),
+        (
+            false,
+            format!("{base}/native-characters"),
+            "OterynDevice",
+            br#"{"protocol_version":1,"client_id":"019a5f4a-1000-7000-8000-000000000001"}"#,
+        ),
+    ] {
+        check(
+            device_capture::contract_request(
+                "POST",
+                &path,
+                "application/json",
+                scheme,
+                body,
+                enrollment,
+                client,
+            )?,
+            "contract_request_refused",
+        )?;
+        for malformed in [
+            br#"{"protocol_version":1,"remember_devic":true}"#.as_slice(),
+            br#"{"protocol_version":1,"remember_device":"true"}"#,
+            br#"{"protocol_version":1,"remember_device":true"#,
+            br#"{"protocol_version":1,"clien_id":"019a5f4a-1000-7000-8000-000000000001"}"#,
+            br#"{"protocol_version":1,"client_id":7}"#,
+            br#"{"client_id":"019a5f4a-1000-7000-8000-000000000001","protocol_version":1}"#,
+            br#"{"protocol_version":1,"client_id":"#,
+        ] {
+            check(
+                !device_capture::contract_request(
+                    "POST",
+                    &path,
+                    "application/json",
+                    scheme,
+                    malformed,
+                    enrollment,
+                    client,
+                )?,
+                "malformed_request_marked_blocked",
+            )?;
+        }
+        for (method, content_type, authorization) in [
+            ("GET", "application/json", scheme),
+            ("POST", "text/plain", scheme),
+            ("POST", "application/json", "Basic"),
+        ] {
+            check(
+                !device_capture::contract_request(
+                    method,
+                    &path,
+                    content_type,
+                    authorization,
+                    body,
+                    enrollment,
+                    client,
+                )?,
+                "wrong_request_metadata_marked_blocked",
+            )?;
+        }
+        check(
+            !device_capture::contract_request(
+                "POST",
+                "/wrong",
+                "application/json",
+                scheme,
+                body,
+                enrollment,
+                client,
+            )?,
+            "wrong_path_marked_blocked",
+        )?;
     }
     Ok(())
 }

@@ -186,10 +186,15 @@ journey logs. The lane now redacts and retains `identity-build.log`, `identity.l
 `native_ticket_and_gateway_fail_closed.log` and `native_device_rotation_replay.log`
 before an explicit failure and again during cleanup (including unexpected exit
 and timeout). Retained files are mode 0600 in the private diagnostics directory.
-Redaction retains only structured Rust test summaries and source-defined fixed
-failure reasons; every other line becomes `[REDACTED]`. This suppresses arbitrary
-opaque secrets as well as bearer/device headers, credentials, OAuth codes/tokens,
-cookies, passwords and database URLs, including multiline values. Test drivers
+Redaction preserves cargo/rustc output, panic locations/messages, assertion
+left/right values and test summaries, masking only secret-bearing substrings:
+bearer/device headers, `otd1.` credentials, OAuth codes/tokens/state, cookies,
+password/secret fields, database URLs, and long opaque high-entropy runs. Hex runs
+of at least 32 characters are masked regardless of entropy; base64url runs of
+at least 32 characters are masked at Shannon entropy >= 4.3 bits/character.
+No summary/test-name line is exempt. Only explicitly supplied 40-character Git
+pins and 64-character evidence digests (bundle/manifest) bypass opaque-run
+redaction; named secret fields are always redacted even for those values. Test drivers
 still must never print secrets in their original private logs.
 
 Root-cause trace at unchanged Platform ed9b3372 (M paths below):
@@ -214,3 +219,30 @@ The pinned-envelope decoder regression failed before repair with
 `Error: InvalidPayload`; diagnostics retention also failed before repair for
 all three journey log names. Both regressions pass after repair. This is focused
 red/green evidence, not a substitute for rerunning the PC topology.
+
+
+The edb9a153 PC run confirmed web identity PASS, native ticket/Gateway fail-closed
+with zero admissions, both expected device contract blockers, and terminal
+`BLOCKED owner=Platform what=portal-rs/crates/gameauth/src/devices_http.rs:224`.
+Its over-redacted diagnostics prompted substring redaction above.
+
+Before either device BLOCKED decision, `tests/support/device_capture.rs` now
+terminates a private loopback TLS connection from the shipping client, captures
+the actual method/path/content-type/authorization scheme/body, and forwards the
+body verbatim to the real, CA-verified Platform TLS listener. Every response
+status/header/body comes from that listener; no credential response is generated.
+The capture retains only a boolean proof, never credential/header values. Both
+connections verify TLS, the relay refuses redirects, and no production capture
+API or hook was added. The proof requires exact `enroll.json` or `rotate.json`
+fixture bytes (substituting only the configured client UUID), POST, the precise
+path, JSON content type and the correct authorization scheme. A rendered 400,
+unchanged state and zero admissions alone cannot qualify BLOCKED. Enrollment
+still requires only HTTP 400; rotation still requires its exact 401/error.
+Misspelled members, wrong types, malformed JSON and wrong request metadata are
+negative unit cases. Production rotation/revoke serialization uses an ordered
+struct so its bytes match the protocol-version-first fixture, rather than
+serde_json::Value's alphabetically ordered keys. JSON values are unchanged.
+
+PHP P behavior: the retained Accept headers do not change native device protocol
+behavior; P's controller already returns JsonResponse for success and refusals
+(`3bc2d0e9:app/Http/Controllers/GameAuth/DeviceSessions/NativeDeviceSessionController.php`).
