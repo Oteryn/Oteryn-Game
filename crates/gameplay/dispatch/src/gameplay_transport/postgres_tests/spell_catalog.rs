@@ -85,18 +85,59 @@ fn spell_catalog_projection_preserves_native_runes_costs_and_indices() -> TestRe
         let initial =
             crate::gameplay_transport::spell_catalog::catalog(book, &state, 0).ok_or("catalog")?;
         assert!(initial.iter().any(|entry| entry.rune_item.is_some()));
+        // Existing qualified conjuration labels; the other four source runes keep
+        // their original label when no unanimous creator label exists.
+        let expected_rune_labels = [
+            (3203, "Animate Dead Rune"),
+            (3153, "Cure Poison Rune"),
+            (3161, "Avalanche Rune"),
+            (3178, "Chameleon Rune"),
+            (3177, "Convince Creature Rune"),
+            (3197, "Disintegrate Rune"),
+            (3148, "Destroy Field Rune"),
+            (3164, "Energy Field Rune"),
+            (3166, "Energy Wall Rune"),
+            (3149, "Energy Bomb Rune"),
+            (3200, "Explosion Rune"),
+            (3188, "Fire Field Rune"),
+            (3190, "Fire Wall Rune"),
+            (3189, "Fireball Rune"),
+            (3192, "Fire Bomb Rune"),
+            (3191, "Great Fireball Rune"),
+            (3198, "Heavy Magic Missile Rune"),
+            (3182, "Holy Missile Rune"),
+            (3158, "Icicle Rune"),
+            (3152, "Intense Healing Rune"),
+            (3180, "Magic Wall Rune"),
+            (3165, "Paralyze Rune"),
+            (3173, "Poison Bomb Rune"),
+            (3172, "Poison Field Rune"),
+            (3176, "Poison Wall Rune"),
+            (3195, "Soulfire Rune"),
+            (3179, "Stalagmite Rune"),
+            (3175, "Stone Shower Rune"),
+            (3155, "Sudden Death Rune"),
+            (3202, "Thunderstorm Rune"),
+            (3160, "Ultimate Healing Rune"),
+            (3156, "Wild Growth Rune"),
+        ];
         for entry in &initial {
             let index = std::num::NonZeroU32::new(entry.cast_index).ok_or("index")?;
             let spell = book.indexed(index).ok_or("cast lookup")?;
-            assert_eq!(entry.name, spell.name);
             assert_eq!(entry.soul, spell.soul);
             assert!(!entry.learned);
             match &spell.carrier {
                 crate::spell::Carrier::Instant { words, .. } => {
+                    assert_eq!(entry.name, spell.name);
                     assert_eq!(&entry.words, words);
                     assert_eq!(entry.rune_item, None);
                 }
                 crate::spell::Carrier::Rune { item, .. } => {
+                    let expected_name = expected_rune_labels
+                        .iter()
+                        .find_map(|(id, name)| (*id == *item).then_some(*name))
+                        .unwrap_or(&spell.name);
+                    assert_eq!(entry.name, expected_name);
                     assert!(entry.words.is_empty());
                     assert_eq!(entry.rune_item, Some(*item));
                 }

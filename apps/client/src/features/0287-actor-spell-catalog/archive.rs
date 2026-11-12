@@ -16,7 +16,37 @@ pub struct ArchivedSpell {
 }
 impl ArchivedSpell {
     fn matches(&self, spell: &SpellCatalogEntry) -> bool {
-        self.name == spell.name && self.words == spell.words && self.rune_item == spell.rune_item
+        if self.words != spell.words || self.rune_item != spell.rune_item {
+            return false;
+        }
+        if self.name == spell.name {
+            return true;
+        }
+        let Some(item) = self.rune_item else {
+            return false;
+        };
+        self.name.eq_ignore_ascii_case(&spell.name)
+            || match item {
+                3149 => legacy_rune_name(
+                    &self.name,
+                    &spell.name,
+                    "energybomb rune",
+                    "Energy Bomb Rune",
+                ),
+                3153 => {
+                    legacy_rune_name(&self.name, &spell.name, "antidote rune", "Cure Poison Rune")
+                }
+                3192 => {
+                    legacy_rune_name(&self.name, &spell.name, "firebomb rune", "Fire Bomb Rune")
+                }
+                3197 => legacy_rune_name(
+                    &self.name,
+                    &spell.name,
+                    "desintegrate rune",
+                    "Disintegrate Rune",
+                ),
+                _ => false,
+            }
     }
     fn valid(&self) -> bool {
         !self.name.is_empty()
@@ -30,6 +60,11 @@ impl ArchivedSpell {
             && self.rune_item.is_none_or(|item| item > 0 && item < 1 << 28)
     }
 }
+fn legacy_rune_name(saved: &str, current: &str, legacy: &str, canonical: &str) -> bool {
+    (saved.eq_ignore_ascii_case(legacy) && current.eq_ignore_ascii_case(canonical))
+        || (saved.eq_ignore_ascii_case(canonical) && current.eq_ignore_ascii_case(legacy))
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "spell", deny_unknown_fields)]
 pub enum ArchiveSlot {
