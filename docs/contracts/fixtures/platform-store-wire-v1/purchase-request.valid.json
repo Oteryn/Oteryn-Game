@@ -1,0 +1,14 @@
+{
+  "contract_version": 1,
+  "operation": "PurchaseStoreOfferV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+  "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+  "catalog_revision": "37",
+  "offer_key": "premium-30d",
+  "currency": "COINS",
+  "unit_price": "250",
+  "quantity": 1
+}

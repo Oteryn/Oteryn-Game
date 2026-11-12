@@ -1,0 +1,29 @@
+{
+  "game_login_ticket": "<synthetic-opaque-ticket>",
+  "gameplay_offer": {
+    "candidates": [
+      {
+        "capabilities": [
+          "actions.command-result.v1",
+          "chat.semantic.v1",
+          "combat.server-authoritative.v1",
+          "inventory.server-authoritative.v1",
+          "ordering.server-sequence.v1",
+          "reconciliation.movement.v1",
+          "session.single-admission.v1",
+          "state.revision.v1",
+          "state.snapshot-delta.v1"
+        ],
+        "family": "oteryn",
+        "native_protocol_version": 1,
+        "schema_revision": 2,
+        "schema_sha256": "9c67f19525400fb9890d2a3541ceb6d02eb955061540ad39ca1c1d891c06eba9",
+        "transport": "tcp.tls13.protobuf.be32.v1"
+      }
+    ],
+    "client_build": "oteryn-client-fixture",
+    "client_platform": "test-x86_64",
+    "offer_version": 1
+  },
+  "protocol_version": 1
+}

@@ -1,0 +1,20 @@
+{
+  "contract_version": 1,
+  "operation_kind": "DELIVER",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "source_revision": "102",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000707",
+  "order_id": "0192b6a0-4c00-7000-8000-000000000503",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000603",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "product_id": "oteryn.store.outfit_unlock",
+  "product_version": "1",
+  "unit_kind": "COSMETIC",
+  "catalog_revision": "37",
+  "offer_key": "outfit-ranger",
+  "grant_key": "outfit:ranger",
+  "grant_revision": "4",
+  "quantity": 1,
+  "issued_at_source": "1792756805",
+  "audience": "OTERYN_GAME_STORE"
+}

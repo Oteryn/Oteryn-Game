@@ -1,0 +1,10 @@
+{
+  "contract_version": 1,
+  "operation": "PublishGameRestoreNoticeV1",
+  "source_authority": "oteryn-game/restore",
+  "restore_event_id": "0192b6a0-4c00-7000-8000-000000000801",
+  "restored_generation": "7",
+  "new_recovery_generation": "8",
+  "restore_point": "1792757050",
+  "backup_label": "game-pitr-2026-10-23T12:04Z"
+}

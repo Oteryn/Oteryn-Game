@@ -1,0 +1,1044 @@
+{
+  "fixture_set": "oteryn.store_wire.v1",
+  "coordination_id": "STORE-WIRE-1",
+  "contract": "docs/contracts/OTERYN_V2_STORE_WIRE_CONTRACT.md",
+  "semantic_contract": "docs/contracts/OTERYN_V2_STORE_PURCHASE_DELIVERY_CONTRACT.md",
+  "status": "PROPOSED",
+  "canonical_encoding": {
+    "rule": "UTF-8 JSON object, members in the order of the schema properties, no insignificant whitespace, no escape sequences (no backslash), equal to the re-encoding of the decoded value with JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE; decode depth at most 4",
+    "fixture_note": "fixture files are pretty-printed for review; canonical_bytes and sha256 in valid[] are computed over the compact re-encoding in file member order",
+    "digest": "lower-case hex SHA-256 over the exact canonical bytes"
+  },
+  "routes": {
+    "balance": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/balance/read",
+      "operation": "ReadStoreBalanceV1"
+    },
+    "history": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/history/read",
+      "operation": "ReadStoreHistoryPageV1"
+    },
+    "purchase": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/purchases",
+      "operation": "PurchaseStoreOfferV1"
+    },
+    "pending": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/operations/pending",
+      "operation": "ListPendingStoreOperationsV1"
+    },
+    "read": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/operations/read",
+      "operation": "ReadStoreOperationIntentV1"
+    },
+    "receipt": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/operations/receipt",
+      "operation": "PublishStoreDeliveryReceiptV1"
+    },
+    "restore": {
+      "method": "POST",
+      "path": "/internal/v1/game-auth/game-restore/notice",
+      "operation": "PublishGameRestoreNoticeV1"
+    },
+    "reconcile": {
+      "method": "POST",
+      "path": "/internal/v1/products-entitlements/store/operations/reconcile",
+      "operation": "ListStoreOperationStatesV1"
+    }
+  },
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "audience": "OTERYN_GAME_STORE",
+  "bounds": {
+    "max_balance_request_bytes": 512,
+    "max_balance_response_bytes": 512,
+    "max_history_request_bytes": 512,
+    "max_history_response_bytes": 12288,
+    "max_purchase_request_bytes": 1024,
+    "max_purchase_answer_bytes": 2048,
+    "max_pending_request_bytes": 512,
+    "max_pending_response_bytes": 8192,
+    "max_read_request_bytes": 512,
+    "max_intent_bytes": 4096,
+    "max_receipt_bytes": 1024,
+    "max_receipt_answer_bytes": 64,
+    "max_restore_notice_bytes": 512,
+    "max_restore_status_bytes": 256,
+    "max_reconcile_request_bytes": 512,
+    "max_reconcile_response_bytes": 12288,
+    "max_entries": 32,
+    "max_units_per_purchase": 8,
+    "max_purchase_quantity": 100,
+    "max_unit_quantity": 65535,
+    "max_json_depth": 4
+  },
+  "worst_case_bytes": {
+    "history_response": 11666,
+    "pending_response": 4290,
+    "reconcile_response": 9061,
+    "purchase_answer": 1575,
+    "purchase_request": 627,
+    "balance_response": 323,
+    "intent": 833,
+    "receipt": 1006,
+    "pending_request": 337,
+    "reconcile_request": 337,
+    "history_request": 319,
+    "read_request": 356,
+    "balance_request": 257
+  },
+  "purchase_result_codes": {
+    "200": [
+      "ACCEPTED",
+      "INSUFFICIENT_BALANCE",
+      "STALE_QUOTE",
+      "OFFER_UNAVAILABLE",
+      "ACCOUNT_RESTRICTED",
+      "PURCHASE_DISABLED"
+    ],
+    "409": "CONFLICT (empty body)",
+    "503": "UNAVAILABLE (empty body)"
+  },
+  "receipt_committed_codes": {
+    "DELIVER": [
+      "STORE_OK"
+    ],
+    "CLAIM": [
+      "STORE_OK"
+    ],
+    "REVOKE_UNCLAIMED": [
+      "STORE_OK"
+    ],
+    "RECLAIM": [
+      "STORE_RECLAIMED",
+      "STORE_RECLAIM_SHORTFALL"
+    ],
+    "FLAG": [
+      "STORE_OK"
+    ]
+  },
+  "receipt_rejection_codes": {
+    "STORE_ACCOUNT_NOT_FOUND": [
+      "DELIVER"
+    ],
+    "STORE_GRANT_UNKNOWN": [
+      "DELIVER",
+      "CLAIM"
+    ],
+    "STORE_LINE_REVOKED": [
+      "CLAIM"
+    ],
+    "STORE_LINE_ALREADY_CLAIMED": [
+      "REVOKE_UNCLAIMED"
+    ],
+    "STORE_LINE_NOT_FOUND": [
+      "CLAIM",
+      "REVOKE_UNCLAIMED",
+      "RECLAIM",
+      "FLAG"
+    ],
+    "STORE_INTENT_INVALID": [
+      "DELIVER",
+      "CLAIM",
+      "REVOKE_UNCLAIMED",
+      "RECLAIM",
+      "FLAG"
+    ],
+    "STORE_OPERATION_CONFLICT": [
+      "DELIVER",
+      "CLAIM",
+      "REVOKE_UNCLAIMED",
+      "RECLAIM",
+      "FLAG"
+    ],
+    "STORE_UNSUPPORTED": [
+      "DELIVER",
+      "CLAIM",
+      "REVOKE_UNCLAIMED",
+      "RECLAIM",
+      "FLAG"
+    ]
+  },
+  "member_order": {
+    "balance-request": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "account_id"
+    ],
+    "history-request": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "account_id",
+      "before_entry_id",
+      "max_entries"
+    ],
+    "purchase-request": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "purchase_request_id",
+      "account_id",
+      "character_id",
+      "world_id",
+      "catalog_revision",
+      "offer_key",
+      "currency",
+      "unit_price",
+      "quantity"
+    ],
+    "pending-request": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "after_source_revision",
+      "after_operation_id",
+      "max_entries"
+    ],
+    "read-request": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "issuer_authority",
+      "operation_kind",
+      "operation_id"
+    ],
+    "reconcile-request": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "after_source_revision",
+      "after_operation_id",
+      "max_entries"
+    ],
+    "restore-notice": [
+      "contract_version",
+      "operation",
+      "source_authority",
+      "restore_event_id",
+      "restored_generation",
+      "new_recovery_generation",
+      "restore_point",
+      "backup_label"
+    ]
+  },
+  "valid": {
+    "balance-request.valid.json": {
+      "schema": "balance-request.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 155,
+      "sha256": "ee7bb8c184491251b3b6054421ce8f0d2418d77ad48ac5b51f2152b6c0774fe0"
+    },
+    "balance-response.valid.json": {
+      "schema": "balance-response.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 179,
+      "sha256": "43c8199f6cada928a347925c0ed76fc8096879b61398d84879125f0d6c014bad"
+    },
+    "history-request.valid.json": {
+      "schema": "history-request.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 197,
+      "sha256": "241cb29c088649f0e87bffdd66cd0503d1cf7d099f665f0ecb25fc51ef0ee3ad"
+    },
+    "history-response.valid.json": {
+      "schema": "history-response.schema.json",
+      "max_bytes": 12288,
+      "canonical_bytes": 543,
+      "sha256": "238ed334ef2670f250125ddcf1d1af4c3c649fec52e3bca5311285a443f41f4f"
+    },
+    "purchase-request.valid.json": {
+      "schema": "purchase-request.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 423,
+      "sha256": "895d8b1edbad9ad72df392cc4a7c25453fe0a03dbd0fb8f335a19950da570d52"
+    },
+    "purchase-answer.accepted.json": {
+      "schema": "purchase-answer.schema.json",
+      "max_bytes": 2048,
+      "canonical_bytes": 485,
+      "sha256": "671fa38669097cef1c3535f5dcad5a5a303ff07550b73754f9bd7f0a30ba444e"
+    },
+    "purchase-answer.insufficient-balance.json": {
+      "schema": "purchase-answer.schema.json",
+      "max_bytes": 2048,
+      "canonical_bytes": 225,
+      "sha256": "dfd4dcb2798cce7652399a315925d29e06e1050599e2da0559251947685090ae"
+    },
+    "purchase-answer.stale-quote.json": {
+      "schema": "purchase-answer.schema.json",
+      "max_bytes": 2048,
+      "canonical_bytes": 216,
+      "sha256": "eadb7c5647e351710e047681385aef55c5ec368818e4674297363a2eeceb4f74"
+    },
+    "purchase-answer.purchase-disabled.json": {
+      "schema": "purchase-answer.schema.json",
+      "max_bytes": 2048,
+      "canonical_bytes": 222,
+      "sha256": "a00286ce9da0ecbdf4dd3f97d059d688121e6d3cde76438bbcbea246cbe94885"
+    },
+    "pending-request.valid.json": {
+      "schema": "pending-request.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 218,
+      "sha256": "35874e81d5a3e50af2cc3d773ecf72ca62d67eb18928430c0fbd0aa298892559"
+    },
+    "intent.deliver-premium-time.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 597,
+      "sha256": "eef4cd5c05e3bdbe0c0b68b6070a99db0d91d38f4a8153e5189cc1b5df46be35"
+    },
+    "intent.deliver-cosmetic.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 602,
+      "sha256": "67feee262a0352095ad5da0ee701ce008c1c8aef924a447434369c1749831943"
+    },
+    "intent.deliver-item.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 609,
+      "sha256": "232a47fef23b49b8cb159b4f388eb8c99825315a27f7291373e700d1e0a19f7d"
+    },
+    "intent.claim.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 567,
+      "sha256": "5910adde60704fcf76fd7253e3e3586f6a9d380e7b893cc0f3258a77e63359e6"
+    },
+    "intent.revoke-unclaimed.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 530,
+      "sha256": "1d7e7cde3d0fd0d3c25dde2048a91aa219bf63e51b291527093db3cb911ca358"
+    },
+    "intent.reclaim.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 671,
+      "sha256": "5b2cdc5cc6cdde112b9d5092b093edb122508cf74bd022d63394b01e9340cb71"
+    },
+    "intent.flag.json": {
+      "schema": "intent.schema.json",
+      "max_bytes": 4096,
+      "canonical_bytes": 604,
+      "sha256": "ca966667f968f1a7bc465af7753d6310eea1217c05ecf1e2a8ab963869082b71"
+    },
+    "receipt.deliver-premium-time.committed.json": {
+      "schema": "receipt.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 620,
+      "sha256": "d6f7e66e456448c3444b672d0f901deaa0a46af5b9ed80373857974de0a50839"
+    },
+    "receipt.deliver-item.committed.json": {
+      "schema": "receipt.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 624,
+      "sha256": "497d493b70987963c324a1f1eeceb071dba40f28728747c86ce03580a6144913"
+    },
+    "receipt.claim.committed.json": {
+      "schema": "receipt.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 812,
+      "sha256": "363b0d2714f69b83ea67ee06c5933d44bf956b71299c50216da82fe0ad006297"
+    },
+    "receipt.revoke-unclaimed.rejected-already-claimed.json": {
+      "schema": "receipt.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 626,
+      "sha256": "8e9017171a3d0a6f13ee84006f7d942af04c4c670fee45b3dfd5ae676e878626"
+    },
+    "receipt.reclaim.committed-shortfall.json": {
+      "schema": "receipt.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 765,
+      "sha256": "1bab55a48b271a20cd348276688e7503d90e471c4bd29d05edda442effdb5d21"
+    },
+    "receipt.flag.committed.json": {
+      "schema": "receipt.schema.json",
+      "max_bytes": 1024,
+      "canonical_bytes": 597,
+      "sha256": "8f4ac08b7fc84a79c4d7339c16c211d1324ced1530c7d14362424ed02c510929"
+    },
+    "receipt-answer.valid.json": {
+      "schema": "receipt-answer.schema.json",
+      "max_bytes": 64,
+      "canonical_bytes": 42,
+      "sha256": "0ae134c1a960061f1289071d512a11794e6fc17286768e990df6aaf28c56368d"
+    },
+    "pending-response.valid.json": {
+      "schema": "pending-response.schema.json",
+      "max_bytes": 8192,
+      "canonical_bytes": 246,
+      "sha256": "c4e2dfb8b00e3f4c90eecc62d828f350aea5b159b1b3230a219b4dd2e5e8ef19"
+    },
+    "read-request.valid.json": {
+      "schema": "read-request.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 243,
+      "sha256": "7622ac3584b7150848ef937e408072b675092b8a60ae804df4b0bf66dcaac887"
+    },
+    "restore-notice.valid.json": {
+      "schema": "restore-notice.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 292,
+      "sha256": "b57360cd4508fd68a232492ed6ae885ea36b3f32df31eb8c38439d4872d57aa1"
+    },
+    "restore-status.reconciling.json": {
+      "schema": "restore-status.schema.json",
+      "max_bytes": 256,
+      "canonical_bytes": 132,
+      "sha256": "bbd67a26002f0a04d28576f7b3f2d8d8af56cd3fedbe7eeb9831e3dcdb41e6ae"
+    },
+    "reconcile-request.valid.json": {
+      "schema": "reconcile-request.schema.json",
+      "max_bytes": 512,
+      "canonical_bytes": 218,
+      "sha256": "53db17af3e97e2335bddb6ac926979f62867aa9f12d856cb00ff4029fe5895a3"
+    },
+    "reconcile-response.valid.json": {
+      "schema": "reconcile-response.schema.json",
+      "max_bytes": 12288,
+      "canonical_bytes": 623,
+      "sha256": "8124a5b8325cfaf54e465e3c370f5ebfe9a1aeae55f75a680f80c0e11631f5ec"
+    }
+  },
+  "cross_field_rules": [
+    "uint64 strings are at most 18446744073709551615; amount strings are at most 9223372036854775807",
+    "a cursor pair is either (\"0\", nil UUID) or (a uint64 revision, a UUIDv7)",
+    "purchase answer request_digest = sha256 of the exact purchase request bytes; purchase_request_id equals the request value",
+    "ACCEPTED: total_price = quantity x unit_price of the request, currency equals the request currency, units has one entry per fulfilment unit",
+    "receipt binding_digest = sha256 of the exact stored intent bytes served by ReadStoreOperationIntentV1",
+    "receipt operation_kind, operation_id, account_id, entitlement_id, product_id and product_version equal the intent",
+    "DELIVER delivered_quantity, CLAIM minted_quantity and REVOKE_UNCLAIMED revoked_quantity equal the intent or line quantity",
+    "RECLAIM reclaimed_quantity + shortfall_quantity = minted_quantity of the claim receipt named by claim_receipt_digest; STORE_RECLAIMED iff shortfall_quantity is 0",
+    "RECLAIM claim_receipt_digest = sha256 of the stored CLAIM receipt bytes",
+    "reconcile: state PENDING or REOPENED iff receipt_digest and recovery_generation are null",
+    "history: order_id, offer_key and quantity are non-null iff kind is STORE_PURCHASE or STORE_REVERSAL",
+    "history entries are strictly descending by entry_id and below before_entry_id unless it is \"0\"; next_before_entry_id is the last entry_id, or \"0\" when no older entry exists",
+    "pending and reconcile entries are strictly ascending by (source_revision numerically, operation_id) and above the request cursor",
+    "restore notice new_recovery_generation > restored_generation",
+    "serialized canonical body is within its max_*_bytes bound"
+  ],
+  "invalid_cases": [
+    {
+      "schema": "balance-request.schema.json",
+      "case": "unknown member",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreBalanceV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301"
+      }
+    },
+    {
+      "schema": "balance-request.schema.json",
+      "case": "account_id not UUIDv7",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreBalanceV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "account_id": "0192b6a0-4c00-4000-8000-000000000101"
+      }
+    },
+    {
+      "schema": "balance-request.schema.json",
+      "case": "wrong operation",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreBalanceV2",
+        "source_authority": "oteryn-game/store-consumer",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101"
+      }
+    },
+    {
+      "schema": "history-request.schema.json",
+      "case": "max_entries above 32",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreHistoryPageV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "before_entry_id": "0",
+        "max_entries": 33
+      }
+    },
+    {
+      "schema": "history-request.schema.json",
+      "case": "cursor with leading zero",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreHistoryPageV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "before_entry_id": "0481",
+        "max_entries": 2
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "missing purchase_request_id",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "250",
+        "quantity": 1
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "quantity zero",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "250",
+        "quantity": 0
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "quantity above 100",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "250",
+        "quantity": 101
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "unit_price as JSON number",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": 250,
+        "quantity": 1
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "unit_price zero",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "0",
+        "quantity": 1
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "unknown currency",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "GOLD",
+        "unit_price": "250",
+        "quantity": 1
+      }
+    },
+    {
+      "schema": "purchase-request.schema.json",
+      "case": "quoted total member not allowed",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "250",
+        "quantity": 1,
+        "total_price": "250"
+      }
+    },
+    {
+      "schema": "pending-request.schema.json",
+      "case": "max_entries zero",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ListPendingStoreOperationsV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "after_source_revision": "0",
+        "after_operation_id": "00000000-0000-0000-0000-000000000000",
+        "max_entries": 0
+      }
+    },
+    {
+      "schema": "pending-request.schema.json",
+      "case": "cursor operation id not UUIDv7 or nil",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ListPendingStoreOperationsV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "after_source_revision": "0",
+        "after_operation_id": "x",
+        "max_entries": 32
+      }
+    },
+    {
+      "schema": "read-request.schema.json",
+      "case": "foreign issuer",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreOperationIntentV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
+        "operation_kind": "CLAIM",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000703"
+      }
+    },
+    {
+      "schema": "read-request.schema.json",
+      "case": "unknown operation kind",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ReadStoreOperationIntentV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "GRANT",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000703"
+      }
+    },
+    {
+      "schema": "receipt.schema.json",
+      "case": "REJECTED code not allowed for kind",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "REVOKE_UNCLAIMED",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000704",
+        "binding_digest": "1d7e7cde3d0fd0d3c25dde2048a91aa219bf63e51b291527093db3cb911ca358",
+        "outcome": "REJECTED",
+        "result_code": "STORE_LINE_REVOKED",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "recovery_generation": "7",
+        "decided_at": "1792757202"
+      }
+    },
+    {
+      "schema": "receipt.schema.json",
+      "case": "COMMITTED DELIVER missing delivered_quantity",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "DELIVER",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+        "binding_digest": "232a47fef23b49b8cb159b4f388eb8c99825315a27f7291373e700d1e0a19f7d",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_OK",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "recovery_generation": "7",
+        "decided_at": "1792756812"
+      }
+    },
+    {
+      "schema": "receipt.schema.json",
+      "case": "REJECTED carrying committed members",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "REVOKE_UNCLAIMED",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000704",
+        "binding_digest": "1d7e7cde3d0fd0d3c25dde2048a91aa219bf63e51b291527093db3cb911ca358",
+        "outcome": "REJECTED",
+        "result_code": "STORE_LINE_ALREADY_CLAIMED",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "recovery_generation": "7",
+        "decided_at": "1792757202",
+        "revoked_quantity": 10
+      }
+    },
+    {
+      "schema": "receipt.schema.json",
+      "case": "binding_digest upper-case hex",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "DELIVER",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+        "binding_digest": "232A47FEF23B49B8CB159B4F388EB8C99825315A27F7291373E700D1E0A19F7D",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_OK",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "delivered_quantity": 10,
+        "recovery_generation": "7",
+        "decided_at": "1792756812"
+      }
+    },
+    {
+      "schema": "receipt.schema.json",
+      "case": "recovery_generation zero",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "DELIVER",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+        "binding_digest": "232a47fef23b49b8cb159b4f388eb8c99825315a27f7291373e700d1e0a19f7d",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_OK",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "delivered_quantity": 10,
+        "recovery_generation": "0",
+        "decided_at": "1792756812"
+      }
+    },
+    {
+      "schema": "restore-notice.schema.json",
+      "case": "unknown member",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishGameRestoreNoticeV1",
+        "source_authority": "oteryn-game/restore",
+        "restore_event_id": "0192b6a0-4c00-7000-8000-000000000801",
+        "restored_generation": "7",
+        "new_recovery_generation": "8",
+        "restore_point": "1792757050",
+        "backup_label": "game-pitr-2026-10-23T12:04Z",
+        "store_only": true
+      }
+    },
+    {
+      "schema": "reconcile-request.schema.json",
+      "case": "wrong operation",
+      "expected_status": 400,
+      "level": "schema",
+      "body": {
+        "contract_version": 1,
+        "operation": "ListPendingStoreOperationsV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "after_source_revision": "100",
+        "after_operation_id": "0192b6a0-4c00-7000-8000-000000000700",
+        "max_entries": 32
+      }
+    }
+  ],
+  "rule_cases": [
+    {
+      "message": "receipt",
+      "case": "binding_digest does not match the stored intent bytes",
+      "expected_status": 409,
+      "rule": "binding_digest",
+      "intent": "intent.deliver-item.json",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "DELIVER",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+        "binding_digest": "eef4cd5c05e3bdbe0c0b68b6070a99db0d91d38f4a8153e5189cc1b5df46be35",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_OK",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "delivered_quantity": 10,
+        "recovery_generation": "7",
+        "decided_at": "1792756812"
+      }
+    },
+    {
+      "message": "receipt",
+      "case": "delivered_quantity differs from the intent quantity",
+      "expected_status": 400,
+      "rule": "quantity_echo",
+      "intent": "intent.deliver-item.json",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "DELIVER",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+        "binding_digest": "232a47fef23b49b8cb159b4f388eb8c99825315a27f7291373e700d1e0a19f7d",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_OK",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "delivered_quantity": 9,
+        "recovery_generation": "7",
+        "decided_at": "1792756812"
+      }
+    },
+    {
+      "message": "receipt",
+      "case": "echoed account_id differs from the intent",
+      "expected_status": 400,
+      "rule": "echo",
+      "intent": "intent.deliver-item.json",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "DELIVER",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+        "binding_digest": "232a47fef23b49b8cb159b4f388eb8c99825315a27f7291373e700d1e0a19f7d",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_OK",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000102",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "delivered_quantity": 10,
+        "recovery_generation": "7",
+        "decided_at": "1792756812"
+      }
+    },
+    {
+      "message": "receipt",
+      "case": "STORE_RECLAIMED with a non-zero shortfall",
+      "expected_status": 400,
+      "rule": "reclaim_code",
+      "intent": "intent.reclaim.json",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "RECLAIM",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000705",
+        "binding_digest": "5b2cdc5cc6cdde112b9d5092b093edb122508cf74bd022d63394b01e9340cb71",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_RECLAIMED",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "reclaimed_quantity": 6,
+        "shortfall_quantity": 4,
+        "recovery_generation": "7",
+        "decided_at": "1792757302"
+      }
+    },
+    {
+      "message": "receipt",
+      "case": "reclaimed plus shortfall differs from the claimed minted_quantity",
+      "expected_status": 400,
+      "rule": "reclaim_sum",
+      "intent": "intent.reclaim.json",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishStoreDeliveryReceiptV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+        "operation_kind": "RECLAIM",
+        "operation_id": "0192b6a0-4c00-7000-8000-000000000705",
+        "binding_digest": "5b2cdc5cc6cdde112b9d5092b093edb122508cf74bd022d63394b01e9340cb71",
+        "outcome": "COMMITTED",
+        "result_code": "STORE_RECLAIM_SHORTFALL",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+        "product_id": "oteryn.store.item_grant",
+        "product_version": "2",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "reclaimed_quantity": 5,
+        "shortfall_quantity": 4,
+        "recovery_generation": "7",
+        "decided_at": "1792757302"
+      }
+    },
+    {
+      "message": "restore-notice",
+      "case": "new_recovery_generation not above restored_generation",
+      "expected_status": 400,
+      "rule": "generation_order",
+      "body": {
+        "contract_version": 1,
+        "operation": "PublishGameRestoreNoticeV1",
+        "source_authority": "oteryn-game/restore",
+        "restore_event_id": "0192b6a0-4c00-7000-8000-000000000801",
+        "restored_generation": "7",
+        "new_recovery_generation": "7",
+        "restore_point": "1792757050",
+        "backup_label": "game-pitr-2026-10-23T12:04Z"
+      }
+    },
+    {
+      "message": "purchase-request",
+      "case": "uint64 above 18446744073709551615",
+      "expected_status": 400,
+      "rule": "uint64_range",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "18446744073709551616",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "250",
+        "quantity": 1
+      }
+    },
+    {
+      "message": "purchase-request",
+      "case": "amount above 9223372036854775807",
+      "expected_status": 400,
+      "rule": "amount_range",
+      "body": {
+        "contract_version": 1,
+        "operation": "PurchaseStoreOfferV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+        "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+        "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+        "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+        "catalog_revision": "37",
+        "offer_key": "premium-30d",
+        "currency": "COINS",
+        "unit_price": "9223372036854775808",
+        "quantity": 1
+      }
+    },
+    {
+      "message": "pending-request",
+      "case": "cursor pair mixes a zero revision with a non-nil operation id",
+      "expected_status": 400,
+      "rule": "cursor_pair",
+      "body": {
+        "contract_version": 1,
+        "operation": "ListPendingStoreOperationsV1",
+        "source_authority": "oteryn-game/store-consumer",
+        "after_source_revision": "0",
+        "after_operation_id": "0192b6a0-4c00-7000-8000-000000000700",
+        "max_entries": 32
+      }
+    }
+  ]
+}

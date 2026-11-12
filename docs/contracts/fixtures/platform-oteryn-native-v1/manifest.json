@@ -1,0 +1,17 @@
+{
+  "capability_digest_sha256": "f762b55d5108c135079cf0427424d9e9973e76b102321bcb5cacd1fe35a0f018",
+  "contract_revision": 2,
+  "coordination_id": "OTS-20260804-native-protocol-selection",
+  "fixtures": [
+    "gateway-offer.json",
+    "gateway-selection.json"
+  ],
+  "native_identity": {
+    "family": "oteryn",
+    "native_protocol_version": 1,
+    "transport": "tcp.tls13.protobuf.be32.v1"
+  },
+  "production_enabled": false,
+  "schema_revision": 2,
+  "schema_sha256": "9c67f19525400fb9890d2a3541ceb6d02eb955061540ad39ca1c1d891c06eba9"
+}

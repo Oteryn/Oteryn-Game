@@ -1,0 +1,29 @@
+{
+  "contract_version": 1,
+  "operations": [
+    {
+      "operation_kind": "DELIVER",
+      "operation_id": "0192b6a0-4c00-7000-8000-000000000701",
+      "source_revision": "101",
+      "state": "COMMITTED",
+      "receipt_digest": "d6f7e66e456448c3444b672d0f901deaa0a46af5b9ed80373857974de0a50839",
+      "recovery_generation": "7"
+    },
+    {
+      "operation_kind": "DELIVER",
+      "operation_id": "0192b6a0-4c00-7000-8000-000000000707",
+      "source_revision": "102",
+      "state": "PENDING",
+      "receipt_digest": null,
+      "recovery_generation": null
+    },
+    {
+      "operation_kind": "DELIVER",
+      "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+      "source_revision": "103",
+      "state": "REOPENED",
+      "receipt_digest": null,
+      "recovery_generation": null
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.history_response.v1.json",
+  "title": "oteryn.store_wire.history_response.v1",
+  "description": "200 body of ReadStoreHistoryPageV1. At most 12288 bytes and 32 entries, newest first.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "result",
+    "account_id",
+    "entries",
+    "next_before_entry_id"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "result": {
+      "const": "OK"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entry_id",
+          "kind",
+          "currency",
+          "available_delta",
+          "reserved_delta",
+          "order_id",
+          "offer_key",
+          "quantity",
+          "created_at"
+        ],
+        "properties": {
+          "entry_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "kind": {
+            "enum": [
+              "STORE_PURCHASE",
+              "STORE_REVERSAL",
+              "COIN_PACKAGE_CREDIT",
+              "COIN_PACKAGE_REVERSAL",
+              "AUCTION_RESERVE",
+              "AUCTION_RELEASE",
+              "AUCTION_SETTLE",
+              "OPERATOR_ADJUSTMENT",
+              "OTHER"
+            ]
+          },
+          "currency": {
+            "enum": [
+              "COINS",
+              "TRANSFERABLE_COINS"
+            ]
+          },
+          "available_delta": {
+            "type": "string",
+            "pattern": "^(0|-?[1-9][0-9]{0,18})$"
+          },
+          "reserved_delta": {
+            "type": "string",
+            "pattern": "^(0|-?[1-9][0-9]{0,18})$"
+          },
+          "order_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "offer_key": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          }
+        }
+      }
+    },
+    "next_before_entry_id": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$"
+    }
+  }
+}

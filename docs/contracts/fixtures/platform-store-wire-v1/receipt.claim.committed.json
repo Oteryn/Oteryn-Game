@@ -1,0 +1,21 @@
+{
+  "contract_version": 1,
+  "operation": "PublishStoreDeliveryReceiptV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "operation_kind": "CLAIM",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000703",
+  "binding_digest": "5910adde60704fcf76fd7253e3e3586f6a9d380e7b893cc0f3258a77e63359e6",
+  "outcome": "COMMITTED",
+  "result_code": "STORE_OK",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+  "product_id": "oteryn.store.item_grant",
+  "product_version": "2",
+  "character_id": "0192b6a0-4c00-7000-8000-000000000201",
+  "world_id": "0192b6a0-4c00-7000-8000-000000000301",
+  "minted_quantity": 10,
+  "minted_units_digest": "df100c2d95e2b2c89ad51c70b738004077208935970a041269f44d462e578951",
+  "recovery_generation": "7",
+  "decided_at": "1792757100"
+}

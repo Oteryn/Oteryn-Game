@@ -1,0 +1,8 @@
+{
+  "contract_version": 1,
+  "operation": "ReadStoreOperationIntentV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "operation_kind": "CLAIM",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000703"
+}

@@ -1,0 +1,13 @@
+{
+  "contract_version": 1,
+  "result": "OK",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "balances": [
+    {
+      "currency": "COINS",
+      "available": "1250",
+      "reserved": "0"
+    }
+  ],
+  "read_at": "1792756800"
+}

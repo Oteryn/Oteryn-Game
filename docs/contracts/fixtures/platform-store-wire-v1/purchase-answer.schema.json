@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.purchase_answer.v1.json",
+  "title": "oteryn.store_wire.purchase_answer.v1",
+  "description": "200 body of PurchaseStoreOfferV1: a terminal answer, stored and returned byte-identical for every exact retry. At most 2048 bytes. CONFLICT is 409 and UNAVAILABLE is 503, both with an empty body.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "purchase_request_id",
+        "request_digest",
+        "result",
+        "order_id",
+        "currency",
+        "total_price",
+        "available_after",
+        "units",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "purchase_request_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "result": {
+          "const": "ACCEPTED"
+        },
+        "order_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "currency": {
+          "enum": [
+            "COINS",
+            "TRANSFERABLE_COINS"
+          ]
+        },
+        "total_price": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "available_after": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "units": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "unit_kind",
+              "entitlement_id",
+              "delivery_operation_id"
+            ],
+            "properties": {
+              "unit_kind": {
+                "enum": [
+                  "PREMIUM_TIME",
+                  "COSMETIC",
+                  "ITEM"
+                ]
+              },
+              "entitlement_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "delivery_operation_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              }
+            }
+          }
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "purchase_request_id",
+        "request_digest",
+        "result",
+        "decided_at"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "purchase_request_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "result": {
+          "enum": [
+            "INSUFFICIENT_BALANCE",
+            "STALE_QUOTE",
+            "OFFER_UNAVAILABLE",
+            "ACCOUNT_RESTRICTED",
+            "PURCHASE_DISABLED"
+          ]
+        },
+        "decided_at": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "contract_version": 1,
+  "operation_kind": "DELIVER",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "source_revision": "101",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000701",
+  "order_id": "0192b6a0-4c00-7000-8000-000000000501",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000601",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "product_id": "oteryn.premium_time",
+  "product_version": "1",
+  "unit_kind": "PREMIUM_TIME",
+  "catalog_revision": "37",
+  "offer_key": "premium-30d",
+  "grant_key": "premium_time",
+  "grant_revision": "1",
+  "quantity": 30,
+  "issued_at_source": "1792756800",
+  "audience": "OTERYN_GAME_STORE"
+}

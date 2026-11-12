@@ -1,0 +1,20 @@
+{
+  "contract_version": 1,
+  "operation_kind": "DELIVER",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "source_revision": "103",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+  "order_id": "0192b6a0-4c00-7000-8000-000000000502",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "product_id": "oteryn.store.item_grant",
+  "product_version": "2",
+  "unit_kind": "ITEM",
+  "catalog_revision": "37",
+  "offer_key": "potion-pack-10",
+  "grant_key": "item:great_health_potion",
+  "grant_revision": "12",
+  "quantity": 10,
+  "issued_at_source": "1792756810",
+  "audience": "OTERYN_GAME_STORE"
+}

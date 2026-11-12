@@ -1,0 +1,18 @@
+{
+  "contract_version": 1,
+  "operation_kind": "RECLAIM",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "source_revision": "106",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000705",
+  "delivery_operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+  "claim_operation_id": "0192b6a0-4c00-7000-8000-000000000703",
+  "claim_receipt_digest": "363b0d2714f69b83ea67ee06c5933d44bf956b71299c50216da82fe0ad006297",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "product_id": "oteryn.store.item_grant",
+  "product_version": "2",
+  "unit_kind": "ITEM",
+  "reversal_reason": "REFUND",
+  "issued_at_source": "1792757300",
+  "audience": "OTERYN_GAME_STORE"
+}

@@ -1,0 +1,17 @@
+{
+  "contract_version": 1,
+  "operation": "PublishStoreDeliveryReceiptV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "operation_kind": "REVOKE_UNCLAIMED",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000704",
+  "binding_digest": "1d7e7cde3d0fd0d3c25dde2048a91aa219bf63e51b291527093db3cb911ca358",
+  "outcome": "REJECTED",
+  "result_code": "STORE_LINE_ALREADY_CLAIMED",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+  "product_id": "oteryn.store.item_grant",
+  "product_version": "2",
+  "recovery_generation": "7",
+  "decided_at": "1792757202"
+}

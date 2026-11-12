@@ -1,0 +1,444 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.intent.v1.json",
+  "title": "oteryn.store_wire.intent.v1",
+  "description": "Platform-authored Store operation intent, served verbatim by ReadStoreOperationIntentV1. Immutable; at most 4096 bytes; no backslash.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation_kind",
+        "issuer_authority",
+        "source_revision",
+        "operation_id",
+        "order_id",
+        "entitlement_id",
+        "account_id",
+        "product_id",
+        "product_version",
+        "unit_kind",
+        "catalog_revision",
+        "offer_key",
+        "grant_key",
+        "grant_revision",
+        "quantity",
+        "issued_at_source",
+        "audience"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation_kind": {
+          "const": "DELIVER"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "order_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "unit_kind": {
+          "enum": [
+            "PREMIUM_TIME",
+            "COSMETIC",
+            "ITEM"
+          ]
+        },
+        "catalog_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "offer_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "grant_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]{0,63}$"
+        },
+        "grant_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "issued_at_source": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "audience": {
+          "const": "OTERYN_GAME_STORE"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation_kind",
+        "issuer_authority",
+        "source_revision",
+        "operation_id",
+        "delivery_operation_id",
+        "entitlement_id",
+        "account_id",
+        "product_id",
+        "product_version",
+        "unit_kind",
+        "grant_key",
+        "grant_revision",
+        "quantity",
+        "issued_at_source",
+        "audience"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation_kind": {
+          "const": "CLAIM"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "delivery_operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "unit_kind": {
+          "const": "ITEM"
+        },
+        "grant_key": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:-]{0,63}$"
+        },
+        "grant_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "issued_at_source": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "audience": {
+          "const": "OTERYN_GAME_STORE"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation_kind",
+        "issuer_authority",
+        "source_revision",
+        "operation_id",
+        "delivery_operation_id",
+        "entitlement_id",
+        "account_id",
+        "product_id",
+        "product_version",
+        "unit_kind",
+        "reversal_reason",
+        "issued_at_source",
+        "audience"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation_kind": {
+          "const": "REVOKE_UNCLAIMED"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "delivery_operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "unit_kind": {
+          "const": "ITEM"
+        },
+        "reversal_reason": {
+          "enum": [
+            "REFUND",
+            "CHARGEBACK",
+            "SUPPORT_CORRECTION"
+          ]
+        },
+        "issued_at_source": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "audience": {
+          "const": "OTERYN_GAME_STORE"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation_kind",
+        "issuer_authority",
+        "source_revision",
+        "operation_id",
+        "delivery_operation_id",
+        "claim_operation_id",
+        "claim_receipt_digest",
+        "entitlement_id",
+        "account_id",
+        "product_id",
+        "product_version",
+        "unit_kind",
+        "reversal_reason",
+        "issued_at_source",
+        "audience"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation_kind": {
+          "const": "RECLAIM"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "delivery_operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "claim_operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "claim_receipt_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "unit_kind": {
+          "const": "ITEM"
+        },
+        "reversal_reason": {
+          "enum": [
+            "REFUND",
+            "CHARGEBACK",
+            "SUPPORT_CORRECTION"
+          ]
+        },
+        "issued_at_source": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "audience": {
+          "const": "OTERYN_GAME_STORE"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "operation_kind",
+        "issuer_authority",
+        "source_revision",
+        "operation_id",
+        "delivery_operation_id",
+        "reversal_operation_id",
+        "entitlement_id",
+        "account_id",
+        "product_id",
+        "product_version",
+        "unit_kind",
+        "reversal_reason",
+        "shortfall_quantity",
+        "issued_at_source",
+        "audience"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": 1
+        },
+        "operation_kind": {
+          "const": "FLAG"
+        },
+        "issuer_authority": {
+          "const": "OTERYN_PLATFORM_STORE_AUTHORITY"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "delivery_operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "reversal_operation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "entitlement_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+          "maxLength": 64
+        },
+        "product_version": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "unit_kind": {
+          "const": "ITEM"
+        },
+        "reversal_reason": {
+          "enum": [
+            "REFUND",
+            "CHARGEBACK",
+            "SUPPORT_CORRECTION"
+          ]
+        },
+        "shortfall_quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "issued_at_source": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "audience": {
+          "const": "OTERYN_GAME_STORE"
+        }
+      }
+    }
+  ]
+}

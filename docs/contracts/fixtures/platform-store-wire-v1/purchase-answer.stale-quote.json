@@ -1,0 +1,7 @@
+{
+  "contract_version": 1,
+  "purchase_request_id": "0192b6a0-4c00-7000-8000-000000000401",
+  "request_digest": "895d8b1edbad9ad72df392cc4a7c25453fe0a03dbd0fb8f335a19950da570d52",
+  "result": "STALE_QUOTE",
+  "decided_at": "1792756800"
+}

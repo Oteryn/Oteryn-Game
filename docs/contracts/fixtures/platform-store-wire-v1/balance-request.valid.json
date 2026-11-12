@@ -1,0 +1,6 @@
+{
+  "contract_version": 1,
+  "operation": "ReadStoreBalanceV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101"
+}

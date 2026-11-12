@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.receipt_answer.v1.json",
+  "title": "oteryn.store_wire.receipt_answer.v1",
+  "description": "200 body of PublishStoreDeliveryReceiptV1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "result"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "result": {
+      "const": "accepted"
+    }
+  }
+}

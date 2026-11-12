@@ -1,0 +1,27 @@
+{
+  "game_session_contract_version": 2,
+  "gameplay_selection": {
+    "capabilities": [
+      "actions.command-result.v1",
+      "chat.semantic.v1",
+      "combat.server-authoritative.v1",
+      "inventory.server-authoritative.v1",
+      "ordering.server-sequence.v1",
+      "reconciliation.movement.v1",
+      "session.single-admission.v1",
+      "state.revision.v1",
+      "state.snapshot-delta.v1"
+    ],
+    "capability_digest_sha256": "f762b55d5108c135079cf0427424d9e9973e76b102321bcb5cacd1fe35a0f018",
+    "family": "oteryn",
+    "host": "native.invalid",
+    "native_protocol_version": 1,
+    "policy_revision": 1,
+    "port": 7173,
+    "schema_revision": 2,
+    "schema_sha256": "9c67f19525400fb9890d2a3541ceb6d02eb955061540ad39ca1c1d891c06eba9",
+    "tls_server_name": "native.invalid",
+    "transport": "tcp.tls13.protobuf.be32.v1"
+  },
+  "protocol_version": 1
+}

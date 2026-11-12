@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.restore_status.v1.json",
+  "title": "oteryn.store_wire.restore_status.v1",
+  "description": "200 body of PublishGameRestoreNoticeV1, unchanged; reopened and outstanding count character commands and Store operations together.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "restore_event_id",
+    "status",
+    "reopened",
+    "outstanding"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "restore_event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "status": {
+      "enum": [
+        "RECONCILING",
+        "ACKNOWLEDGED"
+      ]
+    },
+    "reopened": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "outstanding": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    }
+  }
+}

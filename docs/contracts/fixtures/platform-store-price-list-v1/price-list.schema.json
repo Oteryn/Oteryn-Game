@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/store-price-list-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "offers"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "offers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "offer_key",
+          "currency",
+          "unit_price",
+          "max_quantity",
+          "purchasable",
+          "units"
+        ],
+        "properties": {
+          "offer_key": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+          },
+          "currency": {
+            "enum": [
+              "COINS",
+              "TRANSFERABLE_COINS"
+            ]
+          },
+          "unit_price": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,18}$"
+          },
+          "max_quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "purchasable": {
+            "type": "boolean"
+          },
+          "units": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "product_id",
+                "product_version",
+                "unit_kind",
+                "grant_key",
+                "grant_revision",
+                "quantity"
+              ],
+              "properties": {
+                "product_id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,31}(\\.[a-z][a-z0-9_]{0,31}){1,3}$",
+                  "maxLength": 64
+                },
+                "product_version": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,19}$"
+                },
+                "unit_kind": {
+                  "enum": [
+                    "PREMIUM_TIME",
+                    "COSMETIC",
+                    "ITEM"
+                  ]
+                },
+                "grant_key": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._:-]{0,63}$"
+                },
+                "grant_revision": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,19}$"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

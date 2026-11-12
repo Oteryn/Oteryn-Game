@@ -1,0 +1,18 @@
+{
+  "contract_version": 1,
+  "operation_kind": "FLAG",
+  "issuer_authority": "OTERYN_PLATFORM_STORE_AUTHORITY",
+  "source_revision": "107",
+  "operation_id": "0192b6a0-4c00-7000-8000-000000000706",
+  "delivery_operation_id": "0192b6a0-4c00-7000-8000-000000000702",
+  "reversal_operation_id": "0192b6a0-4c00-7000-8000-000000000705",
+  "entitlement_id": "0192b6a0-4c00-7000-8000-000000000602",
+  "account_id": "0192b6a0-4c00-7000-8000-000000000101",
+  "product_id": "oteryn.store.item_grant",
+  "product_version": "2",
+  "unit_kind": "ITEM",
+  "reversal_reason": "REFUND",
+  "shortfall_quantity": 4,
+  "issued_at_source": "1792757500",
+  "audience": "OTERYN_GAME_STORE"
+}

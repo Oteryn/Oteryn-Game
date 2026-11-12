@@ -1,0 +1,8 @@
+{
+  "contract_version": 1,
+  "operation": "ListPendingStoreOperationsV1",
+  "source_authority": "oteryn-game/store-consumer",
+  "after_source_revision": "0",
+  "after_operation_id": "00000000-0000-0000-0000-000000000000",
+  "max_entries": 32
+}

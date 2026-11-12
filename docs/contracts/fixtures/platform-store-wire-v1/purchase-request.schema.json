@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.store_wire.purchase_request.v1.json",
+  "title": "oteryn.store_wire.purchase_request.v1",
+  "description": "Request body of POST /internal/v1/products-entitlements/store/purchases (PurchaseStoreOfferV1). At most 1024 bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "operation",
+    "source_authority",
+    "purchase_request_id",
+    "account_id",
+    "character_id",
+    "world_id",
+    "catalog_revision",
+    "offer_key",
+    "currency",
+    "unit_price",
+    "quantity"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": 1
+    },
+    "operation": {
+      "const": "PurchaseStoreOfferV1"
+    },
+    "source_authority": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:/-]{1,128}$"
+    },
+    "purchase_request_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "character_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "world_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "catalog_revision": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,19}$"
+    },
+    "offer_key": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "currency": {
+      "enum": [
+        "COINS",
+        "TRANSFERABLE_COINS"
+      ]
+    },
+    "unit_price": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]{0,18}$"
+    },
+    "quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  }
+}
