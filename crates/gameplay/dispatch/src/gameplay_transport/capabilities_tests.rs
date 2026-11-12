@@ -249,6 +249,8 @@ struct NegotiatingAuthority {
     position: Cell<ActorPosition>,
     /// PARITY-EVENT-CALLBACKS-1: the Channel's due server-save countdown minute.
     server_save: Cell<Option<super::super::server_save_countdown::DueServerSaveCountdown>>,
+    /// Whether the activity scope read fails, so the join cannot be prepared.
+    scope_fails: Cell<bool>,
 }
 
 impl NegotiatingAuthority {
@@ -269,6 +271,7 @@ impl NegotiatingAuthority {
                 floor: 0,
             }),
             server_save: Cell::new(None),
+            scope_fails: Cell::new(false),
         }
     }
 }
@@ -347,6 +350,17 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
         &self,
     ) -> Option<super::super::server_save_countdown::DueServerSaveCountdown> {
         self.server_save.get()
+    }
+
+    async fn activity_scope_snapshot(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> Result<Option<Vec<u8>>, ()> {
+        if self.scope_fails.get() {
+            Err(())
+        } else {
+            Ok(None)
+        }
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {

@@ -81,6 +81,17 @@ class ReportTests(unittest.TestCase):
             evidence = results(f"SEAM_EVIDENCE e2e_all scenario=M01.full status={status} seconds=0 evidence={source}")
             self.assertFalse(summary([("M01", "Movement")], evidence)[1])
 
+    def test_failing_result_may_name_its_cause_and_root(self):
+        line = "SEAM_EVIDENCE e2e_all scenario=M01.full status=FAIL seconds=3"
+        evidence = results(line + " cause=timeout root=M01/fixture0-released")
+        self.assertEqual(evidence["M01.full"][0], "FAIL")
+        self.assertFalse(summary([("M01", "Movement")], evidence)[1])
+        passing = "SEAM_EVIDENCE e2e_all scenario=M01.full status=PASS seconds=3"
+        with self.assertRaises(ValueError):
+            results(passing + " cause=timeout root=M01/check")
+        with self.assertRaises(ValueError):
+            results(line + " cause=timeout")
+
     def test_duplicate_unknown_and_malformed_evidence_fails(self):
         line = "SEAM_EVIDENCE e2e_all scenario=M01.full status=PASS seconds=0"
         with self.assertRaises(ValueError):

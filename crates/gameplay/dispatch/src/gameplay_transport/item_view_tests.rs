@@ -995,15 +995,19 @@ mod connection {
             assert_eq!(ended(end)?.item_view, mirror.continuity());
             assert_eq!(mirror.continuity().handle_counter, 3);
 
-            // An unreadable backpack fails closed before anything is sent.
+            // An unreadable backpack fails closed before any snapshot: only
+            // SESSION_JOIN_UNAVAILABLE is sent.
             let authority = ViewAuthority::new(None);
-            let (end, frames) = serve(
-                &authority,
-                session(selected(ItemViewContinuity::default()))?,
-                &[],
-            )
-            .await?;
-            assert!(frames.is_empty());
+            let admitted = session(selected(ItemViewContinuity::default()))?;
+            let (end, frames) = serve(&authority, admitted, &[]).await?;
+            assert_eq!(
+                frames,
+                [oteryn_protocol_oteryn::encode_protocol_error(
+                    oteryn_protocol_oteryn::FoundationProtocolError::SessionJoinUnavailable,
+                    admitted.continuity.connection_generation,
+                )
+                .expect("error frame")]
+            );
             assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
             Ok(())
         })

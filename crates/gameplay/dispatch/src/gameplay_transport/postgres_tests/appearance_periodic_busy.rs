@@ -260,7 +260,28 @@ fn scenario(case: Case) -> TestResult {
             drop(server);
             let mut bytes = Vec::new();
             client.read_to_end(&mut bytes).await?;
-            assert!(bytes.is_empty(), "failed join published a partial snapshot");
+            // FND-04C §4.1: the failed join sends exactly one SESSION_JOIN_UNAVAILABLE
+            // frame and nothing else, so no partial snapshot reaches the client.
+            let (length, frame) = bytes
+                .split_first_chunk::<4>()
+                .ok_or("failed join sent no SESSION_JOIN_UNAVAILABLE frame")?;
+            assert_eq!(
+                usize::try_from(u32::from_be_bytes(*length))?,
+                frame.len(),
+                "failed join published more than its one error frame"
+            );
+            let envelope = decode_wire_envelope(frame).map_err(debug)?;
+            assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                envelope.connection_generation(),
+                admitted.continuity.connection_generation
+            );
+            let error =
+                oteryn_protocol_oteryn::decode_protocol_error(envelope.payload()).map_err(debug)?;
+            assert_eq!(
+                error.error_code,
+                oteryn_protocol_oteryn::FoundationProtocolError::SessionJoinUnavailable.code()
+            );
             drop(held);
         }
 

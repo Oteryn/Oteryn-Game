@@ -9,7 +9,9 @@ import re
 RESULT = re.compile(
     r"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+) "
     r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER) seconds=([0-9]+(?:\.[0-9]+)?)"
-    r"(?: evidence=(\S+))?$"
+    r"(?: evidence=(\S+))?"
+    # A failing scenario names its own cause and the first failing row/check.
+    r"(?: cause=([a-z][a-z-]*) root=(\S+))?$"
 )
 ROW = re.compile(r"^\| ([A-Z]\d\d[a-z]?) \| ([^|]+) \|")
 MAP_CHECK = re.compile(
@@ -137,7 +139,9 @@ def results(text):
         match = RESULT.fullmatch(line)
         if not match:
             raise ValueError("malformed E2E-ALL result")
-        scenario, status, seconds, evidence = match.groups()
+        scenario, status, seconds, evidence, cause, _root = match.groups()
+        if cause and status != "FAIL":
+            raise ValueError(f"cause on a non-failing result: {scenario}")
         seconds = float(seconds)
         if not math.isfinite(seconds):
             raise ValueError(f"non-finite duration: {scenario}")
