@@ -25,6 +25,25 @@ allow = [
     "Zlib",
 ]
 
+# Bounded admission for Bevy 0.20.1's upstream shader-layout infrastructure.
+# Registry archives/checksums and SPDX MIT-0 text were verified against the
+# exact upstream commit; see crates/client-ui-bevy/dependency-custody.json.
+# Keep these exact versions scoped here; MIT-0 is not globally allowed.
+[[licenses.exceptions]]
+name = "encase"
+version = "=0.12.1"
+allow = ["MIT-0"]
+
+[[licenses.exceptions]]
+name = "encase_derive"
+version = "=0.12.1"
+allow = ["MIT-0"]
+
+[[licenses.exceptions]]
+name = "encase_derive_impl"
+version = "=0.12.1"
+allow = ["MIT-0"]
+
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
