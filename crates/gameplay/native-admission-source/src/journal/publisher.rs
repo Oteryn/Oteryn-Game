@@ -110,6 +110,12 @@ pub trait JournalOutbox {
         &self,
         stream: &ReadGameJournalCursorV1,
     ) -> impl Future<Output = Result<bool, SourceError>>;
+    /// An unknown remote stream is not a zero cursor. Only a locally registered
+    /// cut with retained revision-1 bytes can bootstrap by exact replay.
+    fn first_for_replay(
+        &self,
+        stream: &ReadGameJournalCursorV1,
+    ) -> impl Future<Output = Result<Option<StoredPublication>, SourceError>>;
     fn after_cursor(
         &self,
         stream: &ReadGameJournalCursorV1,
@@ -190,16 +196,31 @@ impl<P: JournalPeer> Publisher<P> {
             .await
         {
             Ok(bytes) => match ReadGameJournalCursorV1Response::decode(&bytes) {
-                Ok(value) => value,
+                Ok(value) => Some(value),
                 Err(_) => return Step::Quarantined,
             },
             Err(Failure::Retry(delay)) => return self.retry(&key, delay),
-            Err(_) => return Step::Quarantined,
+            Err(Failure::Conflict) => None,
+            Err(Failure::Quarantine) => return Step::Quarantined,
         };
-        let publication = match store.after_cursor(stream, &cursor).await {
+        let bootstrapping = cursor.is_none();
+        let selected = match &cursor {
+            Some(cursor) => store.after_cursor(stream, cursor).await,
+            None => store.first_for_replay(stream).await,
+        };
+        let publication = match selected {
             Ok(Some(value)) => value,
-            Ok(None) => return Step::Idle,
-            Err(_) => return Step::Quarantined,
+            Ok(None) => {
+                return if bootstrapping {
+                    Step::Quarantined
+                } else {
+                    Step::Idle
+                };
+            }
+            Err(SourceError::InvalidInput | SourceError::InvalidDescriptor) => {
+                return Step::Quarantined;
+            }
+            Err(_) => return self.retry(&key, None),
         };
         if Sha256::digest(&publication.bytes).as_slice() != publication.sha256 {
             return Step::Quarantined;
@@ -207,11 +228,14 @@ impl<P: JournalPeer> Publisher<P> {
         let Ok(record) = PublishGameJournalRecordV1::decode(&publication.bytes) else {
             return Step::Quarantined;
         };
-        let expected = cursor
-            .after_source_revision
-            .parse::<u64>()
-            .ok()
-            .and_then(|v| v.checked_add(1));
+        let expected = match &cursor {
+            Some(cursor) => cursor
+                .after_source_revision
+                .parse::<u64>()
+                .ok()
+                .and_then(|v| v.checked_add(1)),
+            None => Some(1),
+        };
         if counter(&record.source_revision) != expected || !same_stream(stream, &record) {
             return Step::Quarantined;
         }
@@ -238,6 +262,7 @@ impl<P: JournalPeer> Publisher<P> {
                 Step::Accepted
             }
             // The next step always rereads the cursor, including after a lost ACK or gap.
+            Err(Failure::Conflict) if bootstrapping => Step::Quarantined,
             Err(Failure::Conflict) => self.retry(&key, None),
             Err(Failure::Retry(delay)) => self.retry(&key, delay),
             Err(Failure::Quarantine) => Step::Quarantined,

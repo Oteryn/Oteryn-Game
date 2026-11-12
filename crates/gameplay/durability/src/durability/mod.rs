@@ -37,6 +37,7 @@ pub mod house_transfer;
 pub mod hunting_stamina;
 pub mod hunting_xp;
 pub mod inspection;
+pub mod journal;
 pub mod mail_text_policy;
 #[allow(dead_code)]
 pub mod native_world_items;

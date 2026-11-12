@@ -1,5 +1,8 @@
 use super::*;
-use std::{cell::RefCell, collections::VecDeque};
+use std::{
+    cell::{Cell, RefCell},
+    collections::VecDeque,
+};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 struct Peer {
     replies: VecDeque<Result<Vec<u8>, Failure>>,
@@ -12,6 +15,7 @@ impl JournalPeer for Peer {
     }
 }
 struct Store {
+    after_calls: Cell<usize>,
     record: Vec<u8>,
     acks: RefCell<Vec<String>>,
     live: bool,
@@ -20,11 +24,25 @@ impl JournalOutbox for Store {
     async fn current(&self, _: &ReadGameJournalCursorV1) -> Result<bool, SourceError> {
         Ok(self.live)
     }
+    async fn first_for_replay(
+        &self,
+        _: &ReadGameJournalCursorV1,
+    ) -> Result<Option<StoredPublication>, SourceError> {
+        let record = PublishGameJournalRecordV1::decode(&self.record)?;
+        if record.source_revision != "1" {
+            return Err(SourceError::InvalidInput);
+        }
+        Ok(Some(StoredPublication {
+            bytes: self.record.clone(),
+            sha256: Sha256::digest(&self.record).into(),
+        }))
+    }
     async fn after_cursor(
         &self,
         _: &ReadGameJournalCursorV1,
         c: &ReadGameJournalCursorV1Response,
     ) -> Result<Option<StoredPublication>, SourceError> {
+        self.after_calls.set(self.after_calls.get() + 1);
         let record = PublishGameJournalRecordV1::decode(&self.record)?;
         if c.after_source_revision == "0" {
             return Ok(Some(StoredPublication {
@@ -69,6 +87,7 @@ fn fixture() -> Result<(ReadGameJournalCursorV1, Store), Box<dyn std::error::Err
     Ok((
         s,
         Store {
+            after_calls: Cell::new(0),
             record: text.as_bytes().to_vec(),
             acks: RefCell::new(Vec::new()),
             live: true,
@@ -103,4 +122,34 @@ fn journal_publisher_ack_gap_replay_lost_ack_and_default_off() -> TestResult {
         assert_eq!(store.acks.borrow().len(),1);
         Ok(())
     })
+}
+
+#[test]
+fn journal_publisher_unknown_cursor_bootstraps_from_retained_first_record() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (stream, store) = fixture()?;
+            let peer = Peer {
+                replies: VecDeque::from([
+                    Err(Failure::Conflict),
+                    Ok(PublishGameJournalRecordV1Response::BYTES.to_vec()),
+                ]),
+                sent: Vec::new(),
+            };
+            let mut publisher = Publisher::new(
+                JournalExportConfig {
+                    game_journal_items_export_enabled: true,
+                    ..Default::default()
+                },
+                peer,
+                stream.source_authority.clone(),
+            )?;
+            assert_eq!(publisher.step(&stream, &store).await, Step::Accepted);
+            assert_eq!(publisher.peer.sent[1].1, store.record);
+            assert_eq!(store.acks.borrow().len(), 1);
+            assert_eq!(store.after_calls.get(), 0);
+            Ok(())
+        })
 }
