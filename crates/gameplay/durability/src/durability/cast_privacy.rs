@@ -108,11 +108,40 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         worker: &mut CastConsentWorker,
     ) -> Result<CastConsentBatch, DurabilityError> {
+        self.refresh_cast_consent_worker_with_wait(node, worker, true)
+            .await
+    }
+
+    /// The cast service must keep polling its pending observer command's existing
+    /// rejection boundary while that command's caller may hold the busy holder.
+    /// Try this same refresh without waiting; media still requires the current lease.
+    pub async fn try_refresh_cast_consent_worker(
+        &self,
+        node: &NodeIncarnationProof,
+        worker: &mut CastConsentWorker,
+    ) -> Result<CastConsentBatch, DurabilityError> {
+        self.refresh_cast_consent_worker_with_wait(node, worker, false)
+            .await
+    }
+
+    async fn refresh_cast_consent_worker_with_wait(
+        &self,
+        node: &NodeIncarnationProof,
+        worker: &mut CastConsentWorker,
+        wait_for_holder: bool,
+    ) -> Result<CastConsentBatch, DurabilityError> {
         let started = Instant::now();
+        let pass = if wait_for_holder {
+            self.cast_privacy_worker_pass(worker.valid_until()).await?
+        } else if worker.valid() {
+            self.try_issue_semantic_pass_by(worker.valid_until())?
+        } else {
+            self.try_issue_semantic_pass()?
+        };
         let instance = worker.instance;
         let from = worker.cursor;
         let node = node.clone();
-        let (through,events,renewed)=self.cast_privacy_worker_pass(worker.valid_until()).await?.run(move |holder,deadline|Box::pin(async move {
+        let (through,events,renewed)=pass.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             current(&mut tx,&node).await?;
             let latest=control(&mut tx).await?;

@@ -39,7 +39,7 @@ async fn holder_case(admin: String) -> TestResult {
             Poll::Ready(())
         })
         .await;
-        drop(held);
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         let batch = refresh.as_mut().await?;
         assert!(batch.is_empty());
         // End the mutable borrow owned by the completed, pinned future.
@@ -59,7 +59,7 @@ async fn holder_case(admin: String) -> TestResult {
             Poll::Ready(())
         })
         .await;
-        drop(held);
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         ack.as_mut().await?;
         drop(ack);
         assert!(worker.valid());
@@ -80,7 +80,7 @@ async fn holder_case(admin: String) -> TestResult {
         assert_eq!(worker.valid_until(), until);
         assert!(!worker.valid());
         assert_eq!(worker.version(), version);
-        drop(held);
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         h.root.close_cast_consent_worker(&h.node, worker).await?;
         Ok(())
     }
