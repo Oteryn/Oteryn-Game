@@ -1323,6 +1323,17 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Keeps one background fairness grant across all passes of a bounded operation.
+    /// The holder is still checked out non-blockingly for each pass; completion or
+    /// cancellation drops the grant, including when the caller is a long-lived scheduler.
+    pub async fn with_background_operation<F: Future>(&self, future: F) -> F::Output {
+        if holder_queue::is_background() {
+            foreground::operation(&self.holder_priority, future).await
+        } else {
+            future.await
+        }
+    }
+
     /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).
     pub const MAX_BOOT_PASS_DEADLINE: Duration = Duration::from_secs(60);
 
@@ -1435,10 +1446,10 @@ impl DurabilityRoot {
         F::Output: Send + 'static,
     {
         // Work spawned on an owner's behalf keeps that owner's place for the holder.
-        self.spawn_on_runtime(holder_queue::spawned_for(
+        self.spawn_on_runtime(foreground::inherit_operation(holder_queue::spawned_for(
             holder_queue::current_owner(),
             future,
-        ))
+        )))
     }
 
     fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
@@ -1797,7 +1808,7 @@ impl DurabilityRoot {
     fn try_acquire_background_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
         self.holder_priority
             .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
-                // Priority already granted this pass its fairness turn. The ticket
+                // Priority already granted this operation its fairness turn. The ticket
                 // queue must not reserve an idle holder against that grant.
                 let holder = self.pool.try_acquire();
                 if holder.is_none() {

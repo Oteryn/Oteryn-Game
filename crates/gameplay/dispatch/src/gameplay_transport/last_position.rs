@@ -1057,6 +1057,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// sessions' fences in one root pass and write them in one transaction, so the batch costs
     /// two durability passes whatever its size (`CHARPOS0-RL-01`). Returns the failed writes.
     async fn write_last_position_batch(&self, batch: &[(GameSessionId, Track)]) -> usize {
+        self.root
+            .with_background_operation(self.write_last_position_batch_inner(batch))
+            .await
+    }
+
+    async fn write_last_position_batch_inner(&self, batch: &[(GameSessionId, Track)]) -> usize {
         let mut changed = Vec::with_capacity(batch.len());
         for &(session, track) in batch {
             let capture = match self.capture_last_position(&track, session).await {

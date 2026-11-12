@@ -43,6 +43,7 @@ fn observation() -> WorldSpatialObservation {
 #[derive(Default)]
 struct SlowOwner {
     slow_browse: Cell<bool>,
+    refuse_browse: Cell<bool>,
     visibility_delay: Cell<std::time::Duration>,
     vitals_delay: Cell<std::time::Duration>,
     browse_reads: Cell<usize>,
@@ -121,6 +122,9 @@ impl FreshAdmissionAuthority for SlowOwner {
             }
         );
         self.browse_reads.set(self.browse_reads.get() + 1);
+        if self.refuse_browse.get() {
+            return None;
+        }
         if self.slow_browse.get() {
             // A valid owner read longer than the existing cadence reproduces the starvation.
             tokio::time::sleep(VISIBILITY_REFRESH * 2).await;
@@ -531,4 +535,82 @@ fn slow_refresh_session(delay: std::time::Duration) -> TestResult {
         })?
         .join()
         .map_err(|_| "slow refresh test thread panicked")?
+}
+
+#[test]
+fn background_visibility_refusal_keeps_container_open_and_retries_next_tick() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(async {
+                    let authority = SlowOwner::default();
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(true)?;
+                    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+                    let mut session = setup::prepare(
+                        &mut server,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "prepare connection")?;
+                    let payload =
+                        encode_browse_field_intent(&BrowseFieldIntent::Open { position: FIELD })
+                            .map_err(|error| format!("{error:?}"))?;
+                    write_frame(
+                        &mut client,
+                        &command_frame(1, COMMAND_TYPE_BROWSE_FIELD_INTENT, &payload)?,
+                    )
+                    .await?;
+                    execute_ready_frame(&mut server, &authority, &mut session).await?;
+                    let revision = session
+                        .item_view
+                        .as_ref()
+                        .ok_or("item view")?
+                        .continuity()
+                        .views_revision;
+                    authority.browse_reads.set(0);
+                    authority.refuse_browse.set(true);
+                    for refused in [true, false] {
+                        authority.refuse_browse.set(refused);
+                        crate::durability::DurabilityRoot::with_background_holder(receive(
+                            &mut server,
+                            &authority,
+                            &mut session,
+                            Next::Visibility,
+                        ))
+                        .await
+                        .map_err(|_| "visibility refresh")?;
+                        assert_eq!(
+                            session.container_views.as_ref().map(|v| v.open_views()),
+                            Some(1),
+                            "a refused observation must keep the container open"
+                        );
+                        assert_eq!(
+                            session
+                                .item_view
+                                .as_ref()
+                                .ok_or("item view")?
+                                .continuity()
+                                .views_revision,
+                            revision
+                        );
+                    }
+                    assert_eq!(
+                        authority.browse_reads.get(),
+                        2,
+                        "next tick retries observation"
+                    );
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "visibility refusal test thread panicked")?
 }

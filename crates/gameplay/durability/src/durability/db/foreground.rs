@@ -1,4 +1,5 @@
 //! Bounded foreground preference for the single ready durability holder.
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -12,6 +13,24 @@ struct State {
 #[derive(Default)]
 pub(super) struct HolderPriority {
     state: Mutex<State>,
+}
+
+tokio::task_local! {
+    static BACKGROUND_OPERATION: Option<(Arc<HolderPriority>, Arc<AtomicBool>)>;
+}
+
+pub(super) async fn operation<F: Future>(priority: &Arc<HolderPriority>, future: F) -> F::Output {
+    BACKGROUND_OPERATION
+        .scope(
+            Some((Arc::clone(priority), Arc::new(AtomicBool::new(false)))),
+            future,
+        )
+        .await
+}
+
+pub(super) fn inherit_operation<F: Future>(future: F) -> impl Future<Output = F::Output> {
+    let operation = BACKGROUND_OPERATION.try_with(Clone::clone).ok().flatten();
+    BACKGROUND_OPERATION.scope(operation, future)
 }
 
 /// Keeps a foreground owner's demand visible across waits and separate passes.
@@ -53,7 +72,7 @@ impl HolderPriority {
     }
 
     /// Check priority and take an already-idle holder in one short critical section.
-    /// A continuous foreground stream still permits one background pass per window.
+    /// A continuous foreground stream still permits one background operation per window.
     pub(super) fn background<T>(
         &self,
         now: Instant,
@@ -61,11 +80,27 @@ impl HolderPriority {
         acquire: impl FnOnce() -> Option<T>,
     ) -> Option<T> {
         let mut state = self.state.lock().ok()?;
-        if state.foreground > 0 && state.until.is_some_and(|until| now < until) {
+        let grant = BACKGROUND_OPERATION
+            .try_with(|operation| {
+                operation.as_ref().and_then(|(priority, granted)| {
+                    std::ptr::eq(self, Arc::as_ptr(priority)).then(|| Arc::clone(granted))
+                })
+            })
+            .ok()
+            .flatten();
+        let granted = grant
+            .as_ref()
+            .is_some_and(|grant| grant.load(Ordering::Relaxed));
+        if !granted && state.foreground > 0 && state.until.is_some_and(|until| now < until) {
             return None;
         }
         let holder = acquire()?;
-        state.until = (state.foreground > 0).then_some(now + window);
+        if !granted {
+            state.until = (state.foreground > 0).then_some(now + window);
+            if let Some(grant) = grant {
+                grant.store(true, Ordering::Relaxed);
+            }
+        }
         Some(holder)
     }
 }
@@ -142,6 +177,44 @@ mod tests {
             assert_eq!(holder_queue::current_owner(), owner);
             let ticket = root.holder_waiter();
             assert!(ticket.is_some(), "cancellation restores ordinary FIFO ownership");
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+    }
+
+    #[test]
+    fn background_operation_keeps_one_grant_across_passes() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        runtime.block_on(async {
+            let priority = Arc::new(HolderPriority::default());
+            let other = Arc::new(HolderPriority::default());
+            let now = Instant::now();
+            let demand = priority.foreground(now, WINDOW);
+            assert!(demand.is_some());
+            operation(&priority, async {
+                assert_eq!(priority.background(now, WINDOW, || Some(())), None);
+                assert_eq!(priority.background::<()>(now + WINDOW, WINDOW, || None), None);
+                assert_eq!(
+                    priority.background(now + WINDOW, WINDOW, || Some(())),
+                    Some(())
+                );
+                let other_demand = other.foreground(now + WINDOW, WINDOW);
+                assert!(other_demand.is_some());
+                assert_eq!(other.background(now + WINDOW, WINDOW, || Some(())), None);
+                let inherited = Arc::clone(&priority);
+                tokio::spawn(inherit_operation(async move {
+                    assert_eq!(
+                        inherited.background(now + WINDOW, WINDOW, || Some(())),
+                        Some(())
+                    );
+                }))
+                .await?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })
+            .await?;
+            operation(&priority, async {
+                assert_eq!(priority.background(now + WINDOW, WINDOW, || Some(())), None);
+            })
+            .await;
             Ok::<(), Box<dyn std::error::Error>>(())
         })
     }
