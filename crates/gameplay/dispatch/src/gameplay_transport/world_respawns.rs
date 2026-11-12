@@ -35,10 +35,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A busy durability holder is transient; never stop the world's existing spawn loop.
         loop {
             let Some(initialized) = stopping_first(
-                async {
+                self.root.with_background_operation(async {
                     self.initialize_daily_boost().await?;
                     self.initialize_cyclopedia_respawn().await
-                },
+                }),
                 shutdown,
             )
             .await
@@ -94,6 +94,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn boss_spawn_pass(
+        &self,
+        timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
+    ) -> Result<bool, RespawnExit> {
+        self.root
+            .with_background_operation(self.boss_spawn_pass_inner(timers))
+            .await
+    }
+
+    async fn boss_spawn_pass_inner(
         &self,
         timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
     ) -> Result<bool, RespawnExit> {

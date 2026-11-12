@@ -447,14 +447,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         now_ms: i64,
         progress: &mut RaidEffectProgress,
     ) -> Result<(), ()> {
-        progress.begin(firing, key)?;
-        let result = self
-            .drive_retained_raid_firing(firing, key, catalogue, seed, now_ms, progress)
-            .await;
-        if result.is_ok() {
-            progress.retries.remove(&firing);
-        }
-        result
+        self.root
+            .with_background_operation(async {
+                progress.begin(firing, key)?;
+                let result = self
+                    .drive_retained_raid_firing(firing, key, catalogue, seed, now_ms, progress)
+                    .await;
+                if result.is_ok() {
+                    progress.retries.remove(&firing);
+                }
+                result
+            })
+            .await
     }
 
     async fn drive_retained_raid_firing(

@@ -10,6 +10,7 @@ struct MoveOwner {
     moved: Cell<bool>,
     refused: Cell<bool>,
     reads: Cell<usize>,
+    background_operations: Cell<usize>,
 }
 
 fn item(tag: u8) -> ViewItem {
@@ -22,6 +23,12 @@ fn item(tag: u8) -> ViewItem {
 }
 
 impl FreshAdmissionAuthority for MoveOwner {
+    async fn background_operation<F: Future>(&self, future: F) -> F::Output {
+        self.background_operations
+            .set(self.background_operations.get() + 1);
+        future.await
+    }
+
     async fn admit(
         &self,
         _: FreshAdmissionAttempt<'_>,
@@ -166,6 +173,7 @@ fn item_move_refused_container_without_browse_retries_next_visibility_tick() -> 
                         authority.moved.get(),
                         "ITEM_MOVE must commit through dispatch"
                     );
+                    assert_eq!(authority.background_operations.get(), 0);
                     assert_eq!(
                         session.container_views.as_ref().map(|v| v.open_views()),
                         Some(1)
@@ -197,6 +205,7 @@ fn item_move_refused_container_without_browse_retries_next_visibility_tick() -> 
                     assert_eq!(authority.reads.get(), reads + 1);
                     let view = session.item_view.as_ref().ok_or("view")?;
                     assert!(!view.inventory_refresh_pending);
+                    assert_eq!(authority.background_operations.get(), 2);
                     assert_eq!(
                         view.continuity().views_revision,
                         revision + 1,

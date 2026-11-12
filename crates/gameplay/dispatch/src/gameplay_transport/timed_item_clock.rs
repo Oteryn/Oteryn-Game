@@ -115,6 +115,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> bool {
+        self.root
+            .with_background_operation(self.checkpoint_timed_equipment_inner(actor, session, force))
+            .await
+    }
+
+    async fn checkpoint_timed_equipment_inner(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };

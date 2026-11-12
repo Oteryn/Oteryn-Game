@@ -20,6 +20,18 @@ tokio::task_local! {
 }
 
 pub(super) async fn operation<F: Future>(priority: &Arc<HolderPriority>, future: F) -> F::Output {
+    // Nested helpers in one bounded owner turn share its grant; a different
+    // root must still arbitrate independently.
+    if BACKGROUND_OPERATION
+        .try_with(|operation| {
+            operation
+                .as_ref()
+                .is_some_and(|(current, _)| Arc::ptr_eq(current, priority))
+        })
+        .unwrap_or(false)
+    {
+        return future.await;
+    }
     BACKGROUND_OPERATION
         .scope(
             Some((Arc::clone(priority), Arc::new(AtomicBool::new(false)))),
@@ -200,6 +212,21 @@ mod tests {
                 let other_demand = other.foreground(now + WINDOW, WINDOW);
                 assert!(other_demand.is_some());
                 assert_eq!(other.background(now + WINDOW, WINDOW, || Some(())), None);
+                operation(&priority, async {
+                    assert_eq!(
+                        priority.background(now + WINDOW, WINDOW, || Some(())),
+                        Some(())
+                    );
+                })
+                .await;
+                operation(&other, async {
+                    assert_eq!(other.background(now + WINDOW, WINDOW, || Some(())), None);
+                })
+                .await;
+                assert_eq!(
+                    priority.background(now + WINDOW, WINDOW, || Some(())),
+                    Some(())
+                );
                 let inherited = Arc::clone(&priority);
                 tokio::spawn(inherit_operation(async move {
                     assert_eq!(

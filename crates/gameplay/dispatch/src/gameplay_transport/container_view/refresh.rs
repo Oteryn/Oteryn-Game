@@ -28,6 +28,7 @@ pub(in super::super) async fn refresh<A: FreshAdmissionAuthority>(
         else {
             // A busy/yielded background read is not evidence that the container
             // is gone. Keep this projection intact and retry on the next tick.
+            view.inventory_refresh_pending = true;
             return Ok(None);
         };
         observed.push((key, Some(observation)));
