@@ -419,19 +419,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn hazard_reply_checks_require_exact_status_and_delta() {
-        assert!(accepted(1, (CommandStatus::Accepted, vec![1, 1]), [1, 1]).is_ok());
-        assert!(accepted(1, (CommandStatus::Accepted, vec![2, 1]), [1, 1]).is_err());
-        assert!(rejected(2, (CommandStatus::Rejected, Vec::new())).is_ok());
-        assert!(rejected(2, (CommandStatus::Accepted, Vec::new())).is_err());
-    }
-}
-
 impl std::error::Error for StepFailure {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.source.as_deref()
@@ -464,4 +451,17 @@ fn failed_error(
     let mut failure = failed(step, &error, need);
     failure.source = Some(error);
     failure
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hazard_reply_checks_require_exact_status_and_delta() {
+        assert!(accepted(1, (CommandStatus::Accepted, vec![1, 1]), [1, 1]).is_ok());
+        assert!(accepted(1, (CommandStatus::Accepted, vec![2, 1]), [1, 1]).is_err());
+        assert!(rejected(2, (CommandStatus::Rejected, Vec::new())).is_ok());
+        assert!(rejected(2, (CommandStatus::Accepted, Vec::new())).is_err());
+    }
 }

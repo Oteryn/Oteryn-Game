@@ -144,7 +144,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             step: 1,
             observed: format!("admission-{error}"),
             need: "fresh-player-admission",
-            source: Some(error.into()),
+            source: Some(error),
         }
     })?;
     if !client
@@ -325,6 +325,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+impl std::error::Error for StepFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref()
+    }
+}
+
+impl verdict::IndexedError for StepFailure {
+    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::token;
@@ -335,17 +347,5 @@ mod tests {
         assert!(encoded.starts_with("State"));
         assert!(encoded.ends_with("no_house"));
         assert!(!encoded.contains(char::is_whitespace));
-    }
-}
-
-impl std::error::Error for StepFailure {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_deref()
-    }
-}
-
-impl verdict::IndexedError for StepFailure {
-    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
-        self
     }
 }

@@ -145,7 +145,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         StepFailure {
             step: 1,
             observed: format!("admission-{error}"),
-            source: Some(error.into()),
+            source: Some(error),
         }
     })?;
 
@@ -255,6 +255,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+impl verdict::IndexedError for StepFailure {
+    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::sanitize;
@@ -265,13 +271,5 @@ mod tests {
             sanitize("status Accepted / missing delta"),
             "status-Accepted---missing-delta"
         );
-    }
-}
-
-
-
-impl verdict::IndexedError for StepFailure {
-    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
-        self
     }
 }

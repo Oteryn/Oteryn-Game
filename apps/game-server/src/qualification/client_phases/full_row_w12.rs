@@ -81,7 +81,7 @@ async fn query(client: &mut DevClientSession, step: u8) -> Result<wire::MapResul
         .map_err(|error| {
             verdict::record_error(verdict::IndexedError::as_error(&error));
             let mut failure = Failure::new(step, format!("query-error={error}"));
-            failure.source = Some(error.into());
+            failure.source = Some(error);
             failure
         })?;
     if reply.status != CommandStatus::Accepted {
@@ -106,7 +106,7 @@ async fn action(
     .map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         let mut failure = Failure::new(step, format!("command-error={error}"));
-        failure.source = Some(error.into());
+        failure.source = Some(error);
         failure
     })?;
     if reply.status != CommandStatus::Accepted {
@@ -142,7 +142,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     let mut client = connect_world(clients, 0xb8).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         let mut failure = Failure::new(1, format!("admission={error}"));
-        failure.source = Some(error.into());
+        failure.source = Some(error);
         failure
     })?;
     let first_session = client.join_snapshot().game_session_id;
@@ -241,7 +241,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     .map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         let mut failure = Failure::new(6, format!("malformed-command-error={error}"));
-        failure.source = Some(error.into());
+        failure.source = Some(error);
         failure
     })?;
     if malformed.status != CommandStatus::Rejected || !malformed.payload.is_empty() {
@@ -254,7 +254,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     let mut fresh = connect_world(clients, 0xb9).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         let mut failure = Failure::new(7, format!("fresh-admission={error}"));
-        failure.source = Some(error.into());
+        failure.source = Some(error);
         failure
     })?;
     if fresh.join_snapshot().game_session_id == first_session {
