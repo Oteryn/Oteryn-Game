@@ -175,3 +175,22 @@ earlier heads, not this repair. Activity's earlier indeterminate COMMIT remains
 unexplained unless the new exact-head results classify it; no retry or waiver is
 introduced. Independent repair-delta review and final native/PostgreSQL/Node CI
 remain required before integration.
+
+## Existing offer-description guard
+
+The composed client native job `131145818845` passed 3,842 of 3,843 tests; the
+remaining failure was the existing bundle-profile description guard at
+`capability_selection_tests.rs:371`. That test derives the correct bundle-only
+set and requires each corresponding offer_gate description to name
+`BUNDLE_WORLD_OFFERED_CAPABILITIES`. The new 483 text described bundle Worlds
+but omitted that literal. The initial log-only diagnosis called this an allowlist
+failure; reading the actual assertion corrected that classification.
+
+Only the contract description is corrected. The existing test, runtime offer
+flags, parent requirements, selection code and regenerated golden remain
+unchanged. A whole bundle-only description check using the existing assertion's
+marker reproduced exactly the missing 483 description, then passed after this
+correction. The actual current protocol generator and selection regression,
+formatting, governance and whitespace checks pass. This is metadata/negotiation
+evidence, not final native or paid-wire qualification. Independent bounded-delta
+review and the final candidate's own CI remain required.
