@@ -5,6 +5,52 @@ pub const COMMAND_QUERY: u32 = 174;
 pub const COMMAND_SET: u32 = 175;
 pub const COMMAND_PROJECTION: u32 = 176;
 pub const MAX_KEY_BYTES: usize = 160;
+/// Capability 489: command 175 and the 174/176 projections carry the podium visibility flags.
+pub const CAPABILITY_HOUSE_PODIUM_FLAGS_V1: u32 = 489;
+
+/// Which parts of a podium display are shown (Crystal `PODIUM_SHOW_PLATFORM`,
+/// `PODIUM_SHOW_OUTFIT`, `PODIUM_SHOW_MOUNT`). Each flag is one byte, `0` or `1`, in that order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DisplayFlags {
+    pub show_platform: bool,
+    pub show_outfit: bool,
+    pub show_mount: bool,
+}
+impl Default for DisplayFlags {
+    /// A display stored without flags shows every part.
+    fn default() -> Self {
+        Self {
+            show_platform: true,
+            show_outfit: true,
+            show_mount: true,
+        }
+    }
+}
+impl DisplayFlags {
+    pub const BYTES: usize = 3;
+    pub fn encode(self) -> [u8; Self::BYTES] {
+        [
+            u8::from(self.show_platform),
+            u8::from(self.show_outfit),
+            u8::from(self.show_mount),
+        ]
+    }
+    pub fn decode(v: &[u8]) -> Option<Self> {
+        let flag = |byte: u8| match byte {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        };
+        match v {
+            [platform, outfit, mount] => Some(Self {
+                show_platform: flag(*platform)?,
+                show_outfit: flag(*outfit)?,
+                show_mount: flag(*mount)?,
+            }),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetRequest {
@@ -50,6 +96,24 @@ impl SetRequest {
         })
     }
 }
+impl SetRequest {
+    /// Command 175 with capability 489 selected: the V1 request followed by the three flags.
+    pub fn encode_flagged(&self, flags: DisplayFlags) -> Option<Vec<u8>> {
+        let mut v = self.encode()?;
+        v.extend(flags.encode());
+        Some(v)
+    }
+    /// Command 175 as the session's selection shapes it: flags only when `flagged`.
+    pub fn decode_selected(flagged: bool, v: &[u8]) -> Option<(Self, Option<DisplayFlags>)> {
+        if !flagged {
+            return Self::decode(v).map(|request| (request, None));
+        }
+        let split = v.len().checked_sub(DisplayFlags::BYTES)?;
+        let (request, flags) = v.split_at(split);
+        Some((Self::decode(request)?, Some(DisplayFlags::decode(flags)?)))
+    }
+}
+
 /// Commands 174 and 176 carry only the podium item UUID.
 pub fn decode_item(v: &[u8]) -> Option<[u8; 16]> {
     v.try_into().ok()
@@ -100,6 +164,30 @@ impl Projection {
             }
             _ => None,
         }
+    }
+}
+
+impl Projection {
+    /// Command 176 with capability 489 selected: a shown display is followed by its three
+    /// flags; an empty podium stays `0`.
+    pub fn encode_flagged(projection: Option<(&Self, DisplayFlags)>) -> Option<Vec<u8>> {
+        let Some((projection, flags)) = projection else {
+            return Some(vec![0]);
+        };
+        let mut v = Self::encode(Some(projection))?;
+        v.extend(flags.encode());
+        Some(v)
+    }
+    pub fn decode_flagged(v: &[u8]) -> Option<Option<(Self, DisplayFlags)>> {
+        if v == [0] {
+            return Some(None);
+        }
+        let split = v.len().checked_sub(DisplayFlags::BYTES)?;
+        let (projection, flags) = v.split_at(split);
+        Some(Some((
+            Self::decode(projection)??,
+            DisplayFlags::decode(flags)?,
+        )))
     }
 }
 
@@ -173,6 +261,64 @@ mod tests {
         assert_eq!(SetRequest::decode(&encoded), Some(r));
         assert!(SetRequest::decode(&[0; 26]).is_none());
     }
+    #[test]
+    fn display_flags_follow_the_v1_bytes_only_when_selected() {
+        let r = SetRequest {
+            item: [7; 16],
+            expected_revision: 9,
+            display_kind: 1,
+            direction: 3,
+            key: "oteryn:content.outfit.citizen".into(),
+        };
+        let flags = DisplayFlags {
+            show_platform: false,
+            show_outfit: true,
+            show_mount: false,
+        };
+        let plain = r.encode().unwrap_or_default();
+        let flagged = r.encode_flagged(flags).unwrap_or_default();
+        assert_eq!(flagged[..plain.len()], plain[..]);
+        assert_eq!(flagged[plain.len()..], [0, 1, 0]);
+        assert_eq!(
+            SetRequest::decode_selected(true, &flagged),
+            Some((r.clone(), Some(flags)))
+        );
+        assert_eq!(
+            SetRequest::decode_selected(false, &plain),
+            Some((r.clone(), None))
+        );
+        assert!(SetRequest::decode_selected(false, &flagged).is_none());
+        assert!(SetRequest::decode_selected(true, &plain).is_none());
+        let mut bad = flagged.clone();
+        if let Some(last) = bad.last_mut() {
+            *last = 2;
+        }
+        assert!(SetRequest::decode_selected(true, &bad).is_none());
+        let p = Projection {
+            podium_kind: 1,
+            display_kind: 1,
+            direction: 2,
+            revision: 5,
+            key: "k".repeat(MAX_KEY_BYTES),
+        };
+        let shown = Projection::encode_flagged(Some((&p, flags))).unwrap_or_default();
+        assert_eq!(shown.len(), 13 + MAX_KEY_BYTES + DisplayFlags::BYTES);
+        assert_eq!(
+            Projection::decode_flagged(&shown),
+            Some(Some((p.clone(), flags)))
+        );
+        assert_eq!(Projection::encode_flagged(None), Some(vec![0]));
+        assert_eq!(Projection::decode_flagged(&[0]), Some(None));
+        assert!(Projection::decode_flagged(&shown[..shown.len() - 1]).is_none());
+        let plain = Projection::encode(Some(&p)).unwrap_or_default();
+        assert!(Projection::decode_flagged(&plain).is_none());
+        assert_eq!(
+            DisplayFlags::default().encode(),
+            [1, 1, 1],
+            "a display stored without flags shows every part"
+        );
+    }
+
     #[test]
     fn projection_and_result_wire_are_canonical_and_bounded() {
         let p = Projection {

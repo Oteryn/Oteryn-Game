@@ -103,7 +103,14 @@ pub(super) unsafe fn create(hwnd: HWND) -> Layout {
             [730, 300, 280, 110],
             WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
         );
-        control(hwnd, "BUTTON", "Toggle Cosmetic Tokens / coins", 17, [730, 415, 280, 28], WS_TABSTOP);
+        control(
+            hwnd,
+            "BUTTON",
+            "Toggle Cosmetic Tokens / coins",
+            17,
+            [730, 415, 280, 28],
+            WS_TABSTOP,
+        );
         let buy = control(
             hwnd,
             "BUTTON",
@@ -139,7 +146,10 @@ pub(super) unsafe fn create(hwnd: HWND) -> Layout {
         let name = control(hwnd, "EDIT", "", 21, [730, 530, 180, 26], WS_BORDER);
         let sex = control(hwnd, "EDIT", "1", 22, [920, 530, 90, 26], WS_BORDER);
         let identity = control(hwnd, "EDIT", "", 23, [730, 566, 280, 26], WS_BORDER);
-        let balance = control(hwnd, "STATIC", "", 0, [12, 610, 200, 80], 0);
+        let balance = control(hwnd, "STATIC", "", 0, [12, 610, 200, 46], 0);
+        for (id, label, x) in [(24, "Coin history (web)", 12), (25, "Coin transfer (web)", 112)] {
+            control(hwnd, "BUTTON", label, id, [x, 660, 98, 40], WS_TABSTOP | BS_MULTILINE as u32);
+        }
         let status = control(
             hwnd,
             "EDIT",

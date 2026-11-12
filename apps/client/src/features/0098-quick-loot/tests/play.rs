@@ -225,3 +225,56 @@ fn t056_loot_notice_filter_preserves_received_result() {
     crate::play::mailbox::lock(&link.mailbox).local_preferences.game_window.loot_messages = true;
     assert!(oteryn_client_ui::quick_loot::panel_text(&link.discovery_panel().loot).contains("Looted 0 of 0"));
 }
+
+#[test]
+fn a_finished_loot_run_posts_one_loot_notice_when_loot_messages_are_on()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ChannelTab, NoticeScope};
+    use oteryn_client_ui::quick_loot::{
+        Action, QuickLootItemResult, QuickLootResult, encode_quick_loot_result,
+    };
+    let (link, _commands, outbox) = crate::play::play_channel();
+    outbox.discovery_initialize(&Selected);
+    let result = || -> Result<oteryn_session::GatedCommandResult, Box<dyn std::error::Error>> {
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: encode_quick_loot_result(&QuickLootResult {
+                items: vec![
+                    QuickLootItemResult { item: [1; 16], accepted: true },
+                    QuickLootItemResult { item: [2; 16], accepted: false },
+                ],
+            })
+            .map_err(|e| format!("{e:?}"))?,
+        })
+    };
+    let notices = |link: &crate::play::PlayLink| {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        let console = &mailbox.chat.console;
+        console.notices.scoped_text(console.filters, console.display, NoticeScope::LootOnly)
+    };
+    assert!(link.quick_loot_action(Action::LootAll));
+    outbox.discovery_result(98, &result()?);
+    assert!(notices(&link).contains("[Loot] Looted 1 of 2 items"));
+    // The Loot tab shows it; a filter edit (which is not a loot run) posts nothing more.
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.chat.console.open_channel(ChannelTab::Loot);
+    }
+    assert!(oteryn_client_ui::chat::panel_text(&link.chat_panel()).contains("Looted 1 of 2 items"));
+    assert!(link.quick_loot_action(Action::Clear(
+        oteryn_client_ui::quick_loot::QuickLootFilterMode::Skip
+    )));
+    outbox.discovery_result(98, &result()?);
+    assert_eq!(notices(&link).matches("[Loot]").count(), 1);
+    // With loot messages off, a loot run leaves no notice.
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .game_window
+        .loot_messages = false;
+    assert!(link.quick_loot_action(Action::LootAll));
+    outbox.discovery_result(98, &result()?);
+    assert_eq!(notices(&link).matches("[Loot]").count(), 1);
+    Ok(())
+}

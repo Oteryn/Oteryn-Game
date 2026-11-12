@@ -351,6 +351,15 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 7],
             }),
         ),
+        (
+            483,
+            "GemReshape",
+            FeeBurnCauseV1::GemReshape(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "reshape".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -414,6 +423,8 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
             "HirelingService",
             "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007",
         ),
+        // Winter Update 2026 adds Mod Reshaping at 483; earlier goldens remain unchanged.
+        ("GemReshape", "9a1e0d0a077265736861706512028107"),
         ("EventId", "0a028107"),
         ("Command", "12070a028107108101"),
         ("OperationId", "1a028107"),

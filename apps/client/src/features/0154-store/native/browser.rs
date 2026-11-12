@@ -140,8 +140,24 @@ unsafe fn run(link: &PlayLink) {
                 displayed_quote.as_ref(),
             );
             let panel: StorePanel = link.store_panel();
-            if panel.token_supported && panel.token_balance_refresh && !panel.pending { link.store_request(6187, vec![]); }
-            SetWindowTextW(balance, wide(&format!("Coins: {}\r\nCosmetic Tokens: {}\r\n(this character)", panel.browser.page.as_ref().map_or_else(|| "unavailable".into(), |p| p.total.to_string()), panel.cosmetic_tokens.map_or_else(|| "unavailable".into(), |n| n.to_string()))).as_ptr());
+            if panel.token_supported && panel.token_balance_refresh && !panel.pending {
+                link.store_request(6187, vec![]);
+            }
+            SetWindowTextW(
+                balance,
+                wide(&format!(
+                    "Coins: {}\r\nCosmetic Tokens: {}\r\n(this character)",
+                    panel
+                        .browser
+                        .page
+                        .as_ref()
+                        .map_or_else(|| "unavailable".into(), |p| p.total.to_string()),
+                    panel
+                        .cosmetic_tokens
+                        .map_or_else(|| "unavailable".into(), |n| n.to_string())
+                ))
+                .as_ptr(),
+            );
             if held != panel.browser.page {
                 SendMessageW(category, LB_RESETCONTENT, 0, 0);
                 SendMessageW(offers, LB_RESETCONTENT, 0, 0);
@@ -161,7 +177,6 @@ unsafe fn run(link: &PlayLink) {
                         );
                         SendMessageW(offers, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                     }
-
                 }
                 held = panel.browser.page.clone();
                 selected = usize::MAX;
@@ -258,8 +273,27 @@ unsafe fn run(link: &PlayLink) {
                 controls::paint(image, pixels);
             }
             displayed_quote = store::confirmation_quote(&panel);
-            EnableWindow(buy, i32::from(!panel.pending && displayed_quote.is_some()));
-            EnableWindow(GetDlgItem(hwnd, 17), i32::from(!panel.pending && panel.confirmed_purchase.is_none() && panel.cosmetic_tokens.is_some() && product.is_some_and(|p| oteryn_client_runtime::cui3::store::cosmetic_tokens::eligible(&p.category))));
+            EnableWindow(
+                buy,
+                i32::from(
+                    !panel.pending
+                        && displayed_quote.is_some()
+                        && store::token_purchase_disabled_reason(&panel).is_none(),
+                ),
+            );
+            EnableWindow(
+                GetDlgItem(hwnd, 17),
+                i32::from(
+                    !panel.pending
+                        && panel.confirmed_purchase.is_none()
+                        && panel.cosmetic_tokens.is_some()
+                        && product.is_some_and(|p| {
+                            oteryn_client_runtime::cui3::store::cosmetic_tokens::eligible(
+                                &p.category,
+                            )
+                        }),
+                ),
+            );
             MsgWaitForMultipleObjects(0, null(), 0, 30, QS_ALLINPUT);
         }
         DestroyWindow(hwnd);

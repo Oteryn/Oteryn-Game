@@ -1,0 +1,13 @@
+{
+  "mechanic": "0483-gem-atelier",
+  "kind": "panels",
+  "id": "0483-gem-atelier-vessels",
+  "status": "supported",
+  "entry": "view.rs::vessel_lines",
+  "not_applicable": {
+    "input": "The Wheel panel owns the controls.",
+    "settings": "The Gem Atelier has no client settings.",
+    "protocol": "The panel renders the confirmed Gem Atelier reply.",
+    "state": "The Wheel panel stores the confirmed reply."
+  }
+}

@@ -34,17 +34,16 @@ pub(in crate::play) fn submit(
 }
 impl PlayLink {
     pub fn house_podium_choose_display(&self, kind: u8, direction: u8) -> bool {
-        if !(1..=3).contains(&kind) || direction > 3 {
-            return false;
-        }
-        let mut mailbox = lock(&self.mailbox);
-        let panel = &mut mailbox.properties.house_podium;
-        if panel.pending {
-            return false;
-        }
-        edit(panel, 1, kind.to_string());
-        edit(panel, 2, direction.to_string());
-        true
+        lock(&self.mailbox)
+            .properties
+            .house_podium
+            .choose_display(kind, direction)
+    }
+    pub fn house_podium_toggle(&self, part: oteryn_client_ui::house_podium_flags::Part) -> bool {
+        oteryn_client_ui::house_podium_flags::toggle(
+            &mut lock(&self.mailbox).properties.house_podium,
+            part,
+        )
     }
     pub fn house_podium_edit(&self, field: usize, value: String) {
         edit(

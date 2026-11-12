@@ -32,6 +32,7 @@ impl PlayView {
             sounds: Vec::new(),
             ui_sounds: Vec::new(),
             visuals: Vec::new(),
+            hit_flash: None,
             spell_words: std::collections::BTreeMap::new(),
             tutorial_overlay: Default::default(),
             own,

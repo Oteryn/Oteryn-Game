@@ -194,6 +194,8 @@ fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn 
     Ok(())
 }
 
+#[path = "aim_fallback.rs"]
+mod aim_fallback;
 #[path = "directional.rs"]
 mod directional;
 
@@ -253,7 +255,8 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
     assert!(link.assign_bar_action(
         10,
         BarAction::Equip {
-            definition: NonZeroU32::new(256).ok_or("item")?
+            definition: NonZeroU32::new(256).ok_or("item")?,
+            upgrade_tier: 0
         }
     ));
     crate::play::feature_local_spell_action_bar::input::submit(
@@ -272,7 +275,8 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
     assert!(link.assign_bar_action(
         9,
         BarAction::Text {
-            text: "Hello travellers".into()
+            text: "Hello travellers".into(),
+            send_automatically: true
         }
     ));
     {
@@ -310,11 +314,102 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
     assert!(!link.assign_bar_action(
         150,
         BarAction::Text {
-            text: "out of bounds".into()
+            text: "out of bounds".into(),
+            send_automatically: true
         }
     ));
-    assert!(!link.assign_bar_action(0, BarAction::Text { text: "\0".into() }));
+    assert!(!link.assign_bar_action(
+        0,
+        BarAction::Text {
+            text: "\0".into(),
+            send_automatically: true
+        }
+    ));
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn n001_text_action_sends_at_once_or_inserts_into_the_chat_input()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_spell_action_bar::view::{BarAction, BarActions};
+    use std::num::NonZeroU32;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    assert!(link.assign_bar_action(
+        0,
+        BarAction::Text {
+            text: "Insert me".into(),
+            send_automatically: false
+        }
+    ));
+    assert!(link.assign_bar_action(
+        1,
+        BarAction::Text {
+            text: "Send me".into(),
+            send_automatically: true
+        }
+    ));
+    link.cast_spell_slot(NonZeroU32::new(1).ok_or("slot")?);
+    while let Ok(command) = commands.try_recv() {
+        assert!(
+            !matches!(command, crate::combat_input::PlayCommand::ChatPublic(_)),
+            "an insert-only text action must not send chat"
+        );
+    }
+    {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert_eq!(mailbox.chat.text, "Insert me");
+        assert_eq!(mailbox.custom_chat_paste.as_deref(), Some("Insert me"));
+    }
+    link.cast_spell_slot(NonZeroU32::new(2).ok_or("slot")?);
+    let mut sent = false;
+    while let Ok(command) = commands.try_recv() {
+        sent |= matches!(command, crate::combat_input::PlayCommand::ChatPublic(oteryn_client_runtime::chat::ChatIntent::Say { text, .. }) if text == "Send me");
+    }
+    assert!(sent, "an automatic text action sends at once");
+    let old: BarActions = serde_json::from_str(r#"{"3":{"kind":"Text","text":"legacy"}}"#)?;
+    assert!(matches!(
+        old.0.get(&3),
+        Some(BarAction::Text {
+            send_automatically: true,
+            ..
+        })
+    ));
+    Ok(())
+}
+
+#[test]
+fn n002_equip_action_binds_an_upgrade_tier() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_spell_action_bar::view::{BarAction, BarActions};
+    use std::num::NonZeroU32;
+    let (link, _commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256]);
+    let definition = NonZeroU32::new(256).ok_or("item")?;
+    assert!(link.assign_bar_action(
+        0,
+        BarAction::Equip {
+            definition,
+            upgrade_tier: 3
+        }
+    ));
+    assert!(link.spell_slot_labels()[0].contains("Equip 256 (tier 3)"));
+    assert!(!link.assign_bar_action(
+        1,
+        BarAction::Equip {
+            definition,
+            upgrade_tier: 11
+        }
+    ));
+    let old: BarActions = serde_json::from_str(r#"{"0":{"kind":"Equip","definition":256}}"#)?;
+    assert!(matches!(
+        old.0.get(&0),
+        Some(BarAction::Equip {
+            upgrade_tier: 0,
+            ..
+        })
+    ));
     Ok(())
 }
 

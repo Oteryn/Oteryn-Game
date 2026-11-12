@@ -1,5 +1,6 @@
 //! Source-backed rules shared by reward-boss combat and reward settlement.
 
+pub mod pity;
 pub mod reward_chest;
 
 /// Participation accumulated by the combat owner for one character.

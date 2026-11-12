@@ -1,4 +1,4 @@
-use super::{Action, CATEGORY_IDS, HighscoresPanel};
+use super::{Action, HighscoresPanel};
 use oteryn_client_runtime::highscores::{
     command,
     wire::{HighscoresQuery, decode_highscores_result},
@@ -49,7 +49,9 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
             query.snapshot_id = reply.snapshot_id;
         }
         Action::Filter { category, vocation } => {
-            if !CATEGORY_IDS.contains(&category) || vocation > 5 {
+            if crate::highscores_loyalty::category_selection(category, p.loyalty_selected).is_none()
+                || vocation > 5
+            {
                 return None;
             }
             query.category = category;

@@ -1,0 +1,34 @@
+[
+  {
+    "mechanic": "0492-boss-difficulty-pity",
+    "kind": "handlers",
+    "id": "0492-boss-difficulty-pity-command431-extension",
+    "status": "supported",
+    "commands": [],
+    "shared_commands": [
+      431
+    ],
+    "direction": "server_to_client",
+    "capability": 492,
+    "entry": "protocol.rs::decode",
+    "push_messages": [
+      "BossDifficultyWindow"
+    ],
+    "reducer": "protocol.rs::decode",
+    "test": "tests.rs::c0492_selected_windows_show_the_bad_luck_tracker",
+    "not_applicable": {
+      "state": "The existing 0225 panel and the 0117 boss window hold the tracker beside the window.",
+      "protocol": "The shared boss difficulty codec in oteryn-protocol-oteryn decodes window fields 11-13.",
+      "input": "No new input; the existing command 431 Open with progress carries it.",
+      "settings": "The pity tracker has no client setting.",
+      "view": "The owning boss window shows the tracker; this capability adds no view of its own."
+    }
+  },
+  {
+    "mechanic": "0492-boss-difficulty-pity",
+    "kind": "panels",
+    "id": "0492-boss-difficulty-pity-panel",
+    "status": "supported",
+    "entry": "protocol.rs::tracker_text"
+  }
+]

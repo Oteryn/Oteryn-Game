@@ -166,6 +166,7 @@ impl SettingsState {
             screenshot_runtime: Default::default(),
             screenshot_requested: false,
             native_sign_out: false,
+            web_link: None,
             window_actions: Default::default(),
             custom_choices: Vec::new(),
             custom_choices_refreshed: None,

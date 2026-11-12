@@ -31,6 +31,8 @@ pub mod screenshots;
 pub mod spell;
 mod support_delivery;
 pub mod updater;
+#[path = "features/local-web-links/mod.rs"]
+pub mod web_links;
 #[cfg(windows)]
 pub mod win_mutex;
 pub mod window_layout;

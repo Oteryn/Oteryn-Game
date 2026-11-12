@@ -16,6 +16,8 @@ mod custody;
 mod outputs;
 #[path = "wire_paid/presentation.rs"]
 mod presentation;
+#[path = "wire_paid/reshape.rs"]
+mod reshape;
 #[path = "wire_paid/resources.rs"]
 mod resources;
 #[path = "wire_paid/wheel_presentation.rs"]
@@ -24,6 +26,7 @@ mod wheel_presentation;
 #[derive(Clone, Copy, Debug)]
 enum Case {
     Reveal,
+    Reshape,
     Dismantle,
     NestedDismantle,
     SplitDismantle,
@@ -63,6 +66,7 @@ impl Case {
         !matches!(
             self,
             Self::Reveal
+                | Self::Reshape
                 | Self::Dismantle
                 | Self::SwitchDomain
                 | Self::GradeUp
@@ -75,7 +79,8 @@ impl Case {
     fn refuses(self) -> bool {
         matches!(
             self,
-            Self::InsufficientFragments
+            Self::SwitchDomain
+                | Self::InsufficientFragments
                 | Self::InsufficientGold
                 | Self::StashedReveal
                 | Self::FullDismantle
@@ -100,6 +105,11 @@ impl Case {
 #[test]
 fn atelier_wire_reveal_burns_one_gem_and_charges_once() -> TestResult {
     check(Case::Reveal)
+}
+
+#[test]
+fn atelier_wire_6214_reshape_burns_fragments_and_replays_once() -> TestResult {
+    check(Case::Reshape)
 }
 
 #[test]
@@ -158,7 +168,7 @@ fn atelier_wire_filtered_managed_dismantle_still_uses_ordinary_destination() -> 
 }
 
 #[test]
-fn atelier_wire_switch_domain_charges_once_and_restores_after_relog() -> TestResult {
+fn atelier_wire_retired_switch_domain_is_refused_without_a_write() -> TestResult {
     check(Case::SwitchDomain)
 }
 
@@ -203,7 +213,7 @@ fn atelier_wire_last_nested_coin_stack_retires_and_makes_change_once() -> TestRe
 }
 
 #[test]
-fn atelier_wire_domain_switch_reads_seventy_five_nested_coin_stacks() -> TestResult {
+fn atelier_wire_lesser_reveal_reads_seventy_five_nested_coin_stacks() -> TestResult {
     check(Case::ManyNestedCoins)
 }
 
@@ -445,7 +455,7 @@ async fn stow_asset(
     stow_asset_command(owner, admitted, input, quantity, 150).await
 }
 
-async fn stow_asset_command(
+pub(super) async fn stow_asset_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     input: u8,
@@ -538,14 +548,16 @@ fn scenario(case: Case) -> TestResult {
                 "content-1",
             )?;
         let room = pin.qualified_room().clone();
-        let (channel_pin, resource_bundle) =
-            if matches!(case, Case::Resources | Case::ResourcesUnselected) {
-                let (channel_pin, bundle) = resources::bundle_fixture(&h, &pin, world).await?;
-                (channel_pin, Some(bundle))
-            } else {
-                super::super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
-                (pin.into_channel_parts().0, None)
-            };
+        let (channel_pin, resource_bundle) = if matches!(
+            case,
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape
+        ) {
+            let (channel_pin, bundle) = resources::bundle_fixture(&h, &pin, world).await?;
+            (channel_pin, Some(bundle))
+        } else {
+            super::super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
+            (pin.into_channel_parts().0, None)
+        };
         let deps = Dependencies::with_content(
             channel_pin,
             room,
@@ -634,8 +646,16 @@ fn scenario(case: Case) -> TestResult {
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
                 .await?;
-        if matches!(case, Case::Resources) {
-            deps.runtime.lock().await.bind_attacker_lease(deps.actor, deps.admitted.game_session_id, current.current_character_lease()).map_err(debug)?;
+        if matches!(case, Case::Resources | Case::Reshape) {
+            deps.runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    current.current_character_lease(),
+                )
+                .map_err(debug)?;
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -647,15 +667,33 @@ fn scenario(case: Case) -> TestResult {
                 wire::CAPABILITY_WHEEL_ALLOCATION_V1,
                 wire::resources::CAPABILITY_ATELIER_RESOURCES_V1,
             ]
+        } else if matches!(case, Case::Reshape) {
+            &[
+                wire::CAPABILITY_WHEEL_ALLOCATION_V1,
+                wire::v2::CAPABILITY_GEM_ATELIER_V2,
+            ]
         } else {
             &[wire::CAPABILITY_WHEEL_ALLOCATION_V1]
         };
-        admitted.continuity.selected_capabilities = if matches!(case, Case::Resources) {
-            crate::gameplay_transport::connection::fresh_capability_selection(&owner, capabilities)
-        } else {
-            SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
+        admitted.continuity.selected_capabilities =
+            if matches!(case, Case::Resources | Case::Reshape) {
+                crate::gameplay_transport::connection::fresh_capability_selection(
+                    &owner,
+                    capabilities,
+                )
+            } else {
+                SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
+            }
+            .ok_or("Atelier capabilities")?;
+        if matches!(case, Case::Reshape) {
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(wire::v2::CAPABILITY_GEM_ATELIER_V2),
+                "the real bundle offer must negotiate Atelier v2 before the first request"
+            );
         }
-        .ok_or("Atelier capabilities")?;
         if matches!(case, Case::Resources) {
             assert!(admitted.continuity.selected_capabilities.contains(148));
             assert!(admitted.continuity.selected_capabilities.contains(272));
@@ -664,6 +702,16 @@ fn scenario(case: Case) -> TestResult {
         assert_eq!(before.gems.len(), 8);
         assert_eq!(before.quality_quotes.len(), 3);
         assert_eq!(before.grade_quotes.len(), 6);
+        if matches!(case, Case::Reshape) {
+            owner.premium_coordinator = Some(&free);
+            reshape::refused_without_premium(&h, &mut owner, &mut admitted, &before).await?;
+            owner.premium_coordinator = Some(&gate);
+            reshape::exercise(&h, &mut owner, &mut admitted, &before).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if matches!(case, Case::Resources | Case::ResourcesUnselected) {
             if matches!(case, Case::Resources) {
                 presentation::check_read(&h, &owner, &mut admitted, &before).await?;
@@ -687,16 +735,17 @@ fn scenario(case: Case) -> TestResult {
         if matches!(case, Case::ThirtyFragments) {
             before = query(&owner, &mut admitted).await?;
         }
-        let scope_before = if case.custody() {
+        let scope_before = if case.custody() || case.refuses() {
             Some(scope_footprint(&h).await?)
         } else {
             None
         };
+        // Gems have no domain; the subject is the first Regular gem of the reply.
         let gem = before
             .gems
             .iter()
-            .find(|gem| gem.domain == 0 && gem.quality == 1)
-            .ok_or("initial regular green gem")?;
+            .find(|gem| gem.quality == 1)
+            .ok_or("initial regular gem")?;
         let original_gem = gem.clone();
         let grade_kind = u8::from(matches!(case, Case::SupremeStashGrade));
         let grade_modifier = if grade_kind == 1 {
@@ -710,7 +759,7 @@ fn scenario(case: Case) -> TestResult {
             1
         };
         let mutation = match case {
-            Case::Resources | Case::ResourcesUnselected => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
                 return Err("resource query reached a mutation planner".into());
             }
             Case::Reveal
@@ -721,6 +770,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NestedGold
             | Case::WholeNestedGold
             | Case::StashedReveal
+            | Case::ManyNestedCoins
             | Case::ExAction => wire::Mutation::Reveal { quality: 0 },
             Case::Dismantle
             | Case::NestedDismantle
@@ -731,9 +781,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::ManagedFallbackDismantle
             | Case::ManagedMainFallbackDismantle
             | Case::FilteredManagedDismantle => wire::Mutation::Dismantle { gem: gem.id },
-            Case::SwitchDomain | Case::ManyNestedCoins => {
-                wire::Mutation::SwitchDomain { gem: gem.id }
-            }
+            Case::SwitchDomain => wire::Mutation::SwitchDomain { gem: gem.id },
             Case::GradeUp
             | Case::NestedGrade
             | Case::StashGrade
@@ -756,7 +804,7 @@ fn scenario(case: Case) -> TestResult {
         };
         let payload = wire::encode_mutate(&request).map_err(debug)?;
         let bank_before = footprint(&h).await?.2;
-        if scope_before.is_some() {
+        if case.custody() {
             assert!(
                 owner
                     .refresh_and_apply_spell_access(deps.actor, session)
@@ -768,7 +816,7 @@ fn scenario(case: Case) -> TestResult {
             if !matches!(case, Case::InsufficientGold) {
                 let required_gold = match request.mutation {
                     wire::Mutation::Reveal { .. } => 125_000,
-                    wire::Mutation::SwitchDomain { .. } => 250_000,
+                    wire::Mutation::SwitchDomain { .. } => 0,
                     wire::Mutation::Dismantle { .. } => 0,
                     _ if grade_kind == 1 => 5_000_000,
                     _ if target_grade == 3 => 30_000_000,
@@ -825,7 +873,7 @@ fn scenario(case: Case) -> TestResult {
             "paid resources stay with the existing item and stash owners"
         );
         let expected_fee = match case {
-            Case::Resources | Case::ResourcesUnselected => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
                 return Err("resource query reached mutation verification".into());
             }
             Case::Reveal
@@ -836,6 +884,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NestedGold
             | Case::WholeNestedGold
             | Case::StashedReveal
+            | Case::ManyNestedCoins
             | Case::ExAction => {
                 assert_eq!(reply.gems.len(), before.gems.len() + 1);
                 assert!(
@@ -884,17 +933,8 @@ fn scenario(case: Case) -> TestResult {
                 );
                 None
             }
-            Case::SwitchDomain | Case::ManyNestedCoins => {
-                assert_eq!(
-                    reply
-                        .gems
-                        .iter()
-                        .find(|gem| gem.id == original_gem.id)
-                        .ok_or("rotated gem")?
-                        .domain,
-                    1
-                );
-                Some(250_000)
+            Case::SwitchDomain => {
+                return Err("retired Switch Domain reached mutation verification".into());
             }
             Case::GradeUp
             | Case::NestedGrade
@@ -931,7 +971,7 @@ fn scenario(case: Case) -> TestResult {
             .bind(request.occurrence.as_slice()).fetch_optional(&h.pool).await?;
         assert_eq!(fee, expected_fee);
         let advertised_fee = match case {
-            Case::Resources | Case::ResourcesUnselected => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
                 return Err("resource query reached a paid quote".into());
             }
             Case::Reveal
@@ -942,6 +982,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NestedGold
             | Case::WholeNestedGold
             | Case::StashedReveal
+            | Case::ManyNestedCoins
             | Case::ExAction => Some(
                 before
                     .quality_quotes
@@ -959,14 +1000,9 @@ fn scenario(case: Case) -> TestResult {
             | Case::ManagedFallbackDismantle
             | Case::ManagedMainFallbackDismantle
             | Case::FilteredManagedDismantle => None,
-            Case::SwitchDomain | Case::ManyNestedCoins => Some(
-                before
-                    .quality_quotes
-                    .iter()
-                    .find(|quote| quote.quality == 1)
-                    .ok_or("regular quote")?
-                    .switch_gold as i64,
-            ),
+            Case::SwitchDomain => {
+                return Err("retired Switch Domain reached a paid quote".into());
+            }
             Case::GradeUp
             | Case::NestedGrade
             | Case::StashGrade

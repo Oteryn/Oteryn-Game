@@ -53,6 +53,19 @@ impl PlayView {
         super::state::lock(&self.minimap).bind_world(world);
     }
     pub fn minimap_input(&mut self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::minimap::create_mark_key(events) {
+            let own = (self.own.x, self.own.y, self.floor);
+            let created = super::state::lock(&self.minimap).create_mark_at(own);
+            if let Err(error) = &created {
+                super::state::lock(&self.minimap).feedback = error.to_string();
+            }
+            // A mark already sits at the player's position: edit it.
+            #[cfg(windows)]
+            if matches!(created, Ok(false)) {
+                native::open(self.minimap.clone(), own);
+            }
+            return true;
+        }
         if !oteryn_client_ui::minimap::editor_key(events) {
             return false;
         }

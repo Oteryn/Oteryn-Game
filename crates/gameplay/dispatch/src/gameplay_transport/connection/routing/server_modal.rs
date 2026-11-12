@@ -1,7 +1,10 @@
 use super::super::{AdmittedSession, FreshAdmissionAuthority};
 use super::Dispatch;
+use oteryn_protocol_oteryn::server_modal::input::{
+    CAPABILITY_SERVER_MODAL_INPUT_V1, decode_answer_selected,
+};
 use oteryn_protocol_oteryn::server_modal::{
-    Answer, CAPABILITY_SERVER_MODAL_V1, COMMAND_TYPE_HIRELING_STORE_SELECTION,
+    CAPABILITY_SERVER_MODAL_V1, COMMAND_TYPE_HIRELING_STORE_SELECTION,
     COMMAND_TYPE_SERVER_MODAL_ANSWER, COMMAND_TYPE_SERVER_MODAL_QUERY,
 };
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -13,7 +16,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         COMMAND_TYPE_SERVER_MODAL_QUERY => {
             oteryn_protocol_oteryn::server_modal::decode_query(command.payload).is_ok()
         }
-        COMMAND_TYPE_SERVER_MODAL_ANSWER => Answer::decode(command.payload).is_ok(),
+        COMMAND_TYPE_SERVER_MODAL_ANSWER => decode_answer_selected(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_SERVER_MODAL_INPUT_V1),
+            command.payload,
+        )
+        .is_ok(),
         COMMAND_TYPE_HIRELING_STORE_SELECTION => {
             oteryn_protocol_oteryn::store::decode_purchase_request_with_hireling(command.payload)
                 .is_ok()

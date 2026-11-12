@@ -1,0 +1,7 @@
+{
+  "mechanic": "0497-sanction-record",
+  "kind": "panels",
+  "id": "0497-sanction-record-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

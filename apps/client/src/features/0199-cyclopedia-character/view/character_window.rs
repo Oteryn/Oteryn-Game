@@ -25,7 +25,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=119 | 140 | 145..=150 | 152..=155 | 180..=185)
+                && matches!(id, 101..=119 | 140 | 141 | 145..=150 | 152..=155 | 180..=185)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -92,6 +92,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             history,
             detail,
             achievement_browser,
+            sanction_browser,
             status_label,
             cards,
             stamina_bar,
@@ -181,6 +182,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SW_HIDE
                 },
             );
+            // Capability 497: the record button exists only for a session that selected it.
+            let sanctions = mailbox.sanctions.selected && panel.target.is_none();
+            EnableWindow(sanction_browser, i32::from(sanctions && !panel.pending));
+            ShowWindow(sanction_browser, if sanctions { SW_SHOW } else { SW_HIDE });
             let status = if panel.pending {
                 tr!("Waiting for the server")
             } else {

@@ -39,7 +39,18 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
         window.clear_gold
     );
     if let Some(offer) = window.offers.get(panel.offer) {
-        text.push_str(&lfmt!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", family_name(offer.family), offer.tier, offer.gold, if offer.requires_premium { tr!(" (premium required)") } else { "" }));
+        if let Some(percent) = crate::imbuement_success_chance::success_percent(panel, panel.offer)
+        {
+            text.push_str(&format!(
+                "Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: {percent}% (server)\n",
+                family_name(offer.family),
+                offer.tier,
+                offer.gold,
+                if offer.requires_premium { tr!(" (premium required)") } else { "" }
+            ));
+        } else {
+            text.push_str(&lfmt!("Selected offer: family {}, tier {}\nApply cost: {} gold{}\nSuccess chance: 100% (no protection charge)\n", family_name(offer.family), offer.tier, offer.gold, if offer.requires_premium { tr!(" (premium required)") } else { "" }));
+        }
         if let Some(quote) = panel
             .details
             .as_ref()
@@ -51,6 +62,11 @@ pub fn selected_detail_text(panel: &ImbuePanel) -> String {
                     .find(|quote| quote.family == offer.family && quote.tier == offer.tier)
             })
         {
+            text.push_str(&lfmt!(
+                "Quoted cost: {} gold; success chance: {}%\n",
+                quote.gold,
+                quote.success_percent
+            ));
             if quote.recipe_available {
                 text.push_str(tr!("Required materials (main backpack):\n"));
                 for material in &quote.materials {
@@ -97,7 +113,7 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
             ));
         }
         for (index, offer) in window.offers.iter().enumerate() {
-            text.push_str(&lfmt!(
+            let mut line = lfmt!(
                 "Offer {index}: family {}, tier {}, {} gold{}\n",
                 family_name(offer.family),
                 offer.tier,
@@ -108,7 +124,12 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
                     ""
                 },
                 index = index
-            ));
+            );
+            if let Some(percent) = crate::imbuement_success_chance::success_percent(panel, index) {
+                line.pop();
+                line.push_str(&format!(", {percent}% success\n"));
+            }
+            text.push_str(&line);
         }
     }
     text.push_str(&selected_detail_text(panel));
