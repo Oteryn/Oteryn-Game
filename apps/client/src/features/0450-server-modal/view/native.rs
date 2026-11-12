@@ -3,7 +3,7 @@
     unsafe_code,
     reason = "Window and controls remain on their creating thread"
 )]
-use super::{Dialog, Submission};
+use super::{Arc, Dialog, DialogInput, Entry, Mutex, Submission};
 use oteryn_client_ui::server_modal::Answer;
 use std::ptr::{null, null_mut};
 use tokio::sync::{mpsc::Sender, oneshot};
@@ -62,7 +62,21 @@ unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) 
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
-pub(super) fn run(dialog: Dialog, sender: Sender<Submission>) {
+fn read_text(edit: HWND) -> String {
+    unsafe {
+        let length = GetWindowTextLengthW(edit).max(0) as usize;
+        let mut text = vec![0u16; length + 1];
+        let copied = GetWindowTextW(edit, text.as_mut_ptr(), text.len() as i32).max(0) as usize;
+        String::from_utf16_lossy(&text[..copied])
+    }
+}
+pub(super) fn run(
+    dialog: Dialog,
+    input: Option<DialogInput>,
+    remember: bool,
+    sender: Sender<Submission>,
+    entry: Arc<Mutex<Entry>>,
+) {
     unsafe {
         let hwnd = CreateWindowExW(
             0,
@@ -101,8 +115,42 @@ pub(super) fn run(dialog: Dialog, sender: Sender<Submission>) {
             "LISTBOX",
             "",
             11,
-            [120, 204, 572, 210],
+            // A dialog with a value field leaves the space below the list for it.
+            [120, 204, 572, if input.is_some() { 90 } else { 210 }],
             WS_BORDER | WS_TABSTOP | WS_VSCROLL | LBS_NOTIFY as u32,
+        );
+        if input.is_some() && dialog.choices.is_empty() {
+            ShowWindow(list, SW_HIDE);
+        }
+        // Capability 490: the value field sits below the choice list, above the buttons.
+        let field = input.as_ref().map(|input| {
+            let field = super::input_control(input, |text, rect, style| {
+                control(hwnd, "EDIT", text, 13, rect, style)
+            });
+            control(
+                hwnd,
+                "STATIC",
+                &oteryn_client_ui::server_modal_input::prompt(input),
+                15,
+                [120, 300, 572, 22],
+                0,
+            );
+            field
+        });
+        // Capability 490: the choice is independent of the value field.
+        let (remember, feedback) = super::footer_controls(
+            remember,
+            |rect| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    "Don't show again",
+                    14,
+                    rect,
+                    WS_TABSTOP | BS_AUTOCHECKBOX as u32,
+                )
+            },
+            |rect| control(hwnd, "STATIC", "", 12, rect, 0),
         );
         for (_, label) in &dialog.choices {
             SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
@@ -123,7 +171,6 @@ pub(super) fn run(dialog: Dialog, sender: Sender<Submission>) {
                 WS_TABSTOP,
             ));
         }
-        let feedback = control(hwnd, "STATIC", "", 12, [12, 535, 680, 40], 0);
         let mut pending: Option<oneshot::Receiver<bool>> = None;
         let mut message: MSG = std::mem::zeroed();
         while IsWindow(hwnd) != 0 && !sender.is_closed() {
@@ -180,9 +227,24 @@ pub(super) fn run(dialog: Dialog, sender: Sender<Submission>) {
                     button_id,
                     choice_id,
                 };
+                let value = match (&input, field) {
+                    (Some(input), Some(field)) if dialog.cancel_button != Some(button_id) => {
+                        let text = read_text(field);
+                        oteryn_client_ui::server_modal_input::parse_value(input, &text)
+                    }
+                    _ => None,
+                };
+                let wants_value = input.is_some() && dialog.cancel_button != Some(button_id);
                 if !dialog.accepts(answer) {
                     SetWindowTextW(feedback, wide("Select one option first.").as_ptr());
+                } else if wants_value && value.is_none() {
+                    SetWindowTextW(feedback, wide("Enter a value within the limits.").as_ptr());
                 } else {
+                    *entry.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Entry {
+                        value,
+                        dont_show_again: remember
+                            .is_some_and(|box_| SendMessageW(box_, BM_GETCHECK, 0, 0) == 1),
+                    };
                     let (tx, rx) = oneshot::channel();
                     if sender.try_send((answer, tx)).is_ok() {
                         pending = Some(rx);

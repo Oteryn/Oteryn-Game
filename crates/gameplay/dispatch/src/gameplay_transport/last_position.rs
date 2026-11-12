@@ -67,6 +67,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use super::{ComposedFreshAdmission, operator_event, respawn_cell, respawn_cell_admissible};
 use crate::domain::CharacterRevision;
 use crate::durability::DB_PASS_DEADLINE;
+use crate::durability::bed_regen::BedPremiumGate;
 use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
     FinalLastPosition, HouseLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell,
@@ -920,8 +921,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<AdmissionPosition, ()> {
+        if let Some(coordinator) = self.premium_coordinator {
+            // First entry has not registered its session's Premium account yet.
+            // Settle deployment delivery before borrowing the bed transaction's
+            // holder; that transaction resolves the account under its own fence.
+            coordinator
+                .with_premium_batch_gate(&[], |_, _| Box::pin(async {}))
+                .await
+                .map_err(|_| ())?;
+        }
+        let premium: Option<&dyn BedPremiumGate> = self.premium_coordinator.map(|gate| gate as _);
         self.root
-            .settle_bed_regen(self.character, self.holder, fence)
+            .settle_bed_regen(self.character, self.holder, fence, premium)
             .await
             .map_err(|_| ())?;
         match self

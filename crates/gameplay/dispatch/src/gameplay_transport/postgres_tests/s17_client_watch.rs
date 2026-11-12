@@ -17,21 +17,55 @@ use std::{sync::Arc, time::Duration};
 mod actor_peer;
 use actor_peer::Peer;
 type Viewer = CastViewerSession<tokio::io::DuplexStream>;
-async fn viewer(
-    node: CastNode,
-    marker: u8,
-    nonce: u8,
-) -> TestResult<(Viewer, tokio::task::JoinHandle<Result<(), Error>>)> {
+type ObserverTask = tokio::task::JoinHandle<Result<(), Error>>;
+
+async fn next_observation(
+    viewer: &mut Viewer,
+    observer: &mut ObserverTask,
+    phase: &str,
+) -> TestResult<Message> {
+    match viewer.next().await {
+        Ok(message) => Ok(message),
+        Err(error) => {
+            let server = tokio::time::timeout(Duration::from_secs(5), &mut *observer).await;
+            if server.is_err() {
+                observer.abort();
+            }
+            Err(format!("CLCAST {phase}: {error}; observer result: {server:?}").into())
+        }
+    }
+}
+
+async fn viewer(node: CastNode, marker: u8, nonce: u8) -> TestResult<(Viewer, ObserverTask)> {
     let (client, mut server) = tokio::io::duplex(65536);
     let ticket = format!("ocv1.{marker:02x}{}{nonce:02x}", "ab".repeat(30));
-    let task = tokio::task::spawn_local(async move {
+    let units = Arc::new(tokio::sync::Semaphore::new(1));
+    let admission_units = Arc::clone(&units);
+    let mut task = tokio::task::spawn_local(async move {
+        let unit = admission_units
+            .acquire()
+            .await
+            .map_err(|_| Error::Unavailable)?;
         let first = read_frame(&mut server)
             .await
             .map_err(|_| Error::Unavailable)?;
         let stop = crate::gameplay_transport::CancellationToken::new();
-        crate::gameplay_transport::cast_observer::serve(server, &first, node, &stop).await
+        crate::gameplay_transport::cast_observer::serve(server, &first, node, &stop, unit).await
     });
-    let viewer = Viewer::join(client, ticket.as_bytes(), Duration::from_secs(5)).await?;
+    let viewer = match Viewer::join(client, ticket.as_bytes(), Duration::from_secs(5)).await {
+        Ok(viewer) => viewer,
+        Err(error) => {
+            let server = tokio::time::timeout(Duration::from_secs(5), &mut task).await;
+            if server.is_err() {
+                task.abort();
+            }
+            return Err(format!("CLCAST observer join: {error}; server result: {server:?}").into());
+        }
+    };
+    assert!(!task.is_finished(), "the joined observer remains active");
+    let _next_admission = units
+        .try_acquire()
+        .map_err(|_| "a joined observer must release its admission unit")?;
     Ok((viewer, task))
 }
 async fn moderate(peer: &mut Peer, subject: [u8; 16], action: u8) -> TestResult {
@@ -107,22 +141,22 @@ fn scenario(case: u8) -> TestResult {
                     let (status,_)=peer.exchange(503,&Message::ConsentSet{revision:0,allowed:false}.encode().map_err(debug)?).await?;
                     assert_eq!(status,oteryn_protocol_oteryn::CommandStatus::Rejected);
                     peer.cast(502,Message::Start{revision:0,access_revision:1,delay,cap:50,password:false}).await?;
-                    let (mut watching,observer)=peer.observe(viewer(node.clone(),1,1)).await??;
+                    let (mut watching,mut observer)=peer.observe(viewer(node.clone(),1,1)).await??;
                     assert_eq!(watching.chat_allowed(),case==3);assert_eq!(watching.delay(),delay);
                     if case==2 {
                         let mut picture=oteryn_client_runtime::cast_view::Picture::default();
                         picture.apply(Message::Ready{epoch:watching.epoch(),chat:watching.chat_allowed(),delay:watching.delay()},std::time::Instant::now())?;
-                        peer.observe(tokio::time::timeout(Duration::from_secs(10),async {while picture.floor.is_none(){picture.apply(watching.next().await.map_err(|e|format!("CLCAST map: {e}"))?,std::time::Instant::now())?;}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
+                        peer.observe(tokio::time::timeout(Duration::from_secs(10),async {while picture.floor.is_none(){picture.apply(next_observation(&mut watching,&mut observer,"map").await?,std::time::Instant::now())?;}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
                         assert!(picture.tiles.values().any(|items|items.contains(&1629)),"actual donor door appearance reaches native view");
                         assert!(!picture.actors.is_empty(),"caster creature picture is projected");
                         let text="Hello from the caster";
                         let speech=oteryn_protocol_oteryn::chat::encode_chat_intent(&oteryn_protocol_oteryn::chat::ChatIntent::Say{mode:oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,text:text.into()}).map_err(debug)?;
                         let (status,_)=peer.exchange(13,&speech).await?;assert_eq!(status,oteryn_protocol_oteryn::CommandStatus::Accepted);
-                        peer.observe(tokio::time::timeout(Duration::from_secs(10),async {loop{let message=watching.next().await.map_err(|e|format!("CLCAST speech: {e}"))?;let found=matches!(&message,Message::Media{media:PublicMedia::Speech{text:heard,..},..} if heard==text);picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
+                        peer.observe(tokio::time::timeout(Duration::from_secs(10),async {loop{let message=next_observation(&mut watching,&mut observer,"speech").await?;let found=matches!(&message,Message::Media{media:PublicMedia::Speech{text:heard,..},..} if heard==text);picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
                         assert!(picture.speech.iter().any(|line|line==text));
                         let position=oteryn_protocol_oteryn::world_spatial::ActorPosition{x:before.x,y:before.y,floor:before.floor};
                         owner.cast_public_effects(admitted,&[oteryn_protocol_oteryn::presentation::PresentationEvent{decision_ordinal:1,emission_ordinal:1,kind:oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect{position,effect_id:1,source:oteryn_protocol_oteryn::presentation::PresentationSource::Global}}]).await;
-                        peer.observe(tokio::time::timeout(Duration::from_secs(10),async {loop{let message=watching.next().await.map_err(|e|format!("CLCAST effects: {e}"))?;let found=matches!(&message,Message::Media{media:PublicMedia::Effects(_),..});picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
+                        peer.observe(tokio::time::timeout(Duration::from_secs(10),async {loop{let message=next_observation(&mut watching,&mut observer,"effects").await?;let found=matches!(&message,Message::Media{media:PublicMedia::Effects(_),..});picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
                         assert!(!picture.effects.is_empty());
                         peer.observe(watching.leave()).await??;let _=observer.await?;
                     }else{

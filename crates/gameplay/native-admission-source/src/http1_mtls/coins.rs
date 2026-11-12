@@ -55,6 +55,7 @@ pub(crate) async fn exchange_coins(
             false,
             Duration::from_secs(30),
             true,
+            false,
         )
         .await
     };

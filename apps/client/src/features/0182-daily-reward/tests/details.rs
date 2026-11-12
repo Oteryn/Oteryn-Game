@@ -69,17 +69,22 @@ fn daily_reward_catalogue_and_account_history_cross_real_session_caller() -> Res
                 ready(&link, false).await?;
                 link.daily_reward_details_request();
                 link.daily_reward_details_request();
-                tokio::time::timeout(Duration::from_secs(3), async {
-                    while link.daily_reward_panel().details.is_none() {
+                let panel = tokio::time::timeout(Duration::from_secs(3), async {
+                    // The first reply can arrive before the second request is queued.
+                    // Retained details do not mean that the latest request has finished.
+                    loop {
+                        let panel = link.daily_reward_panel();
+                        if panel.details.is_some() && !panel.pending {
+                            break panel;
+                        }
                         tokio::task::yield_now().await;
                     }
                 })
                 .await?;
-                let panel = link.daily_reward_panel();
                 assert!(!panel.pending);
                 assert!(panel.wall.is_none());
                 let text = panel_text(&panel);
-                assert!(text.contains("Day 30"));
+                assert!(text.contains("day 30"));
                 assert!(text.contains("another account character"));
                 assert!(text.contains("streak 60"));
                 assert!(panel.claim_receipts.iter().all(Option::is_none));

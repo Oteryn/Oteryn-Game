@@ -1,16 +1,12 @@
-//! Original geometric glyphs. Quality changes cut; domain changes color; lock/vessel are overlays.
+//! Original geometric glyphs. Quality changes cut and color; lock/vessel are overlays. Gems have no domain.
 use super::*;
 pub const SIZE: usize = 64;
-pub fn glyph(quality: u8, domain: u8, locked: bool, vessel: bool) -> Vec<u8> {
+pub fn glyph(quality: u8, locked: bool, vessel: bool) -> Vec<u8> {
     let mut rgba = vec![0; SIZE * SIZE * 4];
-    let colors = [
-        [63, 188, 110],
-        [215, 81, 75],
-        [164, 109, 221],
-        [74, 150, 221],
-    ];
+    // Lesser, regular and greater gems.
+    let colors = [[74, 150, 221], [164, 109, 221], [245, 160, 70]];
     let color = colors
-        .get(usize::from(domain))
+        .get(usize::from(quality))
         .copied()
         .unwrap_or([110, 110, 110]);
     let radius = 18 + 3 * i32::from(quality.min(2));
@@ -66,9 +62,7 @@ pub fn panel_glyphs(p: &WheelPanel) -> Vec<u8> {
                 .iter()
                 .find(|g| g.id == id)
         });
-        cells.push(gem.map_or_else(empty_slot, |g| {
-            glyph(g.quality, g.domain, g.locked, g.vessel)
-        }));
+        cells.push(gem.map_or_else(empty_slot, |g| glyph(g.quality, g.locked, g.vessel)));
     }
     let mut pixels = vec![0; SIZE * SIZE * 5 * 4];
     for y in 0..SIZE {
@@ -84,19 +78,20 @@ pub fn panel_glyphs(p: &WheelPanel) -> Vec<u8> {
 mod tests {
     use super::*;
     #[test]
-    fn gem_shapes_distinguish_quality_domain_lock_and_vessel() -> Result<(), &'static str> {
-        let base = glyph(0, 0, false, false);
-        assert!(base != glyph(2, 0, false, false), "quality changes the cut");
+    fn gem_shapes_distinguish_quality_lock_and_vessel() -> Result<(), &'static str> {
+        let base = glyph(0, false, false);
+        assert!(base != glyph(2, false, false), "quality changes the cut");
         assert!(
-            base != glyph(0, 1, false, false),
-            "domain changes the color"
+            glyph(0, false, false)[(32 * 64 + 20) * 4..(32 * 64 + 20) * 4 + 3]
+                != glyph(1, false, false)[(32 * 64 + 20) * 4..(32 * 64 + 20) * 4 + 3],
+            "quality changes the color"
         );
-        let lock = glyph(0, 0, true, false);
+        let lock = glyph(0, true, false);
         assert_eq!(
             &lock[(50 * 64 + 50) * 4..(50 * 64 + 50) * 4 + 3],
             &[245, 200, 65]
         );
-        let vessel = glyph(0, 0, false, true);
+        let vessel = glyph(0, false, true);
         assert_eq!(
             &vessel[(32 * 64 + 2) * 4..(32 * 64 + 2) * 4 + 3],
             &[230, 230, 240]

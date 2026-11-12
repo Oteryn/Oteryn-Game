@@ -777,6 +777,10 @@ pub(super) fn uuid_bytes(text: &str) -> Option<[u8; 16]> {
 }
 
 #[cfg(test)]
+#[path = "store/platform_price_list_tests.rs"]
+mod platform_price_list_tests;
+
+#[cfg(test)]
 #[path = "store/tests.rs"]
 mod tests;
 

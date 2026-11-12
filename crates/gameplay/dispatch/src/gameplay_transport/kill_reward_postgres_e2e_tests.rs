@@ -52,7 +52,16 @@ use summer_settlement::qualify_summer_settlement;
 
 #[test]
 fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> TestResult {
-    scenario_thread::run("kill-reward-e2e", scenario)
+    let started = std::time::Instant::now();
+    let result = scenario_thread::run("kill-reward-e2e", scenario);
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
+        eprintln!(
+            "CHANNEL_NATIVE_CORPSE POSTGRES_CASE_COMPLETED elapsed_ms={} success={}",
+            started.elapsed().as_millis(),
+            result.is_ok()
+        );
+    }
+    result
 }
 
 pub(super) fn scenario() -> TestResult {
@@ -872,16 +881,15 @@ fn scenario_with_creature_observed(
                     if radiant == Some("templar") {
                         // The general monster owner now also executes its independent
                         // life-drain source. Isolate the holy/energy proof from that hit.
-                        state
-                            .apply_owner_promotion_transition(true, true, Some(u64::MAX))
-                            .map_err(debug)?;
-                        let mut effects =
-                            oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
-                        effects
-                            .sockets
-                            .gem_values_milli
-                            .insert(("Life Drain Resistance".into(), "".into()), 100_000);
-                        state.install_wheel_effects(effects);
+                        // Gem resistance caps at 30%; direct equipment protection
+                        // isolates this source without changing the production cap.
+                        state.install_equipped_element_protection(
+                            crate::content::ReferenceResistanceKind::LifeDrain,
+                            Some(crate::content::ReferenceRationalPercent {
+                                numerator: 100,
+                                denominator: 1,
+                            }),
+                        );
                     }
                     // Qualify the circle and holy independently despite both being scheduled.
                     state.install_equipped_energy_protection(Some(

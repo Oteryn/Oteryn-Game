@@ -176,7 +176,7 @@ pub(super) use tests::source as test_source;
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
-    use super::super::geometry::{attack_target_origin, geometry};
+    use super::super::geometry::{aimed_cardinal, attack_target_origin, geometry, offset};
     use super::*;
     use serde_json::Value;
 
@@ -216,6 +216,45 @@ mod tests {
             attack_target_origin(caster, target, false).unwrap(),
             (target, None)
         );
+    }
+    #[test]
+    fn wave_cursor_mode_tie_prefers_east_west() {
+        let caster = (10, 10, 7);
+        let aim = |dx, dy| aimed_cardinal(caster, (10 + dx, 10 + dy, 7));
+        // Exact diagonals and every other tie go east or west.
+        assert_eq!(aim(3, 3), Some((1, 0)));
+        assert_eq!(aim(-2, 2), Some((-1, 0)));
+        assert_eq!(aim(-1, -1), Some((-1, 0)));
+        assert_eq!(aim(1, -1), Some((1, 0)));
+        // Otherwise the larger axis wins.
+        assert_eq!(aim(2, -3), Some((0, -1)));
+        assert_eq!(aim(-1, 5), Some((0, 1)));
+        assert_eq!(aim(4, 0), Some((1, 0)));
+        assert_eq!(aim(0, -4), Some((0, -1)));
+        // The caster's own column and row has no direction; the floor plays no part.
+        assert_eq!(aim(0, 0), None);
+        assert_eq!(aimed_cardinal(caster, (11, 10, 6)), Some((1, 0)));
+        // Far coordinates do not overflow.
+        assert_eq!(
+            aimed_cardinal((i32::MIN, i32::MAX, 7), (i32::MAX, i32::MIN, 7)),
+            Some((1, 0))
+        );
+    }
+    #[test]
+    fn wave_target_mode_hits_the_target_direction_while_facing_elsewhere() {
+        let spell = source("candidate:spell/fire_wave");
+        let a = ability(&spell, None).unwrap();
+        let caster = (100, 100, 7);
+        let target = (104, 101, 7);
+        // The character faces north; the option aims east at the target from the adjacent tile.
+        let facing_north = geometry(a, offset(caster, 0, -1).unwrap(), (0, -1)).unwrap();
+        assert!(!facing_north.contains(&target));
+        let d = aimed_cardinal(caster, target).unwrap();
+        assert_eq!(d, (1, 0));
+        let aimed = geometry(a, offset(caster, d.0, d.1).unwrap(), d).unwrap();
+        assert!(aimed.contains(&target));
+        assert!(aimed.contains(&(101, 100, 7)));
+        assert!(!aimed.contains(&(100, 99, 7)));
     }
     #[test]
     fn genuine_berserk_and_cancel_invisibility_are_world_areas_not_self_mutations() {

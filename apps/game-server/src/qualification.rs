@@ -87,7 +87,145 @@ fn required(name: &str) -> Result<String, io::Error> {
 }
 
 fn evidence(line: &str) {
-    println!("SEAM_EVIDENCE {line}");
+    if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
+        println!("SEAM_EVIDENCE {line}");
+    }
+}
+
+/// Row reporters write `e2e_all` lines in several shapes. `report.py` accepts
+/// one: `e2e_all scenario=<id> status=<verdict> seconds=<n>[ evidence=<token>]`
+/// followed by the harness's optional typed failure suffix.
+/// A capture line is not a verdict and becomes `e2e_capture`; a failed capture
+/// write, or a line without a verdict, is a FAIL. Other lines pass unchanged.
+fn e2e_result_line(line: &str) -> String {
+    let line = line.trim_start_matches("SEAM_EVIDENCE ").trim();
+    let Some(rest) = line.strip_prefix("e2e_all ") else {
+        return line.to_owned();
+    };
+    // Keep the harness suffix out of free-text evidence, including when that
+    // evidence has spaces. Preserve malformed suffixes for report.py to reject.
+    let (rest, cause) = rest
+        .rsplit_once(" cause=")
+        .map_or((rest, None), |(rest, cause)| (rest, Some(cause)));
+    let suffix = cause.map_or_else(String::new, |cause| format!(" cause={cause}"));
+    let mut scenario = None;
+    let mut status = None;
+    let mut seconds = None;
+    let mut detail: Vec<String> = Vec::new();
+    // The evidence value runs to the end of the line: its words join with '_'.
+    let mut evidence_value: Option<String> = None;
+    for token in rest.split_whitespace() {
+        if let Some(value) = evidence_value.as_mut() {
+            value.push('_');
+            value.push_str(token);
+        } else if let Some(value) = token.strip_prefix("evidence=") {
+            evidence_value = Some(value.to_owned());
+        } else if let Some(value) = token.strip_prefix("scenario=") {
+            scenario = Some(value);
+        } else if let Some(value) = token.strip_prefix("status=").filter(|_| status.is_none()) {
+            status = Some(value);
+        } else if let Some(value) = token
+            .strip_prefix("seconds=")
+            .filter(|value| seconds.is_none() && value.parse::<f64>().is_ok_and(f64::is_finite))
+        {
+            seconds = Some(value);
+        } else {
+            detail.push(token.to_owned());
+        }
+    }
+    detail.extend(evidence_value);
+    let Some(scenario) = scenario else {
+        return line.to_owned();
+    };
+    let verdict = match status {
+        Some("CAPTURED") => return format!("e2e_capture {rest}"),
+        Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
+        Some(other) => {
+            detail.insert(0, other.to_owned());
+            "FAIL"
+        }
+        None => {
+            detail.insert(0, "no-verdict".to_owned());
+            "FAIL"
+        }
+    };
+    // A reporter that did not time its row reports zero seconds, not a guess.
+    let seconds = seconds.unwrap_or("0.000");
+    let detail: String = detail
+        .join(";")
+        .chars()
+        .map(|character| {
+            if character.is_whitespace() {
+                '_'
+            } else {
+                character
+            }
+        })
+        .collect();
+    if detail.is_empty() {
+        format!("e2e_all scenario={scenario} status={verdict} seconds={seconds}{suffix}")
+    } else {
+        format!(
+            "e2e_all scenario={scenario} status={verdict} seconds={seconds} evidence={detail}{suffix}"
+        )
+    }
+}
+
+#[cfg(test)]
+mod e2e_result_line_tests {
+    use super::e2e_result_line;
+
+    #[test]
+    fn row_results_preserve_typed_failure_suffix_after_evidence() {
+        for detail in ["", " evidence=timed out"] {
+            let input = format!(
+                "e2e_all scenario=M01.full status=FAIL seconds=3{detail} cause=transport root=M01/admission"
+            );
+            let expected_detail = if detail.is_empty() {
+                ""
+            } else {
+                " evidence=timed_out"
+            };
+            assert_eq!(
+                e2e_result_line(&input),
+                format!(
+                    "e2e_all scenario=M01.full status=FAIL seconds=3{expected_detail} cause=transport root=M01/admission"
+                ),
+            );
+        }
+    }
+
+    #[test]
+    fn row_results_take_the_one_shape_report_py_accepts() {
+        assert_eq!(
+            e2e_result_line("SEAM_EVIDENCE e2e_all scenario=C06.full status=PASS seconds=3.982"),
+            "e2e_all scenario=C06.full status=PASS seconds=3.982"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C01.client status=FAIL evidence=timed out"),
+            "e2e_all scenario=C01.client status=FAIL seconds=0.000 evidence=timed_out"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C03.client status=PASS payload=pages"),
+            "e2e_all scenario=C03.client status=PASS seconds=0.000 evidence=payload=pages"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C02.client status=CAPTURED attack=1"),
+            "e2e_capture scenario=C02.client status=CAPTURED attack=1"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence=x"),
+            "e2e_all scenario=C14.client status=FAIL seconds=0.000 evidence=CAPTURE-WRITE-ERROR;x"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C02.client capture=a.bin error=disk"),
+            "e2e_all scenario=C02.client status=FAIL seconds=0.000 evidence=no-verdict;capture=a.bin;error=disk"
+        );
+        assert_eq!(
+            e2e_result_line("world_loader state=booted"),
+            "world_loader state=booted"
+        );
+    }
 }
 
 fn pem_der(path: &str, label: &str) -> TestResult<Vec<u8>> {
@@ -1251,6 +1389,15 @@ fn node_boot_seam_against_running_node() -> TestResult {
         .build()?
         .block_on(async {
             let url = required("NODE_BOOT_DATABASE_URL")?;
+            let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
+            let packet_accounts = if world_path.is_some() {
+                Some([
+                    required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
+                    required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
+                ])
+            } else {
+                None
+            };
             let world = crate::node::uuid_bytes(&required("NODE_BOOT_WORLD_ID")?)
                 .ok_or("invalid NODE_BOOT_WORLD_ID")?;
             let channel = crate::node::uuid_bytes(&required("NODE_BOOT_CHANNEL_ID")?)
@@ -1261,14 +1408,32 @@ fn node_boot_seam_against_running_node() -> TestResult {
             )?);
             let mut database = sqlx::PgConnection::connect(&url).await?;
             let mut characters = Vec::new();
-            for account in &accounts {
-                let character: Vec<u8> = sqlx::query_scalar(
+            let mut account_ids = std::collections::BTreeSet::new();
+            let mut character_ids = std::collections::BTreeSet::new();
+            for account in accounts.iter().chain(packet_accounts.iter().flatten()) {
+                let account_id = crate::node::uuid_bytes(account)
+                    .ok_or("invalid node-boot fixture AccountId")?;
+                if !account_ids.insert(account_id) {
+                    return Err("node-boot fixture Accounts must be distinct".into());
+                }
+                let found: Vec<Vec<u8>> = sqlx::query_scalar(
                     "SELECT uuid_send(character_id) FROM game_character_roots WHERE account_id = $1::uuid",
                 )
                 .bind(account)
-                .fetch_one(&mut database)
+                .fetch_all(&mut database)
                 .await?;
-                characters.push(<[u8; 16]>::try_from(character.as_slice())?);
+                let [character] = found.as_slice() else {
+                    return Err(format!(
+                        "node-boot fixture Account must own exactly one Character: account={account} count={}",
+                        found.len()
+                    )
+                    .into());
+                };
+                let character = <[u8; 16]>::try_from(character.as_slice())?;
+                if !character_ids.insert(character) {
+                    return Err("node-boot fixture Characters must be distinct".into());
+                }
+                characters.push(character);
             }
             let scope_generation: String = sqlx::query_scalar(
                 "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
@@ -1279,14 +1444,17 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .fetch_one(&mut database)
             .await?;
             database.close().await?;
-            evidence("node_boot characters=2 source=control_socket assignment=operator");
+            evidence(&format!(
+                "node_boot characters={} source=control_socket assignment=operator",
+                characters.len()
+            ));
             let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
                 key_id: &key_id,
                 accounts: &accounts,
-                characters: &characters,
+                characters: &characters[..accounts.len()],
                 world,
                 channel,
                 scope_generation: scope_generation.parse()?,
@@ -1299,8 +1467,23 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 runtime: None,
                 recovery: &recovery_key()?,
             };
-            if let Some(path) = std::env::var_os("NODE_BOOT_WORLD_BUNDLE") {
-                client_world::journeys(&clients, std::path::Path::new(&path)).await
+            if let Some(path) = world_path {
+                let packet_accounts = packet_accounts
+                    .as_ref()
+                    .ok_or("World packet Accounts are not configured")?;
+                let packet_clients = SeamClients {
+                    accounts: packet_accounts,
+                    characters: &characters[accounts.len()..],
+                    ..clients
+                };
+                for (role, pair) in [("core", &clients), ("packets", &packet_clients)] {
+                    evidence(&format!(
+                        "node_boot_fixture role={role} character_0={} character_1={} accounts=distinct characters=distinct",
+                        uuid_text(&pair.characters[0]),
+                        uuid_text(&pair.characters[1]),
+                    ));
+                }
+                client_world::journeys(&clients, &packet_clients, std::path::Path::new(&path)).await
             } else {
                 seam_clients(clients).await
             }

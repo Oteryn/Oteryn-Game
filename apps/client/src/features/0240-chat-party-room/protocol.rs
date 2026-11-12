@@ -25,7 +25,7 @@ impl Outbox {
         ) {
             self.local_chat_result(outcome);
         } else {
-            self.chat_public_result(outcome);
+            self.chat_public_result(intent, outcome);
         }
     }
 }

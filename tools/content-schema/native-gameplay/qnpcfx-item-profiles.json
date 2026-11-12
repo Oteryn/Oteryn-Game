@@ -197,13 +197,13 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "7e77fa9a344e98e078be35bb2407c31fc5a6d00c12cd44d9d9a0789f21598eb5"
+      "sha256": "a39681f845e4ec72d759682962b99a4266bfeca9f577f2fb7720387ef07426d4"
     }
   ],
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-00000-00499.json",
-      "sha256": "b92afd79915f514dd48d6c8b22890af64d1889355d6a1352af21b24dd92cd683"
+      "sha256": "c29c94efdfb37a753a3b1a1ce0cdd28c74e0a1c0d5bff461a7e2f86870010d94"
     },
     {
       "path": "content/items/definitions/items-00500-00999.json",
@@ -211,7 +211,7 @@
     },
     {
       "path": "content/items/definitions/items-01000-01499.json",
-      "sha256": "4cc44ccb9c49f466c20691d013fbcbd4ecc55a87561b3428be23705ef02e0a45"
+      "sha256": "6b0ff0ce370507360d6b72e9c1f032e20dc24bd0242ac5dc2aea9c3c592f827a"
     },
     {
       "path": "content/items/definitions/items-01500-01999.json",
@@ -239,23 +239,23 @@
     },
     {
       "path": "content/items/definitions/items-16000-16499.json",
-      "sha256": "4487cf3964218a7bfd28e764b4b9af3106fff1e07b6f520f481fe7a1a59b66d4"
+      "sha256": "1b5ea110c1ea32441dee10e79d019c9b799eb6e2948dce19321610f53717d1fe"
     },
     {
       "path": "content/items/definitions/items-16500-16999.json",
-      "sha256": "0976b3f6cedb987b93c6b6702cdcf4e0cabffb6c1477896cf9ac6aba0339842e"
+      "sha256": "321fd2900b3ec927a42fed055ecbeb81afdc7fd444135ebf4365a20b3c59bcdd"
     },
     {
       "path": "content/items/definitions/items-17000-17499.json",
-      "sha256": "834d8d5fdea1924a47d1571c7009c10338f74fc2cc439feb8df00b5353edef27"
+      "sha256": "50ded9548117be0b9bbb0736ee3d60466e80fad80baf5d218e7cf32f42049f9c"
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "30c6afeb92bc4b03e80d816d16f58f7c4306f50dd0857f8b02e983645ae85d51"
+      "sha256": "79ee5cc95cdf572b11edadc6dd763e9ac3baf4fe6a68892dc7bae770d531f7d9"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
-      "sha256": "80fa7cc512cf1734a891a4acdad00c63689cc33ca2943b90501fef80bfe5920c"
+      "sha256": "634854affe75b920ca0a4f95704c8e0068b0a749b6d2b21bee740b7bb87f53f3"
     },
     {
       "path": "content/items/definitions/items-18500-18999.json",
@@ -263,11 +263,11 @@
     },
     {
       "path": "content/items/definitions/items-20500-20999.json",
-      "sha256": "40aa4583015d5ee1e2a09e165b7b04e7d2f95847171d37b8465f4e52a78c9e4f"
+      "sha256": "3d12f360ac21a4cb8108b37c560ac81fba15c851fdebdda64a84a48d5de53ff5"
     },
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "09d3b5409a8a5098cedaf47777a2d050e3faeee4f200139e5ae8a9da5d4a91d8"
+      "sha256": "bbde56730dba51ebf592df924ef0a544f3c56553ff08e52cb627178666d561c0"
     },
     {
       "path": "content/items/definitions/items-21500-21999.json",
@@ -279,15 +279,15 @@
     },
     {
       "path": "content/items/definitions/items-22500-22999.json",
-      "sha256": "add38b813f81b6ef66b76b971370a260d1754b19860184defbdca39d1c434b29"
+      "sha256": "34be5013a4ef47e10fa53675ea4be8a59b9c7605bb147fe4f988c894d9ad3c84"
     },
     {
       "path": "content/items/definitions/items-24500-24999.json",
-      "sha256": "acd1017f3a14cd9327fc66e4854ef17a1b4b5d56e209d6050e689ef2b2204d67"
+      "sha256": "310beb2c72fdd531c30d0bbf390de4e1fedb80baa7fe6f73af6eb0e9cd2f4244"
     },
     {
       "path": "content/items/definitions/items-25000-25499.json",
-      "sha256": "20915b1773f23ab1175d7e1d61ca8be3a3e37d28f7c15a3df13ff8007301b56f"
+      "sha256": "c861c9d60d0da94a2f0465ad4bad0d9b88a5e83779fc1592db3f3e056d2a3479"
     },
     {
       "path": "content/items/definitions/items-26500-26999.json",
@@ -311,7 +311,7 @@
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "92f0d0672e40945716dd26732c8857a8485353dbea8470dafce68dca6af87ffb"
+      "sha256": "cd0ffa6dde24531c20c491b04d87ae9a37b208f122fd73d7c8581676c594e1f6"
     },
     {
       "path": "content/items/definitions/items-30000-30499.json",
@@ -319,7 +319,7 @@
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "f3fca5c5d8d67861740bb947f120530949a9138eb254dc76efbf32d4a2fca309"
+      "sha256": "78d89f6fb82d0f5b6b8b222feb5e1d6856e03c9bd560a7abb0e9f2d1a81b99a5"
     },
     {
       "path": "content/items/definitions/items-31500-31999.json",
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "8dddf732916bffc7a8151ac772e73e4a9f47ca4d51768d76245295232557c5fd"
+      "sha256": "652fc1afd55fded6e61ae6da2d3bec52198c2f7dc3eb80cae4c63f5c1eed57a7"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
@@ -548,9 +548,9 @@
         }
       ],
       "canonical_materializable": false,
-      "existing_native_profile": false,
+      "existing_native_profile": true,
       "holds": [],
-      "classification": "QUALIFIED_PLAIN_PORTABLE",
+      "classification": "EXISTING_NATIVE",
       "reason": null
     }
   ]

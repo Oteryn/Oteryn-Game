@@ -1,0 +1,9 @@
+{
+  "mechanic": "0287-actor-spell-catalog",
+  "kind": "keybindings",
+  "id": "0287-actor-spell-catalog-toggle",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "ALT+L",
+  "entry": "input.rs::toggle_key"
+}

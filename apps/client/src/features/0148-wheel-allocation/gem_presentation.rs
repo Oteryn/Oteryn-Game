@@ -32,7 +32,7 @@ pub(in crate::play) enum Action {
     Gem { revision: u64, id: [u8; 16] },
     Modifier { nonce: u64, kind: u8, id: u16 },
     Quality(u8),
-    Domain(u8),
+    Vessel(u8),
     Stage(oteryn_client_ui::wheel_allocation::Intent),
     Confirm,
     Retry,
@@ -88,8 +88,10 @@ pub(in crate::play) fn activate(m: &mut Mailbox, s: &UnboundedSender<PlayCommand
             }
         }
         Action::Quality(q) if q < 3 => m.wheel.quality = q,
-        Action::Domain(d) if d < 4 => m.wheel.domain = d,
+        Action::Vessel(d) if d < m.wheel.vessel_slot_count() => m.wheel.vessel_slot = d,
         Action::Stage(i) => super::enqueue(m, s, i),
+        Action::Socket if m.wheel.atelier_v2 => super::enqueue(m, s, Intent::ReplaceVessel),
+        Action::Clear if m.wheel.atelier_v2 => super::enqueue(m, s, Intent::ClearVessel),
         Action::Socket => {
             m.wheel.socket_selected();
         }

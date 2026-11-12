@@ -1,6 +1,8 @@
 //! Starter-backpack, temple-respawn and first-vocation journeys on the ordinary Character.
 //! No provisioning: all assertions consume native admission, command or delta frames.
+use super::starter_inventory::check_starter;
 use super::*;
+use oteryn_dev_client::client_runtime::inventory;
 use oteryn_dev_client::{CharacterInventory, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{item_view as items, logout::LogoutResult};
 use std::collections::BTreeSet;
@@ -31,68 +33,47 @@ const VOCATION: &[&str] = &[
     "relog-vocation-xp-level",
 ];
 
-struct Row {
-    id: &'static str,
-    required: &'static [&'static str],
-    passed: BTreeSet<&'static str>,
-    invalid_action: bool,
-    started: std::time::Instant,
-}
+struct Row(verdict::Row);
 
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self {
-            id,
-            required,
-            passed: BTreeSet::new(),
-            invalid_action: false,
-            started: std::time::Instant::now(),
-        }
+        Self(verdict::Row::new("E2EF6", id, required))
+    }
+
+    // Every row admits Character 1 first; the blessing rows also fight with Character 0.
+    fn needs(self, needs: &[verdict::Need]) -> Self {
+        Self(self.0.needs(needs))
     }
 
     fn pass(&mut self, action: &'static str, observed: impl std::fmt::Debug) {
-        if !self.required.contains(&action) || !self.passed.insert(action) {
-            self.invalid_action = true;
-            return;
-        }
-        evidence(&format!(
-            "E2EF6_CHECK {} {action} PASS observed={observed:?}",
-            self.id
-        ));
+        self.0.pass(action, format_args!("observed={observed:?}"));
     }
 
+    #[allow(
+        dead_code,
+        reason = "Only the function-local row test reads completeness; the shared verdict decides PASS."
+    )]
     fn complete(&self) -> bool {
-        !self.required.is_empty()
-            && !self.invalid_action
-            && self
-                .required
-                .iter()
-                .all(|action| self.passed.contains(action))
+        self.0.complete()
     }
 
     fn finish(self, result: TestResult) {
-        for action in self.required {
-            if !self.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                    self.id
-                ));
-            }
-        }
-        if let Err(error) = &result {
-            evidence(&format!("E2EF6_GAP {} {error}", self.id));
-        }
-        evidence(&format!(
-            "e2e_all scenario={}.full status={} seconds={:.3}",
-            self.id,
-            if result.is_ok() && self.complete() {
-                "PASS"
-            } else {
-                "FAIL"
-            },
-            self.started.elapsed().as_secs_f64(),
-        ));
+        self.0.finish(&result);
     }
+}
+
+pub(super) async fn run_starter(clients: &SeamClients<'_>) {
+    use verdict::Need::Fixture;
+    let mut starter = Row::new("C19a", STARTER).needs(&[Fixture(1)]);
+    let watch = starter.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(100),
+            "starter journey deadline; remaining actions unproven",
+            starter_backpack(&mut starter, clients),
+        )
+        .await;
+    starter.finish(result);
 }
 
 pub(super) async fn run(
@@ -101,86 +82,89 @@ pub(super) async fn run(
     spawns: &oteryn_world_bundle::spawn::Table,
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
+    use verdict::Need::{Fixture, Row as After};
     // Own a connection per row: an error/timeout cannot prevent the next row's verdict.
-    let mut starter = Row::new("C19a", STARTER);
-    let result = tokio::time::timeout(
-        Duration::from_secs(100),
-        starter_backpack(&mut starter, clients),
-    )
-    .await
-    .unwrap_or_else(|_| Err("starter journey deadline; remaining actions unproven".into()));
-    starter.finish(result);
-
-    let mut temple = Row::new("C20d", TEMPLE);
-    let result = tokio::time::timeout(
-        Duration::from_secs(330),
-        temple_respawn(&mut temple, clients, world, spawns),
-    )
-    .await
-    .unwrap_or_else(|_| Err("temple journey deadline; remaining actions unproven".into()));
+    let mut temple = Row::new("C20d", TEMPLE).needs(&[Fixture(1)]);
+    let watch = temple.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(330),
+            "temple journey deadline; remaining actions unproven",
+            temple_respawn(&mut temple, clients, world, spawns),
+        )
+        .await;
     temple.finish(result);
 
-    let mut vocation = Row::new("S16a", VOCATION);
-    let result = tokio::time::timeout(
-        Duration::from_secs(420),
-        first_vocation(&mut vocation, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| Err("Oressa journey deadline; remaining actions unproven".into()));
+    let mut vocation = Row::new("S16a", VOCATION).needs(&[Fixture(1)]);
+    let watch = vocation.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(420),
+            "Oressa journey deadline; remaining actions unproven",
+            first_vocation(&mut vocation, clients, world, spawns, npcs),
+        )
+        .await;
     vocation.finish(result);
 
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1100),
-        experience_loss(&mut loss, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| Err("experience-loss journey deadline; remaining actions unproven".into()));
+    // Promotion starts from the knight the first-vocation row produces.
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[Fixture(1), After("S16a")]);
+    let watch = loss.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1100),
+            "experience-loss journey deadline; remaining actions unproven",
+            experience_loss(&mut loss, clients, world, spawns, npcs),
+        )
+        .await;
     match result {
         Ok(Some(source)) => finish_missing_receipt(loss, source),
         other => loss.finish(other.map(|_| ())),
     }
 
-    let mut custody = Row::new("C20b", ITEM_LOSS);
-    let result = tokio::time::timeout(
-        Duration::from_secs(850),
-        item_loss(&mut custody, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| Err("item-loss journey deadline; remaining actions unproven".into()));
+    let mut custody = Row::new("C20b", ITEM_LOSS).needs(&[Fixture(1)]);
+    let watch = custody.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(850),
+            "item-loss journey deadline; remaining actions unproven",
+            item_loss(&mut custody, clients, world, spawns, npcs),
+        )
+        .await;
     custody.finish(result);
 
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1800),
-        blessing_services(&mut services, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| {
-        Err("blessing services journey deadline; remaining actions unproven".into())
-    });
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[Fixture(1), Fixture(0)]);
+    let watch = services.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "blessing services journey deadline; remaining actions unproven",
+            blessing_services(&mut services, clients, world, spawns, npcs),
+        )
+        .await;
     finish_blessing_row(services, result);
 
-    let mut consumption = Row::new("C20c", BLESSING_DEATH);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1500),
-        blessing_death(&mut consumption, clients, world, spawns, npcs),
-    )
-    .await
-    .unwrap_or_else(|_| {
-        Err("blessing consumption journey deadline; remaining actions unproven".into())
-    });
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[Fixture(0), Fixture(1)]);
+    let watch = consumption.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1500),
+            "blessing consumption journey deadline; remaining actions unproven",
+            blessing_death(&mut consumption, clients, world, spawns, npcs),
+        )
+        .await;
     finish_blessing_row(consumption, result);
 
-    let mut resting = Row::new("P10", RESTING_BONUSES);
-    let result = tokio::time::timeout(
-        Duration::from_secs(1800),
-        resting_bonuses(&mut resting, clients, world, spawns),
-    )
-    .await
-    .unwrap_or_else(|_| Err("P10 resting journey deadline; remaining actions unproven".into()));
+    let mut resting = Row::new("P10", RESTING_BONUSES).needs(&[Fixture(1)]);
+    let watch = resting.0.watch();
+    let result = watch
+        .bound(
+            Duration::from_secs(1800),
+            "P10 resting journey deadline; remaining actions unproven",
+            resting_bonuses(&mut resting, clients, world, spawns),
+        )
+        .await;
     finish_resting_row(resting, result);
 }
 
@@ -200,8 +184,8 @@ const RESTING_BONUSES: &[&str] = &[
     "resting-area-classification",
 ];
 
-fn resting_stamina(payload: &[u8]) -> TestResult<u16> {
-    progress_frame(payload)?;
+fn resting_stamina(payload: &[u8], vocation_selected: bool) -> TestResult<u16> {
+    progress_frame(payload, vocation_selected)?;
     let minutes = u16::from_le_bytes(payload[29..31].try_into()?);
     if minutes > 2520 {
         return Err(format!("native stamina exceeds 2520: {minutes}").into());
@@ -455,7 +439,7 @@ async fn resting_deficits(
     }
     resting_walk(client, world, outside).await?;
     relog(client, clients, 0xf3).await?; // Clears the unrelated kill-triggered soul window.
-    let stamina = resting_stamina(&tab(client, 1).await?)?;
+    let stamina = resting_stamina(&tab(client, 1).await?, general_stats::selected(client))?;
     if stamina >= 2520 {
         return Err(format!("P10 stamina deficit blocked after earned kill and fresh admission: observed={stamina}, need <2520").into());
     }
@@ -499,23 +483,11 @@ async fn resting_deficits(
 
 fn finish_resting_row(row: Row, result: TestResult<Option<&'static str>>) {
     if let Ok(Some(source)) = result {
-        for action in row.required {
-            if !row.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                    row.id
-                ));
-            }
-        }
         evidence(&format!(
             "E2EF6_GAP {} server ticks qualify all PZ tiles, without an admitted narrower resting-area classification; no native player route can prove the area distinction source:{source}",
-            row.id
+            row.0.id
         ));
-        evidence(&format!(
-            "e2e_all scenario={}.full status=MISSING-SERVER seconds={:.3} evidence=source:{source}",
-            row.id,
-            row.started.elapsed().as_secs_f64()
-        ));
+        row.0.finish_missing_server(source);
     } else {
         row.finish(result.map(|_| ()));
     }
@@ -578,12 +550,12 @@ async fn resting_bonuses(
             return Err(format!("P10 ordinary knight prerequisite blocked: native build={look}").into());
         }
         let initial_vitals = client.actor_vitals().copied().ok_or("P10 deficit vitals missing")?;
-        row.pass("player-earned-deficits", (initial_vitals, resting_stamina(&tab(&mut client, 1).await?)?));
+        row.pass("player-earned-deficits", (initial_vitals, resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?));
         resting_walk(&mut client, world, inside).await?;
         daily_wall(&mut client).await?; // Install the saved streak; do not reset cadence during observation.
         client.take_events();
         let mut previous = client.actor_vitals().copied().ok_or("P10 resting vitals missing")?;
-        let stamina_before = resting_stamina(&tab(&mut client, 1).await?)?;
+        let stamina_before = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
         let soul_before = previous.soul;
         let mut health = false;
         let mut mana = false;
@@ -627,7 +599,7 @@ async fn resting_bonuses(
                 }
             }
             if tokio::time::Instant::now() >= next_stamina_read {
-                stamina = resting_stamina(&tab(&mut client, 1).await?)?;
+                stamina = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
                 next_stamina_read = tokio::time::Instant::now() + Duration::from_secs(1);
             }
             if stamina < stamina_before {
@@ -650,7 +622,7 @@ async fn resting_bonuses(
         row.pass("resting-double-health-mana", previous);
         row.pass("resting-soul-and-stamina", (soul_before, previous.soul, stamina_before, stamina_after));
         relog(&mut client, clients, 0xf3).await?;
-        if daily_wall(&mut client).await? != claimed || resting_stamina(&tab(&mut client, 1).await?)? != stamina_after
+        if daily_wall(&mut client).await? != claimed || resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))? != stamina_after
             || client.actor_vitals().is_none_or(|v| v.soul != previous.soul || v.health < previous.health || v.mana < previous.mana) {
             return Err("P10 earned bonuses/streak did not persist through fresh admission".into());
         }
@@ -660,7 +632,7 @@ async fn resting_bonuses(
         let mut base_health = false;
         let mut base_mana = false;
         let outside_soul = client.actor_vitals().ok_or("P10 outside vitals absent")?.soul;
-        let outside_stamina = resting_stamina(&tab(&mut client, 1).await?)?;
+        let outside_stamina = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
         if outside_stamina >= 2520 {
             return Err("P10 outside negative-path stamina prerequisite capped; absence of a gain would be vacuous".into());
         }
@@ -693,7 +665,7 @@ async fn resting_bonuses(
                 }
             }
             if tokio::time::Instant::now() >= next_stamina_read {
-                observed_stamina = resting_stamina(&tab(&mut client, 1).await?)?;
+                observed_stamina = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
                 next_stamina_read = tokio::time::Instant::now() + Duration::from_secs(1);
             }
             if tile(client.world_spatial().actor_position)? != outside
@@ -772,8 +744,8 @@ mod resting_tests {
             })
             .encode()
             .map_err(|error| format!("stats encode: {error:?}"))?;
-            assert_eq!(resting_stamina(&payload)?, minutes);
-            assert!(resting_stamina(&payload[..41]).is_err());
+            assert_eq!(resting_stamina(&payload, false)?, minutes);
+            assert!(resting_stamina(&payload[..41], false).is_err());
         }
         let payload = TabView::GeneralStats(GeneralStats {
             level: 8,
@@ -782,34 +754,20 @@ mod resting_tests {
         })
         .encode()
         .map_err(|error| format!("stats encode: {error:?}"))?;
-        assert!(resting_stamina(&payload).is_err());
+        assert!(resting_stamina(&payload, false).is_err());
         Ok(())
     }
-}
-
-/// Wire handles are session-local. Assert the exact template, quantity and empty custody
-/// instead of comparing handles across fresh admissions (or accepting any container).
-fn check_starter(inventory: &CharacterInventory, definition: NonZeroU32) -> TestResult {
-    if !inventory.main_backpack.is_some_and(|bag| {
-        bag.item_definition_ref == definition && bag.count.get() == 1 && bag.sub_type == 0
-    }) || !inventory.entries.is_empty()
-        || !inventory.equipment.is_empty()
-    {
-        return Err(
-            format!("expected exactly one production starter backpack: {inventory:?}").into(),
-        );
-    }
-    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        match client.session_mut().logout().await?.result {
+        let logout = client.session_mut().logout().await?;
+        match logout.result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::Busy | LogoutResult::InFight { .. })
                 if tokio::time::Instant::now() < deadline => {}
-            result => return Err(format!("E2EF6 logout did not settle: {result:?}").into()),
+            _ => return Err(format!("E2EF6 logout did not settle: {logout:?}").into()),
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
@@ -831,11 +789,16 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
     let result: TestResult = async {
         let index = provisioning::item_index()?;
         let definition = provisioning::item_reference(&index, 2854)?;
+        let entries = [
+            provisioning::item_reference(&index, 3003)?,
+            provisioning::item_reference(&index, 3457)?,
+        ];
         check_starter(
             client
                 .inventory()
                 .ok_or("starter inventory snapshot missing")?,
             definition,
+            entries,
         )?;
         row.pass("first-entry-backpack", client.inventory());
 
@@ -846,43 +809,23 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
             .and_then(|inventory| inventory.main_backpack)
             .ok_or("starter main backpack missing")?
             .handle;
-        let selection = items::ItemMoveSelection {
-            equip_drop: client
-                .selected_capabilities()
-                .contains(&items::CAPABILITY_ITEM_EQUIP_DROP_V1),
-            container_tree: false,
-            world_interaction: false,
-        };
-        let payload = items::encode_item_move_intent_for(
-            &items::ItemMoveIntent {
+        let reply = inventory::send(
+            client.session_mut(),
+            inventory::MoveRequest {
                 source,
                 destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand),
+                count: None,
             },
-            selection,
         )
-        .map_err(|error| format!("starter equip intent: {error:?}"))?;
-        let reply = client
-            .session_mut()
-            .gated_command(
-                items::CAPABILITY_ITEM_VIEW_MOVE_V1,
-                items::COMMAND_TYPE_ITEM_MOVE_INTENT,
-                &payload,
-            )
-            .await?;
-        let (payload, _) =
-            oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
-                .map_err(|error| format!("starter equip refusal detail: {error:?}"))?;
-        if reply.status != CommandStatus::Accepted
-            || items::decode_item_move_result_for(payload, selection)
-                .map_err(|error| format!("starter equip result: {error:?}"))?
-                != items::ItemMoveOutcome::SlotMismatch
-        {
+        .await?
+        .ok_or("starter equipment move capabilities are not selected")?;
+        if reply.outcome != items::ItemMoveOutcome::SlotMismatch {
             return Err(format!(
                 "starter invalid equip was not refused as SlotMismatch: {reply:?}"
             )
             .into());
         }
-        row.pass("invalid-equip-refused", &reply);
+        row.pass("invalid-equip-refused", reply);
 
         relog(&mut client, clients, 0xe1).await?;
         check_starter(
@@ -890,6 +833,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
                 .inventory()
                 .ok_or("starter relog inventory missing")?,
             definition,
+            entries,
         )?;
         row.pass("relog-custody-no-second-grant", client.inventory());
         relog(&mut client, clients, 0xe2).await?;
@@ -898,6 +842,7 @@ async fn starter_backpack(row: &mut Row, clients: &SeamClients<'_>) -> TestResul
                 .inventory()
                 .ok_or("second starter relog inventory missing")?,
             definition,
+            entries,
         )?;
         row.pass("second-relog-no-second-grant", client.inventory());
         Ok(())
@@ -1031,8 +976,8 @@ async fn temple_respawn(
 
 /// GeneralStats has a fixed native layout. Do not substitute a ranking snapshot:
 /// its scheduled cut can predate the kill or the vocation confirmation.
-fn progress_frame(payload: &[u8]) -> TestResult<(u64, u32)> {
-    if payload.len() != 42 || payload[0] != 1 || payload[33] > 1 {
+fn progress_frame(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u32)> {
+    if general_stats::validate(payload, vocation_selected).is_err() || payload[0] != 1 || payload[33] > 1 {
         return Err("malformed native GeneralStats frame".into());
     }
     let xp = u64::from_le_bytes(payload[1..9].try_into()?);
@@ -1056,7 +1001,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("current progression query refused: {reply:?}").into());
     }
-    progress_frame(&reply.payload)
+    progress_frame(&reply.payload, general_stats::selected(client))
 }
 
 async fn self_look(client: &mut DevClientSession) -> TestResult<String> {
@@ -1880,23 +1825,11 @@ async fn experience_loss(
 }
 
 fn finish_missing_receipt(row: Row, source: &str) {
-    for action in row.required {
-        if !row.passed.contains(action) {
-            evidence(&format!(
-                "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                row.id
-            ));
-        }
-    }
     evidence(&format!(
         "E2EF6_GAP {} native RecentDeaths exposes only timestamp/cause; no player route to loss receipt XP/blessing/promotion fields source:{source}",
-        row.id
+        row.0.id
     ));
-    evidence(&format!(
-        "e2e_all scenario={}.full status=MISSING-SERVER seconds={:.3} evidence=source:{source}",
-        row.id,
-        row.started.elapsed().as_secs_f64()
-    ));
+    row.0.finish_missing_server(source);
 }
 
 async fn ground_entries(
@@ -2218,21 +2151,9 @@ fn finish_blessing_row(row: Row, result: TestResult) {
     if let Err(error) = &result
         && error.downcast_ref::<MissingBlessingRoute>().is_some()
     {
-        for action in row.required {
-            if !row.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF6_CHECK {} {action} FAIL assertion-not-completed",
-                    row.id
-                ));
-            }
-        }
         let source = "crates/gameplay/content/src/content/npc_catalogue/premium_services.rs:95";
-        evidence(&format!("E2EF6_GAP {} {error} source:{source}", row.id));
-        evidence(&format!(
-            "e2e_all scenario={}.full status=MISSING-SERVER seconds={:.3} evidence=source:{source}",
-            row.id,
-            row.started.elapsed().as_secs_f64()
-        ));
+        evidence(&format!("E2EF6_GAP {} {error} source:{source}", row.0.id));
+        row.0.finish_missing_server(source);
     } else {
         row.finish(result);
     }
@@ -2619,6 +2540,7 @@ async fn adventurer_journey(
         let held = blessings(&mut victim).await?;
         let owned = custody(victim.inventory().ok_or("Adventurer inventory missing")?);
         let mut attacker = connect_world(clients, tag + 1).await?;
+        let mut earning_cancelled = false;
         let fight: TestResult = async {
             {
                 let earning = earn_death_prerequisites(&mut attacker, world, spawns, 8, 0);
@@ -2627,7 +2549,10 @@ async fn adventurer_journey(
                     match tokio::time::timeout(Duration::from_millis(100), earning.as_mut()).await {
                         Ok(result) => { result?; break; }
                         Err(_) => {
-                            victim.service_liveness(Duration::from_millis(1)).await?;
+                            if let Err(error) = victim.service_liveness(Duration::from_millis(1)).await {
+                                earning_cancelled = true;
+                                return Err(error.into());
+                            }
                             victim.take_events();
                         }
                     }
@@ -2645,6 +2570,12 @@ async fn adventurer_journey(
             row.pass("adventurer-relog", (&held, &owned));
             Ok(())
         }.await;
+        if earning_cancelled {
+            // The observer error dropped a pending attacker exchange. Close its
+            // connection without sending cleanup on an uncertain reply/frame.
+            drop(attacker);
+            return fight;
+        }
         let cleanup = release_fighter(&mut attacker).await;
         fight.and(cleanup)
     }.await;
@@ -2945,16 +2876,16 @@ mod tests {
         })
         .encode()
         .map_err(|error| format!("stats encode: {error:?}"))?;
-        assert_eq!(progress_frame(&payload)?, (4200, 8));
-        assert!(progress_frame(&payload[..41]).is_err());
+        assert_eq!(progress_frame(&payload, false)?, (4200, 8));
+        assert!(progress_frame(&payload[..41], false).is_err());
         payload[0] = 2;
-        assert!(progress_frame(&payload).is_err());
+        assert!(progress_frame(&payload, false).is_err());
         payload[0] = 1;
         payload[33] = 2;
-        assert!(progress_frame(&payload).is_err());
+        assert!(progress_frame(&payload, false).is_err());
         payload[33] = 0;
         payload[9..13].fill(0);
-        assert!(progress_frame(&payload).is_err());
+        assert!(progress_frame(&payload, false).is_err());
         Ok(())
     }
 
@@ -2979,45 +2910,5 @@ mod tests {
         }
         assert!(!unknown.complete());
         assert!(!Row::new("C19a", &[]).complete());
-    }
-
-    #[test]
-    #[allow(
-        dead_code,
-        reason = "The required function-local mount is not discoverable by libtest; run this exact helper/test source in the isolated unit-test harness."
-    )]
-    fn starter_requires_exact_single_backpack_and_no_extra_custody() -> TestResult {
-        let definition = NonZeroU32::new(1).ok_or("definition")?;
-        let bag = items::ItemEntry {
-            handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
-            item_definition_ref: definition,
-            count: NonZeroU32::new(1).ok_or("count")?,
-            sub_type: 0,
-        };
-        let mut inventory = CharacterInventory {
-            main_backpack: Some(bag),
-            ..Default::default()
-        };
-        check_starter(&inventory, definition)?;
-        assert!(check_starter(&inventory, NonZeroU32::new(2).ok_or("other definition")?).is_err());
-        inventory.entries.push(bag);
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.entries.clear();
-        inventory.equipment.push(items::EquippedItem {
-            slot: items::EquipmentSlot::RightHand,
-            item: bag,
-        });
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.equipment.clear();
-        inventory.main_backpack = Some(items::ItemEntry {
-            count: NonZeroU32::new(2).ok_or("two")?,
-            ..bag
-        });
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.main_backpack = None;
-        assert!(check_starter(&inventory, definition).is_err());
-        inventory.main_backpack = Some(items::ItemEntry { sub_type: 1, ..bag });
-        assert!(check_starter(&inventory, definition).is_err());
-        Ok(())
     }
 }

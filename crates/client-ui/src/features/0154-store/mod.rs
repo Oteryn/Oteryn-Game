@@ -12,7 +12,7 @@ pub use protocol::{
     request,
 };
 pub use state::{GiftDraft, StorePage, StorePanel, StoreSort};
-pub use view::{offer_preview, panel_text, visible_offers};
+pub use view::{offer_preview, panel_text, token_purchase_disabled_reason, visible_offers};
 
 #[path = "state/browser.rs"]
 mod browser;
@@ -22,3 +22,6 @@ pub use protocol::browse_request as browse;
 #[path = "state/gift.rs"]
 mod gift;
 pub use gift::{GiftPanel, gift_control, gift_result};
+#[cfg(test)]
+#[path = "tests/e2e_e10.rs"]
+mod e2e_e10;

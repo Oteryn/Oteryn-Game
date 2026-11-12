@@ -116,6 +116,9 @@ pub enum FeeBurnCauseV1 {
     QuestRewardPayment(OneItemQuestRewardPaymentV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
+    // Winter Update 2026 Mod Reshaping, paired with the same-transaction Atelier receipt.
+    #[prost(message, tag = "483")]
+    GemReshape(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
@@ -152,6 +155,7 @@ pub struct OneItemFeeBurnCauseV1 {
             17, // Svargrond arena entry
             18, // Source-bound Quest reward payment
             472, // HirelingService
+            483, // GemReshape
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -267,7 +271,11 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
         Some(FeeBurnCauseV1::Forge(forge)) => {
             super::character_forge_dust::live::audit::usage(forge)
         }
-        Some(FeeBurnCauseV1::GemReveal(cause) | FeeBurnCauseV1::GemGradeUp(cause)) => {
+        Some(
+            FeeBurnCauseV1::GemReveal(cause)
+            | FeeBurnCauseV1::GemGradeUp(cause)
+            | FeeBurnCauseV1::GemReshape(cause),
+        ) => {
             atelier_cause::usage(cause)
         }
         _ => TransactionResourceUsage {

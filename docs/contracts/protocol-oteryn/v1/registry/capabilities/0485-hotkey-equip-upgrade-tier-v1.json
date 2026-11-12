@@ -1,0 +1,14 @@
+{
+  "id": 485,
+  "name": "HOTKEY_EQUIP_UPGRADE_TIER_V1",
+  "owner_decision": "WU26 native-client mechanics batch package 2 (client PR #3098); parity rule: Crystal 201189f8 and current Tibia",
+  "owner": "Game character equipment owner (capability 180 carried hotkey selection)",
+  "requires": [
+    179,
+    180
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with HOTKEY_EQUIP_V1 and HOTKEY_EQUIP_CARRIED_V1. Command 348 appends one byte upgrade_tier 0..=10 after the four definition bytes; the equipment owner matches definition and stored game_item_tiers tier (no row is tier 0) in the same fenced transaction and refuses when no such copy is worn or carried. Without selection the payload stays four bytes and a fifth byte is invalid."
+}

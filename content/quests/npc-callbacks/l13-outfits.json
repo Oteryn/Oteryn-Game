@@ -1,0 +1,301 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/l13-decaying_defender-first",
+      "quest": "oteryn:quest.decaying_defender_outfits_quest",
+      "npc": "oteryn:npc.bloodshade_rotten",
+      "keywords": [
+        "accessory"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i43899",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.decaying_defender",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bloodshade_rotten.lua:sha256:153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/items/usable_outfit_items.lua:26-31:sha256:69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37"
+      ],
+      "carried_item": "oteryn:item.tibia.i43899",
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.decaying_defender"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.decaying_defender",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l13-decaying_defender-second",
+      "quest": "oteryn:quest.decaying_defender_outfits_quest",
+      "npc": "oteryn:npc.bloodshade_rotten",
+      "keywords": [
+        "accessory"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i43900",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.decaying_defender",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/fully_decayed",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/bloodshade_rotten.lua:sha256:153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/items/usable_outfit_items.lua:26-31:sha256:69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37"
+      ],
+      "carried_item": "oteryn:item.tibia.i43900",
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.decaying_defender"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.decaying_defender",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.decaying_defender",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l13-revenant-first",
+      "quest": "oteryn:quest.revenant_outfits_quest",
+      "npc": "oteryn:npc.flickering_soul",
+      "keywords": [
+        "accessory"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i34075",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.revenant",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/flickering_soul.lua:sha256:67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/items/usable_outfit_items.lua:26-31:sha256:69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37"
+      ],
+      "carried_item": "oteryn:item.tibia.i34075",
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.revenant"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.revenant",
+          "addons": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l13-revenant-second",
+      "quest": "oteryn:quest.revenant_outfits_quest",
+      "npc": "oteryn:npc.flickering_soul",
+      "keywords": [
+        "accessory"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i34076",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.revenant",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/unleash_the_beast",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/flickering_soul.lua:sha256:67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/items/usable_outfit_items.lua:26-31:sha256:69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37"
+      ],
+      "carried_item": "oteryn:item.tibia.i34076",
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.revenant"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.revenant",
+          "addons": 1
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.revenant",
+          "addons": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l13-rift-base",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "rift warrior outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.rift_warrior",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "owner:chosen-Cledwyn-completed-Ferumbras-base-attestation:read-only-parent"
+      ],
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.rift_warrior"
+      ],
+      "requires_completed_quests": [
+        "oteryn:quest.ferumbras_ascension_quest"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l13-rift-first",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "first"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.rift_warrior",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.rift_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.rift_warrior",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l13-rift-second",
+      "quest": "oteryn:quest.rift_warrior_outfits_quest",
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "second"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22516",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.rift_warrior",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/rift_warrior",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cledwyn.lua:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+      ],
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.rift_warrior"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.rift_warrior",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.rift_warrior",
+          "addons": 1
+        }
+      ]
+    }
+  ]
+}

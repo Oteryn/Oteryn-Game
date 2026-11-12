@@ -15,6 +15,7 @@ fn build() -> NpcDataCatalogue {
         .expect("data import")
 }
 
+// Regenerate strict count pins: python tools/contracts/refresh_npc_service_counts.py
 #[test]
 fn pinned_catalogue_service_model_counts() {
     let catalogue = build();
@@ -27,28 +28,38 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model, again, "built twice");
     assert_eq!(model.source_tree_digest(), catalogue.source_tree_digest());
     let counts: BTreeMap<&str, usize> = model.held_offer_counts();
-    assert_eq!(model.npcs().len(), 1282);
+    // The repository refresh tool captures every count before any assertion stops the test.
+    if std::env::var_os("OTERYN_CAPTURE_NPC_SERVICE_COUNTS").is_some() {
+        eprintln!(
+            "NPC_SERVICE_COUNTS {}",
+            serde_json::json!({
+                "npcs": model.npcs().len(), "held_npcs": model.held_npcs().len(),
+                "services": model.services().len(), "offers": model.admitted_offer_count(),
+                "routes": model.admitted_route_count(), "replies": model.generated_reply_npc_count(),
+                "held": counts, "source_tree_digest": model.source_tree_digest(),
+                "service_keys": model.services().keys().map(|r| r.key.as_str()).collect::<Vec<_>>(),
+            })
+        );
+    }
+    assert_eq!(model.npcs().len(), 1_282);
     assert_eq!(model.held_npcs().len(), 0);
     // NPC-ECON-1 Bank, PREM-5's services, BANK-3's Henricus blessing offer, and #2810's
-    // Grizzly Adams rank shop. Collector #3030 (78294c081), s10-nonquest.json,
-    // adds ten: one bank, five blessings, three Monk promotions and Kawill's
-    // free Phoenix prerequisite. These services have no trade offers or routes.
-    assert_eq!(model.services().len(), 400);
-    // NPC-TRADE-3 in #3030 restores source fluid subtypes and full-charge offers
-    // through npc_catalogue/subtype_trades.rs and service.rs.
-    assert_eq!(model.admitted_offer_count(), 12_415);
+    // Grizzly Adams rank shop, S10 services, exact NPC-TRADE-3 subtype restoration,
+    // and the four source-owned Djinn shops (126 offers, four held below).
+    assert_eq!(model.services().len(), 404);
+    assert_eq!(model.admitted_offer_count(), 12_687);
     assert_eq!(model.admitted_route_count(), 195);
     assert_eq!(model.generated_reply_npc_count(), 446);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
-        // NPC-TRADE-3 admits the proven fluid/full-charge tuples. Remaining
-        // oversized ordinary offers still obey the physical coin capacity.
+        // Exact subtype qualification preserves the existing arbitrage protection.
         ("ArbitragePaying", 0),
-        ("ChargedOrFluidPending", 0),
+        // The Djinn i3284 offers lack a native subtype; i3083 lacks full-charge proof.
+        ("ChargedOrFluidPending", 2),
         ("CountOutOfRange", 0),
         ("NonGoldCurrency", 31),
         ("ParityPending", 0),
         ("SellPriceAboveCoinCapacity", 17),
-        ("TimedCountMismatch", 0),
+        ("TimedCountMismatch", 9),
         ("UnknownItem", 0),
     ]);
     assert_eq!(counts, expected);

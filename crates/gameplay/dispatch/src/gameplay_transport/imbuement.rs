@@ -2,10 +2,14 @@
 //!
 //! The query reads a main backpack direct entry through the durable item owner and its
 //! slots and allowances from the qualified native item policy. Apply and clear run the
-//! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile; the
-//! official Powerful unlocks) and Premium for tiers 2 and 3, and then the
+//! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile),
+//! source-qualified quest knowledge or the Powerful branch unlocks, and Premium for
+//! tiers 2 and 3. The result is
 //! one fenced durable transaction that consumes the recipe materials, burns the gold and writes
 //! or removes the imbuement (PARITY-IMBUE-FORGE-WIRE-1, migration 0196).
+#[path = "imbuement/knowledge.rs"]
+mod knowledge;
+
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::{generation_item_facts, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
@@ -503,6 +507,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .continuity
             .selected_capabilities
             .contains(wire::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
+        let success_chance = admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
         let (decision, instance, blank) = match views.resolve(request.item) {
             Some(key @ ItemKey::Instance(instance)) if views.equipped_slot(&key).is_none() => {
                 let target = match self
@@ -574,12 +582,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return encode(&reply(ImbuementResult::NotAllowed)),
         };
-        let unlock = match &decision {
-            Decision::Apply { offer, .. } if offer.tier == 3 => Some(offer.family),
-            _ => None,
-        };
-        let (write, premium) = match decision {
-            Decision::Reply(reply) => return encode(&reply),
+        let (write, premium, learning) = match decision {
+            Decision::Reply(reply) => return encode_selected(&reply, success_chance),
             Decision::Apply { slot, offer } => {
                 let Some(recipe) = imbuement_recipe(offer.family, offer.tier) else {
                     return encode(&reply(ImbuementResult::NotAllowed));
@@ -623,7 +627,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         materials,
                     }
                 };
-                (write, recipe.requires_premium)
+                (
+                    write,
+                    recipe.requires_premium,
+                    Some((offer.family, offer.tier)),
+                )
             }
             Decision::Clear { slot } => (
                 ImbuementWrite::Clear {
@@ -631,6 +639,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gold: IMBUEMENT_CLEAR_GOLD,
                 },
                 false,
+                None,
             ),
         };
         let Some(actor) = admitted.runtime_actor else {
@@ -665,16 +674,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if current.item_fence() != fence {
             return ImbuementReply::Rejected;
         }
-        if let Some(family) = unlock {
-            let Ok(copy) = self
-                .root
-                .read_character_quest_state(self.character, current.character_id)
-                .await
-            else {
-                return ImbuementReply::Unavailable;
+        if let Some((family, tier)) = learning {
+            let requirement = match knowledge::requirement(family, tier) {
+                Ok(rule) => rule,
+                Err(_) => return ImbuementReply::Unavailable,
             };
-            if !unlocks::powerful(family, &copy) {
-                return encode(&reply(ImbuementResult::RequirementNotMet));
+            if tier == 3 || requirement.is_some() {
+                let Ok(copy) = self
+                    .root
+                    .read_character_quest_state(self.character, current.character_id)
+                    .await
+                else {
+                    return ImbuementReply::Unavailable;
+                };
+                // The following durable write checks the same Character revision. A
+                // concurrent quest write makes the command stale, never a free grant.
+                if copy.character_revision() != Some(current.expected_character_revision) {
+                    return ImbuementReply::Rejected;
+                }
+                if !quest_learning_permits(family, tier, requirement, &copy) {
+                    return encode(&reply(ImbuementResult::RequirementNotMet));
+                }
             }
         }
         let Ok(Some(bag)) = self
@@ -736,8 +756,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+fn quest_learning_permits(
+    family: u8,
+    tier: u8,
+    requirement: Option<&knowledge::Rule>,
+    copy: &crate::durability::quest_state::QuestStateCopy,
+) -> bool {
+    let completed = requirement.map(|rule| {
+        rule.permits(|quest| {
+            copy.states()
+                .get(quest)
+                .is_some_and(|state| state.completed)
+        })
+    });
+    if tier == 3 {
+        // The canonical completed programme and the individual branch unlocks are
+        // alternative earned proofs. An absent completion rule grants no unlock.
+        unlocks::powerful(family, copy) || completed == Some(true)
+    } else {
+        completed != Some(false)
+    }
+}
+
 fn encode(reply: &wire::ImbuementReply) -> ImbuementReply {
     wire::encode_imbuement_reply(reply).map_or(ImbuementReply::Unavailable, ImbuementReply::Payload)
+}
+
+/// The per-offer success percentages of a query window (capability 491), read from the
+/// tier rules that the apply path enforces. `None` names an offer tier with no rule.
+pub(super) fn offer_success_percents(reply: &wire::ImbuementReply) -> Option<Vec<u8>> {
+    reply.window.as_ref().map_or(Some(Vec::new()), |window| {
+        window
+            .offers
+            .iter()
+            .map(|offer| {
+                let index = usize::from(offer.tier.checked_sub(1)?);
+                IMBUEMENT_TIER_RULES
+                    .get(index)
+                    .map(|rules| rules.success_percent)
+            })
+            .collect()
+    })
+}
+
+/// A query window carries the per-offer success percentages only for a session that
+/// selected capability 491; every other reply is the V1 bytes.
+fn encode_selected(reply: &wire::ImbuementReply, success_chance: bool) -> ImbuementReply {
+    if !success_chance {
+        return encode(reply);
+    }
+    let Some(success) = offer_success_percents(reply) else {
+        return ImbuementReply::Unavailable;
+    };
+    wire::encode_imbuement_reply_with_success(reply, &success)
+        .map_or(ImbuementReply::Unavailable, ImbuementReply::Payload)
 }
 
 macro_rules! authority_methods {
@@ -776,3 +848,82 @@ pub(super) use composed_methods;
 #[cfg(test)]
 #[path = "imbuement_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod knowledge_gate_tests {
+    use super::*;
+    use crate::domain::{CharacterId, CharacterRevision};
+    use crate::durability::quest_state::{CommittedQuestTransition, QuestCause, QuestStateCopy};
+    use crate::foundation::{CommandRef, GameSessionId};
+    use oteryn_gameplay_quests::quest::QuestTrackChange;
+
+    fn earned(quest: &str, completes: bool, boss: Option<&str>) -> Result<QuestStateCopy, String> {
+        let id = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+        let mut copy = QuestStateCopy::default();
+        let receipt = CommittedQuestTransition {
+            character_id: CharacterId::from_bytes(id).map_err(|e| format!("{e:?}"))?,
+            cause: QuestCause::Command(CommandRef::new(
+                GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?,
+                CommandId::new(1).map_err(|e| format!("{e:?}"))?,
+            )),
+            transition_key: "oteryn:quest-callback/imbuement-learning".into(),
+            quest_key: quest.into(),
+            original_character_revision: CharacterRevision::new(1).map_err(|e| format!("{e:?}"))?,
+            committed_character_revision: CharacterRevision::new(2)
+                .map_err(|e| format!("{e:?}"))?,
+            pinned_content_revision: "content-1".into(),
+            definition_hash: [7; 32],
+            completes,
+            changes: boss
+                .map(|boss| QuestTrackChange {
+                    track: format!(
+                        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/{boss}_killed"
+                    ),
+                    before: 0,
+                    after: 1,
+                })
+                .into_iter()
+                .collect(),
+            experience: None,
+        };
+        assert!(copy.apply(&receipt));
+        Ok(copy)
+    }
+
+    #[test]
+    fn powerful_learning_accepts_either_earned_route_and_requires_positive_proof()
+    -> Result<(), String> {
+        let forgotten = "oteryn:quest.forgotten_knowledge_quest";
+        let requirement = knowledge::requirement(3, 3)?;
+        assert!(requirement.is_some());
+        let boss_only = earned(forgotten, false, Some("lady_tenebris"))?;
+        assert!(quest_learning_permits(3, 3, requirement, &boss_only));
+        let completed_only = earned(forgotten, true, None)?;
+        assert!(quest_learning_permits(3, 3, requirement, &completed_only));
+        let neither = QuestStateCopy::default();
+        assert!(!quest_learning_permits(3, 3, requirement, &neither));
+        let wrong_boss = earned(forgotten, false, Some("lloyd"))?;
+        assert!(!quest_learning_permits(3, 3, requirement, &wrong_boss));
+        let heart = earned("oteryn:quest.heart_of_destruction_quest", true, None)?;
+        assert!(quest_learning_permits(
+            18,
+            3,
+            knowledge::requirement(18, 3)?,
+            &heart
+        ));
+        for family in 21..=26 {
+            let rule = knowledge::requirement(family, 3)?;
+            assert!(rule.is_none());
+            assert!(!quest_learning_permits(family, 3, rule, &neither));
+            assert!(!quest_learning_permits(family, 3, rule, &completed_only));
+        }
+        let dragon_king = earned(forgotten, false, Some("dragonking"))?;
+        assert!(quest_learning_permits(21, 3, None, &dragon_king));
+        for tier in [1, 2] {
+            let rule = knowledge::requirement(3, tier)?;
+            assert!(rule.is_none());
+            assert!(quest_learning_permits(3, tier, rule, &neither));
+        }
+        Ok(())
+    }
+}

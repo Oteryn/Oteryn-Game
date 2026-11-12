@@ -49,14 +49,46 @@ impl Application {
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             for action in custom_actions {
-                play.link.custom_hotkey_action(&play.view, &action);
+                if let oteryn_client::play::CustomAction::Utility { action } = action {
+                    if self.settings.run_utility(&play.link, action) {
+                        self.settings.capture(&mut play.view);
+                    }
+                } else {
+                    play.link.custom_hotkey_action(&play.view, &action);
+                }
             }
             if let Some(window) = &self.window {
-                window.set_cursor(if play.view.preferences().cursor_crosshair {
+                window.set_cursor(if play.link.lens_active() {
+                    winit::window::CursorIcon::Help
+                } else if play.view.preferences().cursor_crosshair {
                     winit::window::CursorIcon::Crosshair
                 } else {
                     winit::window::CursorIcon::Default
                 });
+            }
+
+            if play.link.lens_active() {
+                play.view.observe_creature_pointer(events);
+                // Clear an armed drag before help ends the mode on this press.
+                if play.view.world_pointer_input(&play.link, events).is_err() {
+                    self.fail(event_loop, ShellError::RendererRender);
+                    return;
+                }
+                for click in &clicks {
+                    if !click.secondary {
+                        let size = self
+                            .window
+                            .as_ref()
+                            .map(|window| window.inner_size())
+                            .unwrap_or_default();
+                        let root = [size.width, size.height]
+                            .map(|value| u16::try_from(value).unwrap_or(u16::MAX));
+                        let key = play.view.lens_key([click.x as f32, click.y as f32], root);
+                        play.link.lens_click(key);
+                        break;
+                    }
+                }
+                return;
             }
 
             if play.link.custom_hotkeys_input(events) {
@@ -157,7 +189,9 @@ impl Application {
             if play.view.target_move_input(&play.link, events) {
                 return;
             }
-            if let Some(direction) = arrow_step(events) {
+            if !play.view.diagonal_movement_input(&play.link, events)
+                && let Some(direction) = arrow_step(events)
+            {
                 play.view.arrow(direction);
             }
             for spell in self.hotkeys.route(events) {
@@ -175,6 +209,12 @@ impl Application {
             };
             let mut render_failed = false;
             for click in clicks {
+                if click.toggle_attack {
+                    if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                        play.view.attack_toggle_click(tile, &play.link);
+                    }
+                    continue;
+                }
                 if !click.secondary && suppress_primary {
                     continue;
                 }

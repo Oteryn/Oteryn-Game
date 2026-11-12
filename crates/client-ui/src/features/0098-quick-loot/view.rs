@@ -23,3 +23,15 @@ pub fn panel_text(panel: &Panel) -> String {
     }
     text
 }
+
+/// The one-line loot notice of a finished run, for the Loot channel tab.
+#[must_use]
+pub fn result_notice(result: &QuickLootResult) -> String {
+    lfmt!(
+        "\r\nLooted {} of {} items",
+        result.items.iter().filter(|item| item.accepted).count(),
+        result.items.len()
+    )
+    .trim()
+    .to_owned()
+}

@@ -2,10 +2,63 @@ import unittest
 from pathlib import Path
 import re
 
-from report import combat_results, map_results, matrix_rows, results, summary
+from report import combat_results, map_results, matrix_rows, results, summary, supplemental_rows
 
 
 class ReportTests(unittest.TestCase):
+    def test_client_capture_does_not_emit_a_full_journey_verdict(self):
+        root = Path(__file__).resolve().parents[3]
+        phases = root / "apps/game-server/src/qualification/client_phases"
+        offenders = [path.name for path in phases.glob("client_row_*.rs")
+                     if re.search(r'e2e_all scenario=[A-Z]\d\d[a-z]?\.full', path.read_text())]
+        self.assertEqual(offenders, [])
+
+    def test_literal_journey_ids_have_matrix_or_supplemental_registration(self):
+        root = Path(__file__).resolve().parents[3]
+        rows = matrix_rows((root / "apps/game-server/src/qualification/SCENARIO_MATRIX.md").read_text())
+        extra, clients = supplemental_rows(Path(__file__).with_name("supplemental_rows.json").read_text())
+        full = {row for row, _ in [*rows, *extra]}
+        client = {row for row, _ in clients}
+        phases = root / "apps/game-server/src/qualification/client_phases"
+        for path in phases.glob("*.rs"):
+            for row, scenario in re.findall(r'e2e_all scenario=([A-Z]\d\d[a-z]?)\.([a-z0-9-]+)', path.read_text()):
+                with self.subTest(path=path.name, row=row, scenario=scenario):
+                    self.assertTrue(row in full or (row in client and scenario == "client"))
+
+    def test_supplemental_journeys_and_bounded_captures_are_registered(self):
+        extra, clients = supplemental_rows(
+            (Path(__file__).with_name("supplemental_rows.json")).read_text()
+        )
+        found = results(
+            "SEAM_EVIDENCE e2e_all scenario=G01.full status=FAIL seconds=1 evidence=owned-house-required\n"
+            "SEAM_EVIDENCE e2e_all scenario=N01.client status=PASS seconds=1\n"
+            "SEAM_EVIDENCE e2e_all scenario=G38.full status=MISSING-CLIENT seconds=1 evidence=source:apps/client/src/features/0233-touch-controls/input.rs:1"
+        )
+        output, complete = summary([], found, additional_rows=extra, client_rows=clients)
+        self.assertIn("G01 ", output)
+        self.assertIn("slice N01.client | PASS", output)
+        self.assertIn("G38 ", output)
+        self.assertFalse(complete)
+        self.assertNotIn("N01 ", output)
+        with self.assertRaises(ValueError):
+            summary([], results("SEAM_EVIDENCE e2e_all scenario=N01.full status=PASS seconds=1"),
+                    additional_rows=extra, client_rows=clients)
+        with self.assertRaises(ValueError):
+            summary([], results("SEAM_EVIDENCE e2e_all scenario=G99.full status=PASS seconds=1"),
+                    additional_rows=extra, client_rows=clients)
+
+    def test_supplemental_registry_rejects_invalid_and_duplicate_ids(self):
+        for text in [
+            '{"full": [["G01", "House"], ["G01", "Duplicate"]], "client": []}',
+            '{"full": [["G01", "House"]], "client": [["G01", "Duplicate"]]}',
+            '{"full": [["G001", "House"]], "client": []}',
+            '{"full": [["G01", ""]], "client": []}',
+            '{"full": [], "client": [], "extra": []}',
+            '{"full": "G01", "client": []}',
+        ]:
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                supplemental_rows(text)
+
     def test_map_checks_include_failures_skips_and_reconciled_summaries(self):
         log = (
             "SEAM_EVIDENCE MAP_CHECK stairs_up 100,101,7 PASS matched\n"
@@ -81,6 +134,17 @@ class ReportTests(unittest.TestCase):
             evidence = results(f"SEAM_EVIDENCE e2e_all scenario=M01.full status={status} seconds=0 evidence={source}")
             self.assertFalse(summary([("M01", "Movement")], evidence)[1])
 
+    def test_failing_result_may_name_its_cause_and_root(self):
+        line = "SEAM_EVIDENCE e2e_all scenario=M01.full status=FAIL seconds=3"
+        evidence = results(line + " cause=timeout root=M01/fixture0-released")
+        self.assertEqual(evidence["M01.full"][0], "FAIL")
+        self.assertFalse(summary([("M01", "Movement")], evidence)[1])
+        passing = "SEAM_EVIDENCE e2e_all scenario=M01.full status=PASS seconds=3"
+        with self.assertRaises(ValueError):
+            results(passing + " cause=timeout root=M01/check")
+        with self.assertRaises(ValueError):
+            results(line + " cause=timeout")
+
     def test_duplicate_unknown_and_malformed_evidence_fails(self):
         line = "SEAM_EVIDENCE e2e_all scenario=M01.full status=PASS seconds=0"
         with self.assertRaises(ValueError):
@@ -144,6 +208,15 @@ class ReportTests(unittest.TestCase):
         for invalid in ["", valid + "\n" + valid, "| M01 | Movement | no scenario |"]:
             with self.assertRaises(ValueError):
                 matrix_rows(invalid)
+
+    def test_missing_client_needs_evidence_and_never_qualifies(self):
+        found = results(
+            "SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0.000 evidence=no-reducer"
+        )
+        self.assertEqual(found["P19.client"][0], "MISSING-CLIENT")
+        self.assertFalse(summary([("P19", "Outfits")], found)[1])
+        with self.assertRaises(ValueError):
+            results("SEAM_EVIDENCE e2e_all scenario=P19.client status=MISSING-CLIENT seconds=0")
 
 
 if __name__ == "__main__":

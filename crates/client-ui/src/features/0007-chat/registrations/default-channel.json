@@ -1,0 +1,9 @@
+{
+  "mechanic": "0007-chat",
+  "kind": "keybindings",
+  "id": "0007-chat-default-channel",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "ALT+D",
+  "entry": "input.rs::default_channel_key"
+}

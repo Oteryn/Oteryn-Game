@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-npc --lib native_quest_book_admits_only_requested_source_greetings -- --nocapture",
+  "exit": 101,
+  "duration_seconds": 110.335
+}

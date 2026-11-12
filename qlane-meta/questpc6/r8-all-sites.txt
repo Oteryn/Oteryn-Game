@@ -1,0 +1,146 @@
+apps/game-server/tests/support/combat_bestiary_postgres_cases.rs:72:    Ok(CreatureDeathRewardInput {
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:616:    Ok(CreatureDeathRewardInput {
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:1574:            let input = CreatureDeathRewardInput {
+apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs:575:    Ok(CreatureDeathRewardInput {
+apps/game-server/src/node/serve/qualification_fixture.rs:154:        let request = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:805:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:806:    RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:826:fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1717:        let key = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2184:) -> RewardClaimMintRequest {
+crates/gameplay/social/src/interaction/chest_use.rs:311:    let mint_request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:105:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs:151:                let request = RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:167:pub struct RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1847:    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1849:        RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1882:        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1918:        let key = |number: Option<u16>| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1928:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1932:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1936:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1951:        let with_quest = |number| RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:159:                    .map(|(item, quantity)| RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:678:        Some(RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:67:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:203:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:248:    let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:458:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:637:    let mut request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:178:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola_book.rs:158:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:198:                let request = RewardClaimMintRequest {
+crates/gameplay/content/src/content/world_reward_claims.rs:104:pub struct BoundPlacement {
+crates/gameplay/content/src/content/world_reward_claims.rs:1002:            Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
+crates/gameplay/content/src/content/world_reward_claims.rs:121:pub struct RewardContainerItem {
+crates/gameplay/content/src/content/world_reward_claims.rs:762:        result.contents.push(RewardContainerItem {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:109:fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:138:    PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:171:fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:1057:fn entry_for(creature: ExactActorRef) -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92:pub struct PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:143:impl PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1460:                        PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1793:    let entry = PendingKillSettlement {
+crates/gameplay/quests/src/quest/task_board_tests.rs:25:fn catalogue() -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/log/tests.rs:64:fn state(revision: &str) -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/mod.rs:274:pub struct QuestStateCatalogue {
+crates/gameplay/quests/src/quest/mod.rs:283:impl QuestStateCatalogue {
+crates/gameplay/quests/src/quest/mod.rs:611:    fn catalogue(transitions: Vec<QuestTransition>) -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/predicate.rs:164:    fn catalogue() -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/loader.rs:82:    pub fn catalogue(&self) -> &QuestStateCatalogue {
+crates/gameplay/dispatch/src/gameplay_transport/quest_log_tests.rs:91:fn state_catalogue() -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:410:        return Ok(Some(NpcRulePlan {
+crates/gameplay/quests/src/quest/npc_rules.rs:337:pub struct NpcRulePlan {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:102:    source.plan_storage(&NpcRuleInput {
+crates/gameplay/quests/src/quest/batch3_a.rs:19:    NpcRuleInput {
+crates/gameplay/quests/src/quest/batch3_a/hot_cuisine/tests.rs:49:    NpcRuleInput {
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:55:    let input = NpcRuleInput {
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:94:        NpcRuleInput {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:108:    let mut request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:113:    let request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:383:    let request = NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:8:pub struct NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:24:impl NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:58:        "mission" | "task" | "book" => Some(ViolaAction::Mission),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:74:                Some(ViolaAction::Accept)
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:99:        ViolaReply::ReturnOffer => "Glad to see you are back. Did you find my book? Say yes or no.",
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:100:        ViolaReply::Offer => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:103:        ViolaReply::Accepted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:106:        ViolaReply::MissingBook => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:109:        ViolaReply::Completed => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:112:        ViolaReply::AlreadyCompleted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:115:        ViolaReply::NoRoom => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:130:        state.viola = if matches!(reply, ViolaReply::Offer | ViolaReply::ReturnOffer) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:143:    if reply == ViolaReply::Completed
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:149:        inventory_changed: reply == ViolaReply::Completed,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:224:            Some(crate::durability::tutorial_viola::ViolaReply::Completed)
+crates/gameplay/durability/src/durability/tutorial_viola.rs:131:                (2,_)=>ViolaReply::AlreadyCompleted,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:132:                (0,ViolaAction::Mission)=>ViolaReply::Offer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:133:                (0,ViolaAction::Accept)=>{sqlx::query("INSERT INTO game_character_viola(character_id,stage) VALUES(encode($1,'hex')::uuid,1)").bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;ViolaReply::Accepted},
+crates/gameplay/durability/src/durability/tutorial_viola.rs:134:                (1,ViolaAction::Mission)=>ViolaReply::ReturnOffer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:135:                (1,ViolaAction::Accept)=>{
+crates/gameplay/durability/src/durability/tutorial_viola.rs:143:                        Exchange::Missing=>ViolaReply::MissingBook,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:144:                        Exchange::NoRoom=>ViolaReply::NoRoom,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:151:                            craft=Some(transaction);xp=Some(occurrence.as_bytes().to_vec());ViolaReply::Completed
+crates/gameplay/durability/src/durability/tutorial_viola.rs:175:            ViolaReply::stored(reply)
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:584:    assert_eq!(active.npc_legacy.len(), 6);
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:600:        if let Some((hash, defaults)) = active.npc_legacy.get(quest) {
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:603:            assert_eq!(legacy_defaults(&active, quest, hash), Some(defaults));
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:604:            assert!(legacy_defaults(&active, quest, &[0; 32]).is_none());
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:608:                legacy_defaults(
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:650:    assert_eq!(loaded.catalogue().npc_legacy.len(), 6);
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:72:            if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+crates/gameplay/quests/src/quest/mod.rs:280:    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+crates/gameplay/quests/src/quest/mod.rs:383:            npc_legacy: BTreeMap::new(),
+crates/gameplay/quests/src/quest/mod.rs:409:        extended.npc_legacy.clone_from(&self.npc_legacy);
+crates/gameplay/quests/src/quest/npc_rules.rs:385:                                .npc_legacy
+crates/gameplay/quests/src/quest/npc_rules.rs:485:    let mut legacy = catalogue.npc_legacy.clone();
+crates/gameplay/quests/src/quest/npc_rules.rs:577:    active.npc_legacy = legacy;
+crates/gameplay/quests/src/quest/npc_rules.rs:583:pub fn legacy_defaults<'a>(
+crates/gameplay/quests/src/quest/npc_rules.rs:589:        .npc_legacy
+crates/gameplay/quests/src/quest/loader.rs:234:    let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+crates/gameplay/quests/src/quest/loader.rs:253:    lowered.catalogue.npc_legacy = npc_legacy;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:310:            oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:207:                if let Some(defaults)=oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue,&quest,&stored) {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:223:                        && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue,quest,&stored).is_none()
+crates/gameplay/durability/src/durability/quest_state/writer.rs:397:                                    && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, quest, &hash).is_none();
+crates/gameplay/durability/src/durability/quest_state/writer.rs:517:                    if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue, quest, &hash) {
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:49:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:57:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:65:                    .prepare_tutorial_corruptor(&authority, &h.node, current, death)
+apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs:80:                    .prepare_tutorial_corruptor(&authority, &h.node, stale, death)
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:24:            .prepare_tutorial_corruptor(self.character, self.holder, fence, entry.facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs:176:                    .claim_viola_book(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:239:        .commit_viola(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:286:        .reconcile_viola(admission.character, character, reference)
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:58:    pub async fn prepare_tutorial_corruptor(
+crates/gameplay/durability/src/durability/tutorial_viola.rs:71:    pub async fn reconcile_viola(
+crates/gameplay/durability/src/durability/tutorial_viola.rs:96:    pub async fn commit_viola<C: ItemLoopContent, const N: usize>(
+crates/gameplay/durability/src/durability/reward_claim_mint/viola_book.rs:7:    pub async fn claim_viola_book(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:388:            .prepare_tutorial_corruptor(&authority, &h.node, current, facts.death)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:221:                .reconcile_viola(&authority, fence.character_id, reference)
+
+PATTERN CreatureDeathRewardInput\s*\{
+
+PATTERN RewardClaimMintRequest\s*\{
+
+PATTERN BoundPlacement\s*\{
+
+PATTERN RewardContainerItem\s*\{
+
+PATTERN PendingKillSettlement\s*\{
+
+PATTERN QuestStateCatalogue\s*\{
+
+PATTERN NpcRulePlan\s*\{
+
+PATTERN NpcRuleInput\s*\{
+
+PATTERN NpcProgramRequest\s*\{
+
+PATTERN ViolaAction::|ViolaReply::
+
+PATTERN npc_legacy|legacy_defaults|plan_scoped_storage
+
+PATTERN prepare_tutorial_corruptor|claim_viola_book|commit_viola|reconcile_viola

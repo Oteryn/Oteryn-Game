@@ -45,6 +45,26 @@ fn account_deletion_dispatch_kicks_retires_and_quarantines() -> TestResult {
                 .ok_or("controller missing")?
                 .account_id,
         );
+        // The same ordinary settings write must remain legal until quarantine.
+        assert_eq!(
+            sqlx::query(
+                "INSERT INTO game_character_quick_loot_settings(character_id,committed_character_revision) SELECT character_id,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+            )
+            .bind(id(41).as_slice())
+            .execute(&h.pool)
+            .await?
+            .rows_affected(),
+            1
+        );
+        let settings_update = "UPDATE game_character_quick_loot_settings SET fallback_to_main=fallback_to_main WHERE character_id=encode($1,'hex')::uuid";
+        assert_eq!(
+            sqlx::query(settings_update)
+                .bind(id(41).as_slice())
+                .execute(&h.pool)
+                .await?
+                .rows_affected(),
+            1
+        );
         let now: i64 = sqlx::query_scalar("SELECT game_account_closure_now()")
             .fetch_one(&h.pool)
             .await?;
@@ -491,6 +511,29 @@ fn account_deletion_dispatch_kicks_retires_and_quarantines() -> TestResult {
             .await?,
             1
         );
+        // The real closure owner detached this Character. Refuse the identical
+        // previously committed write through the installed custody guard.
+        let settings_snapshot = "SELECT to_jsonb(s)::text FROM game_character_quick_loot_settings s WHERE character_id=encode($1,'hex')::uuid";
+        let settings_before: String = sqlx::query_scalar(settings_snapshot)
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+        let refused = sqlx::query(settings_update)
+            .bind(id(41).as_slice())
+            .execute(&h.pool)
+            .await
+            .err()
+            .ok_or("quarantined settings accepted an ordinary writer")?;
+        let refusal = refused
+            .as_database_error()
+            .ok_or("quarantined settings refusal was not a database error")?;
+        assert_eq!(refusal.code().as_deref(), Some("55000"));
+        assert_eq!(refusal.message(), "quarantined character custody");
+        let settings_after: String = sqlx::query_scalar(settings_snapshot)
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(settings_after, settings_before);
         drop(recovered);
         drop(recovered_seal);
         eprintln!(

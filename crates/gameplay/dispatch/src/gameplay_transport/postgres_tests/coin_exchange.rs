@@ -666,7 +666,22 @@ fn coin_use_scenario() -> TestResult {
             let key = format!("oteryn:item.tibia.i{input}");
             let definition = index.definition_ref("Item", &key, "definition-r1").ok_or("coin definition")?;
             let command_id = u64::try_from(command_index)? + 1;
-            let (end, result, _) = super::item_craft::exchange(&owner, admitted, command_id, &payload, Some(definition)).await?;
+            let diagnostic_command = crate::foundation::CommandRef::new(
+                fence.game_session_id,
+                crate::foundation::CommandId::new(command_id).map_err(debug)?,
+            );
+            let (exchange_result, commits) = crate::durability::coin_exchange::audit_commit_probe::capture(
+                &h.root,
+                diagnostic_command,
+                super::item_craft::exchange(&owner, admitted, command_id, &payload, Some(definition)),
+            ).await;
+            let (end, result, _) = match exchange_result {
+                Ok(result) => result,
+                Err(error) => {
+                    report_coin_use_failure(&h, diagnostic_command, source, &commits, error.as_ref()).await;
+                    return Err(error);
+                }
+            };
             assert_eq!(result, expected, "round {round}");
             let retained_source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_source) FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).fetch_one(&h.pool).await?;
@@ -733,6 +748,40 @@ fn coin_use_scenario() -> TestResult {
         drop(owner); drop(authority); drop(seal);
         h.cleanup().await
     })
+}
+
+async fn report_coin_use_failure(
+    h: &Harness,
+    command: crate::foundation::CommandRef,
+    source: [u8; 16],
+    commits: &crate::durability::coin_exchange::audit_commit_probe::Report,
+    error: &dyn std::error::Error,
+) {
+    // One bounded, read-only snapshot after failure; never replay an unknown write.
+    let game_session_id = command.game_session_id();
+    let snapshot = sqlx::query_scalar::<_, serde_json::Value>(
+        r#"SELECT jsonb_build_object(
+         'receipt',(SELECT jsonb_build_object('transaction',r.transaction_id,'result',r.result,
+          'source',r.item_source,'inputs',r.inputs,'outputs',r.outputs)
+          FROM game_coin_exchange_receipts r WHERE r.game_session_id=encode($1,'hex')::uuid
+           AND r.command_id=$2::text::numeric LIMIT 1),
+         'source',(SELECT jsonb_build_object('quantity',i.quantity,'lifecycle',i.lifecycle,
+          'last_transaction',i.last_transaction_id) FROM game_item_instances i
+          WHERE i.item_instance_id=encode($3,'hex')::uuid LIMIT 1))"#,
+    )
+    .bind(game_session_id.as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .bind(source.as_slice())
+    .fetch_one(&h.pool);
+    let retained = match tokio::time::timeout(std::time::Duration::from_secs(1), snapshot).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(error)) => Err(format!("diagnostic query: {error}")),
+        Err(_) => Err("diagnostic query deadline".into()),
+    };
+    eprintln!(
+        "[DBG-audit-765f34] coin_command={} original_error={error} commits={commits:?} retained={retained:?}",
+        command.command_id().get()
+    );
 }
 
 #[test]
@@ -818,7 +867,48 @@ fn converter_scenario() -> TestResult {
 
         // gold_converter.lua L17-36: a fresh converter spends one of its 500 charges.
         seed_converter_bag(&h, &[(162, "oteryn:item.tibia.i23722", 1, None), (164, gold, 100, None)]).await?;
-        let converted = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("gold converter")?;
+        let converted = {
+            // Contend after replay lookup, at the fresh conversion's second lane acquisition.
+            let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+            let conversion = crate::gameplay_transport::coin_use::CONVERTER_COMMIT_LANE_BARRIER
+                .scope(
+                    Arc::clone(&barrier),
+                    owner.use_gold_converter(
+                        deps.actor,
+                        command(1),
+                        ItemKey::Instance(id(162)),
+                        ItemKey::Instance(id(164)),
+                    ),
+                );
+            tokio::pin!(conversion);
+            tokio::select! {
+                () = barrier.0.notified() => {}
+                result = &mut conversion => return Err(format!("conversion ended before lane contention: {result:?}").into()),
+            }
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("competing checkpoint lane")?;
+            barrier.1.notify_one();
+            // A cooperative yield must not masquerade as waiting for the occupied lane.
+            let polled = {
+                let mut waiting = std::pin::pin!(tokio::task::unconstrained(conversion.as_mut()));
+                std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(waiting.as_mut(), cx))
+                })
+                .await
+            };
+            assert!(
+                polled.is_pending(),
+                "conversion must wait for the occupied spell lane"
+            );
+            assert!(
+                deps.runtime.try_lock().is_ok(),
+                "a converter waiting for the lane must leave runtime available to its owner"
+            );
+            drop(permit);
+            conversion.await.ok_or("gold converter")?
+        };
         assert_eq!(converted.disposition, UseDisposition::Committed);
         assert_eq!(converter_row(&h, 162).await?, ("oteryn:item.tibia.i23722".into(), 1, Some(499)));
         assert_eq!(quantity(&h, "3035").await?, 1);

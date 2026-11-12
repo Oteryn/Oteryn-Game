@@ -768,8 +768,7 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // neither function inserts, updates or deletes Inbox rows.
                 "game_daily_reward_bound_custody",
                 "game_daily_reward_line_guard",
-                // DAILY-2 (1711): deferred SELECT/RAISE proof that a picked item
-                // was minted bound into the claimant's Inbox; never writes Inbox rows.
+                // 1711: SELECT/RAISE proof of an atomic bound Inbox mint only.
                 "game_daily_reward_pick_guard",
                 // DEPOT-SEARCH E08: read-only custody owner, and the one narrow removal
                 // seam of a retrieved Inbox root; its BEFORE DELETE proof requires the
@@ -786,8 +785,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // registered coin-only destination; never creates an Inbox row.
                 "game_house_container_coin_pouch_destination",
                 "game_house_disposition_delivery_proven",
-                // T135 (2602): the wrapper keeps the original Inbox removal proof
-                // under this name; both stay read-only.
+                // 2602: the original 0178 SELECT-only custody proof is renamed
+                // and called by the wrapping-aware function, not duplicated.
                 "game_house_disposition_native_removal_proven_before_t135",
                 // W18: verify final Inbox custody before removing only private
                 // House reclaim metadata; no Inbox row or delivery changes.
@@ -814,18 +813,28 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_market_complete",
                 // TRADE-PLAYER-1: read-only final-custody proof, no Inbox mutation.
                 "game_player_trade_complete",
-                // RETURNER-1 (1712): deferred EXISTS proof of the atomic Inbox
-                // mint for a returner claim; never writes Inbox rows.
+                // 1712: SELECT/RAISE proof of the returner's atomic Inbox mint.
                 "game_returner_claim_guard",
                 "game_reward_claim_inbox_mint_is_complete",
+                // WU26: exact due-scroll custody proofs and the receipt-proven
+                // expiry writer; native Inbox removal guards remain enabled.
+                "game_temple_scroll_custody",
+                "game_temple_scroll_expire_due",
+                "game_temple_scroll_receipt_proven",
             ]
         );
-        // Register the two exact read-only custody users independently of the
-        // closed inventory above. A direct/dynamic Inbox DML path in either
+        // Register the exact read-only custody users independently of the
+        // closed inventory above. A direct/dynamic Inbox DML path in any
         // helper fails even if its name remains in the registered reader set.
         for reader in [
+            "game_daily_reward_pick_guard",
             "game_house_container_coin_pouch_destination",
+            "game_house_disposition_native_removal_proven",
+            "game_house_disposition_native_removal_proven_before_t135",
             "game_house_nested_reclaim_reconcile",
+            "game_returner_claim_guard",
+            "game_temple_scroll_custody",
+            "game_temple_scroll_receipt_proven",
         ] {
             let no_inbox_dml: bool = sqlx::query_scalar(
                 r#"SELECT prosrc !~* '\m(insert[[:space:]]+into|update|delete[[:space:]]+from|truncate([[:space:]]+table)?)[[:space:]]+(only[[:space:]]+)?(("[^"]+"|[a-z_][a-z_0-9$]*)[.])?"?game_(item_character_inbox_locations|character_inbox_(deliveries|counters|cause_kinds))"?\M'

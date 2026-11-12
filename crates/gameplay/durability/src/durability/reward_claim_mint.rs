@@ -115,8 +115,13 @@ use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 mod arena;
+mod backpack_outputs;
 pub mod boss_reward;
+mod charges;
+mod claimed;
 mod contents;
+pub mod falcon;
+pub(in crate::durability) mod fathers_burden;
 mod fluid;
 mod grizzly;
 mod monk;
@@ -131,6 +136,7 @@ pub use santa::{
 };
 mod soul_war;
 mod tibiadrome;
+mod viola_book;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;
@@ -158,13 +164,15 @@ pub struct RewardClaimAchievement {
 /// Nested container items may be empty; this shape never recursively expands them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardClaimMintContent {
-    /// Source-authored initial fluid, bound to the complete MINT plan.
-    pub fluid_subtype: Option<u8>,
     pub item: ItemDefinitionFacts,
     pub quantity: u32,
     pub key_number: Option<u16>,
     /// Public authored source text, never player-supplied writing.
     pub text: Option<String>,
+    /// Source-resolved fluid subtype; no row means an empty container.
+    pub fluid_subtype: Option<u8>,
+    /// Exact source charge state; absence retains the definition default.
+    pub charges_remaining: Option<u32>,
 }
 
 /// Complete semantic intent of one reward-claim MINT.
@@ -184,8 +192,14 @@ pub struct RewardClaimMintRequest {
     pub quantity: u32,
     /// The exact complete container contents. No child is dropped on refusal.
     pub contents: Vec<RewardClaimMintContent>,
+    /// Place additional outputs directly in the main backpack, rather than inside the root.
+    pub backpack_outputs: bool,
     /// Immutable source-authored text on the top-level reward.
     pub root_text: Option<String>,
+    /// Source-resolved fluid subtype of the top-level reward.
+    pub root_fluid_subtype: Option<u8>,
+    /// Exact source charge state on the root reward.
+    pub root_charges_remaining: Option<u32>,
     /// Facts of the equipped main backpack's definition.
     pub backpack: ItemDefinitionFacts,
     pub content_revision: String,
@@ -1248,11 +1262,11 @@ async fn apply_claim(
            character_id, claim_family, claim_production_key, claim_revision_ref, \
            intent_binding, transaction_id, event_id, item_instance_id, quantity, \
            destination_parent_item_instance_id, destination_ordinal, occurred_at, \
-           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text) \
+           envelope_sha256, committed_at, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan, backpack_outputs) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            $4, $5, $6, $7, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            encode($10,'hex')::uuid, $11, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
-           $14, $15, $16, $17, $18, $19)",
+           $14, $15, $16, $17, $18, $19, $20, $21, $22)",
     )
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
@@ -1273,6 +1287,9 @@ async fn apply_claim(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(sqlx::types::Json(fluid::plan(request)))
+    .bind(sqlx::types::Json(charges::plan(request)))
+    .bind(request.backpack_outputs)
     .execute(&mut **tx)
     .await?;
     if let Some(number) = request.key_number {
@@ -1313,6 +1330,8 @@ async fn apply_claim(
         .await?;
     }
     contents::apply(tx, frozen, reservation, envelope, tuple).await?;
+    fluid::apply(tx, frozen, reservation).await?;
+    charges::apply(tx, frozen, reservation).await?;
     Ok(CommittedRewardClaimMint {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,
@@ -1348,7 +1367,7 @@ async fn load_reservation(
     Ok(sqlx::query(
         "SELECT intent_binding, character_id::text, world_id::text, channel_id::text, \
                 transaction_id::text, event_id::text, item_instance_id::text, occurred_at, \
-                work_units_used, contents_capacity, contents_plan, root_text \
+                work_units_used, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan, backpack_outputs \
            FROM game_reward_claim_mint_reservations \
           WHERE game_session_id = encode($1,'hex')::uuid \
             AND command_id = $2::text::numeric(20,0)",
@@ -1387,11 +1406,11 @@ async fn insert_reservation(
         "INSERT INTO game_reward_claim_mint_reservations(game_session_id, command_id, \
            character_id, world_id, channel_id, claim_family, claim_production_key, \
            claim_revision_ref, intent_binding, transaction_id, event_id, item_instance_id, \
-           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text) \
+           occurred_at, work_units_used, reserved_at, contents_capacity, contents_plan, root_text, fluid_plan, charges_plan, backpack_outputs) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6, $7, $8, $9, \
            encode($10,'hex')::uuid, encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13, 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $14, $15, $16, $17, $18, $19)",
     )
     .bind(request.command.game_session_id().as_bytes().as_slice())
     .bind(request.command.command_id().get().to_string())
@@ -1409,6 +1428,9 @@ async fn insert_reservation(
     .bind(contents::capacity(request))
     .bind(sqlx::types::Json(contents::plan(request, reservation)))
     .bind(&request.root_text)
+    .bind(sqlx::types::Json(fluid::plan(request)))
+    .bind(sqlx::types::Json(charges::plan(request)))
+    .bind(request.backpack_outputs)
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -1515,6 +1537,8 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
         return Err(RewardClaimMintError::InvalidInput);
     }
     contents::validate(request)?;
+    fluid::validate(request)?;
+    charges::validate(request)?;
     Ok(())
 }
 
@@ -1604,6 +1628,7 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             }
         }
     }
+    // Preserve main's already-published child-fluid intent encoding.
     if request
         .contents
         .iter()
@@ -1617,9 +1642,26 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             }
         }
     }
+    if request.backpack_outputs {
+        canonical.push(0x42);
+    }
     if let Some(text) = &request.root_text {
         canonical.push(0x54);
         push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
+    }
+    let fluid_plan = fluid::plan(request);
+    if request.root_fluid_subtype.is_some()
+        && fluid_plan.as_array().is_some_and(|plan| !plan.is_empty())
+    {
+        canonical.push(0x46);
+        push_text(&mut canonical, fluid_plan.to_string().as_bytes())
+            .map_err(from_transfer_input)?;
+    }
+    let charges_plan = charges::plan(request);
+    if charges_plan.as_array().is_some_and(|plan| !plan.is_empty()) {
+        canonical.push(0x48);
+        push_text(&mut canonical, charges_plan.to_string().as_bytes())
+            .map_err(from_transfer_input)?;
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1841,6 +1883,7 @@ mod tests {
     fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
         use crate::foundation::{CommandId, GameSessionId};
         RewardClaimMintRequest {
+            backpack_outputs: false,
             command: CommandRef::new(
                 GameSessionId::decode(&id(50)).expect("session"),
                 CommandId::new(7).expect("command"),
@@ -1855,6 +1898,8 @@ mod tests {
             quantity: 3,
             contents: Vec::new(),
             root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
             backpack: backpack_facts(20),
             content_revision: "content-1".into(),
             ruleset_revision: "ruleset-1".into(),
@@ -1872,6 +1917,7 @@ mod tests {
     fn the_quest_transition_is_validated_and_bound_into_the_intent() {
         const TRANSITION: &str = "oteryn:quest-transition/test.chest";
         let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+            backpack_outputs: false,
             quest_transition: transition.map(Into::into),
             ..request(achievement)
         };
@@ -1908,6 +1954,7 @@ mod tests {
     #[test]
     fn the_key_number_is_validated_and_bound_into_the_intent() {
         let key = |number: Option<u16>| RewardClaimMintRequest {
+            backpack_outputs: false,
             item: facts("fixture:b3.key", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: number,
@@ -1918,14 +1965,17 @@ mod tests {
         let refused = [
             key(Some(0)),
             RewardClaimMintRequest {
+                backpack_outputs: false,
                 quantity: 2,
                 ..key(Some(10))
             },
             RewardClaimMintRequest {
+                backpack_outputs: false,
                 item: facts("fixture:b3.coin", COIN),
                 ..key(Some(10))
             },
             RewardClaimMintRequest {
+                backpack_outputs: false,
                 item: backpack_facts(8),
                 ..key(Some(10))
             },
@@ -1941,6 +1991,7 @@ mod tests {
         let bind =
             |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
         let with_quest = |number| RewardClaimMintRequest {
+            backpack_outputs: false,
             quest_transition: Some("oteryn:quest-transition/test.chest".into()),
             ..key(number)
         };
@@ -2017,6 +2068,7 @@ mod tests {
         filled.item = backpack_facts(8);
         filled.quantity = 1;
         filled.contents = vec![RewardClaimMintContent {
+            charges_remaining: None,
             item: facts("fixture:waterskin", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: None,
@@ -2047,6 +2099,58 @@ mod tests {
     }
 
     #[test]
+    fn filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() {
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let mut empty = request(None);
+        empty.item = facts("fixture:vial", ItemStackClass::NonStackable);
+        empty.quantity = 1;
+        let mut filled = empty.clone();
+        filled.root_fluid_subtype = Some(6);
+        assert!(validate_request(&filled).is_ok());
+        assert_ne!(
+            intent_binding(&empty, character).expect("empty intent"),
+            intent_binding(&filled, character).expect("filled intent")
+        );
+        let mut wine = filled.clone();
+        wine.root_fluid_subtype = Some(2);
+        assert_ne!(
+            intent_binding(&filled, character).expect("filled intent"),
+            intent_binding(&wine, character).expect("wine intent")
+        );
+        for mutation in ["empty subtype", "stack", "key", "text", "container"] {
+            let mut changed = filled.clone();
+            match mutation {
+                "empty subtype" => changed.root_fluid_subtype = Some(0),
+                "stack" => changed.item.stack = COIN,
+                "key" => changed.key_number = Some(3801),
+                "text" => changed.root_text = Some("authored".into()),
+                _ => changed.item.container_capacity = Some(4),
+            }
+            assert!(validate_request(&changed).is_err(), "{mutation}");
+        }
+        let mut bag = request(None);
+        bag.item = backpack_facts(4);
+        bag.quantity = 1;
+        bag.contents = vec![RewardClaimMintContent {
+            item: filled.item.clone(),
+            quantity: 1,
+            key_number: None,
+            text: None,
+            fluid_subtype: Some(6),
+            charges_remaining: None,
+        }];
+        assert!(validate_request(&bag).is_ok());
+        let before = intent_binding(&bag, character).expect("bag intent");
+        bag.contents[0].fluid_subtype = Some(15);
+        assert_ne!(
+            before,
+            intent_binding(&bag, character).expect("changed bag intent")
+        );
+        bag.contents[0].fluid_subtype = Some(0);
+        assert!(validate_request(&bag).is_err());
+    }
+
+    #[test]
     fn container_contents_are_complete_bounded_and_part_of_the_frozen_intent() {
         let mut container = request(None);
         container.item = backpack_facts(24);
@@ -2058,6 +2162,7 @@ mod tests {
                 quantity: 100,
                 key_number: None,
                 text: None,
+                charges_remaining: None,
             },
             RewardClaimMintContent {
                 fluid_subtype: None,
@@ -2065,6 +2170,7 @@ mod tests {
                 quantity: 1,
                 key_number: Some(3801),
                 text: None,
+                charges_remaining: None,
             },
         ];
         assert!(validate_request(&container).is_ok());
@@ -2124,6 +2230,7 @@ mod tests {
             quantity: 1,
             key_number: None,
             text: Some("source-authored text".into()),
+            charges_remaining: None,
         }];
         assert!(validate_request(&container).is_ok());
         let character = CharacterId::from_bytes(id(41)).expect("character");
@@ -2239,8 +2346,41 @@ mod tests {
             grant.source
         );
     }
+    #[test]
+    fn backpack_output_layout_is_bound_and_counts_the_root_entry() {
+        let mut nested = request(None);
+        let child = RewardClaimMintContent {
+            item: nested.item.clone(),
+            quantity: 3,
+            key_number: None,
+            text: None,
+            fluid_subtype: None,
+            charges_remaining: None,
+        };
+        nested.item = nested.backpack.clone();
+        nested.quantity = 1;
+        nested.contents = vec![child];
+        assert!(contents::validate(&nested).is_ok());
+        let mut flat = nested.clone();
+        flat.backpack_outputs = true;
+        assert!(contents::validate(&flat).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        assert_ne!(
+            intent_binding(&nested, character).expect("nested binding"),
+            intent_binding(&flat, character).expect("backpack binding")
+        );
+        flat.backpack.container_capacity = Some(1);
+        assert!(
+            contents::validate(&flat).is_err(),
+            "the root also needs a free entry"
+        );
+        flat.contents.clear();
+        assert!(
+            contents::validate(&flat).is_err(),
+            "a layout flag cannot describe an empty plan"
+        );
+    }
 }
 
-pub(super) mod npc_program;
-pub(super) mod fathers_burden;
 pub(super) mod marlin_trophy;
+pub(super) mod npc_program;

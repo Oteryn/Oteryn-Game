@@ -1,0 +1,348 @@
+{
+  "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal": {
+    "quests": [
+      "canary:quest/hidden_threats_quest",
+      "canary:quest/hunter_outfits_quest",
+      "canary:quest/knight_outfits_quest",
+      "canary:quest/koshei_the_deathless_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01": {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+        "placements": [
+          {
+            "position": {
+              "x": 33080,
+              "y": 32014,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1009",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6095
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1309",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6095
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02": {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+        "placements": [
+          {
+            "position": {
+              "x": 33031,
+              "y": 32050,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1016",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6096
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1316",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6096
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file": {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+        "placements": [
+          {
+            "position": {
+              "x": 33078,
+              "y": 31980,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1002",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6094
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1302",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6094
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow": {
+        "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+        "placements": [
+          {
+            "position": {
+              "x": 32369,
+              "y": 32795,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1799",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6191
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2084",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6191
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest": {
+        "claim": "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest",
+        "placements": [
+          {
+            "position": {
+              "x": 32860,
+              "y": 32516,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1807",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6192
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2092",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6192
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+        "placements": [
+          {
+            "position": {
+              "x": 33194,
+              "y": 32458,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2146",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6236
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2431",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6236
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+        "placements": [
+          {
+            "position": {
+              "x": 33305,
+              "y": 32277,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2153",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6237
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2438",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6237
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+        "placements": [
+          {
+            "position": {
+              "x": 33212,
+              "y": 32593,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2160",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6238
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2445",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6238
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+        "placements": [
+          {
+            "position": {
+              "x": 33053,
+              "y": 32468,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2167",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6239
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2452",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6239
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold",
+        "placements": [
+          {
+            "position": {
+              "x": 33273,
+              "y": 32470,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2188",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6242
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2473",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6242
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+        "placements": [
+          {
+            "position": {
+              "x": 33261,
+              "y": 32444,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2174",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6240
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2459",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6240
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+        "placements": [
+          {
+            "position": {
+              "x": 33261,
+              "y": 32448,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2181",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6241
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2466",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6241
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      }
+    }
+  }
+}

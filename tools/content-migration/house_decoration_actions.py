@@ -353,6 +353,7 @@ def apply_bed_semantics(records, overlay):
 def apply_top_order(records, overlay):
     """Crystal items.cpp:203-208 source facts survive richer specialized profiles."""
     from qready1_reward_profiles import IDS as reward_ids
+    from authored_static_item_constructors import SOURCE as authored_source
     reward_ids = {str(value) for value in reward_ids}
     for row in records:
         item = row['production_definition']['production_key'].removeprefix('oteryn:item.tibia.i')
@@ -363,6 +364,12 @@ def apply_top_order(records, overlay):
             if item in reward_ids:
                 if top != 0:
                     raise ValueError('HOUSE_QREADY1_TOP_ORDER_CONFLICT')
+                continue
+            # First-party constructors bind their complete row independently.
+            # A donor's zero rendering default adds no behavior to that owner.
+            if row.get('production_binding', {}).get('source_key') == authored_source:
+                if top != 0:
+                    raise ValueError('HOUSE_AUTHORED_TOP_ORDER_CONFLICT')
                 continue
             row['attributes']['always_on_top'] = top != 0
             row['attributes']['always_on_top_order'] = top

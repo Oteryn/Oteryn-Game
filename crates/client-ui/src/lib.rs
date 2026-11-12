@@ -30,6 +30,8 @@ pub mod charm_progression;
 pub mod container_sort;
 #[path = "features/0057-cyclopedia-map/mod.rs"]
 pub mod cyclopedia_map;
+#[path = "features/0371-diagonal-movement/input.rs"]
+pub mod diagonal_movement;
 #[path = "features/0055-guild-bank/mod.rs"]
 pub mod guild_bank;
 #[path = "features/0103-guild-war/mod.rs"]
@@ -48,6 +50,8 @@ pub mod house_furniture_wrap;
 pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]
 pub mod house_podium;
+#[path = "features/0489-house-podium-flags/protocol.rs"]
+pub mod house_podium_flags;
 #[path = "features/0086-house-transfer/mod.rs"]
 pub mod house_transfer;
 #[path = "features/0115-mail/mod.rs"]
@@ -114,17 +118,31 @@ pub mod arena;
 
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
+#[path = "features/0492-boss-difficulty-pity/protocol.rs"]
+pub mod boss_difficulty_pity;
 #[path = "features/0230-browse-field/mod.rs"]
 pub mod browse_field;
 /// Local speech and named private messages.
 #[path = "features/0007-chat/mod.rs"]
 pub mod chat;
+#[path = "features/0495-chat-channel-participants/protocol.rs"]
+pub mod chat_channel_participants;
 #[path = "features/0036-chat-guild-room/mod.rs"]
 pub mod chat_guild_room;
+#[path = "features/0494-chat-joined-channels/protocol.rs"]
+pub mod chat_joined_channels;
+#[path = "features/0496-chat-line-sequence/protocol.rs"]
+pub mod chat_line_sequence;
 #[path = "features/0240-chat-party-room/mod.rs"]
 pub mod chat_party_room;
+#[path = "features/0493-chat-private-echo/protocol.rs"]
+pub mod chat_private_echo;
 #[path = "features/0199-cyclopedia-character/mod.rs"]
 pub mod cyclopedia_character;
+#[path = "features/0487-cyclopedia-character-vocation/protocol.rs"]
+mod cyclopedia_character_vocation;
+#[path = "features/0488-cyclopedia-death-details/protocol.rs"]
+pub mod cyclopedia_death_details;
 #[path = "features/0197-cyclopedia-tracker/mod.rs"]
 pub mod cyclopedia_tracker;
 #[path = "features/0151-daily-boost/mod.rs"]
@@ -138,8 +156,13 @@ pub mod forge_creature;
 /// Live server highscores panel.
 #[path = "features/0009-highscores/mod.rs"]
 pub mod highscores;
+/// Highscores category 13, Loyalty.
+#[path = "features/0498-highscores-loyalty/protocol.rs"]
+pub mod highscores_loyalty;
 #[path = "features/0179-hotkey-equip/mod.rs"]
 pub mod hotkey_equip;
+#[path = "features/0485-hotkey-equip-upgrade-tier/protocol.rs"]
+mod hotkey_equip_upgrade_tier;
 #[path = "features/0152-item-forge/mod.rs"]
 pub mod item_forge;
 #[path = "features/0003-npc-service/mod.rs"]
@@ -197,9 +220,15 @@ pub mod logout {
 }
 #[path = "features/0010-analyser/mod.rs"]
 pub mod analyser;
+/// Capability 486: the attacker of a received hit and the own-character hit flash (N006).
+#[path = "features/0486-analyser-hit-attribution/protocol.rs"]
+pub mod analyser_hit_attribution;
 /// Local spell action-bar key intent mapping.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell_action_bar;
+/// Action button target option to the aimed cast command (capability 480).
+#[path = "features/0480-spell-aim-mode/input.rs"]
+pub mod spell_aim_mode;
 #[path = "features/0287-actor-spell-catalog/mod.rs"]
 pub mod spell_catalog;
 #[path = "features/0449-spellbook-details/mod.rs"]
@@ -223,6 +252,9 @@ pub mod boss_rewards;
 /// Daily reward wall and one-click claim controls.
 #[path = "features/0182-daily-reward/mod.rs"]
 pub mod daily_reward;
+/// Gem Atelier v2 (capability 483): Gem Vessel slots and Replace Vessel.
+#[path = "features/0483-gem-atelier/mod.rs"]
+pub mod gem_atelier;
 /// Guild state and actions.
 #[path = "features/0040-guild/mod.rs"]
 pub mod guild;
@@ -246,6 +278,8 @@ pub mod wheel_allocation;
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
 
+#[path = "features/0497-sanction-record/mod.rs"]
+pub mod sanction_record;
 #[path = "features/0075-server-save-countdown/protocol.rs"]
 pub mod server_save_countdown;
 
@@ -268,6 +302,10 @@ pub mod stash;
 #[path = "features/local-minimap/mod.rs"]
 pub mod minimap;
 
+/// Lens help: help texts keyed by panel identifiers.
+#[path = "features/local-lens-help/mod.rs"]
+pub mod lens_help;
+
 /// Target-walk input and receipt projection.
 #[path = "features/0064-target-move/mod.rs"]
 pub mod target_move;
@@ -279,6 +317,8 @@ pub mod npc_shop;
 /// Imbuement shrine state, actions, and plain-text view.
 #[path = "features/0068-imbue/mod.rs"]
 pub mod imbue;
+#[path = "features/0491-imbuement-success-chance/protocol.rs"]
+pub mod imbuement_success_chance;
 
 /// VIP list, group, and consent panel state.
 #[path = "features/0043-vip/mod.rs"]
@@ -337,6 +377,8 @@ pub mod wheel_presentation;
 
 #[path = "features/0450-server-modal/mod.rs"]
 pub mod server_modal;
+#[path = "features/0490-server-modal-input/protocol.rs"]
+pub mod server_modal_input;
 
 #[path = "features/0479-store-cosmetic-tokens/mod.rs"]
 pub mod store_cosmetic_tokens;

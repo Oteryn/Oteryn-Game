@@ -179,6 +179,16 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "game_journal_configuration",
+      "level": "error",
+      "span": false,
+      "fields": [
+        "reason"
+      ],
+      "codes": [],
+      "note": "T72: journal export configuration invalid, export stays disabled; reason is invalid. No secrets or raw errors."
+    },
+    {
       "event": "guild_world_pass",
       "level": "info",
       "span": false,

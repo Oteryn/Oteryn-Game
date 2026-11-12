@@ -108,6 +108,8 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
                 "Text to say",
                 "Keyboard chord (empty clears)",
                 "Spell aim: facing / cursor / target",
+                "Equip upgrade tier (0–10)",
+                "Send text automatically: yes / no (no inserts it into the chat input)",
             ],
             buttons: &[
                 "Spell",
@@ -136,6 +138,8 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
                         String::new(),
                         String::new(),
                         "facing".into(),
+                        "0".into(),
+                        "yes".into(),
                     ],
                     format!(
                         "{}\r\n{}\r\n{}",

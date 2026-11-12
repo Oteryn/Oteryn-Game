@@ -32,7 +32,7 @@ pub(super) async fn provision(
         ChannelId::decode(&clients.channel)?,
     )?;
     let movement = connect_world(clients, 0x90).await?;
-    let mut movement = e2ef1::run(movement, clients, &world).await?;
+    let mut movement = e2ef1::run(movement, clients, world).await?;
     e2ef1::logout(&mut movement).await?;
     drop(movement);
     let client = connect_character(clients, 0x91, index).await?;
@@ -78,14 +78,29 @@ mod e2ef1 {
         StepDirection::West,
     ];
 
+    // Rows the journey never finished: the row in progress carries the abort
+    // cause, the rows after it are blocked by it.
     #[derive(Default)]
-    struct Verdicts(BTreeSet<&'static str>);
+    struct Verdicts {
+        done: BTreeSet<&'static str>,
+        current: Option<&'static str>,
+        aborted: Option<verdict::Cause>,
+    }
     impl Drop for Verdicts {
         fn drop(&mut self) {
+            let current = self.current.unwrap_or(ROWS[0].0);
+            let root = format!("{current}/lifecycle");
+            // Without a recorded error the journey future was cancelled by its caller's deadline.
+            let cause = self
+                .aborted
+                .take()
+                .unwrap_or(verdict::Cause::Deadline { phase: "cancelled" });
+            let blocked = verdict::Cause::BlockedBy { root: root.clone() };
             for (row, _) in ROWS {
-                if !self.0.contains(row) {
+                if !self.done.contains(row) {
+                    let suffix = if row == current { &cause } else { &blocked }.suffix(&root);
                     evidence(&format!(
-                        "e2e_all scenario={row}.full status=FAIL seconds=0 evidence=journey-aborted:apps/game-server/src/qualification/client_phases/full_e2ef1.rs"
+                        "e2e_all scenario={row}.full status=FAIL seconds=0 evidence=journey-aborted:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}"
                     ));
                 }
             }
@@ -723,10 +738,9 @@ mod e2ef1 {
         })
         .await?;
         let saved = peer.world_spatial().actor_position;
-        if peer.session_mut().logout().await?.result
-            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
-            return Err("pushed peer logout refused".into());
+        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(peer).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("pushed peer logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         // The caller reconnects this peer after the row and checks this exact saved cell.
         evidence(&format!("E2EF1_PUSH_SAVED position={saved:?}"));
@@ -810,6 +824,10 @@ mod e2ef1 {
                     StepDirection::East => (1, 0),
                     StepDirection::South => (0, 1),
                     StepDirection::West => (-1, 0),
+                    StepDirection::NorthEast => (1, -1),
+                    StepDirection::SouthEast => (1, 1),
+                    StepDirection::SouthWest => (-1, 1),
+                    StepDirection::NorthWest => (-1, -1),
                 };
                 at.x.checked_add_signed(dx) == Some(object.at.x)
                     && at.y.checked_add_signed(dy) == Some(object.at.y)
@@ -842,6 +860,10 @@ mod e2ef1 {
             StepDirection::East => StepDirection::West,
             StepDirection::South => StepDirection::North,
             StepDirection::West => StepDirection::East,
+            StepDirection::NorthEast => StepDirection::SouthWest,
+            StepDirection::SouthEast => StepDirection::NorthWest,
+            StepDirection::SouthWest => StepDirection::NorthEast,
+            StepDirection::NorthWest => StepDirection::SouthEast,
         };
         if client.step_retrying(reverse).await?.disposition != StepDisposition::Moved
             || client.world_spatial().actor_position != before
@@ -1004,23 +1026,34 @@ mod e2ef1 {
     pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
         loop {
-            if client.session_mut().logout().await?.result
-                == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-            {
+            let logout = client.session_mut().logout().await?;
+            if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
                 return Ok(());
             }
             if tokio::time::Instant::now() >= deadline {
-                return Err("movement logout lock did not settle".into());
+                return Err(format!("movement logout lock did not settle: {logout:?}").into());
             }
             pump(client).await?;
         }
     }
     pub(super) async fn run(
-        mut client: DevClientSession,
+        client: DevClientSession,
         clients: &SeamClients<'_>,
         world: &BundleWorld,
     ) -> TestResult<DevClientSession> {
         let mut verdicts = Verdicts::default();
+        let result = rows(client, clients, world, &mut verdicts).await;
+        if let Err(error) = &result {
+            verdicts.aborted = Some(verdict::classify(error.as_ref()));
+        }
+        result
+    }
+    async fn rows(
+        mut client: DevClientSession,
+        clients: &SeamClients<'_>,
+        world: &BundleWorld,
+        verdicts: &mut Verdicts,
+    ) -> TestResult<DevClientSession> {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let objects = objects(&bytes)?;
         let origin = tile(client.world_spatial().actor_position)?;
@@ -1028,6 +1061,7 @@ mod e2ef1 {
         let mut revisions = BTreeMap::new();
         for (ordinal, (row, required)) in ROWS.iter().enumerate() {
             let started = std::time::Instant::now();
+            verdicts.current = Some(row);
             let mut checks = Checks {
                 row,
                 ..Checks::default()
@@ -1107,9 +1141,21 @@ mod e2ef1 {
             evidence(&format!(
                 "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
             ));
-            verdicts.0.insert(row);
+            verdicts.done.insert(row);
+            let suffix = if passed {
+                String::new()
+            } else {
+                let cause = match &result {
+                    Err(error) => verdict::classify(error.as_ref()),
+                    Ok(()) => verdict::Cause::Assertion,
+                };
+                cause.suffix(&format!(
+                    "{row}/{}",
+                    gaps.first().copied().unwrap_or("durable")
+                ))
+            };
             evidence(&format!(
-                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs",
+                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
                 if passed { "PASS" } else { "FAIL" },
                 started.elapsed().as_secs_f64()
             ));

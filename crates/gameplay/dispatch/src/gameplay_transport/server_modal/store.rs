@@ -97,7 +97,8 @@ pub(super) async fn answer(
     payload: &[u8],
 ) -> Option<Option<Vec<u8>>> {
     let answer = Answer::decode(payload).ok()?;
-    let super::rules::Selection::HirelingStore(selection) =
+    // The Hireling dialog asks for no input, so an answer carrying a value never reaches it.
+    let (super::rules::Selection::HirelingStore(selection), None, _) =
         owner.states.server_modals.rule_selection(root, answer)?
     else {
         return None;

@@ -74,17 +74,19 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
         }
         while !stopped && accept_pause.is_none() && connections.len() < limits.connections {
             match listener.poll_accept(context) {
-                Poll::Ready(Ok((stream, _))) => connections.push(Box::pin(serve_accepted(
-                    stream,
-                    tls,
-                    &units,
-                    limits.entry_deadline,
-                    authority,
-                    identifiers,
-                    observer,
-                    shutdown,
-                    drain,
-                ))),
+                Poll::Ready(Ok((stream, _))) => {
+                    connections.push(Box::pin(DurabilityRoot::with_holder_owner(serve_accepted(
+                        stream,
+                        tls,
+                        &units,
+                        limits.entry_deadline,
+                        authority,
+                        identifiers,
+                        observer,
+                        shutdown,
+                        drain,
+                    ))))
+                }
                 Poll::Ready(Err(_)) => {
                     let mut pause = Box::pin(tokio::time::sleep(ACCEPT_ERROR_PAUSE));
                     // Registers the wake-up that resumes accepting.
@@ -94,13 +96,15 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 Poll::Pending => break,
             }
         }
+        let was_full = connections.len() == limits.connections;
         connections.retain_mut(
             |connection| match timed_poll(connection.as_mut(), context) {
                 Poll::Pending => true,
                 Poll::Ready(lost) => {
                     if let Some(lost) = lost {
-                        let mut lifecycle =
-                            Box::pin(control_loss_lifecycle(authority, lost, shutdown));
+                        let mut lifecycle = Box::pin(DurabilityRoot::with_holder_owner(
+                            control_loss_lifecycle(authority, lost, shutdown),
+                        ));
                         // Registers the lifecycle's first wake-up.
                         if lifecycle.as_mut().poll(context).is_pending() {
                             lifecycles.push(lifecycle);
@@ -110,6 +114,11 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 }
             },
         );
+        if was_full && connections.len() < limits.connections && !stopped {
+            // Accept was skipped while full. Poll it again after releasing a
+            // slot, even when no remaining connection can wake this listener.
+            context.waker().wake_by_ref();
+        }
         lifecycles.retain_mut(|lifecycle| lifecycle.as_mut().poll(context).is_pending());
         let polled = poll_started.elapsed();
         if polled >= LISTENER_POLL_REPORT {
@@ -295,7 +304,7 @@ where
     // The owning authority's decision is never cancelled midway.
     if cast_observer::ingress(&frame) {
         if let Some(node) = authority.cast_node() {
-            let _ = cast_observer::serve(stream, &frame, node, shutdown).await;
+            let _ = cast_observer::serve(stream, &frame, node, shutdown, unit).await;
         }
         observer.ended(ConnectionEnd::AdmissionRefused(
             connection::AdmissionRefusal::Unavailable,
@@ -464,11 +473,27 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     let lifecycle = async {
         let mut wait = lost.wait;
         let mut backoff = RECONCILE_BACKOFF;
+        let mut previous_result = None;
         loop {
-            match authority
+            let result = authority
                 .lose_control(lost.session, wait, lost.reset.as_ref())
-                .await
-            {
+                .await;
+            if previous_result != Some(result) {
+                operator_event(match result {
+                    ControlLossResult::Recorded => "event=control_loss_result kind=recorded",
+                    ControlLossResult::ResumedHistory => {
+                        "event=control_loss_result kind=resumed_history"
+                    }
+                    ControlLossResult::Terminal => "event=control_loss_result kind=terminal",
+                    ControlLossResult::Unknown => "event=control_loss_result kind=unknown",
+                    ControlLossResult::NotApplicable => {
+                        "event=control_loss_result kind=not_applicable"
+                    }
+                    ControlLossResult::Refused => "event=control_loss_result kind=refused",
+                });
+                previous_result = Some(result);
+            }
+            match result {
                 ControlLossResult::Recorded => {
                     // KILL-REWARD-COMP-1 §1.3: an unknown expiry keeps its fence, kill mark and
                     // parked kills, and runs again behind the backoff, unbounded in count.

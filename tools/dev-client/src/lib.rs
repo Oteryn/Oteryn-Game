@@ -23,7 +23,8 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
 /// Default support sent by this harness, shared with the native session.
 pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
-use oteryn_session::{Admission, Session, SessionError};
+pub use oteryn_session::SessionError;
+use oteryn_session::{Admission, Session};
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
     ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,
@@ -511,3 +512,11 @@ impl DevClientSession {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_c18a.rs"]
+mod e2e_c18a;
+
+#[cfg(test)]
+#[path = "tests/e2e_s05.rs"]
+mod e2e_s05;

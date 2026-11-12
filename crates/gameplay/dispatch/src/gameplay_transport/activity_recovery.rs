@@ -34,7 +34,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This idempotent input receipt shares the root with background enrichment.
         // Wait briefly for its holder, re-proving the same transport/fences on every
         // attempt. Exhaustion and every non-busy error still refuse before dispatch.
-        super::AdmissionRetryBudget::for_command(self.root)
+        let Ok(budget) = super::AdmissionRetryBudget::for_foreground_command(self.root) else {
+            return false;
+        };
+        budget
             .retry_unavailable(async || {
                 ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
@@ -76,7 +79,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         }
         let handoffs = ActivityHandoffOwner::new(self.root.clone());
-        let retry = super::AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+        let retry =
+            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+                .map_err(|_| ())?;
         let Some(candidate) = retry
             .retry_unavailable(async || {
                 self.root.await_ready().await.map_err(projection_refusal)?;

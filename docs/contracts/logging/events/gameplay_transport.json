@@ -3,6 +3,26 @@
   "owner": "crates",
   "events": [
     {
+      "event": "appearance_initial_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3106: initial appearance preparation refusal; class is observation, mappings, attach or encode. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "appearance_observation_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3106: logical appearance observation refusal; class is content, fence, revision, state, visibility or conditions. Durable failures retain the existing retry diagnostics. No player identifiers, payloads or raw errors."
+    },
+    {
       "event": "attack_target_condition_gated",
       "level": "info",
       "span": false,
@@ -67,6 +87,58 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "control_loss_grace",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "PR3106: grace-release entry or the first pending observation per stage per call. Stage is entry, activity_publish, activity_return, activity_successor, combat_hold, condition_save, death_save, familiar_save, foreground_demand, gourmet_checkpoint, item_effects, kill_rewards, monk_save, release_commit, release_fence, release_not_applicable, release_not_expired, release_settle, retire, staff_release, terminal_session, training_save or wheel_gift. Kind is absent at entry and pending otherwise. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "control_loss_publication",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "PR3106: loss-publication entry and the first pending observation; stage is entry, native_publication or loss_readback. Kind is absent at entry and pending otherwise. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "control_loss_reconcile_pending",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "NBFIX: closed retained-work stage blocking logout or loss reconciliation."
+    },
+    {
+      "event": "control_loss_result",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "kind"
+      ],
+      "codes": [],
+      "note": "PR3106: listener control-loss result reported only when it changes; kind is recorded, resumed_history, terminal, unknown, not_applicable or refused. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "fresh_admission_pending",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase"
+      ],
+      "codes": [],
+      "note": "PR3106: post-commit admission continuation awaiting spell repair; phase is spell_facts or automatic_spells. No player identifiers, payloads or raw errors."
+    },
+    {
       "event": "join_prepare_failed",
       "level": "info",
       "span": false,
@@ -91,6 +163,54 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "logout_busy",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage"
+      ],
+      "codes": [],
+      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
+    },
+    {
+      "event": "logout_unknown",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."
+    },
+    {
+      "event": "player_trade_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "intent",
+        "code",
+        "cause"
+      ],
+      "codes": [],
+      "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "release_deferred",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason",
+        "waited_ms",
+        "attempts",
+        "control_loss_epoch",
+        "connection_generation",
+        "suppressed"
+      ],
+      "codes": [],
+      "note": "An expired grace release was put off on this attempt (LOGDBG-C): closed reason set, ms since the grace deadline, generation numbers only; rate-limited per reason."
+    },
+    {
       "event": "serve_command_end",
       "level": "info",
       "span": false,
@@ -107,12 +227,103 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "session_durability_failed",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stage",
+        "kind"
+      ],
+      "codes": [],
+      "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
+    },
+    {
       "event": "spell_cast_condition_gated",
       "level": "info",
       "span": false,
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "step_rejected_dawnport",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_dead",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_drome",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_holder_busy",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_lane",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_movement",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_pending_spell",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_pvp_locks",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_source_map",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
+    },
+    {
+      "event": "step_rejected_stale_position",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },
     {
       "event": "transport_close",

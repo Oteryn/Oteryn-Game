@@ -110,7 +110,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // Soulseal fight command 6120 uses existing capability 72.
     // Coin market command 6128 uses existing capability 63.
     // Market details command 6126 uses existing capability 63.
-    // Daily picker and returner commands 6122..=6125 use existing capability 182.
+    // Daily returner commands 6124 and 6125 use existing capability 182 (the picker 6122/6123 left it).
     // Store browse command 6118 uses existing capability 154.
     // Wheel presentation queries 6119 and 6121 use existing capability 148.
     // Chat console command 6117 uses existing capability 7; no new advertised capability.
@@ -142,6 +142,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // CLIGAP-W12 adds 10 (typed analyser facts and the native totals panel).
     // CLCAST adds native caster settings, chat and consent (290–292); Watch 289 is separate.
     // C17b adds 275 (empty-outfit-v1: invisible creatures project an empty outfit).
+    // The native walking route also advertises diagonal movement (371).
     // The real-server client journeys (node boot) add 3 (npc_service) and 81 (npc_shop) for the
     // NPC shop phase, and 51 (staff) with 165 (hireling) for the hireling phase; staff negotiation
     // never grants the signed-envelope authority it requires.
@@ -153,9 +154,9 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
             72, 75, 80, 81, 82, 83, 86, 87, 91, 92, 97, 98, 99, 104, 115, 117, 132, 134, 140, 147,
             148, 149, 150, 151, 152, 153, 154, 165, 168, 179, 180, 182, 195, 199, 200, 207, 224,
             230, 232, 233, 240, 258, 259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287,
-            288, 290, 291, 292, 330, 350, 370, 381, 382, 383, 384, 445, 446, 447, 448, 449, 450, 461,
-            462, 463, 470, 474,
-            479
+            288, 290, 291, 292, 330, 350, 370, 371, 381, 382, 383, 384, 445, 446, 447, 448, 449,
+            450, 461, 462, 463, 470, 474, 479, 480, 483, 485, 486, 487, 488, 489, 490, 491, 492,
+            493, 494, 495, 496, 497, 498
         ]
     );
 }
@@ -335,4 +336,70 @@ fn every_intent_variant_reaches_the_wire_at_the_text_bound() -> Result<(), BoxEr
         peer.await??;
         Ok(())
     })?
+}
+
+#[test]
+fn local_clear_oldest_chat_line_keeps_owner_extras_and_future_lines_aligned() -> Result<(), BoxError>
+{
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), BoxError> {
+            block_on(async {
+                let (client, peer) = chat_peer(vec![], vec![]);
+                let mut session = Session::admit(client, chat_admission()?).await?;
+                let first = ChatLine::Private {
+                    speaker_name: "Ari".into(),
+                    text: "old".into(),
+                };
+                let second = ChatLine::Private {
+                    speaker_name: "Ari".into(),
+                    text: "kept".into(),
+                };
+                let extra = crate::chat_extended::LineExtra {
+                    recipient_name: Some("Cy".into()),
+                    line_sequence: Some(2),
+                };
+                let log = session.chat.as_mut().ok_or("capability 7 selected")?;
+                log.push(
+                    first,
+                    crate::chat_extended::LineExtra {
+                        recipient_name: Some("Bo".into()),
+                        line_sequence: Some(1),
+                    },
+                );
+                log.push(second.clone(), extra.clone());
+                let revision = session.chat_revision;
+                assert!(session.clear_oldest_chat_line());
+                let log = session.chat_log().ok_or("capability 7 selected")?;
+                assert_eq!(log.lines().cloned().collect::<Vec<_>>(), vec![second]);
+                assert_eq!(log.line_extras().cloned().collect::<Vec<_>>(), vec![extra]);
+                assert_eq!(session.chat_revision, revision);
+                // Later incoming chat extends the same owner rather than restoring dismissed history.
+                session.chat.as_mut().ok_or("chat owner")?.push(
+                    room_line("incoming"),
+                    crate::chat_extended::LineExtra::default(),
+                );
+                assert!(session.clear_oldest_chat_line());
+                assert_eq!(
+                    session
+                        .chat_log()
+                        .ok_or("chat owner")?
+                        .lines()
+                        .cloned()
+                        .collect::<Vec<_>>(),
+                    vec![room_line("incoming")]
+                );
+                assert!(session.clear_oldest_chat_line());
+                assert!(!session.clear_oldest_chat_line());
+                assert_eq!(
+                    session.chat_log().ok_or("chat owner")?.line_extras().len(),
+                    0
+                );
+                drop(session);
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "chat owner test thread panicked")?
 }

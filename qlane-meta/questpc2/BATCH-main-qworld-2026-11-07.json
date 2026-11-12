@@ -1,0 +1,25 @@
+{
+  "batch": "main-qworld-2026-11-07",
+  "main_sha": "1138720b1",
+  "base_pushed_head": "3af2d830b70fd900407387ff921c78d6a3f544a0",
+  "state": "GREEN_READY_TO_PUBLISH",
+  "merge_scope": [
+    "QWORLD production calendar and occurrence decisions PR3026, migrations1320-1322",
+    "CATALOG public Game catalogue producer PR3025",
+    "CLCAST cast/spectate client PR3028"
+  ],
+  "conflicts": [
+    "Soul War PostgreSQL fixture Callback initializer: retain owned position aliases and main world_change=None.",
+    "Rotten Blood altar Callback initializer: retain owned position aliases/effects and main world_change=None."
+  ],
+  "constructor_repairs": "Six additional owned callback/QuestTransition initializers now set the new optional world_change field to None; behavior and all assertions retained.",
+  "validation": {
+    "initial_red": "Missing new world_change field in owned constructors; all collected and repaired.",
+    "capacity_retry": "All second-run failures were ENOSPC; retired inactive own caches and obsolete pre-QWORLD dispatch/durability link artifacts, then reran.",
+    "final_workspace": "PASS exit0,2m09s; /tmp/questpc2-qworld-merge-final-check.log",
+    "fmt": "PASS exit0; /tmp/questpc2-qworld-merge-fmt.log",
+    "policy": "Latest hard speed rule: workspace all-target check+fmt, push immediately; CI full suites."
+  },
+  "qualifications_added": 0,
+  "source_guards": "No migrations duplicated or renumbered; consume main QWORLD1320-1322, own1240-1244 unchanged. Source tests and guards unchanged."
+}

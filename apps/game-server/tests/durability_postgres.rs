@@ -5855,8 +5855,40 @@ fn assert_exhausted_budget_refused<
     Ok(())
 }
 
+// The reconnect scenario polls deep durability and Foundation call chains; run it on
+// a 64 MiB thread like the other PostgreSQL scenarios, since the default test-thread
+// stack overflows on some runners.
 #[test]
 fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    // Construct and poll the complete PostgreSQL scenario on the same stack budget
+    // as the game-node thread; boxing its future alone does not bound poll frames.
+    std::thread::Builder::new()
+        .name("complete-reconnect-scenario".into())
+        .stack_size(64 << 20)
+        .spawn(|| complete_reconnect_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+        .map_err(Into::into)
+}
+
+fn complete_reconnect_scenario() -> Result<(), Box<dyn std::error::Error>> {
+    std::thread::Builder::new()
+        .name("complete_reconnect_resumes_an_owning_loss_session_exactly_once".into())
+        .stack_size(64 << 20)
+        .spawn(|| {
+            complete_reconnect_resumes_an_owning_loss_session_exactly_once_scenario()
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "complete_reconnect scenario thread panicked")??;
+    Ok(())
+}
+
+fn complete_reconnect_resumes_an_owning_loss_session_exactly_once_scenario()
 -> Result<(), Box<dyn std::error::Error>> {
     use base64::Engine;
     use durability::admission_authority_guards::AdmissionGuardStore;
@@ -5951,10 +5983,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
             &hex[20..]
         )
     }
-    if !postgres_e2e_is_configured()? {
-        return Ok(());
-    }
-    // The whole reconnect scenario is one large future; keep it off the test-thread stack.
+    // Keep the scenario state on the heap while polling it on the scenario thread.
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
         let database = postgres::IsolatedPostgres::create("complete_reconnect").await?;
         let result = async {

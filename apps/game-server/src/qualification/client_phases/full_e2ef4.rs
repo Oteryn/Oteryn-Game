@@ -2,76 +2,12 @@
 //! No fixture provisioning, SQL mutations, clock overrides or invented wire handles.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityRef};
-use std::collections::BTreeSet;
 
-struct Row {
-    id: &'static str,
-    required: &'static [&'static str],
-    passed: BTreeSet<&'static str>,
-    started: std::time::Instant,
-    failures: Vec<String>,
-    missing_server: Option<&'static str>,
-}
+use verdict::Row;
 
-impl Row {
-    fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self {
-            id,
-            required,
-            passed: BTreeSet::new(),
-            started: std::time::Instant::now(),
-            failures: Vec::new(),
-            missing_server: None,
-        }
-    }
-
-    fn pass(&mut self, action: &'static str, observation: &str) {
-        if !self.required.contains(&action) || !self.passed.insert(action) {
-            self.failures
-                .push(format!("duplicate-or-unknown-action:{action}"));
-            return;
-        }
-        evidence(&format!(
-            "E2EF4_CHECK {} {action} PASS {observation}",
-            self.id
-        ));
-    }
-
-    fn finish(mut self, result: TestResult) {
-        if let Err(error) = result {
-            self.failures.push(error.to_string());
-        }
-        for action in self.required {
-            if !self.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF4_CHECK {} {action} FAIL assertion-not-completed",
-                    self.id
-                ));
-            }
-        }
-        let complete = self.passed.len() == self.required.len() && self.failures.is_empty();
-        // Detail is separate from the report's single-token evidence field. A failure is
-        // never turned into MISSING-SERVER merely because this journey is unfinished.
-        for failure in &self.failures {
-            evidence(&format!("E2EF4_GAP {} {failure}", self.id));
-        }
-        evidence(&format!(
-            "e2e_all scenario={}.full status={} seconds={:.3} evidence={}",
-            self.id,
-            if complete {
-                "PASS"
-            } else if self.missing_server.is_some() {
-                "MISSING-SERVER"
-            } else {
-                "FAIL"
-            },
-            self.started.elapsed().as_secs_f64(),
-            self.missing_server.unwrap_or(
-                "source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1"
-            ),
-        ));
-    }
-}
+// Detail stays on the GAP lines, separate from the report's single-token evidence field.
+// A failure is never turned into MISSING-SERVER merely because this journey is unfinished.
+const EVIDENCE: &str = "source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1";
 
 const E01: &[&str] = &[
     "greet",
@@ -148,7 +84,7 @@ const S18: &[&str] = &[
 ];
 
 pub(super) async fn run(
-    client: &mut DevClientSession,
+    client: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -157,15 +93,28 @@ pub(super) async fn run(
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
         ($id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
-            let mut row = Row::new($id, $actions);
-            let result = tokio::time::timeout(
-                Duration::from_secs(90),
-                $journey(&mut row, client $(, $arg)*),
-            ).await;
-            row.finish(match result {
-                Ok(result) => result,
-                Err(_) => Err("native-journey-deadline;remaining-assertions-unproven".into()),
-            });
+            let mut row = Row::new("E2EF4", $id, $actions).evidence(EVIDENCE, EVIDENCE);
+            let watch = row.watch();
+            let result = if let Some(active) = client.as_mut() {
+                let mut completed = false;
+                let result = watch.bound(
+                    Duration::from_secs(90),
+                    "native-journey-deadline;remaining-assertions-unproven",
+                    async {
+                        let result = $journey(&mut row, active $(, $arg)*).await;
+                        completed = true;
+                        result
+                    },
+                ).await;
+                if !completed {
+                    // An interrupted command or frame cannot be resumed by another row.
+                    *client = None;
+                }
+                result
+            } else {
+                Err("prior-native-journey-deadline;connection-closed;actions-unproven".into())
+            };
+            row.finish(&result);
         }};
     }
     row!("E01", E01, shop, clients, world, npcs);
@@ -177,6 +126,9 @@ pub(super) async fn run(
     row!("S03", S03, guild);
     row!("S09", S09, logout, clients, world);
     row!("S18", S18, speech);
+    let Some(client) = client.as_mut() else {
+        return;
+    };
     // Restore the entry position expected by the pre-existing world phases.
     let restore: TestResult = async {
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -248,10 +200,9 @@ async fn wait_inventory(
 
 async fn relog(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
     let old = client.join_snapshot().game_session_id;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("durability-check logout refused".into());
+    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("durability-check logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     *client = connect_character(clients, 0x85, 1).await?;
     if client.join_snapshot().game_session_id == old {
@@ -465,9 +416,10 @@ async fn trade(
         Err("accept/logout-race/relog-custody assertions unfinished".into())
     }
     .await;
-    let cleanup = peer.session_mut().logout().await?;
-    if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("trade peer cleanup logout refused".into());
+    let (cleanup_result, cleanup, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("trade peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
 }
@@ -767,9 +719,10 @@ async fn party(
     }
     .await;
     let _ = send(client, Some(PartyIntent::Leave)).await;
-    let cleanup = peer.session_mut().logout().await?;
-    if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("party peer cleanup logout refused".into());
+    let (cleanup_result, cleanup, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
     result
 }
@@ -803,23 +756,26 @@ async fn logout(
         .tile(tile(position)?.x, tile(position)?.y, tile(position)?.floor)
         .is_some_and(|t| t.protection_zone())
     {
-        let _ = peer.session_mut().logout().await?;
-        return Err("logout peer is not on authored PZ tile".into());
+        let (_, cleanup, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
+        return Err(format!("logout peer is not on authored PZ tile: cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     let session = peer.join_snapshot().game_session_id;
-    if peer.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("PZ logout refused".into());
+    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut peer).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!(
+            "PZ logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"
+        )
+        .into());
     }
     row.pass("pz-logout", "authored-PZ-native-logout-accepted");
     drop(peer);
     let mut peer = connect_character(clients, 0x84, 0).await?;
     let retained = peer.world_spatial().actor_position == position
         && peer.join_snapshot().game_session_id != session;
-    let cleanup = peer.session_mut().logout().await?;
-    if !retained || cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("fresh-login-position-or-cleanup-mismatch".into());
+    let (cleanup_result, cleanup, attempts, busy_timed_out) =
+        super::logout_retrying_busy(&mut peer).await?;
+    if !retained || cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("fresh-login-position-or-cleanup-mismatch: retained={retained}; cleanup={cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     row.pass("relog-position", "fresh-session-retained-saved-position");
     Err("fight/NOLOGOUT/15-minute-warning/16-minute-removal/gameplay-reset assertions unfinished;no-clock-override-used;source:crates/gameplay/dispatch/src/gameplay_transport/connection/serve/idle.rs:1".into())

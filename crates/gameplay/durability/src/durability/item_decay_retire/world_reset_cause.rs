@@ -139,6 +139,7 @@ pub(super) fn bind_message(message: &mut OneItemDecayRetireV1, cause: RetireCaus
                 parent_item_instance_id: entry.corpse_item_instance_id,
                 placement_ordinal: entry.placement_ordinal,
                 parent_ground: entry.corpse_ground,
+                tree_root_item_instance_id: None,
             });
 }
 

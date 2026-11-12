@@ -1,6 +1,8 @@
 //! Periodic state refreshes and chase progression.
 
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::ObservationError;
+use oteryn_protocol_oteryn::chat::{line_extended, private_channel_extended};
 
 pub(super) async fn serene<S, A>(
     stream: &mut S,
@@ -140,6 +142,7 @@ where
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
     super::vip_presence::refresh(stream, authority, session).await?;
+    private_echoes(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
     // At most one full queue per refresh: lines that keep arriving cannot hold the
@@ -152,19 +155,27 @@ where
         else {
             break;
         };
-        let Some((delta_sequence, frame, chat_revision)) = chat_line_delta(
-            session.generation,
-            session.sequence,
-            session.admitted.continuity.chat_revision,
-            &line,
-        ) else {
-            return Err(ServeEnd::Disconnected);
-        };
-        session.sequence = delta_sequence;
-        session.admitted.continuity.server_sequence = session.sequence;
-        session.admitted.continuity.chat_revision = chat_revision;
-        if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+        if session
+            .selected_capabilities
+            .contains(line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1)
+        {
+            let payload = encode_chat_line(&line).map_err(|_| ServeEnd::Disconnected)?;
+            write_line(stream, session, payload).await?;
+        } else {
+            let Some((delta_sequence, frame, chat_revision)) = chat_line_delta(
+                session.generation,
+                session.sequence,
+                session.admitted.continuity.chat_revision,
+                &line,
+            ) else {
+                return Err(ServeEnd::Disconnected);
+            };
+            session.sequence = delta_sequence;
+            session.admitted.continuity.server_sequence = session.sequence;
+            session.admitted.continuity.chat_revision = chat_revision;
+            if write_frame(stream, &frame).await.is_err() {
+                return Err(ServeEnd::Disconnected);
+            }
         }
         if session.selected_capabilities.contains(290) {
             authority.cast_heard(session.admitted, &line).await;
@@ -175,6 +186,75 @@ where
                 .chat_delivered(session.admitted.game_session_id)
                 .await;
         }
+    }
+    Ok(())
+}
+
+/// WU26: one domain 12 line delta (type 1) of an encoded line. With capability 496 the line
+/// carries field 13, the delta's own new revision, so it strictly increases per GameSession.
+async fn write_line<S>(
+    stream: &mut S,
+    session: &mut ServeState,
+    mut payload: Vec<u8>,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    if session
+        .selected_capabilities
+        .contains(line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1)
+    {
+        let line_sequence = session
+            .admitted
+            .continuity
+            .chat_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        line_extended::append_line_sequence(&mut payload, line_sequence)
+            .map_err(|_| ServeEnd::Disconnected)?;
+    }
+    let Some((delta_sequence, frame, chat_revision)) = chat_delta(
+        session.generation,
+        session.sequence,
+        session.admitted.continuity.chat_revision,
+        DELTA_TYPE_CHAT_LINE_V1,
+        &payload,
+    ) else {
+        return Err(ServeEnd::Disconnected);
+    };
+    session.sequence = delta_sequence;
+    session.admitted.continuity.server_sequence = session.sequence;
+    session.admitted.continuity.chat_revision = chat_revision;
+    if write_frame(stream, &frame).await.is_err() {
+        return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+/// WU26 capability 493: the echoes of the session's accepted private lines, oldest first, at most
+/// one egress bound per refresh.
+async fn private_echoes<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    if !session
+        .selected_capabilities
+        .contains(line_extended::CAPABILITY_CHAT_PRIVATE_ECHO_V1)
+    {
+        return Ok(());
+    }
+    for _ in 0..EGRESS_MAX_LINES {
+        let Some(echo) = authority.chat_private_echo_next(session.admitted).await else {
+            break;
+        };
+        let payload =
+            line_extended::encode_private_echo(&echo).map_err(|_| ServeEnd::Disconnected)?;
+        write_line(stream, session, payload).await?;
     }
     Ok(())
 }
@@ -238,6 +318,15 @@ where
     {
         return Ok(());
     }
+    if session
+        .selected_capabilities
+        .contains(private_channel_extended::CAPABILITY_CHAT_JOINED_CHANNELS_V1)
+        || session
+            .selected_capabilities
+            .contains(private_channel_extended::CAPABILITY_CHAT_CHANNEL_PARTICIPANTS_V1)
+    {
+        return channel_list_extended(stream, authority, session).await;
+    }
     let Some(list) = authority.chat_channel_list_bound(session.admitted).await else {
         return Ok(());
     };
@@ -257,6 +346,48 @@ where
     session.admitted.continuity.chat_revision = chat_revision;
     if write_frame(stream, &frame).await.is_err() {
         return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+/// WU26 capabilities 494 and 495: the list delta with fields 4 and 5 when the list or its
+/// extension changed, then one line kind 8 per member notice since the previous read.
+async fn channel_list_extended<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::chat::private_channel;
+    let (list, notices) = authority
+        .chat_channel_list_extended_bound(session.admitted)
+        .await;
+    if let Some((list, extension)) = list {
+        let payload = private_channel_extended::encode_channel_list_extended(&list, &extension)
+            .map_err(|_| ServeEnd::Disconnected)?;
+        let Some((delta_sequence, frame, chat_revision)) = chat_delta(
+            session.generation,
+            session.sequence,
+            session.admitted.continuity.chat_revision,
+            private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1,
+            &payload,
+        ) else {
+            return Err(ServeEnd::Disconnected);
+        };
+        session.sequence = delta_sequence;
+        session.admitted.continuity.server_sequence = session.sequence;
+        session.admitted.continuity.chat_revision = chat_revision;
+        if write_frame(stream, &frame).await.is_err() {
+            return Err(ServeEnd::Disconnected);
+        }
+    }
+    for notice in notices {
+        let payload =
+            line_extended::encode_channel_notice(&notice).map_err(|_| ServeEnd::Disconnected)?;
+        write_line(stream, session, payload).await?;
     }
     Ok(())
 }
@@ -499,9 +630,9 @@ where
     else {
         return Err(ServeEnd::Disconnected);
     };
-    let Some((to_sequence, to_revision)) = session
+    let projection = session
         .appearances
-        .refresh(
+        .refresh_result(
             stream,
             authority,
             session.actor,
@@ -512,39 +643,48 @@ where
             session.sequence,
             session.revision,
         )
-        .await
-    else {
-        return Err(ServeEnd::Disconnected);
-    };
-    session.sequence = to_sequence;
-    session.revision = to_revision;
-    session.admitted.continuity.spatial_revision = session.revision;
-    party_skull::refresh(stream, authority, session).await?;
-    // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
-    if let (Some(view), Some(items)) = (session.world_map.as_mut(), session.item_view.as_mut()) {
-        let update = world_map_frames(
-            authority,
-            session.actor,
-            session.generation,
-            session.sequence,
-            view,
-            items,
-        )
         .await;
-        session.admitted.continuity.item_view = items.continuity();
-        let Some(update) = update else {
-            return Err(ServeEnd::Disconnected);
-        };
-        if let Some((next_sequence, frames)) = update {
-            session.sequence = next_sequence;
-            session.admitted.continuity.server_sequence = session.sequence;
-            session.admitted.continuity.world_map_revision = view.revision();
-            for frame in frames {
-                if write_frame(stream, &frame).await.is_err() {
+    match projection {
+        Ok((to_sequence, to_revision)) => {
+            session.sequence = to_sequence;
+            session.revision = to_revision;
+            session.admitted.continuity.spatial_revision = session.revision;
+            party_skull::refresh(stream, authority, session).await?;
+            // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
+            if let (Some(view), Some(items)) =
+                (session.world_map.as_mut(), session.item_view.as_mut())
+            {
+                let update = world_map_frames(
+                    authority,
+                    session.actor,
+                    session.generation,
+                    session.sequence,
+                    view,
+                    items,
+                )
+                .await;
+                session.admitted.continuity.item_view = items.continuity();
+                let Some(update) = update else {
                     return Err(ServeEnd::Disconnected);
+                };
+                if let Some((next_sequence, frames)) = update {
+                    session.sequence = next_sequence;
+                    session.admitted.continuity.server_sequence = session.sequence;
+                    session.admitted.continuity.world_map_revision = view.revision();
+                    for frame in frames {
+                        if write_frame(stream, &frame).await.is_err() {
+                            return Err(ServeEnd::Disconnected);
+                        }
+                    }
                 }
             }
         }
+        // The discarded candidate consumed no appearance, visibility or item
+        // cursor. Independent clock/weather deltas below still get their turn.
+        // A pending respawn fences the dead Character's appearance only until its
+        // placement; the next refresh observes it again.
+        Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
+        Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
     // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
     if session

@@ -14,6 +14,8 @@ import json
 import sys
 from pathlib import Path
 
+from native_profile_composition import encode_native_profile
+
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/wheel-gem-item-profiles.json'
 PRODUCER = 'tools/content-migration/wheel_gem_item_profiles.py'
@@ -185,7 +187,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if present & KEYS:
         raise ValueError('WHEEL_GEM_PROFILE_DUPLICATE')
     document['records'] = sorted(document['records'] + records, key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()
     manifest_raw = canonical(manifest)

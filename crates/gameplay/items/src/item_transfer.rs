@@ -63,7 +63,8 @@ pub enum ItemTransferRefusal {
     /// The item has no complete `container`-slot equip pattern.
     NotContainerSlotEquippable,
     ContainerSlotOccupied,
-    /// A moved container must be empty (DUR03-RL-05 = 0).
+    /// Unqualified direct edges refuse; canonical nested ContainerSlot trees
+    /// require separate durable tree admission and receipt-bound promotion.
     ContainerNotEmpty,
     /// No main backpack is equipped.
     NoMainBackpack,

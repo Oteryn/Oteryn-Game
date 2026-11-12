@@ -1,0 +1,7 @@
+{
+  "mechanic": "0494-chat-joined-channels",
+  "kind": "panels",
+  "id": "0494-chat-joined-channels-panel",
+  "status": "supported",
+  "entry": "protocol.rs::newly_joined"
+}

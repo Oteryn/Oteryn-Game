@@ -79,16 +79,42 @@ with CI and never blocks or delays it.
   one, and then only over the new diff. At most 2 reviews per PR. If the second
   review still finds a P0/P1, the design of the change is wrong: stop and
   report to the owner instead of a third round.
-- How: the coordinator (the review-dispatch owner) starts it with `codex exec`
-  in a read-only sandbox, single agent, model gpt-6.1-sol, reasoning effort high (an
+- Who (owner decision 2026-11-11): whoever owns the branch or PR runs the
+  review, also when it works alone without the coordinator: a Claude session,
+  a child session or a PC lane named as owner in its packet. On the PC that is
+  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag>`. The owner puts
+  "Codex review <head SHA>: N findings, M fixed" in its report and, when it
+  opens the PR, in one PR comment; a head that already has that line is not
+  reviewed again. A session without Codex (no PC, no `codex` binary) reports
+  "not reviewed" and the coordinator runs it. A Codex lane never reviews its
+  own code.
+- How: the review owner starts it with `codex exec`
+  in a read-only sandbox, model gpt-6.1-sol, reasoning effort high (an
   `@codex review` PR comment has gone unanswered since 2026-10-20, so it is not
-  used), with the diff, `CODEX-CHECKLIST.md`, the risky areas of this diff
-  (locks, retries, commit and fencing, tests that can pass without testing) and
-  the instruction to report findings only, at most 30 lines. Code Codex wrote is
+  used), as one round of parallel lens runs over the same head, each with the
+  diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
+  lines. Each run is told to report every finding, with no cap on lines or
+  count, and every other instance of the same class in the diff. Lenses,
+  chunking of big diffs, the prompt, the merge, verify and sweep steps and the
+  stop rule are in `references/batch-review.md`; read it before you start a
+  review or delegate one. Code Codex wrote is
   reviewed by a new Codex run with a clean context, never as a continuation of
   the run that wrote it.
 - Its output is findings to verify with step 3, not a verdict; a failed or
   empty run means "not reviewed".
+- Fixing confirmed findings (owner decision 2026-11-11): the review run never
+  edits code. After you verify each finding (§6), write only the confirmed ones,
+  one per line as `P1|P2 path:line - problem - failure path`, to a file and hand
+  them, with every instance the pattern sweep found, to one code-writing
+  Codex run at reasoning effort `medium` (one run for the whole batch, never
+  one per finding): on the PC
+  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
+  (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
+  the same list. Per finding it writes a red test first, reports `NOT
+  REPRODUCED` without a code change when the test cannot fail, then makes the
+  smallest fix and reruns the test green; it changes no existing assertion,
+  timeout or budget and nothing outside the listed findings. Nothing is
+  committed: you review that diff (§2-§3), then commit and push it.
 - Fixes made for a review do not get another review unless they meet the
   second-review rule above.
 - Merge: CI green and no open P0/P1 finding from the review.

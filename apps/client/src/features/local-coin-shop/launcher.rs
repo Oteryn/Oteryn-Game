@@ -40,6 +40,10 @@ impl Launcher {
     pub(crate) fn can_start(&self) -> bool {
         !self.ended.load(Ordering::Acquire) && !self.active.load(Ordering::Acquire)
     }
+    /// Opens a Platform web page (coin history, coin transfer) in the system browser.
+    pub(crate) fn open_web(&self, link: crate::web_links::WebLink) -> bool {
+        !self.ended.load(Ordering::Acquire) && crate::web_links::open(&self.config, link)
+    }
     pub(crate) fn end(&self) {
         self.ended.store(true, Ordering::Release);
         if let Ok(token) = self.cancellation.lock()

@@ -483,10 +483,12 @@ pub(super) async fn assert_result(h: &Harness, case: Case, bank_before: i64) -> 
                 .bind(id(180).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
                 proof,
+                // The partial case pays a Lesser reveal (125,000): thirteen coins and
+                // 5,000 change, as the nested single-stack gold case does.
                 if all_burned {
                     (75, 75, 750_000, 0)
                 } else {
-                    (25, 75, 250_000, 0)
+                    (13, 75, 130_000, 5_000)
                 },
                 "the complete carried scan must not truncate at twenty sources"
             );
@@ -497,7 +499,7 @@ pub(super) async fn assert_result(h: &Harness, case: Case, bank_before: i64) -> 
                 if all_burned {
                     (75, 0, 0, 0)
                 } else {
-                    (25, 50, 50, 50)
+                    (13, 62, 62, 62)
                 }
             );
             assert_eq!(

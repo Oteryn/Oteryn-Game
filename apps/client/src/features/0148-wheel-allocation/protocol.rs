@@ -2,8 +2,10 @@ use crate::play::{Outbox, mailbox::lock};
 use oteryn_client_runtime::wheel_allocation::WheelResponse;
 
 impl Outbox {
-    pub(in crate::play) fn wheel_initialize(&self, selected: bool) {
-        lock(&self.0).wheel.selected = selected;
+    pub(in crate::play) fn wheel_initialize(&self, selected: bool, atelier_v2: bool) {
+        let mut m = lock(&self.0);
+        m.wheel.selected = selected;
+        m.wheel.atelier_v2 = selected && atelier_v2;
     }
 
     pub(in crate::play) fn wheel_result(&self, response: &WheelResponse) {

@@ -66,3 +66,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p13.rs"]
+mod e2e_p13;

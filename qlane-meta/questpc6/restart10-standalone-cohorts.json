@@ -1,0 +1,1367 @@
+{
+  "standalone_claims_bear_berserk_berserker_black_knight_dead_archer": {
+    "quests": [
+      "canary:quest/bear_room_quest",
+      "canary:quest/berserker_treasure_quest",
+      "canary:quest/black_knight_quest",
+      "canary:quest/dead_archer_quest",
+      "crystalserver:quest/berserk_potion_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.kv.bear_chest1": {
+        "claim": "oteryn:reward-claim.kv.bear_chest1",
+        "placements": [
+          {
+            "position": {
+              "x": 32146,
+              "y": 32097,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1158",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6114
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1458",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6114
+              }
+            ]
+          }
+        ],
+        "reason": "quest_container_chests_bear_bag_once_and_replay",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.bear_chest2": {
+        "claim": "oteryn:reward-claim.kv.bear_chest2",
+        "placements": [
+          {
+            "position": {
+              "x": 32144,
+              "y": 32096,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1167",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6115
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1467",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6115
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.bear_chest3": {
+        "claim": "oteryn:reward-claim.kv.bear_chest3",
+        "placements": [
+          {
+            "position": {
+              "x": 32141,
+              "y": 32097,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1174",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6116
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1474",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6116
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id4601": {
+        "claim": "oteryn:reward-claim.quest.key.id4601",
+        "placements": [
+          {
+            "position": {
+              "x": 32150,
+              "y": 32112,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:193",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5013
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:468",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5013
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls": {
+        "claim": "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls",
+        "placements": [
+          {
+            "position": {
+              "x": 33199,
+              "y": 31923,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:771",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6066
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1070",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6066
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.blackknight1": {
+        "claim": "oteryn:reward-claim.kv.blackknight1",
+        "placements": [
+          {
+            "position": {
+              "x": 32868,
+              "y": 31955,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:634",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6047
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:933",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6047
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.blackknight2": {
+        "claim": "oteryn:reward-claim.kv.blackknight2",
+        "placements": [
+          {
+            "position": {
+              "x": 32880,
+              "y": 31955,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:641",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6048
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:940",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6048
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id5010": {
+        "claim": "oteryn:reward-claim.quest.key.id5010",
+        "placements": [
+          {
+            "position": {
+              "x": 32800,
+              "y": 31959,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:139",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5006
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:421",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5006
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32813,
+              "y": 31964,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:146",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5007
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:428",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5007
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.deadarcher": {
+        "claim": "oteryn:reward-claim.kv.deadarcher",
+        "placements": [
+          {
+            "position": {
+              "x": 32514,
+              "y": 32303,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1620",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6169
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1905",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6169
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_04_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim": {
+        "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+        "placements": [
+          {
+            "position": {
+              "x": 32490,
+              "y": 31192,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2006",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6218
+              },
+              {
+                "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+                "citation": "crystal:data-global/startup/tables/chest.lua:2291",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6218
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_11_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      }
+    }
+  },
+  "standalone_claims_dragon_corpse_tower_edron_emperor_fanfare": {
+    "quests": [
+      "canary:quest/dragon_corpse_quest",
+      "canary:quest/dragon_tower_quest",
+      "canary:quest/edron_goblin_quest",
+      "canary:quest/emperor_s_cookies_quest",
+      "canary:quest/fanfare_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.kv.dragoncorpse": {
+        "claim": "oteryn:reward-claim.kv.dragoncorpse",
+        "placements": [
+          {
+            "position": {
+              "x": 32179,
+              "y": 32224,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1556",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6161
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1841",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6161
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1": {
+        "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+        "placements": [
+          {
+            "position": {
+              "x": 33072,
+              "y": 32169,
+              "z": 2
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:832",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6073
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1131",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6073
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2": {
+        "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+        "placements": [
+          {
+            "position": {
+              "x": 33078,
+              "y": 32169,
+              "z": 2
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:841",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6074
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1140",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6074
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.edrongoblin1": {
+        "claim": "oteryn:reward-claim.kv.edrongoblin1",
+        "placements": [
+          {
+            "position": {
+              "x": 33095,
+              "y": 31800,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:536",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6034
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:835",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6034
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.edrongoblin2": {
+        "claim": "oteryn:reward-claim.kv.edrongoblin2",
+        "placements": [
+          {
+            "position": {
+              "x": 33095,
+              "y": 31801,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:543",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6035
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:842",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6035
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id3800": {
+        "claim": "oteryn:reward-claim.quest.key.id3800",
+        "placements": [
+          {
+            "position": {
+              "x": 32605,
+              "y": 31908,
+              "z": 3
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:112",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5003
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:394",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5003
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_12_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id3802": {
+        "claim": "oteryn:reward-claim.quest.key.id3802",
+        "placements": [
+          {
+            "position": {
+              "x": 32599,
+              "y": 31923,
+              "z": 6
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:131",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5005
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:413",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5005
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_12_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": {
+        "claim": "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies",
+        "placements": [
+          {
+            "position": {
+              "x": 32648,
+              "y": 31905,
+              "z": 3
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:120",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5004
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:402",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5004
+              }
+            ]
+          }
+        ],
+        "reason": "quest_container_chests_key_attributes_are_atomic",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.fanfare": {
+        "claim": "oteryn:reward-claim.kv.fanfare",
+        "placements": [
+          {
+            "position": {
+              "x": 32390,
+              "y": 31769,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1396",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6142
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1681",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6142
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id3520": {
+        "claim": "oteryn:reward-claim.quest.key.id3520",
+        "placements": [
+          {
+            "position": {
+              "x": 32376,
+              "y": 31802,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:233",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5018
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:508",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5018
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      }
+    }
+  },
+  "standalone_claims_fire_axe_fishing_frost_geomancer_ghoul": {
+    "quests": [
+      "canary:quest/fire_axe_quest",
+      "canary:quest/fishing_box_quest",
+      "canary:quest/geomancer_quest",
+      "canary:quest/ghoul_room_quest",
+      "crystalserver:quest/frost_dragon_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.kv.fireaxe1": {
+        "claim": "oteryn:reward-claim.kv.fireaxe1",
+        "placements": [
+          {
+            "position": {
+              "x": 33078,
+              "y": 31656,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:780",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6067
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1079",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6067
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.fireaxe2": {
+        "claim": "oteryn:reward-claim.kv.fireaxe2",
+        "placements": [
+          {
+            "position": {
+              "x": 33084,
+              "y": 31650,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:551",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6036
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:850",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6036
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.fishing_box": {
+        "claim": "oteryn:reward-claim.quest.u8_0.fishing_box",
+        "placements": [
+          {
+            "position": {
+              "x": 32015,
+              "y": 31409,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2137",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6235
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2422",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6235
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.geomancer": {
+        "claim": "oteryn:reward-claim.kv.geomancer",
+        "placements": [
+          {
+            "position": {
+              "x": 32456,
+              "y": 32008,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1333",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6134
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1618",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6134
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.ghoulroom1": {
+        "claim": "oteryn:reward-claim.kv.ghoulroom1",
+        "placements": [
+          {
+            "position": {
+              "x": 32500,
+              "y": 32175,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1351",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6136
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1636",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6136
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.ghoulroom2": {
+        "claim": "oteryn:reward-claim.kv.ghoulroom2",
+        "placements": [
+          {
+            "position": {
+              "x": 32500,
+              "y": 32177,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1359",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6137
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1644",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6137
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id3600": {
+        "claim": "oteryn:reward-claim.quest.key.id3600",
+        "placements": [
+          {
+            "position": {
+              "x": 32509,
+              "y": 32181,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:209",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5015
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:484",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5015
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_07_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir": {
+        "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+        "placements": [
+          {
+            "position": {
+              "x": 32146,
+              "y": 31430,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1998",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6217
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2283",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6217
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_11_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      }
+    }
+  },
+  "standalone_claims_goblin_inukaya_iron_helmet_katana_lion": {
+    "quests": [
+      "canary:quest/goblin_temple_quest",
+      "canary:quest/inukaya_quest",
+      "canary:quest/iron_helmet_quest",
+      "canary:quest/katana_quest",
+      "canary:quest/lion_trophy_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.kv.goblintemple": {
+        "claim": "oteryn:reward-claim.kv.goblintemple",
+        "placements": [
+          {
+            "position": {
+              "x": 31973,
+              "y": 32209,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1198",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6118
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1490",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6118
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_08_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.goblintemple2": {
+        "claim": "oteryn:reward-claim.kv.goblintemple2",
+        "placements": [
+          {
+            "position": {
+              "x": 31977,
+              "y": 32209,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1207",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6119
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1499",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6119
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya": {
+        "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+        "placements": [
+          {
+            "position": {
+              "x": 32483,
+              "y": 31110,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1982",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6215
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2267",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6215
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_08_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.ironhelmet": {
+        "claim": "oteryn:reward-claim.kv.ironhelmet",
+        "placements": [
+          {
+            "position": {
+              "x": 32769,
+              "y": 32225,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1610",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6168
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1895",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6168
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.katanacorpse1": {
+        "claim": "oteryn:reward-claim.kv.katanacorpse1",
+        "placements": [
+          {
+            "position": {
+              "x": 32175,
+              "y": 32145,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1566",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6162
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1851",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6162
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.katanacorpse2": {
+        "claim": "oteryn:reward-claim.kv.katanacorpse2",
+        "placements": [
+          {
+            "position": {
+              "x": 32174,
+              "y": 32149,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1573",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6163
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1858",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6163
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.key.id4603": {
+        "claim": "oteryn:reward-claim.quest.key.id4603",
+        "placements": [
+          {
+            "position": {
+              "x": 32176,
+              "y": 32132,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:201",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5014
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:476",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5014
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines": {
+        "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines",
+        "placements": [
+          {
+            "position": {
+              "x": 32154,
+              "y": 31116,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2014",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6219
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2299",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6219
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      }
+    }
+  },
+  "standalone_claims_longsword_mad_mage_medusa_shield_minotaur": {
+    "quests": [
+      "canary:quest/longsword_quest",
+      "canary:quest/mad_mage_room_quest",
+      "canary:quest/medusa_shield_quest",
+      "canary:quest/minotaur_hell_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.kv.longsword1": {
+        "claim": "oteryn:reward-claim.kv.longsword1",
+        "placements": [
+          {
+            "position": {
+              "x": 32649,
+              "y": 31969,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1428",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6146
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1713",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6146
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.longsword2": {
+        "claim": "oteryn:reward-claim.kv.longsword2",
+        "placements": [
+          {
+            "position": {
+              "x": 32650,
+              "y": 31969,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1435",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6147
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1720",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6147
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.longsword3": {
+        "claim": "oteryn:reward-claim.kv.longsword3",
+        "placements": [
+          {
+            "position": {
+              "x": 32651,
+              "y": 31969,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1442",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6148
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1727",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6148
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.madmageroom1": {
+        "claim": "oteryn:reward-claim.kv.madmageroom1",
+        "placements": [
+          {
+            "position": {
+              "x": 32578,
+              "y": 32195,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:894",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6080
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1193",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6080
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.madmageroom2": {
+        "claim": "oteryn:reward-claim.kv.madmageroom2",
+        "placements": [
+          {
+            "position": {
+              "x": 32575,
+              "y": 32195,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:901",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6081
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1200",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6081
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.madmageroom3": {
+        "claim": "oteryn:reward-claim.kv.madmageroom3",
+        "placements": [
+          {
+            "position": {
+              "x": 32572,
+              "y": 32195,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:908",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6082
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1207",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6082
+              }
+            ]
+          }
+        ],
+        "reason": "quest_container_chests_full_definition_charges_mint_one_instance",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u7_3.the_medusa_quest": {
+        "claim": "oteryn:reward-claim.quest.u7_3.the_medusa_quest",
+        "placements": [
+          {
+            "position": {
+              "x": 33049,
+              "y": 32399,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1732",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6183
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2017",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6183
+              }
+            ]
+          }
+        ],
+        "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+        "reason": "quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.minohell1": {
+        "claim": "oteryn:reward-claim.kv.minohell1",
+        "placements": [
+          {
+            "position": {
+              "x": 32130,
+              "y": 32066,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1217",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6120
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1509",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6120
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.minohell2": {
+        "claim": "oteryn:reward-claim.kv.minohell2",
+        "placements": [
+          {
+            "position": {
+              "x": 32127,
+              "y": 32065,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1233",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6121
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1516",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6121
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.minohell3": {
+        "claim": "oteryn:reward-claim.kv.minohell3",
+        "placements": [
+          {
+            "position": {
+              "x": 32124,
+              "y": 32064,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1233",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6121
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:571",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5026
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_phase_a_10_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      }
+    }
+  }
+}

@@ -19,7 +19,7 @@ pub(super) async fn run(
     let mut count = 0_i64;
     for rule in crate::content::native_gameplay::mount_taming::rules()
         .iter()
-        .filter(|rule| rule.target_item_key.is_some())
+        .filter(|rule| rule.target_item_key.is_some() && rule.single_item_use())
     {
         assert_eq!(
             rule.target_item_key.as_deref(),
@@ -101,7 +101,7 @@ pub(super) async fn run(
         assert_eq!(h.count("game_mount_taming_attempts").await?, count);
         assert_eq!(h.count("game_account_appearance_unlocks").await?, count);
     }
-    assert_eq!(count, 4, "all source construction pairs exercised");
+    assert_eq!(count, 3, "all one-item source construction pairs exercised");
     Ok(())
 }
 

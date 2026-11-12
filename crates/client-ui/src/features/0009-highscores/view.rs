@@ -1,12 +1,12 @@
-use super::{CATEGORIES, CATEGORY_IDS, HighscoresPanel, VOCATIONS};
+use super::{HighscoresPanel, VOCATIONS};
 use std::fmt::Write;
 pub fn panel_text(p: &HighscoresPanel) -> String {
     let mut text = lfmt!(
         "Highscores — {} / {}",
-        CATEGORY_IDS
-            .iter()
-            .position(|id| *id == p.category)
-            .map(|index| crate::localization::tr(CATEGORIES[index]))
+        crate::highscores_loyalty::categories(p.loyalty_selected)
+            .into_iter()
+            .find(|(id, _)| *id == p.category)
+            .map(|(_, label)| crate::localization::tr(label))
             .unwrap_or(tr!("Unavailable")),
         crate::localization::tr(VOCATIONS[p.vocation as usize])
     );

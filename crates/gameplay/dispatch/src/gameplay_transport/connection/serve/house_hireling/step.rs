@@ -9,10 +9,91 @@ pub(in crate::gameplay_transport::connection::serve) enum Event {
     Services,
 }
 
+/// A completed service pass may have consumed its entire period while its
+/// appearance read was busy. Keep the next turn one existing period ahead so
+/// a queued ACK or command is serviced; probe and STEP deadlines are untouched.
+pub(in crate::gameplay_transport::connection::serve) fn services_completed(
+    cadence: &mut tokio::time::Interval,
+) {
+    cadence.reset();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
+
+    #[test]
+    fn house_busy_service_turns_dispatch_ready_acks_before_another_service_pass()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .start_paused(true)
+                    .build()?
+                    .block_on(async {
+                        let period = std::time::Duration::from_secs(1);
+                        let started = tokio::time::Instant::now();
+                        let (mut server, mut client) = tokio::io::duplex(4096);
+                        let mut queue = Queue::default();
+                        let mut cadence = tokio::time::interval_at(
+                            started + IDLE_LIVENESS.interval,
+                            IDLE_LIVENESS.interval,
+                        );
+                        cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+                        let mut services = tokio::time::interval_at(started + period, period);
+                        services.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+                        for probe_id in 1..=2 {
+                            assert!(matches!(
+                                queue
+                                    .next(&mut server, 1, &mut cadence, &mut services)
+                                    .await
+                                    .map_err(|_| "House service event")?,
+                                Event::Services
+                            ));
+                            // Model two complete existing holder windows in the
+                            // actual House queue, each ending in a deferred refresh.
+                            let entered = tokio::time::Instant::now();
+                            tokio::time::sleep(crate::gameplay_transport::COMMAND_HOLDER_WINDOW)
+                                .await;
+                            assert_eq!(entered.elapsed(), period);
+                            let ack = oteryn_protocol_oteryn::encode_liveness_ack(1, probe_id, 0)?;
+                            write_frame(&mut client, &ack).await?;
+                            services_completed(&mut services);
+                            let completed = tokio::time::Instant::now();
+                            let Event::Input(input) = queue
+                                .next(&mut server, 1, &mut cadence, &mut services)
+                                .await
+                                .map_err(|_| "House ACK event")?
+                            else {
+                                return Err("due service overtook a ready ACK".into());
+                            };
+                            assert_eq!(input.frame, ack);
+                            assert!(!input.buffered_original);
+                            assert!(!input.arrived_while_buffered);
+                            assert_eq!(tokio::time::Instant::now(), completed);
+                        }
+                        // Completion resets no probe deadline: at the five-second
+                        // tie the original probe priority still wins.
+                        assert!(matches!(
+                            queue
+                                .next(&mut server, 1, &mut cadence, &mut services)
+                                .await
+                                .map_err(|_| "House probe event")?,
+                            Event::Probe
+                        ));
+                        assert_eq!(
+                            tokio::time::Instant::now(),
+                            started + IDLE_LIVENESS.interval
+                        );
+                        Ok(())
+                    })
+            })?
+            .join()
+            .map_err(|_| "House service queue test thread panicked")?
+    }
 
     #[test]
     fn hireling_house_step_buffer_keeps_original_and_bounds_later_wire_frames()
@@ -188,7 +269,10 @@ impl State {
         command: oteryn_protocol_oteryn::ClientCommandView<'_>,
         arrived_while_buffered: bool,
     ) -> route::StepAction {
-        let dispatch = match decode_step_intent(command.payload) {
+        let dispatch = match decode_step_intent_selected(
+            admitted.continuity.selected_capabilities.as_slice(),
+            command.payload,
+        ) {
             Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
             Ok(_) if arrived_while_buffered => {
                 let now = tokio::time::Instant::now();

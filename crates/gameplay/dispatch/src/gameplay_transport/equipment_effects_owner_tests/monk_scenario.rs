@@ -1,9 +1,7 @@
 //! Test-only access to the existing monk owner fixture; no second fixture registration.
 
 use super::fixture::{Harness, debug, id, run};
-use super::{
-    ComposedFreshAdmission, Dependencies, TestResult, fresh_fixture, prepare_current_session,
-};
+use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session};
 
 /// Reuse the inventoried owner and isolated database for equipment dispatch scenarios.
 pub(in crate::gameplay_transport) fn run_equipment_scenario(
@@ -23,7 +21,7 @@ pub(in crate::gameplay_transport) fn run_equipment_scenario(
             NEXT_FIXTURE.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         );
         let harness = Harness::create_with_admission_seed(admin, &tag, true, false).await?;
-        prepare_current_session(&harness).await?;
+        let request = prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -43,8 +41,9 @@ pub(in crate::gameplay_transport) fn run_equipment_scenario(
         .await?;
         let operation =
             crate::durability::fresh_admission::decode_operation(&encoded, 65536).map_err(debug)?;
-        let request =
-            fresh_fixture::fresh::Source::new(operation.authorization.verified_at)?.request()?;
+        // Runtime readiness was observed before the Platform authorization.
+        // Reconstructing all observations at verified_at changes the binding;
+        // retain the exact request committed by the shared admission owner.
         assert_eq!(request.operation(), &operation);
         scenario(
             dependencies.owner(&harness, &authority),

@@ -34,6 +34,16 @@ macro_rules! authority_methods {
         ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>> {
             async { Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected) }
         }
+        /// Capability 485: the carried selection narrowed to one exact upgrade tier.
+        fn hotkey_equip_tiered(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _request: oteryn_protocol_oteryn::hotkey_equip::Request,
+            _upgrade_tier: u8,
+        ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>> {
+            async { Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected) }
+        }
         fn hotkey_equip(
             &self,
             _actor: $crate::foundation::ExactActorRef,
@@ -65,8 +75,27 @@ macro_rules! composed_methods {
             command: $crate::gameplay_transport::connection::UseCommand,
             request: oteryn_protocol_oteryn::hotkey_equip::Request,
         ) -> Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome> {
-            $crate::gameplay_transport::hotkey_equip::execute(self, actor, command, request, true)
-                .await
+            $crate::gameplay_transport::hotkey_equip::execute(
+                self, actor, command, request, true, None,
+            )
+            .await
+        }
+        async fn hotkey_equip_tiered(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            request: oteryn_protocol_oteryn::hotkey_equip::Request,
+            upgrade_tier: u8,
+        ) -> Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome> {
+            $crate::gameplay_transport::hotkey_equip::execute(
+                self,
+                actor,
+                command,
+                request,
+                true,
+                Some(upgrade_tier),
+            )
+            .await
         }
         async fn hotkey_equip(
             &self,
@@ -74,12 +103,30 @@ macro_rules! composed_methods {
             command: $crate::gameplay_transport::connection::UseCommand,
             request: oteryn_protocol_oteryn::hotkey_equip::Request,
         ) -> Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome> {
-            $crate::gameplay_transport::hotkey_equip::execute(self, actor, command, request, false)
-                .await
+            $crate::gameplay_transport::hotkey_equip::execute(
+                self, actor, command, request, false, None,
+            )
+            .await
         }
     };
 }
 pub(super) use composed_methods;
+
+fn action_now(owner: &ComposedFreshAdmission<'_, '_, '_>) -> std::time::Duration {
+    // Keep the owner cooldown aligned with a paused transport clock in database
+    // tests. Production retains the same monotonic clock and full precision.
+    #[cfg(test)]
+    {
+        let fixed = owner
+            .states
+            .test_owner_time
+            .load(std::sync::atomic::Ordering::Relaxed);
+        if fixed != 0 {
+            return std::time::Duration::from_micros(fixed - 1);
+        }
+    }
+    owner.clock_origin.elapsed()
+}
 
 /// This observation grants no custody or input authority. The normal executor rechecks
 /// session, conditions, timing and item custody after the transport's bounded wait.
@@ -122,11 +169,7 @@ pub(super) async fn ordinary_delay(
                 .world_gate
                 .lock()
                 .ok()?
-                .equip_delay(
-                    actor,
-                    6,
-                    owner.clock_origin.elapsed().saturating_sub(queued_for),
-                )
+                .equip_delay(actor, 6, action_now(owner).saturating_sub(queued_for))
                 .unwrap_or_default(),
         );
     }
@@ -144,11 +187,7 @@ pub(super) async fn ordinary_delay(
             .world_gate
             .lock()
             .ok()?
-            .equip_delay(
-                actor,
-                *slot,
-                owner.clock_origin.elapsed().saturating_sub(queued_for),
-            )
+            .equip_delay(actor, *slot, action_now(owner).saturating_sub(queued_for))
             .unwrap_or_default(),
     )
 }
@@ -159,7 +198,12 @@ pub(super) async fn execute(
     command: UseCommand,
     request: Request,
     carried: bool,
+    upgrade_tier: Option<u8>,
 ) -> Option<ItemMoveOutcome> {
+    // Capability 485 requires the carried owner; the direct legacy path has no tier filter.
+    if upgrade_tier.is_some() && !carried {
+        return Some(ItemMoveOutcome::Rejected);
+    }
     // Foundation binds command id, type and payload before this route. Replay must precede
     // lookup: the selected item has already left its original location after a commit.
     match equipment_move::committed_equipment_move(owner, command).await? {
@@ -229,11 +273,22 @@ pub(super) async fn execute(
         return Some(ItemMoveOutcome::Rejected);
     }
     if ammunition {
+        // Ammunition is never classified, so only an unforged tier can name it.
+        if upgrade_tier.is_some_and(|tier| tier != 0) {
+            return Some(ItemMoveOutcome::Stale);
+        }
         return equip_ammunition(owner, actor, command, &definition, carried).await;
     }
     if carried {
-        let outcome =
-            equipment_move::move_hotkey_carried(owner, actor, command, definition, slot).await;
+        let outcome = equipment_move::move_hotkey_carried(
+            owner,
+            actor,
+            command,
+            definition,
+            slot,
+            upgrade_tier,
+        )
+        .await;
         return finish(owner, actor, slot, outcome);
     }
     // A queued command resolves custody after its wait, like the source's rescheduled call.
@@ -392,11 +447,12 @@ fn finish(
 ) -> Option<ItemMoveOutcome> {
     match outcome {
         EquipmentMoveResult::Committed => {
-            owner.states.world_gate.lock().ok()?.equip_committed(
-                actor,
-                slot,
-                owner.clock_origin.elapsed(),
-            );
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_committed(actor, slot, action_now(owner));
             Some(ItemMoveOutcome::Moved)
         }
         EquipmentMoveResult::Refused(refusal) => Some(super::item_move::equipment_outcome(refusal)),
@@ -453,11 +509,12 @@ async fn action_ready(
             {
                 return Some(false);
             }
-            owner.states.world_gate.lock().ok()?.equip_delay(
-                actor,
-                slot,
-                owner.clock_origin.elapsed(),
-            )
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_delay(actor, slot, action_now(owner))
         };
         if !wait_action(slot, delay).await {
             return Some(false);

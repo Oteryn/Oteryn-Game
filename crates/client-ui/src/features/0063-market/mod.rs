@@ -15,4 +15,10 @@ pub use state::{MarketPanel, MarketView};
 pub use view::{coin_panel_text, panel_text, row_text, table_selection, visible_rows};
 
 #[cfg(test)]
+#[path = "tests/e2e_e05.rs"]
+mod e2e_e05;
+#[cfg(test)]
+#[path = "tests/e2e_e06.rs"]
+mod e2e_e06;
+#[cfg(test)]
 mod tests;

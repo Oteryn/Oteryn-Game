@@ -1,0 +1,39 @@
+{
+  "state": "INTRODUCTION_AND_PAID_TOOLS_QUALIFIED_NOT_WHOLE_QUEST",
+  "quest": "oteryn:quest.goblin_merchant_quest",
+  "postgres": "18.6",
+  "red": {
+    "seconds": 65.835904231,
+    "error": "NoConversation on the real Rafzan greeting before the new NPC composition"
+  },
+  "green": {
+    "seconds": 68.51049825,
+    "test": "questpc7_goblin_six_jobs_and_exact_paid_tools",
+    "marker": "QUESTPC7_GOBLIN_INTRO POSTGRES_CASE_COMPLETED success=true"
+  },
+  "proof": [
+    "fresh character: no quest-state or tool seeds",
+    "real NPC wire conversation accepts all six jobs in one7-track receipt",
+    "acceptance gives no free merchant stock",
+    "unpaid bundle refuses without tools or quest receipt",
+    "ordinary currency input only; exact1125gold spent with correct change",
+    "three stackable signs17668 and one each17669/17670/17671/17676",
+    "intro and purchase command replay create no second receipt, fee or tools",
+    "quest remains incomplete"
+  ],
+  "source": {
+    "path": "data-global/npc/rafzan.lua",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "lines": "73-90",
+    "sha256": "9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+  },
+  "checks": {
+    "workspace_all_targets": "PASS4m06s",
+    "fmt": "PASS",
+    "authoring": "3passed9.378s, including donor-price drift rejection",
+    "source_item_probe": "5portable source types admitted through existing qualifier",
+    "generation": "qengine quest producer and register_spell_families repo tools PASS",
+    "world_pin_refresh": "PASS; unchanged digestc8d643dc6f9bf376116595391dfa26a1b23e7965d556830d11126e59b0bff5e9"
+  },
+  "boundary": "Only native introduction/shop mechanism. The six physical jobs, live world NPC placement verification and report/completion remain ACTIVE. Live creature capture remains qengine2-owned."
+}

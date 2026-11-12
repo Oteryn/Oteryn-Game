@@ -66,6 +66,8 @@ pub async fn serve_gameplay(
         imported_charms: owners.imported_charms,
         proficiency_catalogue: weapon_proficiency::ProductionProficiencyCatalogue::embedded(),
         clock_origin: std::time::Instant::now(),
+        #[cfg(test)]
+        test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
             casts,
@@ -129,6 +131,8 @@ pub async fn serve_gameplay(
             .chat
             .install_relay(std::sync::Arc::new(relay));
     }
+    // N009/N014: the Platform stream pullers run until this seam ends; dropping them aborts them.
+    let _platform_streams = platform_stream_pullers(owners.root);
     // Check every initial boss clock before accepting connections; confirmed claims may wait for a free tile.
     let mut boss_timers = std::collections::BTreeMap::new();
     loop {

@@ -1,3 +1,17 @@
+/// Readable item identity; the numeric handle stays an internal wire detail.
+fn item_label(p: &super::ItemForgePanel, handle: u64) -> String {
+    match p.preview.item(handle) {
+        Some(item) => format!(
+            "{} — class {}, tier {} / {}",
+            item.name, item.classification, item.tier, item.maximum_tier
+        ),
+        None if handle != 0 && p.preview.live.iter().any(|e| e.handle.get() == handle) => {
+            "Carried item — name unavailable on this server".into()
+        }
+        None => "No current item selected".into(),
+    }
+}
+
 pub fn panel_text(p: &super::ItemForgePanel) -> String {
     let mut s = lfmt!(
         "Item Forge\nAction: {}\nItem: {} / {}",
@@ -6,8 +20,8 @@ pub fn panel_text(p: &super::ItemForgePanel) -> String {
         } else {
             format!("{:?}", p.operation)
         },
-        p.first_item,
-        p.second_item
+        item_label(p, p.first_item),
+        item_label(p, p.second_item)
     );
     if let Some(reply) = &p.decoded {
         match reply {
@@ -44,17 +58,7 @@ pub fn panel_text(p: &super::ItemForgePanel) -> String {
 }
 
 pub fn selected_pair_text(p: &super::ItemForgePanel) -> String {
-    let item = |handle| {
-        p.preview.item(handle).map_or_else(
-            || "No current item selected".into(),
-            |item| {
-                format!(
-                    "{} — class {}, tier {} / {}",
-                    item.name, item.classification, item.tier, item.maximum_tier
-                )
-            },
-        )
-    };
+    let item = |handle| item_label(p, handle);
     let mut text = format!(
         "Receiver: {}\nSource / tier donor: {}\n",
         item(p.first_item),

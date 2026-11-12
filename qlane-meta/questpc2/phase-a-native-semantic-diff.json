@@ -1,0 +1,21 @@
+{
+  "added": [
+    "oteryn:item.tibia.i1791",
+    "oteryn:item.tibia.i21982",
+    "oteryn:item.tibia.i2436",
+    "oteryn:item.tibia.i2438",
+    "oteryn:item.tibia.i2473",
+    "oteryn:item.tibia.i2474",
+    "oteryn:item.tibia.i2822",
+    "oteryn:item.tibia.i2823",
+    "oteryn:item.tibia.i2848",
+    "oteryn:item.tibia.i6264",
+    "oteryn:item.tibia.i6265"
+  ],
+  "removed": [],
+  "changed": [
+    "oteryn:item.tibia.i3318",
+    "oteryn:item.tibia.i3357",
+    "oteryn:item.tibia.i3370"
+  ]
+}

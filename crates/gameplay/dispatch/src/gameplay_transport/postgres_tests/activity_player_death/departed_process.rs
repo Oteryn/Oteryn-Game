@@ -142,7 +142,7 @@ pub(super) async fn recover(
             .await?
             .is_empty()
     );
-    let child: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+    let child: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM (SELECT item_instance_id,parent_item_instance_id FROM game_item_container_entries UNION ALL SELECT item_instance_id,parent_item_instance_id FROM game_item_nested_entries) edges WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         child.as_slice(),
@@ -328,6 +328,7 @@ async fn snapshot(h: &Harness) -> TestResult<String> {
         'ground',(SELECT jsonb_agg(to_jsonb(g) ORDER BY item_instance_id) FROM game_item_ground_locations g),
         'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i),
         'entries',(SELECT jsonb_agg(to_jsonb(e) ORDER BY item_instance_id) FROM game_item_container_entries e),
+        'nested',(SELECT jsonb_agg(to_jsonb(n) ORDER BY item_instance_id) FROM game_item_nested_entries n),
         'retirement',(SELECT jsonb_agg(to_jsonb(r) ORDER BY item_instance_id) FROM game_item_decay_retire_receipts r),
         'audits',(SELECT jsonb_agg(to_jsonb(a) ORDER BY event_id) FROM game_item_audit_outbox a)
     )::text"#).fetch_one(&h.pool).await?)

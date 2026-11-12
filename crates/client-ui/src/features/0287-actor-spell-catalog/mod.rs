@@ -6,7 +6,7 @@ pub use metadata::{VOCATIONS, professions};
 pub mod protocol;
 mod state;
 mod view;
-pub use input::open_key;
+pub use input::{open_key, toggle_key};
 pub use state::Panel;
 pub use view::{detail_text, panel_text};
 #[cfg(test)]

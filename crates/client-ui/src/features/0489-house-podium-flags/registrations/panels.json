@@ -1,0 +1,7 @@
+{
+  "mechanic": "0489-house-podium-flags",
+  "kind": "panels",
+  "id": "0489-house-podium-flags-panel",
+  "status": "supported",
+  "entry": "protocol.rs::flags_line"
+}

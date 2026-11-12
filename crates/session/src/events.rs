@@ -8,6 +8,8 @@ pub enum SessionEvent {
     CastCasterLine(AppliedDelta<cast_chat::CasterLine>),
     CastRoster(AppliedDelta<cast_chat::Roster>),
     AnalyserFacts(AppliedDelta<Vec<analyser_transport::AnalyserFact>>),
+    /// Domain 15 delta 1 of a session with capability 486: each fact with its optional attacker.
+    AnalyserAttributedFacts(AppliedDelta<Vec<analyser_transport::AttributedFact>>),
     WorldWeather(AppliedDelta<world_weather::WorldWeather>),
     /// Every replaced domain, including those with a typed projection event.
     GatedSnapshotReplaced(AppliedDelta<GatedSnapshot>),
@@ -53,6 +55,9 @@ pub enum SessionEvent {
     ActorCombatState(AppliedDelta<ActorCombatState>),
     /// Domain 12 `CHAT`, delta type 1: one line. [`Session::chat_log`] already holds it.
     ChatLine(AppliedDelta<ChatLine>),
+    /// Domain 12 `CHAT`, delta type 1 under capability 495: a member joined, left or was
+    /// excluded from a private channel. [`ChatLog::channel_notices`] already holds it.
+    ChatNotice(AppliedDelta<chat_extended::ChannelNotice>),
     /// Domain 12 `CHAT`, delta type 2: the open-room set, replaced whole.
     ChatRooms(AppliedDelta<ChatRoomSet>),
     /// Domain 12, capability-80 delta 3: available rooms and private-channel metadata.
@@ -76,7 +81,7 @@ impl SessionEvent {
     pub const fn domain_id(&self) -> u32 {
         match self {
             Self::CastCasterLine(_) | Self::CastRoster(_) => 103,
-            Self::AnalyserFacts(_) => 15,
+            Self::AnalyserFacts(_) | Self::AnalyserAttributedFacts(_) => 15,
             Self::PlayerTrade(_) => player_trade::STATE_DOMAIN_PLAYER_TRADE,
             Self::GatedSnapshotReplaced(snapshot) => snapshot.value.domain_id,
             Self::WorldObjectOverlaySnapshot(_) => 2,
@@ -109,6 +114,7 @@ impl SessionEvent {
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_)
+            | Self::ChatNotice(_)
             | Self::ChatRooms(_)
             | Self::VipPresence(_)
             | Self::PlayerTyping(_) => STATE_DOMAIN_CHAT,

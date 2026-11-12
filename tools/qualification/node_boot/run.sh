@@ -15,13 +15,15 @@ readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
+readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
+readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404)
 # CHAR-NAME-1: bootstrap intent contract version 2 names each Character (naming policy revision 1).
-readonly INTENT_NAMES=("Qualification One" "Qualification Two")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
@@ -29,10 +31,56 @@ readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
-readonly SERVICE_USER=oteryn-node-boot
-readonly BASE=/srv/oteryn-node-boot
+# Local parallel stacks override the service user, base directory, Compose project and
+# ports; CI keeps the defaults. Everything is checked before any sudo or Docker use:
+# cleanup kills the service user's processes and removes BASE as root.
+SERVICE_USER="${NODE_BOOT_SERVICE_USER:-oteryn-node-boot}"
+BASE="${NODE_BOOT_BASE:-/srv/oteryn-node-boot}"
+[[ "$SERVICE_USER" =~ ^oteryn-node-boot(-[a-z0-9]{1,16})?$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_service_user'; exit 2; }
+node_boot_tmp="$(realpath -m -- "${TMPDIR:-/tmp}")"
+if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
+  || ! [[ "$BASE" == /srv/?* || ( "$node_boot_tmp" != / && "$BASE" == "$node_boot_tmp"/?* ) ]]; then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
+fi
+[[ -z "${NODE_BOOT_PROJECT+x}" || "$NODE_BOOT_PROJECT" =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_project'; exit 2; }
+for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT; do
+  [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
+    || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
+done
+readonly SERVICE_USER BASE
+# NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
+# reruns only the seam stage against it, =teardown removes it. Local development only.
+NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
+NODE_BOOT_REUSE_STACK="${NODE_BOOT_REUSE_STACK:-0}"
+case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
+  0/0) ;;
+  1/0|0/1|0/teardown)
+    if [[ "${CI:-}" == true || -n "${GITHUB_ACTIONS:-}" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=stack_reuse_is_local_only'; exit 2
+    fi ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
+esac
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+# The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
+# A fixed repository path prevents an environment variable from sourcing arbitrary code.
+case "${NODE_BOOT_LIFECYCLE:-}" in
+  '') ;;
+  game_platform)
+    # shellcheck source=tools/qualification/game_platform/lifecycle.sh
+    source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
+    game_platform_validate
+    ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=unknown_lifecycle'; exit 2 ;;
+esac
+NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
+NODE_BOOT_TOPOLOGY="$TOPOLOGY_REVISION"
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  # portal-rs pin is owned by game_platform/lifecycle.sh (includes Platform #1833).
+  NODE_BOOT_PLATFORM_PIN="$GAME_PLATFORM_SHA"
+  NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
+fi
+readonly NODE_BOOT_PLATFORM_PIN NODE_BOOT_TOPOLOGY
 export NODE_BOOT_PROFILE="${NODE_BOOT_PROFILE:-sorcerer}"
 case "$NODE_BOOT_PROFILE" in
   explorer|knight|paladin|sorcerer|druid|monk) ;;
@@ -47,10 +95,20 @@ esac
 # Keep every fixture-only transport/door assertion intact in its own disposable pass.
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
-if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
+# A kept or reused stack is one topology, so it never runs the separate basic pass.
+# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
+  && -z "${NODE_BOOT_LIFECYCLE:-}" \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
+BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  # Packet journeys may move, loot or kill their Characters before the required core runs.
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID")
+fi
+readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
@@ -75,11 +133,11 @@ elif [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   NODE_REQUIRED_CAPABILITIES='[]'
 fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
-if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SHA" ]]; then
+if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_PLATFORM_PIN" ]]; then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
 fi
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
   # Execute the existing compile/decode/stage qualification before creating services.
   RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
     bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
@@ -92,7 +150,7 @@ WP5_PKI="$WORK/pki"
 WP5_SCRATCH="$WORK/scratch"
 mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
 WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"
-WP5_PROJECT="nodeboot${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}"
+WP5_PROJECT="${NODE_BOOT_PROJECT:-nodeboot${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}}"
 WP5_DB_PASSWORD="$(openssl rand -hex 24)"
 WP5_DB_ROOT_PASSWORD="$(openssl rand -hex 24)"
 WP5_APP_KEY="base64:$(openssl rand -base64 32 | tr -d '\n')"
@@ -108,12 +166,37 @@ RUNTIME_PASSWORD="$(openssl rand -hex 24)"
 NODE_PID=""
 RUNTIME_DIAGNOSTICS_PID=""
 ACTIVE_STAGE=setup
+# Redacted PostgreSQL samples and stage dumps (pg_observe.py); kept with node.log on failure.
+PG_OBS="$WORK/postgres"
+PG_SAMPLER_PID=""
+STACK_KEPT=0
+REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
+if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
+  rm -rf -- "$WORK"
+  # Owner-only state from the NODE_BOOT_KEEP_STACK run; it holds the disposable stack's secrets.
+  if [[ ! -f "$REUSE_STATE" || -L "$REUSE_STATE" || ! -O "$REUSE_STATE" || "$(stat -c %a "$REUSE_STATE")" != 600 ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_state_missing'; exit 2
+  fi
+  # shellcheck source=/dev/null
+  source "$REUSE_STATE"
+  if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}" ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
+  fi
+  if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
+      || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
+    fi
+    STACK_KEPT=1
+  fi
+fi
 
 result=NODE_BOOT_FAIL
 compose() {
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
     --file "$GAME_SOURCE/$COMPOSE_S3B" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"
 }
+psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
 fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
 stop_runtime_diagnostics() {
@@ -122,6 +205,43 @@ stop_runtime_diagnostics() {
     wait "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
     RUNTIME_DIAGNOSTICS_PID=""
   }
+}
+pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
+start_pg_sampler() {
+  mkdir -p "$PG_OBS"
+  # Start python3 itself in the background, not a subshell running pg_observe:
+  # $! must be the sampler so stop_pg_sampler's SIGTERM reaches it. A shell
+  # wrapper died on SIGTERM and left the sampler polling forever with the run's
+  # stdout open, so the caller's `run.sh | tee` never saw EOF and the step hung
+  # after NODE_BOOT_RESULT until the job timeout. Its stdout is not the run's pipe.
+  python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" sample --out "$PG_OBS/activity.log" \
+    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot \
+    < /dev/null > /dev/null 2>> "$PG_OBS/sampler.err" &
+  PG_SAMPLER_PID=$!
+}
+stop_pg_sampler() {
+  [[ -z "${PG_SAMPLER_PID:-}" ]] || {
+    kill -TERM "$PG_SAMPLER_PID" 2>/dev/null || true
+    wait "$PG_SAMPLER_PID" 2>/dev/null || true
+    PG_SAMPLER_PID=""
+  }
+}
+pg_observability_dump() { # stage exit: statements, lock waits and slow statements of the stage
+  [[ -n "${PG_SAMPLER_PID:-}" ]] || return 0
+  local verbose=()
+  [[ $2 == 0 ]] || verbose=(--verbose)
+  pg_observe dump --stage "$1" --dir "$PG_OBS" --activity "$PG_OBS/activity.log" "${verbose[@]}" || true
+}
+save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
+  local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
+    WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
+    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+  [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
+  ( umask 077
+    { declare -p "${names[@]}"
+      printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+    } > "$REUSE_STATE" )
+  STACK_KEPT=1
 }
 interrupted() {
   result=NODE_BOOT_FAIL
@@ -134,11 +254,21 @@ cleanup() {
   set +e
   # Flush the independent reader before either the server or its private log is removed.
   stop_runtime_diagnostics
-  [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
-  sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
-  compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
-  docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
-  sudo rm -rf "$BASE" || true
+  stop_pg_sampler
+  if [[ ${STACK_KEPT:-0} == 1 ]]; then
+    evidence "stack=kept project=$WP5_PROJECT rerun=NODE_BOOT_REUSE_STACK=1 remove=NODE_BOOT_REUSE_STACK=teardown"
+  else
+    [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
+    sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
+    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+      game_platform_cleanup
+    else
+      compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+    fi
+    docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
+    sudo rm -rf "$BASE" || true
+    [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
+  fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
     if [[ -f "$failed_node_log" ]]; then
@@ -146,9 +276,13 @@ cleanup() {
     elif [[ -f "$node_log" ]]; then
       cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     fi
+    # The basic and World passes share the directory; each keeps its own PostgreSQL record.
+    [[ ! -d "${PG_OBS:-}" ]] || cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world$NODE_BOOT_WORLD-spells$NODE_BOOT_SPELLS"
   fi
-  find "$WORK" -type f -delete 2>/dev/null || true
-  find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
+  if [[ ${STACK_KEPT:-0} != 1 ]]; then
+    find "$WORK" -type f -delete 2>/dev/null || true
+    find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
+  fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
   echo "NODE_BOOT_RESULT=$result"
@@ -157,6 +291,12 @@ cleanup() {
 trap cleanup EXIT
 trap 'interrupted INT 130' INT
 trap 'interrupted TERM 143' TERM
+if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]; then
+  result=NODE_BOOT_TEARDOWN
+  exit 0
+fi
+# A reused stack keeps its provisioning, characters and node: only the seam stage runs again.
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
 
 make_ca() {
   openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
@@ -197,15 +337,17 @@ openssl genpkey -algorithm ed25519 -out "$WP5_PKI/recovery-signing.pem" >/dev/nu
 RECOVERY_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -pubout -outform DER | raw_hex)"
 RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform DER | raw_hex)"
 [[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
-evidence "pins platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION game=$(git rev-parse HEAD)"
+evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY game=$(git rev-parse HEAD)"
 
-# TLS-verified PostgreSQL 18.6 for the Game durability root.
+# TLS-verified PostgreSQL 18.6 for the Game durability root. It always logs lock waits
+# (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
+# and loads pg_stat_statements, so every run carries its own database evidence.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
 docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
-  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key' >/dev/null
+  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
 chmod 600 "$WP5_PKI/db.key"
 # Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
 # and is shut down after init, so a socket probe can pass before the real server is up.
@@ -215,20 +357,28 @@ for _ in $(seq 1 60); do
   sleep 1
 done
 [[ $pg_ready == 1 ]] || fail "postgres_ready"
-psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
+# The view lives in the maintenance database: the Game schema stays exactly as migrated.
+echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 180006 ]] || fail "postgres_version"
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # The Platform topology.
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  game_platform_start
+else
 compose config --quiet
 compose build --pull platform
 compose up --detach --wait db platform nginx
 # Platform output is kept: a failing operator command must be diagnosable.
 php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'")); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
-evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
+fi
+evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
+fi # Platform lifecycle
 
 # The accelerated build is disposable: production binaries omit its file input.
 # Real-clock qualification deliberately builds the ordinary shipping binary.
@@ -444,6 +594,9 @@ start_y = 32238
 start_floor = -7''')
 PY_WORLD
   fi
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+    game_platform_config "$WORK/node.toml"
+  fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 # Root/client writes an atomic offset; the service can only read it. Start at
@@ -455,6 +608,8 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
 fi
+fi # NODE_BOOT_REUSE_STACK == 0
+start_pg_sampler
 
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 start_node() {
@@ -483,6 +638,46 @@ durability_report_lines() {
     -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=holder_usage /DURABILITY_HOLDER_USAGE /' \
     -e 's/^oteryn-game-server ts=[0-9]+ level=(error|warn|info|debug) module=durability event=pass_dropped /DURABILITY_PASS_DROPPED /'
 }
+report_character_authority_failures() {
+  # Startup runs outside the seam monitor. Export only the closed check names
+  # from the current log snapshot, never identifiers, SQL, or stored payloads.
+  python3 - "$node_log" "$1" "$NODE_BOOT_WORLD" <<'PY_CHARACTER_AUTHORITY'
+import os, re, sys
+
+path, stage, world = sys.argv[1:]
+checks = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+          'bazaar', 'revision_chain', 'appearance', 'build_chain',
+          'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+          'spell_item_chain', 'audit_payload'}
+reported = set()
+try:
+    with open(path, 'rb') as stream:
+        remaining = os.fstat(stream.fileno()).st_size
+        oversized = False
+        while remaining > 0 and len(reported) < len(checks):
+            piece = stream.readline(min(4097, remaining))
+            if not piece:
+                break
+            remaining -= len(piece)
+            complete = piece.endswith(b'\n')
+            if oversized or len(piece) > 4096 or not complete:
+                oversized = not complete
+                continue
+            line = piece.decode('utf-8', errors='replace')
+            if not line.startswith('oteryn-game-server '):
+                continue
+            fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+            check = fields.get('stage')
+            if (fields.get('module') == 'durability'
+                    and fields.get('event') == 'character_authority_check_failed'
+                    and check in checks and check not in reported):
+                print(f'NODE_BOOT_CHARACTER_AUTHORITY_CHECK stage={stage} '
+                      f'world_bundle={world} check={check}')
+                reported.add(check)
+except FileNotFoundError:
+    pass
+PY_CHARACTER_AUTHORITY
+}
 start_runtime_diagnostics() {
   # Read the regular file independently: neither a slow log consumer nor a stalled
   # qualification pipeline can hold up the server's stderr. No raw error text is copied.
@@ -500,20 +695,65 @@ signal.signal(signal.SIGINT, stop)
 signal.signal(signal.SIGTERM, stop)
 events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'join_prepare_failed', 'listener_poll_slow', 'listener_connection_poll_slow',
-          'pass_dropped'}
+          'pass_dropped', 'step_rejected_dawnport', 'step_rejected_source_map',
+          'step_rejected_dead', 'step_rejected_lane', 'step_rejected_pvp_locks',
+          'step_rejected_stale_position', 'step_rejected_pending_spell',
+          'step_rejected_drome', 'step_rejected_movement', 'step_rejected_holder_busy',
+          'session_durability_failed', 'logout_unknown', 'logout_busy',
+          'control_loss_reconcile_pending', 'control_loss_result',
+          'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
+          'appearance_initial_failed', 'appearance_observation_failed'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
+    'kind': {'Actor', 'SnapshotMismatch', 'ContextMismatch', 'ScopeMismatch',
+             'CoordinateOverflow', 'Cell', 'Blocked', 'CapacityExceeded', 'NotQualified',
+             'holder_busy', 'storage', 'deadline', 'commit_unknown', 'authority',
+             'invalid_state', 'unavailable', 'unknown', 'recorded', 'resumed_history',
+             'terminal', 'not_applicable', 'refused', 'pending'},
+    'class': {'observation', 'mappings', 'attach', 'encode', 'content', 'fence',
+              'revision', 'state', 'visibility', 'conditions'},
+    'failure_stage': {'account_closure', 'activity_destination', 'activity_loss_session',
+                      'activity_publish', 'activity_return', 'activity_scope',
+                      'activity_successor', 'activity_view', 'actor_unreserved',
+                      'admitted_binding', 'appearance_observation', 'familiar_cast',
+                      'combat_hold', 'condition_save', 'death_save', 'entry', 'familiar_save',
+                      'foreground_demand', 'gourmet_checkpoint', 'hunting_stamina_readback',
+                      'item_effects', 'kill_rewards', 'logout_settle', 'loss_activity_origin',
+                      'loss_readback', 'monk_save', 'native_publication',
+                      'loss_resumed_history', 'loss_session', 'loss_session_time',
+                      'loss_transferred_history', 'native_cast', 'newhaven_travel',
+                      'parameters', 'pending_spell_commit', 'prey_checkpoint_fence',
+                      'prey_checkpoint_session', 'proficiency_character', 'proficiency_fence',
+                      'proficiency_readback', 'proficiency_snapshot', 'pvp_refresh',
+                      'release_attempt', 'release_commit', 'release_fence',
+                      'release_not_applicable', 'release_not_expired', 'release_retry_lifted',
+                      'release_settle',
+                      'resting_stamina_readback', 'retire', 'retire_session',
+                      'spell_reconcile', 'staff_release', 'stamina_character', 'stamina_session',
+                      'terminal_session', 'training_character', 'training_readback',
+                      'training_save', 'training_session', 'wheel_gift', 'world_items',
+                      'zones_after_reconcile', 'zones_before_reconcile',
+                      'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+                      'bazaar', 'revision_chain', 'appearance', 'build_chain',
+                      'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+                      'spell_item_chain', 'audit_payload'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
                'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
              'updates_timeout', 'activity_transfer', 'house_transfer'},
     'guard': {'house_transfer_input', 'activity_transfer_input'},
     'phase': {'activity_scope', 'initial', 'items', 'sessions', 'world',
-              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances'},
+              'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances',
+              'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
+              'serene', 'quest_log', 'chat', 'combat', 'chase', 'target_move', 'npc'},
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
+authority_stages = {'recovery_fence', 'offline_training', 'npc_purchase', 'creation',
+                    'bazaar', 'revision_chain', 'appearance', 'build_chain',
+                    'proficiency_history', 'familiar_chain', 'spell_familiar_group',
+                    'spell_item_chain', 'audit_payload'}
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
            'ms', 'connections', 'lifecycles', 'held_ms'}
 counts = collections.Counter()
@@ -525,6 +765,8 @@ started = time.monotonic()
 def report(line):
     global emitted
     fields = dict(re.findall(r'\b([a-z_]+)=([^\s]+)', line))
+    # Keep the qualification stage and the session failure stage distinct.
+    fields['failure_stage'] = fields.get('stage', '')
     event = fields.get('event') if line.startswith('oteryn-game-server ') else None
     marker = line.split(' ', 1)[0]
     if marker in legacy:
@@ -539,6 +781,8 @@ def report(line):
     for key, allowed in labels.items():
         if fields.get(key) in allowed:
             safe.append((key, fields[key]))
+    if event == 'character_authority_check_failed' and fields.get('stage') in authority_stages:
+        safe.append(('check_stage', fields['stage']))
     for key in ('source', 'caller'):
         value = fields.get(key, '')
         if value in {'maintenance', 'none'} or re.fullmatch(
@@ -550,7 +794,10 @@ def report(line):
     if counts[identity] >= 2:
         return
     # Reserve room for terminal failures even if many different slow callers recur.
-    limit = {'serve_end': 32, 'durability_pass_slow': 16}.get(event, 8)
+    limit = {'serve_end': 32, 'durability_pass_slow': 16,
+             'logout_busy': 16, 'control_loss_reconcile_pending': 16,
+             'control_loss_grace': 16,
+             'character_authority_check_failed': 16}.get(event, 8)
     if event_counts[event] >= limit or emitted >= 128:
         if event not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
@@ -629,11 +876,16 @@ stage() { # name prerequisite... -- function
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
   stop_runtime_diagnostics
+  pg_observability_dump "$name" "$rc"
   set -e
   evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
+      echo "--- session close events behind failed e2e rows"
+      grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
+    fi
   else
     STATUS[$name]="FAIL(exit $rc)"
     # Later probes start new server incarnations and truncate node_log. Preserve
@@ -641,6 +893,7 @@ stage() { # name prerequisite... -- function
     # the qualification failure rather than a subsequent successful shutdown.
     [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
     echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
+    report_character_authority_failures "$name"
     echo "--- session close events"
     grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed)( |$)' "$node_log" 2>/dev/null | tail -n 40 || true
     echo "--- last node events"; durability_report_lines < "$node_log" 2>/dev/null | grep -v 'DURABILITY_' | tail -n 40 || true
@@ -816,7 +1069,7 @@ PY
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name failed=0
-  for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
+  for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
     operation="${INTENT_OPERATIONS[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
@@ -830,7 +1083,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]]
-  evidence "characters=2 source=platform_intents path=control_socket retry=idempotent"
+  evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
 
 seam_stages() { # §4.6 every #823 stage against the node's own port
@@ -844,7 +1097,13 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
   fi
+  # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
+  local knob
+  for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
+    [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
+  done
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
@@ -928,22 +1187,44 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  game_platform_identity
+  exit "$?"
+fi
+
+seam_stage_name=seam_stages
+[[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+  stage "$seam_stage_name" -- seam_stages
+else
 stage operator_setup -- operator_setup
 stage configuration_negatives operator_setup -- configuration_negatives
 stage node_assigned_ready operator_setup -- node_assigned_ready
 stage control_socket_peer node_assigned_ready -- control_socket_peer
 stage character_bootstrap node_assigned_ready -- character_bootstrap
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
-  stage spell_scenarios character_bootstrap -- seam_stages
-else
-  stage seam_stages character_bootstrap -- seam_stages
+stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
 stage restart_without_supersession graceful_shutdown -- restart_without_supersession
 stage superseding_replacement graceful_shutdown -- superseding_replacement
 stage signal_before_ready superseding_replacement -- signal_before_ready
 NODE_PID=""
+elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
+  # The shutdown and restart stages did not run, so this is never a qualification pass.
+  if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+    # The node was started inside a stage subshell; its pid is in $VARS.
+    # shellcheck source=/dev/null
+    NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
+    [[ -z "$NODE_PID" ]] || save_reuse_state
+  fi
+  ORDER+=(stack_kept)
+  STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"
+fi
 
+# The failed rows of this pass, grouped by their first cause, ahead of the stage table.
+python3 "$GAME_SOURCE/tools/qualification/node_boot/failure_summary.py" "$WORK"/stage-*.log \
+  ${GITHUB_STEP_SUMMARY:+--summary "$GITHUB_STEP_SUMMARY"} || true
 echo "NODE_BOOT_STAGES"
 failures=0
 for name in "${ORDER[@]}"; do
@@ -953,6 +1234,10 @@ done
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 if [[ $failures == 0 ]]; then
   result=NODE_BOOT_PASS
+elif [[ $failures == 1 && ${STATUS[stack_kept]:-} == SKIP* ]]; then
+  # Every stage that ran passed and the stack stays up; still not a qualification pass.
+  result=NODE_BOOT_PARTIAL
+  exit 3
 else
   exit 1
 fi

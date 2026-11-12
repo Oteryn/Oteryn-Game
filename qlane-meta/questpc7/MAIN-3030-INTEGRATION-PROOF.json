@@ -1,0 +1,116 @@
+{
+  "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
+  "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+  "unit_baseline": {
+    "log": "/tmp/questpc7-main-3032-unit-final.log",
+    "cases": 3644,
+    "passed": 3633,
+    "failed": 11,
+    "filtered": 1229,
+    "duration_seconds": 1474.984
+  },
+  "postgres_baseline": {
+    "log": "/tmp/questpc7-main-3032-pg-baseline.log",
+    "postgres_version": "18.6",
+    "cases": [
+      {
+        "name": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+        "result": "PASS",
+        "duration_seconds": 96.149345555
+      },
+      {
+        "name": "questpc7_goblin_six_jobs_and_exact_paid_tools",
+        "result": "PASS",
+        "duration_seconds": 104.595595302
+      },
+      {
+        "name": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+        "result": "FAIL",
+        "duration_seconds": 47.98,
+        "error": "InvalidInput"
+      }
+    ]
+  },
+  "compile": {
+    "command": "cargo check --workspace --all-targets",
+    "result": "PASS",
+    "duration": "3m29s",
+    "log": "/tmp/questpc7-collector3030-check-final.log"
+  },
+  "qualification_change": false,
+  "pending": [
+    "unit rerun across all12 changed crates, including binary unit tests",
+    "three focused PostgreSQL cases after repairs"
+  ],
+  "clippy": {
+    "command": "cargo clippy -p oteryn-gameplay-content -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability -p oteryn-gameplay-quests --all-targets -- -D warnings",
+    "result": "PASS",
+    "duration": "6m35s",
+    "log": "/tmp/questpc7-collector3030-clippy.log"
+  },
+  "changed_crates": [
+    "oteryn-game-server",
+    "oteryn-gameplay-combat",
+    "oteryn-gameplay-content",
+    "oteryn-gameplay-dispatch",
+    "oteryn-gameplay-durability",
+    "oteryn-gameplay-entities",
+    "oteryn-gameplay-items",
+    "oteryn-gameplay-npc",
+    "oteryn-gameplay-quests",
+    "oteryn-gameplay-world",
+    "oteryn-gameplay-world-change",
+    "oteryn-world-bundle-compiler"
+  ],
+  "regeneration": {
+    "result": "PASS after refreshing authored prop quest-shard reference through existing producer",
+    "command": "tools/content-migration/regenerate_content.py --resolve --skip-checks; quest authoring tools; qengine_rewards.py; world-bundle-compiler pin-refresh .",
+    "log": "/tmp/questpc7-collector3030-regeneration.log",
+    "pin_retry_log": "/tmp/questpc7-collector3030-pins-final.log",
+    "initial_error": "format: authored quest props: source length or digest",
+    "root_cause": "Quest tree regeneration changed the cited shard digest; regenerate authored props afterward, without hand editing pins."
+  },
+  "fmt": {
+    "result": "PASS",
+    "command": "cargo fmt --all -- --check"
+  },
+  "duplicate_migrations": "PASS",
+  "lane_migrations": [
+    "1280_quest_native_reward_initialization.sql",
+    "1281_quest_corruptor_lifecycle.sql",
+    "1283_quest_viola_rewards.sql",
+    "1286_quest_repeatable_exchanges.sql",
+    "1287_quest_world_item_rewards.sql",
+    "1288_quest_backpack_outputs.sql"
+  ],
+  "python_tests": {
+    "physical_preservation": {
+      "passed": 6,
+      "seconds": 0.003,
+      "log": "/tmp/questpc7-collector3030-physical-final.log"
+    },
+    "goblin_authoring": {
+      "passed": 3,
+      "seconds": 8.779,
+      "log": "/tmp/questpc7-collector3030-goblin-author-final.log"
+    },
+    "rafzan_placement": {
+      "passed": 2,
+      "seconds": 0.28,
+      "log": "/tmp/questpc7-collector3030-placement-final.log"
+    },
+    "itemhold": {
+      "passed": 9,
+      "seconds": 14.588,
+      "log": "/tmp/questpc7-collector3030-itemhold.log"
+    },
+    "source_guard": {
+      "passed": 12,
+      "seconds": 13.698,
+      "log": "/tmp/questpc7-collector3030-source-guard-tests.log"
+    },
+    "completion_and_bindings": "PASS, including6628 exact JSON pointers"
+  },
+  "quest_tree_check": "PASS",
+  "publication_rule": "Owner PREPUSH-2 permits gates1/2/4 publication when unit reruns exceed cadence; no new qualification or green unit/PG rerun claimed."
+}

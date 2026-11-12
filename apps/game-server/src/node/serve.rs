@@ -1283,25 +1283,29 @@ async fn highscores_loop(
     first(job.run(receiver), stop.cancelled()).await;
 }
 
-/// Both futures to completion on this task.
-async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
-    let mut a = pin!(a);
-    let mut b = pin!(b);
-    let (mut a_done, mut b_done) = (false, false);
-    poll_fn(|context| {
-        if !a_done {
-            a_done = a.as_mut().poll(context).is_ready();
-        }
-        if !b_done {
-            b_done = b.as_mut().poll(context).is_ready();
-        }
-        if a_done && b_done {
-            Poll::Ready(())
-        } else {
-            Poll::Pending
-        }
-    })
-    .await;
+/// Both futures to completion on this task, retaining each child's ownership until both end.
+/// Box before constructing the join future: nested joins otherwise embed every child in
+/// each ancestor's state and debug poll temporaries, even when the outer node is boxed.
+fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) -> impl Future<Output = ()> {
+    let mut a = Box::pin(a);
+    let mut b = Box::pin(b);
+    async move {
+        let (mut a_done, mut b_done) = (false, false);
+        poll_fn(|context| {
+            if !a_done {
+                a_done = a.as_mut().poll(context).is_ready();
+            }
+            if !b_done {
+                b_done = b.as_mut().poll(context).is_ready();
+            }
+            if a_done && b_done {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
+    }
 }
 
 /// The Character Authority side of the command consumer: it refreshes the
@@ -2933,41 +2937,7 @@ fn boot_bundle_items(
     channel: ChannelId,
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
-    use crate::content::{ReferenceItemField, ReferenceItemType};
-    let index = gameplay.and_then(|state| state.item_index());
-    let item = |key: &str| {
-        let index = index?;
-        let revision = index.revision(key)?;
-        let reference = index.definition_ref("Item", key, revision)?;
-        let profile = gameplay
-            .and_then(|state| state.item_policy(key, revision))
-            .map(|policy| policy.record());
-        let pickupable = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.physical,
-                ReferenceItemField::Known(physical)
-                    if physical.pickupable == ReferenceItemField::Known(true)
-            )
-        });
-        // MAP-DOOR-1: doorhood is the content profile's `item_type`, never an appearance id.
-        let door = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.classification,
-                ReferenceItemField::Known(classification)
-                    if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-            )
-        });
-        let attributes = profile.map(|profile| &profile.attributes);
-        Some(crate::map::facts::ItemDefinition {
-            reference,
-            solid: attributes.and_then(|attributes| attributes.blocks_movement),
-            blocks_projectile: attributes
-                .and_then(|attributes| attributes.blocks_projectile)
-                .unwrap_or(true),
-            pickupable,
-            door,
-        })
-    };
+    let item = |key: &str| crate::map::boot::native_item_definition(gameplay, key);
     checked
         .boot(world, channel, item)
         .map_err(BootError::WorldBundle)
@@ -3489,7 +3459,9 @@ async fn boot_and_serve(
         quest_log_content: &quest_log_content,
         last_position_flush: Some(&last_position_flush),
     };
-    supervision::supervise(supervision::Serving {
+    // The long-lived supervisor owns its child jobs on the heap. Keep its state out of
+    // the boot future too; boxing only the outer node leaves stacked poll temporaries.
+    Box::pin(supervision::supervise(supervision::Serving {
         listener: &listener,
         control: &control,
         listener_config,
@@ -3503,9 +3475,13 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
-    })
+    }))
     .await
 }
+
+#[cfg(test)]
+#[path = "serve/future_stack_tests.rs"]
+mod future_stack_tests;
 
 #[cfg(test)]
 mod tests {

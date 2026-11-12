@@ -229,12 +229,20 @@ impl SpellRow {
                                     1,
                                     wide("Assign Multiaction").as_ptr(),
                                 );
-                                for (id, label) in [
-                                    (2, "Spell: in facing direction"),
-                                    (3, "Spell: towards cursor"),
-                                    (4, "Spell: at target"),
-                                ] {
-                                    AppendMenuW(menu, MF_STRING, id, wide(label).as_ptr());
+                                AppendMenuW(
+                                    menu,
+                                    MF_STRING | MF_GRAYED,
+                                    0,
+                                    wide(oteryn_client_ui::spell_action_bar::TARGET_OPTIONS_LABEL)
+                                        .as_ptr(),
+                                );
+                                for (id, aim) in (2..).zip(SpellAim::ALL) {
+                                    AppendMenuW(
+                                        menu,
+                                        MF_STRING,
+                                        id,
+                                        wide(aim.option().label()).as_ptr(),
+                                    );
                                 }
                                 let selected = TrackPopupMenu(
                                     menu,
@@ -250,11 +258,7 @@ impl SpellRow {
                                     1 => gestures.push(BarGesture::AssignMultiaction { slot }),
                                     2..=4 => gestures.push(BarGesture::Aim {
                                         slot,
-                                        aim: match selected {
-                                            2 => SpellAim::Facing,
-                                            3 => SpellAim::Cursor,
-                                            _ => SpellAim::Target,
-                                        },
+                                        aim: SpellAim::ALL[selected as usize - 2],
                                     }),
                                     _ => {}
                                 }

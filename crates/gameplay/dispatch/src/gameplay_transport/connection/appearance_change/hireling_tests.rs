@@ -37,6 +37,7 @@ fn observation(
         cosmetics_digest: [2; 32],
     };
     Observation {
+        skipped: Vec::new(),
         catalogue: wire::Catalogue {
             context,
             root_revision: 1,

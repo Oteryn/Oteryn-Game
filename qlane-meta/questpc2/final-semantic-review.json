@@ -1,0 +1,226 @@
+{
+  "native": {
+    "added": [
+      "oteryn:item.tibia.i1631",
+      "oteryn:item.tibia.i1777",
+      "oteryn:item.tibia.i1791",
+      "oteryn:item.tibia.i21982",
+      "oteryn:item.tibia.i2436",
+      "oteryn:item.tibia.i2438",
+      "oteryn:item.tibia.i2473",
+      "oteryn:item.tibia.i2474",
+      "oteryn:item.tibia.i2822",
+      "oteryn:item.tibia.i2823",
+      "oteryn:item.tibia.i2848",
+      "oteryn:item.tibia.i6264",
+      "oteryn:item.tibia.i6265"
+    ],
+    "removed": [],
+    "changed_existing": [
+      "oteryn:item.tibia.i3318",
+      "oteryn:item.tibia.i3357",
+      "oteryn:item.tibia.i3370"
+    ]
+  },
+  "reward_changes_preserving_source": [
+    "oteryn:reward-claim.kv.poisondaggers"
+  ],
+  "map_additions": [
+    {
+      "region": "content/world/placements/region-z07-x127-y125.b3",
+      "x": 32652,
+      "y": 32107,
+      "added": {
+        "unique": 5001
+      }
+    },
+    {
+      "region": "content/world/placements/region-z07-x130-y125.b3",
+      "x": 33327,
+      "y": 32182,
+      "added": {
+        "unique": 6173
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x126-y125.b3",
+      "x": 32448,
+      "y": 32042,
+      "added": {
+        "action": 1035
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x126-y125.b3",
+      "x": 32451,
+      "y": 32048,
+      "added": {
+        "unique": 6132
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x126-y125.b3",
+      "x": 32455,
+      "y": 32048,
+      "added": {
+        "unique": 6133
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x127-y125.b3",
+      "x": 32643,
+      "y": 32128,
+      "added": {
+        "action": 4055
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x127-y125.b3",
+      "x": 32644,
+      "y": 32131,
+      "added": {
+        "unique": 6065
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x128-y126.b3",
+      "x": 32816,
+      "y": 32279,
+      "added": {
+        "unique": 6170
+      }
+    },
+    {
+      "region": "content/world/placements/region-z08-x128-y126.b3",
+      "x": 32814,
+      "y": 32281,
+      "added": {
+        "unique": 6112
+      }
+    },
+    {
+      "region": "content/world/placements/region-z09-x128-y123.b3",
+      "x": 32980,
+      "y": 31727,
+      "added": {
+        "unique": 6020
+      }
+    },
+    {
+      "region": "content/world/placements/region-z09-x128-y123.b3",
+      "x": 32981,
+      "y": 31727,
+      "added": {
+        "unique": 6021
+      }
+    },
+    {
+      "region": "content/world/placements/region-z09-x128-y123.b3",
+      "x": 32985,
+      "y": 31727,
+      "added": {
+        "unique": 6022
+      }
+    },
+    {
+      "region": "content/world/placements/region-z09-x128-y124.b3",
+      "x": 32981,
+      "y": 31760,
+      "added": {
+        "action": 1040
+      }
+    },
+    {
+      "region": "content/world/placements/region-z09-x129-y125.b3",
+      "x": 33089,
+      "y": 32030,
+      "added": {
+        "unique": 6150
+      }
+    },
+    {
+      "region": "content/world/placements/region-z10-x126-y125.b3",
+      "x": 32356,
+      "y": 32074,
+      "added": {
+        "action": 40031
+      }
+    },
+    {
+      "region": "content/world/placements/region-z11-x126-y125.b3",
+      "x": 32353,
+      "y": 32073,
+      "added": {
+        "action": 1040
+      }
+    },
+    {
+      "region": "content/world/placements/region-z11-x129-y124.b3",
+      "x": 33155,
+      "y": 31880,
+      "added": {
+        "unique": 6068
+      }
+    },
+    {
+      "region": "content/world/placements/region-z11-x130-y127.b3",
+      "x": 33444,
+      "y": 32605,
+      "added": {
+        "unique": 6305
+      }
+    },
+    {
+      "region": "content/world/placements/region-z12-x126-y125.b3",
+      "x": 32346,
+      "y": 32063,
+      "added": {
+        "unique": 6135
+      }
+    },
+    {
+      "region": "content/world/placements/region-z15-x126-y123.b3",
+      "x": 32424,
+      "y": 31591,
+      "added": {
+        "unique": 6128
+      }
+    },
+    {
+      "region": "content/world/placements/region-z15-x126-y123.b3",
+      "x": 32427,
+      "y": 31591,
+      "added": {
+        "unique": 6129
+      }
+    },
+    {
+      "region": "content/world/placements/region-z15-x126-y123.b3",
+      "x": 32421,
+      "y": 31594,
+      "added": {
+        "unique": 6130
+      }
+    },
+    {
+      "region": "content/world/placements/region-z15-x129-y123.b3",
+      "x": 33063,
+      "y": 31624,
+      "added": {
+        "unique": 6076
+      }
+    }
+  ],
+  "map_addition_count": 23,
+  "pilgrimage_missing_canonical_service_declarations": [
+    "oteryn:service.blessing.the_spiritual_shielding",
+    "oteryn:service.blessing.the_embrace_of_tibia",
+    "oteryn:service.blessing.the_fire_of_the_suns",
+    "oteryn:service.blessing.the_spark_of_the_phoenix"
+  ],
+  "ledger": {
+    "removed_qualified_claims": 17,
+    "unchanged_remaining_records": 280,
+    "source_claim_conservation": 336
+  }
+}

@@ -146,6 +146,10 @@ pub enum EquipmentIntent {
         #[serde(serialize_with = "serialize_equipment_definition")]
         definition: super::item_mint::TypedDefinitionRef,
         slot: u8,
+        /// Capability 485: the exact stored classification tier. Absent keeps the
+        /// original binding text, so pre-485 receipts replay unchanged.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        upgrade_tier: Option<u8>,
     },
     HotkeyMove {
         item: [u8; 16],
@@ -1549,6 +1553,31 @@ impl DurabilityRoot {
         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
         DurabilityError,
     > {
+        self.commit_hotkey_equipment_tiered(recovery, node, fence, command, content, selection, None)
+            .await
+    }
+
+    /// Capability 485: the carried selection matches definition and exact upgrade tier.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the fenced equipment inputs plus the capability 485 tier"
+    )]
+    pub async fn commit_hotkey_equipment_tiered<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        selection: (super::item_mint::TypedDefinitionRef, u8),
+        upgrade_tier: Option<u8>,
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        if upgrade_tier.is_some_and(|tier| tier > crate::domain::forge::ItemTier::MAX) {
+            return Ok(Err(EquipmentMoveRefusal::Rejected));
+        }
         self.commit_equipment_intent(
             recovery,
             node,
@@ -1558,6 +1587,7 @@ impl DurabilityRoot {
             EquipmentIntent::Hotkey {
                 definition: selection.0,
                 slot: selection.1,
+                upgrade_tier,
             },
         )
         .await
@@ -1637,9 +1667,19 @@ impl DurabilityRoot {
                         .await?;
                         let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
                         let resolved = match &intent {
-                            EquipmentIntent::Hotkey { definition, slot } => {
+                            EquipmentIntent::Hotkey {
+                                definition,
+                                slot,
+                                upgrade_tier,
+                            } => {
                                 hotkey::resolve(
-                                    &mut tx, &authority, &snapshot, content, definition, *slot,
+                                    &mut tx,
+                                    &authority,
+                                    &snapshot,
+                                    content,
+                                    definition,
+                                    *slot,
+                                    *upgrade_tier,
                                 )
                                 .await?
                             }

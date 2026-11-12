@@ -66,9 +66,13 @@ const ROWS: &[Row] = &[
     },
 ];
 
-fn result(row: &Row, seconds: f64, reason: &str) {
+fn result(row: &Row, seconds: f64, reason: &str, cause: &verdict::Cause) {
+    // The first unexecuted action is the root; the starter observation's own
+    // failure, when there is one, is the cause.
+    let first = row.missing.split(',').next().unwrap_or("lifecycle");
+    let suffix = cause.suffix(&format!("{}/{first}", row.id));
     evidence(&format!(
-        "e2e_all scenario={}.full status=FAIL seconds={seconds:.3} evidence=source:{}",
+        "e2e_all scenario={}.full status=FAIL seconds={seconds:.3} evidence=source:{}{suffix}",
         row.id, row.source
     ));
     // Separate detail from the strict report record; never treat these words as checks.
@@ -266,9 +270,9 @@ pub(super) async fn run(
         let before = backpack_inspection(&mut client).await?;
         let session = client.join_snapshot().game_session_id;
         let saved_position = client.world_spatial().actor_position;
-        let logout = client.session_mut().logout().await?;
-        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Err("E2EF3 fresh admission logout refused".into());
+        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("E2EF3 fresh admission logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
         drop(client);
         client = connect_world(clients, 0x79).await?;
@@ -292,6 +296,10 @@ pub(super) async fn run(
         Ok::<_, Box<dyn std::error::Error>>(client)
     }
     .await;
+    let cause = match &observations {
+        Ok(_) => verdict::Cause::Assertion,
+        Err(error) => verdict::classify(error.as_ref()),
+    };
     for row in ROWS {
         if observations.is_ok() && ((row.id == "I08" && primal) || (row.id == "I13" && covet)) {
             evidence(&format!(
@@ -309,6 +317,7 @@ pub(super) async fn run(
             } else {
                 "starter-observation-failed;full-actions-unimplemented"
             },
+            &cause,
         );
     }
     observations

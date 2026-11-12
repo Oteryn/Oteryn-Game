@@ -1,0 +1,7 @@
+{
+  "mechanic": "0496-chat-line-sequence",
+  "kind": "panels",
+  "id": "0496-chat-line-sequence-panel",
+  "status": "supported",
+  "entry": "protocol.rs::new_senders"
+}

@@ -20,6 +20,14 @@ impl Reentry {
         true
     }
 
+    /// Opens a Platform web page in the system browser; `false` without native login.
+    pub fn open_web_link(&self, link: crate::web_links::WebLink) -> bool {
+        self.client
+            .native_login
+            .as_ref()
+            .is_some_and(|config| crate::web_links::open(config, link))
+    }
+
     pub fn native_sign_out(&mut self) {
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();

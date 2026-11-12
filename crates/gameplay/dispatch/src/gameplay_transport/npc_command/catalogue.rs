@@ -76,7 +76,7 @@ pub(super) fn prepare(
     let tracks = {
         let sessions = admission.states.quest_sessions.lock().ok()?;
         let copy = sessions.get(&command.game_session_id)?.copy.as_ref()?;
-        let mut tracks = copy.tracks().clone();
+        let mut tracks = copy.read_tracks(catalogue)?;
         for (quest, state) in copy.states() {
             if let Some(defaults) = oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
                 catalogue,
@@ -155,7 +155,8 @@ pub(super) fn prepare(
         npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
-    if plan.track_changes.is_empty()
+    let has_track_mutation = super::catalogue_track_mutation::has_mutation(&plan);
+    if !has_track_mutation
         && plan
             .effects
             .iter()
@@ -163,7 +164,7 @@ pub(super) fn prepare(
     {
         return Some(Step::Refused);
     }
-    if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
+    if !has_track_mutation && request.npc != "oteryn:npc.pemaret" {
         let end = plan
             .effects
             .iter()
@@ -414,6 +415,7 @@ pub(super) async fn apply(
                 },
             )
             .with_wheel(admission.premium_coordinator),
+            &admission.premium_coordinator,
         )
         .await;
     drop(slot);

@@ -25,13 +25,23 @@ fn classic_quests_npc_commands_commit_exact_start_branches_and_fence_topics() ->
         eprintln!("CLASSIC_QUESTS_NPC_POSTGRES_SKIPPED no_admin_url");
         return Ok(());
     }
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("classic-quests-npc", || {
         super::quest_world_callbacks::scenario(
             "classic-quests-npc",
-            Position { x: 33294, y: 31677, floor: -15 },
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
             false,
         )
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED classic_quests_npc_commands_commit_exact_start_branches_and_fence_topics {:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 pub(super) async fn install<const N: usize>(
@@ -39,100 +49,257 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    install_with_positions(owner, admitted, keys, None).await
+}
+
+pub(super) async fn install_positions<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: [Position; N],
+) -> TestResult<[EntityRef; N]> {
+    install_with_positions(owner, admitted, keys, Some(positions)).await
+}
+
+async fn install_with_positions<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    positions: Option<[Position; N]>,
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-        std::ffi::OsStr::new("world"), npc_catalogue_preproduction_limits(),
-    ).map_err(debug)?;
+        std::ffi::OsStr::new("world"),
+        npc_catalogue_preproduction_limits(),
+    )
+    .map_err(debug)?;
     let model = catalogue.service_model_for_project().map_err(debug)?;
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model_with_native_quests(&model, &keys)));
-    owner.states.chat.admit(admitted.game_session_id, "Quest witness", owner.owner_now());
+    let source =
+        oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
+    let native_npcs = source
+        .programs()
+        .iter()
+        .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+        .chain(std::iter::once("oteryn:npc.viola"))
+        .chain(keys.iter().copied())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    owner.states.chat.install_npc_talk(std::sync::Arc::new(
+        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
+    ));
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Quest witness", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "fence")?.ok_or("fence")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
     let mut runtime = owner.runtime.lock().await;
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    runtime.bind_attacker_lease(actor, admitted.game_session_id,
-        crate::foundation::CharacterLease::new(
-            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-            fence.character_lease_generation,
-        ).map_err(debug)?).map_err(debug)?;
-    let at = runtime.read_actor_position(actor).map_err(debug)?.position();
-    let mut placements = keys.into_iter().enumerate().map(|(i,key)| {
-            Ok(NpcPlacements { key: key.into(), placements: vec![NpcPlacement {
-                x: u16::try_from(at.x + i32::try_from(i)?)?,
-                y: u16::try_from(at.y + 1)?,
-                floor: -i8::try_from(at.floor)?,
-                direction: MovementFacing::South,
-            }]})
-        }).collect::<TestResult<Vec<_>>>()?;
+    runtime
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let at = runtime
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let mut placements = keys
+        .into_iter()
+        .enumerate()
+        .map(|(i, key)| {
+            let p = if let Some(positions) = positions.as_ref() {
+                positions[i]
+            } else {
+                Position {
+                    x: u16::try_from(
+                        at.x + if N > 5 {
+                            i32::try_from(i % 5)? - 2
+                        } else {
+                            i32::try_from(i)?
+                        },
+                    )?,
+                    y: u16::try_from(at.y + if N > 5 { 1 + i32::try_from(i / 5)? } else { 1 })?,
+                    floor: -i8::try_from(at.floor)?,
+                }
+            };
+            Ok(NpcPlacements {
+                key: key.into(),
+                placements: vec![NpcPlacement {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor,
+                    direction: MovementFacing::South,
+                }],
+            })
+        })
+        .collect::<TestResult<Vec<_>>>()?;
     placements.sort_by(|left, right| left.key.cmp(&right.key));
-    runtime.place_npcs(&NpcPlacementTable {
-        npcs: placements,
-    }, |_| true, true).map_err(debug)?;
+    runtime
+        .place_npcs(&NpcPlacementTable { npcs: placements }, |_| true, true)
+        .map_err(debug)?;
     let mut found = Vec::new();
     for key in keys {
-        found.push(runtime.visible_entities().npcs.into_iter().find_map(|npc| {
-            (runtime.npc_key(npc.actor) == Some(key)).then_some(EntityRef {
-                identity: npc.actor.placement_identity(), generation: npc.generation,
-            })
-        }).ok_or("placed source NPC")?);
+        found.push(
+            runtime
+                .visible_entities()
+                .npcs
+                .into_iter()
+                .find_map(|npc| {
+                    (runtime.npc_key(npc.actor) == Some(key)).then_some(EntityRef {
+                        identity: npc.actor.placement_identity(),
+                        generation: npc.generation,
+                    })
+                })
+                .ok_or("placed source NPC")?,
+        );
     }
     found.try_into().map_err(|_| "exact NPC refs".into())
 }
 
 pub(super) async fn talk(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
-    npc: EntityRef, command_id: u64, text: &str,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    npc: EntityRef,
+    command_id: u64,
+    text: &str,
 ) -> TestResult<Vec<String>> {
-    owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "fence")?.ok_or("fence")?;
-    let result = owner.npc_talk(admitted.runtime_actor.ok_or("actor")?, UseCommand {
-        game_session_id: admitted.game_session_id, command_id, item_fence: Some(fence.item_fence()),
-    }, NpcTalkIntent { npc_actor: npc, text: text.into() }).await;
-    assert_eq!(result.disposition, NpcIntentDisposition::Ok, "{command_id}: {text}");
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let result = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: text.into(),
+            },
+        )
+        .await;
+    assert_eq!(
+        result.disposition,
+        NpcIntentDisposition::Ok,
+        "{command_id}: {text}"
+    );
     assert!(!result.unknown);
     Ok(result.conversation.map(|c| c.lines).unwrap_or_default())
 }
 
 pub(super) async fn progress(
-    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
-    authority: &ReconciledCharacterAuthority<'_, '_>, track: &str,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    track: &str,
 ) -> TestResult<i64> {
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "fence")?.ok_or("fence")?;
-    let copy = owner.root.read_character_quest_state(authority, fence.character_id).await.map_err(debug)?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let copy = owner
+        .root
+        .read_character_quest_state(authority, fence.character_id)
+        .await
+        .map_err(debug)?;
     Ok(copy.tracks().get(track).copied().unwrap_or(0))
 }
 
 pub(super) async fn exercise(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
-    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    let [morris,woblin,jerom,queen] = install(owner, admitted, [MORRIS,WOBLIN,JEROM,QUEEN]).await?;
+    let [morris, woblin, jerom, queen] =
+        install(owner, admitted, [MORRIS, WOBLIN, JEROM, QUEEN]).await?;
     talk(owner, admitted, morris, 1200, "hi").await?;
     talk(owner, admitted, morris, 1201, "yes").await?;
-    assert_eq!(progress(owner, admitted, authority, &format!("{DAWN}the_lost_amulet")).await?, 0);
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            &format!("{DAWN}the_lost_amulet")
+        )
+        .await?,
+        0
+    );
     let offer = talk(owner, admitted, morris, 1202, "amulet").await?;
-    assert!(offer.iter().any(|line| line.contains("ancient amulet")));
+    assert!(
+        !offer.iter().any(|line| line.contains("ancient amulet")),
+        "Dawnport offer is excluded"
+    );
     let accepted = talk(owner, admitted, morris, 1203, "yes").await?;
-    assert!(accepted.iter().any(|line| line.contains("Dormovo alive")));
-    assert_eq!(progress(owner, admitted, authority, &format!("{DAWN}the_lost_amulet")).await?, 1);
+    assert!(
+        !accepted.iter().any(|line| line.contains("Dormovo alive")),
+        "Dawnport confirmation is excluded"
+    );
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            &format!("{DAWN}the_lost_amulet")
+        )
+        .await?,
+        0
+    );
     talk(owner, admitted, morris, 1204, "yes").await?;
     talk(owner, admitted, morris, 1205, "herbs").await?;
     let herbs = talk(owner, admitted, morris, 1206, "yes").await?;
-    assert_eq!(herbs.len(), 2, "both literal donor reply parts must be retained");
-    assert!(herbs[1].contains("light grey-brown sand"));
-    assert_eq!(progress(owner, admitted, authority, &format!("{DAWN}the_rare_herb")).await?, 1);
-    assert_eq!(progress(owner, admitted, authority, &format!("{DAWN}herb_flower")).await?, 1);
+    assert!(
+        !herbs
+            .iter()
+            .any(|line| line.contains("light grey-brown sand")),
+        "Dawnport herbs are excluded"
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{DAWN}the_rare_herb")).await?,
+        0
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{DAWN}herb_flower")).await?,
+        0
+    );
     talk(owner, admitted, morris, 1207, "key").await?;
     talk(owner, admitted, morris, 1208, "yes").await?;
-    assert_eq!(progress(owner, admitted, authority, &format!("{DAWN}the_dorm_key")).await?, 1);
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{DAWN}the_dorm_key")).await?,
+        0
+    );
     talk(owner, admitted, woblin, 1209, "hi").await?;
     let fish = talk(owner, admitted, woblin, 1210, "precious reward").await?;
-    assert_eq!(fish.len(), 2, "Woblin has consecutive source ifs");
-    assert!(fish[1].contains("Old Nasty"));
-    assert_eq!(progress(owner, admitted, authority, &format!("{DAWN}the_dorm_key")).await?, 2);
+    assert!(
+        !fish.iter().any(|line| line.contains("Old Nasty")),
+        "Dawnport Woblin transition is excluded"
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{DAWN}the_dorm_key")).await?,
+        0
+    );
     // An offer made to Morris is not a Jerom confirmation.
     talk(owner, admitted, morris, 1211, "hi").await?;
     talk(owner, admitted, morris, 1212, "log book").await?;
@@ -147,10 +314,17 @@ pub(super) async fn exercise(
     talk(owner, admitted, queen, 1218, "hi").await?;
     talk(owner, admitted, queen, 1219, "seventh seal").await?;
     let refused = talk(owner, admitted, queen, 1220, "yes").await?;
-    assert!(refused.iter().any(|line| line.contains("not passed the seal of sacrifice")));
+    assert!(
+        refused
+            .iter()
+            .any(|line| line.contains("not passed the seal of sacrifice"))
+    );
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key LIKE 'oteryn:quest-transition/classic/%'")
         .fetch_one(&h.pool).await?;
-    assert_eq!(receipts, 5, "five mutations, never a receipt for static answers or repeated yes");
+    assert_eq!(
+        receipts, 1,
+        "only Jerom mutates; excluded Dawnport commands and repeated yes write no receipts"
+    );
     Ok(())
 }
 
@@ -162,26 +336,43 @@ fn classic_rottin_disrepair_commits_three_flags_only_after_the_source_offer() ->
     }
     super::kill_reward_e2e::scenario_thread::run("classic-rottin", || {
         super::quest_world_callbacks::scenario(
-            "classic-rottin-disrepair", Position { x: 33294, y: 31677, floor: -15 }, false,
+            "classic-rottin-disrepair",
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
         )
     })
 }
 
 pub(super) async fn exercise_rottin(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
-    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
-    use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
     use crate::foundation::{CommandId, CommandRef};
-    const TRACK: &str = "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/";
+    const TRACK: &str =
+        "oteryn:quest-progress/crystalserver/quest/u8_7/rottin_wood_and_the_married_men/";
     let [rottin] = install(owner, admitted, [ROTTIN]).await?;
     talk(owner, admitted, rottin, 1700, "hi").await?;
     talk(owner, admitted, rottin, 1701, "yes").await?;
-    assert_eq!(progress(owner, admitted, authority, &format!("{TRACK}questline")).await?, 0);
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{TRACK}questline")).await?,
+        0
+    );
     // Establish only the test's prior completed mission through its existing
     // source transition; this is not a production path around the deferred hand-in.
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "fence")?.ok_or("fence")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let result = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
         QuestTransitionRequest {
@@ -190,15 +381,36 @@ pub(super) async fn exercise_rottin(
         }, owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone()).await.map_err(debug)?;
     assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
     drop(slot);
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let offered = talk(owner, admitted, rottin, 1703, "mission").await?;
     assert_eq!(offered.len(), 5);
     assert!(offered[1].contains("deer stands"));
     let accepted = talk(owner, admitted, rottin, 1704, "yes").await?;
-    assert!(accepted.iter().any(|line| line.contains("it was not made by us")));
-    assert_eq!(progress(owner, admitted, authority, &format!("{TRACK}questline")).await?, 3);
-    assert_eq!(progress(owner, admitted, authority, &format!("{TRACK}mission02")).await?, 1);
-    assert_eq!(progress(owner, admitted, authority, "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount").await?, 0);
+    assert!(
+        accepted
+            .iter()
+            .any(|line| line.contains("it was not made by us"))
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{TRACK}questline")).await?,
+        3
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{TRACK}mission02")).await?,
+        1
+    );
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/crystalserver/kv/rottinwood-wallcount"
+        )
+        .await?,
+        0
+    );
     talk(owner, admitted, rottin, 1705, "yes").await?;
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/classic/rottin-wood/start-disrepair'")
         .fetch_one(&h.pool).await?;
@@ -206,17 +418,41 @@ pub(super) async fn exercise_rottin(
     // The donor refuses an incomplete repair without changing state or money.
     // A completed repair's combined reward remains deferred to its shared owner.
     talk(owner, admitted, rottin, 1706, "mission").await?;
-    owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "fence")?.ok_or("fence")?;
-    let refused = owner.npc_talk(admitted.runtime_actor.ok_or("actor")?, UseCommand {
-        game_session_id: admitted.game_session_id, command_id: 1707, item_fence: Some(fence.item_fence()),
-    }, NpcTalkIntent { npc_actor: rottin, text: "yes".into() }).await;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let refused = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 1707,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: rottin,
+                text: "yes".into(),
+            },
+        )
+        .await;
     assert_eq!(refused.disposition, NpcIntentDisposition::Ok);
     assert!(!refused.inventory_changed);
-    assert!(refused.conversation.is_some_and(|reply|
-        reply.lines.iter().any(|line| line.contains("walls haven't been repaired"))));
-    assert_eq!(progress(owner, admitted, authority, &format!("{TRACK}questline")).await?, 3);
+    assert!(refused.conversation.is_some_and(|reply| {
+        reply
+            .lines
+            .iter()
+            .any(|line| line.contains("walls haven't been repaired"))
+    }));
+    assert_eq!(
+        progress(owner, admitted, authority, &format!("{TRACK}questline")).await?,
+        3
+    );
     Ok(())
 }
 
@@ -228,10 +464,22 @@ fn classic_draconia_real_levers_open_and_restore_the_source_obstacles() -> TestR
     }
     super::kill_reward_e2e::scenario_thread::run("classic-draconia", || {
         super::quest_world_callbacks::scenario(
-            "draconia-lever-30006", Position { x: 32792, y: 31595, floor: -7 }, false,
+            "draconia-lever-30006",
+            Position {
+                x: 32792,
+                y: 31595,
+                floor: -7,
+            },
+            false,
         )?;
         super::quest_world_callbacks::scenario(
-            "draconia-lever-30035", Position { x: 32792, y: 31579, floor: -7 }, false,
+            "draconia-lever-30035",
+            Position {
+                x: 32792,
+                y: 31579,
+                floor: -7,
+            },
+            false,
         )
     })
 }
@@ -244,10 +492,38 @@ fn classic_world_steps_use_source_teleports_and_commit_seal_flags_atomically() -
     }
     super::kill_reward_e2e::scenario_thread::run("classic-steps", || {
         for (name, trigger) in [
-            ("outlaw-camp-entrance", Position { x: 32619, y: 32248, floor: -6 }),
-            ("banshees-first-seal-return", Position { x: 32266, y: 31885, floor: -12 }),
-            ("banshees-second-seal", Position { x: 32171, y: 31853, floor: -15 }),
-            ("banshees-final-battle-exit", Position { x: 32219, y: 31913, floor: -15 }),
+            (
+                "outlaw-camp-entrance",
+                Position {
+                    x: 32619,
+                    y: 32248,
+                    floor: -6,
+                },
+            ),
+            (
+                "banshees-first-seal-return",
+                Position {
+                    x: 32266,
+                    y: 31885,
+                    floor: -12,
+                },
+            ),
+            (
+                "banshees-second-seal",
+                Position {
+                    x: 32171,
+                    y: 31853,
+                    floor: -15,
+                },
+            ),
+            (
+                "banshees-final-battle-exit",
+                Position {
+                    x: 32219,
+                    y: 31913,
+                    floor: -15,
+                },
+            ),
         ] {
             super::quest_world_callbacks::scenario(name, trigger, false)?;
         }
@@ -255,23 +531,40 @@ fn classic_world_steps_use_source_teleports_and_commit_seal_flags_atomically() -
     })
 }
 
-#[allow(clippy::too_many_arguments, reason = "existing callback fixture owner and source binding")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing callback fixture owner and source binding"
+)]
 pub(super) async fn exercise_step(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
-    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
     world: &crate::map::boot::BundleWorld,
     callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
-    trigger: Position, origin: crate::foundation::MovementLocalPosition,
+    trigger: Position,
+    origin: crate::foundation::MovementLocalPosition,
 ) -> TestResult {
     let step = oteryn_protocol_oteryn::world_spatial::encode_step_intent(
         oteryn_protocol_oteryn::world_spatial::StepDirection::East,
     );
     super::quest_world_callbacks::wire(owner, admitted, 1, 1, step.clone()).await?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
-        super::quest_world_callbacks::local(callback.teleport.ok_or("teleport")?));
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks::local(callback.teleport.ok_or("teleport")?)
+    );
     for effect in &callback.storage {
-        assert_eq!(progress(owner, admitted, authority, &effect.track).await?, effect.set);
+        assert_eq!(
+            progress(owner, admitted, authority, &effect.track).await?,
+            effect.set
+        );
     }
     if callback.key.ends_with("banshees-second-seal") {
         {
@@ -279,21 +572,50 @@ pub(super) async fn exercise_step(
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             let doors = crate::map::floor::BundleDoors(world.facts().doors());
             let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
-                &runtime, owner.movement_cells(), actor, admitted.game_session_id,
-                expected, origin, false, &doors,
+                &runtime,
+                owner.movement_cells(),
+                actor,
+                admitted.game_session_id,
+                expected,
+                origin,
+                false,
+                &doors,
                 None,
-            ).map_err(debug)?;
+            )
+            .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;
         }
-        owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
         super::quest_world_callbacks::wire(owner, admitted, 2, 1, step).await?;
-        assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), origin,
-            "a completed Second Seal must return to the previous tile");
-        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1")
-            .bind(&callback.key).fetch_one(&h.pool).await?;
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            origin,
+            "a completed Second Seal must return to the previous tile"
+        );
+        let receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+        )
+        .bind(&callback.key)
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(receipts, 1);
     }
-    let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1).ok_or("source key")?;
-    assert!(world.facts().quest_callback_matches(key, callback.selector.unique, callback.selector.action, callback.selector.appearance));
+    let key = oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)
+        .ok_or("source key")?;
+    assert!(world.facts().quest_callback_matches(
+        key,
+        callback.selector.unique,
+        callback.selector.action,
+        callback.selector.appearance
+    ));
     Ok(())
 }

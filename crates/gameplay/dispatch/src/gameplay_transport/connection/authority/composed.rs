@@ -8,6 +8,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn client_bulletin(&self) -> Option<String> {
         self.states.bulletin_source.as_ref()?.load().await
     }
+    fn step_wait_receipts(&self) -> bool {
+        #[cfg(test)]
+        if let Some(enabled) = self.test_step_wait_receipts {
+            return enabled;
+        }
+        crate::gameplay_transport::world_spatial::step_wait_receipts_enabled()
+    }
+
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
@@ -323,6 +331,37 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
     ) -> Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList> {
         self.private_channel_list(admitted).await
+    }
+
+    async fn chat_channel_list_extended_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> (
+        Option<(
+            oteryn_protocol_oteryn::chat::private_channel::ChatChannelList,
+            oteryn_protocol_oteryn::chat::private_channel_extended::ChannelListExtension,
+        )>,
+        Vec<oteryn_protocol_oteryn::chat::line_extended::ChannelNotice>,
+    ) {
+        self.private_channel_list_extended(admitted).await
+    }
+
+    async fn chat_private_echo(
+        &self,
+        admitted: AdmittedSession,
+        recipient_name: String,
+        text: String,
+    ) {
+        self.states
+            .chat
+            .push_private_echo(admitted.game_session_id, &recipient_name, &text);
+    }
+
+    async fn chat_private_echo_next(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho> {
+        self.states.chat.next_private_echo(admitted.game_session_id)
     }
 
     async fn chat_private_intent(
@@ -796,6 +835,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => MovementFacing::East,
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
+            // TURN keeps its existing cardinal-only contract.
+            _ => return false,
         };
         movement.commit_turn(expected, facing).is_ok()
     }
@@ -1028,6 +1069,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return self
                 .use_house_event_item(actor, command, &intent, source)
                 .await;
+        }
+        if let Some(outcome) = self
+            .use_bundle_dropdown(
+                actor,
+                command,
+                None,
+                source.filter(|_| {
+                    intent.use_with.is_none()
+                        && intent.use_with_map_item.is_none()
+                        && intent.use_with_position.is_none()
+                }),
+            )
+            .await
+        {
+            return Ok(Some(outcome));
         }
         if let Some(outcome) = self
             .use_reward_bag_intent(actor, command, &intent, source)

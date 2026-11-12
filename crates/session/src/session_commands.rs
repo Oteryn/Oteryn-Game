@@ -41,6 +41,13 @@ impl<S: SessionStream> Session<S> {
     /// decodes its `CommandResult` and, when it `Moved`, the one `WORLD_SPATIAL` delta.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, SessionError> {
         self.ensure_usable()?;
+        if direction.is_diagonal()
+            && !self.is_selected(world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1)
+        {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+            });
+        }
         let payload = world_spatial::encode_step_intent(direction);
         let outcome = self.exchange_step(&payload).await;
         self.poison_on_error(outcome)
@@ -164,6 +171,39 @@ impl<S: SessionStream> Session<S> {
             target,
             aim_at_target,
         });
+        let outcome = self.exchange_cast(&payload).await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Capability 480 `SPELL_AIM_MODE_V1`: the cast intent with field 5 `aim_mode`. FACING and
+    /// TARGET go with the `NONE` target, CURSOR with the tile under the cursor; `aim_at_target`
+    /// stays false. Refused before anything is sent when 480 is not selected.
+    pub async fn cast_spell_aimed(
+        &mut self,
+        spell: NonZeroU32,
+        aim: AimedTarget,
+    ) -> Result<CastOutcome, SessionError> {
+        self.ensure_usable()?;
+        if !self.is_selected(actor_spell::CAPABILITY_SPELL_AIM_MODE_V1) {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: actor_spell::CAPABILITY_SPELL_AIM_MODE_V1,
+            });
+        }
+        let (aim_mode, target) = match aim {
+            AimedTarget::Facing => (SpellAimMode::Facing, SpellTarget::None),
+            AimedTarget::Cursor(position) => {
+                (SpellAimMode::Cursor, SpellTarget::Position(position))
+            }
+            AimedTarget::Target => (SpellAimMode::Target, SpellTarget::None),
+        };
+        let payload = actor_spell::encode_aimed_spell_cast_intent(&AimedSpellCastIntent {
+            intent: SpellCastIntent {
+                spell,
+                target,
+                aim_at_target: false,
+            },
+            aim_mode: Some(aim_mode),
+        })?;
         let outcome = self.exchange_cast(&payload).await;
         self.poison_on_error(outcome)
     }

@@ -2,7 +2,7 @@
 // Win32 controls require FFI, confined to this feature's native adapter.
 #![allow(unsafe_code)]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::daily_boost::panel_text;
+use oteryn_client_ui::daily_boost::{panel_text, xp_boost_lines};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -73,7 +73,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         let Some(shared) = weak.upgrade() else {
                             break;
                         };
-                        let text = panel_text(&lock(&shared).daily_boost);
+                        let text = {
+                            let mailbox = lock(&shared);
+                            let mut text = panel_text(&mailbox.daily_boost);
+                            let potions = &mailbox.potion_durations;
+                            if let (Some(snapshot), Some(at)) =
+                                (&potions.snapshot, potions.received_at)
+                            {
+                                let elapsed =
+                                    u64::try_from(at.elapsed().as_millis()).unwrap_or(u64::MAX);
+                                text.push_str(&xp_boost_lines(&snapshot.active, elapsed));
+                            }
+                            text
+                        };
                         if text != previous {
                             SetWindowTextW(label, wide(&text).as_ptr());
                             previous = text;

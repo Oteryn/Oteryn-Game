@@ -83,13 +83,21 @@ pub(super) fn meaningful(
         target_move, task_board, timed_item, vip,
     };
     match command.command_type {
-        1 => oteryn_protocol_oteryn::world_spatial::decode_step_intent(command.payload).is_ok(),
+        1 => oteryn_protocol_oteryn::world_spatial::decode_step_intent_selected(
+            selected,
+            command.payload,
+        )
+        .is_ok(),
         2 => oteryn_protocol_oteryn::world_object::decode_use_intent_target(
             selected,
             command.payload,
         )
         .is_ok(),
-        3 => super::decode_spell_cast_intent(command.payload).is_ok(),
+        3 => oteryn_protocol_oteryn::actor_spell::decode_spell_cast_intent_selected(
+            selected,
+            command.payload,
+        )
+        .is_ok(),
         7 => oteryn_protocol_oteryn::npc_service::decode_npc_talk_intent(command.payload).is_ok(),
         8 => oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent(command.payload).is_ok(),
         13 => chat::decode_chat_intent(command.payload).is_ok_and(|intent| {

@@ -38,9 +38,24 @@ Write it as one self-contained file. Include, in this order:
    only when the packet gives a database route (a PC lane's own database);
    otherwise a non-PostgreSQL test, with the PostgreSQL case run by the
    coordinator.
-7. **Report:** at most 15 lines: result, head SHA or diff name, commands run
+7. **Review:** for a Claude lane or child session that owns its branch,
+   "you run the Codex review of your head and fix confirmed findings
+   (`oteryn-review` §5 and its `references/batch-review.md`: parallel lens runs,
+   every finding with no cap, pattern sweep, one batch fix)"; for a Codex lane, "no review, the coordinator
+   reviews".
+8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
-   what is still PARTIAL.
+   what is still PARTIAL, and the line `Codex review <head SHA>: ...`.
+   A Codex Cloud task's final message cannot be read back, so its packet
+   also says: "As the last step, write `.codex-status` at the repository
+   root: line 1 is the `OTERYN_SETUP` line from
+   `/workspace/oteryn-env/logs/setup-status` (or `OTERYN_SETUP MISSING`), line 2 is
+   `RESULT DONE|PARTIAL|BLOCKED <one-line reason>`, line 3 the success
+   check with pass/fail counts." The PC collector `cxstat.sh` reads that
+   file from the diff into `codex-status.txt`; the coordinator deletes it
+   before committing. A task with status `error` and no diff died before
+   any work (setup, network or capacity) and is relaunched from the same
+   packet.
 
 Keep the packet short and decided: write it for an engineer who has never
 seen the repository, so it names the files, the function and type names, the
@@ -49,9 +64,25 @@ what any competent engineer would choose the same way. Point at repository
 files (`AGENTS.md`, task card, README of a directory) instead of pasting them.
 State what to do rather than what to avoid; a prohibition belongs only in the
 limits below. Send Codex work to Codex Cloud with model
-`gpt-6.1-sol` at reasoning effort `high` (owner decision 2026-11-05) and
-start each packet with "Reasoning effort: high."; repository subagents use
-the model and effort set in their own `.claude/agents/*.md` definition.
+`gpt-6.1-sol` at reasoning effort `medium` and start each packet with
+"Reasoning effort: medium."; a Codex lane on the PC that writes code uses the
+same setting. Codex review runs `gpt-6.1-sol` at reasoning effort `high`
+(`oteryn-review`); its verified findings are fixed by a separate `medium`
+run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision 2026-11-11, replacing the 2026-11-05
+`high` for code-writing Codex. Repository subagents use the model and effort
+set in their own `.claude/agents/*.md` definition.
+
+Submit a Codex Cloud task with `scripts/codex-cloud.mjs` (2026-11-12: the old
+`codex cloud exec --env "Oteryn/Oteryn-Game"` route answers "environment not
+found"). It needs an existing `codex login` and the environment variable
+`OTERYN_CODEX_ENV_CONFIG_ID` (set in the cloud environment; ask the
+coordinator if it is missing). It reads the login file itself; never open that
+file. Commands: `node .claude/skills/oteryn-waves/scripts/codex-cloud.mjs`
+`check` (environment ready), `submit --prompt-file <packet> --branch <ref>
+--title <tag>` (prints the thread id), `poll <thread>`, `status <thread>`,
+`send <thread> --prompt-file <follow-up>`, `list`. It calls the desktop
+client's internal RPC, not an official API: if it fails, report the error
+verbatim and do not retry a submit blindly.
 
 ## Limits to paste into every packet
 

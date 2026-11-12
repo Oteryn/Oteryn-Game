@@ -92,6 +92,7 @@ This is the complete FND-04 integration catalogue. Component-owned progression/r
 | `ADMISSION_INCUMBENT_PROTECTED` | `CONFLICT` | `TERMINAL` | new attempt only after incumbent eligibility changes; same grant never becomes takeover | `NO_AUTHORITY_MUTATION` | `CHARACTER_ALREADY_ACTIVE` | `fresh admission blocked by current character authority` | incumbent-state class |
 | `ADMISSION_CAPABILITY_REQUIRED` | `UNSUPPORTED_REVISION` | `TERMINAL` | a client build supporting the channel's required capabilities; a new grant (ADMIT-0, pending on acceptance) | `NO_AUTHORITY_MUTATION` | `CLIENT_UPDATE_REQUIRED` | `fresh admission requires a gameplay capability the client lacks` | missing registered capability ids |
 | `ADMISSION_CAPACITY_EXCEEDED` | `CAPACITY_EXCEEDED` | `RETRYABLE` | bounded backoff; same unconsumed grant only on same current route while valid | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` | `fresh admission capacity unavailable` | capacity/world/channel/route class |
+| `SESSION_JOIN_UNAVAILABLE` (1051) | `INTERNAL_UNAVAILABLE` | `RETRYABLE` | new connection: same-session reconnect, recovery or fresh admission as current state permits; written once at the admitted generation after an admitted or resumed session's join could not be prepared or sent, then the transport closes (owner 2026-11-10) | `COMMITTED_OR_RECONCILE_REQUIRED` | `TEMPORARILY_UNAVAILABLE` | `session join is temporarily unavailable` | connection trace + server `join_prepare_failed` / `resume_bootstrap_failed` phase |
 
 ### 4.2 Same-GameSession reconnect
 

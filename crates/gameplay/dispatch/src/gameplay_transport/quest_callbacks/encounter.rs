@@ -52,7 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Occupied;
         }
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let mut players = Vec::new();
         let mut proofs = Vec::new();
         for member in &encounter.players {

@@ -1,4 +1,5 @@
-//! One Inbox mint for selected consumables/exercise weapons and the existing temple scroll.
+//! One Inbox mint for the daily temple scroll. Winter Update 2026 retired the item picker,
+//! so no selected consumable or exercise weapon is minted (migration 1711 keeps history).
 use super::{
     DurabilityError,
     character_inbox::*,
@@ -7,38 +8,21 @@ use super::{
     item_mint_audit::Type2Transaction,
     item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass},
 };
-use oteryn_protocol_oteryn::daily_reward::picker::Claim;
 pub(super) async fn mint(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     day: u8,
     temple: u8,
-    selection: Option<&Claim>,
 ) -> Result<Option<String>, DurabilityError> {
-    let mut lines = Vec::new();
-    if temple > 0 {
-        lines.push((25718, u32::from(temple), false));
-    }
-    if let Some(selection) = selection {
-        for pick in &selection.picks {
-            let exercise = (day - 1) % 7 + 1 == 6;
-            if exercise {
-                for _ in 0..pick.count {
-                    lines.push((pick.item, 1, true));
-                }
-            } else {
-                lines.push((pick.item, u32::from(pick.count), false));
-            }
-        }
-    }
-    if lines.is_empty() {
+    if temple == 0 {
         return Ok(None);
     }
+    let lines = [(25718_u32, u32::from(temple))];
     let mut ids = Vec::new();
     let mut strings = Vec::new();
     let mut outputs = Vec::new();
-    for (line, (source, quantity, exercise)) in lines.iter().enumerate() {
+    for (line, (source, quantity)) in lines.iter().enumerate() {
         let text: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
             .fetch_one(&mut ***tx)
             .await?;
@@ -53,13 +37,7 @@ pub(super) async fn mint(
                     production_key: format!("oteryn:item.tibia.i{source}"),
                     revision_ref: "definition-r1".into(),
                 },
-                stack: if *exercise || *source == 25718 {
-                    ItemStackClass::NonStackable
-                } else {
-                    ItemStackClass::Stackable {
-                        proven_maximum: Some(100),
-                    }
-                },
+                stack: ItemStackClass::NonStackable,
                 container_capacity: None,
                 container_slot_equip_pattern: false,
             },
@@ -108,16 +86,8 @@ pub(super) async fn mint(
         RewardClaimInboxError::Unavailable(e) => e,
         _ => DurabilityError::InvalidStoredState,
     })?;
-    for (index, (item, (source, quantity, exercise))) in strings.iter().zip(&lines).enumerate() {
+    for item in &strings {
         sqlx::query("INSERT INTO public.game_item_bindings(item_instance_id,world_id,character_id,cause) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD')").bind(item).bind(world_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
-        if temple > 0 && index == 0 {
-            continue;
-        }
-        sqlx::query("INSERT INTO public.game_daily_reward_picks(claim_id,line,item_instance_id,source_id,quantity,charges) VALUES(encode($1,'hex')::uuid,$2,$3::uuid,$4,$5,$6)").bind(request.transaction_id.as_slice()).bind(index as i16).bind(item).bind(i64::from(*source)).bind(*quantity as i16).bind(if *exercise {Some(50i16)}else{None}).execute(&mut ***tx).await?;
     }
-    Ok(if temple > 0 {
-        strings.first().cloned()
-    } else {
-        None
-    })
+    Ok(strings.first().cloned())
 }

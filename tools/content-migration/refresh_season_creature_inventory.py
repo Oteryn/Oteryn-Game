@@ -12,6 +12,44 @@ from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def validate_inventory(root, rows, native, schedules):
+    """Retain main's exact cohort while qualifying the branch's one Thaian."""
+    from questpc7_thaian_authoring import PACKET
+    packet, _ = cake.read_canonical(root / PACKET)
+    if packet['source']['page_id'] != 48123 or packet['source']['revision'] != 445240:
+        raise ValueError('Thaian source authoring revision')
+    profiles = {row['target']['family']: row for row in packet['profiles']}
+    records = {row['identity']['family']: row for row in packet['records']}
+    authoring = profiles['Creature']['data']
+    canonical_authoring = {**authoring, 'profile': dict(authoring['profile'])}
+    # The native World writer omits an empty immunity list. The successor still
+    # requires its explicit reference_level and every other pinned source field.
+    if canonical_authoring['profile'].get('immunities') == []:
+        del canonical_authoring['profile']['immunities']
+    key = 'oteryn:creature.thaian'
+    canonical = [row for row in rows if row['definition']['identity']['key'] == key]
+    active = [row for row in native if row['profile']['target']['key'] == key]
+    if (len(canonical) != 1 or len(active) != 1
+            or canonical[0]['definition'] != records['Creature']
+            or canonical[0]['authoring'] not in (authoring, canonical_authoring)
+            or active[0]['profile'] != profiles['Creature']
+            or active[0]['behavior'] != profiles['Behavior']):
+        raise ValueError('Thaian source authoring closure')
+    behavior = active[0]['behavior']['data']['profile']
+    attacks = behavior.get('attacks', [])
+    if len(attacks) != 1 or behavior.get('defenses', []):
+        raise ValueError('Thaian exact melee schedule')
+    ability = [row for row in active[0]['attack_definitions']['profiles']
+               if row['target'] == attacks[0]['ability']]
+    if len(ability) != 1 or ability[0]['data']['profile']['details']['kind'] != 'Melee':
+        raise ValueError('Thaian exact melee ability')
+    # Only the independently qualified Thaian is outside main's Cake cohort.
+    # Any other Creature or schedule addition still fails this closed guard.
+    if len(rows) - 1 != 1863 + 1 or len(native) != len(rows) or schedules - 1 != 7201 + 4:
+        raise ValueError('Non-seasonal canonical inventory changed; review its source first')
+    return 1
+
+
 def generated(root):
     read = lambda path: json.loads((root / path).read_bytes())
     index = read('content/creatures/definitions/index.json')
@@ -36,8 +74,7 @@ def generated(root):
         raise ValueError('Cake source schedule inventory')
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
-    if len(rows) != 1863 + 1 or len(native) != len(rows) or schedules != 7201 + 4:
-        raise ValueError('Non-seasonal canonical inventory changed; review its source first')
+    thaian_melee = validate_inventory(root, rows, native, schedules)
     result = {}
 
     def replace(path, pattern, replacement):
@@ -56,7 +93,7 @@ def generated(root):
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1})')
+            f'("melee:Ok(())", {1689 + 1 + thaian_melee})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
             f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1})')
     if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:

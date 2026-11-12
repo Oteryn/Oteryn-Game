@@ -224,6 +224,11 @@ impl ApplicationHandler for Application {
         {
             play.link.window_toggle(id, &events);
         }
+        if let Some(link) = self.settings.take_web_link()
+            && let Some(entry) = &self.entry
+        {
+            entry.open_web_link(link);
+        }
         if self.settings.take_native_sign_out() {
             if let Some(entry) = &mut self.entry {
                 entry.native_sign_out();

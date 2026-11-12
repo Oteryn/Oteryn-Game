@@ -80,19 +80,20 @@ impl Outbox {
     }
     pub(super) fn hud_stamina_result(&self, result: &oteryn_session::GatedCommandResult) {
         use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, apply_result};
+        let mut mailbox = lock(&self.0);
         let mut panel = CyclopediaCharacterPanel {
             selected: true,
             pending: true,
             command_kind: stamina_command().kind,
             requested_tab: Some(oteryn_session::cyclopedia_character::CharacterTab::GeneralStats),
             limit: 1,
+            extensions: mailbox.cyclopedia_character.extensions,
             ..Default::default()
         };
         let stamina = apply_result(&mut panel, result)
             .then_some(panel.general)
             .flatten()
             .map(|stats| stats.stamina_minutes);
-        let mut mailbox = lock(&self.0);
         mailbox.hud_resource.pending = false;
         mailbox.hud_resource.stamina = stamina;
     }

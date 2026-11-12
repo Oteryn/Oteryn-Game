@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--lib",
+    "questpc7_formorgar_hoist",
+    "--",
+    "--nocapture"
+  ],
+  "exit_code": 101,
+  "seconds": 155.69,
+  "log": ".questpc7/hoist-green-pg.log"
+}

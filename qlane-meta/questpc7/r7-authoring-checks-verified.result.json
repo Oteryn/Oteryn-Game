@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/quest-authoring/run_checks.py --part checks",
+  "exit": 0,
+  "duration_seconds": 202.971
+}

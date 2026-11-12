@@ -191,6 +191,9 @@ pub mod analyser;
 pub mod attack;
 /// Session-owned combat command vocabulary and routing.
 pub mod combat;
+#[cfg(test)]
+#[path = "features/0287-actor-spell-catalog/tests/e2e_c14.rs"]
+mod e2e_c14;
 /// Quest log state and selected-capability command construction.
 #[path = "features/0016-quest-log/mod.rs"]
 pub mod quest_log;
@@ -245,7 +248,7 @@ pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
     arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
-    cyclopedia_tracker, weapon_proficiency,
+    cyclopedia_tracker, sanction_record, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]
@@ -254,6 +257,9 @@ pub mod prey;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+#[cfg(test)]
+#[path = "features/0064-target-move/tests/e2e_m01.rs"]
+mod e2e_m01;
 /// Server target-cell walking through the admitted session.
 #[path = "features/0064-target-move/protocol.rs"]
 pub mod target_move;

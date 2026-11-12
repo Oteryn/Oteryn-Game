@@ -1,0 +1,198 @@
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+index fce8950fc..38a732d09 100644
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+@@ -93,6 +93,8 @@ pub struct PendingKillSettlement {
+     pub facts: ProjectedCreatureDeathFacts,
+     pub creature: String,
+     pub row: Option<Arc<CreatureRewardRow>>,
++    /// Source-qualified encounter XP retained without granting corpse/loot admission.
++    pub(super) encounter_experience: Option<oteryn_simulation_determinism::ExactI64>,
+     pub bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
+     pub(super) boss_slot_bonuses: Arc<OnceLock<BossSlotBonuses>>,
+     pub ground: DeathGroundContext,
+@@ -138,7 +140,22 @@ pub(super) struct CapturedActivityDeath {
+     pub(super) died_at_unix_ms: i64,
+ }
+
++/// Closed native progression consumers. Missing loot never admits arbitrary XP.
++pub(super) fn tracks_native_progression(creature: &str) -> bool {
++    oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(creature).is_some()
++        || oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::from_creature_key(creature)
++            .is_some()
++        || creature == "oteryn:creature.the_primal_menace"
++}
++
+ impl PendingKillSettlement {
++    pub(super) fn base_experience(&self) -> Option<i64> {
++        self.row
++            .as_ref()
++            .map(|row| row.xp_amount.get())
++            .or_else(|| self.encounter_experience.map(|amount| amount.get()))
++    }
++
+     #[cfg(test)]
+     pub(super) fn captured_talisman(
+         &self,
+@@ -178,6 +195,7 @@ impl PendingKillSettlement {
+             facts,
+             creature,
+             row: None,
++            encounter_experience: None,
+             bosstiary_only,
+             boss_slot_bonuses: Arc::new(OnceLock::new()),
+             ground,
+@@ -1406,6 +1424,7 @@ pub fn record_creature_kill(
+                             facts,
+                             creature,
+                             row: None,
++                            encounter_experience: None,
+                             bosstiary_only: None,
+                             boss_slot_bonuses: Arc::new(OnceLock::new()),
+                             ground,
+@@ -1447,6 +1466,42 @@ pub fn record_creature_kill(
+                 )
+             };
+             let mut entry = entry;
++            // Keep source-qualified quest XP independent of ordinary corpse/loot
++            // admission. The same native death, bounded frozen census and atomic
++            // party XP writer own its eventual progression; no synthetic reward row.
++            if top.present().is_some() && tracks_native_progression(&creature) {
++                let Some(amount) = source
++                    .and_then(|facts| facts.experience)
++                    .and_then(|amount| i64::try_from(amount).ok())
++                else {
++                    refuse("encounter_experience_unavailable", &creature);
++                    return;
++                };
++                let amount = if daily_boost
++                    .as_ref()
++                    .is_some_and(|choice| choice.creature == creature)
++                {
++                    let Some(amount) = amount.checked_mul(2) else {
++                        return;
++                    };
++                    amount
++                } else {
++                    amount
++                };
++                let Ok(activity) = super::party_xp::capture_activity_at_death(
++                    runtime,
++                    principal.character,
++                    &damage_shares,
++                    sink.activity,
++                ) else {
++                    refuse("activity_census_unavailable", &creature);
++                    return;
++                };
++                entry.encounter_experience =
++                    Some(oteryn_simulation_determinism::ExactI64::new(amount));
++                entry.activity_at_death = activity;
++                entry.damage_shares = damage_shares;
++            }
+             // Only the actual lethal producer supplies the retained Instance clock.
+             entry.activity_death = activity_death;
+             refuse(reason.as_str(), &creature);
+@@ -1750,6 +1805,7 @@ pub fn record_creature_kill(
+         facts,
+         creature,
+         row: Some(row),
++        encounter_experience: None,
+         bosstiary_only: None,
+         boss_slot_bonuses: Arc::new(OnceLock::new()),
+         ground,
+@@ -2359,6 +2415,30 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
+     }
+ }
+ impl DurableKillSettle<'_, '_, '_, '_> {
++    async fn modified_experience(
++        &self,
++        entry: &PendingKillSettlement,
++        base: i64,
++    ) -> oteryn_simulation_determinism::ExactI64 {
++        let admission = self.admission;
++        let masteries = admission
++            .root
++            .read_animus_masteries(admission.character, self.fence.character_id)
++            .await
++            .unwrap_or_default();
++        let mastered = masteries.iter().any(|key| key == &entry.creature);
++        let base_xp = u64::try_from(base).unwrap_or(0);
++        let animus_xp = animus_mastery_experience(base_xp, masteries.len(), mastered);
++        // W05d: the scheduled event experience rate (Crystal `player.lua:428-429`) applies to the
++        // kill's experience before the party split, so solo and party kills both carry it.
++        let event_rates = self.event_rates;
++        let event_xp = oteryn_gameplay_foundation::scheduled_events::scale_gain(
++            animus_xp,
++            event_rates.experience,
++        );
++        oteryn_simulation_determinism::ExactI64::new(i64::try_from(event_xp).unwrap_or(i64::MAX))
++    }
++
+     /// W22c: the corpse owner's live Wealth Duplex rolls the creature's base loot once more,
+     /// without Gut (Crystal ff7ede59 `ondroploot_wealth_duplex.lua:61-63`, `gut = false`). The
+     /// extra MINTs are reserved first; `false` waits for scope room. A roll that cannot fit even
+@@ -2436,6 +2516,27 @@ impl DurableKillSettle<'_, '_, '_, '_> {
+                 no_progression: false,
+             };
+         }
++        if let Some(experience) = entry.encounter_experience {
++            let Some(permit) = admission.spell_lane_permit().await else {
++                return SettleReport {
++                    verdict: SettleVerdict::Retry,
++                    no_progression: false,
++                };
++            };
++            let mut captured = entry.clone();
++            captured.encounter_experience =
++                Some(self.modified_experience(entry, experience.get()).await);
++            match admission.settle_party_experience(&permit, &captured).await {
++                Ok(_) => {}
++                Err(error) => {
++                    operator_event(&format!("encounter_progression_deferred reason={error:?}"));
++                    return SettleReport {
++                        verdict: SettleVerdict::Retry,
++                        no_progression: false,
++                    };
++                }
++            }
++        }
+         if let Some(boss) = &entry.bosstiary_only {
+             let Some(_permit) = admission.spell_lane_permit().await else {
+                 return SettleReport {
+@@ -2678,24 +2779,8 @@ impl DurableKillSettle<'_, '_, '_, '_> {
+                 no_progression: false,
+             };
+         };
+-        let masteries = admission
+-            .root
+-            .read_animus_masteries(admission.character, self.fence.character_id)
+-            .await
+-            .unwrap_or_default();
+-        let mastered = masteries.iter().any(|key| key == &entry.creature);
+-        let base_xp = u64::try_from(row.xp_amount.get()).unwrap_or(0);
+-        let animus_xp = animus_mastery_experience(base_xp, masteries.len(), mastered);
+-        // W05d: the scheduled event experience rate (Crystal `player.lua:428-429`) applies to the
+-        // kill's experience before the party split, so solo and party kills both carry it.
+-        let event_rates = self.event_rates;
+-        let event_xp = oteryn_gameplay_foundation::scheduled_events::scale_gain(
+-            animus_xp,
+-            event_rates.experience,
+-        );
+-        Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(
+-            i64::try_from(event_xp).unwrap_or(i64::MAX),
+-        );
++        Arc::make_mut(&mut row).xp_amount =
++            self.modified_experience(&entry, row.xp_amount.get()).await;
+         entry.row = Some(Arc::clone(&row));
+         let party = if admission
+             .progression_binding(self.fence.game_session_id)
+@@ -2784,7 +2869,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
+         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+         // SV09: two full rolls for Double Loot; Reward System loot is excluded.
+         if entry.boss_reward.is_none() {
+-            apply_scheduled_loot_rate(&mut loot_table, event_rates.loot);
++            apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
+         }
+         if !loot_table.entries.is_empty() {
+             let Ok(active) = admission

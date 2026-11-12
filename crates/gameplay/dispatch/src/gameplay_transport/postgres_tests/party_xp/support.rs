@@ -29,7 +29,7 @@ pub(super) async fn join_two<A: std::future::Future, B: std::future::Future>(
     .await
 }
 
-pub(super) async fn initialize_build(
+pub(in crate::gameplay_transport) async fn initialize_build(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
     vocation: &str,
@@ -67,7 +67,9 @@ pub(super) async fn initialize_build(
         .await
         .map_err(debug)?;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
-        include_bytes!("../../../../../../../tools/content-schema/native-gameplay/build-training.json"),
+        include_bytes!(
+            "../../../../../../../tools/content-schema/native-gameplay/build-training.json"
+        ),
         "content-1",
     )
     .map_err(debug)?;

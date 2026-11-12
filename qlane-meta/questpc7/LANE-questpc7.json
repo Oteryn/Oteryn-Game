@@ -1,0 +1,475 @@
+{
+  "lane": "questpc7",
+  "branch": "claude/happy-davinci-ijz3wy-questpc7-n3",
+  "source_ledger": "qlane-meta/questpc7/QUEST-STATUS.json",
+  "ownership_rule": "Retain original25 ledger titles except exact owning entries in another lane LANE-*.json on origin claude/happy-davinci-ijz3wy-quest* branches. Nested citations alone are not treated as ownership.",
+  "entries": [
+    {
+      "title": "Exchange Quests",
+      "canonical": "oteryn:quest.friends_and_traders",
+      "status": "QUALIFIED"
+    },
+    {
+      "title": "Hidden Threats Quest",
+      "canonical": "oteryn:quest.hidden_threats_quest",
+      "status": "QUALIFIED"
+    },
+    {
+      "title": "Hot Cuisine Quest",
+      "canonical": "oteryn:quest.hot_cuisine_quest",
+      "status": "WAITING-ENGINE"
+    },
+    {
+      "title": "Hunting for Tokens Quest",
+      "canonical": "oteryn:quest.hunting_for_tokens",
+      "status": "QUALIFIED"
+    }
+  ],
+  "count": 4,
+  "counts": {
+    "QUALIFIED": 3,
+    "WAITING-ENGINE": 1,
+    "SKIPPED_OTHER_LANE": 21
+  },
+  "skipped": [
+    {
+      "title": "Feaster of Souls Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Ferumbras' Ascension Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Festive Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Fiend Slayer Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Fire-Fighter Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Forgotten Knowledge Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc2"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questpc2",
+          "sha": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+          "packet": "qlane-meta/questpc2/LANE-L3.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Formal Dress Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Formorgar Mines Hoist Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc5"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc5",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/questpc5/LANE-L5.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Formorgar Mines Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Giant Smithhammer Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc8"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc8",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questpc8",
+          "sha": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e",
+          "packet": "qlane-meta/questpc8/LANE-L7.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Glooth Engineer Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Goblin Merchant Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc2"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questpc2",
+          "sha": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+          "packet": "qlane-meta/questpc2/LANE-L3.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Golden Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Grave Danger Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Grimvale Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc2"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questpc2",
+          "sha": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+          "packet": "qlane-meta/questpc2/LANE-L3.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Hand of the Inquisition Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Heart of Destruction Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc2"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questpc2",
+          "sha": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+          "packet": "qlane-meta/questpc2/LANE-L3.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Hero of Rathleton Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc2"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questpc2",
+          "sha": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+          "packet": "qlane-meta/questpc2/LANE-L3.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Hunter Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    },
+    {
+      "title": "Hydra Egg Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "questpc4"
+      ],
+      "evidence": [
+        {
+          "lane": "questpc4",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2b",
+          "sha": "be6626b49508c33b062c097480ed173472a8bdba",
+          "packet": "qlane-meta/questpc4/LANE-L6.json",
+          "status": "QUALIFIED"
+        }
+      ]
+    },
+    {
+      "title": "Illuminated Warrior Outfits Quest",
+      "reason": "Other lane LANE entry claims this title; owner2026-11-08 ANY-claim exclusion overrides prior25-title scope",
+      "owners": [
+        "qengine2"
+      ],
+      "evidence": [
+        {
+          "lane": "qengine2",
+          "branch": "origin/claude/happy-davinci-ijz3wy-questl2",
+          "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+          "packet": "qlane-meta/qengine2/LANE-L1.json",
+          "status": "BLOCKED"
+        }
+      ]
+    }
+  ],
+  "checked_branches": [
+    {
+      "sha": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questl2"
+    },
+    {
+      "sha": "2927da8aa2b4c72c271e7d2d5594fea833a2aa8d",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questl2-wip"
+    },
+    {
+      "sha": "be6626b49508c33b062c097480ed173472a8bdba",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questl2b"
+    },
+    {
+      "sha": "6c09e0365110db6683f938dd08d5d584744cbf37",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc"
+    },
+    {
+      "sha": "2806d1b2cce855d7ed4bd28e01ddcb1e1020acac",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc-pc2"
+    },
+    {
+      "sha": "f85f43ab49366eda609337ec2800d3911ea4dfae",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc-snap"
+    },
+    {
+      "sha": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc-wip"
+    },
+    {
+      "sha": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc2"
+    },
+    {
+      "sha": "c913a88349317056cf8f2db83e52a0911200ce53",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc2-wip"
+    },
+    {
+      "sha": "5dd600a26f00530797109358ea7bbbdcfdcca333",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc2b"
+    },
+    {
+      "sha": "09c26dcee6ca67f43b89bee6523e011f4f466c03",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc3"
+    },
+    {
+      "sha": "968f6812010e719d91316f92eedb5732841283fd",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc3-wip"
+    },
+    {
+      "sha": "27d2708c3a71858ab3838f5d28d9101db2932f24",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc3b"
+    },
+    {
+      "sha": "30e0b2af23a01fae1d932395b13d1c2365b65662",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc4-wip"
+    },
+    {
+      "sha": "9ee8b80795135a87841ea835cb426cd08ab23c66",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc4b"
+    },
+    {
+      "sha": "5afd5b5e58484dc749e7b28c9479561f8882fe1b",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc5"
+    },
+    {
+      "sha": "be670b5c145bd14882926e917299b4bd35c480b3",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc5-wip"
+    },
+    {
+      "sha": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc6"
+    },
+    {
+      "sha": "db355fae2d4900be2728eca6d645f72376134b5a",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc6-wip"
+    },
+    {
+      "sha": "5c39e6be3c934499b27ff01f6c3cc63b8af46581",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc7"
+    },
+    {
+      "sha": "06c1349463051f39823a8f8e5d8b4326c120f868",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc7-wip"
+    },
+    {
+      "sha": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc8"
+    },
+    {
+      "sha": "4bc2bdb420845626d23c958205fb97bd823ac590",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc8-wip"
+    },
+    {
+      "sha": "2170910e2af7f0293aee022b15b3633a17dce31e",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questpc8b"
+    },
+    {
+      "sha": "19126b2482effd4f6529016234659e95341793ac",
+      "branch": "refs/heads/claude/happy-davinci-ijz3wy-questwip"
+    }
+  ],
+  "continuation_decision": "n3 retains/reuses the previous tested lane history and merges current origin/main; earlier branch is frozen and receives no further pushes."
+}
