@@ -3192,11 +3192,28 @@ async fn reconcile_already_carried_death_tree(
     .bind(items[1].as_slice())
     .fetch_one(&h.pool)
     .await?;
+    // Migration0531 already stopped trusting a direct edge's historical
+    // Character annotation: this child's parent is no longer a MAIN slot.
+    assert_eq!(old_owner, None, "legacy child has no current MAIN owner");
+    let historical_edge: (String, String) = sqlx::query_as(
+        "SELECT character_id::text,parent_item_instance_id::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+    ).bind(items[1].as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
-        old_owner,
-        Some(uuid_text(id(
-            crate::item_transfer_postgres_cases::CHARACTER
-        )))
+        historical_edge,
+        (
+            uuid_text(id(crate::item_transfer_postgres_cases::CHARACTER)),
+            uuid_text(items[0]),
+        )
+    );
+    let current_root_owner: (Option<String>, Option<i32>) = sqlx::query_as(
+        "SELECT owner_character::text,depth FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+    )
+    .bind(items[0].as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        current_root_owner,
+        (Some(uuid_text(*f.character_id.as_bytes())), Some(1))
     );
     // Recovery-only views remain read-only, even though this old representation
     // cannot yet show a dropped root's direct entries as a nested container.

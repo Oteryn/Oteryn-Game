@@ -3079,10 +3079,15 @@ async fn drive_player_field(
                 .find(|(_, held, _)| *held == creator_session)
                 .map(|(actor, _, _)| *actor)
                 .ok_or("creator")?;
-            let current = FreshAdmissionStore::from_root(harness.root.clone())
-                .current_session_at(
-                    crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?,
-                )
+            // This driver shares the nonblocking holder with the live server.
+            // Reuse the existing bounded read retry; ambiguous/storage outcomes
+            // still propagate, and every attempt resolves current source facts.
+            let current = crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(owner.root)?
+                .retry_durability("field_runes_current_source", async || {
+                    FreshAdmissionStore::from_root(harness.root.clone())
+                        .current_session_at(creator_session)
+                        .await
+                })
                 .await?
                 .0;
             let controller = crate::gameplay_transport::connection::ControllerBinding {

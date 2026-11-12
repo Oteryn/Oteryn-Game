@@ -286,12 +286,20 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 .bind(id(72).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
         }
-        if !matches!(case, Case::Empty) && !case.keg() {
-            let subtype = if matches!(case, Case::Milk) {
-                9_i16
-            } else {
-                1_i16
-            };
+        // Filled fluid vessels and charge-bearing dispensers are distinct
+        // durable item states. Use the exact fixture seed for the wire subtype.
+        let initial_fluid = match case {
+            Case::Water | Case::Full => Some(1_i16),
+            Case::Milk => Some(9_i16),
+            Case::Empty | Case::Keg | Case::KegLast | Case::KegMove | Case::KegFull
+            | Case::GroundFull | Case::Ground | Case::GroundLast | Case::Nested
+            | Case::NestedLast => None,
+        };
+        let snapshot_subtype = match initial_fluid {
+            Some(fluid) => u32::try_from(fluid)?,
+            None => 0,
+        };
+        if let Some(subtype) = initial_fluid {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role = replica")
                 .execute(&mut *tx)
@@ -299,6 +307,11 @@ fn scenario(case: Case, name: &str) -> TestResult {
             sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,game_character_uuid_v7())")
                 .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(subtype).execute(&mut *tx).await?;
             tx.commit().await?;
+        }
+        if case.keg() {
+            let fluid_rows: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(fluid_rows,0,"charge-bearing dispenser has no filled-fluid subtype row");
         }
         let initial_instances: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances")
             .fetch_one(&harness.pool)
@@ -331,7 +344,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             &payload,
             reference(flour),
             reference(vessel),
-            reference(vessel).map(|definition| (definition, if matches!(case,Case::Empty) {0} else if matches!(case,Case::Milk) {9} else {1})),
+            reference(vessel).map(|definition| (definition, snapshot_subtype)),
         )
         .await? };
 
@@ -627,7 +640,7 @@ async fn exchange_carried(
                         if let Some((definition, subtype)) = expected_fluid {
                             let entry = inventory.entries.iter().find(|entry| entry.item_definition_ref==definition)
                                 .ok_or("snapshot filled vessel")?;
-                            assert_eq!(entry.sub_type,subtype,"actual native join/resume snapshot retains filled-fluid metadata");
+                            assert_eq!(entry.sub_type,subtype,"native join/resume snapshot retains the vessel durable fluid subtype");
                         }
                         source = inventory
                             .entries
