@@ -62,6 +62,10 @@ mod e2e_c15;
 mod e2e_s16b;
 
 #[cfg(test)]
+#[path = "tests/general_stats_selection.rs"]
+mod general_stats_selection;
+
+#[cfg(test)]
 #[path = "tests/stamina.rs"]
 mod stamina_tests;
 

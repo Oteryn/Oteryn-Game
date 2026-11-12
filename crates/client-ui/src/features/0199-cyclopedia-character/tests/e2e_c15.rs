@@ -7,8 +7,7 @@
 //! (request/codec only) and the dev-client/session snapshot and delta reducers
 //! used by `tools/dev-client/src/lib.rs` (no GeneralStats payload consumer).
 
-#[path = "general_stats_selection.rs"]
-mod selection;
+use super::general_stats_selection as selection;
 
 use super::{CyclopediaCharacterPanel, Intent, apply_result, request};
 use oteryn_client_runtime::{

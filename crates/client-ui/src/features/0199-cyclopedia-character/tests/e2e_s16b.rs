@@ -4,8 +4,7 @@
 //! (`request` + `SkillProgressPanel::finish`). The expected numbers are the server-observed
 //! values the capture phase wrote to `s16b-expected.txt`, never the client's own rendering.
 
-#[path = "general_stats_selection.rs"]
-mod selection;
+use super::general_stats_selection as selection;
 
 use super::{CyclopediaCharacterPanel, Intent, apply_result, panel_text, request};
 use crate::skill_progress::{self, SkillProgress, SkillProgressPanel, SkillProgressSnapshot};

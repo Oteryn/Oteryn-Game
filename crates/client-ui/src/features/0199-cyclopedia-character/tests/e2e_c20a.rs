@@ -7,8 +7,7 @@
 //! `crates/session/src/domain_dispatch.rs::Session::apply_delta` consumes state deltas rather
 //! than this command-result payload.
 
-#[path = "general_stats_selection.rs"]
-mod selection;
+use super::general_stats_selection as selection;
 
 use super::*;
 use oteryn_client_runtime::{
