@@ -69,3 +69,47 @@ fn shared_frontend_chat_sends_existing_command_without_local_echo() {
     assert!(owner.chat_panel().lines.is_empty());
     assert!(owner.chat_panel().pending);
 }
+
+#[test]
+fn shared_frontend_bound_container_actions_reject_reused_view_ids()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::container_tree::{ContainerView, ContainerViewIntent, ContainerViews};
+    let (owner, mut commands, outbox) = play_channel();
+    owner.use_shared_frontend();
+    let original = ContainerView {
+        view_id: 4,
+        container_handle: 10.try_into()?,
+        parent_handle: Some(11.try_into()?),
+        capacity: 20,
+        entries: vec![],
+        browse: None,
+    };
+    outbox.container_initialize(Some(ContainerViews {
+        views: vec![original.clone()],
+    }));
+    assert!(!owner.container_up_bound(4, 99.try_into()?));
+    assert!(commands.try_recv().is_err());
+    assert!(owner.container_up_bound(4, original.container_handle));
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::ContainerView(ContainerViewIntent::Up { view_id: 4 })
+    );
+    outbox.container_result(Some(
+        oteryn_session::container_tree::ContainerViewOutcome::Opened,
+    ));
+    let replacement = ContainerView {
+        container_handle: 12.try_into()?,
+        ..original.clone()
+    };
+    outbox.container_initialize(Some(ContainerViews {
+        views: vec![replacement.clone()],
+    }));
+    assert!(!owner.container_close_bound(4, original.container_handle));
+    assert!(commands.try_recv().is_err());
+    assert!(owner.container_close_bound(4, replacement.container_handle));
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::ContainerView(ContainerViewIntent::Close { view_id: 4 })
+    );
+    Ok(())
+}
