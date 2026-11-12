@@ -7,7 +7,9 @@ impl PlayLink {
         }
         lock(&self.mailbox).vip_presence.open = true;
         #[cfg(windows)]
-        super::view::open_window(self);
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
         true
     }
 }

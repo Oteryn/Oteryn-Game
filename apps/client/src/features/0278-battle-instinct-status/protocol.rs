@@ -32,8 +32,7 @@ impl PlayLink {
             tr!("Battle Instinct — Ctrl+Alt+Shift+B"),
             |mailbox| &mut mailbox.battle_instinct_status,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).battle_instinct_status.open = true;
         }
         true

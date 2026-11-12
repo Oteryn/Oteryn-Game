@@ -24,10 +24,16 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     crate::play::feature_0115_mail::view::native::open(link, form(false));
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_archive(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     crate::play::feature_0115_mail::view::native::open(link, form(true));
 }
 #[cfg(windows)]

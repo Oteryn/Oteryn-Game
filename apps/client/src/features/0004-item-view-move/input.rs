@@ -12,9 +12,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             let mut mailbox = lock(&self.mailbox);
             if !mailbox.inventory_shutdown {
                 mailbox.inventory.open = true;

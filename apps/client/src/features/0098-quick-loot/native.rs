@@ -52,6 +52,9 @@ fn set_open(state: &mut oteryn_client_ui::quick_loot::Discovery, panel: u32, ope
     previous
 }
 pub(in crate::play) fn open_window(link: &PlayLink, panel: u32) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if set_open(&mut mailbox.discovery, panel, true) {

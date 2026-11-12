@@ -3,14 +3,19 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::battle::{self, Action};
 use oteryn_renderer::TileCoord;
 impl crate::play::PlayView {
-    /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
-    pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
-        // Same guard as `PlayView::click`: no world input while dead or under a server modal.
-        if link.lens_active()
+    /// Shared widgets obey the same gameplay gate as world target selection.
+    #[must_use]
+    pub fn gameplay_input_blocked(&self, link: &PlayLink) -> bool {
+        link.lens_active()
             || self.death.dead
             || lock(&link.mailbox).world_input_blocked()
             || crate::play::feature_0450_server_modal::view::active()
-        {
+    }
+
+    /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
+    pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
+        // Same guard as `PlayView::click`: no world input while dead or under a server modal.
+        if self.gameplay_input_blocked(link) {
             return false;
         }
         let own = self.scene.own_identity();
@@ -69,7 +74,9 @@ impl PlayLink {
             }
         }
         #[cfg(windows)]
-        super::view::open_window(self);
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
         true
     }
 }

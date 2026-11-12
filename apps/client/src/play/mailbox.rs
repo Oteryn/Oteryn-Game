@@ -114,6 +114,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     pub(super) hud_resource: super::resource_hud::MailboxState,
     pub(super) local_preferences: crate::play::ReferencePreferences,

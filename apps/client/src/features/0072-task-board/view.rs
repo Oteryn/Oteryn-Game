@@ -7,9 +7,10 @@ impl PlayLink {
     pub fn open_task_board(&self) {
         self.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Refresh);
         #[cfg(windows)]
-        open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).task_board.open = true;
         }
     }
@@ -28,9 +29,10 @@ impl PlayLink {
         self.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Refresh);
         self.soulseal_catalogue_request(0);
         #[cfg(windows)]
-        soulseals_window::open(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            soulseals_window::open(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).task_board.soulseals_open = true;
         }
     }

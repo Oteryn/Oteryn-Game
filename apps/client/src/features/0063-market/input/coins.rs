@@ -15,9 +15,10 @@ impl PlayLink {
         let fields = lock(&self.mailbox).market.coins.fields.clone();
         self.coin_market_control(0, fields);
         #[cfg(windows)]
-        open(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            open(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).market.coins.open = true;
         }
     }

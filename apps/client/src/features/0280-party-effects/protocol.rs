@@ -31,8 +31,7 @@ impl PlayLink {
             tr!("Party effects — Ctrl+Alt+Shift+P"),
             |mailbox| &mut mailbox.party_effects,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).party_effects.open = true;
         }
         true

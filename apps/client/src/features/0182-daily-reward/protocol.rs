@@ -33,7 +33,10 @@ impl Outbox {
             result,
         );
         #[cfg(windows)]
-        if notice.is_some() && !super::view::notify_returner() {
+        if !lock(&self.0).shared_frontend
+            && notice.is_some()
+            && !super::view::notify_returner()
+        {
             lock(&self.0).daily_reward.returner_notified = None;
         }
         #[cfg(not(windows))]

@@ -9,6 +9,7 @@ use std::{
 pub(in crate::play) struct Owned {
     pub center: Mutex<NotificationCenter>,
     pub origin: Instant,
+    shared_frontend: std::sync::atomic::AtomicBool,
     #[cfg(all(windows, not(test)))]
     started: std::sync::atomic::AtomicBool,
 }
@@ -19,6 +20,7 @@ impl Default for State {
         Self(Arc::new(Owned {
             center: Mutex::new(NotificationCenter::default()),
             origin: Instant::now(),
+            shared_frontend: std::sync::atomic::AtomicBool::new(false),
             #[cfg(all(windows, not(test)))]
             started: std::sync::atomic::AtomicBool::new(false),
         }))
@@ -28,6 +30,10 @@ pub(in crate::play) fn lock(owned: &Owned) -> MutexGuard<'_, NotificationCenter>
     owned.center.lock().unwrap_or_else(PoisonError::into_inner)
 }
 impl State {
+    pub fn use_shared_frontend(&self) {
+        self.0.shared_frontend.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub fn observe(&self, message: &AppliedDelta<ServerMessage>) {
         let (text, popup) = match &message.value {
             ServerMessage::StatusText(text) | ServerMessage::Advance(text) => (text, false),
@@ -42,6 +48,7 @@ impl State {
         let _ = inserted;
         #[cfg(all(windows, not(test)))]
         if inserted
+            && !self.0.shared_frontend.load(std::sync::atomic::Ordering::Relaxed)
             && !self
                 .0
                 .started

@@ -10,9 +10,10 @@ impl PlayLink {
     }
     pub fn discovery_open(&self, panel: u32) {
         #[cfg(windows)]
-        native::open_window(self, panel);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            native::open_window(self, panel);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             let mut mailbox = lock(&self.mailbox);
             match panel {
                 98 => mailbox.discovery.loot.open = true,

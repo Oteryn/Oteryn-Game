@@ -2,6 +2,9 @@
 use crate::play::PlayLink;
 use crate::play::feature_0115_mail::view::native::{Form, open};
 pub(super) fn open_reward(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     open(
         link,
         Form {

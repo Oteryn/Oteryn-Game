@@ -34,7 +34,9 @@ impl PlayLink {
         }
         drop(mailbox);
         #[cfg(windows)]
-        super::view::open_window(self);
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
     }
     pub fn npc_dialogue_input(
         &self,

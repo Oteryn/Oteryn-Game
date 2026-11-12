@@ -127,9 +127,10 @@ impl PlayLink {
         };
         if show {
             #[cfg(windows)]
-            super::view::weekly_results_window::open(self);
-            #[cfg(not(windows))]
-            {
+            if !self.uses_shared_frontend() {
+                super::view::weekly_results_window::open(self);
+            }
+            if cfg!(not(windows)) || self.uses_shared_frontend() {
                 lock(&self.mailbox).task_board.weekly_results_open = true;
             }
         }

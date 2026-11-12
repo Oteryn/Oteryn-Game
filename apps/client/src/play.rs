@@ -22,6 +22,7 @@ use std::num::NonZeroU32;
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    shared_frontend: bool,
     game_notifications: feature_local_game_notifications::state::State,
     touch: feature_0233_touch_controls::state::State,
     ui_sounds: Vec<UiSound>,
