@@ -97,15 +97,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
     ) -> Result<bool, RespawnExit> {
-        self.root
-            .with_background_operation(self.boss_spawn_pass_inner(timers))
-            .await
-    }
-
-    async fn boss_spawn_pass_inner(
-        &self,
-        timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
-    ) -> Result<bool, RespawnExit> {
         use crate::durability::boss_encounter::{BossClockClaim, BossClockError, BossClockKey};
         let mut checked_all = self.grizzly_boss_pass().await?;
         let (binding, spawns) = {

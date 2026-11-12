@@ -16,30 +16,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The owner cadence: refresh every session whose backoff has passed. The map lock is
     /// never held across an await.
     pub(in crate::gameplay_transport) async fn refresh_due_quest_sessions(&self) {
-        self.root
-            .with_background_operation(async {
-                let now = std::time::Instant::now();
-                let runtime = self.runtime.lock().await;
-                let due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
-                    Ok(mut sessions) => sessions
-                        .iter_mut()
-                        .filter_map(|(session, entry)| {
-                            if !entry.retry_at.is_some_and(|at| at <= now)
-                                || !matches!(runtime.house_player_for_session(*session), Ok(None))
-                            {
-                                // The generic quest owner admits Channel only. Preserve
-                                // the exact pending deadline/data while held in House;
-                                // a genuine return to Channel resumes this cadence.
-                                return None;
-                            }
-                            entry.retry_at = None;
-                            Some(*session)
-                        })
-                        .collect(),
-                    Err(_) => return,
-                };
-                drop(runtime);
-                for session in due {
+        let now = std::time::Instant::now();
+        let runtime = self.runtime.lock().await;
+        let due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
+            Ok(mut sessions) => sessions
+                .iter_mut()
+                .filter_map(|(session, entry)| {
+                    if !entry.retry_at.is_some_and(|at| at <= now)
+                        || !matches!(runtime.house_player_for_session(*session), Ok(None))
+                    {
+                        // The generic quest owner admits Channel only. Preserve
+                        // the exact pending deadline/data while held in House;
+                        // a genuine return to Channel resumes this cadence.
+                        return None;
+                    }
+                    entry.retry_at = None;
+                    Some(*session)
+                })
+                .collect(),
+            Err(_) => return,
+        };
+        drop(runtime);
+        for session in due {
+            self.root
+                .with_background_operation(async {
                     self.refresh_quest_session(session, false).await;
                     let wheel_deferred =
                         self.states
@@ -52,9 +52,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if wheel_deferred {
                         self.admit_wheel_session(session).await;
                     }
-                }
-            })
-            .await
+                })
+                .await;
+        }
     }
 
     /// Refresh `session` on the owner cadence after the backoff.

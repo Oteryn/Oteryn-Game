@@ -17,16 +17,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 global_due = now.saturating_add(1_000_000);
             }
             let deadline = if let Some(owner) = self.states.boss_activity_handoff.get() {
-                match stopping_first(
-                    self.root.with_background_operation(owner.drive_soulpit(
-                        self,
-                        now,
-                        global_tick,
-                    )),
-                    shutdown,
-                )
-                .await
-                {
+                match stopping_first(owner.drive_soulpit(self, now, global_tick), shutdown).await {
                     None => return RespawnExit::Shutdown,
                     Some(Ok(deadline)) if deadline.is_none_or(|due| due > now) => deadline,
                     Some(Ok(_)) | Some(Err(())) => {

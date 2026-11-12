@@ -50,7 +50,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut ready = true;
             for principal in principals {
-                if view.drain_kill_rewards(principal).await == DrainOutcome::Deferred {
+                if self
+                    .root
+                    .with_background_operation(view.drain_kill_rewards(principal))
+                    .await
+                    == DrainOutcome::Deferred
+                {
                     deferred = true;
                     ready = false;
                 }
@@ -66,54 +71,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // cannot return a room this pass would use.
         if durable_scan && !drained.is_empty() {
             loop {
-                let page = handoffs
-                    .due_boss_rooms_after(self.character, self.holder, self.world_id, after)
-                    .await
-                    .map_err(|_| ())?;
-                after = page.next_after;
-                for room in page.rooms {
-                    let key = ScopeKey::new(room.scope, room.generation.get());
-                    if !drained.contains(&key) {
-                        continue;
-                    }
-                    let Some(owner) = self
-                        .activity_runtimes
-                        .get(room.scope, room.generation.get())
-                    else {
-                        continue;
-                    };
-                    let sessions = match owner.runtime.lock().await.activity_participant_sessions()
-                    {
-                        Ok(sessions) => sessions,
-                        Err(_) => {
-                            deferred = true;
-                            continue;
-                        }
-                    };
-                    let view = self.runtime_view(&owner);
-                    for session in sessions {
-                        let Some(admitted) = self.activity_runtimes.connection(session) else {
-                            deferred = true;
-                            continue;
+                let (page, first_deferred) = self
+                    .root
+                    .with_background_operation(async {
+                        let page = handoffs
+                            .due_boss_rooms_after(self.character, self.holder, self.world_id, after)
+                            .await
+                            .map_err(|_| ())?;
+                        let first_deferred = if let Some(room) = page.rooms.first() {
+                            self.return_due_room(room, &drained).await?
+                        } else {
+                            false
                         };
-                        let admitted = self.activity_runtimes.current_connection(admitted);
-                        if admitted.item_fence.is_none_or(|fence| {
-                            fence.runtime_scope != room.scope
-                                || fence.scope_ownership_generation != room.generation
-                        }) {
-                            deferred = true;
-                            continue;
-                        }
-                        match view.return_due_activity(admitted, room.reason).await {
-                            Ok(NativeActivityOutcome::Committed(commit)) => {
-                                self.publish_activity_commit(&commit)?
-                            }
-                            // A captured defeat can have superseded a timeout page.
-                            // The transaction's typed refusal remains authoritative.
-                            Ok(NativeActivityOutcome::Refused(_)) => {}
-                            Err(()) => deferred = true,
-                        }
-                    }
+                        Ok::<_, ()>((page, first_deferred))
+                    })
+                    .await?;
+                after = page.next_after;
+                deferred |= first_deferred;
+                for room in page.rooms.iter().skip(1) {
+                    deferred |= self
+                        .root
+                        .with_background_operation(self.return_due_room(room, &drained))
+                        .await?;
                 }
                 if after.is_none() {
                     break;
@@ -124,81 +103,140 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // All participants, including offline/dead/frozen actors, must be gone
         // in both owners. Ground is never cleared from a caller's room flag.
         for owner in self.activity_runtimes.activity_owners()? {
-            let _transition = self.activity_runtimes.transitions.lock().await;
-            if !owner
-                .runtime
-                .lock()
-                .await
-                .activity_retirement_empty()
-                .map_err(|_| ())?
-            {
-                continue;
+            self.root
+                .with_background_operation(async {
+                    let _transition = self.activity_runtimes.transitions.lock().await;
+                    if !owner
+                        .runtime
+                        .lock()
+                        .await
+                        .activity_retirement_empty()
+                        .map_err(|_| ())?
+                    {
+                        return Ok(());
+                    }
+                    if self
+                        .prune_completed_activity_entries(owner.scope, owner.generation)
+                        .await
+                        .is_err()
+                        || self
+                            .prune_completed_activity_returns(owner.scope, owner.generation)
+                            .await
+                            .is_err()
+                    {
+                        deferred = true;
+                        return Ok(());
+                    }
+                    let generation =
+                        ScopeOwnershipGeneration::new(owner.generation).map_err(|_| ())?;
+                    let Some(proof) = handoffs
+                        .retirement_ready(self.character, self.holder, owner.scope, generation)
+                        .await
+                        .map_err(|_| ())?
+                    else {
+                        return Ok(());
+                    };
+                    let permit = match owner.lane.acquire().await {
+                        Ok(permit) => permit,
+                        Err(_) => {
+                            deferred = true;
+                            return Ok(());
+                        }
+                    };
+                    {
+                        let runtime = owner.runtime.lock().await;
+                        let attack = owner.states.attack.lock().await;
+                        if !runtime.activity_retirement_empty().map_err(|_| ())?
+                            || !attack.kills().activity_retirement_drained()
+                        {
+                            deferred = true;
+                            return Ok(());
+                        }
+                    }
+                    // The transition lock excludes entrants, native retirement-empty
+                    // excludes all participants, and the durable witness seals return.
+                    // Join this Instance only; other Instances and the Channel keep serving.
+                    owner.states.kill_source_owner.stop_and_join().await;
+                    if !self
+                        .runtime_view(&owner)
+                        .finish_activity_daily_kills()
+                        .await
+                    {
+                        deferred = true;
+                        return Ok(());
+                    }
+                    match self
+                        .root
+                        .retire_activity_ground_step(&permit, self.character, self.holder, &proof)
+                        .await
+                    {
+                        Ok(ActivityGroundRetirement::Progress(_)) => {}
+                        Ok(ActivityGroundRetirement::Complete) => {
+                            // The hook prunes before locking and synchronously retires
+                            // plus unregisters under one native lock: no cancellation
+                            // can strand an invalidated owner still in the registry.
+                            self.retire_and_unregister_activity(owner.scope, owner.generation)
+                                .await?;
+                        }
+                        Err(_) => deferred = true,
+                    }
+                    Ok::<(), ()>(())
+                })
+                .await?;
+        }
+        if deferred { Err(()) } else { Ok(()) }
+    }
+
+    async fn return_due_room(
+        &self,
+        room: &crate::durability::activity_handoff::boss_room::ActivityDueRoom,
+        drained: &BTreeSet<ScopeKey>,
+    ) -> Result<bool, ()> {
+        let mut deferred = false;
+        let key = ScopeKey::new(room.scope, room.generation.get());
+        if !drained.contains(&key) {
+            return Ok(false);
+        }
+        let Some(owner) = self
+            .activity_runtimes
+            .get(room.scope, room.generation.get())
+        else {
+            return Ok(false);
+        };
+        let sessions = match owner.runtime.lock().await.activity_participant_sessions() {
+            Ok(sessions) => sessions,
+            Err(_) => {
+                return Ok(true);
             }
-            if self
-                .prune_completed_activity_entries(owner.scope, owner.generation)
-                .await
-                .is_err()
-                || self
-                    .prune_completed_activity_returns(owner.scope, owner.generation)
-                    .await
-                    .is_err()
-            {
+        };
+        let view = self.runtime_view(&owner);
+        for session in sessions {
+            let Some(admitted) = self.activity_runtimes.connection(session) else {
                 deferred = true;
                 continue;
-            }
-            let generation = ScopeOwnershipGeneration::new(owner.generation).map_err(|_| ())?;
-            let Some(proof) = handoffs
-                .retirement_ready(self.character, self.holder, owner.scope, generation)
-                .await
-                .map_err(|_| ())?
-            else {
-                continue;
             };
-            let permit = match owner.lane.acquire().await {
-                Ok(permit) => permit,
-                Err(_) => {
-                    deferred = true;
-                    continue;
-                }
-            };
-            {
-                let runtime = owner.runtime.lock().await;
-                let attack = owner.states.attack.lock().await;
-                if !runtime.activity_retirement_empty().map_err(|_| ())?
-                    || !attack.kills().activity_retirement_drained()
-                {
-                    deferred = true;
-                    continue;
-                }
-            }
-            // The transition lock excludes entrants, native retirement-empty
-            // excludes all participants, and the durable witness seals return.
-            // Join this Instance only; other Instances and the Channel keep serving.
-            owner.states.kill_source_owner.stop_and_join().await;
-            if !self
-                .runtime_view(&owner)
-                .finish_activity_daily_kills()
-                .await
-            {
+            let admitted = self.activity_runtimes.current_connection(admitted);
+            if admitted.item_fence.is_none_or(|fence| {
+                fence.runtime_scope != room.scope
+                    || fence.scope_ownership_generation != room.generation
+            }) {
                 deferred = true;
                 continue;
             }
             match self
                 .root
-                .retire_activity_ground_step(&permit, self.character, self.holder, &proof)
+                .with_background_operation(view.return_due_activity(admitted, room.reason))
                 .await
             {
-                Ok(ActivityGroundRetirement::Progress(_)) => {}
-                Ok(ActivityGroundRetirement::Complete) => {
-                    // The hook prunes before locking and synchronously retires
-                    // plus unregisters under one native lock: no cancellation
-                    // can strand an invalidated owner still in the registry.
-                    self.retire_and_unregister_activity(owner.scope, owner.generation)
-                        .await?;
+                Ok(NativeActivityOutcome::Committed(commit)) => {
+                    self.publish_activity_commit(&commit)?
                 }
-                Err(_) => deferred = true,
+                // A captured defeat can have superseded a timeout page.
+                // The transaction's typed refusal remains authoritative.
+                Ok(NativeActivityOutcome::Refused(_)) => {}
+                Err(()) => deferred = true,
             }
         }
-        if deferred { Err(()) } else { Ok(()) }
+        Ok(deferred)
     }
 }

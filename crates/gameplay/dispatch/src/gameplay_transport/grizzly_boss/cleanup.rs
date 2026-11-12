@@ -27,20 +27,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for (session, actor, entry) in retries {
             // A prior expiry COMMIT may have succeeded without its response. The
             // remembered predecessor is only a retry obligation, never return authority.
-            let reconciled = match self
+            let reconciled = self
                 .root
-                .pending_grizzly_boss_entry(self.character, entry.character_id)
-                .await
-            {
-                Ok(Some(current)) if current.cause == entry.cause => {
-                    current.state == GrizzlyBossEntryState::ReturnPending
-                        && self
-                            .return_grizzly_visit(&permit, actor, session, &current)
-                            .await
-                }
-                Ok(_) => true,
-                Err(_) => false,
-            };
+                .with_background_operation(async {
+                    match self
+                        .root
+                        .pending_grizzly_boss_entry(self.character, entry.character_id)
+                        .await
+                    {
+                        Ok(Some(current)) if current.cause == entry.cause => {
+                            current.state == GrizzlyBossEntryState::ReturnPending
+                                && self
+                                    .return_grizzly_visit(&permit, actor, session, &current)
+                                    .await
+                        }
+                        Ok(_) => true,
+                        Err(_) => false,
+                    }
+                })
+                .await;
             if reconciled && let Ok(mut entries) = self.states.grizzly_boss.returns.lock() {
                 entries.remove(&session);
             } else if !reconciled {
@@ -55,36 +60,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(channel_id) = binding.channel_id() else {
             return Err(RespawnExit::StaleOwner);
         };
-        let entries = match self
+        let page = self
             .root
-            .active_grizzly_boss_entries(
-                self.character,
-                self.holder,
-                binding.world_id(),
-                channel_id,
-                binding.scope_generation(),
-            )
-            .await
-        {
-            Ok(entries) => entries,
-            Err(CharacterProgressionError::AuthorityRejected) => {
-                return Err(RespawnExit::StaleOwner);
-            }
-            Err(_) => return Ok(false),
+            .with_background_operation(async {
+                let entries = match self
+                    .root
+                    .active_grizzly_boss_entries(
+                        self.character,
+                        self.holder,
+                        binding.world_id(),
+                        channel_id,
+                        binding.scope_generation(),
+                    )
+                    .await
+                {
+                    Ok(entries) => entries,
+                    Err(CharacterProgressionError::AuthorityRejected) => {
+                        return Err(RespawnExit::StaleOwner);
+                    }
+                    Err(_) => return Ok(None),
+                };
+                let first_complete = if let Some(entry) = entries.first() {
+                    self.retire_due_grizzly_visit(&permit, entry, binding.scope_generation())
+                        .await?
+                } else {
+                    true
+                };
+                Ok(Some((entries, first_complete)))
+            })
+            .await?;
+        let Some((entries, first_complete)) = page else {
+            return Ok(false);
         };
-        for entry in entries {
-            let timed = entry.expired || entry.scope_generation != binding.scope_generation();
-            if !timed
-                && (self.grizzly_visit_is_pending(&entry)
-                    || self.grizzly_room_occupied(&entry).await?)
-            {
-                continue;
-            }
-            if !self.retire_grizzly_visit(&permit, &entry, timed).await? {
-                complete = false;
-            }
+        complete &= first_complete;
+        for entry in entries.iter().skip(1) {
+            complete &= self
+                .root
+                .with_background_operation(self.retire_due_grizzly_visit(
+                    &permit,
+                    entry,
+                    binding.scope_generation(),
+                ))
+                .await?;
         }
         Ok(complete)
+    }
+
+    async fn retire_due_grizzly_visit(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &GrizzlyBossEntry,
+        generation: crate::foundation::ScopeOwnershipGeneration,
+    ) -> Result<bool, RespawnExit> {
+        let timed = entry.expired || entry.scope_generation != generation;
+        if !timed
+            && (self.grizzly_visit_is_pending(entry) || self.grizzly_room_occupied(entry).await?)
+        {
+            return Ok(true);
+        }
+        self.retire_grizzly_visit(permit, entry, timed).await
     }
 
     /// Checked at fresh admission/resume and before input, through the existing callback

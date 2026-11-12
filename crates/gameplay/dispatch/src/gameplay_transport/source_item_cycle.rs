@@ -86,40 +86,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // drain only after that stronger shared quiescence boundary.
                 return;
             }
-            let retired = self
-                .root
-                .with_background_operation(async {
-                    // One owner pass is one owner turn: the world-interaction cap starts anew, under
-                    // the runtime lock that every admitted act holds through its commit.
-                    {
-                        let runtime = self.runtime.lock().await;
-                        if runtime.owner_fence().is_err() {
-                            return true;
-                        }
-                        if let Some(map) = self.bundle_map() {
-                            map.facts.expire_movement_items(self.owner_now().get());
-                        }
-                        if let Ok(mut gate) = self.states.world_gate.lock() {
-                            gate.begin_turn();
-                        }
-                    }
-                    let _ = self.flush_daily_kill_statistics().await;
-                    self.tick_timed_items().await;
-                    if !self.ensure_source_map_initialized().await {
-                        return false;
-                    }
-                    self.drain_source_item_deadlines().await;
-                    self.drain_quest_encounter_deadlines().await;
-                    self.drain_source_party_deadlines_bounded().await;
-                    let _ = self.drain_native_ai_timers().await;
-                    if let Some(cycle) = npc_voices.as_mut() {
-                        self.emit_npc_voices(cycle, self.owner_now().get()).await;
-                    }
-                    false
-                })
-                .await;
-            if retired {
-                return;
+            // Keep the population sweep outside any operation. Multi-pass
+            // units such as equipment checkpoints scope their own grants.
+            {
+                let runtime = self.runtime.lock().await;
+                if runtime.owner_fence().is_err() {
+                    return;
+                }
+                if let Some(map) = self.bundle_map() {
+                    map.facts.expire_movement_items(self.owner_now().get());
+                }
+                if let Ok(mut gate) = self.states.world_gate.lock() {
+                    gate.begin_turn();
+                }
+            }
+            let _ = self.flush_daily_kill_statistics().await;
+            self.tick_timed_items().await;
+            if !self.ensure_source_map_initialized().await {
+                continue;
+            }
+            self.drain_source_item_deadlines().await;
+            self.drain_quest_encounter_deadlines().await;
+            self.drain_source_party_deadlines_bounded().await;
+            let _ = self.drain_native_ai_timers().await;
+            if let Some(cycle) = npc_voices.as_mut() {
+                self.emit_npc_voices(cycle, self.owner_now().get()).await;
             }
         }
     }
@@ -148,6 +139,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {
+        self.root
+            .with_background_operation(self.ensure_source_map_initialized_inner())
+            .await
+    }
+
+    async fn ensure_source_map_initialized_inner(&self) -> bool {
         #[cfg(test)]
         let stage = |name: &str| {
             if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {

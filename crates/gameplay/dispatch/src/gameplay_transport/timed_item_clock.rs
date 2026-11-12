@@ -96,7 +96,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             let Some(_permit) = self.spell_lane_permit().await else {
                 return;
             };
-            if !self.tick_magic_converter(session).await {
+            if !self
+                .root
+                .with_background_operation(self.tick_magic_converter(session))
+                .await
+            {
                 self.states
                     .timed_items
                     .magic_converters

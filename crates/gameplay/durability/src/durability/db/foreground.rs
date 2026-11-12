@@ -247,6 +247,37 @@ mod tests {
     }
 
     #[test]
+    fn background_sweep_releases_grant_between_units() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        runtime.block_on(async {
+            let priority = Arc::new(HolderPriority::default());
+            let now = Instant::now();
+            let demand = priority.foreground(now, WINDOW);
+            assert!(demand.is_some());
+            let holder = std::cell::Cell::new(Some(()));
+            for unit in 0..16 {
+                operation(&priority, async {
+                    let acquired = priority.background(now + WINDOW, WINDOW, || holder.take());
+                    assert_eq!(acquired.is_some(), unit == 0);
+                    if acquired.is_some() {
+                        holder.set(acquired);
+                        // Another pass in this same unit still has the grant.
+                        let second = priority.background(now + WINDOW, WINDOW, || holder.take());
+                        assert_eq!(second, Some(()));
+                        holder.set(second);
+                    }
+                }).await;
+                // A queued foreground owner can take the returned holder between units.
+                let foreground_holder = holder.take();
+                assert_eq!(foreground_holder, Some(()));
+                holder.set(foreground_holder);
+            }
+            drop(demand);
+        });
+        Ok(())
+    }
+
+    #[test]
     fn returned_holder_cannot_be_retaken_by_background_before_foreground() {
         let priority = Arc::new(HolderPriority::default());
         let now = Instant::now();
