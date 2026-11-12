@@ -2803,6 +2803,7 @@ async fn run_nested_death_pickup(
     other_character: bool,
     historical: bool,
     already_carried: bool,
+    house_mode: u8,
 ) -> TestResult {
     use crate::corpse_transfer_postgres_cases::{
         SECOND_CHARACTER, SECOND_SESSION, command_of, fence_of, seed_second_character,
@@ -2815,13 +2816,15 @@ async fn run_nested_death_pickup(
 
     // Each routed test owns a distinct retained recovery directory, including
     // when the test harness runs all four scenarios concurrently in one PID.
-    let tag = match (other_character, historical, already_carried) {
-        (false, true, true) => "death_carried_historical_same",
-        (true, true, true) => "death_carried_historical_other",
-        (false, false, _) => "death_nested_pickup_same",
-        (true, false, _) => "death_nested_pickup_other",
-        (false, true, false) => "death_nested_pickup_historical_same",
-        (true, true, false) => "death_nested_pickup_historical_other",
+    let tag = match (other_character, historical, already_carried, house_mode) {
+        (_, true, true, 1) => "death_carried_house_admission",
+        (_, true, true, 2) => "death_carried_house_service",
+        (false, true, true, _) => "death_carried_historical_same",
+        (true, true, true, _) => "death_carried_historical_other",
+        (false, false, _, _) => "death_nested_pickup_same",
+        (true, false, _, _) => "death_nested_pickup_other",
+        (false, true, false, _) => "death_nested_pickup_historical_same",
+        (true, true, false, _) => "death_nested_pickup_historical_other",
     };
     let h = Harness::create(admin, tag).await?;
     if other_character {
@@ -2987,7 +2990,15 @@ async fn run_nested_death_pickup(
     if already_carried {
         sqlx::query("ALTER TABLE game_item_loop_move_lines ENABLE TRIGGER game_player_death_container_normalize")
             .execute(&h.pool).await?;
-        reconcile_already_carried_death_tree(&h, &authority, &f, &items, other_character).await?;
+        reconcile_already_carried_death_tree(
+            &h,
+            &authority,
+            &f,
+            &items,
+            other_character,
+            house_mode,
+        )
+        .await?;
     }
     assert_eq!(pickup.operation, 5);
     assert!(!pickup.replayed);
@@ -3099,6 +3110,7 @@ fn nested_death_pickup_case(
     other_character: bool,
     historical: bool,
     already_carried: bool,
+    house_mode: u8,
 ) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
@@ -3113,6 +3125,7 @@ fn nested_death_pickup_case(
                     other_character,
                     historical,
                     already_carried,
+                    house_mode,
                 ))
                 .map_err(debug)
         })?
@@ -3123,33 +3136,33 @@ fn nested_death_pickup_case(
 
 #[test]
 fn player_death_nested_backpack_pickup_same_owner_honors_complete_weight() -> TestResult {
-    nested_death_pickup_case(false, false, false)
+    nested_death_pickup_case(false, false, false, 0)
 }
 
 #[test]
 fn player_death_nested_backpack_pickup_changes_every_descendant_owner() -> TestResult {
-    nested_death_pickup_case(true, false, false)
+    nested_death_pickup_case(true, false, false, 0)
 }
 
 #[test]
 fn player_death_nested_historical_backpack_pickup_same_owner_is_atomic() -> TestResult {
-    nested_death_pickup_case(false, true, false)
+    nested_death_pickup_case(false, true, false, 0)
 }
 
 #[test]
 fn player_death_nested_historical_backpack_pickup_changes_every_descendant_owner() -> TestResult {
-    nested_death_pickup_case(true, true, false)
+    nested_death_pickup_case(true, true, false, 0)
 }
 
 #[test]
 fn historical_carried_death_tree_reconciles_at_current_inventory_admission() -> TestResult {
-    nested_death_pickup_case(false, true, true)
+    nested_death_pickup_case(false, true, true, 0)
 }
 
 #[test]
 fn historical_carried_death_tree_reconciles_to_current_receiver_without_rewriting_history()
 -> TestResult {
-    nested_death_pickup_case(true, true, true)
+    nested_death_pickup_case(true, true, true, 0)
 }
 
 async fn reconcile_already_carried_death_tree(
@@ -3158,11 +3171,19 @@ async fn reconcile_already_carried_death_tree(
     f: &crate::durability::item_transfer::CurrentCharacterItemFence,
     items: &[[u8; 16]],
     other_character: bool,
+    house_mode: u8,
 ) -> TestResult {
     use crate::durability::item_use::ItemUseError;
     use crate::durability::runtime_scope_assignment::{BootstrapSecret, NodeIncarnationProof};
     use crate::item_transfer_postgres_cases::uuid_text;
 
+    let source_channel_fence = *f;
+    let house_fence = if house_mode > 0 {
+        Some(enter_carried_test_house(h, authority, f).await?)
+    } else {
+        None
+    };
+    let f = house_fence.as_ref().unwrap_or(f);
     assert_eq!(h.count("game_item_container_entries").await?, 2);
     assert_eq!(h.count("game_item_nested_entries").await?, 1);
     let old_owner: Option<String> = sqlx::query_scalar(
@@ -3204,8 +3225,41 @@ async fn reconcile_already_carried_death_tree(
     };
     for invalid in [wrong_connection, wrong_lease, wrong_scope, wrong_character] {
         assert!(matches!(
+            read_carried_test_inventory(h, authority, &h.node, invalid, house_mode).await,
+            Err(ItemUseError::AuthorityRejected)
+        ));
+        assert_eq!(nested_death_snapshot(h, [0; 16]).await?, before);
+        assert_eq!(h.count("game_carried_death_reconciliations").await?, 0);
+    }
+    if house_mode > 0 {
+        // House identity and retained source Channel are independent bindings;
+        // neither the current House nor the retired Channel may act as activity.
+        assert!(matches!(
             h.root
-                .read_item_use_inventory(authority, &h.node, invalid)
+                .read_house_carried_inventory(authority, &h.node, *f, id(155))
+                .await,
+            Err(crate::durability::DurabilityError::InvalidStoredState)
+        ));
+        let mut wrong_house = *f;
+        wrong_house.runtime_scope = crate::durability::house_scope_handoff::HouseId::new(
+            f.runtime_scope.world_id(),
+            "oteryn:content.house.admiral_s_avenue_2",
+        )
+        .ok_or("other House")?
+        .runtime_scope()?;
+        assert!(matches!(
+            h.root
+                .read_house_carried_inventory(authority, &h.node, wrong_house, id(CHANNEL))
+                .await,
+            Err(crate::durability::DurabilityError::InvalidStoredState)
+        ));
+        assert!(matches!(
+            h.root.read_item_use_inventory(authority, &h.node, *f).await,
+            Err(ItemUseError::AuthorityRejected)
+        ));
+        assert!(matches!(
+            h.root
+                .read_item_use_inventory(authority, &h.node, source_channel_fence)
                 .await,
             Err(ItemUseError::AuthorityRejected)
         ));
@@ -3215,16 +3269,14 @@ async fn reconcile_already_carried_death_tree(
     let wrong_node =
         NodeIncarnationProof::new(h.node.fact(), BootstrapSecret::from_bytes([255; 32]));
     assert!(matches!(
-        h.root
-            .read_item_use_inventory(authority, &wrong_node, *f)
-            .await,
+        read_carried_test_inventory(h, authority, &wrong_node, *f, house_mode).await,
         Err(ItemUseError::AuthorityRejected)
     ));
     // A downstream conversion refusal must roll back the private journal and
     // every earlier representation write; the owner can then retry normally.
     sqlx::raw_sql("CREATE FUNCTION test_carried_death_refuse() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test carried conversion refusal' USING ERRCODE='23514'; END $$; CREATE TRIGGER test_carried_death_refuse BEFORE INSERT ON game_item_nested_entries FOR EACH ROW EXECUTE FUNCTION test_carried_death_refuse();")
         .execute(&h.pool).await?;
-    let failed = h.root.read_item_use_inventory(authority, &h.node, *f).await;
+    let failed = read_carried_test_inventory(h, authority, &h.node, *f, house_mode).await;
     sqlx::raw_sql("DROP TRIGGER test_carried_death_refuse ON game_item_nested_entries; DROP FUNCTION test_carried_death_refuse();")
         .execute(&h.pool).await?;
     assert!(matches!(failed, Err(ItemUseError::Unavailable(_))));
@@ -3234,9 +3286,7 @@ async fn reconcile_already_carried_death_tree(
     assert_eq!(direct_after, direct);
     assert_eq!(h.count("game_carried_death_reconciliations").await?, 0);
     assert_eq!(h.count("game_carried_death_edges").await?, 0);
-    let inventory = h
-        .root
-        .read_item_use_inventory(authority, &h.node, *f)
+    let inventory = read_carried_test_inventory(h, authority, &h.node, *f, house_mode)
         .await
         .map_err(debug)?;
     assert!(
@@ -3255,8 +3305,7 @@ async fn reconcile_already_carried_death_tree(
     assert_eq!(carried_death_history(h).await?, history);
     assert_eq!(h.count("game_carried_death_reconciliations").await?, 1);
     assert_eq!(h.count("game_carried_death_edges").await?, 2);
-    h.root
-        .read_item_use_inventory(authority, &h.node, *f)
+    read_carried_test_inventory(h, authority, &h.node, *f, house_mode)
         .await
         .map_err(debug)?;
     assert_eq!(h.count("game_carried_death_reconciliations").await?, 1);
@@ -3305,6 +3354,164 @@ async fn reconcile_already_carried_death_tree(
     tx.rollback().await?;
     assert_eq!(carried_death_history(h).await?, history);
     Ok(())
+}
+
+#[test]
+fn historical_carried_death_tree_reconciles_under_current_house_custody() -> TestResult {
+    nested_death_pickup_case(true, true, true, 1)
+}
+
+#[test]
+fn historical_carried_death_tree_reconciles_before_current_house_service_read() -> TestResult {
+    nested_death_pickup_case(true, true, true, 2)
+}
+
+async fn read_carried_test_inventory(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    f: crate::durability::item_transfer::CurrentCharacterItemFence,
+    house_mode: u8,
+) -> Result<crate::durability::item_use::ItemUseInventory, crate::durability::item_use::ItemUseError>
+{
+    use crate::durability::{DurabilityError, item_use::ItemUseError};
+    if house_mode == 0 {
+        return h.root.read_item_use_inventory(authority, node, f).await;
+    }
+    let result = if house_mode == 1 {
+        h.root
+            .read_house_carried_inventory(authority, node, f, id(CHANNEL))
+            .await
+    } else {
+        h.root
+            .read_hireling_use_inventory(authority, node, f, id(CHANNEL))
+            .await
+    };
+    result.map_err(|error| match error {
+        DurabilityError::InvalidStoredState => ItemUseError::AuthorityRejected,
+        other => ItemUseError::Unavailable(other),
+    })
+}
+
+async fn enter_carried_test_house(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    f: &crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> TestResult<crate::durability::item_transfer::CurrentCharacterItemFence> {
+    use crate::durability::house_scope_handoff::{
+        HouseCommitOutcome, HouseEntryCommit, HouseEntryRequest, HouseHandoffDirection, HouseId,
+        HousePrepareOutcome, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome,
+        HouseScopeAssignmentRequest,
+    };
+    use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
+    // Match the real retained source-session membership expected by native
+    // handoff, using the existing House fixture's complete one-session ledger.
+    sqlx::query(
+        "INSERT INTO game_durability_session_use_ledgers VALUES(encode($1,'hex')::uuid,1,true,1,1)",
+    )
+    .bind(f.character_id.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL)")
+        .bind(f.game_session_id.as_bytes().as_slice()).bind(f.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+    let house_key = "oteryn:content.house.admiral_s_avenue_1";
+    let house = HouseId::new(f.runtime_scope.world_id(), house_key).ok_or("test House identity")?;
+    sqlx::query(include_str!("../owned_house_fixture.sql"))
+        .bind(f.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(house_key)
+        .bind(f.character_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user,encode($1,'hex')::uuid,$2,1")
+        .bind(f.runtime_scope.world_id().as_bytes().as_slice()).bind(house_key).execute(&h.pool).await?;
+    assert!(matches!(
+        h.root
+            .assign_house_scope(HouseScopeAssignmentRequest {
+                operation_key: OperationKey::from_bytes([220; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                actor_role: "oteryn_test_admin".into(),
+                command: HouseScopeAssignmentCommand::Assign {
+                    house: house.clone(),
+                    target: h.node.fact()
+                },
+            })
+            .await
+            .map_err(debug)?,
+        HouseScopeAssignmentOutcome::Committed(_)
+    ));
+    let request = HouseEntryRequest {
+        direction: HouseHandoffDirection::Entry,
+        handoff_id: id(221),
+        character_id: f.character_id,
+        source_game_session_id: f.game_session_id,
+        source_connection_generation: f.connection_generation.get(),
+        source_character_lease_generation: f.character_lease_generation,
+        source_scope: f.runtime_scope,
+        source_scope_ownership_generation: f.scope_ownership_generation.get(),
+        house,
+        house_scope_ownership_generation: 1,
+        acl_revision: 1,
+        guild_revisions: None,
+        reserved_tile: vec![1],
+        prepared_at: 1000,
+    };
+    assert!(matches!(
+        h.root
+            .prepare_house_entry(authority, &h.node, request)
+            .await
+            .map_err(debug)?,
+        HousePrepareOutcome::Prepared(_)
+    ));
+    let destination = crate::foundation::GameSessionId::decode(&id(222)).map_err(debug)?;
+    assert!(matches!(
+        h.root
+            .commit_house_entry(
+                authority,
+                &h.node,
+                HouseEntryCommit {
+                    handoff_id: id(221),
+                    destination_game_session_id: destination,
+                    committed_at: 1001
+                }
+            )
+            .await
+            .map_err(debug)?,
+        HouseCommitOutcome::Committed(_)
+    ));
+    let row = sqlx::query("SELECT current_generation::text,character_lease_generation::text,scope_ownership_generation::text FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(destination.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    let current = crate::durability::item_transfer::CurrentCharacterItemFence {
+        character_id: f.character_id,
+        game_session_id: destination,
+        connection_generation: ConnectionGeneration::new(
+            row.try_get::<String, _>("current_generation")?.parse()?,
+        )
+        .map_err(debug)?,
+        character_lease_generation: row
+            .try_get::<String, _>("character_lease_generation")?
+            .parse()?,
+        runtime_scope: crate::durability::house_scope_handoff::HouseId::new(
+            f.runtime_scope.world_id(),
+            house_key,
+        )
+        .ok_or("current House")?
+        .runtime_scope()?,
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(
+            row.try_get::<String, _>("scope_ownership_generation")?
+                .parse()?,
+        )
+        .map_err(debug)?,
+    };
+    // This generic durability fixture seeds admission-guard DATA directly, as
+    // its initial Character fixture does. Advance that projection to the actual
+    // committed native House session/lease; no guard/publication qualification
+    // is claimed, and every production current-House predicate stays installed.
+    sqlx::query("UPDATE game_durability_admission_character_guards SET lease_generation=$2::text::numeric,holder_game_session_id=encode($3,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid")
+        .bind(current.character_id.as_bytes().as_slice()).bind(current.character_lease_generation.to_string())
+        .bind(current.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_durability_admission_account_guards SET holder_game_session_id=encode($2,'hex')::uuid WHERE presence_character_id=encode($1,'hex')::uuid")
+        .bind(current.character_id.as_bytes().as_slice()).bind(current.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+    Ok(current)
 }
 
 async fn carried_death_history(h: &Harness) -> TestResult<Vec<(String, String)>> {

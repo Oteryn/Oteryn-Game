@@ -331,6 +331,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             &payload,
             reference(flour),
             reference(vessel),
+            reference(vessel).map(|definition| (definition, if matches!(case,Case::Empty) {0} else if matches!(case,Case::Milk) {9} else {1})),
         )
         .await? };
 
@@ -374,14 +375,14 @@ fn scenario(case: Case, name: &str) -> TestResult {
                     assert_eq!(custody,i64::from(!last));
                 } else {
                 let (after_replay, replay, _) =
-                    exchange_carried(&owner, continued, 1, &actual, None, None).await?;
+                    exchange_carried(&owner, continued, 1, &actual, None, None, None).await?;
                 assert_eq!(replay, UseDisposition::Committed);
                 let replay_receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'")
                     .fetch_one(&harness.pool).await?;
                 assert_eq!(replay_receipts, 1);
                 if case.moves() {
                     let plain=encode_item_use_intent(&UseIntent{target:UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("plain source")?),use_with:None,use_with_map_item:None,use_with_position:None}).map_err(debug)?;
-                    let (_,plain_use,_)=exchange_carried(&owner,after_replay,2,&plain,reference(vessel),None).await?;
+                    let (_,plain_use,_)=exchange_carried(&owner,after_replay,2,&plain,reference(vessel),None,None).await?;
                     assert_eq!(plain_use,UseDisposition::NothingToUse,"a dispenser consumes charges only when filling a matching flask");
                     let explicit=oteryn_protocol_oteryn::timed_item::encode_timed_item_intent(oteryn_protocol_oteryn::timed_item::TimedItemIntent{
                         action:oteryn_protocol_oteryn::timed_item::TimedAction::Use,
@@ -472,7 +473,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 restarted.active_generation = Some(active);
                 restarted.movement_cells = (&cells).into();
                 deps.initialize(&restarted).await;
-                let (_, recovered, _) = exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
+                let (_, recovered, _) = exchange_carried(&restarted, admitted, 1, &actual, None, None, None).await?;
                 assert_eq!(recovered, UseDisposition::Committed);
                 assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&harness.pool).await?, 1);
                 assert_eq!(sqlx::query_scalar::<_, i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&harness.pool).await?, if last {1} else if case.ground() {998} else {498});
@@ -520,6 +521,9 @@ fn scenario(case: Case, name: &str) -> TestResult {
             }
             Case::Full => {
                 assert_eq!(result, UseDisposition::NoRoom);
+                let (_, resumed, _) = exchange_carried(&owner, continued, 2, &actual, reference(flour), reference(vessel),
+                    reference(vessel).map(|definition| (definition,1))).await?;
+                assert_eq!(resumed,UseDisposition::NoRoom,"same-session continuation keeps the full-parent refusal and filled snapshot");
                 assert_eq!(flour_state, (2, 1));
                 assert_eq!(vessel_state, (1, 1));
                 assert_eq!(craft_records, 0);
@@ -541,7 +545,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             deps.initialize(&restarted).await;
             let output = "oteryn:item.tibia.i3604";
             let (_, replay, _) =
-                exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
+                exchange_carried(&restarted, admitted, 1, &actual, None, None, None).await?;
             assert_eq!(replay, UseDisposition::Committed);
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
@@ -599,6 +603,7 @@ async fn exchange_carried(
     payload: &[u8],
     source_definition: Option<std::num::NonZeroU32>,
     vessel_definition: Option<std::num::NonZeroU32>,
+    expected_fluid: Option<(std::num::NonZeroU32, u32)>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
@@ -619,6 +624,11 @@ async fn exchange_carried(
                                 domain.payload,
                             )
                             .map_err(debug)?;
+                        if let Some((definition, subtype)) = expected_fluid {
+                            let entry = inventory.entries.iter().find(|entry| entry.item_definition_ref==definition)
+                                .ok_or("snapshot filled vessel")?;
+                            assert_eq!(entry.sub_type,subtype,"actual native join/resume snapshot retains filled-fluid metadata");
+                        }
                         source = inventory
                             .entries
                             .iter()

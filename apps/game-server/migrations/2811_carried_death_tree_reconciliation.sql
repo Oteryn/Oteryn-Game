@@ -1,6 +1,7 @@
 -- Lazy representation maintenance for a death root picked up before 2806.
 -- Current fenced Character custody is authority; old death history only identifies
--- the eligible representation. House custody and immutable history are not rewritten.
+-- the eligible representation. Named-House actors retain Character-carried custody;
+-- physical House custody and immutable history are not rewritten.
 CREATE TABLE game_carried_death_reconciliations (
  transaction_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(transaction_id)),
  root_item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
@@ -45,25 +46,38 @@ DECLARE
  c UUID:=(f->>'character')::uuid; w UUID:=(f->>'world')::uuid;
  s UUID:=(f->>'session')::uuid; ch UUID:=(f->>'channel')::uuid;
  inst UUID:=(f->>'instance')::uuid; n UUID:=(f->>'node')::uuid;
+ house TEXT:=f->>'house';
  kind SMALLINT:=CASE WHEN inst IS NULL THEN 1 ELSE 2 END;
  assignment BYTEA; runtime BYTEA; account UUID;
 BEGIN
  IF (ch IS NULL)=(inst IS NULL) OR c IS NULL OR w IS NULL OR s IS NULL
   OR NOT game_node_lock_current_registration(n,(f->>'node_revision')::numeric)
   OR NOT game_runtime_scope_assignment_history_valid() THEN RETURN FALSE; END IF;
+ IF house IS NOT NULL AND (kind<>2 OR inst IS DISTINCT FROM game_house_scope_instance_id(w,house)) THEN RETURN FALSE; END IF;
  assignment:=CASE WHEN kind=1 THEN '\x01'::bytea||uuid_send(w)||uuid_send(ch)
+  WHEN house IS NOT NULL THEN game_house_scope_key(w,house)
   ELSE '\x03'::bytea||uuid_send(w)||uuid_send(inst) END;
  runtime:=CASE WHEN kind=1 THEN assignment ELSE '\x02'::bytea||uuid_send(w)||uuid_send(inst) END;
  SELECT r.account_id INTO account FROM game_durability_reconnect_sessions r
   WHERE r.game_session_id=s AND r.character_id=c AND r.world_id=w
    AND r.runtime_scope_world_id=w AND r.runtime_scope_kind=kind
    AND r.runtime_scope_channel_id IS NOT DISTINCT FROM ch
-   AND r.runtime_scope_instance_id IS NOT DISTINCT FROM inst AND r.runtime_scope_house_key IS NULL
+   AND r.runtime_scope_instance_id IS NOT DISTINCT FROM inst AND r.runtime_scope_house_key IS NOT DISTINCT FROM house
+   AND (house IS NULL OR r.origin_channel_id=(f->>'origin_channel')::uuid)
    AND r.current_generation=(f->>'connection')::numeric
    AND r.character_lease_generation=(f->>'lease')::numeric
    AND r.scope_ownership_generation=(f->>'generation')::numeric AND r.session_state IN(1,2) FOR SHARE;
  IF NOT FOUND THEN RETURN FALSE; END IF;
- IF kind=2 AND game_activity_session_origin_valid(s,c) IS DISTINCT FROM TRUE THEN RETURN FALSE; END IF;
+ IF kind=2 AND house IS NULL AND game_activity_session_origin_valid(s,c) IS DISTINCT FROM TRUE THEN RETURN FALSE; END IF;
+ IF house IS NOT NULL THEN
+  -- A named House is assignment kind2, never activity kind3 or an origin Channel.
+  -- This proves custody only; no House service ACL or House contents are granted.
+  PERFORM 1 FROM game_runtime_scope_assignments a WHERE a.scope_key=assignment
+   AND a.scope_kind=2 AND a.world_id=w AND a.house_key=house AND a.channel_id IS NULL
+   AND a.activity_instance_id IS NULL AND a.state=1
+   AND a.ownership_generation=(f->>'generation')::numeric AND a.holder_node_id=n
+   AND a.holder_registration_revision=(f->>'node_revision')::numeric FOR SHARE;
+ ELSE
  PERFORM 1 FROM game_runtime_scope_assignments a
   JOIN game_durability_admission_runtime_guards g ON g.scope_key=runtime
   WHERE a.scope_key=assignment AND a.world_id=w AND a.state=1
@@ -72,6 +86,7 @@ BEGIN
    AND a.ownership_generation=(f->>'generation')::numeric AND a.holder_node_id=n
    AND a.holder_registration_revision=(f->>'node_revision')::numeric
    AND g.ready AND g.ownership_generation=a.ownership_generation FOR SHARE OF a,g;
+ END IF;
  IF NOT FOUND THEN RETURN FALSE; END IF;
  PERFORM 1 FROM game_durability_admission_character_guards cg
   JOIN game_durability_admission_account_guards ag ON ag.account_id=cg.account_id

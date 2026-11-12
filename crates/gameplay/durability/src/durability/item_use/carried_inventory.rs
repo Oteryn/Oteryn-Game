@@ -22,6 +22,13 @@ pub struct ItemUseInventory {
 }
 
 impl ItemUseInventory {
+    /// Preserve the complete metadata consumed by the native backpack observer.
+    pub fn into_backpack(self) -> Option<CharacterBackpack> {
+        let mut backpack = self.backpack?;
+        backpack.fluids = self.fluids;
+        Some(backpack)
+    }
+
     /// Returns the immutable action id only when the instance is in this fenced carried tree.
     pub fn key_action(&self, instance: [u8; 16]) -> Option<u16> {
         self.keys
@@ -136,7 +143,7 @@ impl DurabilityRoot {
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
                     };
-                    reconcile_carried_death_tree(&mut tx, &fence, &node).await?;
+                    reconcile_carried_death_tree(&mut tx, &fence, &node, None).await?;
                     let inventory = read_use_inventory(
                         &mut tx,
                         &fence,
@@ -161,10 +168,11 @@ impl DurabilityRoot {
 /// Only the current fenced inventory reader performs lazy representation repair.
 /// Recovery-only projections stay read-only; the complete deferred proof runs
 /// before this pass publishes its inventory, with no later custody write.
-async fn reconcile_carried_death_tree(
+pub(in crate::durability) async fn reconcile_carried_death_tree(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterItemFence,
     node: &NodeIncarnationProof,
+    house_origin: Option<[u8; 16]>,
 ) -> std::result::Result<(), DurabilityError> {
     let (channel, instance) = match fence.runtime_scope {
         RuntimeScopeRefV1::Channel { channel_id, .. } => (Some(*channel_id.as_bytes()), None),
@@ -177,7 +185,9 @@ async fn reconcile_carried_death_tree(
            'session',encode($3::bytea,'hex')::uuid,'connection',$4::text,'lease',$5::text,\
            'generation',$6::text,'channel',encode($7::bytea,'hex')::uuid,\
            'instance',encode($8::bytea,'hex')::uuid,'node',encode($9::bytea,'hex')::uuid,\
-           'node_revision',$10::text),$11)",
+           'node_revision',$10::text,'origin_channel',encode($12::bytea,'hex')::uuid,\
+           'house',(SELECT runtime_scope_house_key FROM game_durability_reconnect_sessions \
+             WHERE game_session_id=encode($3::bytea,'hex')::uuid AND $12::bytea IS NOT NULL)),$11)",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
@@ -190,6 +200,7 @@ async fn reconcile_carried_death_tree(
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())
     .bind(node.sql_possession_secret())
+    .bind(house_origin.as_ref().map(|id| id.as_slice()))
     .execute(&mut **tx)
     .await?;
     Ok(())

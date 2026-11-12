@@ -389,15 +389,20 @@ pub(super) async fn observe_character_inventory(
                 .map_err(|_| Rejected)?
                 .is_some();
             if in_house {
-                // Named-House observation retains its existing read-only owner.
+                // Character-carried custody uses the existing current House
+                // custody fence without adding a service ACL requirement.
                 admission
                     .root
-                    .read_character_backpack(admission.character, fence.character_id)
+                    .read_house_carried_inventory(
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        *admission.channel_id.as_bytes(),
+                    )
                     .await
+                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
                     .map_err(|error| match error {
-                        ItemTransferError::Unavailable(DurabilityError::RootUnavailable) => {
-                            Unavailable
-                        }
+                        DurabilityError::RootUnavailable => Unavailable,
                         _ => Rejected,
                     })
             } else {
@@ -407,7 +412,7 @@ pub(super) async fn observe_character_inventory(
                     .root
                     .read_item_use_inventory(admission.character, admission.holder, fence)
                     .await
-                    .map(|inventory| inventory.backpack)
+                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
                     .map_err(|error| match error {
                         ItemUseError::Unavailable(DurabilityError::RootUnavailable) => Unavailable,
                         _ => Rejected,

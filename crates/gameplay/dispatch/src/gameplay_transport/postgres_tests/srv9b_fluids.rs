@@ -303,6 +303,19 @@ fn scenario(charged: bool) -> TestResult {
         ));
         let fluid:(i16,i64)=sqlx::query_as("SELECT f.fluid_subtype,i.quantity::bigint FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.lifecycle=1").fetch_one(&h.pool).await?;
         assert_eq!(fluid, (3, 1));
+        // Exercise the actual composed observer used by join/resume and later
+        // inventory refresh. Durable NPC fluid facts must reach the client view.
+        for _ in 0..2 {
+            let observed = owner.observe_character_inventory(deps.actor, deps.admitted.game_session_id)
+                .await.ok_or("filled-fluid native inventory observation")?;
+            let item: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(i.item_instance_id) FROM game_item_instances i JOIN game_item_fluid_states f USING(item_instance_id) WHERE i.lifecycle=1")
+                .fetch_one(&h.pool).await?;
+            let view = observed.entries.iter().find(|entry| matches!(entry.key,
+                crate::gameplay_transport::item_view::ItemKey::Instance(id) if id.as_slice()==item.as_slice()))
+                .ok_or("filled-fluid direct inventory entry")?;
+            assert_eq!(view.count.get(),1);
+            assert_eq!(view.sub_type,3,"NPC beer must retain its native subtype in inventory snapshots");
+        }
         let gold:i64=sqlx::query_scalar("SELECT quantity::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i3031'").fetch_one(&h.pool).await?;
         assert_eq!(gold, 98);
         let audit:Vec<u8>=sqlx::query_scalar("SELECT envelope FROM game_item_audit_outbox a JOIN game_npc_trades t USING(transaction_id)").fetch_one(&h.pool).await?;
