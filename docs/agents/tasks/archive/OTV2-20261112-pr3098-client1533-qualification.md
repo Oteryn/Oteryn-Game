@@ -160,3 +160,18 @@ Formatting, locked metadata, governance validation and its 129 tests, source
 preservation and whitespace checks pass. Final native/PostgreSQL/Node evidence
 must bind the new published head. Merge order remains #3115 before #3098,
 with accepted-main composition and the full post-merge gate required.
+
+## Bundle offer-description guard
+
+Server `8779d987` was merged forward normally after independent R5 review with
+zero P0/P1/P2. Only its capability 483 contract description and server archive
+change: the description now names `BUNDLE_WORLD_OFFERED_CAPABILITIES`, as the
+unchanged existing bundle-only metadata guard requires. No runtime flag, golden,
+test or client behavior changes. All 390 client-owned blobs/deletions remain
+identical to `055ce8949` after this merge.
+
+The prior composed native job passed 3,842 of 3,843 tests; that metadata assertion
+was the sole failure. Separately, the complete real paid command-6214 scenario
+passed on server `ecbcd3898` in PG12 job `131150516371` (50.572 seconds), with all
+42 E2E and 205 library tests passing. These are prior-head facts. The new
+composition requires its own checks and preserves #3115-before-#3098 ordering.
