@@ -28,6 +28,11 @@ impl Stepper for Peer {
     fn chat_state(&self) -> Option<(ChatRoomSet, Vec<ChatLine>)> {
         Some((self.rooms, self.lines.clone()))
     }
+    fn chat_clear_oldest(&mut self) {
+        if !self.lines.is_empty() {
+            self.lines.remove(0);
+        }
+    }
     async fn chat_public(&mut self, intent: &ChatIntent) -> Result<ChatOutcome, SessionError> {
         self.commands
             .lock()
@@ -179,4 +184,60 @@ fn channel_dialog_opens_a_private_message_tab_by_name_and_cancels_cleanly() {
     link.chat_channel_dialog_name(&"x".repeat(121));
     assert!(!link.chat_channel_dialog_confirm());
     assert!(link.chat_panel().feedback.is_some());
+}
+
+#[test]
+fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
+                let peer = Peer {
+                    commands: Arc::new(Mutex::new(Vec::new())),
+                    rooms: ChatRoomSet::default(),
+                    lines: vec![
+                        ChatLine::Private {
+                            speaker_name: "Bryn".into(),
+                            text: "oldest".into(),
+                        },
+                        ChatLine::Private {
+                            speaker_name: "Bryn".into(),
+                            text: "retained".into(),
+                        },
+                    ],
+                };
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(peer, incoming, outbox));
+                wait_for(&link, |panel| panel.lines.len() == 2).await?;
+                assert!(link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                wait_for(&link, |panel| panel.lines.len() == 1).await?;
+                // Say produces a result/publication with the same retained log.
+                link.chat_text("publish".into());
+                link.chat_request(Mode::Say, "");
+                wait_for(&link, |panel| !panel.pending).await?;
+                assert_eq!(
+                    link.chat_panel().lines,
+                    vec![ChatLine::Private {
+                        speaker_name: "Bryn".into(),
+                        text: "retained".into(),
+                    }]
+                );
+                link.chat_text("incoming".into());
+                link.chat_request(Mode::Private, "Bryn");
+                wait_for(&link, |panel| panel.lines.len() == 2).await?;
+                assert!(!panel_text(&link.chat_panel()).contains("oldest"));
+                assert!(panel_text(&link.chat_panel()).contains("incoming"));
+                assert!(link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                wait_for(&link, |panel| panel.lines.len() == 1).await?;
+                assert!(panel_text(&link.chat_panel()).contains("incoming"));
+                assert!(link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                wait_for(&link, |panel| panel.lines.is_empty()).await?;
+                assert!(!link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                drop(link);
+                task.await?;
+                Ok::<(), Error>(())
+            })
+        })?
+        .join()
+        .map_err(|_| "chat clear test thread panicked")?
 }

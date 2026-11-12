@@ -778,3 +778,81 @@ mod channels {
         assert_eq!(create, ["Create own private channel"]);
     }
 }
+
+#[test]
+fn server_notice_switch_covers_combined_local_and_private_channel_views() {
+    use crate::chat_channel_participants::{NoticeKind, NoticeLine};
+    let mut panel = ChatPanel::default();
+    panel
+        .console
+        .notices
+        .push(NoticeClass::Status, "safe area", 1);
+    panel
+        .console
+        .notices
+        .push(NoticeClass::Loot, "gold coin", 2);
+    panel.console.channel_notices.push(NoticeLine {
+        serial: 1,
+        channel_id: 7,
+        kind: NoticeKind::Joined,
+        name: "Bryn".into(),
+    });
+    panel.lines = vec![ChatLine::Private {
+        speaker_name: "Bryn".into(),
+        text: "player line".into(),
+    }];
+    assert!(panel_text(&panel).contains("safe area"));
+    panel.console.show_server_messages = false;
+    assert!(panel_text(&panel).contains("player line"));
+    assert!(!panel_text(&panel).contains("safe area"));
+    for tab in [ChannelTab::ServerLog, ChannelTab::Loot] {
+        panel.console.current = Some(tab);
+        assert!(!panel_text(&panel).contains("safe area"));
+        assert!(!panel_text(&panel).contains("gold coin"));
+        panel.console.show_server_messages = true;
+        assert!(panel_text(&panel).contains("gold coin"));
+        panel.console.show_server_messages = false;
+    }
+    panel.console.current = Some(ChannelTab::Private(7));
+    assert!(!panel_text(&panel).contains("Bryn"));
+    panel.console.show_server_messages = true;
+    assert!(panel_text(&panel).contains("Bryn"));
+}
+
+#[test]
+fn dismissed_oldest_line_preserves_remaining_receipt_metadata_after_publish() {
+    let old = ChatLine::Private {
+        speaker_name: "Bryn".into(),
+        text: "old".into(),
+    };
+    let retained = ChatLine::Private {
+        speaker_name: "Cy".into(),
+        text: "retained".into(),
+    };
+    let incoming = ChatLine::Private {
+        speaker_name: "Dana".into(),
+        text: "new".into(),
+    };
+    let mut metadata = Metadata::default();
+    let display = ConsoleDisplay {
+        time: true,
+        seconds: true,
+        ..Default::default()
+    };
+    metadata.observe(&[old], 1);
+    metadata.observe(
+        &[
+            ChatLine::Private {
+                speaker_name: "Bryn".into(),
+                text: "old".into(),
+            },
+            retained.clone(),
+        ],
+        2,
+    );
+    metadata.observe(std::slice::from_ref(&retained), 3);
+    assert_eq!(metadata.prefix(display, 0), "[00:00:02 UTC] ");
+    metadata.observe(&[retained, incoming], 4);
+    assert_eq!(metadata.prefix(display, 0), "[00:00:02 UTC] ");
+    assert_eq!(metadata.prefix(display, 1), "[00:00:04 UTC] ");
+}

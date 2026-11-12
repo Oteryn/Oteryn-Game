@@ -74,6 +74,8 @@ pub struct Console {
     pub mirror: Option<ConsoleTab>,
     pub mode: ComposerMode,
     pub show_messages: bool,
+    /// Server notices have a separate utility switch from the player transcript filter.
+    pub show_server_messages: bool,
     pub filters: super::ConsoleFilters,
     pub notices: super::ConsoleNotices,
     tab_filters: [bool; 4],
@@ -109,6 +111,7 @@ impl Default for Console {
             mirror: None,
             mode: ComposerMode::On,
             show_messages: true,
+            show_server_messages: true,
             filters: Default::default(),
             notices: Default::default(),
             tab_filters: [true; 4],

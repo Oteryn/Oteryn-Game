@@ -398,6 +398,11 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::ChatClearOldest) => {
+                session.chat_clear_oldest();
+                publish(&mut session, &outbox, &mut held);
+                continue;
+            }
             Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_result(&intent, &outcome);

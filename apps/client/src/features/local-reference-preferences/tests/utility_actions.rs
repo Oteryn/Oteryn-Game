@@ -273,7 +273,7 @@ fn global_chat_chords_drive_channels_the_list_and_the_lens() -> Result<(), Box<d
 fn clear_oldest_message_keeps_private_echo_recipients_aligned() {
     use crate::play::UtilityAction;
     use oteryn_client_ui::chat::{ChatExtras, panel_text};
-    let (link, _, outbox) = play_channel();
+    let (link, mut commands, outbox) = play_channel();
     outbox.chat_initialize(true);
     outbox.chat_public_state(
         oteryn_session::ChatRoomSet::default(),
@@ -299,11 +299,70 @@ fn clear_oldest_message_keeps_private_echo_recipients_aligned() {
     assert!(link.chat_open_conversation("Bo"));
     assert!(panel_text(&link.chat_panel()).contains("old to Bo"));
     assert!(bare().run_utility(&link, UtilityAction::ClearOldestMessage));
+    assert_eq!(commands.try_recv(), Ok(PlayCommand::ChatClearOldest));
+    // Only the Session command changes history. Its next publication replaces every view.
+    outbox.chat_public_state(
+        oteryn_session::ChatRoomSet::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Ari".into(),
+            text: "new to Cy".into(),
+        }],
+    );
+    lock(&link.mailbox).chat.apply_extras(
+        "Ari",
+        None,
+        ChatExtras {
+            recipients: Some(vec![Some("Cy".into())]),
+            ..Default::default()
+        },
+    );
+    assert!(!panel_text(&link.chat_panel()).contains("old to Bo"));
     assert!(!panel_text(&link.chat_panel()).contains("new to Cy"));
     assert!(link.chat_open_conversation("Cy"));
     assert!(panel_text(&link.chat_panel()).contains("To Cy: new to Cy"));
     assert_eq!(link.chat_panel().recipients, vec![Some("Cy".into())]);
     assert!(bare().run_utility(&link, UtilityAction::ClearOldestMessage));
+    assert_eq!(commands.try_recv(), Ok(PlayCommand::ChatClearOldest));
+    outbox.chat_public_state(oteryn_session::ChatRoomSet::default(), Vec::new());
+    lock(&link.mailbox)
+        .chat
+        .apply_extras("Ari", None, ChatExtras::default());
     assert!(link.chat_panel().recipients.is_empty());
     assert!(!bare().run_utility(&link, UtilityAction::ClearOldestMessage));
+}
+
+#[test]
+fn server_message_utility_preserves_player_lines_across_console_tabs() {
+    use crate::play::UtilityAction;
+    use oteryn_client_ui::chat::{ChannelTab, ConsoleTab, panel_text};
+    use oteryn_session::{AppliedDelta, ChatLine, ChatRoomSet, ServerMessage, SessionEvent};
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.chat_public_state(
+        ChatRoomSet::default(),
+        vec![ChatLine::Private {
+            speaker_name: "Bryn".into(),
+            text: "Meet at the bridge.".into(),
+        }],
+    );
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::StatusText("You are in a safe area.".into()),
+    })]);
+    assert!(link.chat_open_conversation("Bryn"));
+    for channel in [None, Some(ChannelTab::Conversation("Bryn".into()))] {
+        link.chat_console_tab(ConsoleTab::All);
+        lock(&link.mailbox).chat.console.current = channel.clone();
+        assert!(panel_text(&link.chat_panel()).contains("Meet at the bridge."));
+        assert!(bare().run_utility(&link, UtilityAction::ToggleServerMessages));
+        assert!(panel_text(&link.chat_panel()).contains("Meet at the bridge."));
+        assert!(!panel_text(&link.chat_panel()).contains("You are in a safe area."));
+        assert!(link.chat_panel().console.show_messages);
+        assert!(bare().run_utility(&link, UtilityAction::ToggleServerMessages));
+        if channel.is_none() {
+            assert!(panel_text(&link.chat_panel()).contains("You are in a safe area."));
+        }
+    }
 }

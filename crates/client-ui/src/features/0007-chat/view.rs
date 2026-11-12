@@ -197,6 +197,7 @@ fn tab_text(
     }
     if let Some(super::ChannelTab::Private(id)) = channel
         && show_messages
+        && panel.console.show_server_messages
     {
         for notice in panel
             .console
@@ -211,7 +212,11 @@ fn tab_text(
             );
         }
     }
-    if channel.is_none() && show_messages && tab == crate::chat::ConsoleTab::All {
+    if channel.is_none()
+        && show_messages
+        && panel.console.show_server_messages
+        && tab == crate::chat::ConsoleTab::All
+    {
         text.push_str(&panel.console.notices.scoped_text(
             panel.console.filters,
             panel.console.display,
@@ -235,6 +240,7 @@ fn local_tab_text(panel: &ChatPanel, tab: &super::ChannelTab) -> String {
     use super::{ChannelTab, NoticeScope};
     let console = &panel.console;
     let mut text = match tab {
+        ChannelTab::Loot | ChannelTab::ServerLog if !console.show_server_messages => String::new(),
         ChannelTab::Loot => {
             console
                 .notices

@@ -1,5 +1,6 @@
 //! Custom actions use the same live session callers as inventory, chat and cooldown panels.
 use super::{CustomAction, ObjectTarget};
+use crate::combat_input::PlayCommand;
 use crate::play::feature_local_spell_action_bar::view::{item_source, item_target, visible_items};
 use crate::play::{PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
@@ -81,22 +82,19 @@ impl PlayLink {
         use super::UtilityAction;
         match action {
             UtilityAction::ClearOldestMessage => {
-                let mut mailbox = lock(&self.mailbox);
-                if mailbox.chat.lines.is_empty() {
+                if lock(&self.mailbox).chat.lines.is_empty() {
                     return false;
                 }
-                mailbox.chat.lines.remove(0);
-                if !mailbox.chat.recipients.is_empty() {
-                    mailbox.chat.recipients.remove(0);
-                }
-                true
+                self.commands.send(PlayCommand::ChatClearOldest).is_ok()
             }
             UtilityAction::ShowIgnoreList => {
                 self.chat_show_lists();
                 true
             }
             UtilityAction::ToggleServerMessages => {
-                self.chat_console_filter();
+                let mut mailbox = lock(&self.mailbox);
+                mailbox.chat.console.show_server_messages =
+                    !mailbox.chat.console.show_server_messages;
                 true
             }
             UtilityAction::ChangeCharacter => {

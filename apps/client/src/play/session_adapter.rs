@@ -390,6 +390,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         self.chat_log()
             .map(|log| (log.rooms(), log.lines().cloned().collect()))
     }
+    fn chat_clear_oldest(&mut self) {
+        self.clear_oldest_chat_line();
+    }
     fn chat_extras(&self) -> oteryn_client_ui::chat::ChatExtras {
         use oteryn_client_ui::chat::ChatExtras;
         use oteryn_client_ui::chat_channel_participants::{NoticeKind, NoticeLine};

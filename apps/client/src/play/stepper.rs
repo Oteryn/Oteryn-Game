@@ -303,6 +303,7 @@ super::feature_0014_container_tree::protocol::session_trait! {
     ) -> Option<(oteryn_session::ChatRoomSet, Vec<oteryn_session::ChatLine>)> {
         None
     }
+    fn chat_clear_oldest(&mut self) {}
     fn chat_extras(&self) -> oteryn_client_ui::chat::ChatExtras {
         Default::default()
     }
