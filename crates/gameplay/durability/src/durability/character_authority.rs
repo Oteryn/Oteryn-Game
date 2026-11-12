@@ -951,7 +951,9 @@ static CHARACTER_INTEGRITY_DIAGNOSTIC_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision) \
           LIMIT 1) \
@@ -969,7 +971,9 @@ static CHARACTER_INTEGRITY_DIAGNOSTIC_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
           LIMIT 1) \

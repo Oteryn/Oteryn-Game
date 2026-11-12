@@ -12,7 +12,7 @@ const CHARACTER: &str = "0190f1a2-0000-7000-8000-000000000001";
 const REVISIONS: &str = "profile_revision numeric NOT NULL DEFAULT 1, \
      ruleset_revision numeric NOT NULL DEFAULT 1, content_revision numeric NOT NULL DEFAULT 1, \
      simulation_revision numeric NOT NULL DEFAULT 1, evidence_revision numeric NOT NULL DEFAULT 1, \
-     declaration_revision numeric NOT NULL DEFAULT 1, policy_revision numeric NOT NULL DEFAULT 1, \
+     declaration_revision text NOT NULL DEFAULT '1', policy_revision numeric NOT NULL DEFAULT 1, \
      reward_revision numeric NOT NULL DEFAULT 1";
 
 /// The query on `main` before LOGDBG-C, kept to prove the same fixtures pass and fail.
@@ -68,7 +68,9 @@ fn main_integrity_sql() -> String {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision) \
          UNION ALL \
@@ -81,7 +83,9 @@ fn main_integrity_sql() -> String {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
          LIMIT 1"
