@@ -5,6 +5,9 @@ use crate::durability::character_atelier::AtelierResources;
 use crate::durability::item_fee_burn::test_support::request as fee_request;
 use crate::gameplay_transport::atelier::{GemBuildCommand, GemBuildOutcome};
 
+// Retired paid-scenario items keep their identities; reshape seeds a distinct batch.
+const CARRIED_FRAGMENT_SEEDS: [u8; 3] = [157, 160, 163];
+
 async fn lesser_fragments(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
@@ -33,9 +36,9 @@ async fn carried_small_stacks(h: &Harness) -> TestResult<i64> {
         "SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances
          WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
     )
-    .bind(id(148).as_slice())
-    .bind(id(151).as_slice())
-    .bind(id(154).as_slice())
+    .bind(id(CARRIED_FRAGMENT_SEEDS[0]).as_slice())
+    .bind(id(CARRIED_FRAGMENT_SEEDS[1]).as_slice())
+    .bind(id(CARRIED_FRAGMENT_SEEDS[2]).as_slice())
     .fetch_one(&h.pool)
     .await?)
 }
@@ -301,7 +304,7 @@ pub(super) async fn exercise(
     assert_eq!(debited, 2);
 
     // Carried fragments go first: the stash is untouched while the bag holds enough.
-    fixture::small_fragment_stacks(h).await?;
+    fixture::small_fragment_stacks(h, CARRIED_FRAGMENT_SEEDS, 103).await?;
     let bag = carried_small_stacks(h).await?;
     let carried_first = AtelierRequest {
         occurrence: id(167),

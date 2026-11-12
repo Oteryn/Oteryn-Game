@@ -123,7 +123,7 @@ pub(super) async fn exercise(
     let fresh_yield:i64=sqlx::query_scalar("SELECT (outputs->0->>'count')::bigint FROM game_atelier_item_records WHERE occurrence=encode($1,'hex')::uuid").bind(id(178).as_slice()).fetch_one(&h.pool).await?;
     // Crystal 201189f regular revealed gems yield 2..10 basic fragments.
     assert!((2..=10).contains(&fresh_yield));
-    fixture::small_fragment_stacks(h).await?;
+    fixture::small_fragment_stacks(h, [148, 151, 154], 100).await?;
     let fp = footprint(h).await?;
     let before = stored(h).await?;
     let stale = AtelierRequest {

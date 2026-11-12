@@ -228,12 +228,13 @@ pub(in crate::gameplay_transport) async fn higher_level(h: &Harness) -> TestResu
     Ok(())
 }
 
-pub(super) async fn small_fragment_stacks(h: &Harness) -> TestResult {
+pub(super) async fn small_fragment_stacks(h: &Harness, seeds: [u8; 3], first_ordinal: usize) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    for (seed, ordinal) in [(148, 100), (151, 101), (154, 102)] {
+    for (index, seed) in seeds.into_iter().enumerate() {
+        let ordinal = first_ordinal + index;
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,"oteryn:item.tibia.i46625","definition-r1",2),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
     }
     tx.commit().await?;
