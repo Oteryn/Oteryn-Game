@@ -17,6 +17,7 @@ pub mod premium;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
 use crate::{PlatformClientConfig, PlatformClientError};
+use gateway_request::body;
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use reqwest::header::{CONTENT_TYPE, RETRY_AFTER};
 use reqwest::{Client, Response, StatusCode, Url, redirect::Policy};
@@ -429,12 +430,12 @@ impl NativeLoginGrant {
     }
 }
 
-/// Retry pacing; [`RetryPacing::CONTRACT`] is the production value, tests shorten it.
+/// Retry pacing; tests advance waits without changing limits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RetryPacing {
     /// Backoff before retry `n` (1-based) is `unit * 2^(n-1)`.
     pub unit: Duration,
-    /// A `Retry-After` longer than this is not waited for.
+    /// Maximum accepted `Retry-After`.
     pub max_retry_after: Duration,
 }
 
@@ -609,12 +610,7 @@ impl NativeLoginClient {
         {
             return Err(PlatformClientError::InvalidPayload.into());
         }
-        let body = gateway_request::body(
-            ticket.secret.expose(),
-            login,
-            GATEWAY_PROTOCOL_VERSION,
-            GAME_ALPN,
-        )?;
+        let body = body(&ticket.secret.0, login, GATEWAY_PROTOCOL_VERSION, GAME_ALPN)?;
         if body.len() > MAX_LOGIN_REQUEST_BYTES {
             return Err(PlatformClientError::InvalidPayload.into());
         }
@@ -660,6 +656,8 @@ impl NativeLoginClient {
                 {
                     return Err(error);
                 }
+                #[cfg(test)]
+                let backoff = tests::delay(backoff);
                 tokio::time::sleep(backoff).await;
             }
         };
