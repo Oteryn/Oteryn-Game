@@ -63,7 +63,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
             &[1, 0, 0, 1],
         )
         .await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() != 42 {
+    if reply.status != CommandStatus::Accepted || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err() {
         return Err(format!("P20 GeneralStats observed={reply:?}").into());
     }
     Ok((

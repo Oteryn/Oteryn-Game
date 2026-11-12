@@ -87,11 +87,11 @@ async fn stats(client: &mut DevClientSession) -> TestResult<GeneralStats> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=general-stats observed={reply:?} need=accepted-GeneralStats").into());
     }
-    if reply.payload.len() != 42
+    if general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
         || reply.payload.first() != Some(&(CharacterTab::GeneralStats as u8))
         || reply.payload[33] > 1
     {
-        return Err("step=general-stats observed=malformed-frame need=42-byte-GeneralStats".into());
+        return Err("step=general-stats observed=malformed-frame need=negotiated-GeneralStats".into());
     }
     let mut skills = [0; 7];
     for (slot, bytes) in skills

@@ -133,9 +133,9 @@ fn own_binding(client: &mut DevClientSession) -> TestResult<Binding> {
 
 // GeneralStats wire has a fixed body (tab, xp, level, magic, seven skills,
 // stamina, offline training, known-vitals flag, health, mana). Validate before slicing.
-fn level_from_stats(payload: &[u8]) -> TestResult<u32> {
+fn level_from_stats(payload: &[u8], vocation_selected: bool) -> TestResult<u32> {
     use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
-    if payload.len() != 42
+    if general_stats::validate(payload, vocation_selected).is_err()
         || payload.first() != Some(&(CharacterTab::GeneralStats as u8))
         || payload[33] > 1
     {
@@ -153,7 +153,7 @@ async fn level(client: &mut DevClientSession) -> TestResult<u32> {
     if result.status != CommandStatus::Accepted {
         return Err("C17c player level query refused".into());
     }
-    level_from_stats(&result.payload)
+    level_from_stats(&result.payload, general_stats::selected(client))
 }
 
 async fn say(
@@ -879,9 +879,9 @@ mod tests {
         })
         .encode()
         .map_err(|error| format!("stats encode: {error:?}"))?;
-        assert_eq!(level_from_stats(&bytes)?, 23);
-        assert!(level_from_stats(&bytes[..13]).is_err());
-        assert!(level_from_stats(&[0; 42]).is_err());
+        assert_eq!(level_from_stats(&bytes, false)?, 23);
+        assert!(level_from_stats(&bytes[..13], false).is_err());
+        assert!(level_from_stats(&[0; 42], false).is_err());
         Ok(())
     }
     #[test]
