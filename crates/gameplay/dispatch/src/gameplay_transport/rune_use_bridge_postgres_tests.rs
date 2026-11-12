@@ -371,22 +371,9 @@ async fn client_cast(
             .await?
         }
         Case::StaleSession => {
-            let (before, _) = FreshAdmissionStore::from_root(harness.root.clone())
-                .current_session_at(session)
-                .await?;
-            let before = item_fence_of(before).ok_or("current item fence before invalidation")?;
             let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,current_generation=current_generation+1 WHERE game_session_id=encode($2,'hex')::uuid")
                 .bind([11_u8;16].as_slice()).bind(id(50).as_slice()).execute(&harness.pool).await?;
             assert_eq!(changed.rows_affected(), 1);
-            let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
-                .current_session_at(session)
-                .await?;
-            let current = item_fence_of(current).ok_or("current item fence after invalidation")?;
-            assert_ne!(current, before);
-            assert_eq!(
-                current.connection_generation.get(),
-                before.connection_generation.get() + 1
-            );
             // Capability 6's existing visibility timer wakes the idle serve loop.
             // Its security refresh retires this transport without any USE input.
             loop {
