@@ -90,7 +90,8 @@ fn project(
         }
         return;
     };
-    let (dialog, labels) = play.link.chat_channel_dialog();
+    let snapshot = play.link.chat_panel();
+    let dialog = &snapshot.console.dialog;
     for mut panel in &mut panels {
         panel.display = if dialog.open && !owner.modal_active() {
             Display::Flex
@@ -102,6 +103,8 @@ fn project(
         return;
     }
     let offered = play.link.chat_dialog_entries();
+    // Derive each caption from the exact offered entry, even if the mailbox changed meanwhile.
+    let labels = oteryn_client_ui::chat::dialog_rows(&offered, &snapshot.console);
     if held.generation == Some(owner.generation())
         && held.entries == offered
         && held.labels == labels

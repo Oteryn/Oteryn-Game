@@ -135,11 +135,55 @@ fn native_activate_sends_the_visible_editor_through_the_existing_owner()
             .value(),
         ""
     );
+    assert_eq!(
+        app.world()
+            .resource::<bevy::input_focus::InputFocus>()
+            .get(),
+        Some(editor)
+    );
+    // Replace the session, so the old session's pending command cannot hide a missing fence.
+    let (next_link, mut next_commands, next_outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &next_outbox,
+        ChatRoomSet::default(),
+        Vec::new(),
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = next_link;
+    super::set_text(
+        app.world_mut()
+            .get_mut::<EditableText>(editor)
+            .as_deref_mut()
+            .ok_or("editor")?,
+        "stale draft",
+    );
     app.world_mut().resource_mut::<ChatState>().generation = Some(generation.saturating_add(1));
     app.world_mut().trigger(Activate { entity: send });
     assert!(
-        commands.try_recv().is_err(),
+        next_commands.try_recv().is_err(),
         "stale visible controls must not send"
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "stale draft"
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .text
+            .is_empty()
     );
     Ok(())
 }

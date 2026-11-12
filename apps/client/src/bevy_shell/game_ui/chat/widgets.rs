@@ -59,17 +59,6 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         ))
         .id();
     commands.entity(history).add_child(text);
-    let feedback = commands
-        .spawn((
-            Feedback,
-            source::text("", source::font(skins.font.clone(), true)),
-            Node {
-                min_height: px(0.),
-                flex_shrink: 0.,
-                ..default()
-            },
-        ))
-        .id();
     let compose = commands
         .spawn(Node {
             width: percent(100.),
@@ -104,7 +93,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         .add_children(&[mode, frame, send, channels, close]);
     commands
         .entity(root)
-        .add_children(&[tabs, history, feedback, compose]);
+        .add_children(&[tabs, history, compose]);
     super::channels::setup(&mut commands, root, &skins);
 }
 
@@ -223,7 +212,14 @@ pub(super) fn activate(
                         .chat_channel_dialog_name(&text.value().to_string());
                 }
             }
-            play.link.chat_channel_dialog_confirm();
+            if play.link.chat_channel_dialog_confirm() {
+                for (entity, field, _) in &mut fields {
+                    if *field == Field::Message {
+                        focus.set(entity, FocusCause::Navigated);
+                        break;
+                    }
+                }
+            }
         }
         _ => {}
     }

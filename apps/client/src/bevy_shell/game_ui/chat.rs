@@ -47,8 +47,6 @@ struct Transcript;
 #[derive(Component)]
 struct HistoryScroll;
 #[derive(Component)]
-struct Feedback;
-#[derive(Component)]
 struct ModeButton;
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum Field {
@@ -159,8 +157,7 @@ fn project(
     mut fields: Query<(Entity, &Field, &mut EditableText)>,
     mut focus: ResMut<InputFocus>,
     mut texts: Query<&mut Text, With<Transcript>>,
-    mut feedback: Query<&mut Text, (With<Feedback>, Without<Transcript>)>,
-    mut captions: Query<&mut Text, (Without<Feedback>, Without<Transcript>)>,
+    mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
     tabs: Query<Entity, With<Tabs>>,
     controls: Query<(Entity, &Control)>,
@@ -214,12 +211,6 @@ fn project(
             if position.y >= max - 3. {
                 position.y = 1_000_000.;
             }
-        }
-    }
-    let message = panel.feedback.as_deref().unwrap_or("");
-    for mut text in &mut feedback {
-        if text.0 != message {
-            text.0 = message.into();
         }
     }
     let mode = if !panel.console.can_send() {
