@@ -40,7 +40,8 @@ Write it as one self-contained file. Include, in this order:
    coordinator.
 7. **Review:** for a Claude lane or child session that owns its branch,
    "you run the Codex review of your head and fix confirmed findings
-   (`oteryn-review` §5)"; for a Codex lane, "no review, the coordinator
+   (`oteryn-review` §5 and its `references/batch-review.md`: parallel lens runs,
+   every finding with no cap, pattern sweep, one batch fix)"; for a Codex lane, "no review, the coordinator
    reviews".
 8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
