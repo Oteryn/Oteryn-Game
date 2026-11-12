@@ -1,0 +1,66 @@
+{
+  "schema": "OTERYN_BASIC110_QUALIFIED_DIFFERENCES/v1",
+  "source_commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+  "client": "15.33.dd0955",
+  "differences": [
+    {
+      "classification": "PROVEN_CANONICAL_CONFLICT;MERGED_MATCH",
+      "name": "goo shell",
+      "key": "oteryn:item.tibia.i19372",
+      "field": "Weight",
+      "client": "58.00 oz",
+      "canonical": "48.00 oz",
+      "merged": "58.00 oz",
+      "source": "content/items/definitions/items-08500-08999.json",
+      "capture": "items-basic:67",
+      "boundary": "No wrongruntimeweightclaim."
+    },
+    {
+      "classification": "PROVEN_CANONICAL_CONFLICT;RECORD_NOT_SELECTED",
+      "name": "death oyoroi",
+      "key": "oteryn:item.tibia.i50260",
+      "field": "Mantra",
+      "client": 16,
+      "canonical": 15,
+      "merged": "recordnotselected",
+      "canary_xml": 16,
+      "canary_class": "OTS_HYPOTHESIS_ONLY",
+      "source": "content/items/definitions/items-27500-27999.json",
+      "capture": "items-current:20",
+      "boundary": "No gameplaydamageclaim."
+    }
+  ],
+  "name_bindings": [
+    {
+      "client": "bearskin",
+      "source": "bear skin",
+      "key": "oteryn:item.tibia.i31578",
+      "method": "qualifiedvariant"
+    },
+    {
+      "client": "fireheart cuirass",
+      "source": "Fireheart cuirass",
+      "key": "oteryn:item.tibia.i22518",
+      "method": "uniquecasefold;earlierunboundcandidatewithdrawn"
+    }
+  ],
+  "unresolved_in_scope": {
+    "source_key_bindings": "No ambiguous repository full-name match in frozen names;actual client item identity remains unproven.",
+    "unknown_unprojected_fields": "retained asunknown;notdefects",
+    "Look_instance_graphics": "notvalidatedbyBasicpass"
+  },
+  "comparison_counts": {
+    "canonical_match": 610,
+    "merged_record_not_selected": 513,
+    "reused_records": 10,
+    "canonical_display_terminal_punctuation": 5,
+    "canonical_unknown_or_unprojected_in_source": 108,
+    "market_match": 83,
+    "merged_match": 171,
+    "merged_unknown_or_unprojected_in_source": 38,
+    "new_manual_records": 77,
+    "canonical_client_value_difference": 1,
+    "merged_display_terminal_punctuation": 2
+  },
+  "mapping_boundary": "Source keys identify named repository candidates. Name signatures do not establish unique client item types/instances;facts concern retained cards."
+}
