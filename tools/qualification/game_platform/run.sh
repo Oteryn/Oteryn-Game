@@ -32,7 +32,9 @@ trap cleanup EXIT
 [[ -n "${PLATFORM_SOURCE:-}" ]] || fail platform_source_missing
 [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" == "$GAME_PLATFORM_SHA" ]] || fail wrong_platform_sha
 for file in portal-rs/e2e/start.sh portal-rs/e2e/harness.mjs \
-  portal-rs/crates/identity/src/login_http.rs portal-rs/crates/gameauth/src/oauth/oauth_http.rs; do
+  portal-rs/crates/identity/src/login_http.rs portal-rs/crates/gameauth/src/oauth/oauth_http.rs \
+  portal-rs/crates/player-api/src/lib.rs portal-rs/crates/gateway/src/lib.rs \
+  portal-rs/crates/gameauth/src/devices_http.rs portal-rs/crates/gameauth/src/devices_tls.rs; do
   if [[ ! -f "$PLATFORM_SOURCE/$file" ]]; then
     printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=%s:1\n' "$file" > "$GAME_PLATFORM_RESULT_FILE"
     exit 2

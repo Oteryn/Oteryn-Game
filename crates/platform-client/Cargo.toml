@@ -31,10 +31,9 @@ tough = { version = "=0.24.0", default-features = false }
 url = "=2.5.8"
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["test-util"] }
-
-[dev-dependencies]
+oteryn-client = { version = "=0.1.0", path = "../../apps/client" }
 oteryn-identity = { version = "=0.1.0", path = "../identity" }
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true

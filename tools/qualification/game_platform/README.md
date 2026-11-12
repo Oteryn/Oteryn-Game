@@ -117,3 +117,57 @@ errors are mapped to `unavailable/database`, and account errors contain fixed re
 not password values. Its report and generated secret inputs are not copied to diagnostics.
 The local preflight diagnostic scan found no password/token/cookie/code/URL output;
 no live node or portal logs were available in this workspace for a runtime audit.
+
+GPE2E-3 adds two integration targets immediately after `web_identity`:
+
+- `native_ticket_and_gateway_fail_closed` (60 s) exchanges real browser OAuth,
+  persists a real native ticket, and calls the real Gateway with a deliberately
+  absent Character (verified independently). The current topology has no LCFA
+  owner snapshot: the shipping protocol parser must accept exactly HTTP 503 /
+  `NATIVE_LOGIN_ROUTE_UNAVAILABLE`. Its identical-request retries must leave the
+  ticket unused and `native_admissions` and Game admission receipts empty.
+- `native_device_rotation_replay` (120 s) uses the direct TLS device listener,
+  the existing harness CA/server identity, and Game's `NativeLoginClient`.
+  Enrollment refusal is checked with a second real OAuth bearer because the
+  shipping transport deliberately hides HTTP refusal bodies. Only exact HTTP
+  400 / `{"error":"invalid_request"}`, with no persisted family, identifies the
+  pinned handler's rejection of the contract's original two-member enrollment.
+  Other failures are assertions, not protocol blockers. A later successful
+  enrollment proceeds into character/ticket rotation, real LCFA mTLS publication
+  of an empty owner snapshot, predecessor replay, cross-account/client checks,
+  revoke, a generation change, disabled-OAuth real-process refusal, and offline
+  sign-out through shipping `DeviceLogin`/`DeviceAttempt`. No successful
+  credential response is injected. The security mutation changes only the
+  current native generation; no expiry rows are edited. On Linux the real OS
+  vault reports unavailable; offline sign-out uses the shipping session class
+  and process-memory secret lifecycle rather than substituting a vault.
+
+The native TLS port defaults to 18100 (`GAME_PLATFORM_NATIVE_PORT`). The private
+launcher supplies `APP_ENV=testing`, the explicit remembered-device flag and
+projection authority; the existing real seed supplies the native OAuth client
+allowlist. The disabled-OAuth and offline cases launch additional instances of
+that same real binary with isolated listeners and stop/reap them on every exit.
+
+At ed9b3372, Platform requires four-member enrollment (`devices_http.rs:224`) and
+rotation proof (`:199`), contrary to the ACCEPTED Game contract lines 15–16,
+65–66 and its HTTP request table. An observed enrollment gap emits both pending
+coordinates; it does not claim to have reached rotation. If enrollment becomes
+available while proofless rotation remains refused, only the rotation coordinate
+is recorded. Neither blocked path prints the device success evidence.
+
+The lane preserves first-recorded terminal outcomes: a live Platform blocker is
+not overwritten by the final Game assignment blocker. Both existing downstream
+blocker lines are still emitted, custody before assignment. All successful live
+assertions are required before these success lines can appear:
+
+```text
+NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0
+NODE_BOOT_EVIDENCE flow=native_device_rotation result=pass rotations=4 replay_refused=1 signout_offline=1
+```
+
+Focused observer/protocol tests (no external topology, no E2E success lines):
+
+```sh
+cargo test -p oteryn-platform-client --test native_ticket_and_gateway_fail_closed
+cargo test -p oteryn-platform-client --test native_device_rotation_replay
+```

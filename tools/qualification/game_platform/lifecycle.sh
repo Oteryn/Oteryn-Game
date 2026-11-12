@@ -109,7 +109,8 @@ game_platform_identity() {
   result=NODE_BOOT_IDENTITY_ONLY
   ACTIVE_STAGE=web_identity
   # Compile before the node's bounded assignment wait and journey budget begin.
-  cargo test --locked -p oteryn-platform-client --test web_identity_pkce_isolation --no-run \
+  cargo test --locked -p oteryn-platform-client --test web_identity_pkce_isolation \
+    --test native_ticket_and_gateway_fail_closed --test native_device_rotation_replay --no-run \
     > "$WORK/identity-build.log" 2>&1 || game_platform_fail web_identity driver_build_failed
   stage operator_setup -- operator_setup
   [[ ${STATUS[operator_setup]} == PASS ]] || game_platform_fail game operator_setup_failed
@@ -124,10 +125,36 @@ game_platform_identity() {
   kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_identity
   grep -Fx 'NODE_BOOT_EVIDENCE flow=web_identity result=pass account_isolation=1' "$WORK/identity.log" \
     || game_platform_fail web_identity evidence_missing
+  local target budget
+  for target in native_ticket_and_gateway_fail_closed native_device_rotation_replay; do
+    ACTIVE_STAGE="$target"
+    budget=60
+    [[ "$target" != native_device_rotation_replay ]] || budget=120
+    GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
+      GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
+      timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-platform-client --test "$target" \
+        "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
+      || game_platform_fail "$target" journey_assertion_failed
+    kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_native
+    if [[ "$target" == native_ticket_and_gateway_fail_closed ]]; then
+      grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0' "$WORK/$target.log" \
+        || game_platform_fail "$target" evidence_missing
+    elif grep -q '^GAME_PLATFORM_EVIDENCE blocker=portal-rs/crates/gameauth/src/devices_http.rs:' "$WORK/$target.log"; then
+      grep '^GAME_PLATFORM_EVIDENCE blocker=portal-rs/crates/gameauth/src/devices_http.rs:' "$WORK/$target.log"
+      grep -Eq '^GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=portal-rs/crates/gameauth/src/devices_http.rs:(224|199)$' "$GAME_PLATFORM_RESULT_FILE" \
+        || game_platform_fail "$target" blocker_result_missing
+    else
+      grep -E '^NODE_BOOT_EVIDENCE flow=native_device_rotation result=pass rotations=[1-9][0-9]* replay_refused=1 signout_offline=1$' "$WORK/$target.log" \
+        || game_platform_fail "$target" evidence_missing
+    fi
+  done
   evidence "blocker=portal-rs/crates/gameauth/src/admission/grant.rs:24 pending=encrypted_signing_custody"
   # Assignment requires control-owned scope grants. The default node_boot stage
   # inserts them directly; this lane must not invent those authority records.
   printf 'GAME_PLATFORM_EVIDENCE blocker=tools/qualification/node_boot/run.sh:999 pending=control_scope_grant_issuer\n'
-  printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Game what=tools/qualification/node_boot/run.sh:999\n' > "$GAME_PLATFORM_RESULT_FILE"
+  # Preserve the first terminal outcome, including a live Platform device gap.
+  if [[ ! -f "$GAME_PLATFORM_RESULT_FILE" ]]; then
+    printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Game what=tools/qualification/node_boot/run.sh:999\n' > "$GAME_PLATFORM_RESULT_FILE"
+  fi
   exit 2
 }

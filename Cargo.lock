@@ -3523,6 +3523,7 @@ dependencies = [
  "bytes",
  "ed25519-dalek",
  "futures",
+ "oteryn-client",
  "oteryn-diagnostics",
  "oteryn-error-codes",
  "oteryn-foundation",
