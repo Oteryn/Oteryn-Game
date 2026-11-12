@@ -342,7 +342,7 @@ fn session_owner(database: &str, browser: &Browser) -> TestResult<String> {
         database,
         "session_owner",
         &format!(
-            "SELECT COALESCE(account_id::text,'anonymous') FROM web_sessions WHERE id_hash=decode('{}','hex') AND idle_expires_at>now() AND absolute_expires_at>now();",
+            "SELECT COALESCE((SELECT account_id::text FROM web_sessions WHERE id_hash=decode('{}','hex') AND idle_expires_at>now() AND absolute_expires_at>now()),'anonymous');",
             cookie_hash(browser)?
         ),
     )
@@ -698,7 +698,13 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
     let mut replay = Browser::new(public)?;
     replay.cookie = old_a_cookie;
     check(
-        session_owner(database, &replay)?.is_empty(),
+        sql(
+            database,
+            "logout_old_session",
+            &format!(
+                "SELECT count(*) FROM web_sessions WHERE id_hash=decode('{old_a_hash}','hex');"
+            ),
+        )? == "0",
         "logout_session_row_survived",
     )?;
     let response = replay.request("/en/login", None).await?;
