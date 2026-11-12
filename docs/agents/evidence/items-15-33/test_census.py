@@ -32,9 +32,10 @@ class CensusRegression(unittest.TestCase):
             self.assertEqual(result[path]['records_present'], 1)
 
     def test_nested_collections_and_empty_zero_null_stay_distinct(self):
-        result = rows([{'a': {'state': 'UNKNOWN'}}, {'a': {'state': 'KNOWN', 'value': [[0, None, '']] }},
+        result = rows([{'a': {'state': 'UNKNOWN'}}, {'a': {'state': 'KNOWN', 'value': [[0, None, '', {'x': 1}]] }},
                        {'a': {'state': 'KNOWN', 'value': []}}])
         self.assertEqual(result['a[][]']['records_absent_with_unknown_ancestor'], 1)
+        self.assertEqual(result['a[][].x']['records_absent_with_unknown_ancestor'], 1)
         self.assertEqual(result['a[][]']['records_zero'], 1)
         self.assertEqual(result['a[][]']['records_null'], 1)
         self.assertEqual(result['a[][]']['records_empty_string'], 1)

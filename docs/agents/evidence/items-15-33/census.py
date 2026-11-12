@@ -76,8 +76,9 @@ def census(records, label):
         for index in range(1, len(parts)):
             parent = '.'.join(parts[:index])
             ancestors.append(parent)
-            if parent.endswith('[]'):
-                ancestors.append(parent[:-2])
+            while parent.endswith('[]'):
+                parent = parent[:-2]
+                ancestors.append(parent)
         row = {'corpus': label, 'path': path or '<record>', 'record_count': len(records),
                'records_present': field['present'].bit_count(), 'records_absent': absent.bit_count()}
         for state in ('UNKNOWN', 'NOT_APPLICABLE'):
