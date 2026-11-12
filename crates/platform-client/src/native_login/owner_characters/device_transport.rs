@@ -73,6 +73,8 @@ impl NativeLoginClient {
                 .client
                 .post(endpoint)
                 .header(reqwest::header::AUTHORIZATION, header)
+                .header(reqwest::header::ACCEPT, "application/json")
+                .header(reqwest::header::ACCEPT_LANGUAGE, "en")
                 .json(&body)
                 .send()
                 .await
@@ -250,6 +252,38 @@ impl NativeLoginClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn pinned_site_error_envelope_is_exact() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(
+            DeviceRefusal::decode(400, br#"{"status":400,"error":"Invalid request"}"#)?,
+            DeviceRefusal {
+                status: 400,
+                error: "Invalid request"
+            }
+        );
+        assert_eq!(
+            DeviceRefusal::decode(503, br#"{"status":503,"error":"Temporarily unavailable"}"#)?,
+            DeviceRefusal {
+                status: 503,
+                error: "Temporarily unavailable"
+            }
+        );
+        assert!(
+            DeviceRefusal::decode(
+                400,
+                br#"{"status":400,"error":"Invalid request","extra":true}"#
+            )
+            .is_err()
+        );
+        assert!(
+            DeviceRefusal::decode(401, br#"{"status":400,"error":"Invalid request"}"#).is_err()
+        );
+        assert!(
+            DeviceRefusal::decode(400, br#"{"status":400,"error":"invalid_request"}"#).is_err()
+        );
+        assert!(DeviceRefusal::decode(400, br#"{"error":"Invalid request"}"#).is_err());
+        Ok(())
+    }
     #[test]
     fn refusal_retains_exact_status_and_only_contract_error_values()
     -> Result<(), Box<dyn std::error::Error>> {

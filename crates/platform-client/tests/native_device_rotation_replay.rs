@@ -116,7 +116,7 @@ async fn journey(t: Topology) -> TestResult {
     persisted(&t, &third, &t.input.accounts[0].account_id)?;
     let (status, body) = post(&http, origin, "/tickets", &format!("OterynDevice {}", third.device_credential.expose()), json!({"protocol_version":1,"client_id":t.input.client,"account_id":t.input.accounts[1].account_id})).await?;
     check(
-        status == 400 && body == json!({"error":"invalid_request"}),
+        status == 400 && body == json!({"status":400,"error":"Invalid request"}),
         "wrong_account_override_accepted",
     )?;
     persisted(&t, &third, &t.input.accounts[0].account_id)?;
@@ -226,7 +226,7 @@ async fn journey(t: Topology) -> TestResult {
                 .await,
             Err(NativeLoginError::DeviceRefused(DeviceRefusal {
                 status: 503,
-                error: "device_authorization_unavailable"
+                error: "Temporarily unavailable"
             }))
         ),
         "disabled_oauth_accepted",
@@ -276,7 +276,7 @@ fn native_device_rotation_replay() -> TestResult {
 #[test]
 fn blocker_requires_exact_http_status_and_error() -> TestResult {
     check(
-        enrollment_gap(400, &json!({"error":"invalid_request"})),
+        enrollment_gap(400, &json!({"status":400,"error":"Invalid request"})),
         "enrollment_gap_not_detected",
     )?;
     check(
@@ -306,7 +306,7 @@ fn protocol_blocker_rejects_every_state_change() -> TestResult {
             true,
             DeviceRefusal {
                 status: 400,
-                error: "invalid_request",
+                error: "Invalid request",
             },
         ),
         (

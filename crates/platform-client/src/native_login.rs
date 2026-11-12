@@ -244,7 +244,7 @@ impl GatewayErrorCode {
     }
 }
 
-/// Exact, bounded device-route refusal. Only contract error values are retained;
+/// Exact, bounded device-route refusal. Only explicit protocol/site errors are retained;
 /// arbitrary server response text and credentials can never enter diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DeviceRefusal {
@@ -258,6 +258,23 @@ impl DeviceRefusal {
         struct Body<'a> {
             #[serde(borrow)]
             error: &'a str,
+        }
+        // ed9b3372 wraps native routes in the site renderer (web/surface.rs:244).
+        // With explicit JSON/English negotiation it emits this exact envelope.
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct SiteBody<'a> {
+            status: u16,
+            #[serde(borrow)]
+            error: &'a str,
+        }
+        if let Ok(body) = serde_json::from_slice::<SiteBody<'_>>(bytes) {
+            let error = match (status, body.status, body.error) {
+                (400, 400, "Invalid request") => "Invalid request",
+                (503, 503, "Temporarily unavailable") => "Temporarily unavailable",
+                _ => return Err(PlatformClientError::InvalidPayload),
+            };
+            return Ok(Self { status, error });
         }
         let body: Body<'_> =
             serde_json::from_slice(bytes).map_err(|_| PlatformClientError::InvalidPayload)?;

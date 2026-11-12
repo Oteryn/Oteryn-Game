@@ -4,7 +4,17 @@ set +x
 readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
+game_platform_retain_test_logs() {
+  [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -n "${WORK:-}" ]] || return 0
+  local log
+  for log in identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log; do
+    [[ -f "$WORK/$log" ]] || continue
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
+      "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" || return 1
+  done
+}
 game_platform_fail() {
+  game_platform_retain_test_logs || set -- "$1" diagnostic_redaction_failed
   if [[ -n "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then
     printf 'GAME_PLATFORM_RESULT=FAIL flow=%s reason=%s\n' "$1" "$2" > "$GAME_PLATFORM_RESULT_FILE"
   else
@@ -27,6 +37,8 @@ game_platform_cleanup() {
     kill -KILL -- "-$GP_HARNESS_PID" 2>/dev/null || true
     wait "$GP_HARNESS_PID" 2>/dev/null || true
   fi
+  # Also covers unexpected exits/timeouts before an explicit fail call.
+  game_platform_retain_test_logs || true
   # Preserve private logs before node_boot removes its work directory.
   if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"

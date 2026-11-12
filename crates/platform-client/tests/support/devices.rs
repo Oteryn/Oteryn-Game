@@ -16,7 +16,8 @@ use std::{
 
 pub const BASE: &str = "/api/v1/game-auth/device-sessions";
 pub fn enrollment_gap(status: u16, body: &Value) -> bool {
-    status == 400 && *body == json!({"error":"invalid_request"})
+    // M:web/src/surface.rs:244-252 and ui/i18n/en.ftl:9, outside devices_http.
+    status == 400 && *body == json!({"status":400,"error":"Invalid request"})
 }
 pub fn rotation_gap(status: u16, body: &Value) -> bool {
     status == 401 && *body == json!({"error":"device_authorization_unavailable"})
@@ -31,7 +32,11 @@ pub fn device_state(t: &Topology) -> TestResult<String> {
     )
 }
 pub fn contract_gap(enrollment: bool, refusal: DeviceRefusal, before: &str, after: &str) -> bool {
-    let body = json!({"error": refusal.error});
+    let body = if enrollment {
+        json!({"status":refusal.status,"error":refusal.error})
+    } else {
+        json!({"error": refusal.error})
+    };
     before == after
         && if enrollment {
             enrollment_gap(refusal.status, &body)
@@ -116,6 +121,8 @@ pub async fn post(
     let response = client
         .post(format!("{origin}{BASE}{suffix}"))
         .header("authorization", authorization)
+        .header(reqwest::header::ACCEPT, "application/json")
+        .header(reqwest::header::ACCEPT_LANGUAGE, "en")
         .json(&body)
         .send()
         .await

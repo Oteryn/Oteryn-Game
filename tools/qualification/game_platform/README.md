@@ -129,8 +129,9 @@ GPE2E-3 adds two integration targets immediately after `web_identity`:
 - `native_device_rotation_replay` (120 s) uses the direct TLS device listener,
   the existing harness CA/server identity, and Game's `NativeLoginClient`.
   The shipping transport preserves each actual request's exact HTTP status and
-  closed-set contract error value. Only exact HTTP 400 /
-  `{"error":"invalid_request"}`, with unchanged family/credential state, identifies the
+  closed-set refusal value. With explicit `Accept: application/json` and
+  `Accept-Language: en`, only exact HTTP 400 /
+  `{"status":400,"error":"Invalid request"}`, with unchanged family/credential state, identifies the
   pinned handler's rejection of the contract's original two-member enrollment.
   Other failures are assertions, not protocol blockers. A later successful
   enrollment proceeds into character/ticket rotation, real LCFA mTLS publication
@@ -178,3 +179,38 @@ Focused observer/protocol tests (no external topology, no E2E success lines):
 cargo test -p oteryn-platform-client --test native_ticket_and_gateway_fail_closed
 cargo test -p oteryn-platform-client --test native_device_rotation_replay
 ```
+
+
+The PC run on a172ee373 lost its assertion reason because cleanup retained no
+journey logs. The lane now redacts and retains `identity-build.log`, `identity.log`,
+`native_ticket_and_gateway_fail_closed.log` and `native_device_rotation_replay.log`
+before an explicit failure and again during cleanup (including unexpected exit
+and timeout). Retained files are mode 0600 in the private diagnostics directory.
+Redaction retains only structured Rust test summaries and source-defined fixed
+failure reasons; every other line becomes `[REDACTED]`. This suppresses arbitrary
+opaque secrets as well as bearer/device headers, credentials, OAuth codes/tokens,
+cookies, passwords and database URLs, including multiline values. Test drivers
+still must never print secrets in their original private logs.
+
+Root-cause trace at unchanged Platform ed9b3372 (M paths below):
+
+| Hypothesis | Source evidence and outcome |
+|---|---|
+| Disabled/misconfigured device route | `devices_http.rs:69` reads exact `true` and `:70` reads APP_ENV; Game's launcher supplies both (`prepare.py`). `devices.rs:128` accepts `testing`. Gate configuration is correct. |
+| Wrong listener or missing TLS | `web/src/lib.rs:495` mounts devices; `main.rs:441`–`:442` passes that public router to native TLS. `devices_tls.rs:20`–`:22` read the same bind/certificate/key names set by the launcher, and `:86`–`:87` insert verified HTTPS/socket evidence. The configured trusted certificate contains the loopback IP. |
+| OAuth/token or native-client refusal before body validation | `devices_http.rs:169`–`:172` decodes enrollment before calling `enroll_class`; `devices.rs:252`–`:257` then checks OAuth deployment and token authority. The two-member body cannot reach those checks. The real native-client seed and OAuth allowlist remain configured. |
+| Four-member body rejection | `devices_http.rs:220` first deserializes mandatory key/proof members (`devices_wire.rs:6`–`:11`), so it returns Invalid before the explicit length check at `:224`. `devices_http.rs:23` maps that to HTTP 400 / `invalid_request`. |
+| Outer response rendering — most likely PC failure | `web/src/lib.rs:65`–`:67` wraps devices in `surface::finish` and API error policy. `surface.rs:206`–`:221` requires an explicit JSON Accept header; `:244`–`:268` replaces 400 bodies, even ones already JSON. The previous shipping request had no explicit Accept, so the final response was HTML and could not satisfy Game's JSON refusal decoder; the journey maps transport/payload failure to `enrollment_transport_or_payload_failed`. The missing PC log prevents proving which assertion actually fired. |
+
+The repair negotiates JSON/English in the real transport and accepts the exact
+rendered 400 envelope above (`surface.rs:251`, `ui/i18n/en.ftl:9`). It does not
+accept another enrollment status. The same renderer changes the malformed
+account-override response; disabled OAuth's exact 503 envelope is
+`{"status":503,"error":"Temporarily unavailable"}` (`ratelimit.rs:356`–`:389`,
+`:284`, `ui/i18n/en.ftl:142`). HTTP 401 is not in the rendering list, so replay,
+revocation, wrong-client and generation expectations stay unchanged.
+
+The pinned-envelope decoder regression failed before repair with
+`Error: InvalidPayload`; diagnostics retention also failed before repair for
+all three journey log names. Both regressions pass after repair. This is focused
+red/green evidence, not a substitute for rerunning the PC topology.
