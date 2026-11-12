@@ -102,3 +102,34 @@ fn coin_shop_session_end_cancels_pending_oauth_without_presenting_or_refreshing(
         Ok(())
     })
 }
+
+#[test]
+fn store_launcher_opens_coin_history_and_transfer_pages_until_the_session_ends() -> TestResult {
+    use crate::web_links::WebLink;
+    test_thread(|| {
+        let stack = test_support::Stack::start(Vec::new())?;
+        let mut config = stack.config();
+        config.platform_url = "https://oteryn.example/".into();
+        let (url_tx, url_rx) = mpsc::channel();
+        config.open_browser = Arc::new(move |url| {
+            let _ = url_tx.send(url.to_owned());
+            true
+        });
+        let launcher = Launcher::new(config, CHARACTER.into(), Arc::new(|| {}));
+        assert!(launcher.open_web(WebLink::CoinHistory));
+        assert!(launcher.open_web(WebLink::CoinTransfer));
+        let language = oteryn_client_ui::localization::current().code();
+        let language = if language == "pl" { "pl" } else { "en" };
+        assert_eq!(
+            url_rx.try_iter().collect::<Vec<_>>(),
+            [
+                format!("https://oteryn.example/{language}/shop/history"),
+                format!("https://oteryn.example/{language}/shop/transfer"),
+            ]
+        );
+        launcher.end();
+        assert!(!launcher.open_web(WebLink::CoinHistory));
+        assert!(url_rx.try_recv().is_err());
+        Ok(())
+    })
+}

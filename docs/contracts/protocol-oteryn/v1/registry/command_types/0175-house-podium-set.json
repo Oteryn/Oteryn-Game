@@ -5,6 +5,6 @@
   "capability": 150,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/house-podium-v1.md#set",
   "result_schema": "docs/contracts/protocol-oteryn/v1/house-podium-v1.md#result",
-  "max_payload_bytes": 187,
+  "max_payload_bytes": 190,
   "max_result_payload_bytes": 9
 }

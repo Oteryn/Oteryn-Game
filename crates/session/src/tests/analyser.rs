@@ -59,6 +59,74 @@ fn analyser_selected_facts_are_typed_and_invalid_batches_preserve_revision() -> 
 }
 
 #[test]
+fn c0486_selected_session_reports_the_attacker_of_a_damage_input_fact() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&486));
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        &[10, 486],
+                        &[10, 486],
+                        &[],
+                        (1, spatial(0)),
+                        &[(15, 1, 1, vec![])],
+                    )
+                    .await
+                });
+                let mut session = Session::admit(client, admission_with(&[10, 486])?).await?;
+                peer.await??;
+                let attacker = EntityRef {
+                    identity: [7; 16],
+                    generation: 3,
+                };
+                let hit = AnalyserFact::DamageInput {
+                    value: NonZeroU32::new(9).ok_or("nonzero")?,
+                    element: oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+                    source: AnalyserDamageSource::Player,
+                };
+                let mut payload = Vec::new();
+                for (fact, attacker) in [
+                    (&hit, Some(&attacker)),
+                    (&AnalyserFact::Kill { race: None }, None),
+                ] {
+                    let encoded = encode_attributed_analyser_fact(fact, attacker)
+                        .map_err(|e| format!("{e:?}"))?;
+                    payload.push(0x0a);
+                    payload.push(u8::try_from(encoded.len())?);
+                    payload.extend_from_slice(&encoded);
+                }
+                let frame = encode_state_delta(1, 41, 15, 1, 2, 1, &payload)?;
+                let event =
+                    session.apply_state_delta(41, decode_wire_envelope(&frame)?.payload())?;
+                let SessionEvent::AnalyserAttributedFacts(delta) = event else {
+                    return Err("selected 486 must report attributed facts".into());
+                };
+                assert_eq!(
+                    delta.value,
+                    vec![
+                        AttributedFact {
+                            fact: hit,
+                            attacker: Some(attacker)
+                        },
+                        AttributedFact {
+                            fact: AnalyserFact::Kill { race: None },
+                            attacker: None
+                        },
+                    ]
+                );
+                Ok(())
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .join()
+        .map_err(|_| "analyser test thread")??
+}
+
+#[test]
 fn analyser_join_requires_an_empty_typed_snapshot() {
     assert!(crate::analyser_transport::validate_join(&[], &[]).is_ok());
     assert!(crate::analyser_transport::validate_join(&[10], &[]).is_err());

@@ -110,6 +110,15 @@ enum ChatLineKind {
   CHAT_LINE_KIND_GUILD = 5; // capability 36: fields 4, 7, 9, 10 only
   CHAT_LINE_KIND_PRIVATE_CHANNEL = 6; // capability 80: fields 4, 7, 11 only
   CHAT_LINE_KIND_PARTY = 7; // capability 240: fields 4, 7 only
+  CHAT_LINE_KIND_CHANNEL_NOTICE = 8; // capability 495: fields 4, 11, 14 only (WU26)
+}
+
+// WU26 capability 495, field 14 of line kind 8.
+enum ChatChannelNoticeKind {
+  CHAT_CHANNEL_NOTICE_KIND_UNSPECIFIED = 0; // rejected
+  CHAT_CHANNEL_NOTICE_KIND_JOINED = 1;
+  CHAT_CHANNEL_NOTICE_KIND_LEFT = 2;     // left, or its session ended or dropped capability 80
+  CHAT_CHANNEL_NOTICE_KIND_EXCLUDED = 3; // the owner excluded it while its session continued
 }
 
 // Same encoding as world_spatial ActorPositionV1; floor 0..=15.
@@ -120,7 +129,8 @@ message ChatPositionV1 {
 }
 
 // StateDelta.payload of delta type 1: one line. A whisper heard from beyond an adjacent tile
-// carries the text "pspsps". At most 1194 bytes (a local line).
+// carries the text "pspsps". At most 1194 bytes (a local line). At most 1280 bytes with WU26
+// capability 493, 495 or 496.
 message ChatLineV1 {
   ChatLineKind kind = 1;
   bytes speaker_identity = 2;    // the 16-byte spatial identity (world_spatial EntityRefV1)
@@ -132,8 +142,29 @@ message ChatLineV1 {
   ChatPositionV1 position = 8;   // where the line was spoken; always present on a local line
   bytes guild_id = 9; // capability 36, kind 5 only; 16-byte UUIDv7
   uint32 guild_rank = 10; // capability 36, kind 5 only; send-time rank 1..20
-  uint32 channel_id = 11; // capability 80, kind 6 only; 1..=65535
+  uint32 channel_id = 11; // capability 80, kind 6 only; capability 495, kind 8 only; 1..=65535
+  string recipient_name = 12; // capability 493, kind 2 only, the sender's own echo; 1..=120 bytes
+  uint64 line_sequence = 13; // capability 496, every kind; never 0, strictly increasing per GameSession
+  ChatChannelNoticeKind notice_kind = 14; // capability 495, kind 8 only
 }
+
+// WU26, owner programme 2026-11-11: Tibia Global chat channels. Four capabilities, each
+// selected alone; without selection every ChatLineV1 and ChatChannelListV1 byte is unchanged.
+// - 493 CHAT_PRIVATE_ECHO_V1 requires 7. When the World relay accepts a private line (result
+//   OK), its sender receives it back on its next CHAT refresh as kind 2 with fields 4 (the
+//   sender's own name), 7 (the text as relayed) and 12 (the recipient named). Only that echo
+//   carries field 12; nobody else receives it.
+// - 494 CHAT_JOINED_CHANNELS_V1 requires 80: ChatChannelListV1 field 4.
+// - 495 CHAT_CHANNEL_PARTICIPANTS_V1 requires 80: ChatChannelListV1 field 5, and kind 8 notices
+//   sent to the session for every other member that joins, leaves or is excluded from a channel
+//   the session is in at two consecutive reads (the first read after admission is the baseline
+//   and notifies nothing). A channel's label stays client-side: "<owner>'s channel" from
+//   ChatInvitedChannelV1.owner_name, or the session's own name for its own channel.
+// - 496 CHAT_LINE_SEQUENCE_V1 requires 7. Every delta type 1 carries field 13, equal to the
+//   delta's own new domain 12 revision: strictly increasing per GameSession across reconnect,
+//   resume and transfer, with gaps where other domain 12 deltas take a revision.
+// With 493, 495 or 496 a line is at most 1280 bytes (the largest private echo with a
+// sequence); the legacy bound above holds otherwise.
 
 // GUILD-CHAT-1, Integrator decision 2026-10-22: capability 36 CHAT_GUILD_ROOM_V1
 // requires 7. Only selected peers use intent tag 6, disposition 10, line kind 5
@@ -186,6 +217,20 @@ message ChatChannelListV1 {
   uint32 public_rooms = 1; // ChatRoomsV1 bits of the rooms that can be opened; absent when none
   uint32 own_channel = 2; // the session's own channel; absent when it has none
   repeated ChatInvitedChannelV1 invited = 3; // at most 16, distinct, never the own channel
+  // WU26 capability 494: the channels (field 2 or 3 of this list) the session is in now,
+  // ascending, distinct, at most 17; unpacked varints. Absent without selection.
+  repeated uint32 joined_channel = 4;
+  // WU26 capability 495: one entry per channel the session is in, ascending, distinct, at
+  // most 17. Absent without selection.
+  repeated ChatChannelParticipantsV1 participants = 5;
+}
+
+// WU26 capability 495: the joined members of one channel, the session included, ordered by
+// name; 1..=17 (owner and 16 invitations, CHATPM-RL-01). With 494 or 495 a list delta is
+// At most 37500 bytes (2055 + 17 x 4 + 17 x (1 + 2 + 4 + 17 x 122)).
+message ChatChannelParticipantsV1 {
+  uint32 channel_id = 1; // 1..=65535, a channel of fields 2 or 3
+  repeated string name = 2; // 1..=120 bytes each
 }
 
 // CHATCH: capability 240 CHAT_PARTY_ROOM_V1 requires CHAT_V1 and PARTY_V1.

@@ -390,6 +390,51 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         self.chat_log()
             .map(|log| (log.rooms(), log.lines().cloned().collect()))
     }
+    fn chat_clear_oldest(&mut self) {
+        self.clear_oldest_chat_line();
+    }
+    fn chat_extras(&self) -> oteryn_client_ui::chat::ChatExtras {
+        use oteryn_client_ui::chat::ChatExtras;
+        use oteryn_client_ui::chat_channel_participants::{NoticeKind, NoticeLine};
+        use oteryn_session::ChannelNoticeKind;
+        let Some(log) = self.chat_log() else {
+            return ChatExtras::default();
+        };
+        let extension = log.channel_extension();
+        ChatExtras {
+            recipients: self.is_selected(493).then(|| {
+                log.line_extras()
+                    .map(|x| x.recipient_name.clone())
+                    .collect()
+            }),
+            sequences: self
+                .is_selected(496)
+                .then(|| log.line_extras().map(|x| x.line_sequence).collect()),
+            joined: extension
+                .filter(|_| self.is_selected(494))
+                .map(|x| x.joined.clone()),
+            participants: extension.filter(|_| self.is_selected(495)).map(|x| {
+                x.participants
+                    .iter()
+                    .map(|p| (p.channel_id, p.names.clone()))
+                    .collect()
+            }),
+            notices: self.is_selected(495).then(|| {
+                log.channel_notices()
+                    .map(|n| NoticeLine {
+                        serial: n.serial,
+                        channel_id: n.notice.channel_id,
+                        kind: match n.notice.kind {
+                            ChannelNoticeKind::Joined => NoticeKind::Joined,
+                            ChannelNoticeKind::Left => NoticeKind::Left,
+                            ChannelNoticeKind::Excluded => NoticeKind::Excluded,
+                        },
+                        name: n.notice.name.clone(),
+                    })
+                    .collect()
+            }),
+        }
+    }
     async fn chat_public(
         &mut self,
         intent: &oteryn_session::ChatIntent,

@@ -1,7 +1,11 @@
 use super::*;
 
+#[path = "reshape.rs"]
+mod reshape;
 #[path = "resources.rs"]
 mod resources;
+#[path = "vessels_v2.rs"]
+mod vessels_v2;
 #[path = "workshop.rs"]
 mod workshop;
 
@@ -147,10 +151,6 @@ fn atelier_controls_send_only_intent_and_current_revision() -> Result<(), Error>
     for (intent, mutation) in [
         (Intent::Reveal, atelier::Mutation::Reveal { quality: 2 }),
         (
-            Intent::SwitchDomain,
-            atelier::Mutation::SwitchDomain { gem: [17; 16] },
-        ),
-        (
             Intent::Dismantle,
             atelier::Mutation::Dismantle { gem: [17; 16] },
         ),
@@ -203,7 +203,7 @@ fn paid_actions_require_live_quotes_and_unresolved_changes_remain_blocked() -> R
         .quality_quotes
         .clear();
     assert!(request(&mut panel, Intent::Reveal, occurrence(1)).is_none());
-    assert!(request(&mut panel, Intent::SwitchDomain, occurrence(1)).is_none());
+    assert!(request(&mut panel, Intent::Dismantle, occurrence(1)).is_none());
     panel
         .confirmed_atelier
         .as_mut()

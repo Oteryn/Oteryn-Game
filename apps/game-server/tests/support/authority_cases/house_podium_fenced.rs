@@ -4,13 +4,14 @@
 use super::house_podium::{current_house, house_fence, placed_podiums};
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, Sex, UnlockFact};
 use crate::durability::DurabilityRoot;
-use crate::durability::house_podium::{HousePodiumRefusal, HousePodiumSet};
+use crate::durability::house_podium::{HousePodiumRefusal, HousePodiumSet, NEW_PODIUM_FLAGS};
 use crate::foundation::GameSessionId;
 use crate::item_transfer_postgres_cases as native;
 use crate::item_transfer_postgres_cases::{
     CHARACTER, Harness, TestResult, configured_admin, id, runtime,
 };
 use oteryn_gameplay_housing::house_podium::PodiumContent;
+use oteryn_protocol_oteryn::house_podium::DisplayFlags;
 
 const OUTFIT: &str = "oteryn:content.outfit.citizen";
 const MOUNT: &str = "oteryn:content.mount.widow_queen";
@@ -166,6 +167,48 @@ fn house_podium_runtime_path_is_fenced_checked_and_survives_restart() -> TestRes
                     .await.map_err(native::debug)?,
                 Ok(2)
             );
+            // Capability 489 flags persist with the display. A podium's first display set
+            // without flags takes Crystal's new-podium default (platform only), and a later
+            // set without flags keeps the stored flags.
+            let hidden = DisplayFlags { show_platform: false, show_outfit: true, show_mount: false };
+            assert_eq!(
+                restarted.set_house_podium_flagged(&h.node, fence, house.clone(), set(item(94)?, 2, 3, RAT), Some(hidden), Content)
+                    .await.map_err(native::debug)?,
+                Ok(3)
+            );
+            // A display stored before capability 489 carries no flags.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_house_podium_displays SET display_variant=display_variant-'show_platform'-'show_outfit'-'show_mount' WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item(92)?.as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let load = async || -> TestResult<std::collections::BTreeMap<[u8; 16], DisplayFlags>> {
+                Ok(restarted
+                    .load_house_podiums(&h.node, fence, house.clone())
+                    .await
+                    .map_err(native::debug)?
+                    .map_err(native::debug)?
+                    .into_iter()
+                    .map(|d| (d.item_instance_id, d.flags))
+                    .collect())
+            };
+            let flags = load().await?;
+            assert_eq!(flags.get(&item(94)?), Some(&hidden));
+            assert_eq!(flags.get(&item(91)?), Some(&NEW_PODIUM_FLAGS), "a new podium shows only its platform");
+            assert_eq!(flags.get(&item(92)?), Some(&DisplayFlags::default()), "an existing display shows every part");
+            assert_eq!(
+                restarted.set_house_podium(&h.node, fence, house.clone(), set(item(94)?, 3, 3, RAT), Content)
+                    .await.map_err(native::debug)?,
+                Ok(4),
+            );
+            assert_eq!(
+                restarted.set_house_podium(&h.node, fence, house.clone(), set(item(92)?, 1, 3, BOSS), Content)
+                    .await.map_err(native::debug)?,
+                Ok(2),
+            );
+            let flags = load().await?;
+            assert_eq!(flags.get(&item(94)?), Some(&hidden), "a V1 set keeps the stored flags");
+            assert_eq!(flags.get(&item(92)?), Some(&DisplayFlags::default()), "an existing display keeps every part");
             Ok(())
         }
         .await;

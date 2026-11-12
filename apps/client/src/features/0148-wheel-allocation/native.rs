@@ -3,7 +3,7 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::wheel_allocation::{
-    Intent, WheelPanel, domain_name, gem_label, modifier_label, panel_text, slot_label,
+    Intent, WheelPanel, gem_label, modifier_label, panel_text, slot_label,
 };
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
@@ -21,12 +21,12 @@ const REFRESH: usize = 106;
 const GEMS: usize = 107;
 const MODIFIERS: usize = 108;
 const QUALITY: usize = 109;
-const DOMAIN: usize = 110;
+const VESSEL: usize = 110;
 const SOCKET: usize = 111;
 const UNSOCKET: usize = 112;
 const REVEAL: usize = 113;
 const LOCK: usize = 114;
-const SWITCH: usize = 115;
+const RESHAPE: usize = 115;
 const DISMANTLE: usize = 116;
 const GRADE: usize = 117;
 const RETRY: usize = 118;

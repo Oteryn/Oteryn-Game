@@ -1,21 +1,16 @@
 use super::*;
 #[test]
-fn proficiency_bonus_presentation_matches_server_streak_milestones() {
+fn reward_streak_bonus_is_one_point_per_claim_capped_at_seven_percent() {
     let mut panel = DailyRewardPanel::default();
-    assert!(!panel_text(&panel).contains("chance to gain double XP"));
+    assert!(!panel_text(&panel).contains("Reward Streak Bonus"));
     for (streak, chance) in [
         (0, 0),
         (1, 1),
         (6, 6),
         (7, 7),
         (8, 7),
-        (13, 7),
-        (14, 8),
-        (20, 8),
-        (21, 9),
-        (27, 9),
-        (28, 10),
-        (100_000, 10),
+        (28, 7),
+        (100_000, 7),
     ] {
         panel.wall = Some(daily_reward::DailyRewardWall {
             lane_day: 1,
@@ -25,11 +20,59 @@ fn proficiency_bonus_presentation_matches_server_streak_milestones() {
             claim_enabled: false,
         });
         let text = panel_text(&panel);
-        assert!(text.contains(&format!(
-            "Weapon proficiency XP: {chance}% chance to gain double XP"
-        )));
-        assert!(text.contains("1% per streak day up to 7%; 8% at 14, 9% at 21, 10% at 28"));
+        assert!(text.contains("Reward Streak Bonus"));
+        if chance == 0 {
+            assert!(text.contains("You currently have no Reward Streak Bonus."));
+        } else {
+            assert!(text.contains(&format!(
+                "Your reward streak currently grants you a {chance}% chance to gain double weapon proficiency XP."
+            )));
+        }
+        assert!(text.contains("chance of up to 7%"));
+        assert!(!text.contains("resting"));
     }
+}
+
+#[test]
+fn wall_repeats_every_seven_days_and_lists_the_new_reward_kinds() {
+    let mut details = daily_reward::details::Details::empty(1);
+    details.days[0].free = daily_reward::details::Tier {
+        cosmetic_tokens: 2,
+        prey_wildcards: 1,
+        temple_scrolls: 1,
+        xp_percent: 10,
+        xp_minutes: 30,
+        bounty_tokens: 1,
+    };
+    details.days[0].premium.cosmetic_tokens = 4;
+    let mut panel = DailyRewardPanel {
+        details: Some(details),
+        wall: Some(daily_reward::DailyRewardWall {
+            lane_day: 9,
+            streak: 3,
+            jokers: 0,
+            claimed: false,
+            claim_enabled: true,
+        }),
+        ..Default::default()
+    };
+    assert_eq!(
+        [cycle_day(1), cycle_day(7), cycle_day(8), cycle_day(30)],
+        [1, 7, 1, 2]
+    );
+    let text = panel_text(&panel);
+    assert!(text.contains("Day 2 of 7"));
+    assert!(text.contains("Seven-day reward cycle"));
+    assert!(!text.contains("30-day"));
+    assert!(text.contains(
+        "2 Cosmetic Tokens, 1x Prey Wildcards, 1 Temple Teleport Scroll, 30 minutes XP Boost 10%, Bounty Reroll Token"
+    ));
+    assert!(text.contains("Premium: 4 Cosmetic Tokens"));
+    assert!(text.contains("Day 2 today"));
+    assert!(text.contains("Premium accounts receive larger rewards"));
+    assert!(!text.contains("Day 08"));
+    panel.details = None;
+    assert!(panel_text(&panel).contains("Rewards are loading"));
 }
 
 #[test]
@@ -114,7 +157,7 @@ fn wall_encoded_like_server_reduces_into_panel() {
     };
     assert!(apply_result(&mut panel, &response));
     assert_eq!(panel.wall, Some(wall));
-    assert!(panel_text(&panel).contains("Day 30 of 30"));
+    assert!(panel_text(&panel).contains("Day 2 of 7"));
 }
 #[test]
 fn claim_refusal_is_visible_and_not_inferred_as_state() {
@@ -157,10 +200,13 @@ fn reward_calendar_records_only_server_confirmed_claims() {
         }),
         ..Default::default()
     };
+    let mut details = daily_reward::details::Details::empty(1);
+    details.days[4].free.cosmetic_tokens = 3;
+    panel.details = Some(details);
     let before = panel_text(&panel);
-    assert!(before.contains("30-day calendar"));
-    assert!(before.contains("05: available"));
-    assert!(!before.contains("04: claimed"));
+    assert!(before.contains("Day 5 of 7"));
+    assert!(before.contains("Day 5 today"));
+    assert!(!before.contains("Day 4 claimed"));
     assert!(request(&mut panel, Intent::Claim).is_some());
     assert!(apply_result(
         &mut panel,
@@ -173,7 +219,7 @@ fn reward_calendar_records_only_server_confirmed_claims() {
         }
     ));
     let after = panel_text(&panel);
-    assert!(after.contains("05: claimed"));
+    assert!(after.contains("Day 5 claimed"));
     assert!(after.contains("Confirmed this session: day 5, streak 12"));
 }
 

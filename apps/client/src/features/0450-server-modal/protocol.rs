@@ -1,6 +1,8 @@
 //! Session-owned modal transport; the window never owns or blocks the socket.
 use crate::play::Stepper;
 use oteryn_client_ui::server_modal::{self as ui, Answer, Panel};
+use oteryn_client_ui::server_modal_input::Entry;
+use std::sync::{Arc, Mutex, PoisonError};
 use oteryn_session::SessionError;
 use tokio::{
     sync::{mpsc, oneshot},
@@ -18,6 +20,8 @@ pub(in crate::play) struct Driver {
     sender: mpsc::Sender<Submission>,
     next_query: Instant,
     shown: Option<u32>,
+    /// What the dialog window collected next to the answer (capability 490).
+    entry: Arc<Mutex<Entry>>,
 }
 impl Driver {
     pub(in crate::play) fn new(selected: bool) -> Self {
@@ -31,7 +35,14 @@ impl Driver {
             sender,
             next_query: Instant::now(),
             shown: None,
+            entry: Arc::default(),
         }
+    }
+    /// Selects capability 490: dialogs may ask for a value and answers carry it.
+    #[must_use]
+    pub(in crate::play) fn with_input(mut self, selected: bool) -> Self {
+        self.panel.input = selected;
+        self
     }
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
@@ -42,7 +53,8 @@ impl Driver {
         }
         let mut completed = None;
         if let Ok((answer, acknowledged)) = self.answers.try_recv() {
-            let accepted = if let Some(command) = ui::answer(&mut self.panel, answer) {
+            let entry = std::mem::take(&mut *self.entry.lock().unwrap_or_else(PoisonError::into_inner));
+            let accepted = if let Some(command) = ui::answer_with(&mut self.panel, answer, &entry) {
                 let result = session.feature(&command).await?;
                 ui::apply_result(&mut self.panel, &result)
             } else {
@@ -63,7 +75,12 @@ impl Driver {
         }
         if let Some(dialog) = &self.panel.active {
             if self.shown != Some(dialog.id) {
-                super::view::open(dialog.clone(), self.sender.clone());
+                super::view::open(
+                    dialog.clone(),
+                    self.panel.active_input.clone(),
+                    self.panel.input,
+                    (self.sender.clone(), self.entry.clone()),
+                );
                 self.shown = Some(dialog.id);
             }
         } else {

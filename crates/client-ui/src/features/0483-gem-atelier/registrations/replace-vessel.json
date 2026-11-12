@@ -1,0 +1,16 @@
+{
+  "mechanic": "0483-gem-atelier",
+  "kind": "handlers",
+  "id": "0483-gem-atelier-replace-vessel",
+  "status": "supported",
+  "commands": [
+    6213
+  ],
+  "direction": "client_to_server",
+  "capability": 483,
+  "entry": "protocol.rs::replace_vessel",
+  "not_applicable": {
+    "input": "Replace Vessel is chosen with the Wheel panel's existing vessel and gem selection.",
+    "settings": "The Gem Atelier has no client settings."
+  }
+}

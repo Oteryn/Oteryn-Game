@@ -208,7 +208,7 @@ fn scenario() -> Result<(), String> {
 #[test]
 fn phosphorus_record_category_uses_real_play_queue_and_displays_victory() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
-    outbox.highscores_initialize(true);
+    outbox.highscores_initialize(true, false);
     link.highscores_request(Action::Filter {
         category: 16,
         vocation: 0,

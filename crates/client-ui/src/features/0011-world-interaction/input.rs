@@ -7,11 +7,14 @@ use oteryn_input_actions::{
 use oteryn_renderer::{TileCoord, TileView};
 
 pub const CLICK_ACTION: &str = "client.click";
+pub const ATTACK_TOGGLE_ACTION: &str = "client.attack_toggle";
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ClickAction {
     pub x: f64,
     pub y: f64,
     pub secondary: bool,
+    /// Alt+click on an opponent: toggles attacking it.
+    pub toggle_attack: bool,
 }
 #[must_use]
 pub fn click_tile(view: &TileView, x: f64, y: f64) -> Option<TileCoord> {
@@ -49,6 +52,15 @@ impl MouseActions {
                         vec![InputAtom::Mouse(MouseButton::PRIMARY)],
                     )?,
                     ActionId::new(CLICK_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::one(oteryn_input_actions::Modifier::Alt),
+                        vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                    )?,
+                    ActionId::new(ATTACK_TOGGLE_ACTION.to_owned())?,
                     RepeatPolicy::Ignore,
                 ),
                 Binding::new(
@@ -109,8 +121,10 @@ impl MouseActions {
                 _ => {}
             }
             for action in self.router.process(event) {
-                if matches!(action.action().as_str(), CLICK_ACTION | "client.context")
-                    && action.context() == &self.gameplay
+                if matches!(
+                    action.action().as_str(),
+                    CLICK_ACTION | ATTACK_TOGGLE_ACTION | "client.context"
+                ) && action.context() == &self.gameplay
                     && action.phase() == ActionPhase::Started
                     && let Some((x, y)) = self.pointer
                 {
@@ -118,6 +132,7 @@ impl MouseActions {
                         x,
                         y,
                         secondary: action.action().as_str() == "client.context",
+                        toggle_attack: action.action().as_str() == ATTACK_TOGGLE_ACTION,
                     });
                 }
             }

@@ -17,16 +17,6 @@ impl Outbox {
 }
 
 impl Outbox {
-    pub(in crate::play) fn daily_reward_picker_result(
-        &self,
-        kind: u32,
-        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
-    ) {
-        oteryn_client_ui::daily_reward::apply_picker(&mut lock(&self.0).daily_reward, kind, result);
-    }
-}
-
-impl Outbox {
     pub(in crate::play) fn returner_initial_request(
         &self,
     ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {

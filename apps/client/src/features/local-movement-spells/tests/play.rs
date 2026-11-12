@@ -50,7 +50,13 @@ fn ordinary_chat_reply_does_not_clear_pending_movement_spell() -> Result<(), Err
     outbox.chat_result(&earlier_say, &outcome);
     assert!(link.chat_public_panel().pending);
     assert_eq!(link.chat_public_panel().feedback, None);
-    outbox.chat_public_result(&outcome);
+    outbox.chat_public_result(
+        &ChatIntent::Say {
+            mode: ChatSpeechMode::Say,
+            text: "exani tera".into(),
+        },
+        &outcome,
+    );
     assert!(!link.chat_public_panel().pending);
     assert_eq!(
         link.chat_public_panel().feedback.as_deref(),

@@ -3,7 +3,13 @@
 
 pub const STREAK_MAX: u32 = 100_000;
 pub const JOKERS_MAX: u8 = 3;
-pub const CYCLE_DAYS: u8 = 30;
+/// Winter Update 2026 (WU26-07, owner decision 2026-11-11): a seven-day cycle.
+pub const CYCLE_DAYS: u8 = 7;
+/// DAILY30 lanes stored before WU26-07 hold days 1..30 (migration 0547 still allows them);
+/// such a lane resumes on the same weekday of the seven-day cycle.
+pub const LEGACY_LANE_DAYS: u8 = 30;
+/// The streak bonus rises one point per consecutive claim up to this cap.
+pub const PROFICIENCY_BONUS_CAP: u8 = 7;
 
 pub use oteryn_gameplay_content::content::daily_reward::DailyRewardTier as DailyRewardSet;
 
@@ -13,16 +19,18 @@ pub fn reward_for_day(day: u8, premium: bool) -> Option<DailyRewardSet> {
         .reward(day, premium)
 }
 
-/// Chance, as a whole percentage, to double weapon proficiency XP.
+/// Chance, as a whole percentage, to double weapon proficiency XP: one point per streak
+/// day, capped at 7% for Free and Premium alike.
 pub fn proficiency_bonus_chance(streak: u32) -> u8 {
-    match streak {
-        0 => 0,
-        1..=7 => streak as u8,
-        8..=13 => 7,
-        14..=20 => 8,
-        21..=27 => 9,
-        _ => 10,
-    }
+    u8::try_from(streak).map_or(PROFICIENCY_BONUS_CAP, |streak| {
+        streak.min(PROFICIENCY_BONUS_CAP)
+    })
+}
+
+/// The seven-day cycle day of a stored lane day, mapping a legacy DAILY30 day 8..30 onto
+/// the same weekday. Days 1..7 are unchanged.
+pub fn cycle_day(lane_day: u8) -> u8 {
+    1 + lane_day.saturating_sub(1) % CYCLE_DAYS
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,7 +72,7 @@ pub fn advance_daily_reward(
     epoch: u64,
     jokers: u8,
 ) -> Result<DailyRewardAdvance, DailyRewardRuleError> {
-    if !(1..=CYCLE_DAYS).contains(&state.lane_day)
+    if !(1..=LEGACY_LANE_DAYS).contains(&state.lane_day)
         || state.streak > STREAK_MAX
         || jokers > JOKERS_MAX
         || match state.last_claim_epoch {
@@ -77,8 +85,9 @@ pub fn advance_daily_reward(
     if epoch == 0 {
         return Err(DailyRewardRuleError::InvalidEpoch);
     }
+    let lane_day = cycle_day(state.lane_day);
     let (streak, jokers_spent, claimed_lane_day) = match state.last_claim_epoch {
-        None => (1, 0, state.lane_day),
+        None => (1, 0, lane_day),
         Some(last) => {
             let elapsed = epoch
                 .checked_sub(last)
@@ -95,15 +104,11 @@ pub fn advance_daily_reward(
                         .ok_or(DailyRewardRuleError::InvalidState)?
                         .min(STREAK_MAX),
                     spent,
-                    state.lane_day,
+                    lane_day,
                 )
             } else {
-                let milestone = fallback_milestone(state.lane_day);
-                (
-                    u32::from(milestone + 1),
-                    0,
-                    if milestone == 0 { 1 } else { milestone + 1 },
-                )
+                // A gap the jokers cannot cover restarts the streak and the cycle.
+                (1, 0, 1)
             }
         }
     };
@@ -120,16 +125,6 @@ pub fn advance_daily_reward(
         claimed_lane_day,
         jokers_spent,
     })
-}
-
-fn fallback_milestone(next_day: u8) -> u8 {
-    match next_day {
-        8..=14 => 7,
-        15..=21 => 14,
-        22..=28 => 21,
-        29..=30 => 28,
-        _ => 0,
-    }
 }
 
 /// Most recent Berlin 06:00 reset day, expressed as civil days since 1970-01-01.
@@ -156,5 +151,5 @@ pub fn daily_reward_reset_day(
 #[path = "daily_reward_tests.rs"]
 mod tests;
 
-#[path = "daily_reward/picker.rs"]
-pub mod picker;
+#[path = "daily_reward/xp_boost.rs"]
+pub mod xp_boost;

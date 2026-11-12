@@ -110,6 +110,11 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(true);
             }
+            // Capability 492: each recipient's victory moves its Moonsilver pity in this same
+            // transaction. An expired chest delivers nothing, so it is a victory without a drop.
+            let pity_key = oteryn_gameplay_encounter_rules::boss::pity::pity_boss_key(&death.boss_key);
+            let pity: Vec<([u8; 16], bool)> = death.chests.iter().map(|chest| (*chest.character_id.as_bytes(),
+                now < expires && chest.items.iter().any(|item| oteryn_gameplay_encounter_rules::boss::pity::is_pity_item(&item.definition.production_key)))).collect();
             for chest in death.chests {
                 sqlx::query("INSERT INTO game_character_boss_reward_chests(character_id,world_id,death_id,boss_key,minted_at,expires_at,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7)")
                     .bind(chest.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(death.death.as_slice())
@@ -121,6 +126,9 @@ impl DurabilityRoot {
                         .bind((index + 1) as i32).bind(item.definition.family).bind(item.definition.production_key)
                         .bind(item.definition.revision_ref).bind(i64::from(item.quantity)).bind(now >= expires).execute(&mut *tx).await?;
                 }
+            }
+            if let Some(pity_key) = pity_key {
+                crate::durability::boss_pity::record_victories_in_transaction(&mut tx, &pity_key, &pity).await?;
             }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(true)

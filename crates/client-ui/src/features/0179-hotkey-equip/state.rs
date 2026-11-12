@@ -6,6 +6,10 @@ pub struct HotkeyEquipPanel {
     pub selected: bool,
     pub smart: bool,
     pub smart_active: bool,
+    /// Capability 485 is selected: command 348 carries the exact upgrade tier.
+    pub tiered: bool,
+    /// Upgrade tier of the next request (0 = an unforged copy); sent only when `tiered`.
+    pub upgrade_tier: u8,
     pub dirty: bool,
     pub edit: u64,
     pub open: bool,

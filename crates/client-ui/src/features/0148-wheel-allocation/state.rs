@@ -21,6 +21,11 @@ pub struct WheelPanel {
     pub preset_book: super::presets::PresetBook,
     pub preset_feedback: String,
     pub selected: bool,
+    /// Capability 483 is negotiated: the Atelier speaks commands 6210-6214 and reports twelve
+    /// Gem Vessel slots.
+    pub atelier_v2: bool,
+    /// The Gem Vessel facts of the last confirmed v2 reply.
+    pub vessel_board: Option<crate::gem_atelier::VesselBoard>,
     pub open: bool,
     pub synchronized: bool,
     pub confirmed_wheel: Option<wheel::WheelAllocationReply>,
@@ -31,8 +36,12 @@ pub struct WheelPanel {
     pub slot: usize,
     pub gem: Option<[u8; 16]>,
     pub modifier: Option<(u8, u16)>,
-    pub domain: u8,
+    /// Selected Gem Vessel slot (0-based). Gems have no domain; any gem of a vessel's quality fits.
+    pub vessel_slot: u8,
     pub quality: u8,
+    /// Mod Reshaping context. `None` until the server reports it, which keeps Reshape disabled.
+    pub in_temple: Option<bool>,
+    pub premium: Option<bool>,
     pub pending: Option<WheelCommand>,
     /// Exact logical occurrence and expected revision survive an indeterminate response.
     pub retry: Option<WheelCommand>,
@@ -49,6 +58,8 @@ impl Default for WheelPanel {
             preset_book: Default::default(),
             preset_feedback: String::new(),
             selected: false,
+            atelier_v2: false,
+            vessel_board: None,
             open: false,
             synchronized: false,
             confirmed_wheel: None,
@@ -59,8 +70,10 @@ impl Default for WheelPanel {
             slot: 14,
             gem: None,
             modifier: None,
-            domain: 0,
+            vessel_slot: 0,
             quality: 0,
+            in_temple: None,
+            premium: None,
             pending: None,
             retry: None,
             feedback: None,
@@ -76,6 +89,19 @@ impl WheelPanel {
             && self.confirmed_atelier.is_some()
             && self.pending.is_none()
             && self.retry.is_none()
+    }
+
+    /// Both native Atelier views use the same admission and current-selection checks.
+    pub fn can_reshape(&self) -> bool {
+        self.ready()
+            && self.atelier_v2
+            && !self.dirty()
+            && self.gems.pending.is_none()
+            && self.diagram.pending.is_none()
+            && self.gems.review.is_none()
+            && self
+                .selected_gem()
+                .is_some_and(|gem| super::reshape_block(self, gem).is_none())
     }
 
     pub fn selected_gem(&self) -> Option<&atelier::GemView> {
@@ -124,7 +150,18 @@ impl WheelPanel {
             .map_or(0, |grade| grade.grade)
     }
 
+    /// Selectable Gem Vessel slots: twelve with capability 483, else the four draft vessels.
+    pub fn vessel_slot_count(&self) -> u8 {
+        if self.atelier_v2 { 12 } else { 4 }
+    }
+
+    /// The wire still reports a vessel's slot index in the gem's legacy `domain` field. With
+    /// capability 483 vessels are changed by Replace Vessel, never drafted, so there is no draft
+    /// to compare.
     pub fn confirmed_vessels(&self) -> Option<wheel::WheelVessels> {
+        if self.atelier_v2 {
+            return Some(self.vessels);
+        }
         let mut vessels = [None; 4];
         for gem in &self.confirmed_atelier.as_ref()?.gems {
             if gem.vessel {
@@ -167,11 +204,18 @@ impl WheelPanel {
         let Some(gem) = self.selected_gem() else {
             return false;
         };
-        let (domain, id) = (usize::from(gem.domain), gem.id);
-        let Some(vessel) = self.vessels.get_mut(domain) else {
+        let id = gem.id;
+        // Replace Vessel: the chosen slot takes the gem, whatever it held before.
+        let slot = usize::from(self.vessel_slot);
+        if slot >= self.vessels.len() {
             return false;
-        };
-        *vessel = Some(id);
+        }
+        for vessel in &mut self.vessels {
+            if *vessel == Some(id) {
+                *vessel = None;
+            }
+        }
+        self.vessels[slot] = Some(id);
         self.feedback = Some(tr!("Vessel change is pending; press Save Wheel"));
         true
     }
@@ -180,7 +224,7 @@ impl WheelPanel {
         if !self.ready() {
             return false;
         }
-        let Some(vessel) = self.vessels.get_mut(usize::from(self.domain)) else {
+        let Some(vessel) = self.vessels.get_mut(usize::from(self.vessel_slot)) else {
             return false;
         };
         *vessel = None;

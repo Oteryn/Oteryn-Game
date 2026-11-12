@@ -1,7 +1,7 @@
 pub use oteryn_client_runtime::player_trade::*;
 use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
-/// Ctrl+T opens the direct-player-trade panel.
+/// The direct-player-trade panel opens on the chord the player binds (no default key).
 pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
     events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 23 && modifiers.contains(Modifier::Control) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
 }

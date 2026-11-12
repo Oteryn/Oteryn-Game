@@ -11,6 +11,8 @@ pub struct ImbueCommand(pub imbuement::ImbuementRequest);
 pub struct ImbueResponse {
     pub status: CommandStatus,
     pub reply: Option<imbuement::ImbuementReply>,
+    /// Each offer's success percentage (capability 491); empty without the capability.
+    pub success: Vec<u8>,
 }
 
 pub async fn send<S: SessionStream>(
@@ -29,15 +31,24 @@ pub async fn send<S: SessionStream>(
             &payload,
         )
         .await?;
-    let reply = matches!(
+    let accepted = matches!(
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    )
-    .then(|| imbuement::decode_imbuement_reply(&result.payload))
-    .transpose()
-    .map_err(|_| SessionError::SessionUnusable)?;
+    );
+    let (reply, success) = if !accepted {
+        (None, Vec::new())
+    } else if session.is_selected(imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1) {
+        let (reply, success) = imbuement::decode_imbuement_reply_with_success(&result.payload)
+            .map_err(|_| SessionError::SessionUnusable)?;
+        (Some(reply), success)
+    } else {
+        let reply = imbuement::decode_imbuement_reply(&result.payload)
+            .map_err(|_| SessionError::SessionUnusable)?;
+        (Some(reply), Vec::new())
+    };
     Ok(ImbueResponse {
         status: result.status,
         reply,
+        success,
     })
 }

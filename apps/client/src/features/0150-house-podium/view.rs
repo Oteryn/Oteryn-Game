@@ -26,16 +26,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Direction: 0 north, 1 east, 2 south, 3 west",
                 "Display content key",
             ],
-            buttons: &[
-                "Refresh",
-                "Projection",
-                "Set",
-                "Outfit",
-                "Mount",
-                "Creature",
-                "Turn clockwise",
-                "Preview artwork",
-            ],
+            buttons: button_labels(&link.house_podium_panel()),
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.house_podium;
                 (
@@ -67,6 +58,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     super::input::edit(panel, 2, ((direction + 1) % 4).to_string());
                     return;
                 }
+                if (8..=10).contains(&action) {
+                    use oteryn_client_ui::house_podium_flags::{Part, toggle};
+                    toggle(
+                        panel,
+                        [Part::Platform, Part::Outfit, Part::Mount][action - 8],
+                    );
+                    return;
+                }
                 let intent = match action {
                     0 => oteryn_client_ui::house_podium::Intent::Refresh,
                     1 => oteryn_client_ui::house_podium::Intent::Projection,
@@ -82,4 +81,50 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
     graphic_window::start(link);
+}
+
+#[cfg(any(windows, test))]
+fn button_labels(panel: &oteryn_client_ui::house_podium::Panel) -> &'static [&'static str] {
+    const BUTTONS: &[&str] = &[
+        "Refresh",
+        "Projection",
+        "Set",
+        "Outfit",
+        "Mount",
+        "Creature",
+        "Turn clockwise",
+        "Preview artwork",
+        "Toggle platform",
+        "Toggle outfit",
+        "Toggle mount",
+    ];
+    if panel.flagged {
+        BUTTONS
+    } else {
+        &BUTTONS[..8]
+    }
+}
+
+#[cfg(test)]
+mod capability_tests {
+    use super::*;
+
+    #[test]
+    fn podium_toggle_controls_follow_capability_selection() {
+        let (link, _, outbox) = crate::play::play_channel();
+        for flagged in [false, true, false] {
+            lock(&outbox.0).properties.house_podium.flagged = flagged;
+            let panel = link.house_podium_panel();
+            let labels = button_labels(&panel);
+            assert_eq!(labels.len(), if flagged { 11 } else { 8 });
+            assert_eq!(labels.contains(&"Toggle platform"), flagged);
+            assert_eq!(labels.contains(&"Toggle outfit"), flagged);
+            assert_eq!(labels.contains(&"Toggle mount"), flagged);
+            assert!(labels.contains(&"Preview artwork"));
+            use oteryn_client_ui::house_podium_flags::Part;
+            for part in [Part::Platform, Part::Outfit, Part::Mount] {
+                assert_eq!(link.house_podium_toggle(part), flagged);
+            }
+        }
+    }
 }

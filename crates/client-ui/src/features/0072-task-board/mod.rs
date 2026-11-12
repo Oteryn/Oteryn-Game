@@ -19,7 +19,10 @@ pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };
 pub use protocol::{FullIntent, apply_full_result, full_request};
-pub use view::{shop_offer_choice, shop_offer_text};
+pub use view::{
+    DIFFICULTIES, REROLL_TOKEN_CAP, difficulty_name, difficulty_tooltip, rarity_name,
+    shop_offer_choice, shop_offer_text,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {

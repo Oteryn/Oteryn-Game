@@ -17,9 +17,13 @@ struct Peer {
     commands: Arc<Mutex<Vec<ChatIntent>>>,
     list: ChatChannelList,
     lines: Vec<ChatLine>,
+    extras: oteryn_client_ui::chat::ChatExtras,
 }
 
 impl Stepper for Peer {
+    fn chat_extras(&self) -> oteryn_client_ui::chat::ChatExtras {
+        self.extras.clone()
+    }
     fn chat_private_state(&self) -> (bool, Option<ChatChannelList>) {
         (true, Some(self.list.clone()))
     }
@@ -99,6 +103,7 @@ fn private_channel_commands_and_live_state_reach_the_chat_panel() -> Result<(), 
             runtime.block_on(async {
                 let commands = Arc::new(Mutex::new(Vec::new()));
                 let peer = Peer {
+                    extras: Default::default(),
                     commands: Arc::clone(&commands),
                     list: ChatChannelList {
                         invited: vec![InvitedChannel {
@@ -170,4 +175,127 @@ fn private_channel_commands_and_live_state_reach_the_chat_panel() -> Result<(), 
         })?
         .join()
         .map_err(|_| "private chat UI test thread panicked")?
+}
+
+#[test]
+fn activity_handoff_restarts_chat_extension_cursors() -> Result<(), Error> {
+    use oteryn_client_ui::chat::{ChannelTab, ChatExtras};
+    use oteryn_client_ui::chat_channel_participants::{NoticeKind, NoticeLine};
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let mut peer = Peer {
+        commands: Arc::new(Mutex::new(Vec::new())),
+        list: ChatChannelList {
+            own_channel: Some(100),
+            ..Default::default()
+        },
+        lines: vec![ChatLine::Private {
+            speaker_name: "Source".into(),
+            text: "hello".into(),
+        }],
+        extras: ChatExtras {
+            recipients: Some(vec![None]),
+            sequences: Some(vec![Some(20)]),
+            joined: Some(vec![100]),
+            participants: Some(vec![(100, vec!["Source".into()])]),
+            notices: Some(vec![NoticeLine {
+                serial: 20,
+                channel_id: 100,
+                kind: NoticeKind::Joined,
+                name: "Source".into(),
+            }]),
+        },
+    };
+    let mut held = Vec::new();
+    crate::play::session_stepper::publish(&mut peer, &outbox, &mut held);
+    assert!(
+        link.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Conversation("Source".into()))
+    );
+    assert!(
+        link.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Private(100))
+    );
+    use oteryn_session::activity_scope::{
+        ActivityScope, ActivityScopeSnapshot, STATE_DOMAIN_ACTIVITY_SCOPE, encode_activity_scope,
+    };
+    let mut id = [1; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    let mut successor = id;
+    successor[15] = 2;
+    let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        handoff: id,
+        source_session: id,
+        session: successor,
+        scope: ActivityScope::Instance {
+            world: id,
+            instance: id,
+        },
+        scope_generation: 1,
+        connection_generation: 1,
+        lease_generation: 2,
+        selection: vec![7, 80, 117, 493, 494, 495, 496, 497],
+        requires_ack: false,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    outbox.push(vec![oteryn_session::SessionEvent::GatedSnapshotReplaced(
+        oteryn_session::AppliedDelta {
+            server_sequence: 3,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::GatedSnapshot {
+                domain_id: STATE_DOMAIN_ACTIVITY_SCOPE,
+                snapshot_type: 1,
+                revision: 1,
+                payload,
+            },
+        },
+    )]);
+    // The destination installs a fresh log. Its first list replacement removes the old tab.
+    peer.list = ChatChannelList::default();
+    outbox.chat_private_publish(&peer);
+    peer.list.own_channel = Some(100);
+    peer.lines = vec![ChatLine::Private {
+        speaker_name: "Destination".into(),
+        text: "hello".into(),
+    }];
+    peer.extras.sequences = Some(vec![Some(1)]);
+    peer.extras.participants = Some(vec![(100, vec!["Destination".into()])]);
+    peer.extras.notices = Some(vec![NoticeLine {
+        serial: 1,
+        channel_id: 100,
+        kind: NoticeKind::Joined,
+        name: "Destination".into(),
+    }]);
+    crate::play::session_stepper::publish(&mut peer, &outbox, &mut held);
+    let panel = link.chat_panel();
+    assert!(
+        panel
+            .console
+            .channels
+            .contains(&ChannelTab::Conversation("Destination".into()))
+    );
+    assert!(panel.console.channels.contains(&ChannelTab::Private(100)));
+    assert_eq!(
+        panel.console.channel_notices,
+        peer.extras.notices.clone().ok_or("notices")?
+    );
+    // Draining cancelled source commands must not reset the destination cursors a second time.
+    assert_eq!(
+        outbox.death_command(&mut incoming),
+        Err(tokio::sync::mpsc::error::TryRecvError::Empty)
+    );
+    // Republishing the destination does not duplicate notices or reopen a deliberately closed tab.
+    link.chat_open_conversation("Destination");
+    link.chat_close_current();
+    let channels = link.chat_panel().console.channels;
+    crate::play::session_stepper::publish(&mut peer, &outbox, &mut held);
+    assert_eq!(link.chat_panel().console.channels, channels);
+    assert_eq!(link.chat_panel().console.channel_notices.len(), 1);
+    Ok(())
 }

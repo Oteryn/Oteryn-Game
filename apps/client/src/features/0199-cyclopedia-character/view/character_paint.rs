@@ -146,8 +146,13 @@ pub(super) unsafe fn paint(
                 Some(KillStatus::GuildWar) => "Guild war",
                 Some(KillStatus::Unjustified) => "Unjustified",
             };
-            let columns =
-                format!("Time (server Unix ms)     Result     Description | {filter} | {note}");
+            let columns = format!(
+                "{} | {filter} | {note}",
+                oteryn_client_ui::cyclopedia_death_details::history_columns(
+                    panel.extensions.death_details
+                        && panel.history_tab == Some(CharacterTab::RecentDeaths)
+                )
+            );
             SetWindowTextW(heading, wide(&columns).as_ptr());
             let rows: Vec<_> = oteryn_client_ui::cyclopedia_character::history_rows(panel)
                 .into_iter()
@@ -156,12 +161,7 @@ pub(super) unsafe fn paint(
             if state.history != rows {
                 SendMessageW(history, LB_RESETCONTENT, 0, 0);
                 for row in &rows {
-                    let kind = match row.status {
-                        Some(KillStatus::Unjustified) => "Unjustified",
-                        Some(KillStatus::GuildWar) => "Guild war",
-                        None => "Death",
-                    };
-                    let label = format!("{}\t{}\t{}", row.at, kind, row.description);
+                    let label = oteryn_client_ui::cyclopedia_death_details::history_label(row);
                     SendMessageW(history, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
                 state.history = rows;

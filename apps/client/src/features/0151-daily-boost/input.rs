@@ -27,6 +27,8 @@ impl PlayLink {
             command: oteryn_client_runtime::cui3::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY,
             payload: Vec::new(),
         });
+        // The XP boost lines come from the potion durations snapshot.
+        self.potion_durations_request();
         #[cfg(all(windows, not(test)))]
         super::view::open_window(self);
         true

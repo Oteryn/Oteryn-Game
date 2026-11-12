@@ -1,0 +1,17 @@
+{
+  "id": 488,
+  "name": "CYCLOPEDIA_DEATH_DETAILS_V1",
+  "constant": "cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1",
+  "requires": [
+    199
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

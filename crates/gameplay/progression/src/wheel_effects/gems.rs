@@ -8,13 +8,49 @@ use serde_json::Value;
 impl WheelRuntimeEffects {
     /// Signed thousandths of the declared unit. Spell targets are the source spell name
     /// without the catalogue's `Augmented ` display prefix. Momentum has an empty target.
+    /// Gem resistance against one element is capped at `GEM_RESISTANCE_CAP_MILLI`.
     pub fn gem_value_milli(&self, kind: &str, target: &str) -> i64 {
-        self.sockets
+        let value = self
+            .sockets
             .gem_values_milli
             .iter()
             .find_map(|((key, name), value)| (key == kind && name == target).then_some(*value))
-            .unwrap_or(0)
+            .unwrap_or(0);
+        if capped_resistance(kind) {
+            value.min(GEM_RESISTANCE_CAP_MILLI)
+        } else {
+            value
+        }
     }
+
+    /// The client's cap warning: the socketed gems' summed resistance against at least one
+    /// element exceeds the cap.
+    pub fn gem_resistance_over_cap(&self) -> bool {
+        self.sockets
+            .gem_values_milli
+            .iter()
+            .any(|((kind, _), value)| capped_resistance(kind) && *value > GEM_RESISTANCE_CAP_MILLI)
+    }
+}
+
+/// Winter Update 2026 (test server reply "Resistances cap at 30%", corrected from 18%):
+/// summed gem resistance against one element is at most 30%; each element caps separately
+/// and penalties below the cap keep their value. Thousandths of a percentage point.
+pub const GEM_RESISTANCE_CAP_MILLI: i64 = 30_000;
+
+fn capped_resistance(kind: &str) -> bool {
+    matches!(
+        kind,
+        "Physical Resistance"
+            | "Holy Resistance"
+            | "Death Resistance"
+            | "Fire Resistance"
+            | "Earth Resistance"
+            | "Ice Resistance"
+            | "Energy Resistance"
+            | "Mana Drain Resistance"
+            | "Life Drain Resistance"
+    )
 }
 
 fn catalogue_milli(value: &Value) -> Option<i64> {
@@ -133,10 +169,55 @@ pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffec
 mod tests {
     use super::*;
     use crate::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
-    use crate::wheel::{WheelAllocation, WheelDomain, WheelSlots};
+    use crate::wheel::{WheelAllocation, WheelSlots};
     use crate::wheel_gem_data::WheelGemData;
 
     type Error = Box<dyn std::error::Error>;
+
+    fn resistances(values: &[(&str, i64)]) -> WheelRuntimeEffects {
+        let mut effects = WheelRuntimeEffects::default();
+        for (kind, value) in values {
+            effects
+                .sockets
+                .gem_values_milli
+                .insert(((*kind).into(), String::new()), *value);
+        }
+        effects
+    }
+
+    #[test]
+    fn gem_fire_resistance_caps_at_thirty_percent() {
+        let over = resistances(&[("Fire Resistance", 42_500)]);
+        assert_eq!(over.gem_value_milli("Fire Resistance", ""), 30_000);
+        assert!(over.gem_resistance_over_cap());
+        let at = resistances(&[("Fire Resistance", 30_000)]);
+        assert_eq!(at.gem_value_milli("Fire Resistance", ""), 30_000);
+        assert!(!at.gem_resistance_over_cap());
+        let under = resistances(&[("Fire Resistance", 18_000)]);
+        assert_eq!(under.gem_value_milli("Fire Resistance", ""), 18_000);
+        assert!(!under.gem_resistance_over_cap());
+    }
+
+    #[test]
+    fn gem_caps_apply_per_element_independently() {
+        let effects = resistances(&[
+            ("Fire Resistance", 45_000),
+            ("Ice Resistance", 12_000),
+            ("Earth Resistance", -8_000),
+            ("Mana Drain Resistance", 31_000),
+            ("Hit Points", 400_000),
+        ]);
+        assert_eq!(effects.gem_value_milli("Fire Resistance", ""), 30_000);
+        assert_eq!(effects.gem_value_milli("Ice Resistance", ""), 12_000);
+        assert_eq!(effects.gem_value_milli("Earth Resistance", ""), -8_000);
+        assert_eq!(effects.gem_value_milli("Mana Drain Resistance", ""), 30_000);
+        assert_eq!(effects.gem_value_milli("Energy Resistance", ""), 0);
+        assert_eq!(effects.gem_value_milli("Hit Points", ""), 400_000);
+        assert!(effects.gem_resistance_over_cap());
+        let capped_elsewhere =
+            resistances(&[("Ice Resistance", 30_000), ("Fire Resistance", 30_000)]);
+        assert!(!capped_elsewhere.gem_resistance_over_cap());
+    }
 
     fn effect(data: &WheelGemData, id: u16, grade: u8, kind: &str) -> Result<Value, Error> {
         let row = data.gems()["catalogue"]["supreme_mods"]
@@ -300,23 +381,20 @@ mod tests {
         };
         state.grades.insert((FragmentKind::Supreme, 4), 1);
         let mut effects = WheelRuntimeEffects::default();
-        for (id, domain, resonance) in [
-            (1, WheelDomain::Green, "vessel_resonance_top_left"),
-            (2, WheelDomain::Red, "vessel_resonance_top_right"),
-        ] {
+        effects.sockets.gem_vessel_nodes = 6;
+        for (id, slot) in [(1, 2), (2, 5)] {
             state.gems.insert(
                 id,
                 Gem {
                     id,
                     quality: GemQuality::Greater,
-                    domain,
                     mods: vec![31, 0, 4],
                     locked: false,
                     vessel: true,
+                    slot: Some(slot),
                     ruleset_revision: data.revision().into(),
                 },
             );
-            effects.sockets.resonance_stages.insert(resonance.into(), 3);
         }
         effects
             .contribute_gems(&state, &data, &allocation)

@@ -10,7 +10,7 @@ use crate::{
         mailbox::{SharedMailbox, lock},
     },
 };
-use oteryn_client_ui::wheel_allocation::{Intent, WheelPanel, domain_name, gem_label, gems};
+use oteryn_client_ui::wheel_allocation::{Intent, WheelPanel, gem_label, gems};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_renderer::WindowsRenderer;
 use std::{
@@ -63,7 +63,7 @@ fn run(
                 mods,
                 body,
                 quality,
-                domain,
+                vessel,
                 buttons,
             }) = layout::create(hwnd)
             else {
@@ -129,15 +129,15 @@ fn run(
                         (20, n) if n == CBN_SELCHANGE as usize => row(quality, true)
                             .and_then(|i| u8::try_from(i).ok())
                             .map(Action::Quality),
-                        (21, n) if n == CBN_SELCHANGE as usize => row(domain, true)
+                        (21, n) if n == CBN_SELCHANGE as usize => row(vessel, true)
                             .and_then(|i| u8::try_from(i).ok())
-                            .map(Action::Domain),
+                            .map(Action::Vessel),
                         (100, n) if n == BN_CLICKED as usize => Some(Action::Stage(Intent::Reveal)),
                         (101, n) if n == BN_CLICKED as usize => {
                             Some(Action::Stage(Intent::Dismantle))
                         }
                         (102, n) if n == BN_CLICKED as usize => {
-                            Some(Action::Stage(Intent::SwitchDomain))
+                            Some(Action::Stage(Intent::Reshape))
                         }
                         (103, n) if n == BN_CLICKED as usize => {
                             Some(Action::Stage(Intent::GradeUp))
@@ -231,7 +231,11 @@ fn run(
                         0,
                     );
                     SendMessageW(quality, CB_SETCURSEL, usize::from(panel.quality), 0);
-                    SendMessageW(domain, CB_SETCURSEL, usize::from(panel.domain), 0);
+                    SendMessageW(vessel, CB_RESETCONTENT, 0, 0);
+                    for name in super::vessel_choices(&panel) {
+                        SendMessageW(vessel, CB_ADDSTRING, 0, wide(&name).as_ptr() as isize);
+                    }
+                    SendMessageW(vessel, CB_SETCURSEL, usize::from(panel.vessel_slot), 0);
                     let mut detail = gems::view::details(&panel);
                     if renderer.is_none() {
                         detail.push_str("\nGem glyph renderer unavailable; the current text details remain available.");
@@ -240,7 +244,7 @@ fn run(
                     let editing = panel.ready()
                         && panel.gems.pending.is_none()
                         && panel.gems.review.is_none();
-                    for h in [list, mods, quality, domain] {
+                    for h in [list, mods, quality, vessel] {
                         EnableWindow(h, i32::from(editing));
                     }
                     for (index, h) in buttons.iter().enumerate() {
@@ -248,6 +252,8 @@ fn run(
                             *h,
                             i32::from(if index == 11 {
                                 panel.retry.is_some() && panel.pending.is_none()
+                            } else if index == 2 {
+                                panel.can_reshape()
                             } else if index >= 9 {
                                 panel.gems.review.is_some() && panel.pending.is_none()
                             } else {

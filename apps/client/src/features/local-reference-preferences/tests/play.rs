@@ -354,6 +354,8 @@ fn every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchan
 mod options_lane;
 #[path = "presentation.rs"]
 mod presentation;
+#[path = "utility_actions.rs"]
+mod utility_actions;
 
 include!("health_circle.rs");
 

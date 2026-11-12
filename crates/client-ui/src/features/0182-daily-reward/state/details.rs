@@ -7,6 +7,7 @@ pub fn request_details(panel: &mut DailyRewardPanel) -> Option<FeatureCommand> {
     }
     panel.pending = true;
     panel.details_pending = true;
+    panel.details_attempted = true;
     panel.feedback = None;
     Some(FeatureCommand {
         capability: 182,
@@ -41,17 +42,9 @@ pub fn apply_details(panel: &mut DailyRewardPanel, result: &GatedCommandResult) 
 }
 pub fn details_text(panel: &DailyRewardPanel) -> String {
     let Some(details) = &panel.details else {
-        return "Refresh reward details to load the server catalogue and account history.\n".into();
+        return String::new();
     };
-    let mut text = String::from("30-day reward catalogue (Free / Premium)\n");
-    for (index, day) in details.days.iter().enumerate() {
-        text.push_str(&format!(
-            "Day {:02}: Free [{}] | Premium [{}]\n",
-            index + 1,
-            tier_text(day.free),
-            tier_text(day.premium)
-        ));
-    }
+    let mut text = String::new();
     text.push_str("Recent account/World history (latest 30 durable receipts)\n");
     if details.history[0].is_none() {
         text.push_str("No recorded claims\n");
@@ -72,16 +65,56 @@ pub fn details_text(panel: &DailyRewardPanel) -> String {
     }
     text
 }
+/// Seven-day Reward Wall rows from the server catalogue; `today` is the 1-based cycle day.
+pub(super) fn cycle_text(panel: &DailyRewardPanel, today: u8, claimed: bool) -> String {
+    let Some(details) = &panel.details else {
+        return "Rewards are loading from the server\n".into();
+    };
+    let mut text = String::new();
+    for (index, day) in details.days.iter().take(7).enumerate() {
+        let number = index as u8 + 1;
+        let marker = if number == today {
+            if claimed { "claimed" } else { "today" }
+        } else {
+            ""
+        };
+        text.push_str(&format!(
+            "Day {number} {marker}\n  Free: {}\n  Premium: {}\n",
+            tier_text(day.free),
+            tier_text(day.premium)
+        ));
+    }
+    text
+}
+
 fn tier_text(t: daily_reward::details::Tier) -> String {
-    format!(
-        "cosmetic {}; prey {}; temple scroll {}; XP {}%/{}m; bounty {}",
-        t.cosmetic_tokens,
-        t.prey_wildcards,
-        t.temple_scrolls,
-        t.xp_percent,
-        t.xp_minutes,
-        t.bounty_tokens
-    )
+    let mut parts = Vec::new();
+    if t.cosmetic_tokens > 0 {
+        parts.push(format!("{} Cosmetic Tokens", t.cosmetic_tokens));
+    }
+    if t.prey_wildcards > 0 {
+        parts.push(format!("{}x Prey Wildcards", t.prey_wildcards));
+    }
+    match t.temple_scrolls {
+        0 => {}
+        1 => parts.push("1 Temple Teleport Scroll".into()),
+        n => parts.push(format!("{n} Temple Teleport Scrolls")),
+    }
+    if t.xp_percent > 0 {
+        parts.push(format!(
+            "{} minutes XP Boost {}%",
+            t.xp_minutes, t.xp_percent
+        ));
+    }
+    match t.bounty_tokens {
+        0 => {}
+        1 => parts.push("Bounty Reroll Token".into()),
+        n => parts.push(format!("{n}x Bounty Reroll Token")),
+    }
+    if parts.is_empty() {
+        return "no reward".into();
+    }
+    parts.join(", ")
 }
 
 fn date(day: i64) -> String {

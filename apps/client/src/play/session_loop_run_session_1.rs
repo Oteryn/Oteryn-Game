@@ -310,7 +310,7 @@ pub async fn run_session<T: Stepper>(
             }
             Ok(PlayCommand::MovementSpeech(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
-                    outbox.chat_public_result(&outcome);
+                    outbox.chat_public_result(&intent, &outcome);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

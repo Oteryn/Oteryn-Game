@@ -32,6 +32,14 @@ pub fn query(panel: &mut Panel) -> Option<FeatureCommand> {
     })
 }
 pub fn answer(panel: &mut Panel, answer: Answer) -> Option<FeatureCommand> {
+    answer_with(panel, answer, &crate::server_modal_input::Entry::default())
+}
+/// Answer with the value the player entered; the entry is used only with capability 490.
+pub fn answer_with(
+    panel: &mut Panel,
+    answer: Answer,
+    entry: &crate::server_modal_input::Entry,
+) -> Option<FeatureCommand> {
     if !panel.selected
         || panel.logged_out
         || panel.pending.is_some()
@@ -39,7 +47,14 @@ pub fn answer(panel: &mut Panel, answer: Answer) -> Option<FeatureCommand> {
     {
         return None;
     }
-    let payload = answer.encode().ok()?;
+    let cancel = panel.active.as_ref()?.cancel_button == Some(answer.button_id);
+    let payload = crate::server_modal_input::answer_payload(
+        panel.input,
+        panel.active_input.as_ref(),
+        cancel,
+        answer,
+        entry,
+    )?;
     panel.pending = Some(Pending::Answer(answer));
     panel.feedback = None;
     Some(FeatureCommand {
@@ -65,8 +80,14 @@ pub fn apply_result(panel: &mut Panel, result: &GatedCommandResult) -> bool {
         panel.feedback = Some("The server refused the dialog action; retry or cancel");
         return false;
     }
-    match (pending, Reply::decode(&result.payload)) {
+    let decoded = crate::server_modal_input::decode_reply(panel.input, &result.payload);
+    let (reply, input) = match decoded {
+        Ok((reply, input)) => (Ok(reply), input),
+        Err(error) => (Err(error), None),
+    };
+    match (pending, reply) {
         (Pending::Query, Ok(reply @ (Reply::Dialog(_) | Reply::None))) => {
+            panel.active_input = input;
             panel.active = if let Reply::Dialog(dialog) = reply {
                 Some(dialog)
             } else {
@@ -82,6 +103,7 @@ pub fn apply_result(panel: &mut Panel, result: &GatedCommandResult) -> bool {
         }
         (Pending::Answer(sent), Ok(Reply::Answered(received))) if sent == received => {
             panel.active = None;
+            panel.active_input = None;
             panel.feedback = None;
             true
         }
@@ -94,6 +116,7 @@ pub fn apply_result(panel: &mut Panel, result: &GatedCommandResult) -> bool {
                 }) =>
         {
             panel.active = None;
+            panel.active_input = None;
             panel.feedback = None;
             panel.logged_out = true;
             true
