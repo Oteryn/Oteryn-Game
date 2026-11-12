@@ -42,7 +42,7 @@ fn collect(
                 let encoded = delta
                     .value
                     .iter()
-                    .map(|fact| encode_analyser_fact(fact).map(&hex))
+                    .map(|fact| encode_analyser_fact(fact).map(hex))
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|error| format!("analyser capture codec: {error:?}"))?;
                 facts.extend(delta.value);
@@ -65,7 +65,7 @@ fn collect(
                     .iter()
                     .map(|fact| {
                         encode_attributed_analyser_fact(&fact.fact, fact.attacker.as_ref())
-                            .map(&hex)
+                            .map(hex)
                     })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|error| format!("analyser capture codec: {error:?}"))?;
