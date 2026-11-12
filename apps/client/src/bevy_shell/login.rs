@@ -154,6 +154,19 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 source::font(skins.font.clone(), false),
             ))
             .id();
+        // Bevy's text/image intrinsic-size writers must not own the same node.
+        // Keep the source chrome on its own parent; the child owns editing/rendering.
+        let frame = commands
+            .spawn((
+                source::frame(skins.inset.clone(), [1.; 4]),
+                Node {
+                    width: percent(100.),
+                    height: px(25.),
+                    min_height: px(25.),
+                    ..default()
+                },
+            ))
+            .id();
         let input = commands
             .spawn((
                 LoginField(index),
@@ -167,7 +180,6 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 TextLayout::no_wrap(),
                 TextCursorStyle::default(),
                 TabIndex(index as i32),
-                source::frame(skins.inset.clone(), [1.; 4]),
                 Node {
                     width: percent(100.),
                     height: px(25.),
@@ -177,7 +189,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 },
             ))
             .id();
-        commands.entity(panel).add_children(&[label, input]);
+        commands.entity(frame).add_child(input);
+        commands.entity(panel).add_children(&[label, frame]);
     }
     let message = commands
         .spawn((
@@ -474,6 +487,82 @@ mod tests {
             "https://example.invalid?token=refused"
         );
         assert!(!temp.0.join("login.json").exists());
+        Ok(())
+    }
+    #[test]
+    fn keyboard_dispatch_reaches_editable_render_node_without_image_measure_owner() -> TestResult {
+        use bevy::{
+            asset::AssetPlugin,
+            input::{
+                InputPlugin,
+                keyboard::{Key, KeyboardInput},
+            },
+            input_focus::InputDispatchPlugin,
+            text::{TextLayoutInfo, TextPlugin},
+            ui_widgets::TextInputPlugin,
+            window::{PrimaryWindow, WindowPlugin},
+        };
+        let mut host = HostOwner::new(None)?;
+        host.request_login();
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            InputPlugin,
+            InputDispatchPlugin,
+            WindowPlugin::default(),
+            TextPlugin,
+            TextInputPlugin,
+            oteryn_client_ui_bevy::GlobalUiPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .init_resource::<bevy::ui::UiScale>()
+        .init_resource::<bevy::picking::events::PointerState>()
+        .add_message::<bevy::picking::events::PointerRelease>()
+        .insert_non_send(host)
+        .add_systems(Startup, (super::super::ui::setup, setup).chain())
+        .add_systems(Update, project);
+        app.update();
+        let window = app
+            .world_mut()
+            .query_filtered::<Entity, With<PrimaryWindow>>()
+            .single(app.world())?;
+        let input = app
+            .world_mut()
+            .query::<(Entity, &LoginField)>()
+            .iter(app.world())
+            .find_map(|(entity, field)| (field.0 == 0).then_some(entity))
+            .ok_or("platform input")?;
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(input, FocusCause::Navigated);
+        app.world_mut().write_message(KeyboardInput {
+            key_code: KeyCode::KeyN,
+            logical_key: Key::Character("n".into()),
+            state: bevy::input::ButtonState::Pressed,
+            text: Some("n".into()),
+            repeat: false,
+            window,
+        });
+        app.update();
+        assert_eq!(
+            app.world()
+                .entity(input)
+                .get::<EditableText>()
+                .ok_or("editable")?
+                .value()
+                .to_string(),
+            "n"
+        );
+        assert!(
+            app.world().entity(input).contains::<TextLayoutInfo>(),
+            "actual input has text render layout"
+        );
+        assert!(
+            !app.world().entity(input).contains::<ImageNode>(),
+            "text render node must not share the image intrinsic-size writer"
+        );
         Ok(())
     }
 }
