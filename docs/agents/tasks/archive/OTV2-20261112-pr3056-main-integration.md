@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/pr3056-merge-20261112
 pr: 3056
-base_sha: 3044e745b3846e5926b4b060b9401e280c2ce446
+base_sha: 3ce2305da05228e4f690e6195b01e921fe0274bf
 head_sha: null
 final_head_sha: null
 owner: root/audit3093_repair
@@ -118,12 +118,22 @@ after the read/refusals. The full mounted case and Dispatch/durability typecheck
 have not run locally; syntax/API self-audit is not runtime evidence. Existing
 receipt/replay, item rollback and current actor tests remain required in CI.
 
-Composition remains directional: no#3093/#3111 source is imported into this
-branch. The coordinator's separate SQL union experiment found the actual
-QMECH-plus-audit guard shape incompatible with2808 before2809 was reached.
-That actual audit-member compatibility repair and later dependency integration
-belong to the coordinator's separate allocation; this checkpoint changes neither
-guard optimizer nor any proof assertion to bypass it.
+The initial source checkpoint4f63 received an independent exact-head repair
+review with zero confirmed P0/P1/P2 findings. It remains the immutable input for
+auxiliary generator PR3145, not the current qualification head. The owner then
+merged the original player-death audit into accepted main3ce. The next normal
+merge imports that accepted source and all450 migration files byte-for-byte;
+unaccepted experimental2808/2809 edits are never imported. The two actual merge
+conflicts retain the accepted source-eligibility helper and admission-lock import
+alongside the existing QMECH changes.
+
+Published E2E dependency1afdfa86ff8a3cb7f62b5a310c1be0806e76983a is also normal-
+merged into this actual branch. Its sole World conflict resolves to blob
+617c6c1da3c82e0cb3a656cf75404b22ce9da201: the full published E2E body plus exactly
+the two existing QMECH signed-floor conversions, including the moved reconnect.
+The broader thirteen-site floor family is not changed in this checkpoint; its
+canonical frame gating remains the coordinator's separate disposition. No3111
+source or unaccepted audit rewrite is imported.
 
 The actual accepted-main upgrade exposed four QMECH migration compatibility
 repairs.1357 and2734 admit exactly the reviewed fresh predecessor cause array or
@@ -134,16 +144,34 @@ already-applied2701 world-counter-use-v1 branch as well as native claim preceden
 so distinct Feaster USE occurrences retain their identity. No broad registry
 rebuild, trigger bypass, history rewrite or replacement guard is added.
 
-The grouped SQL probe passes both known cause histories, unknown/missing-cause
-negatives, shape conjunctions, carried/Ground anchor identity and fresh/upgrade
-reward behavior. Separately, the coordinator qualified both539/539 fresh installs
-and539/539 real accepted-main upgrades, with exact catalogue checksums and owned
-DB cleanup. That evidence includes these exact four SHA384 files plus the
-coordinator's two audit overlays; its six-overlay/533-immutable manifest is
-`/workspace/scratch/pr3093-qmech-final-sql-manifest.json`. All four QMECH hashes
-were rechecked unchanged before this checkpoint. The539 proof is a directional
-SQL-subset composition proof, not this branch's runtime or native qualification;
-final audit-member integration must match the complete manifest before reuse.
+The earlier grouped SQL probe passed both known cause histories, unknown/missing-
+cause negatives, shape conjunctions, carried/Ground anchor identity and fresh/
+upgrade reward behavior. The earlier539/539 fresh and3044-upgrade experiments
+included unaccepted audit guard overlays. They are REFERENCE ONLY after main3ce
+accepted the original audit migrations, and cannot qualify this new composition.
+The four QMECH compatibility repair SHA384 values remain unchanged.
+
+The approved forward design leaves all accepted450 migration bytes intact. Six
+pending QMECH migrations defer only their Item Instance guard amendments to the
+reserved2815 bridge.1423 retains every transform helper, line/cause/source guard
+and ACL while deferring both its candidate prepend and W01 extension.2030 keeps
+the ingredient-count column/predicate and craft-completion debit patch.2401,
+2405,2605 and2707 retain all receipt, change-proof, custody, deferred-completion,
+constraint and grant work; their amendment loops omit only the Instance guard
+target and its corresponding arm. No applied marker is fabricated. These
+migrations contain no direct Item Instance guard mutation after the deferral.
+The coordinator's complete89-file census established no migration-time Item DML
+requires the new guard before the late bridge.
+
+Static checkpoint checks compare all450 accepted migration bytes to exact main3ce,
+verify all four earlier repair hashes, and bind the six deferred files in
+`/workspace/scratch/pr3056-forward-deferral-checkpoint.json`. The required
+post2811 guard equality to accepted5cfab2ac and the late2815 fresh/upgrade result
+remain executable SQL qualification, pending the separately owned bridge commit.
+This checkpoint is deliberately incomplete until that ordinary child merge,
+current-main540 fresh/upgrade proof, generated-input provenance inspection,
+independent material review and full GitHub qualification. No deadline or proof
+budget changes are made.
 
 ## Validation
 
@@ -153,6 +181,10 @@ final audit-member integration must match the complete manifest before reuse.
 - `cargo metadata --no-deps --offline --format-version 1`: PASS.
 - New NPC reader, dispatcher and mounted regression: scoped Rust1.99.1 parser/
   formatter PASS; no full Dispatch/durability compile or PostgreSQL execution.
-- Four SQL migration SHA384 values: exact final composition manifest match.
+- All450 accepted migration bytes: exact main3ce match; all four prior QMECH
+  repair SHA384 values unchanged; six deferral source identities recorded.
+- `python /workspace/scratch/pr3056-verify-forward-deferrals.py`: PASS exact
+  non-Instance byte parity for all six files and negative identity checks rejecting
+  both unaccepted audit optimizer overlays. This is static source evidence.
 - `git diff --check`: PASS; no unresolved index stages or conflict markers.
 - Full successor qualification and generator completion remain pending.

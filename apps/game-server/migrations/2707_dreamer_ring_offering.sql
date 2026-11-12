@@ -95,22 +95,12 @@ CREATE TRIGGER game_dreamer_ring_no_truncate BEFORE TRUNCATE ON game_dreamer_rin
 DO $migration$
 DECLARE n TEXT; body TEXT; arm TEXT; at INTEGER;
 BEGIN
- FOREACH n IN ARRAY ARRAY['game_item_instance_guard','game_item_instance_change_proven','game_item_ground_removal_proven'] LOOP
+ -- Item instance retirement admission is composed after accepted audit guards by migration 2815.
+ FOREACH n IN ARRAY ARRAY['game_item_instance_change_proven','game_item_ground_removal_proven'] LOOP
   body:=pg_get_functiondef((n||'()')::regprocedure);
   at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
   IF at=0 THEN RAISE EXCEPTION 'missing Dreamer offering predecessor guard %',n; END IF;
-  IF n='game_item_instance_guard' THEN
-   arm:=$arm$
-    IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM game_dreamer_ring_offerings r
-     WHERE r.transaction_id=NEW.last_transaction_id AND r.item_instance_id=OLD.item_instance_id
-      AND r.created_xact_id=pg_current_xact_id() AND r.before_item=to_jsonb(OLD)) THEN
-     IF NEW.quantity<>0 OR NEW.lifecycle<>2 OR (to_jsonb(NEW)-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
-       (to_jsonb(OLD)-ARRAY['quantity','lifecycle','last_transaction_id'])
-     THEN RAISE EXCEPTION 'Dreamer offering retires exactly one inactive ring' USING ERRCODE='23514'; END IF;
-     NEW.state_revision:=OLD.state_revision+1; RETURN NEW;
-    END IF;
-$arm$;
-  ELSIF n='game_item_instance_change_proven' THEN
+  IF n='game_item_instance_change_proven' THEN
    arm:=$arm$
     IF EXISTS(SELECT 1 FROM game_dreamer_ring_offerings r WHERE r.transaction_id=NEW.last_transaction_id
      AND r.item_instance_id=OLD.item_instance_id AND r.created_xact_id=pg_current_xact_id() AND r.before_item=to_jsonb(OLD)) THEN

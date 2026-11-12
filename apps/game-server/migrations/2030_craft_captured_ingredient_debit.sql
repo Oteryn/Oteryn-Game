@@ -34,18 +34,5 @@ BEGIN
     END IF;
     EXECUTE replace(body,before_text,after_text);
 
-    body:=pg_get_functiondef('game_item_instance_guard()'::regprocedure);
-    before_text:=$old$AND r.ingredient_before_item=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()) THEN
-     IF NEW.quantity<>OLD.quantity-1$old$;
-    after_text:=$new$AND r.ingredient_before_item=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()) THEN
-     IF NEW.quantity<>OLD.quantity-(SELECT r.ingredient_count FROM game_item_craft_records r
-        WHERE r.ingredient_item_instance_id=OLD.item_instance_id
-          AND r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id())$new$;
-    IF (length(body)-length(replace(body,before_text,'')))/length(before_text)<>1 THEN
-        RAISE EXCEPTION 'M22 requires exactly one existing craft ingredient mutation arm';
-    END IF;
-    body:=replace(body,before_text,after_text);
-    body:=replace(body,'craft decrements exactly one ingredient unit',
-        'craft ingredient debit differs from its receipt');
-    EXECUTE body;
+    -- The matching Item mutation debit is composed after accepted audit guards by migration 2815.
 END $migration$;

@@ -684,10 +684,7 @@ $$;
 DO $$
 DECLARE body TEXT; amended TEXT;
 BEGIN
- body:=pg_get_functiondef('game_item_instance_guard()'::regprocedure);
- amended:=replace(body,E'BEGIN\n',E'BEGIN\n IF TG_OP=''UPDATE'' THEN\n  DECLARE candidate game_item_instances%ROWTYPE;\n  BEGIN\n   candidate:=NEW;\n   candidate.state_revision:=OLD.state_revision+1;\n   IF game_rotten_move_transform_before(OLD,candidate) THEN\n    NEW:=candidate;\n    INSERT INTO game_item_transfer_quantity_evidence(item_instance_id,transaction_id,quantity_before) VALUES(OLD.item_instance_id,NEW.last_transaction_id,OLD.quantity);\n    RETURN NEW;\n   END IF;\n  END;\n END IF;\n');
- IF amended=body THEN RAISE EXCEPTION 'source transform Item guard form changed'; END IF;
- EXECUTE amended;
+ -- Item instance transform admission is composed after accepted audit guards by migration 2815.
  body:=pg_get_functiondef('game_spell_item_line_proven()'::regprocedure);
  amended:=replace(body,E'BEGIN\n',E'BEGIN\n IF NEW.operation_kind=7 THEN\n  IF NOT game_rotten_move_transform_line_complete(NEW) THEN RAISE EXCEPTION ''source transform exact physical successor missing'' USING ERRCODE=''23514''; END IF;\n  RETURN NULL;\n END IF;\n');
  IF amended=body THEN RAISE EXCEPTION 'source transform line guard form changed'; END IF;
@@ -1001,11 +998,7 @@ LANGUAGE sql SECURITY DEFINER AS $$
   ),false)
 $$;
 DO $$ DECLARE body TEXT; amended TEXT; BEGIN
- body:=pg_get_functiondef('game_item_instance_guard()'::regprocedure);
- amended:=replace(body,'IF game_rotten_move_transform_before(OLD,candidate) THEN',
-  'IF game_rotten_move_transform_before(OLD,candidate) OR game_w01_death_transform_before(OLD,candidate) THEN');
- IF amended=body THEN RAISE EXCEPTION 'W01 transform Item guard changed'; END IF;
- EXECUTE amended;
+ -- Item instance transform admission is composed after accepted audit guards by migration 2815.
  body:=pg_get_functiondef('game_spell_item_line_proven()'::regprocedure);
  amended:=replace(body,'IF NOT game_rotten_move_transform_line_complete(NEW) THEN',
   'IF NOT (game_rotten_move_transform_line_complete(NEW) OR game_w01_death_transform_line_complete(NEW)) THEN');

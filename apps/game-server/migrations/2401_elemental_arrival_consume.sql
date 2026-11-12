@@ -138,20 +138,12 @@ END $migration$;
 DO $migration$
 DECLARE name TEXT; body TEXT; arm TEXT; at INTEGER;
 BEGIN
- FOREACH name IN ARRAY ARRAY['game_item_instance_guard','game_item_instance_change_proven','game_item_ground_removal_proven'] LOOP
+ -- Item instance retirement admission is composed after accepted audit guards by migration 2815.
+ FOREACH name IN ARRAY ARRAY['game_item_instance_change_proven','game_item_ground_removal_proven'] LOOP
    body:=pg_get_functiondef((name||'()')::regprocedure);
    at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
    IF at=0 THEN RAISE EXCEPTION 'missing elemental predecessor %',name; END IF;
-   IF name='game_item_instance_guard' THEN
-     arm:=$arm$
-     IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM game_elemental_arrival_receipts r WHERE r.transaction_id=NEW.last_transaction_id
-       AND r.created_xact_id=pg_current_xact_id() AND r.corpse_before->'item'=to_jsonb(OLD)) THEN
-       IF NEW.quantity<>0 OR NEW.lifecycle<>2 OR (to_jsonb(NEW)-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
-         (to_jsonb(OLD)-ARRAY['quantity','lifecycle','last_transaction_id']) THEN RAISE EXCEPTION 'elemental arrival retires its exact whole corpse' USING ERRCODE='23514'; END IF;
-       NEW.state_revision:=OLD.state_revision+1; RETURN NEW;
-     END IF;
-     $arm$;
-   ELSIF name='game_item_instance_change_proven' THEN
+   IF name='game_item_instance_change_proven' THEN
      arm:=$arm$
      IF EXISTS(SELECT 1 FROM game_elemental_arrival_receipts r WHERE r.transaction_id=NEW.last_transaction_id
        AND r.created_xact_id=pg_current_xact_id() AND r.corpse_before->'item'=to_jsonb(OLD)) THEN

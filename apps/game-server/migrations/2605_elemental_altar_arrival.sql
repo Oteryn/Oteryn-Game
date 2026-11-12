@@ -186,22 +186,13 @@ CREATE TRIGGER game_elemental_latch_admit BEFORE INSERT ON game_elemental_boss_l
 DO $migration$
 DECLARE n TEXT; body TEXT; arm TEXT; at INTEGER;
 BEGIN
- FOREACH n IN ARRAY ARRAY['game_item_instance_guard','game_item_instance_change_proven',
+ -- Item instance retirement admission is composed after accepted audit guards by migration 2815.
+ FOREACH n IN ARRAY ARRAY['game_item_instance_change_proven',
    'game_item_ground_removal_proven','game_item_corpse_entry_removal_proven','game_item_container_entry_removal_proven'] LOOP
    body:=pg_get_functiondef((n||'()')::regprocedure);
    at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
    IF at=0 THEN RAISE EXCEPTION 'missing altar predecessor guard %',n; END IF;
-   IF n='game_item_instance_guard' THEN
-     arm:=$arm$
-     IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM game_elemental_altar_receipts r,LATERAL jsonb_array_elements(r.inputs) v
-       WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id() AND v->'item'=to_jsonb(OLD)) THEN
-       IF NEW.quantity<>0 OR NEW.lifecycle<>2 OR (to_jsonb(NEW)-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
-          (to_jsonb(OLD)-ARRAY['quantity','lifecycle','last_transaction_id']) THEN
-         RAISE EXCEPTION 'altar retires whole exact corpse members' USING ERRCODE='23514'; END IF;
-       NEW.state_revision:=OLD.state_revision+1; RETURN NEW;
-     END IF;
-     $arm$;
-   ELSIF n='game_item_instance_change_proven' THEN
+   IF n='game_item_instance_change_proven' THEN
      arm:=$arm$
      IF EXISTS(SELECT 1 FROM game_elemental_altar_receipts r,LATERAL jsonb_array_elements(r.inputs) v
        WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id() AND v->'item'=to_jsonb(OLD)) THEN
