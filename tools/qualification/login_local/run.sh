@@ -48,7 +48,7 @@ readonly RUST_IMAGE=rust:1.99.1-bookworm@sha256:48b7f435b8fc6378ce43b44f15e3a47f
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
-readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
+readonly RUNTIME_IDENTITY=node.runtime-status.login-local.test
 readonly OPS_IDENTITY=oteryn-game-ops
 readonly PROJECTION_IDENTITY=oteryn-game-character-projection
 readonly PROJECTION_AUTHORITY=oteryn:character-authority:login-local
@@ -292,7 +292,7 @@ make_leaf db db.login-local.test db-ca serverAuth DNS:db.login-local.test
 make_leaf client oteryn-game-native-evidence client-ca clientAuth
 cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
-make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth
+make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth "DNS:$RUNTIME_IDENTITY"
 make_leaf ops-authority "$OPS_IDENTITY" client-ca clientAuth
 make_leaf projection "$PROJECTION_IDENTITY" client-ca clientAuth
 # Gateway -> Platform upstream: nginx serves TLS (SAN nginx) from a test CA the gateway trusts via SSL_CERT_FILE.
@@ -512,11 +512,11 @@ client_certificate_file = "$BASE/ops/authority.crt"
 client_key_file = "$BASE/ops/authority.key"
 assignment_epoch = 1
 [node_certificate_files]
-"CN=$RUNTIME_IDENTITY" = "$BASE/ops/node-runtime-status.crt"
+"$RUNTIME_IDENTITY" = "$BASE/ops/node-runtime-status.crt"
 [[scope]]
 world_id = "$WORLD_ID"
 channel_id = "$CHANNEL_ID"
-node_identities = ["CN=$RUNTIME_IDENTITY"]
+node_identities = ["$RUNTIME_IDENTITY"]
 TOML
 sudo install -o root -m 0600 "$WORK/report.toml" "$BASE/ops/report.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"

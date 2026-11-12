@@ -33,7 +33,7 @@ pub const PATH: &str = "/internal/v1/game-auth/native-scope-assignments";
 /// Compiled `ReportScopeRevocationV1` path (§3, §16.1); not configurable.
 pub const REVOCATION_PATH: &str = "/internal/v1/game-auth/native-scope-revocations";
 /// Longest accepted node-host identity.
-pub const NODE_IDENTITY_BYTES: usize = 256;
+pub const NODE_IDENTITY_BYTES: usize = 253;
 /// Configuration bounds.
 pub const CONFIG_BYTES: usize = 16 * 1024;
 pub const CONFIG_SCOPES_MAX: usize = 64;
@@ -64,17 +64,21 @@ struct Wire<'a> {
     assigned_at: String,
 }
 
-/// A node-host identity (certificate subject): printable ASCII without JSON
-/// escapes, bounded.
+/// A canonical DNS SAN: lowercase LDH labels, at least two labels, no root dot.
 #[must_use]
 pub fn valid_node_identity(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= NODE_IDENTITY_BYTES
-        && value
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b" .,=:_-/@+".contains(&b))
-        && !value.starts_with(' ')
-        && !value.ends_with(' ')
+    value.len() <= NODE_IDENTITY_BYTES
+        && value.contains('.')
+        && value.split('.').all(|label| {
+            let bytes = label.as_bytes();
+            !bytes.is_empty()
+                && bytes.len() <= 63
+                && bytes[0] != b'-'
+                && bytes[bytes.len() - 1] != b'-'
+                && bytes
+                    .iter()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'-')
+        })
 }
 
 /// Exact §5 wire body. Refuses anything outside the contract grammar.
@@ -580,32 +584,13 @@ impl ReportConfig {
     }
 }
 
-/// Whether the leaf certificate's subject is `identity` (§5: the node
-/// identity is the certificate subject of the node host's runtime-status
-/// identity). The complete subject must match, in its one canonical form:
-/// RFC 4514 short names (`CN=node-a,O=Oteryn`; a common name alone is
-/// `CN=node-a`). A subject that cannot be rendered without escaping never
-/// matches.
+/// Match exactly one DNS SAN, never a distinguished name (§5).
 #[must_use]
 pub fn certificate_has_node_identity(leaf: &CertificateDer<'_>, identity: &str) -> bool {
-    let Some(subject) = subject_rdns(leaf.as_ref()) else {
-        return false;
-    };
-    let rendered = subject
-        .iter()
-        .rev()
-        .map(|rdn| {
-            rdn.iter()
-                .map(|(name, value)| format!("{name}={value}"))
-                .collect::<Vec<_>>()
-                .join("+")
-        })
-        .collect::<Vec<_>>()
-        .join(",");
-    valid_node_identity(identity) && rendered == identity
+    valid_node_identity(identity)
+        && rustls::server::ParsedCertificate::try_from(leaf).is_ok()
+        && single_dns_san(leaf.as_ref()) == Some(identity)
 }
-
-type Rdn<'a> = Vec<(&'static str, &'a str)>;
 
 /// One DER element: its tag, its content and the rest of the input.
 fn der(input: &[u8]) -> Option<(u8, &[u8], &[u8])> {
@@ -627,75 +612,67 @@ fn der(input: &[u8]) -> Option<(u8, &[u8], &[u8])> {
     (rest.len() >= length).then(|| (tag, &rest[..length], &rest[length..]))
 }
 
-/// The subject RDNs of a certificate, in encoded order. Only attribute types
-/// with an RFC 4514 short name and string values that need no escaping are
-/// accepted.
-fn subject_rdns(certificate: &[u8]) -> Option<Vec<Rdn<'_>>> {
-    const SEQUENCE: u8 = 0x30;
-    const SET: u8 = 0x31;
-    let (SEQUENCE, certificate, _) = der(certificate)? else {
+// The certificate has already passed rustls DER validation. Walk the TBS
+// extensions, refusing duplicate SAN extensions and counting DNS entries only.
+fn single_dns_san(certificate: &[u8]) -> Option<&str> {
+    let (0x30, certificate, []) = der(certificate)? else {
         return None;
     };
-    let (SEQUENCE, mut tbs, _) = der(certificate)? else {
+    let (0x30, mut tbs, _) = der(certificate)? else {
         return None;
     };
     if tbs.first() == Some(&0xa0) {
         tbs = der(tbs)?.2;
     }
-    // serialNumber, signature, issuer, validity.
-    for _ in 0..4 {
+    // serial, signature, issuer, validity, subject, subjectPublicKeyInfo.
+    for _ in 0..6 {
         tbs = der(tbs)?.2;
     }
-    let (SEQUENCE, mut name, _) = der(tbs)? else {
+    while matches!(tbs.first(), Some(0x81 | 0x82)) {
+        tbs = der(tbs)?.2;
+    }
+    let (0xa3, extensions, []) = der(tbs)? else {
         return None;
     };
-    let mut rdns = Vec::new();
-    while !name.is_empty() {
-        let (SET, mut set, rest) = der(name)? else {
+    let (0x30, mut extensions, []) = der(extensions)? else {
+        return None;
+    };
+    let mut found = None;
+    let mut seen = false;
+    while !extensions.is_empty() {
+        let (0x30, extension, rest) = der(extensions)? else {
             return None;
         };
-        name = rest;
-        let mut rdn = Vec::new();
-        while !set.is_empty() {
-            let (SEQUENCE, attribute, rest) = der(set)? else {
-                return None;
-            };
-            set = rest;
-            let (0x06, oid, value) = der(attribute)? else {
-                return None;
-            };
-            let (tag, value, rest) = der(value)?;
-            let short = match oid {
-                [0x55, 0x04, 0x03] => "CN",
-                [0x55, 0x04, 0x06] => "C",
-                [0x55, 0x04, 0x07] => "L",
-                [0x55, 0x04, 0x08] => "ST",
-                [0x55, 0x04, 0x09] => "STREET",
-                [0x55, 0x04, 0x0a] => "O",
-                [0x55, 0x04, 0x0b] => "OU",
-                [0x09, 0x92, 0x26, 0x89, 0x93, 0xf2, 0x2c, 0x64, 0x01, 0x19] => "DC",
-                [0x09, 0x92, 0x26, 0x89, 0x93, 0xf2, 0x2c, 0x64, 0x01, 0x01] => "UID",
-                _ => return None,
-            };
-            // UTF8String, PrintableString, IA5String.
-            let value = std::str::from_utf8(value).ok()?;
-            let plain = matches!(tag, 0x0c | 0x13 | 0x16)
-                && rest.is_empty()
-                && !value.is_empty()
-                && !value.starts_with([' ', '#'])
-                && !value.ends_with(' ')
-                && value
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b" .:_-/@".contains(&b));
-            if !plain {
-                return None;
-            }
-            rdn.push((short, value));
+        extensions = rest;
+        let (0x06, oid, mut value) = der(extension)? else {
+            return None;
+        };
+        if value.first() == Some(&0x01) {
+            value = der(value)?.2;
         }
-        if rdn.is_empty() {
+        let (0x04, value, []) = der(value)? else {
+            return None;
+        };
+        if oid != [0x55, 0x1d, 0x11] {
+            continue;
+        }
+        if seen {
             return None;
         }
-        rdns.push(rdn);
+        seen = true;
+        let (0x30, mut names, []) = der(value)? else {
+            return None;
+        };
+        while !names.is_empty() {
+            let (tag, name, rest) = der(names)?;
+            names = rest;
+            if tag == 0x82 {
+                if found.is_some() {
+                    return None;
+                }
+                found = Some(std::str::from_utf8(name).ok()?);
+            }
+        }
     }
-    (!rdns.is_empty()).then_some(rdns)
+    found
 }
