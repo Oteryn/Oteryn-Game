@@ -123,6 +123,7 @@ const REQUEST_ENVELOPE_BYTES: usize = 10_240;
 /// gets its own head allowance; every other operation keeps the shared cap.
 const fn request_envelope_max(operation: Operation) -> usize {
     match operation {
+        Operation::PublishGameJournalRecordV1 => 65536 + REQUEST_HEAD_BYTES,
         Operation::PublishAccountCharactersV1 => {
             super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
         }
@@ -210,6 +211,25 @@ async fn exchange_status(
         }
         if super::world_event_outcomes::is_operation(operation) {
             return read_t94_response(&mut tls).await;
+        }
+        if matches!(
+            operation,
+            Operation::PublishGameJournalRecordV1 | Operation::ReadGameJournalCursorV1
+        ) {
+            let mut retry_after = None;
+            let (status, raw) = read_response_inner(
+                &mut tls,
+                false,
+                1024,
+                true,
+                &[],
+                false,
+                Some(&mut retry_after),
+                false,
+                crate::store::MAX_BACKOFF,
+            )
+            .await?;
+            return Ok((status, raw, retry_after));
         }
         if let Some(max) = super::store::response_bytes_max(operation) {
             let mut retry_after = None;

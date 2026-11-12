@@ -7,6 +7,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 pub mod progress;
 mod publish;
+pub mod publisher;
 pub use publish::*;
 
 /// Closed items journal stream families.
