@@ -739,8 +739,8 @@ fn difficulty_changes_wait_for_reroll_and_preserve_active_reward() -> Result<(),
 }
 
 #[test]
-fn token_owner_boundary_refuses_before_consuming_completed_bounty() -> Result<(), TaskBoardRefusal>
-{
+fn token_owner_boundary_keeps_capped_balance_and_claims_completed_bounty()
+-> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
     let mut data = TaskBoardData::default();
@@ -765,20 +765,33 @@ fn token_owner_boundary_refuses_before_consuming_completed_bounty() -> Result<()
         TaskBoardAction::CreditKill { race },
         &ctx,
     )?;
-    ctx.reroll_tokens = i64::MAX.unsigned_abs();
     let before = (data.clone(), balances.clone());
-    assert_eq!(
-        apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx),
-        Err(TaskBoardRefusal::ArithmeticOverflow)
-    );
-    assert_eq!((data.clone(), balances.clone()), before);
-    ctx.reroll_tokens -= 1;
-    let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
-    assert_eq!(
-        ctx.reroll_tokens + u64::from(effects.reroll_tokens_granted),
-        i64::MAX.unsigned_abs() - 1
-    );
-    assert_eq!(data.bounty.state, BountyStatus::Selection);
+    let completed = data
+        .bounty
+        .active
+        .as_ref()
+        .ok_or(TaskBoardRefusal::WrongState)?
+        .clone();
+    for tokens in [
+        MAX_REROLL_TOKENS,
+        i64::MAX.unsigned_abs() - 1,
+        i64::MAX.unsigned_abs(),
+    ] {
+        ctx.reroll_tokens = tokens;
+        let (mut data, mut balances) = before.clone();
+        let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
+        assert_eq!(effects.reroll_tokens_granted, 0);
+        assert_eq!(
+            ctx.reroll_tokens + u64::from(effects.reroll_tokens_granted),
+            tokens
+        );
+        assert_eq!(effects.experience, completed.experience);
+        assert_eq!(
+            balances.bounty_points,
+            before.1.bounty_points + i64::from(completed.points)
+        );
+        assert_eq!(data.bounty.state, BountyStatus::Selection);
+    }
     Ok(())
 }
 

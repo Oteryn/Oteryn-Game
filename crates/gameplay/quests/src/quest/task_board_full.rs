@@ -548,11 +548,6 @@ fn apply_inner(
             if data.bounty.state != BountyStatus::Completed {
                 return Err(TaskBoardRefusal::WrongState);
             }
-            // The accepted existing token owner stores a nonnegative BIGINT. Refuse
-            // overflow before changing XP, points or tasks, so the refusal is replayable.
-            if context.reroll_tokens >= i64::MAX.unsigned_abs() {
-                return Err(TaskBoardRefusal::ArithmeticOverflow);
-            }
             let task = data
                 .bounty
                 .active

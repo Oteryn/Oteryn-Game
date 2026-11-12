@@ -16,6 +16,8 @@ mod custody;
 mod outputs;
 #[path = "wire_paid/presentation.rs"]
 mod presentation;
+#[path = "wire_paid/reshape.rs"]
+mod reshape;
 #[path = "wire_paid/resources.rs"]
 mod resources;
 #[path = "wire_paid/wheel_presentation.rs"]
@@ -24,6 +26,7 @@ mod wheel_presentation;
 #[derive(Clone, Copy, Debug)]
 enum Case {
     Reveal,
+    Reshape,
     Dismantle,
     NestedDismantle,
     SplitDismantle,
@@ -63,6 +66,7 @@ impl Case {
         !matches!(
             self,
             Self::Reveal
+                | Self::Reshape
                 | Self::Dismantle
                 | Self::SwitchDomain
                 | Self::GradeUp
@@ -101,6 +105,11 @@ impl Case {
 #[test]
 fn atelier_wire_reveal_burns_one_gem_and_charges_once() -> TestResult {
     check(Case::Reveal)
+}
+
+#[test]
+fn atelier_wire_6214_reshape_burns_fragments_and_replays_once() -> TestResult {
+    check(Case::Reshape)
 }
 
 #[test]
@@ -539,14 +548,16 @@ fn scenario(case: Case) -> TestResult {
                 "content-1",
             )?;
         let room = pin.qualified_room().clone();
-        let (channel_pin, resource_bundle) =
-            if matches!(case, Case::Resources | Case::ResourcesUnselected) {
-                let (channel_pin, bundle) = resources::bundle_fixture(&h, &pin, world).await?;
-                (channel_pin, Some(bundle))
-            } else {
-                super::super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
-                (pin.into_channel_parts().0, None)
-            };
+        let (channel_pin, resource_bundle) = if matches!(
+            case,
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape
+        ) {
+            let (channel_pin, bundle) = resources::bundle_fixture(&h, &pin, world).await?;
+            (channel_pin, Some(bundle))
+        } else {
+            super::super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
+            (pin.into_channel_parts().0, None)
+        };
         let deps = Dependencies::with_content(
             channel_pin,
             room,
@@ -635,8 +646,16 @@ fn scenario(case: Case) -> TestResult {
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
                 .await?;
-        if matches!(case, Case::Resources) {
-            deps.runtime.lock().await.bind_attacker_lease(deps.actor, deps.admitted.game_session_id, current.current_character_lease()).map_err(debug)?;
+        if matches!(case, Case::Resources | Case::Reshape) {
+            deps.runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    current.current_character_lease(),
+                )
+                .map_err(debug)?;
         }
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -648,15 +667,24 @@ fn scenario(case: Case) -> TestResult {
                 wire::CAPABILITY_WHEEL_ALLOCATION_V1,
                 wire::resources::CAPABILITY_ATELIER_RESOURCES_V1,
             ]
+        } else if matches!(case, Case::Reshape) {
+            &[
+                wire::CAPABILITY_WHEEL_ALLOCATION_V1,
+                wire::v2::CAPABILITY_GEM_ATELIER_V2,
+            ]
         } else {
             &[wire::CAPABILITY_WHEEL_ALLOCATION_V1]
         };
-        admitted.continuity.selected_capabilities = if matches!(case, Case::Resources) {
-            crate::gameplay_transport::connection::fresh_capability_selection(&owner, capabilities)
-        } else {
-            SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
-        }
-        .ok_or("Atelier capabilities")?;
+        admitted.continuity.selected_capabilities =
+            if matches!(case, Case::Resources | Case::Reshape) {
+                crate::gameplay_transport::connection::fresh_capability_selection(
+                    &owner,
+                    capabilities,
+                )
+            } else {
+                SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
+            }
+            .ok_or("Atelier capabilities")?;
         if matches!(case, Case::Resources) {
             assert!(admitted.continuity.selected_capabilities.contains(148));
             assert!(admitted.continuity.selected_capabilities.contains(272));
@@ -665,6 +693,16 @@ fn scenario(case: Case) -> TestResult {
         assert_eq!(before.gems.len(), 8);
         assert_eq!(before.quality_quotes.len(), 3);
         assert_eq!(before.grade_quotes.len(), 6);
+        if matches!(case, Case::Reshape) {
+            owner.premium_coordinator = Some(&free);
+            reshape::refused_without_premium(&h, &mut owner, &mut admitted, &before).await?;
+            owner.premium_coordinator = Some(&gate);
+            reshape::exercise(&h, &mut owner, &mut admitted, &before).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         if matches!(case, Case::Resources | Case::ResourcesUnselected) {
             if matches!(case, Case::Resources) {
                 presentation::check_read(&h, &owner, &mut admitted, &before).await?;
@@ -712,7 +750,7 @@ fn scenario(case: Case) -> TestResult {
             1
         };
         let mutation = match case {
-            Case::Resources | Case::ResourcesUnselected => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
                 return Err("resource query reached a mutation planner".into());
             }
             Case::Reveal
@@ -826,7 +864,7 @@ fn scenario(case: Case) -> TestResult {
             "paid resources stay with the existing item and stash owners"
         );
         let expected_fee = match case {
-            Case::Resources | Case::ResourcesUnselected => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
                 return Err("resource query reached mutation verification".into());
             }
             Case::Reveal
@@ -924,7 +962,7 @@ fn scenario(case: Case) -> TestResult {
             .bind(request.occurrence.as_slice()).fetch_optional(&h.pool).await?;
         assert_eq!(fee, expected_fee);
         let advertised_fee = match case {
-            Case::Resources | Case::ResourcesUnselected => {
+            Case::Resources | Case::ResourcesUnselected | Case::Reshape => {
                 return Err("resource query reached a paid quote".into());
             }
             Case::Reveal
