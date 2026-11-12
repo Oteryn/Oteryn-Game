@@ -13,8 +13,134 @@ mod channel_list_tests;
 mod container_tree_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;
+#[cfg(test)]
+#[path = "tests/e2e_c01.rs"]
+mod e2e_c01;
+#[path = "tests/e2e_c02.rs"]
+mod e2e_c02;
+#[path = "tests/e2e_c07.rs"]
+mod e2e_c07;
+#[path = "tests/e2e_c08.rs"]
+mod e2e_c08;
+#[path = "tests/e2e_c09.rs"]
+mod e2e_c09;
+#[path = "tests/e2e_c12.rs"]
+mod e2e_c12;
+#[path = "tests/e2e_c13.rs"]
+mod e2e_c13;
+#[path = "tests/e2e_c16a.rs"]
+mod e2e_c16a;
+#[path = "tests/e2e_c16c.rs"]
+mod e2e_c16c;
+#[path = "tests/e2e_c17b.rs"]
+mod e2e_c17b;
+#[path = "tests/e2e_c17c.rs"]
+mod e2e_c17c;
+#[path = "tests/e2e_c17d.rs"]
+mod e2e_c17d;
+#[path = "tests/e2e_c18b.rs"]
+mod e2e_c18b;
+#[path = "tests/e2e_c19a.rs"]
+mod e2e_c19a;
+#[path = "tests/e2e_c20b.rs"]
+mod e2e_c20b;
+#[path = "tests/e2e_c20d.rs"]
+mod e2e_c20d;
+#[path = "tests/e2e_e02.rs"]
+mod e2e_e02;
+#[path = "tests/e2e_e03.rs"]
+mod e2e_e03;
+#[path = "tests/e2e_i06.rs"]
+mod e2e_i06;
+#[path = "tests/e2e_i08.rs"]
+mod e2e_i08;
+#[path = "tests/e2e_i09.rs"]
+mod e2e_i09;
+#[path = "tests/e2e_i12.rs"]
+mod e2e_i12;
+#[path = "tests/e2e_i15.rs"]
+mod e2e_i15;
+#[cfg(test)]
+#[path = "tests/e2e_m02.rs"]
+mod e2e_m02;
+#[path = "tests/e2e_m03.rs"]
+mod e2e_m03;
+#[cfg(test)]
+#[path = "tests/e2e_m04.rs"]
+mod e2e_m04;
+#[path = "tests/e2e_m05.rs"]
+mod e2e_m05;
+#[path = "tests/e2e_m06.rs"]
+mod e2e_m06;
+#[path = "tests/e2e_m07.rs"]
+mod e2e_m07;
+#[path = "tests/e2e_m08.rs"]
+mod e2e_m08;
+#[path = "tests/e2e_m09.rs"]
+mod e2e_m09;
+#[path = "tests/e2e_m11a.rs"]
+mod e2e_m11a;
+#[path = "tests/e2e_p11.rs"]
+mod e2e_p11;
+#[cfg(test)]
+#[path = "tests/e2e_s04c.rs"]
+mod e2e_s04c;
+#[cfg(test)]
+#[path = "tests/e2e_s09.rs"]
+mod e2e_s09;
+#[cfg(test)]
+#[path = "tests/e2e_s10.rs"]
+mod e2e_s10;
+#[cfg(test)]
+#[path = "tests/e2e_s13a.rs"]
+mod e2e_s13a;
+#[cfg(test)]
+#[path = "tests/e2e_s13b.rs"]
+mod e2e_s13b;
+#[cfg(test)]
+#[path = "tests/e2e_s15b.rs"]
+mod e2e_s15b;
+#[cfg(test)]
+#[path = "tests/e2e_s16a.rs"]
+mod e2e_s16a;
+#[path = "tests/e2e_w01a.rs"]
+mod e2e_w01a;
+#[path = "tests/e2e_w01b.rs"]
+mod e2e_w01b;
+#[path = "tests/e2e_w01c.rs"]
+mod e2e_w01c;
+#[path = "tests/e2e_w05a.rs"]
+mod e2e_w05a;
+#[cfg(test)]
+#[path = "tests/e2e_w15b.rs"]
+mod e2e_w15b;
+#[cfg(test)]
+#[path = "tests/e2e_w16.rs"]
+mod e2e_w16;
+#[cfg(test)]
+#[path = "tests/e2e_w19a.rs"]
+mod e2e_w19a;
+#[cfg(test)]
+#[path = "tests/e2e_w20a.rs"]
+mod e2e_w20a;
+#[cfg(test)]
+#[path = "tests/e2e_w20b.rs"]
+mod e2e_w20b;
+#[cfg(test)]
+#[path = "tests/e2e_w22a.rs"]
+mod e2e_w22a;
+#[cfg(test)]
+#[path = "tests/e2e_w23.rs"]
+mod e2e_w23;
+#[cfg(test)]
+#[path = "tests/e2e_w24.rs"]
+mod e2e_w24;
 #[path = "features/0004-item-view-move/tests.rs"]
 mod item_movement_tests;
+#[path = "features/0004-item-view-move/tests/e2e_i05.rs"]
+mod item_replay_i05_tests;
+#[path = "tests/npc_conversation_replay.rs"]
+mod npc_conversation_replay;
 #[path = "tests/property_services.rs"]
 mod property_services_tests;
 #[path = "tests/pvp_expert.rs"]
@@ -197,8 +323,16 @@ include!("session_tests_capability_movement.rs");
 include!("session_tests_capability_native.rs");
 include!("session_tests_push.rs");
 include!("session_tests_entities.rs");
+#[path = "features/0004-item-view-move/tests/e2e_i13.rs"]
+mod e2e_i13;
 include!("session_tests_chat.rs");
 include!("session_tests_chat_messages.rs");
+#[path = "tests/e2e_i14.rs"]
+mod e2e_i14;
+#[path = "tests/e2e_s04b.rs"]
+mod e2e_s04b;
+#[path = "tests/e2e_s18.rs"]
+mod e2e_s18;
 include!("session_tests_items.rs");
 include!("session_tests_refusal_details.rs");
 include!("session_tests_browse_field.rs");
@@ -207,9 +341,15 @@ include!("session_tests_player_trade.rs");
 
 #[path = "tests/gem_presentation_gated.rs"]
 mod gem_presentation_gated;
+#[path = "tests/spell_aim_mode.rs"]
+mod spell_aim_mode;
 
 #[path = "tests/wheel_presentation_gated.rs"]
 mod wheel_presentation_gated;
+
+#[cfg(test)]
+#[path = "e2e_c16d.rs"]
+mod e2e_c16d;
 
 #[test]
 fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {

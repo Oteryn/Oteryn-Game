@@ -12,6 +12,9 @@ use oteryn_protocol_oteryn::player_trade::{self as wire, Intent, ResultCode, Sta
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::{collections::HashMap, sync::Mutex};
 
+#[cfg(test)]
+#[path = "player_trade/classification_tests.rs"]
+mod classification_tests;
 #[path = "player_trade/command.rs"]
 mod command;
 #[path = "player_trade/observation.rs"]
@@ -22,10 +25,13 @@ mod ports;
 pub(super) mod preflight;
 
 // A busy durability holder proves neither a stale session nor a trade refusal.
+// This conversion is used only for read-only preflight/observation passes.
+// Commit outcomes bypass CheckError and retain reconciliation semantics.
 // Commands still fail closed; observations retain the last projection until a read succeeds.
 pub(super) enum CheckError {
     Refused(ResultCode),
     Unavailable,
+    Caused(CommandOutcome),
 }
 impl From<ResultCode> for CheckError {
     fn from(code: ResultCode) -> Self {
@@ -35,8 +41,17 @@ impl From<ResultCode> for CheckError {
 impl From<crate::durability::DurabilityError> for CheckError {
     fn from(error: crate::durability::DurabilityError) -> Self {
         match error {
-            crate::durability::DurabilityError::RootUnavailable => Self::Unavailable,
-            _ => Self::Refused(ResultCode::Rejected),
+            // A semantic pass deadline (DB_PASS_DEADLINE) outlasts the foreground
+            // command window, so a timed-out read cannot be retried in budget: it keeps
+            // its own named cause instead of reading as retry_budget_exhausted.
+            crate::durability::DurabilityError::RootUnavailable
+            | crate::durability::DurabilityError::Database(
+                crate::durability::SqlxFailureClass::RetryableStatement,
+            ) => Self::Unavailable,
+            error => Self::Caused(CommandOutcome {
+                code: ResultCode::Rejected,
+                cause: format!("durability_{error}").replace(' ', "_"),
+            }),
         }
     }
 }
@@ -45,7 +60,60 @@ impl From<CheckError> for ResultCode {
         match error {
             CheckError::Refused(code) => code,
             CheckError::Unavailable => Self::Rejected,
+            CheckError::Caused(outcome) => outcome.code,
         }
+    }
+}
+
+// Internal only: retain the originating refusal until the command boundary logs it.
+pub(super) struct CommandOutcome {
+    code: ResultCode,
+    cause: String,
+}
+impl CommandOutcome {
+    fn rejected(cause: &str) -> Self {
+        Self {
+            code: ResultCode::Rejected,
+            cause: cause.to_owned(),
+        }
+    }
+    fn budget_exhausted() -> Self {
+        Self::rejected("retry_budget_exhausted")
+    }
+}
+impl From<ResultCode> for CommandOutcome {
+    fn from(code: ResultCode) -> Self {
+        Self {
+            code,
+            cause: "other".to_owned(),
+        }
+    }
+}
+impl From<Refusal> for CommandOutcome {
+    fn from(reason: Refusal) -> Self {
+        Self {
+            code: result(reason),
+            cause: match reason {
+                Refusal::Rejected => "refusal_rejected",
+                Refusal::UnknownWeight => "refusal_unknown_weight",
+                _ => "other",
+            }
+            .to_owned(),
+        }
+    }
+}
+impl From<CheckError> for CommandOutcome {
+    fn from(error: CheckError) -> Self {
+        match error {
+            CheckError::Refused(code) => code.into(),
+            CheckError::Caused(outcome) => outcome,
+            CheckError::Unavailable => Self::budget_exhausted(),
+        }
+    }
+}
+impl From<Refusal> for CheckError {
+    fn from(reason: Refusal) -> Self {
+        Self::Caused(reason.into())
     }
 }
 

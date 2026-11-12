@@ -340,10 +340,22 @@ impl Default for AuditCollectorConfig {
     }
 }
 
+/// Private journal identity, separate from every other internal client.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JournalConfig {
+    pub source_authority: String,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    #[serde(default)]
+    pub game_journal_items_export_enabled: bool,
+    pub journal: Option<JournalConfig>,
     #[serde(default)]
     pub audit_collector: AuditCollectorConfig,
     /// Explicit disposable node-boot fixture opt-in; never enabled by default.
@@ -521,6 +533,23 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        if self.game_journal_items_export_enabled {
+            let Some(journal) = &self.journal else {
+                return reject("journal");
+            };
+            if journal.source_authority.is_empty()
+                || journal.source_authority.len() > 128
+                || !journal
+                    .source_authority
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"._:/-".contains(&b))
+                || !absolute(&journal.client_certificate_file)
+                || !absolute(&journal.client_key_file)
+                || journal.client_certificate_file == journal.client_key_file
+            {
+                return reject("journal");
+            }
+        }
         #[cfg(feature = "qualification-clock")]
         if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some()
             && !self.qualification_fixture
@@ -1111,6 +1140,25 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         ] {
             assert!(parse(section).is_ok(), "rejected {section}");
         }
+    }
+
+    #[test]
+    fn game_journal_node_config_is_default_off_and_requires_identity() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("default node");
+        assert!(!config.game_journal_items_export_enabled);
+        assert!(config.journal.is_none());
+        assert!(
+            NodeConfig::parse(format!("game_journal_items_export_enabled=true\n{NODE}").as_bytes())
+                .is_err()
+        );
+        let document = format!(
+            "game_journal_items_export_enabled=true\n[journal]\nsource_authority=\"OTERYN_GAME_JOURNAL\"\nclient_certificate_file=\"/etc/oteryn/journal.crt\"\nclient_key_file=\"/etc/oteryn/journal.key\"\n{NODE}"
+        );
+        assert!(
+            NodeConfig::parse(document.as_bytes())
+                .expect("explicit identity")
+                .game_journal_items_export_enabled
+        );
     }
 
     #[test]

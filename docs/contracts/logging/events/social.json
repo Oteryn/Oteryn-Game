@@ -9,6 +9,31 @@
       "fields": [],
       "codes": [],
       "note": "Seeded from current server code."
+    },
+    {
+      "event": "platform_stream_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stream",
+        "reason"
+      ],
+      "codes": [],
+      "note": "Platform stream polling failed."
+    },
+    {
+      "event": "platform_stream_page",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stream",
+        "applied",
+        "replayed",
+        "stale",
+        "skipped"
+      ],
+      "codes": [],
+      "note": "Platform stream page applied."
     }
   ]
 }

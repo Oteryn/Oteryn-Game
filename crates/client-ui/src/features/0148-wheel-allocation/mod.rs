@@ -17,8 +17,18 @@ pub use protocol::{
     Intent, apply_result, gem_presentation_query, request, wheel_presentation_query,
 };
 pub use state::{SLOT_CAPACITIES, SLOT_DOMAINS, WheelPanel};
-pub use view::{domain_name, gem_label, modifier_label, panel_text, slot_label};
+pub use view::{
+    ReshapeBlock, gem_label, is_vessel_node, modifier_label, panel_text, reshape_block,
+    reshape_cost, reshape_position, slot_label, vessel_name, vessel_node_perk, workshop_lines,
+};
 
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_p06.rs"]
+mod e2e_p06;
+#[cfg(test)]
+#[path = "tests/e2e_p07.rs"]
+mod e2e_p07;

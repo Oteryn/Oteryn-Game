@@ -237,7 +237,8 @@ mod tests {
             vec![ClickAction {
                 x: 100.0,
                 y: 60.0,
-                secondary: false
+                secondary: false,
+                toggle_attack: false
             }]
         );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
@@ -288,7 +289,8 @@ mod tests {
             vec![ClickAction {
                 x: 30.0,
                 y: 40.0,
-                secondary: false
+                secondary: false,
+                toggle_attack: false
             }]
         );
         actions.route(&[

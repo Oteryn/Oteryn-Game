@@ -5,13 +5,27 @@ use super::character_last_position::{
     LastPositionKey, LastPositionWrite, LastVitals, ScopedLastPosition, load_scoped_last_position,
     upsert_scoped_last_position,
 };
-use super::character_progression::{CurrentCharacterGameplayFence, assert_gameplay_fence};
+use super::character_progression::{
+    CurrentCharacterGameplayFence, assert_gameplay_fence, uuid_text,
+};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use sqlx::Row;
+use sqlx::{Postgres, Row, Transaction};
+use std::future::Future;
+use std::pin::Pin;
+
+/// The existing Premium owner resolves current benefits in the settlement transaction.
+/// Delivery must be settled before borrowing the transaction's durable holder.
+pub trait BedPremiumGate: Sync {
+    fn current<'a>(
+        &'a self,
+        tx: &'a mut Transaction<'_, Postgres>,
+        account: [u8; 16],
+    ) -> Pin<Box<dyn Future<Output = Result<bool, DurabilityError>> + Send + 'a>>;
+}
 
 /// Crystal 201189f `src/items/bed.cpp:262-285` regenerates only until wake and,
 /// when somebody frees the bed first, only until that earlier instant.
@@ -33,6 +47,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
+        gate: Option<&dyn BedPremiumGate>,
     ) -> Result<(), DurabilityError> {
         // Bed admission settles vitals/rest in the same saved projection, retaining
         // its named House/origin metadata. Its admitting session is genuinely Channel. An activity
@@ -47,11 +62,26 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let mut gate = gate;
+        self.try_issue_semantic_pass()?.run_with_context(&mut gate, move |holder, deadline, gate| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            // Premium's latch precedes the Character root lock. Bind its account
+            // from durable ownership, then recheck it once that root is locked.
+            let account: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+                .ok_or(DurabilityError::Unavailable)?;
+            let premium_current = match *gate {
+                Some(gate) => gate.current(&mut tx, uuid_text(&account)?).await?,
+                None => false,
+            };
             if assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Err(DurabilityError::Unavailable);
+            }
+            let current_account: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            if account != current_account {
                 return Err(DurabilityError::Unavailable);
             }
             let args = || (fence.game_session_id.as_bytes().as_slice(), fence.character_id.as_bytes().as_slice(), fence.connection_generation.get().to_string(), fence.character_lease_generation.to_string());
@@ -81,9 +111,11 @@ impl DurabilityRoot {
                     None if vocation == "none" => 1,
                     None => return Err(DurabilityError::InvalidStoredState),
                 };
-                let (hp, mana, soul) = oteryn_gameplay_characters::vitals::maxima(&vocation,level,
+                let (hp, mana, _) = oteryn_gameplay_characters::vitals::maxima(&vocation,level,
                     oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,oteryn_protocol_oteryn::actor_spell::MAX_SOUL)
                     .ok_or(DurabilityError::InvalidStoredState)?;
+                let promoted = super::character_promotion::read_durable_promotion(&mut tx, fence.character_id).await?;
+                let soul = oteryn_gameplay_domain::domain::premium::soul_maximum(promoted, premium_current);
                 let slept: i64 = sleeper.try_get("slept_at")?;
                 let wake: i64 = sleeper.try_get("wake_at")?;
                 let seconds = offline_bed_seconds(

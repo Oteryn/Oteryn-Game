@@ -53,7 +53,7 @@ pub(in crate::play) fn enqueue(
     };
     if matches!(
         intent,
-        Intent::Reveal | Intent::Dismantle | Intent::SwitchDomain | Intent::GradeUp
+        Intent::Reveal | Intent::Dismantle | Intent::Reshape | Intent::GradeUp
     ) {
         oteryn_client_ui::wheel_allocation::gems::stage(&mut mailbox.wheel, intent, occurrence);
         return;

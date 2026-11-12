@@ -64,10 +64,12 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
         LastPositionWrite::Written
     );
     h.root
-        .settle_bed_regen(&authority, &h.node, channel)
+        .settle_bed_regen(&authority, &h.node, channel, None)
         .await?;
     assert!(matches!(
-        h.root.settle_bed_regen(&authority, &h.node, instance).await,
+        h.root
+            .settle_bed_regen(&authority, &h.node, instance, None)
+            .await,
         Err(crate::durability::DurabilityError::Unavailable)
     ));
     let progress = TutorialProgress {

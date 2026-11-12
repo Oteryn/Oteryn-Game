@@ -23,6 +23,9 @@ pub const TALISMAN_PURCHASE_GOLD: u64 = 5_000;
 pub const MAX_BOUNTY_POINTS: u32 = u32::MAX;
 /// Crystal ioweeklytasks.hpp:148; independent of the historical 1e9 track bound.
 pub const MAX_SOULSEALS: u32 = u32::MAX;
+/// Winter Update 2026 client: "You can store up to 10 Reroll Tokens at a time."
+/// Credits stop at this balance; a larger historical balance is kept, not clawed back.
+pub const MAX_REROLL_TOKENS: u64 = 10;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct TaskBoardData {
@@ -545,11 +548,6 @@ fn apply_inner(
             if data.bounty.state != BountyStatus::Completed {
                 return Err(TaskBoardRefusal::WrongState);
             }
-            // The accepted existing token owner stores a nonnegative BIGINT. Refuse
-            // overflow before changing XP, points or tasks, so the refusal is replayable.
-            if context.reroll_tokens >= i64::MAX.unsigned_abs() {
-                return Err(TaskBoardRefusal::ArithmeticOverflow);
-            }
             let task = data
                 .bounty
                 .active
@@ -561,7 +559,7 @@ fn apply_inner(
                 .checked_add(i64::from(task.points))
                 .filter(|sum| *sum <= i64::from(MAX_BOUNTY_POINTS))
                 .ok_or(TaskBoardRefusal::ArithmeticOverflow)?;
-            effects.reroll_tokens_granted = 1;
+            effects.reroll_tokens_granted = u32::from(context.reroll_tokens < MAX_REROLL_TOKENS);
             generate_bounty(&mut data.bounty, context.creatures, draw)?;
         }
         TaskBoardAction::ChangeBountyDifficulty { difficulty } => {

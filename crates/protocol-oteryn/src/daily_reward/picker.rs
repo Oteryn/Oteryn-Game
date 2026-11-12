@@ -1,4 +1,5 @@
-//! Bounded item-selection messages for the existing daily reward capability.
+//! Bounded item-selection messages of the retired daily item picker. WU26-05 withdrew
+//! commands 6122/6123 from capability 182 and the registry; the numbers stay retired.
 pub const QUERY: u32 = 6122;
 pub const CLAIM: u32 = 6123;
 pub const MAX_PICKS: usize = 19;

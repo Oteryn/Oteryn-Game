@@ -96,6 +96,7 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 Poll::Pending => break,
             }
         }
+        let was_full = connections.len() == limits.connections;
         connections.retain_mut(
             |connection| match timed_poll(connection.as_mut(), context) {
                 Poll::Pending => true,
@@ -113,6 +114,11 @@ pub(super) async fn serve_listener_with_drain<A, I, O>(
                 }
             },
         );
+        if was_full && connections.len() < limits.connections && !stopped {
+            // Accept was skipped while full. Poll it again after releasing a
+            // slot, even when no remaining connection can wake this listener.
+            context.waker().wake_by_ref();
+        }
         lifecycles.retain_mut(|lifecycle| lifecycle.as_mut().poll(context).is_pending());
         let polled = poll_started.elapsed();
         if polled >= LISTENER_POLL_REPORT {
@@ -298,7 +304,7 @@ where
     // The owning authority's decision is never cancelled midway.
     if cast_observer::ingress(&frame) {
         if let Some(node) = authority.cast_node() {
-            let _ = cast_observer::serve(stream, &frame, node, shutdown).await;
+            let _ = cast_observer::serve(stream, &frame, node, shutdown, unit).await;
         }
         observer.ended(ConnectionEnd::AdmissionRefused(
             connection::AdmissionRefusal::Unavailable,

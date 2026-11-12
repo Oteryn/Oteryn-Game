@@ -7,7 +7,7 @@ pub use input::open_key;
 pub use protocol::{apply_result, request};
 pub use state::{Action, HighscoresPanel};
 pub use view::{panel_text, parse_world, world_text};
-// Categories 13 (Loyalty) and 15 (Taint) are reserved; Game filters preserve explicit wire IDs.
+// Category 13 (Loyalty) is added by capability 498 (`crate::highscores_loyalty`); 15 (Taint) is reserved; Game filters preserve explicit wire IDs.
 pub const CATEGORY_IDS: [u32; 15] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17];
 pub const CATEGORIES: [&str; 15] = [
     "Experience",
@@ -37,3 +37,7 @@ pub fn category_for_selection(index: usize) -> Option<u32> {
 pub fn category_selection(category: u32) -> Option<usize> {
     CATEGORY_IDS.iter().position(|id| *id == category)
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_s11.rs"]
+mod e2e_s11;

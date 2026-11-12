@@ -370,3 +370,40 @@ fn party_rounding_agrees_for_viewers_with_different_opaque_handles() -> Result<(
     }
     Ok(())
 }
+
+#[test]
+fn t107_session_shows_clock_xp_per_hour_and_profit_balance() {
+    use oteryn_client_runtime::analyser::AnalyserFact;
+    let mut panel = Panel {
+        selected: true,
+        tool: Tool::Session,
+        ..Default::default()
+    };
+    apply_at(
+        &mut panel,
+        &[
+            AnalyserFact::Experience {
+                raw: 500,
+                gained: 750,
+            },
+            AnalyserFact::KillLoot {
+                race: None,
+                corpse_items: vec![],
+                gold: 900,
+            },
+        ],
+        0,
+    );
+    let text = super::view::session_text_at(&panel, 3725);
+    for expected in [
+        "Session clock: 1:02:05",
+        "Elapsed: 3725 seconds",
+        "XP/h: 724",
+        "Raw XP/h: 483",
+        "Priced balance: 900 gold",
+        "Priced balance/h: 869 gold",
+    ] {
+        assert!(text.contains(expected), "missing {expected}: {text}");
+    }
+    assert!(super::view::session_text_at(&panel, 0).contains("Session clock: 0:00:00"));
+}

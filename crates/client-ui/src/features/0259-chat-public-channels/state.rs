@@ -11,6 +11,8 @@ pub struct ChatPanel {
     pub open: bool,
     pub rooms: ChatRoomSet,
     pub lines: Vec<ChatLine>,
+    /// Capability 493: the recipient of each own private echo, in step with `lines`.
+    pub recipients: Vec<Option<String>>,
     pub room: ChatRoom,
     pub text: String,
     pub pending: bool,
@@ -29,6 +31,7 @@ impl Default for ChatPanel {
             open: false,
             rooms: ChatRoomSet::default(),
             lines: Vec::new(),
+            recipients: Vec::new(),
             room: ChatRoom::World,
             text: String::new(),
             pending: false,

@@ -40,6 +40,7 @@ pub(super) fn publish<T: Stepper>(
     outbox.battle_publish(session.battle_state(), session.battle_floor(), held);
     if let Some((rooms, lines)) = session.chat_state() {
         outbox.chat_public_state(rooms, lines);
+        outbox.chat_extras_publish(session);
     }
 }
 

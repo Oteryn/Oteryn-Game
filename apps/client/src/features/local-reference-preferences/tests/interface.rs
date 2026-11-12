@@ -99,3 +99,40 @@ fn tooltips_use_visible_server_names_delay_and_generation() -> Result<(), Box<dy
     assert_eq!(hover.update(None, now + delay + delay, delay), None);
     Ok(())
 }
+
+#[test]
+fn t050_cursor_and_full_ui_scale_ranges_persist_or_refuse() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::{PreferenceStore, ReferencePreferences};
+    let path = std::env::temp_dir().join(format!("t050-ui-scale-{}.json", std::process::id()));
+    let mut store = PreferenceStore::defaults(path.clone());
+    let mut preferences = ReferencePreferences {
+        cursor_crosshair: true,
+        interface_scale: 200,
+        ui_scale: 80,
+        ..Default::default()
+    };
+    store.apply(preferences.clone())?;
+    assert_eq!(
+        PreferenceStore::load(path.clone())?.preferences(),
+        &preferences
+    );
+    preferences.interface_scale = 80;
+    preferences.ui_scale = 180;
+    store.apply(preferences.clone())?;
+    for (interface_scale, ui_scale) in [(79, 100), (201, 100), (100, 79), (100, 181)] {
+        let rejected = ReferencePreferences {
+            interface_scale,
+            ui_scale,
+            ..preferences.clone()
+        };
+        assert!(store.apply(rejected).is_err());
+    }
+    assert_eq!(
+        PreferenceStore::load(path.clone())?.preferences(),
+        &preferences
+    );
+    let _ = std::fs::remove_file(path.with_extension("backup.json"));
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}

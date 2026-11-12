@@ -184,6 +184,18 @@
       "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."
     },
     {
+      "event": "player_trade_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "intent",
+        "code",
+        "cause"
+      ],
+      "codes": [],
+      "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
+    },
+    {
       "event": "release_deferred",
       "level": "warn",
       "span": false,

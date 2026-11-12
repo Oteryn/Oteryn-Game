@@ -119,10 +119,11 @@ pub(crate) async fn exchange_store(
 const REQUEST_HEAD_BYTES: usize = 512;
 /// Request envelope (head and body) for every other operation.
 const REQUEST_ENVELOPE_BYTES: usize = 10_240;
-/// Per-operation envelope cap: the projection snapshot (`LCA-REQUEST-BYTES`)
-/// gets its own head allowance; every other operation keeps the shared cap.
+/// Large operation bodies get their own bounded head allowance; other
+/// operations keep the shared envelope cap.
 const fn request_envelope_max(operation: Operation) -> usize {
     match operation {
+        Operation::PublishGameJournalRecordV1 => 65536 + REQUEST_HEAD_BYTES,
         Operation::PublishAccountCharactersV1 => {
             super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
         }
@@ -132,6 +133,9 @@ const fn request_envelope_max(operation: Operation) -> usize {
         }
         Operation::PublishWorldOnlineV1 => {
             super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
+        }
+        Operation::PublishCharacterDeathsV2 | Operation::PublishGuildV2 => {
+            operation.request_bytes_max() + REQUEST_HEAD_BYTES
         }
         Operation::PublishBazaarTransferabilityV1
         | Operation::PublishBazaarCharacterCommandReceiptV2 => {
@@ -210,6 +214,13 @@ async fn exchange_status(
         }
         if super::world_event_outcomes::is_operation(operation) {
             return read_t94_response(&mut tls).await;
+        }
+        if matches!(
+            operation,
+            Operation::PublishGameJournalRecordV1 | Operation::ReadGameJournalCursorV1
+        ) {
+            let (status, raw, retry_after) = read_journal_response(&mut tls).await?;
+            return Ok((status, raw, retry_after));
         }
         if let Some(max) = super::store::response_bytes_max(operation) {
             let mut retry_after = None;
@@ -420,6 +431,7 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
         require_retry_after,
         retry_after_max,
         false,
+        false,
     )
     .await
 }
@@ -438,6 +450,7 @@ async fn read_response_impl<S: AsyncRead + Unpin>(
     require_retry_after: bool,
     retry_after_max: Duration,
     coins: bool,
+    journal: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
     if body_max == 0
         || body_max
@@ -533,7 +546,11 @@ async fn read_response_impl<S: AsyncRead + Unpin>(
                     .map_err(|_| SourceError::InvalidInput)?,
             );
         } else if name.eq_ignore_ascii_case("transfer-encoding") {
-            if chunked || length.is_some() || !value.trim().eq_ignore_ascii_case("chunked") {
+            if journal
+                || chunked
+                || length.is_some()
+                || !value.trim().eq_ignore_ascii_case("chunked")
+            {
                 return Err(SourceError::InvalidInput);
             }
             chunked = true;
@@ -563,7 +580,11 @@ async fn read_response_impl<S: AsyncRead + Unpin>(
             retry_after = Some(if delay.is_zero() {
                 delay
             } else {
-                delay.clamp(crate::store::POLL, retry_after_max)
+                if journal {
+                    delay
+                } else {
+                    delay.clamp(crate::store::POLL, retry_after_max)
+                }
             });
         } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
@@ -619,6 +640,14 @@ async fn read_response_impl<S: AsyncRead + Unpin>(
         }
         let mut body = vec![0; length];
         stream.read_exact(&mut body).await?;
+        if journal {
+            // Journal requests require Connection: close. Refuse hidden trailing
+            // bytes as well as declared nonempty error bodies.
+            let mut trailing = [0_u8; 1];
+            if stream.read(&mut trailing).await? != 0 {
+                return Err(SourceError::InvalidInput);
+            }
+        }
         Ok(body)
     }
     .await;
@@ -626,8 +655,33 @@ async fn read_response_impl<S: AsyncRead + Unpin>(
         Err(SourceError::CapacityExceeded) if oversized_ok && code == 200 => {
             Err(SourceError::OversizedOk)
         }
-        body => body.map(|body| (code, body)),
+        body => body.and_then(|body| {
+            if journal && code != 200 && !body.is_empty() {
+                return Err(SourceError::InvalidInput);
+            }
+            Ok((code, body))
+        }),
     }
+}
+async fn read_journal_response<S: AsyncRead + Unpin>(
+    stream: &mut S,
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
+    let mut retry = None;
+    let (status, body) = read_response_impl(
+        stream,
+        false,
+        1024,
+        true,
+        &[],
+        false,
+        Some(&mut retry),
+        false,
+        Duration::MAX,
+        false,
+        true,
+    )
+    .await?;
+    Ok((status, body, retry))
 }
 async fn read_chunked_bounded<S: AsyncRead + Unpin>(
     stream: &mut S,
@@ -733,7 +787,7 @@ mod tests {
 #[cfg(test)]
 mod envelope_tests {
     use super::*;
-    const OPERATIONS: [Operation; 19] = [
+    const OPERATIONS: [Operation; 21] = [
         Operation::ReadAccountSecurityV1,
         Operation::ReadFreshSigningTrustV1,
         Operation::ReadRecoveryAccountSecurityV2,
@@ -753,12 +807,16 @@ mod envelope_tests {
         Operation::PublishCharacterProfileV1,
         Operation::PublishWorldOnlineV1,
         Operation::PublishPublicProjectionWatermarkV1,
+        Operation::PublishCharacterDeathsV2,
+        Operation::PublishGuildV2,
     ];
     /// The operations whose snapshot bound exceeds the shared envelope.
-    const WIDENED: [Operation; 3] = [
+    const WIDENED: [Operation; 5] = [
         Operation::PublishAccountCharactersV1,
         Operation::PublishWorldHighscoresV1,
         Operation::PublishWorldOnlineV1,
+        Operation::PublishCharacterDeathsV2,
+        Operation::PublishGuildV2,
     ];
     #[test]
     fn every_maximum_body_fits_its_envelope_and_only_the_snapshots_widen_it() {
@@ -790,6 +848,14 @@ mod envelope_tests {
         assert_eq!(
             request_envelope_max(Operation::PublishWorldOnlineV1),
             524_288 + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishCharacterDeathsV2),
+            32_768 + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishGuildV2),
+            393_216 + REQUEST_HEAD_BYTES
         );
     }
 }
@@ -970,3 +1036,22 @@ mod bazaar_tests {
 #[path = "http1_mtls/coins.rs"]
 mod coins;
 pub(crate) use coins::exchange_coins;
+
+#[cfg(test)]
+#[test]
+fn journal_http_strict_framing_and_full_retry_after() -> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+ let mut error=b"HTTP/1.1 409 Conflict\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\nx".as_slice();
+ assert!(read_journal_response(&mut error).await.is_err());
+ let ack=crate::journal::PublishGameJournalRecordV1Response::BYTES;
+ let mut raw=format!("HTTP/1.1 200 OK\r\nCache-Control: no-store\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n",ack.len()).into_bytes();
+ raw.extend_from_slice(ack);let mut good=raw.as_slice();assert_eq!(read_journal_response(&mut good).await?.1,ack);
+ raw.push(b'x');let mut bad=raw.as_slice();assert!(read_journal_response(&mut bad).await.is_err());
+
+ for raw in [b"HTTP/1.1 200 OK\r\nCache-Control: no-store\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n\r\n".as_slice(),b"HTTP/1.1 409 Conflict\r\nCache-Control: no-store\r\nContent-Length: 2\r\n\r\n{}"] {
+ let mut input=raw;assert!(read_journal_response(&mut input).await.is_err());
+ }
+ let mut input=b"HTTP/1.1 429 Busy\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 999\r\n\r\n".as_slice();
+ let (status,body,retry)=read_journal_response(&mut input).await?;assert_eq!(status,429);assert!(body.is_empty());assert_eq!(retry,Some(Duration::from_secs(999)));Ok(())
+ })
+}

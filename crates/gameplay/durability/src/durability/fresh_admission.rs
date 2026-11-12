@@ -342,6 +342,7 @@ pub struct FreshAdmissionStore {
     house_release_node: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
+    journal_catalogue: Option<std::sync::Arc<super::journal::LogoutCatalogue>>,
 }
 
 /// OFFLINE0: a terminal-release participant owned outside the shared core (LOOP-TRAIN-1's
@@ -449,6 +450,12 @@ impl FreshAdmissionStore {
         }
     }
 
+    /// Complete admitted-World root catalogue for the terminal journal capture.
+    #[must_use]
+    pub fn with_journal_catalogue(&self, catalogue: super::journal::LogoutCatalogue) -> Self {
+        Self { journal_catalogue: Some(std::sync::Arc::new(catalogue)), ..self.clone() }
+    }
+
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
     #[must_use]
     pub fn with_training_logout(
@@ -490,6 +497,7 @@ impl FreshAdmissionStore {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
+            journal_catalogue: None,
             final_position: None,
             final_house: None,
             house_release_node: None,
@@ -2128,6 +2136,7 @@ impl FreshAdmissionStore {
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
+            journal_catalogue: None,
             final_position: None,
             final_house: None,
             house_release_node: None,

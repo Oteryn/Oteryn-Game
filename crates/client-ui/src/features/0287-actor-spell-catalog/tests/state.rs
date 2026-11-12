@@ -77,3 +77,34 @@ fn filtered_paging_stops_at_the_last_matching_page() {
     navigate(&mut panel, "missing", 2);
     assert_eq!(panel.page, 0);
 }
+
+#[test]
+fn n003_toggle_spell_list_widget_is_alt_l_only() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(15)?;
+    let key = |modifiers: Modifiers, repeat: bool| {
+        [NormalizedInputEvent::Key {
+            code,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat,
+        }]
+    };
+    assert!(crate::spell_catalog::toggle_key(&key(
+        Modifiers::NONE.with(Modifier::Alt),
+        false
+    )));
+    assert!(!crate::spell_catalog::toggle_key(&key(
+        Modifiers::NONE.with(Modifier::Alt),
+        true
+    )));
+    assert!(!crate::spell_catalog::toggle_key(&key(
+        Modifiers::NONE,
+        false
+    )));
+    assert!(!crate::spell_catalog::toggle_key(&key(
+        Modifiers::NONE.with(Modifier::Alt).with(Modifier::Shift),
+        false
+    )));
+    Ok(())
+}

@@ -28,6 +28,11 @@ impl Stepper for Peer {
     fn chat_state(&self) -> Option<(ChatRoomSet, Vec<ChatLine>)> {
         Some((self.rooms, self.lines.clone()))
     }
+    fn chat_clear_oldest(&mut self) {
+        if !self.lines.is_empty() {
+            self.lines.remove(0);
+        }
+    }
     async fn chat_public(&mut self, intent: &ChatIntent) -> Result<ChatOutcome, SessionError> {
         self.commands
             .lock()
@@ -118,3 +123,121 @@ fn local_chat_input_reaches_session_and_received_private_message_is_visible() ->
 
 #[path = "console.rs"]
 mod console;
+
+#[test]
+fn n021_alt_d_selects_the_default_tab_and_keypad_enter_sets_temporary_mode()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, _, _) = crate::play::play_channel();
+    let press =
+        |code: u16, modifiers| -> Result<[NormalizedInputEvent; 1], Box<dyn std::error::Error>> {
+            Ok([NormalizedInputEvent::Key {
+                code: KeyCode::new(code)?,
+                state: ButtonState::Pressed,
+                modifiers,
+                repeat: false,
+            }])
+        };
+    let open = || crate::play::mailbox::lock(&link.mailbox).chat.open;
+    assert!(!open());
+    link.chat_console_tab(ConsoleTab::Guild);
+    assert!(link.chat_input(&press(7, Modifiers::one(Modifier::Alt))?));
+    assert!(open(), "Alt+D opens the console it selects the tab of");
+    crate::play::mailbox::lock(&link.mailbox).chat.open = false;
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.console.tab,
+        ConsoleTab::All
+    );
+    assert!(link.chat_input(&press(88, Modifiers::NONE)?));
+    assert!(open(), "Keypad Enter opens the console");
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox).chat.console.mode,
+        ComposerMode::Temporary
+    );
+    Ok(())
+}
+
+#[test]
+fn channel_dialog_opens_a_private_message_tab_by_name_and_cancels_cleanly() {
+    use oteryn_client_ui::chat::ChannelTab;
+    let (link, _commands, _outbox) = play_channel();
+    link.chat_channel_dialog_open();
+    let (dialog, rows) = link.chat_channel_dialog();
+    assert!(dialog.open);
+    // Without a server list the dialog still offers the three local tabs.
+    assert!(rows.iter().any(|row| row.starts_with("Loot")));
+    link.chat_channel_dialog_cancel();
+    assert!(!link.chat_channel_dialog().0.open);
+    assert!(!link.chat_channel_dialog_confirm());
+    link.chat_channel_dialog_open();
+    link.chat_channel_dialog_name(" Bryn ");
+    assert!(link.chat_channel_dialog_confirm());
+    let panel = link.chat_panel();
+    assert!(!panel.console.dialog.open);
+    assert_eq!(
+        panel.console.current,
+        Some(ChannelTab::Conversation("Bryn".into()))
+    );
+    // A name that cannot be a player closes the dialog and says why.
+    link.chat_channel_dialog_open();
+    link.chat_channel_dialog_name(&"x".repeat(121));
+    assert!(!link.chat_channel_dialog_confirm());
+    assert!(link.chat_panel().feedback.is_some());
+}
+
+#[test]
+fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), Error> {
+            oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
+                let peer = Peer {
+                    commands: Arc::new(Mutex::new(Vec::new())),
+                    rooms: ChatRoomSet::default(),
+                    lines: vec![
+                        ChatLine::Private {
+                            speaker_name: "Bryn".into(),
+                            text: "oldest".into(),
+                        },
+                        ChatLine::Private {
+                            speaker_name: "Bryn".into(),
+                            text: "retained".into(),
+                        },
+                    ],
+                };
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(peer, incoming, outbox));
+                wait_for(&link, |panel| panel.lines.len() == 2).await?;
+                assert!(link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                wait_for(&link, |panel| panel.lines.len() == 1).await?;
+                // Say produces a result/publication with the same retained log.
+                link.chat_text("publish".into());
+                link.chat_request(Mode::Say, "");
+                wait_for(&link, |panel| !panel.pending).await?;
+                assert_eq!(
+                    link.chat_panel().lines,
+                    vec![ChatLine::Private {
+                        speaker_name: "Bryn".into(),
+                        text: "retained".into(),
+                    }]
+                );
+                link.chat_text("incoming".into());
+                link.chat_request(Mode::Private, "Bryn");
+                wait_for(&link, |panel| panel.lines.len() == 2).await?;
+                assert!(!panel_text(&link.chat_panel()).contains("oldest"));
+                assert!(panel_text(&link.chat_panel()).contains("incoming"));
+                assert!(link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                wait_for(&link, |panel| panel.lines.len() == 1).await?;
+                assert!(panel_text(&link.chat_panel()).contains("incoming"));
+                assert!(link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                wait_for(&link, |panel| panel.lines.is_empty()).await?;
+                assert!(!link.utility_action(crate::play::UtilityAction::ClearOldestMessage));
+                drop(link);
+                task.await?;
+                Ok::<(), Error>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "chat clear test thread panicked")?
+}

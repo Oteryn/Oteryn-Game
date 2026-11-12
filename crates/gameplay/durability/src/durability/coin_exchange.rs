@@ -96,7 +96,19 @@ impl DurabilityRoot {
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let mut context = content;
+        #[cfg(any(test, feature = "test-support"))]
+        let diagnostic_root = self.root_identity();
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, content| Box::pin(async move {
+            macro_rules! commit_exchange {
+                ($transaction:expr, $phase:literal) => {{
+                    #[cfg(any(test, feature = "test-support"))]
+                    let probe = audit_commit_probe::CommitProbe::start(diagnostic_root, command, $phase, deadline);
+                    let result = $transaction.commit(deadline).await;
+                    #[cfg(any(test, feature = "test-support"))]
+                    probe.finish(&result);
+                    result
+                }};
+            }
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock(&mut tx, command).await?;
@@ -105,12 +117,12 @@ impl DurabilityRoot {
                 let stored: Option<Vec<u8>> = row.try_get("item_source")?;
                 if stored.as_deref() != source.as_ref().map(|id| id.as_slice()) {
                     // NPC resume must never execute or acknowledge an item-use receipt.
-                    if source.is_none() { tx.commit(deadline).await?; return Ok(None); }
+                    if source.is_none() { commit_exchange!(tx, "retained_read")?; return Ok(None); }
                     return Err(DurabilityError::InvalidStoredState);
                 }
             }
             if existing.is_none() {
-                let Some(request) = request.as_ref() else { tx.commit(deadline).await?; return Ok(None); };
+                let Some(request) = request.as_ref() else { commit_exchange!(tx, "retained_read")?; return Ok(None); };
                 let content = content.ok_or(DurabilityError::Unavailable)?;
                 if request.npc_generation == 0 || request.catalogue_revision == 0 || request.conversation_revision == 0 || request.npc_key.is_empty() || request.npc_key.len() > 512 {
                     return Err(DurabilityError::InvalidStoredState);
@@ -120,7 +132,7 @@ impl DurabilityRoot {
                     .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).bind(converter.as_ref().map(|(tool, _)| tool.id()).as_ref().map(|id| id.as_slice())).bind(converter.as_ref().map(|(tool, _)| tool.code())).execute(&mut **tx).await?;
             }
             // The immutable accepted request survives a timeout or process loss after this commit.
-            tx.commit(deadline).await?;
+            commit_exchange!(tx, "acceptance")?;
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock(&mut tx, command).await?;
@@ -154,7 +166,7 @@ impl DurabilityRoot {
                         None => {
                             sqlx::query("UPDATE game_coin_exchange_receipts SET result=2,inputs='[]',outputs='[]' WHERE transaction_id=$1::uuid")
                                 .bind(&transaction).execute(&mut **tx).await?;
-                            tx.commit(deadline).await?;
+                            commit_exchange!(tx, "converter_refusal_finalization")?;
                             return Ok(Some(CoinExchangeReceipt { npc_identity: identity.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, npc_generation: generation, line: exchange.insufficient_coins().to_owned(), changed: false }));
                         }
                     },
@@ -177,9 +189,134 @@ impl DurabilityRoot {
                 4 => "There is not enough room in your backpack.",
                 _ => return Err(DurabilityError::InvalidStoredState),
             }.to_owned();
-            tx.commit(deadline).await?;
+            commit_exchange!(tx, "finalization")?;
             Ok(Some(CoinExchangeReceipt { npc_identity: identity.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, npc_generation: generation, line, changed: result == 1 }))
         })).await
+    }
+}
+
+/// Temporary, exact-command diagnostics consumed only by the native coin fixture.
+#[cfg(any(test, feature = "test-support"))]
+pub mod audit_commit_probe {
+    use super::{CommandRef, DurabilityError, DurabilityRoot};
+    use std::future::Future;
+    use std::sync::{Arc, Mutex};
+    use std::time::Instant;
+
+    #[derive(Debug, Default)]
+    pub struct Report {
+        pub commits: Vec<Commit>,
+        pub overflow: usize,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct Commit {
+        pub phase: &'static str,
+        pub remaining_ms: u128,
+        pub elapsed_ms: u128,
+        pub outcome: &'static str,
+    }
+
+    struct Scope {
+        root: usize,
+        command: CommandRef,
+        report: Arc<Mutex<Report>>,
+    }
+
+    tokio::task_local! {
+        static ACTIVE: Scope;
+    }
+
+    /// The fixture polls its server and client directly inside this future.
+    /// No diagnostics are installed in unrelated roots, commands or spawned tasks.
+    pub async fn capture<F: Future>(
+        root: &DurabilityRoot,
+        command: CommandRef,
+        operation: F,
+    ) -> (F::Output, Report) {
+        let report = Arc::new(Mutex::new(Report::default()));
+        let result = ACTIVE
+            .scope(
+                Scope {
+                    root: root.root_identity(),
+                    command,
+                    report: Arc::clone(&report),
+                },
+                operation,
+            )
+            .await;
+        let report = std::mem::take(&mut *report.lock().unwrap_or_else(|error| error.into_inner()));
+        (result, report)
+    }
+
+    pub(super) struct CommitProbe(Option<Attempt>);
+
+    struct Attempt {
+        report: Arc<Mutex<Report>>,
+        started: Instant,
+        commit: Commit,
+    }
+
+    impl CommitProbe {
+        pub(super) fn start(
+            root: usize,
+            command: CommandRef,
+            phase: &'static str,
+            deadline: Instant,
+        ) -> Self {
+            Self(
+                ACTIVE
+                    .try_with(|scope| {
+                        (scope.root == root
+                            && scope.command.game_session_id() == command.game_session_id()
+                            && scope.command.command_id() == command.command_id())
+                        .then(|| Attempt {
+                            report: Arc::clone(&scope.report),
+                            started: Instant::now(),
+                            commit: Commit {
+                                phase,
+                                remaining_ms: deadline
+                                    .saturating_duration_since(Instant::now())
+                                    .as_millis(),
+                                elapsed_ms: 0,
+                                outcome: "Cancelled",
+                            },
+                        })
+                    })
+                    .ok()
+                    .flatten(),
+            )
+        }
+
+        pub(super) fn finish(mut self, result: &Result<(), DurabilityError>) {
+            if let Some(attempt) = &mut self.0 {
+                attempt.commit.outcome = match result {
+                    Ok(()) => "Committed",
+                    Err(DurabilityError::CommitOutcomeUnknown) => "CommitOutcomeUnknown",
+                    Err(DurabilityError::CommitRejected) => "CommitRejected",
+                    Err(DurabilityError::RootPassDeadlineExceeded) => "RootPassDeadlineExceeded",
+                    Err(_) => "OtherDurabilityError",
+                };
+            }
+        }
+    }
+
+    impl Drop for CommitProbe {
+        fn drop(&mut self) {
+            let Some(attempt) = &mut self.0 else {
+                return;
+            };
+            attempt.commit.elapsed_ms = attempt.started.elapsed().as_millis();
+            let mut report = attempt
+                .report
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if report.commits.len() < 8 {
+                report.commits.push(attempt.commit);
+            } else {
+                report.overflow = report.overflow.saturating_add(1);
+            }
+        }
     }
 }
 

@@ -117,3 +117,6 @@ pub(in crate::play) fn apply(
     }
     panel.reply = Some(reply);
 }
+#[cfg(test)]
+#[path = "tests/e2e_p01.rs"]
+mod e2e_p01;

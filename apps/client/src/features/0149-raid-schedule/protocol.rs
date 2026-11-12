@@ -47,3 +47,7 @@ pub(in crate::play) fn apply(
     };
     panel.feedback = tr!("Raid schedule updated").into();
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_w04.rs"]
+mod e2e_w04;

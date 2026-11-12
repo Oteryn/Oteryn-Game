@@ -26,6 +26,31 @@ impl HirelingLampPlacement {
 }
 
 impl DurabilityRoot {
+    /// Actor-owned carried projection under the existing current House custody fence.
+    /// This read grants no service ACL and performs no later item mutation.
+    pub async fn read_house_carried_inventory(
+        &self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence, origin_channel: [u8; 16],
+    ) -> Result<ItemUseInventory, DurabilityError> {
+        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if fence::assert_house_custody_fence(&mut tx, &node, &current, origin_channel).await?.is_none() {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            item_use::reconcile_carried_death_tree(&mut tx, &current, &node, Some(origin_channel)).await?;
+            let row = sqlx::query("SELECT content_revision,ruleset_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(current.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let inventory = item_use::read_use_inventory(&mut tx, &current, row.try_get("content_revision")?, row.try_get("ruleset_revision")?)
+                .await.map_err(item_error)?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(inventory)
+        })).await
+    }
+
     /// The same carried-tree projection as ordinary USE, after independent named House proof.
     pub async fn read_hireling_use_inventory(
         &self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
@@ -40,6 +65,7 @@ impl DurabilityRoot {
             if !fence::assert_house_inventory_fence(&mut tx, &node, &current, origin_channel).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
+            item_use::reconcile_carried_death_tree(&mut tx, &current, &node, Some(origin_channel)).await?;
             let row = sqlx::query("SELECT content_revision,ruleset_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                 .bind(current.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let inventory = item_use::read_use_inventory(&mut tx, &current, row.try_get("content_revision")?, row.try_get("ruleset_revision")?)

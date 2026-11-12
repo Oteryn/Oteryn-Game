@@ -12,7 +12,10 @@ mod protection;
 pub use protection::Protection;
 #[path = "view/protection.rs"]
 mod protection_view;
-pub use protection_view::{PROTECTION_NOTE, protection_cards, protection_heading};
+pub use protection_view::{
+    PROTECTION_NOTE, PromotionView, promotion_text, promotion_view, protection_cards,
+    protection_heading,
+};
 #[path = "view/augments.rs"]
 mod augment_view;
 #[path = "protocol/augments.rs"]
@@ -29,7 +32,7 @@ pub use achievements::{next_request as achievement_next_request, request as achi
 pub use input::{blessings_key, open_key, set_target};
 pub use profile::{ProfileRow, profile_heading, profile_rows};
 pub use protocol::{BlessingsPanel, Intent, apply_result, request, request_blessings};
-pub use state::{BadgeFilter, BadgeRow, CyclopediaCharacterPanel, HistoryRow};
+pub use state::{BadgeFilter, BadgeRow, CyclopediaCharacterPanel, HistoryRow, TabExtensions};
 pub use view::{
     CombatRow, badge_rows, badge_text, blessings_text, combat_detail, combat_rows, history_rows,
     misc_bars, misc_cards, overview_bars, overview_cards, panel_text, store_blessings, store_cards,
@@ -41,6 +44,26 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/combat_modifiers.rs"]
 mod combat_modifier_tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_c03.rs"]
+mod e2e_c03;
+
+#[cfg(test)]
+#[path = "tests/e2e_c20a.rs"]
+mod e2e_c20a;
+
+#[cfg(test)]
+#[path = "tests/e2e_c15.rs"]
+mod e2e_c15;
+
+#[cfg(test)]
+#[path = "tests/e2e_s16b.rs"]
+mod e2e_s16b;
+
+#[cfg(test)]
+#[path = "tests/general_stats_selection.rs"]
+mod general_stats_selection;
 
 #[cfg(test)]
 #[path = "tests/stamina.rs"]

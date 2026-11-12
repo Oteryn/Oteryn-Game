@@ -202,3 +202,6 @@ impl Outbox {
         }
     }
 }
+#[cfg(test)]
+#[path = "tests/e2e_s06.rs"]
+mod e2e_s06;

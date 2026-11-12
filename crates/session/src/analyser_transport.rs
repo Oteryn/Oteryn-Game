@@ -50,8 +50,21 @@ pub(super) fn apply<S: SessionStream>(
         .find(|(id, _)| *id == STATE_DOMAIN_ACTOR_ANALYSER)
         .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ACTOR_ANALYSER))?;
     check_delta(&delta, DELTA_TYPE_ANALYSER_FACTS_V1, row.1)?;
-    let value = decode_analyser_facts(delta.payload)
-        .map_err(|_| SessionError::Protocol(FoundationProtocolError::MalformedFrame))?;
+    let malformed = |_| SessionError::Protocol(FoundationProtocolError::MalformedFrame);
+    if session
+        .selected_capabilities
+        .contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        let value = decode_attributed_analyser_facts(delta.payload).map_err(malformed)?;
+        row.1 = delta.new_revision;
+        return Ok(SessionEvent::AnalyserAttributedFacts(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value,
+        }));
+    }
+    let value = decode_analyser_facts(delta.payload).map_err(malformed)?;
     row.1 = delta.new_revision;
     Ok(SessionEvent::AnalyserFacts(AppliedDelta {
         server_sequence: sequence,

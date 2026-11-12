@@ -34,6 +34,9 @@ impl Outbox {
         let mut shared = lock(&self.0);
         shared.item_forge.preview.selected = session.feature_selected(152);
         shared.imbue.details_selected = session.feature_selected(447);
+        shared.imbue.success_selected = session.feature_selected(
+            oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+        );
         shared
             .properties
             .house
@@ -115,6 +118,9 @@ impl Outbox {
             ..Default::default()
         };
         shared.properties.house_podium.selected = session.feature_selected(150);
+        shared.properties.house_podium.flagged = session.feature_selected(
+            oteryn_session::property_services::house_podium::CAPABILITY_HOUSE_PODIUM_FLAGS_V1,
+        );
         shared.properties.training.selected = session.feature_selected(54);
         shared.properties.guild_bank.selected = session.feature_selected(55);
     }
@@ -314,3 +320,7 @@ fn apply(panel: &mut Panel, command: &FeatureCommand, result: &GatedCommandResul
 
 #[path = "panel_lifecycle.rs"]
 mod panel_lifecycle;
+
+#[cfg(test)]
+#[path = "tests/e2e_i04.rs"]
+mod e2e_i04;

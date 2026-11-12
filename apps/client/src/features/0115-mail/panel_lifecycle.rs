@@ -99,6 +99,7 @@ impl Panels {
         };
         self.mail.selected = false;
         self.house_podium.selected = false;
+        self.house_podium.flagged = false;
         self.training.selected = false;
         self.guild_bank.selected = false;
     }

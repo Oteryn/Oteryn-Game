@@ -31,6 +31,9 @@ pub(super) async fn hotkey_equip(
         .ok_or("hotkey equip fixture item missing from inventory")?;
     let mut panel = client_ui::hotkey_equip::HotkeyEquipPanel {
         selected: true,
+        tiered: client.selected_capabilities().contains(
+            &oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1,
+        ),
         item_definition: definition,
         ..Default::default()
     };

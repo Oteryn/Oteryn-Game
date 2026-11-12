@@ -244,6 +244,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
             return ReleaseAttempt::Retry;
         };
+        let releasing = self.journal_logout_store(releasing, admitted.world_id);
         let outcome = AdmissionRetryBudget::for_command(self.root)
             .retry_durability("release_commit", async || match release {
                 TerminalRelease::Abandoned(transport) => {

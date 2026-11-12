@@ -150,3 +150,41 @@ fn npc_pointer_resets_on_focus_and_device_loss() -> Result<(), Box<dyn std::erro
     }
     Ok(())
 }
+
+#[test]
+fn npc_reply_lines_reach_the_npc_channel_tab_and_survive_the_close() {
+    use oteryn_session::{AppliedDelta, SessionEvent, npc_service};
+    let (link, _, outbox) = play_channel();
+    let npc = EntityRef {
+        identity: [9; 16],
+        generation: 2,
+    };
+    let conversation = |open, lines: &[&str]| {
+        SessionEvent::NpcConversation(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: npc_service::NpcConversation {
+                open,
+                lines: lines.iter().map(|line| (*line).to_owned()).collect(),
+            },
+        })
+    };
+    let mut mailbox = mailbox::lock(&outbox.0);
+    mailbox.dialogue_events(&[conversation(
+        Some((npc, npc_service::NpcConversationState::Open)),
+        &["Welcome, traveller."],
+    )]);
+    assert_eq!(mailbox.chat.console.npc_lines, ["Welcome, traveller."]);
+    // The conversation closed with no lines: the last reply stays readable in the tab.
+    mailbox.dialogue_events(&[conversation(None, &[])]);
+    assert_eq!(mailbox.chat.console.npc_lines, ["Welcome, traveller."]);
+    drop(mailbox);
+    link.chat_channel_dialog_open();
+    link.chat_channel_dialog_select(link.chat_dialog_entries().len() - 1);
+    assert!(link.chat_channel_dialog_confirm());
+    assert_eq!(
+        oteryn_client_ui::chat::panel_text(&link.chat_panel()),
+        "Welcome, traveller.\n"
+    );
+}

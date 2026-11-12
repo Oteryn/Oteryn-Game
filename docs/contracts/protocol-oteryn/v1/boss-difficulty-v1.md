@@ -3,6 +3,8 @@
 Boss difficulty, capability 225, command 431. Bundle-world only; requires
 boss-encounter capability 117. PR #2769 ANSWER 6542714759 accepts the sourced
 window and durable draft choice. The owner decision of 2026-11-09 adds individual unlocks and native room admission; scaling remains outside this change.
+The owner decision of 2026-11-11 adds the Moonsilver first-drop pity tracker,
+capability 492 (*Pity tracker* below).
 
 ## Request
 
@@ -49,8 +51,61 @@ for every admitted participant in the same terminal transaction, including offli
 participants. Timeout and conflicting or late deaths do not award a victory.
 The Phosphorus Record (highscores category 16) includes only recorded Phosphorus
 victors, ranked by highest victorious difficulty through the existing snapshots
-and highscores dispatch. No pity/bad-luck rule has an official source; none is
-transmitted or inferred. The difficulty and Archfoe views share confirmed state.
+and highscores dispatch. No pity/bad-luck rule has an official source; the only
+one applied or transmitted is the owner-decided tracker in *Pity tracker* below.
+The difficulty and Archfoe views share confirmed state.
+
+## Pity tracker (capability 492)
+
+Sources (TibiaWiki): Updates/15.30.a30dad, "To reward persistence, your chance of
+obtaining new Moonsilver equipment increases until you receive one."; Winter
+Update 2026, "a pity tracker that applies only your first drop, after that only
+the base drop chance applies."
+
+Parameters: owner decision 2026-11-11; no official figures published.
+
+| Rule | Value |
+|---|---|
+| Scope | One tracker per character per boss under the Boss Difficulty System (a boss with a sourced difficulty maximum: Mimar Haffar, Maior Domus, Phosphorus, the Make Believe bosses). The boss and creature identities of one boss share the key `oteryn:boss.<name>`. |
+| Pity entries | The boss loot table's Moonsilver equipment entries (TibiaWiki item ids 53207-53233). In the current content these are the five Moonsilver helmets 53229-53233 of Mimar Haffar and Maior Domus, 3,000 ppm each; the Phosphorus tables hold none, so its tracker counts but boosts no entry. |
+| Base | The entry's loot-table chance. |
+| Step | +10% of base (100 permille) per boss victory without a Moonsilver drop (`kills_without_drop`). |
+| Cap | +200% of base (2,000 permille), a 3x chance, reached after 20 victories. |
+| First drop | Ends the tracker for that character and boss permanently: `kills_without_drop` keeps the count it reached, the bonus is 0 and only the base chance applies afterwards. |
+
+`bonus_permille = min(kills_without_drop * 100, 2000)` while the tracker is
+active, else 0. A pity entry's chance in that character's personal roll is
+`min(base * (1000 + bonus_permille) / 1000, 1,000,000)` ppm; every other entry and
+every other recipient keeps its own chance. The roll applies whether or not the
+session selected capability 492.
+
+Durability: `game_character_boss_pity` (migration 2790) holds
+`kills_without_drop` and `first_drop_received` per character and boss. The
+reward roll reads each recipient's bonus once under the current scope owner and
+freezes it with the death, so a settlement retry plans identical items. The boss
+reward settlement transaction, which proves every recipient's captured
+GameSession and Character lease, applies the victory to each chest recipient in
+character order: a chest holding Moonsilver equipment marks the first drop; any
+other chest, or one expired at settlement, is a victory without a drop. A
+replayed settlement returns before any write, so a death counts once. A late
+death settles no chest and counts no victory.
+
+Wire: a session that selected capability 492 (requires 225, bundle World only)
+receives, in a progress window (action 4, `unlocked_max != 0`) of a pity boss,
+three varint fields after field 10:
+
+| Field | Tag byte | Type | Meaning |
+|---|---|---|---|
+| 11 | `0x58` | u16 | `kills_without_drop` |
+| 12 | `0x60` | u16 | `bonus_permille`, 0..=2000, the current bonus over base in permille of base |
+| 13 | `0x68` | u8 | `tracker_active`, 1 active, 0 after the first drop |
+
+All three fields are present or none. A tracker that is inactive with a nonzero
+bonus, a bonus above 2000, a flag other than 0/1, a partial tracker or tracker
+fields on any other reply are malformed. A session without 492, a legacy window,
+a closed or refused reply and a boss outside the pity set receive the V1 bytes
+unchanged. The window's replay receipt stores the bytes it sent, so a replay
+repeats them.
 
 ## Authority and replay
 
@@ -83,8 +138,9 @@ actually be started through the new UI window." The Phosphorus Record lists
 victors by the highest difficulty of a single victorious fight. Sourced maxima
 are Mimar Haffar 25, Maior Domus 15 and Phosphorus 28.
 
-No HP/damage/loot multipliers, special-drop probabilities or pity parameters are
-invented. Room content, capacity, quest, cooldown and physical-position checks
+No HP/damage/loot multipliers or special-drop probabilities are invented. The
+pity parameters are the owner decision of 2026-11-11 (*Pity tracker*), labelled as
+such because no official figures are published. Room content, capacity, quest, cooldown and physical-position checks
 remain with the existing native activity owner.
 
 Content limitation: the current captured lever catalogue has no room for these

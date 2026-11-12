@@ -21,12 +21,22 @@ pub(super) async fn scenario(h: &Harness, owner: &ComposedFreshAdmission<'_, '_,
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(viewer_skills, 0);
     let generation = admitted.continuity.connection_generation;
+    let (session, fence) = (admitted.game_session_id, admitted.item_fence);
     let (mut server, stream) = tokio::io::duplex(1 << 20);
     let mut client = Client::new(stream,admitted);
     let client_run = async {
         client.talk(npc,"hi").await?;
+        // WU26-10: Mod Reshaping reads the stash through a hireling only where its stash
+        // service is open; a greeting alone opens nothing.
+        assert!(!owner.reshape_hireling_stash(Some(actor), session, fence).await);
         let opened = client.talk(npc,"stash").await?;
         assert!(opened.lines.iter().any(|line|line.contains("supply stash is available")));
+        assert!(owner.reshape_hireling_stash(Some(actor), session, fence).await);
+        // A hireling without the depot/stash (Steward) function grants no stash access.
+        set_steward(h, false).await?;
+        assert!(!owner.reshape_hireling_stash(Some(actor), session, fence).await);
+        set_steward(h, true).await?;
+        assert!(owner.reshape_hireling_stash(Some(actor), session, fence).await);
         let first = client.next_command;
         let mut item = client.first_item;
         send(&mut client.stream, generation, first, StashIntent { page: 0, action: StashAction::Browse }).await?;
@@ -113,6 +123,20 @@ async fn guest_fixture(h: &Harness, hireling: [u8;16]) -> TestResult {
         .bind(id(42).as_slice()).bind(super::HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_hireling_entitlements(character_id,entitlement_id) VALUES(encode($1,'hex')::uuid,1003)")
         .bind(landlord.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn set_steward(h: &Harness, steward: bool) -> TestResult {
+    // Fixture custody only: toggle the landlord's Steward entitlement that serves this guest.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+    let sql = if steward {
+        "INSERT INTO game_hireling_entitlements(character_id,entitlement_id) VALUES(encode($1,'hex')::uuid,1003)"
+    } else {
+        "DELETE FROM game_hireling_entitlements WHERE character_id=encode($1,'hex')::uuid AND entitlement_id=1003"
+    };
+    assert_eq!(sqlx::query(sql).bind(id(121).as_slice()).execute(&mut *tx).await?.rows_affected(), 1);
     tx.commit().await?;
     Ok(())
 }

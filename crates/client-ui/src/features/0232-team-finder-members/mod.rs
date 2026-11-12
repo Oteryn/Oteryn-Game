@@ -7,3 +7,5 @@ pub use input::open_key;
 pub use protocol::{apply_result, leader, member, query};
 pub use state::{Panel, TeamFilter};
 pub use view::panel_text;
+#[cfg(test)]
+mod tests;

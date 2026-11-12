@@ -25,6 +25,10 @@ pub enum Intent {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ImbuePanel {
     pub details_selected: bool,
+    /// Capability 491 is selected: offers carry their success percentage.
+    pub success_selected: bool,
+    /// The success percentage of each offer of `window`, in offer order.
+    pub success: Vec<u8>,
     pub details_pending: Option<ItemHandle>,
     pub details_attempted: bool,
     pub details: Option<oteryn_client_runtime::imbuement_details::Reply>,
@@ -48,6 +52,7 @@ impl ImbuePanel {
         *self = Self {
             selected: self.selected,
             details_selected: self.details_selected,
+            success_selected: self.success_selected,
             open: self.open,
             tracker_open: self.tracker_open,
             tracker_minutes: self.tracker_minutes.clone(),
@@ -62,6 +67,7 @@ impl ImbuePanel {
         }
         self.item = Some(item);
         self.window = None;
+        self.success.clear();
         self.details = None;
         self.details_pending = None;
         self.details_attempted = false;
@@ -223,6 +229,7 @@ mod tests {
             &mut panel,
             &ImbueResponse {
                 status: oteryn_client_runtime::imbue::CommandStatus::Accepted,
+                success: Vec::new(),
                 reply: Some(imbuement::ImbuementReply {
                     result: imbuement::ImbuementResult::MaterialsMissing,
                     window: None,
@@ -236,3 +243,11 @@ mod tests {
 #[cfg(test)]
 #[path = "tests/tracker.rs"]
 mod tracker_cases;
+
+#[cfg(test)]
+#[path = "tests/slots.rs"]
+mod slot_cases;
+
+#[cfg(test)]
+#[path = "tests/e2e_p21.rs"]
+mod e2e_p21;

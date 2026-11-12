@@ -166,7 +166,10 @@ pub(super) async fn answer(
     payload: &[u8],
 ) -> Option<Option<ServerModalOutcome>> {
     let answer = Answer::decode(payload).ok()?;
-    let Selection::Bed(selection) = owner.states.server_modals.rule_selection(root, answer)? else {
+    // The bed dialog asks for no input, so an answer carrying a value never reaches it.
+    let (Selection::Bed(selection), None, _) =
+        owner.states.server_modals.rule_selection(root, answer)?
+    else {
         return None;
     };
     Some(complete(owner, admitted, root, command_id, answer, selection).await)

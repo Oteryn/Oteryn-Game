@@ -506,3 +506,95 @@ fn kill_counts_survive_fragmentation_and_zero_loot_and_kill_decode_is_strict() {
         Err(AnalyserWireError::LimitExceeded)
     );
 }
+
+#[test]
+fn hit_attribution_carries_the_attacker_only_when_selected_and_attributable() {
+    let attacker = EntityRef {
+        identity: [7; ENTITY_IDENTITY_BYTES],
+        generation: 300,
+    };
+    let hit = AnalyserFact::DamageInput {
+        value: nz(42),
+        element: DamageElement::Fire,
+        source: AnalyserDamageSource::Creature(Some(nz(3))),
+    };
+    let plain = encode_analyser_fact(&hit).expect("plain");
+    // Without an attacker the attributed encoding is byte-identical to the original fact.
+    assert_eq!(
+        encode_attributed_analyser_fact(&hit, None).expect("plain"),
+        plain
+    );
+    let attributed = encode_attributed_analyser_fact(&hit, Some(&attacker)).expect("attributed");
+    assert!(attributed.len() > plain.len());
+    // An original client refuses field 5; an attributed client reads both forms.
+    assert!(decode_analyser_fact(&attributed).is_err());
+    assert_eq!(
+        decode_attributed_analyser_fact(&attributed),
+        Ok(AttributedFact {
+            fact: hit.clone(),
+            attacker: Some(attacker),
+        })
+    );
+    assert_eq!(
+        decode_attributed_analyser_fact(&plain),
+        Ok(AttributedFact {
+            fact: hit.clone(),
+            attacker: None,
+        })
+    );
+    let player = AnalyserFact::DamageInput {
+        value: nz(9),
+        element: DamageElement::Physical,
+        source: AnalyserDamageSource::Player,
+    };
+    let encoded = encode_attributed_analyser_fact(&player, Some(&attacker)).expect("player");
+    assert_eq!(
+        decode_attributed_analyser_fact(&encoded).map(|fact| fact.attacker),
+        Ok(Some(attacker))
+    );
+    // Sourceless hits, other facts and a zero generation never carry an attacker.
+    for fact in [
+        AnalyserFact::DamageInput {
+            value: nz(1),
+            element: DamageElement::Untyped,
+            source: AnalyserDamageSource::None,
+        },
+        AnalyserFact::Kill { race: None },
+    ] {
+        assert_eq!(
+            encode_attributed_analyser_fact(&fact, Some(&attacker)),
+            Err(AnalyserWireError::Malformed)
+        );
+    }
+    assert_eq!(
+        encode_attributed_analyser_fact(
+            &hit,
+            Some(&EntityRef {
+                identity: attacker.identity,
+                generation: 0,
+            })
+        ),
+        Err(AnalyserWireError::Malformed)
+    );
+    // A doubled attacker fails closed.
+    let mut doubled = attributed.clone();
+    let extra = attributed.len() - plain.len();
+    let tail = attributed[attributed.len() - extra..].to_vec();
+    doubled.extend_from_slice(&tail);
+    doubled[1] = u8::try_from(doubled.len() - 2).expect("short");
+    assert!(decode_attributed_analyser_fact(&doubled).is_err());
+    let mut queue = AnalyserPendingQueue::default();
+    queue
+        .push_attributed(&hit, Some(&attacker))
+        .expect("queued");
+    queue.push(&hit).expect("queued");
+    let batch = queue.take_batch().expect("batch");
+    assert_eq!(
+        decode_attributed_analyser_facts(&batch)
+            .expect("batch")
+            .into_iter()
+            .map(|fact| fact.attacker)
+            .collect::<Vec<_>>(),
+        [Some(attacker), None]
+    );
+}

@@ -4,11 +4,16 @@ use crate::charm_wire::{
 };
 
 pub const CAPABILITY_BOSS_DIFFICULTY_V1: u32 = 225;
+/// A progress window of a pity boss carries the Moonsilver first-drop pity tracker as
+/// fields 11-13 ([`PityTracker`]).
+pub const CAPABILITY_BOSS_DIFFICULTY_PITY_V1: u32 = 492;
 pub const COMMAND_TYPE_BOSS_DIFFICULTY: u32 = 431;
 pub const MAX_REQUEST_BYTES: usize = 1_024;
 pub const MAX_RESULT_BYTES: usize = 2_048;
 /// Largest sourced cap (Phosphorus); individual boss bounds are below, not scaling formulas.
 pub const MAX_DIFFICULTY: u16 = 28;
+/// The pity bonus over the base drop chance, in permille of base, never exceeds this (3x base).
+pub const MAX_PITY_BONUS_PERMILLE: u16 = 2_000;
 
 /// Owner-supplied TibiaWiki Boss Difficulty System / Updates/15.30.a30dad.
 /// No scaling or special-drop parameters are inferred from these limits.
@@ -190,9 +195,33 @@ pub enum Reply {
     },
 }
 
-/// Per-character victory facts are authoritative. No unsourced pity figures are sent.
+/// One character's Moonsilver first-drop pity for the window's boss (capability 492).
+/// `bonus_permille` is the current bonus over the item's base chance, in permille of base;
+/// an inactive tracker (first drop received) has no bonus.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PityTracker {
+    pub kills_without_drop: u16,
+    pub bonus_permille: u16,
+    pub tracker_active: bool,
+}
+
+/// Per-character victory facts are authoritative. The legacy reply carries no pity fields.
 pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
+    encode_reply_with_pity(reply, None)
+}
+
+/// The reply as a session that selected capability 492 receives it: a progress window
+/// (`unlocked_max != 0`) of a pity boss appends fields 11 kills_without_drop, 12
+/// bonus_permille and 13 tracker_active. Any other reply takes no tracker.
+pub fn encode_reply_with_pity(reply: &Reply, pity: Option<&PityTracker>) -> Result<Vec<u8>, Error> {
     let mut out = Vec::new();
+    if let Some(pity) = pity
+        && (!matches!(reply, Reply::Window { unlocked_max, .. } if *unlocked_max != 0)
+            || pity.bonus_permille > MAX_PITY_BONUS_PERMILLE
+            || (!pity.tracker_active && pity.bonus_permille != 0))
+    {
+        return Err(Error::Malformed);
+    }
     match reply {
         Reply::Window {
             context,
@@ -227,6 +256,11 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
                 push_varint_field(&mut out, 9, u64::from(*unlocked_max));
                 push_message_field(&mut out, 10, boss_creature_key.as_bytes());
             }
+            if let Some(pity) = pity {
+                push_varint_field(&mut out, 11, u64::from(pity.kills_without_drop));
+                push_varint_field(&mut out, 12, u64::from(pity.bonus_permille));
+                push_varint_field(&mut out, 13, u64::from(pity.tracker_active));
+            }
         }
         Reply::Closed { context } => {
             if *context == [0; 16] {
@@ -257,17 +291,32 @@ pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
     if bytes.len() > MAX_RESULT_BYTES {
         return Err(Error::LimitExceeded);
     }
-    let reply = parse_reply(bytes).ok_or(Error::Malformed)?;
+    let (reply, _) = parse_reply(bytes, false).ok_or(Error::Malformed)?;
     if encode_reply(&reply)? != bytes {
         return Err(Error::Malformed);
     }
     Ok(reply)
 }
-fn parse_reply(bytes: &[u8]) -> Option<Reply> {
+
+/// A reply as a session that selected capability 492 receives it: the tracker is present
+/// exactly when fields 11-13 are. Noncanonical and partial trackers are rejected.
+pub fn decode_reply_with_pity(bytes: &[u8]) -> Result<(Reply, Option<PityTracker>), Error> {
+    if bytes.len() > MAX_RESULT_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (reply, pity) = parse_reply(bytes, true).ok_or(Error::Malformed)?;
+    if encode_reply_with_pity(&reply, pity.as_ref())? != bytes {
+        return Err(Error::Malformed);
+    }
+    Ok((reply, pity))
+}
+
+fn parse_reply(bytes: &[u8], with_pity: bool) -> Option<(Reply, Option<PityTracker>)> {
     let mut at = 0;
     let (mut kind, mut context, mut key, mut revision, mut difficulty, mut refusal) =
         (None, None, None, None, None, None);
     let (mut highest, mut unlocked, mut maximum, mut creature) = (None, None, None, None);
+    let (mut kills, mut bonus, mut active) = (None, None, None);
     while at < bytes.len() {
         let tag = var(bytes, &mut at)?;
         match tag {
@@ -295,10 +344,30 @@ fn parse_reply(bytes: &[u8]) -> Option<Reply> {
             64 => highest = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
             72 => unlocked = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
             82 => creature = Some(String::from_utf8(take(bytes, &mut at)?.to_vec()).ok()?),
+            88 if with_pity => kills = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
+            96 if with_pity => bonus = Some(u16::try_from(var(bytes, &mut at)?).ok()?),
+            104 if with_pity => {
+                active = Some(match var(bytes, &mut at)? {
+                    0 => false,
+                    1 => true,
+                    _ => return None,
+                })
+            }
             _ => return None,
         }
     }
-    match kind? {
+    let pity = match (kills, bonus, active) {
+        (Some(kills_without_drop), Some(bonus_permille), Some(tracker_active)) => {
+            Some(PityTracker {
+                kills_without_drop,
+                bonus_permille,
+                tracker_active,
+            })
+        }
+        (None, None, None) => None,
+        _ => return None,
+    };
+    let reply = match kind? {
         0 => Some(Reply::Window {
             context: context?,
             boss_creature_key: creature.unwrap_or_else(|| key.clone().unwrap_or_default()),
@@ -315,7 +384,8 @@ fn parse_reply(bytes: &[u8]) -> Option<Reply> {
             reason: refusal?,
         }),
         _ => None,
-    }
+    }?;
+    Some((reply, pity))
 }
 fn var(b: &[u8], a: &mut usize) -> Option<u64> {
     let (mut v, mut s) = (0, 0);

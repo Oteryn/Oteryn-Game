@@ -35,6 +35,22 @@
       "note": "Semantic transaction lifecycle; successful slow operations are promoted to warn."
     },
     {
+      "event": "game_journal_quarantined",
+      "level": "error",
+      "span": false,
+      "fields": ["reason"],
+      "codes": [],
+      "note": "T72: journal stream quarantined after a 400/401/413 until explicit repair; reason is authority_or_protocol. No identities or payloads."
+    },
+    {
+      "event": "game_journal_stalled",
+      "level": "warn",
+      "span": false,
+      "fields": ["reason"],
+      "codes": [],
+      "note": "T72: durable journal stream without progress past the bound; reason is no_progress. No identities or payloads."
+    },
+    {
       "event": "highscore_snapshot",
       "level": "info",
       "span": false,

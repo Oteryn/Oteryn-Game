@@ -156,6 +156,9 @@ impl PlayView {
             self.set_marker(entry);
         }
         self.receive_presentation(&pushed.visuals, std::time::Instant::now());
+        if pushed.own_hit_flash {
+            self.hit_flash = Some(std::time::Instant::now());
+        }
         self.rebuild()
     }
 }

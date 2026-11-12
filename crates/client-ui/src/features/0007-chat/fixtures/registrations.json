@@ -17,6 +17,15 @@
   },
   {
     "mechanic": "0007-chat",
+    "kind": "keybindings",
+    "id": "0007-chat-default-channel",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "ALT+D",
+    "entry": "input.rs::default_channel_key"
+  },
+  {
+    "mechanic": "0007-chat",
     "kind": "handlers",
     "id": "0007-chat-input",
     "status": "supported",
@@ -46,5 +55,14 @@
     "id": "0007-chat-panels",
     "status": "supported",
     "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0007-chat",
+    "kind": "keybindings",
+    "id": "0007-chat-temporary-on",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "KEYPADENTER",
+    "entry": "input.rs::temporary_mode_key"
   }
 ]

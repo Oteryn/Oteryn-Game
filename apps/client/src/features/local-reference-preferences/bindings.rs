@@ -13,10 +13,41 @@ pub struct PreferenceBinding {
 pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> {
     let mut bindings: Vec<_> = REGISTERED_BINDINGS
         .iter()
-        .map(|&(id, default_chord)| PreferenceBinding { id, default_chord })
+        .map(|&(id, default_chord)| PreferenceBinding {
+            id,
+            default_chord: if unbound_by_default(id) {
+                ""
+            } else {
+                default_chord
+            },
+        })
         .collect();
     bindings.extend(super::bar_hotkeys::extra_bindings());
     Ok(bindings)
+}
+
+/// Features whose input chord belongs to a Global channel or help command by default; the
+/// player can still bind them, and the feature keeps reading its own chord internally.
+const UNBOUND_BY_DEFAULT: &[&str] = &[
+    "0009-highscores-open",
+    "0060-player-trade-open",
+    "0072-task-board-open",
+    "0147-exiva-settings-open",
+];
+
+fn unbound_by_default(id: &str) -> bool {
+    UNBOUND_BY_DEFAULT.contains(&id)
+}
+
+/// The key an id answers to: the player's choice, else its default unless it has none.
+fn effective_chord<'a>(
+    map: &'a std::collections::BTreeMap<String, String>,
+    id: &str,
+    default: &'a str,
+) -> Option<&'a str> {
+    map.get(id)
+        .map(String::as_str)
+        .or_else(|| (!unbound_by_default(id)).then_some(default))
 }
 
 #[path = "chords.rs"]
@@ -165,8 +196,10 @@ impl ReferencePreferences {
                     continue;
                 }
                 let original = parse(default)?;
-                let effective = parse(primary.get(id).map_or(default, String::as_str))?;
-                if effective == chord
+                let effective = effective_chord(primary, id, default)
+                    .map(parse)
+                    .transpose()?;
+                if effective == Some(chord)
                     || secondary.get(id).map(|s| parse(s)).transpose()? == Some(chord)
                 {
                     target = Some(original);
@@ -177,7 +210,7 @@ impl ReferencePreferences {
                 // another registered effective chord still wins above.
                 suppressed |= original.0 == chord.0
                     && chord.1.bits() & original.1.bits() == original.1.bits()
-                    && effective != original;
+                    && effective != Some(original);
             }
             if let Some(Chord(code, modifiers)) = target {
                 routed.push(NormalizedInputEvent::Key {
@@ -293,12 +326,9 @@ pub(super) fn window_events(
     let Some(binding) = REGISTERED_BINDINGS.iter().find(|(key, _)| *key == id) else {
         return Vec::new();
     };
-    let Ok(Chord(code, modifiers)) = parse(
-        preferences
-            .keybindings
-            .get(id)
-            .map_or(binding.1, String::as_str),
-    ) else {
+    let Some(Ok(Chord(code, modifiers))) =
+        effective_chord(&preferences.keybindings, id, binding.1).map(parse)
+    else {
         return Vec::new();
     };
     [

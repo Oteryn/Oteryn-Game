@@ -269,6 +269,20 @@ impl Minimap {
         self.dirty = true;
         self.save()
     }
+    /// `Misc.: Create Mark`: adds a default-labelled marker at `own`. Returns `false` and leaves
+    /// the map unchanged when a marker already sits there, so the caller opens it for editing.
+    pub fn create_mark_at(&mut self, own: (i32, i32, i16)) -> io::Result<bool> {
+        let (x, y, floor) = own;
+        if self
+            .markers
+            .iter()
+            .any(|m| (m.x, m.y, m.floor) == (x, y, floor))
+        {
+            return Ok(false);
+        }
+        self.edit_marker(x, y, floor, tr!("Mark").into(), 0)?;
+        Ok(true)
+    }
     // Invoked by native Windows controls; the headless tests exercise the same state.
     #[cfg_attr(not(windows), allow(dead_code))]
     pub fn remove_marker(&mut self, x: i32, y: i32, floor: i16) -> io::Result<()> {
@@ -347,3 +361,7 @@ mod transfer_tests;
 #[cfg(test)]
 #[path = "tests/play_persistence.rs"]
 mod play_persistence;
+
+#[cfg(test)]
+#[path = "tests/e2e_n07d.rs"]
+mod e2e_n07d;
