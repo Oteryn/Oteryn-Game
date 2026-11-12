@@ -1,0 +1,68 @@
+[
+  [
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+    },
+    {
+      "status": 429,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_RATE_LIMITED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}",
+      "retry_after": "0"
+    },
+    {
+      "status": 200,
+      "body": "{\"protocol_version\":2,\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\",\"world_id\":\"01890a5d-ac96-774b-bcce-b302099a8059\",\"channel_id\":\"01890a5d-ac96-774b-bcce-b302099a805a\",\"endpoint\":{\"host\":\"game.example.test\",\"port\":7171,\"tls_server_name\":\"game.example.test\",\"alpn\":\"oteryn-game/1\",\"protocol_major\":1,\"transport_profile\":1},\"grant\":{\"profile\":\"oteryn-pre-admission-v1\",\"token\":\"eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl\",\"valid_for_seconds\":30}}"
+    }
+  ],
+  [
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    },
+    {
+      "status": 503,
+      "progression": "Retryable",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+    }
+  ],
+  [
+    {
+      "status": 401,
+      "progression": "SecurityTerminal",
+      "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_AUTHENTICATION_REQUIRED\",\"public_class\":\"AUTHENTICATION_REQUIRED\"},\"attempt_ref\":null}"
+    }
+  ]
+]

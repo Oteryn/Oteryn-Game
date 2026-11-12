@@ -10,12 +10,15 @@ mod account_services;
 pub mod bazaar;
 mod challenge;
 pub mod coin_purchase;
+mod gateway_request;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
 pub mod premium;
+mod ticket;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
 use crate::{PlatformClientConfig, PlatformClientError};
+use gateway_request::body;
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use reqwest::header::{CONTENT_TYPE, RETRY_AFTER};
 use reqwest::{Client, Response, StatusCode, Url, redirect::Policy};
@@ -428,12 +431,12 @@ impl NativeLoginGrant {
     }
 }
 
-/// Retry pacing; [`RetryPacing::CONTRACT`] is the production value, tests shorten it.
+/// Retry pacing; tests advance waits without changing limits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RetryPacing {
     /// Backoff before retry `n` (1-based) is `unit * 2^(n-1)`.
     pub unit: Duration,
-    /// A `Retry-After` longer than this is not waited for.
+    /// Maximum accepted `Retry-After`.
     pub max_retry_after: Duration,
 }
 
@@ -533,57 +536,7 @@ impl NativeLoginClient {
         access_token: AccessToken,
         cancellation: CancellationToken,
     ) -> Result<NativeTicket, NativeLoginError> {
-        let endpoint = self
-            .platform
-            .join("/api/v1/game-auth/tickets")
-            .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        let request = async {
-            let response = self
-                .client
-                .post(endpoint)
-                .bearer_auth(access_token.0.expose())
-                .json(&serde_json::json!({ "protocol_version": 1 }))
-                .send()
-                .await
-                .map_err(|_error| PlatformClientError::Request)?;
-            let received = Instant::now();
-            match response.status() {
-                status if status.is_success() => {}
-                StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
-                    return Err(NativeLoginError::TicketRefused(
-                        PublicClass::AuthenticationRequired,
-                    ));
-                }
-                _ => {
-                    return Err(NativeLoginError::TicketRefused(
-                        PublicClass::TemporarilyUnavailable,
-                    ));
-                }
-            }
-            let body = read_bounded(response, MAX_TICKET_RESPONSE_BYTES).await?;
-            #[derive(Deserialize)]
-            #[serde(deny_unknown_fields)]
-            struct TicketResponse {
-                protocol_version: u64,
-                ticket: String,
-                expires_in: u64,
-            }
-            let ticket: TicketResponse = serde_json::from_slice(&body)
-                .map_err(|_error| PlatformClientError::InvalidPayload)?;
-            if ticket.protocol_version != 1
-                || ticket.expires_in == 0
-                || !is_visible_ascii(&ticket.ticket, MAX_TICKET_BYTES)
-            {
-                return Err(PlatformClientError::InvalidPayload.into());
-            }
-            let lifetime = Duration::from_secs(ticket.expires_in).min(MAX_TICKET_LIFETIME);
-            Ok(NativeTicket {
-                secret: SecretText(ticket.ticket),
-                usable_until: received + lifetime,
-                requests_sent: AtomicU32::new(0),
-            })
-        };
-        run(cancellation, request).await
+        ticket::issue(self, access_token, cancellation).await
     }
 
     /// Gateway `POST /v1/login` (protocol 2). Retries the byte-identical request (same
@@ -608,21 +561,7 @@ impl NativeLoginClient {
         {
             return Err(PlatformClientError::InvalidPayload.into());
         }
-        let body = serde_json::to_vec(&serde_json::json!({
-            "protocol_version": GATEWAY_PROTOCOL_VERSION,
-            "game_login_ticket": ticket.secret.expose(),
-            "attempt_ref": login.attempt_ref.as_str(),
-            "character_id": login.character_id,
-            "channel_id": login.channel_id,
-            "offer": {
-                "client_build": login.client_build,
-                "client_platform": "windows",
-                "transports": [
-                    { "protocol_major": 1, "transport_profile": 1, "alpn": GAME_ALPN }
-                ],
-            },
-        }))
-        .map_err(|_error| PlatformClientError::InvalidPayload)?;
+        let body = body(&ticket.secret.0, login, GATEWAY_PROTOCOL_VERSION, GAME_ALPN)?;
         if body.len() > MAX_LOGIN_REQUEST_BYTES {
             return Err(PlatformClientError::InvalidPayload.into());
         }
@@ -668,6 +607,8 @@ impl NativeLoginClient {
                 {
                     return Err(error);
                 }
+                #[cfg(test)]
+                let backoff = tests::delay(backoff);
                 tokio::time::sleep(backoff).await;
             }
         };

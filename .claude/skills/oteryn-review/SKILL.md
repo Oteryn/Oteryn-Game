@@ -89,11 +89,15 @@ with CI and never blocks or delays it.
   "not reviewed" and the coordinator runs it. A Codex lane never reviews its
   own code.
 - How: the review owner starts it with `codex exec`
-  in a read-only sandbox, single agent, model gpt-6.1-sol, reasoning effort high (an
+  in a read-only sandbox, model gpt-6.1-sol, reasoning effort high (an
   `@codex review` PR comment has gone unanswered since 2026-10-20, so it is not
-  used), with the diff, `CODEX-CHECKLIST.md`, the risky areas of this diff
-  (locks, retries, commit and fencing, tests that can pass without testing) and
-  the instruction to report findings only, at most 30 lines. Code Codex wrote is
+  used), as one round of parallel lens runs over the same head, each with the
+  diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
+  lines. Each run is told to report every finding, with no cap on lines or
+  count, and every other instance of the same class in the diff. Lenses,
+  chunking of big diffs, the prompt, the merge, verify and sweep steps and the
+  stop rule are in `references/batch-review.md`; read it before you start a
+  review or delegate one. Code Codex wrote is
   reviewed by a new Codex run with a clean context, never as a continuation of
   the run that wrote it.
 - Its output is findings to verify with step 3, not a verdict; a failed or
@@ -101,7 +105,9 @@ with CI and never blocks or delays it.
 - Fixing confirmed findings (owner decision 2026-11-11): the review run never
   edits code. After you verify each finding (§6), write only the confirmed ones,
   one per line as `P1|P2 path:line - problem - failure path`, to a file and hand
-  them to one code-writing Codex run at reasoning effort `medium`: on the PC
+  them, with every instance the pattern sweep found, to one code-writing
+  Codex run at reasoning effort `medium` (one run for the whole batch, never
+  one per finding): on the PC
   `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
   (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
   the same list. Per finding it writes a red test first, reports `NOT
