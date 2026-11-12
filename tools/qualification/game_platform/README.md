@@ -231,7 +231,8 @@ terminates a private loopback TLS connection from the shipping client, captures
 the actual method/path/content-type/authorization scheme/body, and forwards the
 body verbatim to the real, CA-verified Platform TLS listener. Every response
 status/header/body comes from that listener; no credential response is generated.
-The capture retains only a boolean proof, never credential/header values. Both
+RequestProof retains only booleans, never credential/header values; the relay
+holds the issued credential in memory only for comparison. Both
 connections verify TLS, the relay refuses redirects, and no production capture
 API or hook was added. The proof requires exact `enroll.json` or `rotate.json`
 fixture bytes (substituting only the configured client UUID), POST, the precise
@@ -246,3 +247,22 @@ serde_json::Value's alphabetically ordered keys. JSON values are unchanged.
 PHP P behavior: the retained Accept headers do not change native device protocol
 behavior; P's controller already returns JsonResponse for success and refusals
 (`3bc2d0e9:app/Http/Controllers/GameAuth/DeviceSessions/NativeDeviceSessionController.php`).
+
+
+Round-3 repairs cover URL userinfo for every scheme, plain/backslash-escaped JSON
+secret keys, ticket variants and complete nested array/object secret values.
+They are exercised through the real `game_platform_fail` retention path: the
+seven initial regression cases failed before the repair and pass afterward.
+Ordinary panic/assertion/compiler/test text remains covered by preservation tests.
+
+Captured request proof also requires absent or `identity` Content-Encoding and
+exact `application/json`. Rotation proof parses the full `OterynDevice` value
+using Game's credential grammar and compares it with the credential issued by
+real enrollment. The relay holds that expected value only in memory; RequestProof
+still contains no secrets. Gzip, malformed credentials and a different canonical
+credential are negative cases, even when the body matches exactly.
+
+The existing OperationRequest ordering is retained: the byte-exact HTTP request
+table in `docs/contracts/OTERYN_V2_NATIVE_REMEMBERED_DEVICE_SESSION_CONTRACT.md:87`–`:89`
+and `rotate.json` require `protocol_version` before `client_id`. No production
+source is changed by this round; the production Accept headers remain unchanged.

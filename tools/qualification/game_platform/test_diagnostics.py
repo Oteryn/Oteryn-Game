@@ -38,6 +38,36 @@ class Diagnostics(unittest.TestCase):
                 self.assertNotIn(secret, result)
                 self.assertIn(f'Error: "{REASON}"', result)
 
+    def test_review_leaks_removed_through_failure_retention(self):
+        root = Path(__file__).resolve().parents[3]
+        cases = [
+            ("https://alice:private-password@example.test/path", ["alice", "private-password"]),
+            (r'\"password\":\"escaped-password-value\"', ["escaped-password-value"]),
+            (r'\"access_token\":\"escaped-token-value\"', ["escaped-token-value"]),
+            ('{"ticket":"ticket-private-value"}', ["ticket-private-value"]),
+            ('{"native_ticket":"native-private-value"}', ["native-private-value"]),
+            ('{"session_ticket":"session-private-value"}', ["session-private-value"]),
+            ("custom+tls://alice:custom-password@example.test/path", ["alice", "custom-password"]),
+            ('{"secret":["first-private-value","later-private-value",["nested-private-value"]]}', ["first-private-value", "later-private-value", "nested-private-value"]),
+            (r'\"secret\":[\"escaped-first-value\",\"escaped-later-value\"]', ["escaped-first-value", "escaped-later-value"]),
+        ]
+        for index, (payload, secrets) in enumerate(cases):
+            with self.subTest(case=index), tempfile.TemporaryDirectory() as directory:
+                work = Path(directory)
+                destination = work / "diagnostics"
+                destination.mkdir(mode=0o700)
+                (work / "identity.log").write_text(payload + "\nerror[E0308]: mismatched types\n")
+                completed = subprocess.run(
+                    ["bash", "-c", 'source "$1"; game_platform_fail web_identity journey_assertion_failed', "bash", str(root / "tools/qualification/game_platform/lifecycle.sh")],
+                    env={**os.environ, "GAME_SOURCE": str(root), "WORK": str(work), "NODE_BOOT_FAILURE_LOG_DIR": str(destination), "GAME_PLATFORM_RESULT_FILE": str(work / "result")},
+                    capture_output=True, check=False,
+                )
+                self.assertEqual(completed.returncode, 1)
+                sanitized = (destination / "identity.log").read_text()
+                for secret in secrets:
+                    self.assertNotIn(secret, sanitized)
+                self.assertIn("error[E0308]: mismatched types", sanitized)
+
     def test_diagnostics_survive_unchanged(self):
         text = ("   Compiling oteryn-platform-client v0.1.0\n"
                 "thread 'journey' panicked at tests/flow.rs:42:7:\n"

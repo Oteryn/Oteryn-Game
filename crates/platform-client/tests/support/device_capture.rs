@@ -1,8 +1,13 @@
 //! Test-only TLS forwarding capture. Every response comes from the real Platform.
 //! No credential values are stored in the capture proof or exposed in diagnostics.
 use super::{devices, support::*};
-use oteryn_platform_client::{PlatformClientConfig, native_login::NativeLoginClient};
-use std::{sync::Arc, time::Duration};
+use oteryn_platform_client::{
+    PlatformClientConfig, device_sessions::DeviceCredential, native_login::NativeLoginClient,
+};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
@@ -29,14 +34,20 @@ impl RequestProof {
     }
 }
 
+pub struct RequestMeta<'a> {
+    pub method: &'a str,
+    pub path: &'a str,
+    pub content_type: &'a str,
+    pub content_encoding: Option<&'a str>,
+    pub authorization: &'a str,
+}
+
 pub fn contract_request(
-    method: &str,
-    path: &str,
-    content_type: &str,
-    scheme: &str,
+    meta: &RequestMeta<'_>,
     body: &[u8],
     enrollment: bool,
     client: &str,
+    issued: Option<&DeviceCredential>,
 ) -> TestResult<bool> {
     let expected = if enrollment {
         std::fs::read(format!("{FIXTURES}enroll.json")).map_err(|_| "contract_fixture_missing")?
@@ -47,21 +58,33 @@ pub fn contract_request(
             .replace("019a5f4a-1000-7000-8000-000000000001", client)
             .into_bytes()
     };
-    Ok(method == "POST"
-        && path
+    let authorized = if enrollment {
+        meta.authorization
+            .strip_prefix("Bearer ")
+            .is_some_and(|value| !value.is_empty() && value.bytes().all(|b| b.is_ascii_graphic()))
+    } else {
+        meta.authorization
+            .strip_prefix("OterynDevice ")
+            .and_then(|value| DeviceCredential::parse(value).ok())
+            .is_some_and(|credential| issued == Some(&credential))
+    };
+    Ok(meta.method == "POST"
+        && meta.path
             == if enrollment {
                 BASE.to_owned()
             } else {
                 format!("{BASE}/native-characters")
             }
-        && content_type == "application/json"
-        && scheme == if enrollment { "Bearer" } else { "OterynDevice" }
+        && meta.content_type == "application/json"
+        && matches!(meta.content_encoding, None | Some("identity"))
+        && authorized
         && body == expected)
 }
 
 pub struct Capture {
     requests: mpsc::Receiver<RequestProof>,
     task: tokio::task::JoinHandle<TestResult>,
+    issued: Arc<Mutex<Option<DeviceCredential>>>,
 }
 impl Capture {
     pub async fn start(t: &Topology) -> TestResult<(Self, NativeLoginClient)> {
@@ -112,6 +135,8 @@ impl Capture {
         let upstream_origin = t.input.native_origin.clone();
         let client = t.input.client.clone();
         let (sender, requests) = mpsc::channel(2);
+        let issued = Arc::new(Mutex::new(None));
+        let expected_credential = issued.clone();
         let task = tokio::spawn(async move {
             let acceptor = TlsAcceptor::from(Arc::new(tls));
             let mut count = 0;
@@ -186,6 +211,7 @@ impl Capture {
                 let path = start[1];
                 let mut authorization = None;
                 let mut content_type = None;
+                let mut content_encoding = None;
                 let mut request = upstream.request(
                     reqwest::Method::from_bytes(method.as_bytes())
                         .map_err(|_| "capture_method_invalid")?,
@@ -206,6 +232,13 @@ impl Capture {
                         check(content_type.is_none(), "capture_duplicate_content_type")?;
                         content_type = Some(value);
                     }
+                    if key.eq_ignore_ascii_case("content-encoding") {
+                        check(
+                            content_encoding.is_none(),
+                            "capture_duplicate_content_encoding",
+                        )?;
+                        content_encoding = Some(value);
+                    }
                     if !["host", "content-length", "connection"]
                         .iter()
                         .any(|name| key.eq_ignore_ascii_case(name))
@@ -217,7 +250,7 @@ impl Capture {
                     }
                 }
                 let authorization = authorization.ok_or("capture_authorization_missing")?;
-                let (scheme, secret) = authorization
+                let (_, secret) = authorization
                     .split_once(' ')
                     .ok_or("capture_authorization_invalid")?;
                 check(
@@ -226,14 +259,22 @@ impl Capture {
                 )?;
                 if count < 2 {
                     let enrollment = count == 0;
+                    let issued = expected_credential
+                        .lock()
+                        .map_err(|_| "capture_expected_credential_failed")?
+                        .clone();
                     let valid = contract_request(
-                        method,
-                        path,
-                        content_type.ok_or("capture_content_type_missing")?,
-                        scheme,
+                        &RequestMeta {
+                            method,
+                            path,
+                            content_type: content_type.ok_or("capture_content_type_missing")?,
+                            content_encoding,
+                            authorization,
+                        },
                         &bytes[headers_end..],
                         enrollment,
                         &client,
+                        issued.as_ref(),
                     )?;
                     sender
                         .send(RequestProof { enrollment, valid })
@@ -295,7 +336,21 @@ impl Capture {
                     .map_err(|_| "capture_shutdown_failed")?;
             }
         });
-        Ok((Self { requests, task }, native))
+        Ok((
+            Self {
+                requests,
+                task,
+                issued,
+            },
+            native,
+        ))
+    }
+    pub fn expect_device(&mut self, credential: &DeviceCredential) -> TestResult {
+        *self
+            .issued
+            .lock()
+            .map_err(|_| "capture_expected_credential_failed")? = Some(credential.clone());
+        Ok(())
     }
     pub async fn request(&mut self) -> TestResult<RequestProof> {
         tokio::time::timeout(Duration::from_secs(5), self.requests.recv())

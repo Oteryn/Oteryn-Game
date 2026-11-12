@@ -58,6 +58,7 @@ async fn journey(t: Topology) -> TestResult {
     // An empty snapshot for a fresh account is published through the real LCFA
     // mTLS handler. No projection, ticket or family rows are inserted by tests.
     empty_projection(&t, &t.input.accounts[0].account_id).await?;
+    capture.expect_device(&first.device_credential)?;
     let before_rotation = device_state(&t)?;
     let rotated = client
         .device_characters(&first, CancellationToken::new())
@@ -351,32 +352,40 @@ fn protocol_blocker_rejects_every_state_change() -> TestResult {
 
 #[test]
 fn blocker_requires_byte_exact_shipping_request() -> TestResult {
+    use device_capture::{RequestMeta, contract_request};
+    use oteryn_platform_client::device_sessions::DeviceCredential;
     let client = "019a5f4a-1000-7000-8000-000000000001";
     let base = "/api/v1/game-auth/device-sessions";
-    for (enrollment, path, scheme, body) in [
+    let fixture: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../docs/contracts/fixtures/remembered-device-v1/enroll-response.json"
+    )))?;
+    let issued = DeviceCredential::parse(text(&fixture, "device_credential")?)
+        .map_err(|_| "credential_fixture_invalid")?;
+    let authorization = format!("OterynDevice {}", issued.expose());
+    for (enrollment, path, authorization, body) in [
         (
             true,
             base.to_owned(),
-            "Bearer",
+            "Bearer transport-test",
             br#"{"protocol_version":1,"remember_device":true}"#.as_slice(),
         ),
         (
             false,
             format!("{base}/native-characters"),
-            "OterynDevice",
+            authorization.as_str(),
             br#"{"protocol_version":1,"client_id":"019a5f4a-1000-7000-8000-000000000001"}"#,
         ),
     ] {
+        let meta = RequestMeta {
+            method: "POST",
+            path: &path,
+            content_type: "application/json",
+            content_encoding: None,
+            authorization,
+        };
         check(
-            device_capture::contract_request(
-                "POST",
-                &path,
-                "application/json",
-                scheme,
-                body,
-                enrollment,
-                client,
-            )?,
+            contract_request(&meta, body, enrollment, client, Some(&issued))?,
             "contract_request_refused",
         )?;
         for malformed in [
@@ -389,48 +398,63 @@ fn blocker_requires_byte_exact_shipping_request() -> TestResult {
             br#"{"protocol_version":1,"client_id":"#,
         ] {
             check(
-                !device_capture::contract_request(
-                    "POST",
-                    &path,
-                    "application/json",
-                    scheme,
-                    malformed,
-                    enrollment,
-                    client,
-                )?,
+                !contract_request(&meta, malformed, enrollment, client, Some(&issued))?,
                 "malformed_request_marked_blocked",
             )?;
         }
-        for (method, content_type, authorization) in [
-            ("GET", "application/json", scheme),
-            ("POST", "text/plain", scheme),
-            ("POST", "application/json", "Basic"),
+        for bad in [
+            RequestMeta {
+                method: "GET",
+                ..meta
+            },
+            RequestMeta {
+                content_type: "text/plain",
+                ..meta
+            },
+            RequestMeta {
+                content_type: "application/json; charset=utf-8",
+                ..meta
+            },
+            RequestMeta {
+                content_encoding: Some("gzip"),
+                ..meta
+            },
+            RequestMeta {
+                authorization: "Basic invalid",
+                ..meta
+            },
+            RequestMeta {
+                path: "/wrong",
+                ..meta
+            },
         ] {
             check(
-                !device_capture::contract_request(
-                    method,
-                    &path,
-                    content_type,
-                    authorization,
-                    body,
-                    enrollment,
-                    client,
-                )?,
+                !contract_request(&bad, body, enrollment, client, Some(&issued))?,
                 "wrong_request_metadata_marked_blocked",
             )?;
         }
-        check(
-            !device_capture::contract_request(
-                "POST",
-                "/wrong",
-                "application/json",
-                scheme,
-                body,
-                enrollment,
-                client,
-            )?,
-            "wrong_path_marked_blocked",
-        )?;
+        if !enrollment {
+            let malformed = RequestMeta {
+                authorization: "OterynDevice malformed",
+                ..meta
+            };
+            check(
+                !contract_request(&malformed, body, false, client, Some(&issued))?,
+                "malformed_credential_marked_blocked",
+            )?;
+            check(
+                !contract_request(&meta, body, false, client, None)?,
+                "missing_issued_credential_marked_blocked",
+            )?;
+            let mut other = issued.expose().as_bytes().to_vec();
+            other[5] = if other[5] == b'A' { b'B' } else { b'A' };
+            let other = DeviceCredential::parse(std::str::from_utf8(&other)?)
+                .map_err(|_| "credential_mutation_invalid")?;
+            check(
+                !contract_request(&meta, body, false, client, Some(&other))?,
+                "wrong_issued_credential_marked_blocked",
+            )?;
+        }
     }
     Ok(())
 }
