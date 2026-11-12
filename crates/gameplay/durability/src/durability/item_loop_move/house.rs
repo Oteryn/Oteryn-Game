@@ -99,41 +99,6 @@ pub(super) async fn path(
     }))
 }
 
-pub(super) async fn subtree_weight<C: ItemLoopContent>(
-    tx: &mut Transaction<'_, Postgres>,
-    content: &C,
-    item: [u8; 16],
-    world: [u8; 16],
-) -> LoopResult<u64> {
-    let rows = sqlx::query("WITH RECURSIVE tree(item,depth) AS (SELECT encode($1,'hex')::uuid,0 UNION ALL SELECT n.item_instance_id,t.depth+1 FROM tree t JOIN game_item_nested_entries n ON n.parent_item_instance_id=t.item WHERE t.depth<=8) SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.lifecycle,i.world_id::text AS world,t.depth FROM tree t JOIN game_item_instances i ON i.item_instance_id=t.item ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
-        .bind(item.as_slice()).fetch_all(&mut **tx).await?;
-    if rows.len() > ITEM_LOOP_TREE_ITEMS_MAX as usize {
-        return refuse(LoopMoveRefusal::NoRoom);
-    }
-    let mut total = 0u64;
-    for row in rows {
-        if row.try_get::<i16, _>("lifecycle")? != 1
-            || uuid_text(row.try_get("world")?)? != world
-            || row.try_get::<i32, _>("depth")? > ITEM_LOOP_DEPTH_MAX
-        {
-            return refuse(LoopMoveRefusal::Rejected);
-        }
-        let quantity = stored_u32(row.try_get("quantity")?)?;
-        let unit = match content.weight_of(&definition_of(&row)?) {
-            Ok(weight) => weight,
-            Err(ItemWeightRefused::Unknown) => return refuse(LoopMoveRefusal::WeightUnknown),
-            Err(ItemWeightRefused::DefinitionMismatch) => return refuse(LoopMoveRefusal::Rejected),
-        };
-        let item_weight = u64::from(unit)
-            .checked_mul(u64::from(quantity))
-            .ok_or(LoopError::Refused(LoopMoveRefusal::Overweight))?;
-        total = total
-            .checked_add(item_weight)
-            .ok_or(LoopError::Refused(LoopMoveRefusal::Overweight))?;
-    }
-    Ok(total)
-}
-
 pub(super) async fn prepare<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,

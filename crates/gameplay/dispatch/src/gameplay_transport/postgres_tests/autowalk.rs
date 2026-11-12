@@ -2,6 +2,8 @@
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
+use crate::durability::DurabilityRoot;
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -451,12 +453,31 @@ fn scenario(target_move: bool) -> TestResult {
                 .await
                 .is_err()
         );
+        // Prepare the independent pickup's own holder and Character authority before
+        // starting the walk. Both writers retain the same node and session fences.
+        let independent_pickup = if target_move {
+            None
+        } else {
+            let root = h.independent_root()?;
+            assert!(root.maintain_ready_once().await?);
+            let authority = root.open_character_authority(&seal).await.map_err(debug)?;
+            Some((root, authority))
+        };
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = if target_move {
-                super::target_move::client_scenario(&mut client, &owner, admitted).await
-            } else {
-                client_scenario(&mut client, &owner, admitted, world.base().digest()).await
+            let result = match &independent_pickup {
+                Some((root, authority)) => {
+                    client_scenario(
+                        &mut client,
+                        &owner,
+                        root,
+                        authority,
+                        admitted,
+                        world.base().digest(),
+                    )
+                    .await
+                }
+                None => super::target_move::client_scenario(&mut client, &owner, admitted).await,
             };
             client.shutdown().await?;
             result
@@ -469,6 +490,7 @@ fn scenario(target_move: bool) -> TestResult {
             crate::durability::DurabilityRoot::with_holder_owner(client_flow),
         )
         .await;
+        drop(independent_pickup);
         result?;
         assert!(
             matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
@@ -719,6 +741,8 @@ pub(super) async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
 async fn client_scenario(
     client: &mut DuplexStream,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    pickup_root: &DurabilityRoot,
+    pickup_authority: &ReconciledCharacterAuthority<'_, '_>,
     admitted: AdmittedSession,
     digest: [u8; 32],
 ) -> TestResult {
@@ -936,7 +960,7 @@ async fn client_scenario(
     send(client, 7, 9, &payload).await?;
     first_step(client).await?;
     send(client, 7, 9, &payload).await?; // same pending CommandId never starts a second action
-    pick_origin(owner, admitted, pos(7, 5)).await?;
+    pick_origin(owner, pickup_root, pickup_authority, admitted, pos(7, 5)).await?;
     let (stale, steps) = result(client, 7).await?;
     assert!(steps > 0, "a duplicate does not cancel the pending walk");
     assert_eq!(
@@ -1006,6 +1030,8 @@ async fn first_step(client: &mut DuplexStream) -> TestResult {
 
 async fn pick_origin(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
     admitted: AdmittedSession,
     pos: TilePos,
 ) -> TestResult {
@@ -1051,12 +1077,10 @@ async fn pick_origin(
     let permit = owner.spell_lane_permit().await.ok_or("lane")?;
     // Movement's gating reads do not take the item lane. Retry their busy holder
     // under one existing command budget, retaining the same request and candidate.
-    let retry = AdmissionRetryBudget::for_command(owner.root);
+    let retry = AdmissionRetryBudget::for_command(root);
     let mut candidate = retry
         .retry_unavailable(async || {
-            owner
-                .root
-                .freeze_map_item_mint(owner.character, owner.holder, fence, request.clone())
+            root.freeze_map_item_mint(authority, owner.holder, fence, request.clone())
                 .await
                 .map_err(pickup_refusal)
         })
@@ -1064,21 +1088,14 @@ async fn pick_origin(
         .map_err(|error| format!("independent pickup freeze: {error:?}"))?;
     let committed = retry
         .retry_unavailable(async || {
-            owner
-                .root
-                .commit_map_item_mint(
-                    &permit,
-                    owner.character,
-                    owner.holder,
-                    fence,
-                    &mut candidate,
-                )
+            root.commit_map_item_mint(&permit, authority, owner.holder, fence, &mut candidate)
                 .await
                 .map_err(pickup_refusal)
         })
         .await
         .map_err(|error| format!("independent pickup commit: {error:?}"))?;
     assert!(matches!(committed, MapItemMintOutcome::Committed(_)));
+
     owner.states.loop_ground.invalidate();
     Ok(())
 }

@@ -6,7 +6,7 @@ use crate::domain::character_name::{CharacterName, NAMING_POLICY_REVISION};
 use crate::domain::{CharacterId, WorldId};
 use sqlx::{Postgres, Row, Transaction};
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations};
 use crate::durability::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current};
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
@@ -50,6 +50,7 @@ impl crate::durability::DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
+            lock_admission_relations(&mut tx).await?;
             let command = CommandRef::new(fence.game_session_id, CommandId::new(command_id).map_err(|_| DurabilityError::InvalidStoredState)?);
             let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable)); };
             let world = WorldId::from_bytes(*world_id.as_bytes()).map_err(|_| DurabilityError::InvalidStoredState)?;

@@ -46,6 +46,7 @@ use sqlx::Row;
 use sqlx::postgres::PgConnection;
 
 mod carried_inventory;
+pub(in crate::durability) use carried_inventory::reconcile_carried_death_tree;
 mod carried_source;
 pub mod concoction;
 pub mod drome_cube;
