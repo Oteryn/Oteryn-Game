@@ -19,34 +19,7 @@ impl ArchivedSpell {
         if self.words != spell.words || self.rune_item != spell.rune_item {
             return false;
         }
-        if self.name == spell.name {
-            return true;
-        }
-        let Some(item) = self.rune_item else {
-            return false;
-        };
-        self.name.eq_ignore_ascii_case(&spell.name)
-            || match item {
-                3149 => legacy_rune_name(
-                    &self.name,
-                    &spell.name,
-                    "energybomb rune",
-                    "Energy Bomb Rune",
-                ),
-                3153 => {
-                    legacy_rune_name(&self.name, &spell.name, "antidote rune", "Cure Poison Rune")
-                }
-                3192 => {
-                    legacy_rune_name(&self.name, &spell.name, "firebomb rune", "Fire Bomb Rune")
-                }
-                3197 => legacy_rune_name(
-                    &self.name,
-                    &spell.name,
-                    "desintegrate rune",
-                    "Disintegrate Rune",
-                ),
-                _ => false,
-            }
+        display_name_matches(&self.name, &spell.name, spell.rune_item)
     }
     fn valid(&self) -> bool {
         !self.name.is_empty()
@@ -59,6 +32,22 @@ impl ArchivedSpell {
                 .any(char::is_control)
             && self.rune_item.is_none_or(|item| item > 0 && item < 1 << 28)
     }
+}
+fn display_name_matches(saved: &str, current: &str, rune_item: Option<u32>) -> bool {
+    if saved == current {
+        return true;
+    }
+    let Some(item) = rune_item else {
+        return false;
+    };
+    saved.eq_ignore_ascii_case(current)
+        || match item {
+            3149 => legacy_rune_name(saved, current, "energybomb rune", "Energy Bomb Rune"),
+            3153 => legacy_rune_name(saved, current, "antidote rune", "Cure Poison Rune"),
+            3192 => legacy_rune_name(saved, current, "firebomb rune", "Fire Bomb Rune"),
+            3197 => legacy_rune_name(saved, current, "desintegrate rune", "Disintegrate Rune"),
+            _ => false,
+        }
 }
 fn legacy_rune_name(saved: &str, current: &str, legacy: &str, canonical: &str) -> bool {
     (saved.eq_ignore_ascii_case(legacy) && current.eq_ignore_ascii_case(canonical))
@@ -104,6 +93,23 @@ impl Default for ArchiveBindings {
     }
 }
 impl ArchiveBindings {
+    /// Target-option actions persist name/words only. Resolve their existing identity
+    /// conservatively against the current catalogue, before checking availability.
+    pub(in crate::play) fn matching_spell<'a>(
+        name: &str,
+        words: &str,
+        entries: &'a [SpellCatalogEntry],
+    ) -> Option<&'a SpellCatalogEntry> {
+        let mut matching = entries.iter().filter(|spell| {
+            words == spell.words && display_name_matches(name, &spell.name, spell.rune_item)
+        });
+        let found = matching.next();
+        if matching.next().is_some() {
+            None
+        } else {
+            found
+        }
+    }
     pub fn valid(&self) -> bool {
         self.slots.iter().all(|slot| match slot {
             ArchiveSlot::Spell(spell) => spell.valid(),
