@@ -141,27 +141,21 @@ pub(super) async fn lock_tree(
     let character = fence.character_id;
     let world = fence.runtime_scope.world_id();
     let world = world.as_bytes();
-    // The Character lock is already held. An occupied MAIN is refused before
-    // inspecting its tree, leaving only the bounded equipment set to weigh.
-    if load_slot(tx, character).await?.is_some() {
-        return Ok(Err(ItemTransferError::Refused(
-            ItemTransferRefusal::ContainerSlotOccupied,
-        )));
-    }
     let source_hint = load_source_read(tx, request.source_item_instance_id, false).await?;
     let Some(source) = &source_hint else {
         return Ok(Err(ItemTransferError::Refused(
             ItemTransferRefusal::SourceNotOnGround,
         )));
     };
-    if source.world_id != *world
-        || source
-            .ground
-            .runtime_scope()
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-            != fence.runtime_scope
-    {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
+    if let Err(error) = source_eligibility(tx, fence, request, source).await? {
+        return Ok(Err(error));
+    }
+    // Source refusals precede destination refusals (D134 included). Neither
+    // this hint nor the occupied-MAIN fast path authorizes a custody write.
+    if load_slot(tx, character).await?.is_some() {
+        return Ok(Err(ItemTransferError::Refused(
+            ItemTransferRefusal::ContainerSlotOccupied,
+        )));
     }
     let hint = graph(tx, request.source_item_instance_id).await?;
     let mut height = 0;

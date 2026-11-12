@@ -136,6 +136,7 @@ impl DurabilityRoot {
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected)),
                     };
+                    reconcile_carried_death_tree(&mut tx, &fence, &node).await?;
                     let inventory = read_use_inventory(
                         &mut tx,
                         &fence,
@@ -155,6 +156,43 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// Only the current fenced inventory reader performs lazy representation repair.
+/// Recovery-only projections stay read-only; the complete deferred proof runs
+/// before this pass publishes its inventory, with no later custody write.
+async fn reconcile_carried_death_tree(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<(), DurabilityError> {
+    let (channel, instance) = match fence.runtime_scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => (Some(*channel_id.as_bytes()), None),
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (None, Some(instance_id)),
+    };
+    let fact = node.fact();
+    sqlx::query(
+        "SELECT game_carried_death_reconcile(jsonb_build_object(\
+           'character',encode($1::bytea,'hex')::uuid,'world',encode($2::bytea,'hex')::uuid,\
+           'session',encode($3::bytea,'hex')::uuid,'connection',$4::text,'lease',$5::text,\
+           'generation',$6::text,'channel',encode($7::bytea,'hex')::uuid,\
+           'instance',encode($8::bytea,'hex')::uuid,'node',encode($9::bytea,'hex')::uuid,\
+           'node_revision',$10::text),$11)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(fence.connection_generation.get().to_string())
+    .bind(fence.character_lease_generation.to_string())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(channel.as_ref().map(|id| id.as_slice()))
+    .bind(instance.as_ref().map(|id| id.as_slice()))
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .bind(node.sql_possession_secret())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
 }
 
 pub(in crate::durability) async fn read_use_inventory(

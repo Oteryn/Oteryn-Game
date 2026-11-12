@@ -1068,66 +1068,8 @@ async fn admit(
             ItemTransferRefusal::SourceNotOnGround,
         )));
     };
-    // DUR-03 §32: the fenced runtime scope owns the source Ground (for a
-    // corpse entry, its corpse's Ground).
-    if source.world_id != *fence.runtime_scope.world_id().as_bytes()
-        || source
-            .ground
-            .runtime_scope()
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-            != fence.runtime_scope
-    {
-        return Ok(Err(ItemTransferError::AuthorityRejected));
-    }
-    // D134: the corpse ItemInstance itself is never a legal source, checked
-    // independently of `ContainerNotEmpty` (an emptied corpse would pass it).
-    let is_corpse: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
-                         WHERE item_instance_id = encode($1,'hex')::uuid \
-                           AND loot_purpose_key = $2)",
-    )
-    .bind(request.source_item_instance_id.as_slice())
-    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
-    .fetch_one(&mut **tx)
-    .await?;
-    if is_corpse {
-        return Ok(Err(ItemTransferError::Refused(
-            ItemTransferRefusal::CorpseNotPickupable,
-        )));
-    }
-    // D133: the exclusivity window, read against the database clock.
-    if let Some(corpse) = source.corpse.as_ref() {
-        let row = sqlx::query(
-            "SELECT corpse_top_damage_character_id::text AS top_damage, materialized_at, \
-                    floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS db_now \
-               FROM game_item_mint_receipts \
-              WHERE item_instance_id = encode($1,'hex')::uuid \
-                AND loot_purpose_key = $2 AND draw_ordinal = 0",
-        )
-        .bind(corpse.corpse_item_instance_id.as_slice())
-        .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
-        .fetch_optional(&mut **tx)
-        .await?;
-        let Some(row) = row else {
-            return Err(DurabilityError::InvalidStoredState);
-        };
-        let top_damage = uuid_text(
-            &row.try_get::<Option<String>, _>("top_damage")?
-                .ok_or(DurabilityError::InvalidStoredState)?,
-        )?;
-        let materialized_at = row
-            .try_get::<Option<i64>, _>("materialized_at")?
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        if !corpse_window_allows(
-            *fence.character_id.as_bytes(),
-            top_damage,
-            materialized_at,
-            row.try_get("db_now")?,
-        ) {
-            return Ok(Err(ItemTransferError::Refused(
-                ItemTransferRefusal::CorpseExclusiveWindow,
-            )));
-        }
+    if let Err(error) = source_eligibility(tx, fence, request, &source).await? {
+        return Ok(Err(error));
     }
     let source_has_entries: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_item_container_entries \
@@ -1427,6 +1369,79 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     };
     base.checked_add(wheel)
         .ok_or(DurabilityError::InvalidStoredState)
+}
+
+/// Rejection-only eligibility for an actual stored source under a proven current
+/// actor fence. A hint grants no authority: admission repeats this after locking
+/// and re-reading the complete Item union.
+async fn source_eligibility(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    request: &ItemTransferRequest,
+    source: &SourceRow,
+) -> Pass<()> {
+    // DUR-03 §32: the fenced runtime scope owns the source Ground (for a
+    // corpse entry, its corpse's Ground).
+    if source.world_id != *fence.runtime_scope.world_id().as_bytes()
+        || source
+            .ground
+            .runtime_scope()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            != fence.runtime_scope
+    {
+        return Ok(Err(ItemTransferError::AuthorityRejected));
+    }
+    // D134: the corpse ItemInstance itself is never a legal source, checked
+    // independently of `ContainerNotEmpty` (an emptied corpse would pass it).
+    let is_corpse: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_item_mint_receipts \
+                         WHERE item_instance_id = encode($1,'hex')::uuid \
+                           AND loot_purpose_key = $2)",
+    )
+    .bind(request.source_item_instance_id.as_slice())
+    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+    .fetch_one(&mut **tx)
+    .await?;
+    if is_corpse {
+        return Ok(Err(ItemTransferError::Refused(
+            ItemTransferRefusal::CorpseNotPickupable,
+        )));
+    }
+    // D133: the exclusivity window, read against the database clock.
+    if let Some(corpse) = source.corpse.as_ref() {
+        let row = sqlx::query(
+            "SELECT corpse_top_damage_character_id::text AS top_damage, materialized_at, \
+                    floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS db_now \
+               FROM game_item_mint_receipts \
+              WHERE item_instance_id = encode($1,'hex')::uuid \
+                AND loot_purpose_key = $2 AND draw_ordinal = 0",
+        )
+        .bind(corpse.corpse_item_instance_id.as_slice())
+        .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(row) = row else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        let top_damage = uuid_text(
+            &row.try_get::<Option<String>, _>("top_damage")?
+                .ok_or(DurabilityError::InvalidStoredState)?,
+        )?;
+        let materialized_at = row
+            .try_get::<Option<i64>, _>("materialized_at")?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if !corpse_window_allows(
+            *fence.character_id.as_bytes(),
+            top_damage,
+            materialized_at,
+            row.try_get("db_now")?,
+        ) {
+            return Ok(Err(ItemTransferError::Refused(
+                ItemTransferRefusal::CorpseExclusiveWindow,
+            )));
+        }
+    }
+    Ok(Ok(()))
 }
 
 async fn load_source(

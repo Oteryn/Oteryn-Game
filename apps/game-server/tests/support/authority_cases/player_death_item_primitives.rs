@@ -2802,6 +2802,7 @@ async fn run_nested_death_pickup(
     admin: String,
     other_character: bool,
     historical: bool,
+    already_carried: bool,
 ) -> TestResult {
     use crate::corpse_transfer_postgres_cases::{
         SECOND_CHARACTER, SECOND_SESSION, command_of, fence_of, seed_second_character,
@@ -2814,11 +2815,13 @@ async fn run_nested_death_pickup(
 
     // Each routed test owns a distinct retained recovery directory, including
     // when the test harness runs all four scenarios concurrently in one PID.
-    let tag = match (other_character, historical) {
-        (false, false) => "death_nested_pickup_same",
-        (true, false) => "death_nested_pickup_other",
-        (false, true) => "death_nested_pickup_historical_same",
-        (true, true) => "death_nested_pickup_historical_other",
+    let tag = match (other_character, historical, already_carried) {
+        (false, true, true) => "death_carried_historical_same",
+        (true, true, true) => "death_carried_historical_other",
+        (false, false, _) => "death_nested_pickup_same",
+        (true, false, _) => "death_nested_pickup_other",
+        (false, true, false) => "death_nested_pickup_historical_same",
+        (true, true, false) => "death_nested_pickup_historical_other",
     };
     let h = Harness::create(admin, tag).await?;
     if other_character {
@@ -2963,6 +2966,11 @@ async fn run_nested_death_pickup(
     let audits_before = h.count("game_item_audit_outbox").await?;
     let receipts_before = h.count("game_item_loop_move_receipts").await?;
     let lines_before = h.count("game_item_loop_move_lines").await?;
+    if already_carried {
+        // Only the new hook is absent while the real older pickup writer runs.
+        sqlx::query("ALTER TABLE game_item_loop_move_lines DISABLE TRIGGER game_player_death_container_normalize")
+            .execute(&h.pool).await?;
+    }
     let pickup = h
         .root
         .commit_item_loop_move(
@@ -2976,6 +2984,11 @@ async fn run_nested_death_pickup(
         )
         .await?
         .map_err(debug)?;
+    if already_carried {
+        sqlx::query("ALTER TABLE game_item_loop_move_lines ENABLE TRIGGER game_player_death_container_normalize")
+            .execute(&h.pool).await?;
+        reconcile_already_carried_death_tree(&h, &authority, &f, &items, other_character).await?;
+    }
     assert_eq!(pickup.operation, 5);
     assert!(!pickup.replayed);
     assert!(!h.on_ground(selected).await?);
@@ -3082,7 +3095,11 @@ async fn run_nested_death_pickup(
     h.cleanup().await
 }
 
-fn nested_death_pickup_case(other_character: bool, historical: bool) -> TestResult {
+fn nested_death_pickup_case(
+    other_character: bool,
+    historical: bool,
+    already_carried: bool,
+) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -3091,7 +3108,12 @@ fn nested_death_pickup_case(other_character: bool, historical: bool) -> TestResu
         .spawn(move || -> Result<(), String> {
             runtime()
                 .map_err(debug)?
-                .block_on(run_nested_death_pickup(admin, other_character, historical))
+                .block_on(run_nested_death_pickup(
+                    admin,
+                    other_character,
+                    historical,
+                    already_carried,
+                ))
                 .map_err(debug)
         })?
         .join()
@@ -3101,22 +3123,198 @@ fn nested_death_pickup_case(other_character: bool, historical: bool) -> TestResu
 
 #[test]
 fn player_death_nested_backpack_pickup_same_owner_honors_complete_weight() -> TestResult {
-    nested_death_pickup_case(false, false)
+    nested_death_pickup_case(false, false, false)
 }
 
 #[test]
 fn player_death_nested_backpack_pickup_changes_every_descendant_owner() -> TestResult {
-    nested_death_pickup_case(true, false)
+    nested_death_pickup_case(true, false, false)
 }
 
 #[test]
 fn player_death_nested_historical_backpack_pickup_same_owner_is_atomic() -> TestResult {
-    nested_death_pickup_case(false, true)
+    nested_death_pickup_case(false, true, false)
 }
 
 #[test]
 fn player_death_nested_historical_backpack_pickup_changes_every_descendant_owner() -> TestResult {
-    nested_death_pickup_case(true, true)
+    nested_death_pickup_case(true, true, false)
+}
+
+#[test]
+fn historical_carried_death_tree_reconciles_at_current_inventory_admission() -> TestResult {
+    nested_death_pickup_case(false, true, true)
+}
+
+#[test]
+fn historical_carried_death_tree_reconciles_to_current_receiver_without_rewriting_history()
+-> TestResult {
+    nested_death_pickup_case(true, true, true)
+}
+
+async fn reconcile_already_carried_death_tree(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    f: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    items: &[[u8; 16]],
+    other_character: bool,
+) -> TestResult {
+    use crate::durability::item_use::ItemUseError;
+    use crate::durability::runtime_scope_assignment::{BootstrapSecret, NodeIncarnationProof};
+    use crate::item_transfer_postgres_cases::uuid_text;
+
+    assert_eq!(h.count("game_item_container_entries").await?, 2);
+    assert_eq!(h.count("game_item_nested_entries").await?, 1);
+    let old_owner: Option<String> = sqlx::query_scalar(
+        "SELECT owner_character::text FROM game_item_loop_owner(encode($1,'hex')::uuid)",
+    )
+    .bind(items[1].as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        old_owner,
+        Some(uuid_text(id(
+            crate::item_transfer_postgres_cases::CHARACTER
+        )))
+    );
+    // Recovery-only views remain read-only, even though this old representation
+    // cannot yet show a dropped root's direct entries as a nested container.
+    let view = h
+        .root
+        .read_item_loop_container(authority, f.character_id, items[0])
+        .await?
+        .ok_or("historical root view")?;
+    assert!(view.entries.is_empty());
+    let before = nested_death_snapshot(h, [0; 16]).await?;
+    let direct: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(e)::text FROM game_item_container_entries e ORDER BY item_instance_id LIMIT 10")
+        .fetch_all(&h.pool).await?;
+    let history = carried_death_history(h).await?;
+    let mut wrong_connection = *f;
+    wrong_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+    let mut wrong_lease = *f;
+    wrong_lease.character_lease_generation += 1;
+    let mut wrong_scope = *f;
+    wrong_scope.scope_ownership_generation =
+        crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?;
+    let mut wrong_character = *f;
+    wrong_character.character_id = if other_character {
+        fence()?.character_id
+    } else {
+        crate::domain::CharacterId::from_bytes(id(155)).map_err(debug)?
+    };
+    for invalid in [wrong_connection, wrong_lease, wrong_scope, wrong_character] {
+        assert!(matches!(
+            h.root
+                .read_item_use_inventory(authority, &h.node, invalid)
+                .await,
+            Err(ItemUseError::AuthorityRejected)
+        ));
+        assert_eq!(nested_death_snapshot(h, [0; 16]).await?, before);
+        assert_eq!(h.count("game_carried_death_reconciliations").await?, 0);
+    }
+    let wrong_node =
+        NodeIncarnationProof::new(h.node.fact(), BootstrapSecret::from_bytes([255; 32]));
+    assert!(matches!(
+        h.root
+            .read_item_use_inventory(authority, &wrong_node, *f)
+            .await,
+        Err(ItemUseError::AuthorityRejected)
+    ));
+    // A downstream conversion refusal must roll back the private journal and
+    // every earlier representation write; the owner can then retry normally.
+    sqlx::raw_sql("CREATE FUNCTION test_carried_death_refuse() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test carried conversion refusal' USING ERRCODE='23514'; END $$; CREATE TRIGGER test_carried_death_refuse BEFORE INSERT ON game_item_nested_entries FOR EACH ROW EXECUTE FUNCTION test_carried_death_refuse();")
+        .execute(&h.pool).await?;
+    let failed = h.root.read_item_use_inventory(authority, &h.node, *f).await;
+    sqlx::raw_sql("DROP TRIGGER test_carried_death_refuse ON game_item_nested_entries; DROP FUNCTION test_carried_death_refuse();")
+        .execute(&h.pool).await?;
+    assert!(matches!(failed, Err(ItemUseError::Unavailable(_))));
+    assert_eq!(nested_death_snapshot(h, [0; 16]).await?, before);
+    let direct_after: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(e)::text FROM game_item_container_entries e ORDER BY item_instance_id LIMIT 10")
+        .fetch_all(&h.pool).await?;
+    assert_eq!(direct_after, direct);
+    assert_eq!(h.count("game_carried_death_reconciliations").await?, 0);
+    assert_eq!(h.count("game_carried_death_edges").await?, 0);
+    let inventory = h
+        .root
+        .read_item_use_inventory(authority, &h.node, *f)
+        .await
+        .map_err(debug)?;
+    assert!(
+        inventory
+            .nested
+            .iter()
+            .any(|(_, entry)| entry.item.item_instance_id == items[1])
+    );
+    assert!(
+        inventory
+            .nested
+            .iter()
+            .any(|(_, entry)| entry.item.item_instance_id == items[2])
+    );
+    assert_eq!(nested_death_snapshot(h, [0; 16]).await?, before);
+    assert_eq!(carried_death_history(h).await?, history);
+    assert_eq!(h.count("game_carried_death_reconciliations").await?, 1);
+    assert_eq!(h.count("game_carried_death_edges").await?, 2);
+    h.root
+        .read_item_use_inventory(authority, &h.node, *f)
+        .await
+        .map_err(debug)?;
+    assert_eq!(h.count("game_carried_death_reconciliations").await?, 1);
+    assert_eq!(carried_death_history(h).await?, history);
+    for statement in [
+        "INSERT INTO game_carried_death_reconciliations(transaction_id) SELECT game_character_uuid_v7()",
+        "INSERT INTO game_carried_death_edges(transaction_id) SELECT game_character_uuid_v7()",
+        "UPDATE game_carried_death_reconciliations SET fence='{}'::jsonb",
+        "DELETE FROM game_carried_death_edges",
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        assert!(
+            sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(&mut *tx)
+                .await
+                .is_err()
+        );
+        tx.rollback().await?;
+    }
+    let stored_fence: String =
+        sqlx::query_scalar("SELECT fence::text FROM game_carried_death_reconciliations")
+            .fetch_one(&h.pool)
+            .await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let refused = sqlx::query("SELECT game_carried_death_reconcile($1::text::jsonb,$2)")
+        .bind(stored_fence)
+        .bind([255_u8; 32].as_slice())
+        .execute(&mut *tx)
+        .await;
+    assert_eq!(
+        refused
+            .err()
+            .and_then(|error| error
+                .as_database_error()
+                .and_then(|e| e.code())
+                .map(|code| code.into_owned()))
+            .as_deref(),
+        Some("23514")
+    );
+    tx.rollback().await?;
+    assert_eq!(carried_death_history(h).await?, history);
+    Ok(())
+}
+
+async fn carried_death_history(h: &Harness) -> TestResult<Vec<(String, String)>> {
+    let rows = sqlx::query_as("SELECT 'death'::text,to_jsonb(r)::text FROM game_player_death_item_records r UNION ALL SELECT 'loop',to_jsonb(r)::text FROM game_item_loop_move_receipts r UNION ALL SELECT 'line',to_jsonb(r)::text FROM game_item_loop_move_lines r UNION ALL SELECT 'audit',to_jsonb(r)::text FROM game_item_audit_outbox r UNION ALL SELECT 'mint',to_jsonb(r)::text FROM game_item_mint_receipts r UNION ALL SELECT 'transfer',to_jsonb(r)::text FROM game_item_transfer_receipts r UNION ALL SELECT 'character_death',to_jsonb(r)::text FROM game_character_death_receipts r ORDER BY 1,2 LIMIT 100")
+        .fetch_all(&h.pool).await?;
+    assert!(
+        rows.len() < 100,
+        "the frozen-history snapshot must not truncate"
+    );
+    Ok(rows)
 }
 
 async fn run_historical_slot_zero_death(admin: String) -> TestResult {
