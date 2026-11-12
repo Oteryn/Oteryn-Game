@@ -18,69 +18,29 @@ const ILLUSION_ACTIONS: &[&str] = &[
     "fresh-admission-expiry",
 ];
 
-struct Row {
-    id: &'static str,
-    required: &'static [&'static str],
-    passed: BTreeSet<&'static str>,
-    started: std::time::Instant,
-    invalid: bool,
-}
+struct Row(verdict::Row);
 impl Row {
     fn new(id: &'static str, required: &'static [&'static str]) -> Self {
-        Self {
-            id,
-            required,
-            passed: BTreeSet::new(),
-            started: std::time::Instant::now(),
-            invalid: false,
-        }
+        Self(verdict::Row::new("E2EF5", id, required).evidence(
+            "observed-all-required-actions",
+            "required-actions-unproven-see-E2EF5_GAP",
+        ))
     }
     fn pass(&mut self, action: &'static str, sequence: u64) {
         // A zero sequence cannot identify an observed server frame.
-        if sequence == 0 || !self.required.contains(&action) || !self.passed.insert(action) {
-            self.invalid = true;
-            return;
+        if sequence == 0 {
+            self.0.invalidate(action);
+        } else {
+            self.0
+                .pass(action, format_args!("server_sequence={sequence}"));
         }
-        evidence(&format!(
-            "E2EF5_CHECK {} {action} PASS server_sequence={sequence}",
-            self.id
-        ));
     }
+    #[cfg(test)]
     fn complete(&self) -> bool {
-        !self.invalid
-            && !self.required.is_empty()
-            && self
-                .required
-                .iter()
-                .all(|action| self.passed.contains(action))
+        self.0.complete()
     }
     fn finish(self, result: TestResult) {
-        if let Err(error) = &result {
-            evidence(&format!("E2EF5_GAP {} {error}", self.id));
-        }
-        for action in self.required {
-            if !self.passed.contains(action) {
-                evidence(&format!(
-                    "E2EF5_CHECK {} {action} FAIL assertion-not-completed",
-                    self.id
-                ));
-            }
-        }
-        evidence(&format!(
-            "e2e_all scenario={}.full status={} seconds={:.3} evidence={}",
-            self.id,
-            if result.is_ok() && self.complete() {
-                "PASS"
-            } else {
-                "FAIL"
-            },
-            self.started.elapsed().as_secs_f64(),
-            if result.is_ok() && self.complete() {
-                "observed-all-required-actions"
-            } else {
-                "required-actions-unproven-see-E2EF5_GAP"
-            },
-        ));
+        self.0.finish(&result);
     }
 }
 
@@ -105,19 +65,27 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
         ("C17c", ILLUSION_ACTIONS, 0xa1, 220),
     ] {
         let mut row = Row::new(id, actions);
+        let watch = row.0.watch();
         let result: TestResult = async {
+            let _row = watch.enter();
             let mut client = connect_world(clients, tag).await?;
-            let result = tokio::time::timeout(Duration::from_secs(limit), async {
-                if id == "C17a" {
-                    haste(&mut row, &mut client, clients, world).await
-                } else {
-                    illusion(&mut row, &mut client, clients).await
-                }
-            })
-            .await
-            .map_err(|_| {
-                format!("{id} native journey exceeded {limit}s; remaining actions unproven")
-            })?;
+            let mut completed = false;
+            let deadline =
+                format!("{id} native journey exceeded {limit}s; remaining actions unproven");
+            let result = watch
+                .bound(Duration::from_secs(limit), deadline, async {
+                    let result = if id == "C17a" {
+                        haste(&mut row, &mut client, clients, world).await
+                    } else {
+                        illusion(&mut row, &mut client, clients).await
+                    };
+                    completed = true;
+                    result
+                })
+                .await;
+            if !completed {
+                return result;
+            }
             // Only a completed exchange can be followed by cleanup. A timeout
             // returns above and drops this connection with its uncertain reply/frame.
             // Restore the entry tile even after a failed movement/cast assertion.
@@ -200,10 +168,12 @@ async fn say(
         .await?)
 }
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, logout, attempts, busy_timed_out) =
-        super::logout_retrying_busy(client).await?;
+    let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C17c logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        return Err(format!(
+            "C17c logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"
+        )
+        .into());
     }
     Ok(())
 }
@@ -963,19 +933,25 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         ("C16a", BARRIER_ACTIONS, 0xb4),
     ] {
         let mut row = Row::new(id, actions);
+        let watch = row.0.watch();
         let result: TestResult = async {
+            let _row = watch.enter();
             let mut client = connect_world(clients, tag).await?;
             let mut peer_cancelled = false;
-            let result = tokio::time::timeout(Duration::from_secs(240), async {
-                if id == "C16b" {
-                    paralyze(&mut row, &mut client, clients, world, &mut peer_cancelled).await
-                } else {
-                    barriers(&mut row, &mut client, clients, world).await
-                }
-            })
-            .await
-            .map_err(|_| format!("{id} 240s journey deadline; remaining actions unproven"))?;
-            if peer_cancelled {
+            let mut completed = false;
+            let deadline = format!("{id} 240s journey deadline; remaining actions unproven");
+            let result = watch
+                .bound(Duration::from_secs(240), deadline, async {
+                    let result = if id == "C16b" {
+                        paralyze(&mut row, &mut client, clients, world, &mut peer_cancelled).await
+                    } else {
+                        barriers(&mut row, &mut client, clients, world).await
+                    };
+                    completed = true;
+                    result
+                })
+                .await;
+            if !completed || peer_cancelled {
                 return result;
             }
             // Also close this admission on prerequisite failures and assertion errors.
@@ -1051,10 +1027,7 @@ async fn player_logout(client: &mut DevClientSession) -> TestResult {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "player logout still refused after combat wait: {reply:?}"
-            )
-            .into());
+            return Err(format!("player logout still refused after combat wait: {reply:?}").into());
         }
         client.service_liveness(Duration::from_millis(250)).await?;
     }
@@ -1800,19 +1773,25 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         ("C17d", CHALLENGE_ACTIONS, 0xc4),
     ] {
         let mut row = Row::new(id, actions);
+        let watch = row.0.watch();
         let result: TestResult = async {
+            let _row = watch.enter();
             let mut client = connect_character(clients, tag, usize::from(id != "C17d")).await?;
             let mut peer_cancelled = false;
-            let result = tokio::time::timeout(Duration::from_secs(240), async {
-                if id == "C18a" {
-                    directional_aim(&mut row, &mut client, clients, world).await
-                } else {
-                    challenge(&mut row, &mut client, clients, world, &mut peer_cancelled).await
-                }
-            })
-            .await
-            .map_err(|_| format!("{id} 240s journey deadline; required actions unproven"))?;
-            if peer_cancelled {
+            let mut completed = false;
+            let deadline = format!("{id} 240s journey deadline; required actions unproven");
+            let result = watch
+                .bound(Duration::from_secs(240), deadline, async {
+                    let result = if id == "C18a" {
+                        directional_aim(&mut row, &mut client, clients, world).await
+                    } else {
+                        challenge(&mut row, &mut client, clients, world, &mut peer_cancelled).await
+                    };
+                    completed = true;
+                    result
+                })
+                .await;
+            if !completed || peer_cancelled {
                 return result;
             }
             let cleanup = rune_cleanup(&mut client, world).await;
@@ -2434,7 +2413,7 @@ async fn combat_rejoin(
         .ok_or("combat logout vitals absent")?;
     let previous = client.join_snapshot().game_session_id;
     player_logout(client).await?;
-    *client = connect_character(clients, tag, usize::from(row.id != "C17d")).await?;
+    *client = connect_character(clients, tag, usize::from(row.0.id != "C17d")).await?;
     if client.join_snapshot().game_session_id == previous
         || tile(client.world_spatial().actor_position)? != TOWN
         || client
@@ -2450,7 +2429,7 @@ async fn combat_rejoin(
     // In particular, any first vocation obtained from Oressa must survive.
     // Recast directly; reacquiring it here would hide a persistence defect.
     let book = native_spell_book()?;
-    let words = if row.id == "C17d" {
+    let words = if row.0.id == "C17d" {
         "exeta res"
     } else {
         "exevo infir flam hur"
@@ -2869,19 +2848,27 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         ("C16c", ACQUIRE_ACTIONS, 0xd8),
     ] {
         let mut row = Row::new(id, actions);
+        let watch = row.0.watch();
         let result: TestResult = async {
+            let _row = watch.enter();
             let mut client = connect_world(clients, tag).await?;
-            let result = tokio::time::timeout(Duration::from_secs(600), async {
-                if id == "C13" {
-                    summons(&mut row, &mut client, clients, world).await
-                } else {
-                    acquired_companions(&mut row, &mut client, clients, world).await
-                }
-            })
-            .await
-            .map_err(|_| {
-                format!("{id}: 600s companion journey deadline; required actions unproven")
-            })?;
+            let mut completed = false;
+            let deadline =
+                format!("{id}: 600s companion journey deadline; required actions unproven");
+            let result = watch
+                .bound(Duration::from_secs(600), deadline, async {
+                    let result = if id == "C13" {
+                        summons(&mut row, &mut client, clients, world).await
+                    } else {
+                        acquired_companions(&mut row, &mut client, clients, world).await
+                    };
+                    completed = true;
+                    result
+                })
+                .await;
+            if !completed {
+                return result;
+            }
             let cleanup = rune_cleanup(&mut client, world).await;
             if let Err(error) = &cleanup {
                 evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
@@ -4067,14 +4054,25 @@ const TILE_ITEM_ACTIONS: &[&str] = &[
 
 async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
     let mut row = Row::new("C16d", TILE_ITEM_ACTIONS);
+    let watch = row.0.watch();
     let result: TestResult = async {
+        let _row = watch.enter();
         let mut client = connect_world(clients, 0xe0).await?;
-        let result = tokio::time::timeout(
-            Duration::from_secs(400),
-            tile_items(&mut row, &mut client, clients, world),
-        )
-        .await
-        .map_err(|_| "C16d 400s journey deadline; required actions unproven")?;
+        let mut completed = false;
+        let result = watch
+            .bound(
+                Duration::from_secs(400),
+                "C16d 400s journey deadline; required actions unproven",
+                async {
+                    let result = tile_items(&mut row, &mut client, clients, world).await;
+                    completed = true;
+                    result
+                },
+            )
+            .await;
+        if !completed {
+            return result;
+        }
         let cleanup = rune_cleanup(&mut client, world).await;
         if let Err(error) = &cleanup {
             evidence(&format!("E2EF5_GAP C16d cleanup: {error}"));

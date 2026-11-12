@@ -44,8 +44,207 @@ const HOLDER_RETURN_POLL: Duration = Duration::from_millis(10);
 const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
 
 /// The call site that has the single holder checked out through a semantic pass, and since
-/// when (NBDIAG-4).
-type HolderOwner = Option<(&'static std::panic::Location<'static>, Instant)>;
+/// when (NBDIAG-4), with the connection trace of the task that issued it (LOGDBG-C).
+type HolderOwner = Option<(
+    &'static std::panic::Location<'static>,
+    Instant,
+    Option<[u8; 16]>,
+)>;
+
+/// A source location that took or asked for the holder.
+type Site = &'static std::panic::Location<'static>;
+
+tokio::task_local! {
+    /// The connection trace of the task issuing semantic passes, when a connection set one
+    /// (LOGDBG-C). Diagnostics only: nothing decides on it.
+    static HOLDER_TRACE: [u8; 16];
+}
+
+/// Runs `future` with `trace` as the connection trace of the semantic passes it issues, and of
+/// the root tasks it spawns (LOGDBG-C).
+pub async fn with_holder_trace<F: Future>(trace: [u8; 16], future: F) -> F::Output {
+    HOLDER_TRACE.scope(trace, future).await
+}
+
+fn holder_trace() -> Option<[u8; 16]> {
+    HOLDER_TRACE.try_with(|trace| *trace).ok()
+}
+
+/// The same text as the transport's connection trace, so holder and transport lines join.
+fn format_trace(trace: [u8; 16]) -> String {
+    let mut text = String::with_capacity(36);
+    for (index, byte) in trace.iter().enumerate() {
+        if matches!(index, 4 | 6 | 8 | 10) {
+            text.push('-');
+        }
+        let _ = write!(text, "{byte:02x}");
+    }
+    text
+}
+
+fn site_text(site: Option<Site>) -> String {
+    site.map_or_else(|| "none".to_owned(), ToString::to_string)
+}
+
+/// Adds one to `owner`'s count.
+fn tally(counts: &mut Vec<(Option<Site>, u64)>, owner: Option<Site>) {
+    let same = |known: &Option<Site>| match (known, owner) {
+        (Some(known), Some(owner)) => std::ptr::eq(*known, owner),
+        (None, None) => true,
+        _ => false,
+    };
+    match counts.iter_mut().find(|(known, _)| same(known)) {
+        Some((_, count)) => *count += 1,
+        None => counts.push((owner, 1)),
+    }
+}
+
+/// The owner counted most often; `None` when nothing was counted.
+fn dominant(counts: &[(Option<Site>, u64)]) -> Option<Option<Site>> {
+    counts
+        .iter()
+        .max_by_key(|(_, count)| *count)
+        .map(|(owner, _)| *owner)
+}
+
+/// A waiter that waited at least this long for the holder is reported when it gets it.
+const HOLDER_WAIT_REPORT: Duration = Duration::from_millis(500);
+/// A waiter refused longer ago than this gave up; its next checkout starts a new wait.
+const HOLDER_WAIT_STALE: Duration = ROOT_RECOVERY_WINDOW;
+
+/// One call site's refused checkouts since its last successful one (LOGDBG-C).
+struct PendingWait {
+    waiter: Site,
+    first: Instant,
+    last: Instant,
+    attempts: u64,
+    owners: Vec<(Option<Site>, u64)>,
+}
+
+static HOLDER_WAITS: StdMutex<Vec<PendingWait>> = StdMutex::new(Vec::new());
+
+/// Counts a refused checkout of `waiter` while `owner` held the holder.
+fn note_wait_refused(
+    waits: &mut Vec<PendingWait>,
+    waiter: Site,
+    owner: Option<Site>,
+    now: Instant,
+) {
+    let index = waits
+        .iter()
+        .position(|wait| std::ptr::eq(wait.waiter, waiter))
+        .unwrap_or_else(|| {
+            waits.push(PendingWait {
+                waiter,
+                first: now,
+                last: now,
+                attempts: 0,
+                owners: Vec::new(),
+            });
+            waits.len() - 1
+        });
+    if let Some(wait) = waits.get_mut(index) {
+        if now.duration_since(wait.last) > HOLDER_WAIT_STALE {
+            wait.first = now;
+            wait.attempts = 0;
+            wait.owners.clear();
+        }
+        wait.last = now;
+        wait.attempts += 1;
+        tally(&mut wait.owners, owner);
+    }
+}
+
+/// Ends `waiter`'s wait at its checkout `now`; the wait when it is worth reporting.
+fn finish_wait(waits: &mut Vec<PendingWait>, waiter: Site, now: Instant) -> Option<PendingWait> {
+    let index = waits
+        .iter()
+        .position(|wait| std::ptr::eq(wait.waiter, waiter))?;
+    let wait = waits.swap_remove(index);
+    (now.duration_since(wait.last) <= HOLDER_WAIT_STALE
+        && now.duration_since(wait.first) >= HOLDER_WAIT_REPORT)
+        .then_some(wait)
+}
+
+fn holder_wait_line(wait: &PendingWait, waited: Duration) -> oteryn_error_codes::Line<'static> {
+    oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "holder_wait")
+        .field(
+            "waiter",
+            oteryn_error_codes::FieldValue::Owned(wait.waiter.to_string()),
+        )
+        .field("waited_ms", millis(waited))
+        .field(
+            "attempts",
+            oteryn_error_codes::FieldValue::U64(wait.attempts),
+        )
+        .field(
+            "dominant_owner",
+            oteryn_error_codes::FieldValue::Owned(site_text(dominant(&wait.owners).flatten())),
+        )
+}
+
+fn pass_slow_line(
+    caller: Site,
+    held: Duration,
+    deadline_exceeded: bool,
+) -> oteryn_error_codes::Line<'static> {
+    oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "pass_slow")
+        .field(
+            "caller",
+            oteryn_error_codes::FieldValue::Owned(caller.to_string()),
+        )
+        .field("held_ms", millis(held))
+        .field(
+            "deadline_exceeded",
+            oteryn_error_codes::FieldValue::Token(if deadline_exceeded { "true" } else { "false" }),
+        )
+}
+
+/// `owner`: the pass holding the holder and for how long; `None` when no pass owns it.
+fn holder_stuck_line(owner: Option<(Site, Duration)>) -> oteryn_error_codes::Line<'static> {
+    let line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Warn,
+        "durability",
+        "holder_stuck",
+    )
+    .field(
+        "caller",
+        oteryn_error_codes::FieldValue::Owned(site_text(owner.map(|(caller, _)| caller))),
+    );
+    match owner {
+        Some((_, held)) => line.field("held_ms", millis(held)),
+        None => line,
+    }
+}
+
+/// Records a refused checkout of `waiter` against the pass that holds the holder (LOGDBG-C).
+fn record_refused_checkout(slot: &StdMutex<HolderOwner>, waiter: Site) {
+    let owner = slot
+        .lock()
+        .ok()
+        .and_then(|owner| owner.map(|(site, ..)| site));
+    record_holder_use(Some(waiter), None, Some(owner));
+    if let Ok(mut waits) = HOLDER_WAITS.lock() {
+        note_wait_refused(&mut waits, waiter, owner, Instant::now());
+    }
+}
+
+/// Reports `waiter`'s wait, if long enough, now that it has the holder (LOGDBG-C).
+fn record_checkout(waiter: Site, now: Instant, trace: Option<[u8; 16]>) {
+    let Some(wait) = HOLDER_WAITS
+        .lock()
+        .ok()
+        .and_then(|mut waits| finish_wait(&mut waits, waiter, now))
+    else {
+        return;
+    };
+    let trace = trace.map(format_trace);
+    let mut line = holder_wait_line(&wait, now.duration_since(wait.first));
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
+}
 
 /// Records the maintenance window's own checkout of the holder when it ends (NBDIAG-5).
 struct MaintenanceUsage(Instant);
@@ -66,6 +265,8 @@ struct CallerUsage {
     passes: u64,
     held: Duration,
     refused: u64,
+    /// The pass that held the holder at each refused checkout (LOGDBG-C).
+    refused_by: Vec<(Option<Site>, u64)>,
 }
 
 struct HolderUsage {
@@ -80,6 +281,16 @@ static HOLDER_USAGE: StdMutex<Option<HolderUsage>> = StdMutex::new(None);
 fn record_holder_usage(
     caller: Option<&'static std::panic::Location<'static>>,
     held: Option<Duration>,
+) {
+    record_holder_use(caller, held, None);
+}
+
+/// [`record_holder_usage`]; a refused checkout also counts `refused_by`, the pass that held the
+/// holder, when it was observed.
+fn record_holder_use(
+    caller: Option<Site>,
+    held: Option<Duration>,
+    refused_by: Option<Option<Site>>,
 ) {
     let Ok(mut usage) = HOLDER_USAGE.lock() else {
         return;
@@ -107,7 +318,12 @@ fn record_holder_usage(
                 entry.passes += 1;
                 entry.held += held;
             }
-            None => entry.refused += 1,
+            None => {
+                entry.refused += 1;
+                if let Some(owner) = refused_by {
+                    tally(&mut entry.refused_by, owner);
+                }
+            }
         }
     }
     let elapsed = now.duration_since(window.since);
@@ -134,21 +350,25 @@ fn record_holder_usage(
         .sort_by_key(|(_, entry)| std::cmp::Reverse(entry.held));
     for (caller, entry) in window.callers.iter().take(8) {
         let site = caller.map_or_else(|| "maintenance".to_owned(), ToString::to_string);
-        oteryn_error_codes::emit(
-            DIAGNOSTIC_PROCESS,
-            &oteryn_error_codes::Line::new(
-                oteryn_error_codes::Level::Info,
-                "durability",
-                "holder_usage",
-            )
-            .field("caller", oteryn_error_codes::FieldValue::Owned(site))
-            .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
-            .field("held_ms", millis(entry.held))
-            .field(
-                "refused",
-                oteryn_error_codes::FieldValue::U64(entry.refused),
-            ),
+        let mut line = oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "durability",
+            "holder_usage",
+        )
+        .field("caller", oteryn_error_codes::FieldValue::Owned(site))
+        .field("passes", oteryn_error_codes::FieldValue::U64(entry.passes))
+        .field("held_ms", millis(entry.held))
+        .field(
+            "refused",
+            oteryn_error_codes::FieldValue::U64(entry.refused),
         );
+        if let Some(owner) = dominant(&entry.refused_by) {
+            line = line.field(
+                "refused_by",
+                oteryn_error_codes::FieldValue::Owned(site_text(owner)),
+            );
+        }
+        oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
     }
     *usage = None;
 }
@@ -169,6 +389,8 @@ struct PassOwner {
     caller: &'static std::panic::Location<'static>,
     issued: Instant,
     finished: bool,
+    /// The connection trace of the issuing task, when it has one (LOGDBG-C).
+    trace: Option<[u8; 16]>,
 }
 
 impl PassOwner {
@@ -177,15 +399,28 @@ impl PassOwner {
         caller: &'static std::panic::Location<'static>,
         issued: Instant,
     ) -> Self {
+        let trace = holder_trace();
         if let Ok(mut owner) = slot.lock() {
-            *owner = Some((caller, issued));
+            *owner = Some((caller, issued, trace));
         }
+        record_checkout(caller, issued, trace);
         Self {
             slot: Arc::clone(slot),
             caller,
             issued,
             finished: false,
+            trace,
         }
+    }
+
+    /// `line` with this pass's connection trace, when it has one.
+    fn emit(&self, line: oteryn_error_codes::Line<'_>) {
+        let trace = self.trace.map(format_trace);
+        let line = match trace.as_deref() {
+            Some(trace) => line.trace(trace),
+            None => line,
+        };
+        oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
     }
 }
 
@@ -193,9 +428,8 @@ impl Drop for PassOwner {
     fn drop(&mut self) {
         record_holder_usage(Some(self.caller), Some(self.issued.elapsed()));
         if !self.finished {
-            oteryn_error_codes::emit(
-                DIAGNOSTIC_PROCESS,
-                &oteryn_error_codes::Line::new(
+            self.emit(
+                oteryn_error_codes::Line::new(
                     oteryn_error_codes::Level::Warn,
                     "durability",
                     "pass_dropped",
@@ -208,7 +442,7 @@ impl Drop for PassOwner {
             );
         }
         if let Ok(mut owner) = self.slot.lock()
-            && owner.is_some_and(|(caller, issued)| {
+            && owner.is_some_and(|(caller, issued, _)| {
                 std::ptr::eq(caller, self.caller) && issued == self.issued
             })
         {
@@ -1200,6 +1434,18 @@ impl DurabilityRoot {
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
+        // A root task issues its passes for the task that spawned it (LOGDBG-C).
+        match holder_trace() {
+            Some(trace) => self.spawn_untraced(HOLDER_TRACE.scope(trace, future)),
+            None => self.spawn_untraced(future),
+        }
+    }
+
+    fn spawn_untraced<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
         match &self.runtime {
             RootRuntime::Dedicated(handle) => handle.spawn(future),
             #[cfg(any(test, feature = "test-support"))]
@@ -1418,13 +1664,20 @@ impl DurabilityRoot {
     /// Names the pass that kept the holder through a whole recovery window (NBDIAG-4).
     fn report_stuck_holder(&self) {
         let owner = self.holder_owner.lock().ok().and_then(|owner| *owner);
+        // The text lines stay until node boot's run.sh selects the event instead (LOGDBG-C).
         match owner {
-            Some((caller, since)) => eprintln!(
+            Some((caller, since, _)) => eprintln!(
                 "DURABILITY_HOLDER_STUCK caller={caller} held_ms={}",
                 since.elapsed().as_millis()
             ),
             None => eprintln!("DURABILITY_HOLDER_STUCK caller=none"),
         }
+        let trace = owner.and_then(|(.., trace)| trace).map(format_trace);
+        let mut line = holder_stuck_line(owner.map(|(caller, since, _)| (caller, since.elapsed())));
+        if let Some(trace) = trace.as_deref() {
+            line = line.trace(trace);
+        }
+        oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
     }
 
     #[must_use]
@@ -1538,7 +1791,7 @@ impl DurabilityRoot {
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
         let holder = self.try_acquire_ready().inspect_err(|_| {
-            record_holder_usage(Some(caller), None);
+            record_refused_checkout(&self.holder_owner, caller);
         })?;
         let issued = Instant::now();
         Ok(IssuedSemanticPass {
@@ -1563,7 +1816,7 @@ impl DurabilityRoot {
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
         let holder = self.try_acquire_ready().inspect_err(|_| {
-            record_holder_usage(Some(caller), None);
+            record_refused_checkout(&self.holder_owner, caller);
         })?;
         Ok(IssuedSemanticPass {
             root: self.clone(),
@@ -1653,11 +1906,14 @@ impl IssuedSemanticPass {
         let held = self.owner.issued.elapsed();
         let deadline_exceeded = matches!(&result, Err(DurabilityError::RootPassDeadlineExceeded));
         if deadline_exceeded || held >= SLOW_PASS_REPORT {
+            // The text line stays until node boot's run.sh selects the event instead (LOGDBG-C).
             eprintln!(
                 "DURABILITY_PASS_SLOW caller={} held_ms={} deadline_exceeded={deadline_exceeded}",
                 self.owner.caller,
                 held.as_millis(),
             );
+            self.owner
+                .emit(pass_slow_line(self.owner.caller, held, deadline_exceeded));
         }
 
         if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
@@ -1825,6 +2081,10 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
     );
     Ok(pool)
 }
+
+#[cfg(test)]
+#[path = "db_holder_wait_tests.rs"]
+mod holder_wait_tests;
 
 #[cfg(test)]
 #[path = "db_wp3_root_contract_tests.rs"]

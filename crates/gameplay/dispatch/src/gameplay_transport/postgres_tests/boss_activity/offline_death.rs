@@ -446,12 +446,19 @@ async fn due_return(
     ))
     .await;
     cancel_undecided_return(h, origin, instance, source).await?;
-    let replay = tokio::time::timeout(
-        Duration::from_secs(30),
-        instance.return_due_activity(source, ActivityReturnReason::Timeout),
-    )
-    .await?
-    .map_err(|_| "same original Timeout retries retained Death")?;
+    let replay = tokio::time::timeout(Duration::from_secs(30), async {
+        // Cancellation returns the single holder asynchronously. Observe its
+        // readiness before retrying the retained operation in this same budget.
+        h.root
+            .await_ready()
+            .await
+            .map_err(|_| "cancelled return holder readiness")?;
+        instance
+            .return_due_activity(source, ActivityReturnReason::Timeout)
+            .await
+            .map_err(|_| "same original Timeout retries retained Death")
+    })
+    .await??;
     let NativeActivityOutcome::Committed(commit) = replay else {
         return Err(format!("retained Timeout retry refused: {replay:?}").into());
     };

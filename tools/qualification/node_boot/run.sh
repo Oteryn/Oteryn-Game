@@ -31,8 +31,35 @@ readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_OVERLAY=tools/qualification/node_boot/compose.override.yml
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
-readonly SERVICE_USER=oteryn-node-boot
-readonly BASE=/srv/oteryn-node-boot
+# Local parallel stacks override the service user, base directory, Compose project and
+# ports; CI keeps the defaults. Everything is checked before any sudo or Docker use:
+# cleanup kills the service user's processes and removes BASE as root.
+SERVICE_USER="${NODE_BOOT_SERVICE_USER:-oteryn-node-boot}"
+BASE="${NODE_BOOT_BASE:-/srv/oteryn-node-boot}"
+[[ "$SERVICE_USER" =~ ^oteryn-node-boot(-[a-z0-9]{1,16})?$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_service_user'; exit 2; }
+node_boot_tmp="$(realpath -m -- "${TMPDIR:-/tmp}")"
+if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
+  || ! [[ "$BASE" == /srv/?* || ( "$node_boot_tmp" != / && "$BASE" == "$node_boot_tmp"/?* ) ]]; then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
+fi
+[[ -z "${NODE_BOOT_PROJECT+x}" || "$NODE_BOOT_PROJECT" =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_project'; exit 2; }
+for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT; do
+  [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
+    || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
+done
+readonly SERVICE_USER BASE
+# NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
+# reruns only the seam stage against it, =teardown removes it. Local development only.
+NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
+NODE_BOOT_REUSE_STACK="${NODE_BOOT_REUSE_STACK:-0}"
+case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
+  0/0) ;;
+  1/0|0/1|0/teardown)
+    if [[ "${CI:-}" == true || -n "${GITHUB_ACTIONS:-}" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=stack_reuse_is_local_only'; exit 2
+    fi ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
+esac
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 export NODE_BOOT_PROFILE="${NODE_BOOT_PROFILE:-sorcerer}"
@@ -49,7 +76,9 @@ esac
 # Keep every fixture-only transport/door assertion intact in its own disposable pass.
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
-if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
+# A kept or reused stack is one topology, so it never runs the separate basic pass.
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
@@ -87,7 +116,7 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SH
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
 fi
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
   # Execute the existing compile/decode/stage qualification before creating services.
   RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
     bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
@@ -100,7 +129,7 @@ WP5_PKI="$WORK/pki"
 WP5_SCRATCH="$WORK/scratch"
 mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
 WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"
-WP5_PROJECT="nodeboot${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}"
+WP5_PROJECT="${NODE_BOOT_PROJECT:-nodeboot${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}}"
 WP5_DB_PASSWORD="$(openssl rand -hex 24)"
 WP5_DB_ROOT_PASSWORD="$(openssl rand -hex 24)"
 WP5_APP_KEY="base64:$(openssl rand -base64 32 | tr -d '\n')"
@@ -116,12 +145,37 @@ RUNTIME_PASSWORD="$(openssl rand -hex 24)"
 NODE_PID=""
 RUNTIME_DIAGNOSTICS_PID=""
 ACTIVE_STAGE=setup
+# Redacted PostgreSQL samples and stage dumps (pg_observe.py); kept with node.log on failure.
+PG_OBS="$WORK/postgres"
+PG_SAMPLER_PID=""
+STACK_KEPT=0
+REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
+if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
+  rm -rf -- "$WORK"
+  # Owner-only state from the NODE_BOOT_KEEP_STACK run; it holds the disposable stack's secrets.
+  if [[ ! -f "$REUSE_STATE" || -L "$REUSE_STATE" || ! -O "$REUSE_STATE" || "$(stat -c %a "$REUSE_STATE")" != 600 ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_state_missing'; exit 2
+  fi
+  # shellcheck source=/dev/null
+  source "$REUSE_STATE"
+  if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}" ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
+  fi
+  if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
+      || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
+    fi
+    STACK_KEPT=1
+  fi
+fi
 
 result=NODE_BOOT_FAIL
 compose() {
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" \
     --file "$GAME_SOURCE/$COMPOSE_S3B" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"
 }
+psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
 fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
 stop_runtime_diagnostics() {
@@ -130,6 +184,36 @@ stop_runtime_diagnostics() {
     wait "$RUNTIME_DIAGNOSTICS_PID" 2>/dev/null || true
     RUNTIME_DIAGNOSTICS_PID=""
   }
+}
+pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
+start_pg_sampler() {
+  mkdir -p "$PG_OBS"
+  pg_observe sample --out "$PG_OBS/activity.log" &
+  PG_SAMPLER_PID=$!
+}
+stop_pg_sampler() {
+  [[ -z "${PG_SAMPLER_PID:-}" ]] || {
+    kill -TERM "$PG_SAMPLER_PID" 2>/dev/null || true
+    wait "$PG_SAMPLER_PID" 2>/dev/null || true
+    PG_SAMPLER_PID=""
+  }
+}
+pg_observability_dump() { # stage exit: statements, lock waits and slow statements of the stage
+  [[ -n "${PG_SAMPLER_PID:-}" ]] || return 0
+  local verbose=()
+  [[ $2 == 0 ]] || verbose=(--verbose)
+  pg_observe dump --stage "$1" --dir "$PG_OBS" --activity "$PG_OBS/activity.log" "${verbose[@]}" || true
+}
+save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
+  local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
+    WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
+    RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+  [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
+  ( umask 077
+    { declare -p "${names[@]}"
+      printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+    } > "$REUSE_STATE" )
+  STACK_KEPT=1
 }
 interrupted() {
   result=NODE_BOOT_FAIL
@@ -142,11 +226,17 @@ cleanup() {
   set +e
   # Flush the independent reader before either the server or its private log is removed.
   stop_runtime_diagnostics
-  [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
-  sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
-  compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
-  docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
-  sudo rm -rf "$BASE" || true
+  stop_pg_sampler
+  if [[ ${STACK_KEPT:-0} == 1 ]]; then
+    evidence "stack=kept project=$WP5_PROJECT rerun=NODE_BOOT_REUSE_STACK=1 remove=NODE_BOOT_REUSE_STACK=teardown"
+  else
+    [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
+    sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
+    compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+    docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
+    sudo rm -rf "$BASE" || true
+    [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
+  fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
     if [[ -f "$failed_node_log" ]]; then
@@ -154,9 +244,13 @@ cleanup() {
     elif [[ -f "$node_log" ]]; then
       cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     fi
+    # The basic and World passes share the directory; each keeps its own PostgreSQL record.
+    [[ ! -d "${PG_OBS:-}" ]] || cp -R "$PG_OBS" "$NODE_BOOT_FAILURE_LOG_DIR/postgres-world$NODE_BOOT_WORLD-spells$NODE_BOOT_SPELLS"
   fi
-  find "$WORK" -type f -delete 2>/dev/null || true
-  find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
+  if [[ ${STACK_KEPT:-0} != 1 ]]; then
+    find "$WORK" -type f -delete 2>/dev/null || true
+    find "$WORK" -depth -type d -empty -delete 2>/dev/null || true
+  fi
   evidence "cleanup=complete"
   evidence "result_scope world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS stage=$ACTIVE_STAGE exit=$rc"
   echo "NODE_BOOT_RESULT=$result"
@@ -165,6 +259,12 @@ cleanup() {
 trap cleanup EXIT
 trap 'interrupted INT 130' INT
 trap 'interrupted TERM 143' TERM
+if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]; then
+  result=NODE_BOOT_TEARDOWN
+  exit 0
+fi
+# A reused stack keeps its provisioning, characters and node: only the seam stage runs again.
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
 
 make_ca() {
   openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
@@ -207,13 +307,15 @@ RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform D
 [[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
 evidence "pins platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION game=$(git rev-parse HEAD)"
 
-# TLS-verified PostgreSQL 18.6 for the Game durability root.
+# TLS-verified PostgreSQL 18.6 for the Game durability root. It always logs lock waits
+# (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
+# and loads pg_stat_statements, so every run carries its own database evidence.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
 docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
-  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key' >/dev/null
+  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
 chmod 600 "$WP5_PKI/db.key"
 # Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
 # and is shut down after init, so a socket probe can pass before the real server is up.
@@ -223,8 +325,9 @@ for _ in $(seq 1 60); do
   sleep 1
 done
 [[ $pg_ready == 1 ]] || fail "postgres_ready"
-psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
+# The view lives in the maintenance database: the Game schema stays exactly as migrated.
+echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 180006 ]] || fail "postgres_version"
 [[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
@@ -466,6 +569,8 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
 fi
+fi # NODE_BOOT_REUSE_STACK == 0
+start_pg_sampler
 
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 start_node() {
@@ -732,6 +837,7 @@ stage() { # name prerequisite... -- function
   ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
   local rc=${PIPESTATUS[0]}
   stop_runtime_diagnostics
+  pg_observability_dump "$name" "$rc"
   set -e
   evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
   echo "::endgroup::"
@@ -954,6 +1060,11 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID")
   fi
+  # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
+  local knob
+  for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
+    [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
+  done
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
@@ -1037,22 +1148,39 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
+seam_stage_name=seam_stages
+[[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
+if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+  stage "$seam_stage_name" -- seam_stages
+else
 stage operator_setup -- operator_setup
 stage configuration_negatives operator_setup -- configuration_negatives
 stage node_assigned_ready operator_setup -- node_assigned_ready
 stage control_socket_peer node_assigned_ready -- control_socket_peer
 stage character_bootstrap node_assigned_ready -- character_bootstrap
-if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
-  stage spell_scenarios character_bootstrap -- seam_stages
-else
-  stage seam_stages character_bootstrap -- seam_stages
+stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
+if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
 stage restart_without_supersession graceful_shutdown -- restart_without_supersession
 stage superseding_replacement graceful_shutdown -- superseding_replacement
 stage signal_before_ready superseding_replacement -- signal_before_ready
 NODE_PID=""
+elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
+  # The shutdown and restart stages did not run, so this is never a qualification pass.
+  if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+    # The node was started inside a stage subshell; its pid is in $VARS.
+    # shellcheck source=/dev/null
+    NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
+    [[ -z "$NODE_PID" ]] || save_reuse_state
+  fi
+  ORDER+=(stack_kept)
+  STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"
+fi
 
+# The failed rows of this pass, grouped by their first cause, ahead of the stage table.
+python3 "$GAME_SOURCE/tools/qualification/node_boot/failure_summary.py" "$WORK"/stage-*.log \
+  ${GITHUB_STEP_SUMMARY:+--summary "$GITHUB_STEP_SUMMARY"} || true
 echo "NODE_BOOT_STAGES"
 failures=0
 for name in "${ORDER[@]}"; do
@@ -1062,6 +1190,10 @@ done
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 if [[ $failures == 0 ]]; then
   result=NODE_BOOT_PASS
+elif [[ $failures == 1 && ${STATUS[stack_kept]:-} == SKIP* ]]; then
+  # Every stage that ran passed and the stack stays up; still not a qualification pass.
+  result=NODE_BOOT_PARTIAL
+  exit 3
 else
   exit 1
 fi

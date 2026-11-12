@@ -7,7 +7,7 @@ use crate::gameplay_transport::{
     connection::{
         AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
     },
-    tcp_tls::{read_frame, write_frame},
+    tcp_tls::write_frame,
 };
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
@@ -67,7 +67,11 @@ pub(super) async fn check(
     let serving = async { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await };
     let driving = async {
         loop {
-            let frame = read_frame(&mut client).await?;
+            let frame = super::party_membership::read_live_frame(
+                &mut client,
+                current.continuity.connection_generation,
+            )
+            .await?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
                 == MessageType::SnapshotCommit
             {
@@ -87,7 +91,11 @@ pub(super) async fn check(
             .map_err(debug)?;
             write_frame(&mut client, &frame).await?;
             loop {
-                let frame = read_frame(&mut client).await?;
+                let frame = super::party_membership::read_live_frame(
+                    &mut client,
+                    current.continuity.connection_generation,
+                )
+                .await?;
                 let env = decode_wire_envelope(&frame).map_err(debug)?;
                 if env.message_type() != MessageType::CommandResult {
                     continue;
@@ -212,12 +220,28 @@ pub(super) async fn check_buffs(
         _ => return Err("party spell fixture".into()),
     };
     let full = super::cl6_status::query_actor(owner, actor, session).await?;
-    let member = full.members.iter().find(|member| member.character == *fence.character_id.as_bytes()).ok_or("CL6 party member")?;
-    assert!(member.conditions.is_some(), "same-Channel member must have a qualified condition observation");
+    let member = full
+        .members
+        .iter()
+        .find(|member| member.character == *fence.character_id.as_bytes())
+        .ok_or("CL6 party member")?;
+    assert!(
+        member.conditions.is_some(),
+        "same-Channel member must have a qualified condition observation"
+    );
     let projected = member.party_spell_remaining_ms[index];
-    if affected { assert!(projected > 0 && projected <= 120000, "CL6 {spell}: {projected}"); }
-    else { assert_eq!(projected, 0, "CL6 out-of-range member"); }
-    assert!(full.members.len() >= 3, "native projection includes other members, not only self");
+    if affected {
+        assert!(
+            projected > 0 && projected <= 120000,
+            "CL6 {spell}: {projected}"
+        );
+    } else {
+        assert_eq!(projected, 0, "CL6 out-of-range member");
+    }
+    assert!(
+        full.members.len() >= 3,
+        "native projection includes other members, not only self"
+    );
     eprintln!("CL6_PARTY POSTGRES_ASSERTION_EXECUTED spell={spell} affected={affected}");
     let remaining = snapshot.party_spell_remaining_ms[index];
     if affected {

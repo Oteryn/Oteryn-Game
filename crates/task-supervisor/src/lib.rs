@@ -36,6 +36,58 @@ fn start_watchdog() {
     }
 }
 
+/// `tokio::spawn`; the tokio-console diagnostics build (feature `diagnostics` with
+/// `--cfg tokio_unstable`) also names the task so the console shows it.
+#[cfg(not(all(tokio_unstable, feature = "diagnostics")))]
+fn spawn_named<F>(_name: &'static str, future: F) -> JoinHandle<F::Output>
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    tokio::spawn(future)
+}
+
+/// `tokio::spawn` with the task named for tokio-console.
+#[cfg(all(tokio_unstable, feature = "diagnostics"))]
+// Diagnostics build only: `Builder::spawn` returns `Ok` for every runtime task, and
+// `tokio::spawn` panics in the cases it would not.
+#[allow(clippy::expect_used)]
+fn spawn_named<F>(name: &'static str, future: F) -> JoinHandle<F::Output>
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    tokio::task::Builder::new()
+        .name(name)
+        .spawn(future)
+        .expect("tokio task spawn")
+}
+
+/// `tokio::task::spawn_blocking`; the diagnostics build also names the task.
+#[cfg(not(all(tokio_unstable, feature = "diagnostics")))]
+fn spawn_blocking_named<F, T>(_name: &'static str, operation: F) -> JoinHandle<T>
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static,
+{
+    tokio::task::spawn_blocking(operation)
+}
+
+/// `tokio::task::spawn_blocking` with the task named for tokio-console.
+#[cfg(all(tokio_unstable, feature = "diagnostics"))]
+// Diagnostics build only: `tokio::task::spawn_blocking` panics where `Builder` returns `Err`.
+#[allow(clippy::expect_used)]
+fn spawn_blocking_named<F, T>(name: &'static str, operation: F) -> JoinHandle<T>
+where
+    F: FnOnce() -> T + Send + 'static,
+    T: Send + 'static,
+{
+    tokio::task::Builder::new()
+        .name(name)
+        .spawn_blocking(operation)
+        .expect("tokio blocking task spawn")
+}
+
 /// Spawn a lifecycle-only supervised task without stall detection while preserving its output.
 pub fn spawn_lifecycle_supervised<F>(
     name: &'static str,
@@ -48,7 +100,7 @@ where
 {
     start_watchdog();
     let guard = global().register(name, trace, TaskKind::Async, false);
-    tokio::spawn(async move { guard.run_preserving(future).await })
+    spawn_named(name, async move { guard.run_preserving(future).await })
 }
 
 /// Spawn a process-supervised task with an explicit progress heartbeat.
@@ -65,7 +117,9 @@ where
     start_watchdog();
     let guard = global().register(name, trace, TaskKind::Async, true);
     let heartbeat = guard.heartbeat();
-    tokio::spawn(async move { guard.run_preserving(make_future(heartbeat)).await })
+    spawn_named(name, async move {
+        guard.run_preserving(make_future(heartbeat)).await
+    })
 }
 
 /// Run blocking work on Tokio's blocking pool, supervised, while preserving its output and panics.
@@ -79,7 +133,7 @@ where
     T: Send + 'static,
 {
     let guard = global().register(name, trace, TaskKind::Blocking, false);
-    tokio::task::spawn_blocking(move || guard.run_blocking_preserving(operation))
+    spawn_blocking_named(name, move || guard.run_blocking_preserving(operation))
 }
 
 /// Run work on a dedicated OS thread named `name`, supervised, while preserving its output and
@@ -245,7 +299,7 @@ impl Supervisor {
         E: Send + 'static,
     {
         let guard = self.register(name, trace, TaskKind::Async, false);
-        tokio::spawn(async move { guard.run(future).await })
+        spawn_named(name, async move { guard.run(future).await })
     }
 
     /// Spawn a supervised asynchronous operation and pass it a heartbeat handle.
@@ -263,7 +317,7 @@ impl Supervisor {
     {
         let guard = self.register(name, trace, TaskKind::Async, true);
         let heartbeat = guard.heartbeat();
-        tokio::spawn(async move { guard.run(make_future(heartbeat)).await })
+        spawn_named(name, async move { guard.run(make_future(heartbeat)).await })
     }
 
     /// Spawn supervised synchronous work on Tokio's blocking pool.
@@ -279,8 +333,8 @@ impl Supervisor {
         E: Send + 'static,
     {
         let guard = self.register(name, trace, TaskKind::Blocking, false);
-        tokio::spawn(async move {
-            match tokio::task::spawn_blocking(operation).await {
+        spawn_named(name, async move {
+            match spawn_blocking_named(name, operation).await {
                 Ok(Ok(value)) => guard.finish("ok", Some(value)),
                 Ok(Err(_)) => guard.finish("err", None),
                 Err(error) if error.is_panic() => {

@@ -11,6 +11,12 @@ import tempfile
 import time
 import unittest
 
+# The workflows run this file only; it carries the node boot tool tests with it.
+from test_node_boot_tools import (  # noqa: F401
+    FailureSummaryTests, KnobTests, PgObserveTests, ReuseTests, SeamPassThroughTests,
+    StageDumpTests, TimelineTests,
+)
+
 SOURCE = Path(__file__).resolve().with_name('run.sh')
 # An explicit source path also runs the same fixture against a saved baseline.
 if len(sys.argv) > 1 and sys.argv[1].endswith('run.sh'):
@@ -259,6 +265,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
             (work / 'node.log').touch()
             definitions = '\n'.join(function(name) for name in [
                 'start_runtime_diagnostics', 'stop_runtime_diagnostics',
+                'stop_pg_sampler', 'pg_observability_dump',
                 'interrupted', 'cleanup', 'stage',
             ])
             trap_lines = '\n'.join(re.findall(r'^trap .+$', TEXT, re.M))
@@ -270,6 +277,7 @@ VARS="$WORK/vars"
 node_log="$WORK/node.log"
 NODE_PID=""
 RUNTIME_DIAGNOSTICS_PID=""
+PG_SAMPLER_PID=""
 ACTIVE_STAGE=setup
 NODE_BOOT_WORLD=1
 NODE_BOOT_SPELLS=0

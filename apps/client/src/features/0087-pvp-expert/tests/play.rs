@@ -31,6 +31,13 @@ impl Stepper for Peer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
+        // The test releases the transport result only after observing pending.
+        self.exchanges
+            .release
+            .acquire()
+            .await
+            .map_err(|_| SessionError::SessionUnusable)?
+            .forget();
         let (kind, payload, status, reply) = self
             .exchanges
             .entries
@@ -41,12 +48,6 @@ impl Stepper for Peer {
         assert_eq!(command.capability, 87);
         assert_eq!(command.kind, kind);
         assert_eq!(command.payload, payload);
-        self.exchanges
-            .release
-            .acquire()
-            .await
-            .map_err(|_| SessionError::SessionUnusable)?
-            .forget();
         Ok(GatedCommandResult {
             command_id: 1,
             server_sequence: 1,
@@ -251,6 +252,7 @@ fn pc01_pvp_expert_scenario() -> Result<(), Error> {
                     link.pvp_expert_edit(0, "2".into());
                     link.pvp_expert_request(Intent::Apply);
                     assert!(link.pvp_expert_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.pvp_expert_panel();
                     assert!(!ended.pending);

@@ -321,6 +321,8 @@ mod provisioning;
 include!("quest_journal.rs");
 #[path = "starter_inventory.rs"]
 mod starter_inventory;
+#[path = "verdict.rs"]
+pub(crate) mod verdict;
 
 pub(crate) const TOWN: TilePos = TilePos {
     x: 32369,
@@ -582,6 +584,7 @@ async fn walk(
             )
             .into());
         }
+        verdict::Harness::global().progress("walk");
         let after = client.world_spatial().actor_position;
         if Some(tile(after)?) != destination(world, tile(before)?, direction) {
             return Err(format!(
@@ -643,6 +646,7 @@ pub(super) async fn journeys(
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
+    let groups = verdict::Groups::from_env()?;
     // The required core keeps its ordinary pair; packet journeys own a separate pair.
     let mut client = connect_world(clients, 0x70).await?;
     let entered_at = tile(client.world_spatial().actor_position)?;
@@ -1582,11 +1586,15 @@ pub(super) async fn journeys(
             client_row_n07d::run_packet(clients).await;
             release_row_characters(clients).await;
         }
-        full_e2ef5::run(clients, world).await;
+        if groups.runs("f5") {
+            full_e2ef5::run(clients, world).await;
+        }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
-        include!("full_e2ef4_mount.rs");
+        if groups.runs("f4") {
+            include!("full_e2ef4_mount.rs");
+        }
         // F4 can drop its socket; require terminal release before the next journey.
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
@@ -1891,6 +1899,11 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
+    // The core/profile pair has not inherited packet movement, loot or death.
+    if !groups.runs("core") {
+        evidence("e2e_groups core=skipped");
+        return Ok(());
+    }
     let profile_result = profile_journey(clients, world, &bytes, &metadata.spawns).await;
     if let Err(error) = &profile_result {
         evidence(&format!("world_profile state=failed error={error}"));
@@ -2128,19 +2141,19 @@ pub(super) async fn connect_character(
         attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
-    Ok(
-        oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-            address: clients.address,
-            server_name: "localhost",
-            root_certificate: clients.certificate,
-            schema_revision: 1,
-            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-            admission_material: token.as_bytes(),
-            client_build_id: "oteryn-dev-client/world-qualification",
-            deadline: Duration::from_secs(20),
-        })
-        .await?,
-    )
+    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: clients.address,
+        server_name: "localhost",
+        root_certificate: clients.certificate,
+        schema_revision: 1,
+        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+        admission_material: token.as_bytes(),
+        client_build_id: "oteryn-dev-client/world-qualification",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
 }
 
 async fn travel_to_spawn(
@@ -2366,7 +2379,7 @@ fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResu
         .find("full_e2ef6::run_starter(clients)")
         .ok_or("missing pristine starter row")?;
     let packet = mount
-        .find("full_e2ef7::run_packet(clients)")
+        .find("full_e2ef7::run_packet(clients,")
         .ok_or("missing F7 packet")?;
     let remaining = mount
         .find("full_e2ef6::run(clients")

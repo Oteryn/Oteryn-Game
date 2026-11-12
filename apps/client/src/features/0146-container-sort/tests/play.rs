@@ -27,6 +27,13 @@ impl Stepper for Peer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
+        // The test releases the transport result only after observing pending.
+        self.exchanges
+            .release
+            .acquire()
+            .await
+            .map_err(|_| SessionError::SessionUnusable)?
+            .forget();
         let (kind, payload, status, reply) = self
             .exchanges
             .entries
@@ -37,12 +44,6 @@ impl Stepper for Peer {
         assert_eq!(command.capability, 146);
         assert_eq!(command.kind, kind);
         assert_eq!(command.payload, payload);
-        self.exchanges
-            .release
-            .acquire()
-            .await
-            .map_err(|_| SessionError::SessionUnusable)?
-            .forget();
         Ok(GatedCommandResult {
             command_id: 1,
             server_sequence: 1,
@@ -255,6 +256,7 @@ fn pc02_container_sort_scenario() -> Result<(), Error> {
                     // An unexpected transport end while a request is in flight resets every session field.
                     link.container_sort_request(intent);
                     assert!(link.container_sort_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.container_sort_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);
