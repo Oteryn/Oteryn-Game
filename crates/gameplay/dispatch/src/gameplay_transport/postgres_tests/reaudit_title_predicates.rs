@@ -298,10 +298,10 @@ fn scenario() -> TestResult {
                 oteryn_gameplay_progression::atelier::Gem {
                     id: u128::from(seed),
                     quality: oteryn_gameplay_progression::atelier::GemQuality::Lesser,
-                    domain: oteryn_gameplay_progression::wheel::WheelDomain::Green,
                     mods: vec![3],
                     locked: false,
                     vessel: false,
+                    slot: None,
                     ruleset_revision: data.revision().into(),
                 },
             );

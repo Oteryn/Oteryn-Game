@@ -32,6 +32,7 @@ impl Mailbox {
         self.potion_durations.pending = Default::default();
         self.item_forge.scope_changed();
         self.store.pending = Default::default();
+        self.sanctions.pending = false;
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();
@@ -144,6 +145,8 @@ impl Outbox {
         mailbox.target_walk.pending = false;
         mailbox.target_walk.response = None;
         mailbox.cancel_activity_requests();
+        // Destination ChatLog sequences and notices start over at the handoff.
+        mailbox.chat.console.reset_extensions();
         mailbox.activity_reset_commands = true;
         mailbox.map = None;
         mailbox.action_feedback = Some(Some(match receipt.scope {

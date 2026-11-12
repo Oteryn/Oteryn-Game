@@ -70,3 +70,10 @@ pub(in crate::play) fn apply(
         );
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p14.rs"]
+mod e2e_p14;
+#[cfg(test)]
+#[path = "tests/e2e_p15.rs"]
+mod e2e_p15;

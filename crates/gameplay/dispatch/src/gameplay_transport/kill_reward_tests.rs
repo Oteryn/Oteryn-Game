@@ -159,6 +159,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         encounter_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
+        boss_pity: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {
             boss_spawn: None,
             map_revision: "map-1".into(),

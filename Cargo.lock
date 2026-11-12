@@ -3588,11 +3588,17 @@ dependencies = [
 name = "oteryn-security-auth-tests"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "futures",
  "oteryn-client-runtime",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
  "oteryn-platform-client",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
  "tokio",
 ]
 

@@ -36,7 +36,14 @@ pub(super) async fn read_state(
     };
     match result {
         Ok(state) => Ok(Some(state)),
-        Err(AppearanceWriteError::Unavailable(error)) => Err(super::ReadFailure::Durable(error)),
+        Err(
+            AppearanceWriteError::Unavailable(error)
+            | AppearanceWriteError::Fence(
+                crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                    error,
+                ),
+            ),
+        ) => Err(super::ReadFailure::Durable(error)),
         Err(AppearanceWriteError::Fence(
             crate::durability::character_progression::CharacterProgressionError::RespawnPending,
         )) => Err(super::ReadFailure::RespawnPending),

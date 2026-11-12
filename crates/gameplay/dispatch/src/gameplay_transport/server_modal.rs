@@ -1,5 +1,8 @@
 //! Connection-owned dialogs; rule callbacks use their existing fenced owners.
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use oteryn_protocol_oteryn::server_modal::input::{
+    CAPABILITY_SERVER_MODAL_INPUT_V1, decode_answer_selected,
+};
 use oteryn_protocol_oteryn::server_modal::{CAPABILITY_SERVER_MODAL_V1, Dialog};
 #[path = "server_modal/owner.rs"]
 mod owner;
@@ -70,6 +73,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.continuity.connection_generation,
         )?;
         drop(runtime);
+        // Capability 490: dialogs carry their input block and an answer carries its value,
+        // which is checked against the pending dialog before the V1 answer reaches its owner.
+        let answer;
+        let payload = if admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_SERVER_MODAL_INPUT_V1)
+        {
+            self.states.server_modals.select_input(root)?;
+            if kind == oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_ANSWER {
+                let input = decode_answer_selected(true, payload).ok()?;
+                self.states
+                    .server_modals
+                    .check_answer_input(root, &input)?;
+                answer = input.answer.encode().ok()?;
+                answer.as_slice()
+            } else {
+                payload
+            }
+        } else {
+            payload
+        };
         if kind == oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_HIRELING_STORE_SELECTION {
             return store::start(self, admitted, root, payload)
                 .await

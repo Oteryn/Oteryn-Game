@@ -2,6 +2,10 @@ use crate::play::PlayLink;
 use oteryn_input_actions::NormalizedInputEvent;
 impl PlayLink {
     pub fn spell_catalog_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::spell_catalog::toggle_key(events) {
+            self.spell_list_toggle();
+            return true;
+        }
         if !oteryn_client_ui::spell_catalog::open_key(events) {
             return false;
         }
@@ -20,6 +24,18 @@ impl PlayLink {
                 .spell_catalog
                 .archive_open = true;
         }
+    }
+    /// ToggleSpellListWidget: closes the spell list (catalogue or spellbook) when shown, else opens it.
+    pub fn spell_list_toggle(&self) {
+        {
+            let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+            if mailbox.spell_catalog.open || mailbox.spellbook_details.open {
+                mailbox.spell_catalog.open = false;
+                mailbox.spellbook_details.open = false;
+                return;
+            }
+        }
+        self.spell_catalog_open();
     }
     pub fn spell_catalog_open(&self) {
         if self.spellbook_open() {

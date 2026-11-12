@@ -64,3 +64,7 @@ impl Panel {
         self.fields[0] = world;
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n01.rs"]
+mod e2e_n01;

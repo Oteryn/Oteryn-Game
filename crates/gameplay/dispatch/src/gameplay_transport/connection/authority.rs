@@ -1215,6 +1215,43 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(None)
     }
 
+    /// Capabilities 494 and 495 (WU26): the channel list with its extension when either changed
+    /// since the client was last sent one, and the member notices (line kind 8) since the
+    /// previous read. Only sessions with capability 80 and 494 or 495 ask.
+    fn chat_channel_list_extended_bound(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<
+        Output = (
+            Option<(
+                oteryn_protocol_oteryn::chat::private_channel::ChatChannelList,
+                oteryn_protocol_oteryn::chat::private_channel_extended::ChannelListExtension,
+            )>,
+            Vec<oteryn_protocol_oteryn::chat::line_extended::ChannelNotice>,
+        ),
+    > {
+        std::future::ready((None, Vec::new()))
+    }
+
+    /// Capability 493 (WU26): the relay accepted a private line of the session; queue its echo.
+    fn chat_private_echo(
+        &self,
+        _admitted: AdmittedSession,
+        _recipient_name: String,
+        _text: String,
+    ) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    /// Capability 493 (WU26): the oldest undelivered echo of the session.
+    fn chat_private_echo_next(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho>>
+    {
+        std::future::ready(None)
+    }
+
     fn chat_guild_admit(
         &self,
         _admitted: AdmittedSession,

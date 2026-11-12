@@ -1,6 +1,180 @@
-//! One shared test-only RETIRING row fixture; callers use the production sealer.
+//! Test-only RETIRING rows and bounded MAX retirement diagnostics.
 use crate::foundation::WorldId;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
+tokio::task_local! {
+    static RETIREMENT_PROFILE: ([u8; 16], Arc<Mutex<Option<RetirementReport>>>);
+}
+
+/// Observe only the selected MAX fixture root, without changing its result.
+pub async fn profile_maximum_retirement<F: std::future::Future>(
+    item: [u8; 16],
+    operation: F,
+) -> (F::Output, Option<RetirementReport>) {
+    let report = Arc::new(Mutex::new(None));
+    let result = RETIREMENT_PROFILE
+        .scope((item, Arc::clone(&report)), operation)
+        .await;
+    let snapshot = report.lock().ok().and_then(|mut slot| slot.take());
+    (result, snapshot)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum RetirementPhase {
+    Admission,
+    TreeLoad,
+    ItemLocks,
+    GraphRecheck,
+    Preparation,
+    Batch,
+    Root,
+    Commit,
+}
+
+/// A bounded snapshot; unfinished work stays separate from completed phases.
+#[derive(Default)]
+pub struct RetirementReport {
+    phase: Option<RetirementPhase>,
+    completed_us: [u64; 8],
+    in_flight_us: u64,
+    total_us: u64,
+    descendants: usize,
+    batch_rows_submitted: usize,
+    batch_rows_acknowledged: usize,
+    child_index: usize,
+    pre_commit_us: Option<u64>,
+    commit_budget_us: Option<u64>,
+    committed: bool,
+}
+
+impl std::fmt::Display for RetirementReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "phase={:?} in_flight_us={} total_us={} descendants={} batch_rows_submitted={} batch_rows_acknowledged={} child_index={} pre_commit_us={:?} commit_budget_us={:?} committed={}",
+            self.phase,
+            self.in_flight_us,
+            self.total_us,
+            self.descendants,
+            self.batch_rows_submitted,
+            self.batch_rows_acknowledged,
+            self.child_index,
+            self.pre_commit_us,
+            self.commit_budget_us,
+            self.committed
+        )?;
+        for (name, micros) in [
+            "admission",
+            "tree_load",
+            "item_locks",
+            "graph_recheck",
+            "preparation",
+            "batch",
+            "root",
+            "commit",
+        ]
+        .into_iter()
+        .zip(self.completed_us)
+        {
+            write!(f, " {name}_completed_us={micros}")?;
+        }
+        Ok(())
+    }
+}
+
+/// Owned state survives cancellation of the inner semantic-pass future. The
+/// probe takes the sink lock only in Drop; no lock crosses an await.
+pub(crate) struct RetirementProbe {
+    sink: Arc<Mutex<Option<RetirementReport>>>,
+    report: RetirementReport,
+    started: Instant,
+    phase_started: Option<Instant>,
+}
+
+impl RetirementProbe {
+    pub(crate) fn start(item: [u8; 16]) -> Option<Self> {
+        let sink = RETIREMENT_PROFILE
+            .try_with(|(selected, sink)| (*selected == item).then(|| Arc::clone(sink)))
+            .ok()??;
+        let mut probe = Self {
+            sink,
+            report: RetirementReport::default(),
+            started: Instant::now(),
+            phase_started: None,
+        };
+        probe.enter(RetirementPhase::Admission);
+        Some(probe)
+    }
+
+    pub(crate) fn enter(&mut self, phase: RetirementPhase) {
+        self.finish_phase();
+        self.report.phase = Some(phase);
+        self.phase_started = Some(Instant::now());
+    }
+
+    fn finish_phase(&mut self) {
+        if let (Some(phase), Some(started)) = (self.report.phase, self.phase_started.take()) {
+            let total = &mut self.report.completed_us[phase as usize];
+            *total = total.saturating_add(micros(started.elapsed()));
+        }
+    }
+
+    pub(crate) fn descendants(&mut self, count: usize) {
+        self.report.descendants = count;
+    }
+
+    pub(crate) fn begin_child(&mut self) {
+        self.report.child_index += 1;
+        self.enter(RetirementPhase::Preparation);
+    }
+
+    pub(crate) fn begin_batch(&mut self, count: usize) {
+        self.report.batch_rows_submitted = count;
+        self.enter(RetirementPhase::Batch);
+    }
+
+    pub(crate) fn batch_finished(&mut self, count: usize) {
+        // A cancelled server-side call exposes no trustworthy partial count.
+        // Only its successfully returned row count is acknowledged here.
+        self.report.batch_rows_acknowledged = count;
+        self.finish_phase();
+    }
+
+    pub(crate) fn begin_commit(&mut self, deadline: Instant) {
+        self.enter(RetirementPhase::Commit);
+        if let Some(started) = self.phase_started {
+            self.report.pre_commit_us =
+                Some(micros(started.saturating_duration_since(self.started)));
+            self.report.commit_budget_us =
+                Some(micros(deadline.saturating_duration_since(started)));
+        }
+    }
+
+    pub(crate) fn committed(&mut self) {
+        self.finish_phase();
+        self.report.committed = true;
+    }
+}
+
+impl Drop for RetirementProbe {
+    fn drop(&mut self) {
+        let now = Instant::now();
+        self.report.total_us = micros(now.saturating_duration_since(self.started));
+        self.report.in_flight_us = self
+            .phase_started
+            .map_or(0, |start| micros(now.saturating_duration_since(start)));
+        if let Ok(mut slot) = self.sink.lock() {
+            *slot = Some(std::mem::take(&mut self.report));
+        }
+    }
+}
+
+fn micros(duration: std::time::Duration) -> u64 {
+    u64::try_from(duration.as_micros()).unwrap_or(u64::MAX)
+}
 
 pub async fn seed_retiring(pool: &sqlx::PgPool, world: WorldId) -> TestResult {
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'))")

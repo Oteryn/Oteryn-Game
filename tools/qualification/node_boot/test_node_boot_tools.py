@@ -9,6 +9,7 @@ import stat
 import subprocess
 import tempfile
 import textwrap
+import time
 import unittest
 
 HERE = Path(__file__).resolve().parent
@@ -211,6 +212,53 @@ class StageDumpTests(unittest.TestCase):
         self.assertNotIn('--verbose', passed)
         failed = self.run_stage('false')
         self.assertRegex(failed, r'PG_OBSERVE dump --stage sample --dir \S+ --activity \S+activity.log --verbose')
+
+
+class PgSamplerLifecycleTests(unittest.TestCase):
+    """stop_pg_sampler must end the sampler itself and leave the run's stdout closed (NBHANG-1)."""
+
+    def test_stop_reaches_the_sampler_and_the_run_pipe_reaches_eof(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tools = Path(tmp, 'src/tools/qualification/node_boot')
+            tools.mkdir(parents=True)
+            pid_file = Path(tmp, 'sampler.pid')
+            # Polls forever like the real sampler when PostgreSQL is gone; stops only on SIGTERM.
+            tools.joinpath('pg_observe.py').write_text(textwrap.dedent(f'''\
+                import os, signal, sys, time
+                open({str(pid_file)!r}, 'w').write(str(os.getpid()))
+                signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+                while True:
+                    print('PG_ACTIVITY sample', flush=True)
+                    time.sleep(0.05)
+                '''))
+            script = textwrap.dedent(f'''\
+                set -Eeuo pipefail
+                GAME_SOURCE={tmp}/src PG_OBS={tmp}/obs PG_CONTAINER=none PG_SAMPLER_PID=""
+                ''') + function('pg_observe') + '\n' + function('start_pg_sampler') + '\n' + function('stop_pg_sampler') + textwrap.dedent('''
+                start_pg_sampler
+                for _ in $(seq 1 100); do [[ -s "$PID_FILE" ]] && break; sleep 0.05; done
+                stop_pg_sampler
+                echo STOPPED
+                ''')
+            env = {key: value for key, value in os.environ.items()
+                   if not key.startswith(('NODE_BOOT_', 'GITHUB_')) and key != 'CI'}
+            env['PID_FILE'] = str(pid_file)
+            # Like the workflow's `run.sh | tee`: the reader returns only at EOF on the pipe.
+            done = subprocess.run(['bash', '-c', f'( {script} ) | cat'], capture_output=True, text=True,
+                                  env=env, timeout=20, check=False)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertIn('STOPPED', done.stdout)
+            self.assertNotIn('PG_ACTIVITY', done.stdout)
+            sampler = int(pid_file.read_text())
+            for _ in range(100):
+                try:
+                    os.kill(sampler, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.05)
+            else:
+                os.kill(sampler, 9)
+                self.fail('the sampler outlived stop_pg_sampler')
 
 
 SERVER_LOG = '''\

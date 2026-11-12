@@ -25,6 +25,38 @@ fn fuzz_decode_spell_cast_intent() {
 }
 
 #[test]
+fn fuzz_decode_aimed_spell_cast_intent() {
+    crate::decoder_fuzz_support::codec(
+        "decode_aimed_spell_cast_intent",
+        |rng| {
+            let spell = NonZeroU32::new(rng.u64() as u32).unwrap_or(NonZeroU32::MIN);
+            let (target, aim_mode) = match rng.below(3) {
+                0 => (SpellTarget::None, Some(SpellAimMode::Facing)),
+                1 => (SpellTarget::None, Some(SpellAimMode::Target)),
+                _ => (
+                    SpellTarget::Position(SpellTargetPosition {
+                        x: rng.u64() as i32,
+                        y: rng.u64() as i32,
+                        floor: rng.u64() as i16,
+                    }),
+                    Some(SpellAimMode::Cursor),
+                ),
+            };
+            AimedSpellCastIntent {
+                intent: SpellCastIntent {
+                    spell,
+                    target,
+                    aim_at_target: false,
+                },
+                aim_mode,
+            }
+        },
+        decode_aimed_spell_cast_intent,
+        |value| encode_aimed_spell_cast_intent(value).expect("consistent aimed intent"),
+    );
+}
+
+#[test]
 fn fuzz_decode_spell_cast_result() {
     crate::decoder_fuzz_support::codec(
         "decode_spell_cast_result",

@@ -14,6 +14,15 @@ fn hotkey_equip_carried_session_reuses_equipment_snapshot_delta_and_reply() -> R
     hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180])
 }
 
+#[test]
+fn hotkey_equip_tiered_session_uses_selected_codec() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180, 485]))?
+        .join()
+        .map_err(|_| "tiered equip session test thread panicked")?
+}
+
 fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxError> {
     block_on(async move {
         let inventory = CharacterInventory {
@@ -32,7 +41,7 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                selected,
+                CLIENT_SUPPORTED_CAPABILITIES,
                 selected,
                 &[],
                 item_snapshot(vec![])?,
@@ -43,7 +52,20 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
             let envelope = decode_wire_envelope(&command)?;
             let command = envelope.client_command(1)?;
             assert_eq!(command.command_type, 348);
-            assert_eq!(command.payload, &[0, 0, 0, 1]);
+            if selected.contains(&485) {
+                assert_eq!(command.payload, &[0, 0, 0, 1, 0]);
+                assert_eq!(
+                    hotkey_equip::TieredRequest::decode_selected(true, command.payload),
+                    Some(hotkey_equip::TieredRequest {
+                        request: hotkey_equip::Request {
+                            definition: std::num::NonZeroU32::MIN,
+                        },
+                        upgrade_tier: Some(0),
+                    })
+                );
+            } else {
+                assert_eq!(command.payload, &[0, 0, 0, 1]);
+            }
             write_frame(&mut server, &encode_state_delta(1, 41, 9, 1, 2, 1, &delta)?).await?;
             write_frame(
                 &mut server,
@@ -61,7 +83,7 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
             Ok::<(), BoxError>(())
         });
         let mut admission = item_admission()?;
-        admission.supported_capabilities = selected;
+        admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
         let mut session = Session::admit(client, admission).await?;
         assert_eq!(session.inventory(), Some(&inventory));
         let result = session

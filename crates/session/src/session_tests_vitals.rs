@@ -1,5 +1,5 @@
 /// An admitted session whose join carried actor vitals, paired with the peer end.
-async fn vitals_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+pub(super) async fn vitals_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
     let (client, mut peer) = tokio::io::duplex(64 * 1024);
     let joining = tokio::spawn(async move {
         send_vitals_join(&mut peer).await?;
@@ -21,6 +21,17 @@ fn vitals_frame(
     Ok(encode_state_delta(
         generation, sequence, domain, base, new, delta_type, payload,
     )?)
+}
+
+pub(super) async fn send_vitals_delta(
+    peer: &mut DuplexStream,
+    sequence: u64,
+    base: u64,
+    new: u64,
+    payload: &[u8],
+) -> Result<(), BoxError> {
+    write_frame(peer, &vitals_frame(1, sequence, 3, base, new, 1, payload)?).await?;
+    Ok(())
 }
 
 #[test]

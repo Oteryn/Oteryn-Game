@@ -1,0 +1,3 @@
+// Keep the module at item scope so its ordinary unit tests are discoverable.
+#[path = "full_row_p22c.rs"]
+mod full_row_p22c;

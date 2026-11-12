@@ -60,6 +60,8 @@ pub struct Pushed {
     pub chat_lines: Vec<oteryn_session::ChatLine>,
     pub chat_rooms: Option<oteryn_session::ChatRoomSet>,
     pub vip_presence: Option<oteryn_session::VipPresenceBatch>,
+    /// N006: the own character took a hit from an attacker while attacking a target.
+    pub own_hit_flash: bool,
 }
 
 impl Pushed {
@@ -94,6 +96,7 @@ impl Pushed {
         self.chat_lines.extend(newer.chat_lines);
         self.chat_rooms = newer.chat_rooms.or(self.chat_rooms);
         self.vip_presence = newer.vip_presence.or(self.vip_presence.take());
+        self.own_hit_flash |= newer.own_hit_flash;
         if newer.markers_reset {
             self.markers.clear();
             self.markers_reset = true;
@@ -172,6 +175,7 @@ pub(super) struct Mailbox {
     pub(super) daily_boost: oteryn_client_ui::daily_boost::DailyBoostPanel,
     pub(super) highscores: oteryn_client_ui::highscores::HighscoresPanel,
     pub(super) highscores_shutdown: bool,
+    pub(super) sanctions: oteryn_client_ui::sanction_record::SanctionsPanel,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
     pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,
@@ -235,6 +239,7 @@ pub(super) struct Mailbox {
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
+    pub(super) lens: oteryn_client_ui::lens_help::LensHelp,
     // CL26s1
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,

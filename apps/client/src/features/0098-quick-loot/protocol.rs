@@ -65,7 +65,23 @@ impl Outbox {
     ) {
         let mut mailbox = lock(&self.0);
         match capability {
-            98 => oteryn_client_ui::quick_loot::apply_result(&mut mailbox.discovery.loot, response),
+            98 => {
+                if oteryn_client_ui::quick_loot::apply_result(&mut mailbox.discovery.loot, response)
+                    && mailbox.local_preferences.game_window.loot_messages
+                    && let Some(result) = &mailbox.discovery.loot.result
+                {
+                    let received = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
+                    let text = oteryn_client_ui::quick_loot::result_notice(result);
+                    mailbox.chat.console.notices.push(
+                        oteryn_client_ui::chat::NoticeClass::Loot,
+                        &text,
+                        received,
+                    );
+                }
+            }
             132 => {
                 crate::play::feature_0068_imbue::protocol::equipment_inspection_result(
                     &mut mailbox,

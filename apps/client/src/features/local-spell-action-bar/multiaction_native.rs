@@ -68,8 +68,9 @@ unsafe fn choose_aim(parent: HWND, mut action: BarAction, point: POINT) -> Optio
         if menu.is_null() {
             return None;
         }
+        let spell_labels = SpellAim::ALL.map(|aim| aim.option().label());
         let labels: &[&str] = match action {
-            BarAction::Spell { .. } => &["In facing direction", "Towards cursor", "At target"],
+            BarAction::Spell { .. } => &spell_labels,
             _ => &[
                 "Use at cursor position",
                 "Use on self",
@@ -77,6 +78,14 @@ unsafe fn choose_aim(parent: HWND, mut action: BarAction, point: POINT) -> Optio
                 "Use with crosshair",
             ],
         };
+        if matches!(action, BarAction::Spell { .. }) {
+            AppendMenuW(
+                menu,
+                MF_STRING | MF_GRAYED,
+                0,
+                wide(oteryn_client_ui::spell_action_bar::TARGET_OPTIONS_LABEL).as_ptr(),
+            );
+        }
         for (index, label) in labels.iter().enumerate() {
             AppendMenuW(menu, MF_STRING, index + 1, wide(label).as_ptr());
         }
@@ -94,13 +103,7 @@ unsafe fn choose_aim(parent: HWND, mut action: BarAction, point: POINT) -> Optio
             return None;
         }
         match &mut action {
-            BarAction::Spell { aim, .. } => {
-                *aim = match choice {
-                    1 => SpellAim::Facing,
-                    2 => SpellAim::Cursor,
-                    _ => SpellAim::Target,
-                }
-            }
+            BarAction::Spell { aim, .. } => *aim = SpellAim::ALL[choice as usize - 1],
             BarAction::Use { mode, .. } => {
                 *mode = match choice {
                     1 => ItemUseMode::CursorPosition,
@@ -125,14 +128,15 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
         let Some(shared) = weak.upgrade() else {
             return;
         };
-        let (choices, mut assigned) = {
+        let (choices, known, mut assigned) = {
             let mailbox = lock(&shared);
-            let mut choices = mailbox
-                .spell_catalog
-                .catalog
-                .entries()
-                .iter()
-                .filter(|entry| entry.rune_item.is_none())
+            let spells = oteryn_client_ui::spell_action_bar::dialog_spells(
+                mailbox.spell_catalog.catalog.entries(),
+                false,
+            );
+            let mut known: Vec<bool> = spells.iter().map(|entry| entry.learned).collect();
+            let mut choices = spells
+                .into_iter()
                 .map(|entry| {
                     (
                         entry.name.clone(),
@@ -147,6 +151,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
             let mut definitions = std::collections::BTreeSet::new();
             for item in super::item_actions::visible_items(&mailbox) {
                 if definitions.insert(item.item_definition_ref) {
+                    known.push(true);
                     choices.push((
                         format!("Object {}", item.item_definition_ref),
                         BarAction::Use {
@@ -162,7 +167,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                     *target = Some(action.clone());
                 }
             }
-            (choices, assigned)
+            (choices, known, assigned)
         };
         let hwnd = CreateWindowExW(
             0,
@@ -225,6 +230,14 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
             )
         });
         let save = control(hwnd, "BUTTON", "Save", 130, [320, 325, 325, 30], 0);
+        let known_only = control(
+            hwnd,
+            "BUTTON",
+            oteryn_client_ui::spell_action_bar::SHOW_ONLY_KNOWN_LABEL,
+            140,
+            [10, 392, 300, 24],
+            BS_AUTOCHECKBOX as u32,
+        );
         let feedback = control(
             hwnd,
             "STATIC",
@@ -233,7 +246,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
             [320, 365, 325, 60],
             0,
         );
-        if [list, save, feedback]
+        if [list, save, feedback, known_only]
             .into_iter()
             .chain(slots)
             .chain(clears)
@@ -242,6 +255,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
             DestroyWindow(hwnd);
             return;
         }
+        let mut shown: Vec<usize> = (0..choices.len()).collect();
         for (label, _) in &choices {
             SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
         }
@@ -280,8 +294,9 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                     ((point.y as u32) << 16 | point.x as u32) as isize,
                 );
                 if (index >> 16) == 0 {
-                    drag = choices
+                    drag = shown
                         .get((index & 0xffff) as usize)
+                        .and_then(|&choice| choices.get(choice))
                         .map(|(_, action)| action.clone());
                 }
             }
@@ -306,12 +321,28 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                     110..=112 => {
                         let index = SendMessageW(list, LB_GETCURSEL, 0, 0);
                         if let Ok(index) = usize::try_from(index)
-                            && let Some((_, action)) = choices.get(index)
+                            && let Some((_, action)) =
+                                shown.get(index).and_then(|&choice| choices.get(choice))
                         {
                             assigned[id - 110] = choose_aim(hwnd, action.clone(), cursor);
                         }
                     }
                     120..=122 => assigned[id - 120] = None,
+                    140 => {
+                        let only_known = SendMessageW(known_only, BM_GETCHECK, 0, 0) == 1;
+                        shown = (0..choices.len())
+                            .filter(|&i| !only_known || known[i])
+                            .collect();
+                        SendMessageW(list, LB_RESETCONTENT, 0, 0);
+                        for &choice in &shown {
+                            SendMessageW(
+                                list,
+                                LB_ADDSTRING,
+                                0,
+                                wide(&choices[choice].0).as_ptr() as isize,
+                            );
+                        }
+                    }
                     130 => {
                         let actions = assigned.iter().flatten().cloned().collect();
                         let mut mailbox = lock(&shared);

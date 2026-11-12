@@ -213,6 +213,19 @@ impl<S: SessionStream> Session<S> {
         self.chat.as_ref()
     }
 
+    /// Dismiss the oldest locally retained chat line and its aligned extension data.
+    /// This changes no server state, revisions, pending events or liveness bookkeeping.
+    pub fn clear_oldest_chat_line(&mut self) -> bool {
+        let Some(log) = self.chat.as_mut() else {
+            return false;
+        };
+        if log.lines.pop_front().is_none() {
+            return false;
+        }
+        log.extras.pop_front();
+        true
+    }
+
     /// The inventory after every delta applied so far; `Some` exactly when capability 4 is
     /// selected.
     pub fn inventory(&self) -> Option<&CharacterInventory> {

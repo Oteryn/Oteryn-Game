@@ -25,7 +25,8 @@ fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn st
     assert!(link.assign_bar_action(
         0,
         BarAction::Text {
-            text: "Saved action".into()
+            text: "Saved action".into(),
+            send_automatically: true
         }
     ));
     assert!(!link.bar_gesture(BarGesture::Swap { from: 0, to: 35 }));
@@ -59,7 +60,8 @@ fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn st
     assert_eq!(
         loaded.preferences.bar_actions.0.get(&35),
         Some(&BarAction::Text {
-            text: "Saved action".into()
+            text: "Saved action".into(),
+            send_automatically: true
         })
     );
     assert_eq!(loaded.preferences.bar_layout.rows[2].offset, 1);
@@ -103,7 +105,8 @@ fn action_amount_labels_follow_server_inventory_replacements()
     assert!(link.assign_bar_action(
         0,
         BarAction::Equip {
-            definition: NonZeroU32::new(256).ok_or("item")?
+            definition: NonZeroU32::new(256).ok_or("item")?,
+            upgrade_tier: 0
         }
     ));
     assert!(link.spell_slot_labels()[0].contains("Visible: ?"));
@@ -132,7 +135,8 @@ fn fifty_button_count_is_configurable_persisted_and_keeps_hidden_assignments()
     assert!(link.assign_bar_action(
         49,
         BarAction::Text {
-            text: "saved".into()
+            text: "saved".into(),
+            send_automatically: true
         }
     ));
     assert!(link.bar_gesture(BarGesture::Count { bar: 0, count: 12 }));

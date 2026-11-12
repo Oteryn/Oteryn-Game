@@ -11,6 +11,11 @@ impl PlayView {
         link: &PlayLink,
         events: &[NormalizedInputEvent],
     ) -> Result<bool, BatchError> {
+        if link.lens_active() {
+            self.observe_creature_pointer(events);
+            self.creature_drag.source = None;
+            return Ok(true);
+        }
         let mut consumed = false;
         for event in events {
             match event {

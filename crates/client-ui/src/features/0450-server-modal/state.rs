@@ -14,6 +14,9 @@ pub enum TerminalReplies {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub selected: bool,
+    /// Capability 490 is selected: dialogs carry an input block and answers a value.
+    pub input: bool,
+    pub active_input: Option<oteryn_client_runtime::server_modal::input::DialogInput>,
     pub pending: Option<Pending>,
     pub active: Option<Dialog>,
     pub feedback: Option<&'static str>,

@@ -223,6 +223,76 @@ fn resource_connection_budget_backpressures_at_limit() -> Result<(), Box<dyn Err
     })
 }
 
+#[test]
+fn released_connection_capacity_wakes_the_isolated_listener() -> Result<(), Box<dyn Error>> {
+    struct Completed {
+        count: AtomicUsize,
+        changed: Notify,
+    }
+    impl ConnectionObserver for Completed {
+        fn ended(&self, end: ConnectionEnd) {
+            assert_eq!(end, ConnectionEnd::TransportFailed);
+            self.count.fetch_add(1, Ordering::SeqCst);
+            self.changed.notify_one();
+        }
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let result = (|| -> Result<(), Box<dyn Error>> {
+                runtime()?.block_on(tokio::task::LocalSet::new().run_until(async {
+                    let material = material()?;
+                    let listener = TcpListener::bind("127.0.0.1:0").await?;
+                    let address = listener.local_addr()?;
+                    let mut clients = Vec::new();
+                    for _ in 0..3 {
+                        clients.push(TcpStream::connect(address).await?);
+                    }
+                    // Prime accept readiness outside the serving task, leaving two sockets
+                    // queued. Neither a new connection nor the test's timeout wakes serve.
+                    drop(listener.accept().await?);
+                    let completed = Arc::new(Completed {
+                        count: AtomicUsize::new(0),
+                        changed: Notify::new(),
+                    });
+                    let observer = Arc::clone(&completed);
+                    let shutdown = CancellationToken::new();
+                    let stopping = shutdown.clone();
+                    let limits =
+                        ListenerLimits::new(1, 1, Duration::from_millis(100)).ok_or("limits")?;
+                    let serving = tokio::task::spawn_local(async move {
+                        serve_listener(
+                            &listener,
+                            &material.server,
+                            limits,
+                            &GatedAuthority::new(true),
+                            &SecureIdentifiers,
+                            observer.as_ref(),
+                            &stopping,
+                        )
+                        .await;
+                    });
+                    let result = tokio::time::timeout(Duration::from_secs(3), async {
+                        while completed.count.load(Ordering::SeqCst) < 2 {
+                            completed.changed.notified().await;
+                        }
+                    })
+                    .await;
+                    shutdown.cancel();
+                    serving.await?;
+                    result?;
+                    assert_eq!(completed.count.load(Ordering::SeqCst), 2);
+                    drop(clients);
+                    Ok(())
+                }))
+            })();
+            result.map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "listener capacity fixture thread failed")?
+        .map_err(Into::into)
+}
+
 /// Admits at once; every ended connection's loss is recorded and its
 /// grace expiry then waits until shutdown.
 struct LifecycleAuthority {
@@ -426,8 +496,7 @@ fn resource_handshake_units_bound_concurrent_admission() -> Result<(), Box<dyn E
 }
 
 #[test]
-fn shutdown_completes_admission_in_flight_and_cancels_entry_work() -> Result<(), Box<dyn Error>>
-{
+fn shutdown_completes_admission_in_flight_and_cancels_entry_work() -> Result<(), Box<dyn Error>> {
     runtime()?.block_on(async {
         let material = material()?;
         let listener = TcpListener::bind("127.0.0.1:0").await?;

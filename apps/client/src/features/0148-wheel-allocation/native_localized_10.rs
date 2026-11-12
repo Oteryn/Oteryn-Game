@@ -15,7 +15,7 @@ pub(super) unsafe extern "system" fn window_proc(
                 && (*actions).0.len() < 32
                 && ((matches!(id, SLOTS | GEMS | MODIFIERS)
                     && notification == LBN_SELCHANGE as usize)
-                    || (matches!(id, QUALITY | DOMAIN) && notification == CBN_SELCHANGE as usize)
+                    || (matches!(id, QUALITY | VESSEL) && notification == CBN_SELCHANGE as usize)
                     || (matches!(
                         id,
                         APPLY
@@ -26,7 +26,7 @@ pub(super) unsafe extern "system" fn window_proc(
                             | UNSOCKET
                             | REVEAL
                             | LOCK
-                            | SWITCH
+                            | RESHAPE
                             | DISMANTLE
                             | GRADE
                             | RETRY

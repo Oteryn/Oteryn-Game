@@ -47,6 +47,9 @@ pub fn panel_text(panel: &StorePanel) -> String {
     {
         let _ = write!(text, "\n{preview}");
     }
+    if let Some(reason) = token_purchase_disabled_reason(panel) {
+        let _ = write!(text, "\n{reason}");
+    }
     if let Some(result) = &panel.purchase {
         let _ = lwrite!(text, "\nPurchase: {:?}", result.code);
     }
@@ -54,6 +57,14 @@ pub fn panel_text(panel: &StorePanel) -> String {
         let _ = write!(text, "\n{feedback}");
     }
     text
+}
+
+/// Why a Cosmetic Token purchase is disabled: the selected quote costs more than the balance.
+pub fn token_purchase_disabled_reason(panel: &StorePanel) -> Option<&'static str> {
+    let balance = panel.cosmetic_tokens?;
+    let offer = panel.catalogue.as_ref()?.offers.first()?;
+    (offer.currency == "COSMETIC_TOKEN" && offer.price > balance)
+        .then_some(tr!("not enough Cosmetic Tokens"))
 }
 
 pub fn visible_offers(panel: &StorePanel) -> Vec<usize> {
@@ -100,4 +111,46 @@ pub fn offer_preview(panel: &StorePanel) -> Option<String> {
         offer.offer_key,
         page.catalog_revision
     ))
+}
+
+#[cfg(test)]
+mod token_reason_tests {
+    use super::*;
+    use oteryn_client_runtime::cui3::store::{StoreCataloguePage, StoreOffer};
+    fn panel(balance: u64, price: u32, currency: &str) -> StorePanel {
+        let offer = StoreOffer {
+            offer_key: "store:outfit:x".into(),
+            title: "Outfit".into(),
+            price: price.into(),
+            currency: currency.into(),
+        };
+        StorePanel {
+            cosmetic_tokens: Some(balance),
+            catalogue: Some(StoreCataloguePage {
+                catalog_revision: "r".into(),
+                offers: vec![offer],
+                next_page_cursor: String::new(),
+                total_coins: 0,
+                transferable_coins: 0,
+            }),
+            ..Default::default()
+        }
+    }
+    #[test]
+    fn token_quote_above_balance_shows_not_enough_cosmetic_tokens() {
+        let p = panel(5, 10, "COSMETIC_TOKEN");
+        assert_eq!(
+            token_purchase_disabled_reason(&p),
+            Some("not enough Cosmetic Tokens")
+        );
+        assert!(panel_text(&p).contains("not enough Cosmetic Tokens"));
+        assert_eq!(
+            token_purchase_disabled_reason(&panel(10, 10, "COSMETIC_TOKEN")),
+            None
+        );
+        assert_eq!(
+            token_purchase_disabled_reason(&panel(5, 10, "TIBIA_COIN")),
+            None
+        );
+    }
 }

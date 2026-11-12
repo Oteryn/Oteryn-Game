@@ -132,9 +132,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         let mut private = PrivateControls::new(hwnd);
         let mut held = String::new();
+        let mut held_labels = Vec::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                if keyboard(&msg, &weak, &commands, &mut actions.keyboard_input) {
+                    continue;
+                }
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
@@ -161,11 +165,11 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 !guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
-            for action in std::mem::take(&mut actions.0) {
+            for action in std::mem::take(&mut actions.pending) {
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
                 }
-                use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
+                use oteryn_client_ui::chat::ComposerMode;
                 match action {
                     IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
                         use oteryn_client_ui::chat::CommunicationList;
@@ -219,15 +223,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         continue;
                     }
                     TAB => {
-                        mailbox
-                            .chat
-                            .console
-                            .select(match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
-                                1 => ConsoleTab::Local,
-                                2 => ConsoleTab::Private,
-                                3 => ConsoleTab::Guild,
-                                _ => ConsoleTab::All,
-                            });
+                        mailbox.chat.console.select_index(
+                            usize::try_from(SendMessageW(tabs, LB_GETCURSEL, 0, 0)).unwrap_or(0),
+                        );
                         continue;
                     }
                     FILTER => {
@@ -260,6 +258,15 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
+            // Opened channel tabs follow the console state after the fixed tabs.
+            let labels = mailbox.chat.console.tab_labels();
+            if console::update_tab_labels(&mut held_labels, &labels) {
+                SendMessageW(tabs, LB_RESETCONTENT, 0, 0);
+                for label in &labels {
+                    SendMessageW(tabs, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+                }
+            }
+            SendMessageW(tabs, LB_SETCURSEL, mailbox.chat.console.tab_index(), 0);
             private.render(&mailbox.chat_private);
             let text = format!(
                 "{}\n{}",

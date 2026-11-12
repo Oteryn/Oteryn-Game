@@ -106,6 +106,7 @@ mod item_spell_augments;
 mod item_transform;
 mod item_use;
 mod item_view;
+mod journal_logout;
 mod kill_reward;
 mod last_position;
 mod level_up_live;
@@ -526,6 +527,20 @@ fn premium_refresher(
         }
     };
     crate::premium::refresh::PremiumRefresher::new(consumer, root.clone(), client)
+}
+
+/// N009/N014: the node's Platform sanction and loyalty stream pullers
+/// (`PLATFORM_SANCTION_LOYALTY_EXPORT_V1`). Off unless enabled; an invalid configuration starts
+/// none, and gameplay is never affected.
+fn platform_stream_pullers(root: &DurabilityRoot) -> crate::platform_streams::PlatformStreams {
+    use crate::platform_streams::{PlatformStreams, StreamPuller};
+    match StreamPuller::from_env() {
+        Ok(pullers) => PlatformStreams::spawn(root, pullers, operator_event),
+        Err(error) => {
+            operator_event(&format!("platform_streams_disabled reason={error}"));
+            PlatformStreams::default()
+        }
+    }
 }
 
 /// Fresh, unpredictable identifiers from the TLS provider's secure random

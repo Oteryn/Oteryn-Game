@@ -507,6 +507,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .continuity
             .selected_capabilities
             .contains(wire::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
+        let success_chance = admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
         let (decision, instance, blank) = match views.resolve(request.item) {
             Some(key @ ItemKey::Instance(instance)) if views.equipped_slot(&key).is_none() => {
                 let target = match self
@@ -579,7 +583,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             _ => return encode(&reply(ImbuementResult::NotAllowed)),
         };
         let (write, premium, learning) = match decision {
-            Decision::Reply(reply) => return encode(&reply),
+            Decision::Reply(reply) => return encode_selected(&reply, success_chance),
             Decision::Apply { slot, offer } => {
                 let Some(recipe) = imbuement_recipe(offer.family, offer.tier) else {
                     return encode(&reply(ImbuementResult::NotAllowed));
@@ -776,6 +780,36 @@ fn quest_learning_permits(
 
 fn encode(reply: &wire::ImbuementReply) -> ImbuementReply {
     wire::encode_imbuement_reply(reply).map_or(ImbuementReply::Unavailable, ImbuementReply::Payload)
+}
+
+/// The per-offer success percentages of a query window (capability 491), read from the
+/// tier rules that the apply path enforces. `None` names an offer tier with no rule.
+pub(super) fn offer_success_percents(reply: &wire::ImbuementReply) -> Option<Vec<u8>> {
+    reply.window.as_ref().map_or(Some(Vec::new()), |window| {
+        window
+            .offers
+            .iter()
+            .map(|offer| {
+                let index = usize::from(offer.tier.checked_sub(1)?);
+                IMBUEMENT_TIER_RULES
+                    .get(index)
+                    .map(|rules| rules.success_percent)
+            })
+            .collect()
+    })
+}
+
+/// A query window carries the per-offer success percentages only for a session that
+/// selected capability 491; every other reply is the V1 bytes.
+fn encode_selected(reply: &wire::ImbuementReply, success_chance: bool) -> ImbuementReply {
+    if !success_chance {
+        return encode(reply);
+    }
+    let Some(success) = offer_success_percents(reply) else {
+        return ImbuementReply::Unavailable;
+    };
+    wire::encode_imbuement_reply_with_success(reply, &success)
+        .map_or(ImbuementReply::Unavailable, ImbuementReply::Payload)
 }
 
 macro_rules! authority_methods {

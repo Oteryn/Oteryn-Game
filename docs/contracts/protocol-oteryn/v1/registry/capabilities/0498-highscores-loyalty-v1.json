@@ -1,0 +1,13 @@
+{
+  "id": 498,
+  "name": "HIGHSCORES_LOYALTY_V1",
+  "owner_decision": "N009/N014 wu26 packet number allocation 2026-11-11; PLATFORM_SANCTION_LOYALTY_EXPORT_V1",
+  "owner": "Game Loyalty highscores category 13 from Platform's account loyalty projection; Platform retains loyalty earning",
+  "requires": [
+    9
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Admits category 13 in query 14 of capability 9; see highscores-loyalty-v1.md. Without it category 13 stays NOT_SUPPORTED."
+}

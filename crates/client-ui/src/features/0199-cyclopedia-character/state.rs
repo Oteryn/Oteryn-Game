@@ -36,6 +36,10 @@ pub struct CyclopediaCharacterPanel {
     pub general: Option<oteryn_client_runtime::cyclopedia_character::GeneralStats>,
     pub history_tab: Option<CharacterTab>,
     pub history: Vec<HistoryRow>,
+    /// Capabilities 487 and 488 selected by this session: they append fields to the tab replies.
+    pub extensions: TabExtensions,
+    /// Capability 487: the vocation id of the last confirmed General Stats reply.
+    pub vocation_id: Option<u8>,
     pub kill_filter: Option<oteryn_client_runtime::cyclopedia_character::KillStatus>,
     pub feedback: Option<&'static str>,
 }
@@ -77,6 +81,8 @@ impl Default for CyclopediaCharacterPanel {
             general: None,
             history_tab: None,
             history: Vec::new(),
+            extensions: TabExtensions::default(),
+            vocation_id: None,
             kill_filter: None,
             feedback: None,
         }
@@ -88,6 +94,15 @@ pub struct HistoryRow {
     pub at: i64,
     pub status: Option<oteryn_client_runtime::cyclopedia_character::KillStatus>,
     pub description: String,
+    /// Capability 488: the structured facts of a Recent Deaths row.
+    pub death: Option<oteryn_client_runtime::cyclopedia_character::DeathDetails>,
+}
+
+/// Which tab reply extensions the session selected (capabilities 487 and 488).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct TabExtensions {
+    pub vocation: bool,
+    pub death_details: bool,
 }
 
 impl CyclopediaCharacterPanel {
@@ -111,6 +126,7 @@ impl CyclopediaCharacterPanel {
             self.achievement_pending = false;
             self.result = None;
             self.general = None;
+            self.vocation_id = None;
             self.misc_general = None;
             self.combat = None;
             self.store = None;

@@ -175,6 +175,30 @@ mod tests {
         assert!(actions.route(&[button(ButtonState::Pressed)]).is_empty());
         Ok(())
     }
+
+    #[test]
+    fn n004_alt_click_routes_an_attack_toggle_not_a_walk_click()
+    -> Result<(), oteryn_input_actions::InputError> {
+        use crate::world_interaction::MouseActions;
+        use oteryn_input_actions::*;
+        let moved = NormalizedInputEvent::PointerMoved {
+            position: PointerPosition::new(
+                PointerCoordinate::new(40)?,
+                PointerCoordinate::new(50)?,
+            ),
+            motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+        };
+        let click = |modifiers| NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            state: ButtonState::Pressed,
+            modifiers,
+        };
+        let mut actions = MouseActions::new()?;
+        let clicks = actions.route(&[moved, click(Modifiers::one(Modifier::Alt))]);
+        assert_eq!(clicks.len(), 1);
+        assert!(clicks[0].toggle_attack && !clicks[0].secondary);
+        Ok(())
+    }
 }
 
 #[cfg(test)]

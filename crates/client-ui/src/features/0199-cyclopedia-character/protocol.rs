@@ -244,10 +244,11 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         return false;
     }
     if auxiliary {
-        let Some(stats) = decode_general(&r.payload) else {
+        let Some((stats, vocation)) = decode_general(&r.payload, p.extensions) else {
             p.feedback = Some(tr!("The server returned invalid resource statistics"));
             return false;
         };
+        p.vocation_id = vocation.or(p.vocation_id);
         p.misc_general = Some(stats);
         p.feedback = None;
         return true;
@@ -273,15 +274,16 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             decoded
         }
     } else {
-        tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit))
+        tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit, p.extensions))
     };
     match text {
         Some(v) => {
             let general = if tab == Some(cyclopedia_character::CharacterTab::GeneralStats) {
-                let Some(stats) = decode_general(&r.payload) else {
+                let Some((stats, vocation)) = decode_general(&r.payload, p.extensions) else {
                     p.feedback = Some(tr!("The server returned invalid general statistics"));
                     return false;
                 };
+                p.vocation_id = vocation.or(p.vocation_id);
                 Some(stats)
             } else {
                 None
@@ -314,7 +316,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
                         | cyclopedia_character::CharacterTab::RecentPvpKills
                 )
             }) {
-                let Some(rows) = decode_history(&r.payload, tab, p.limit) else {
+                let Some(rows) = decode_history(&r.payload, tab, p.limit, p.extensions) else {
                     p.feedback = Some(tr!("The server returned invalid character history"));
                     return false;
                 };

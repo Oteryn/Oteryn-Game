@@ -111,7 +111,7 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>, generation: u64) {
         );
         let status = control(h, "STATIC", "", 31, [10, 585, 780, 35], 0);
         let mut initialized = false;
-        let mut painted = None;
+        let mut painted = (None, None);
         loop {
             let mut msg: MSG = std::mem::zeroed();
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -124,7 +124,7 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>, generation: u64) {
             let Some(shared) = weak.upgrade() else {
                 break;
             };
-            let (forecast, pending, feedback) = {
+            let (forecast, vocation, pending, feedback) = {
                 let mut m = lock(&shared);
                 if m.cyclopedia_character_shutdown {
                     break;
@@ -144,16 +144,16 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>, generation: u64) {
                         p.feedback = Some("The session has ended");
                     }
                 }
-                (p.protection.forecast, p.pending, p.feedback)
+                (p.protection.forecast, p.vocation_id, p.pending, p.feedback)
             };
-            if forecast != painted {
+            if (forecast, vocation) != painted {
                 if let Some(f) = forecast {
-                    SetWindowTextW(header, wide(&protection_heading(&f)).as_ptr());
+                    SetWindowTextW(header, wide(&protection_heading(&f, vocation)).as_ptr());
                     for (handle, (label, value)) in cards.iter().zip(protection_cards(&f)) {
                         SetWindowTextW(*handle, wide(&format!("{label}\r\n\r\n{value}")).as_ptr());
                     }
                 }
-                painted = forecast;
+                painted = (forecast, vocation);
             }
             SetWindowTextW(
                 status,

@@ -1287,7 +1287,7 @@ impl ChannelSpellStates {
         magnitude: u32,
         kind: crate::player_lethal::PlayerHitKind,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-        analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        analyser_source: impl Into<super::analyser::HitSource>,
     ) -> Option<CreatureHit> {
         self.apply_creature_damage_kind_from(
             runtime,
@@ -1313,9 +1313,10 @@ impl ChannelSpellStates {
         magnitude: u32,
         kind: crate::player_lethal::PlayerHitKind,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-        analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        analyser_source: impl Into<super::analyser::HitSource>,
         public_cause: Option<crate::durability::character_death::PublicDeathCause>,
     ) -> Option<CreatureHit> {
+        let analyser_source = analyser_source.into();
         // Durable unknown outcomes retain their exact player before-state. A bite
         // must not invalidate that state, including another caster's reserved target.
         if self.is_dead(target)
@@ -1360,14 +1361,15 @@ impl ChannelSpellStates {
         if let Some(value) =
             std::num::NonZeroU32::new(health_before.saturating_sub(damage.health_after))
         {
-            self.analyser.push(
+            self.analyser.push_hit(
                 target,
                 target_session,
                 oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput {
                     value,
                     element: super::analyser::element(kind),
-                    source: analyser_source,
+                    source: analyser_source.source,
                 },
+                analyser_source.attacker,
             );
         }
         if let Some(death) = death {
@@ -1741,14 +1743,16 @@ impl ChannelSpellStates {
             });
         }
         if !replayed && let Some(value) = std::num::NonZeroU32::new(receipt.applied) {
-            self.analyser.push(
+            let hit = super::analyser::source(runtime, source);
+            self.analyser.push_hit(
                 target,
                 session,
                 oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput {
                     value,
                     element: super::analyser::element(kind),
-                    source: super::analyser::source(runtime, source),
+                    source: hit.source,
                 },
+                hit.attacker,
             );
         }
         Some(receipt)
@@ -2735,7 +2739,7 @@ impl ChannelSpellStates {
         kind: crate::player_lethal::PlayerHitKind,
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-        analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        analyser_source: impl Into<super::analyser::HitSource>,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
         use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
         if magnitude == 0

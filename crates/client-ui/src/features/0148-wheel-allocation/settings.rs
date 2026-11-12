@@ -50,9 +50,10 @@ impl WheelPanel {
         }
         let points = decode(code)?;
         self.points = points;
-        self.feedback = Some(tr!(
-            "Build loaded as a proposal; Save Wheel applies it through the server"
-        ));
+        // Every OW1 code predates the Gem Vessel rework of the Wheel.
+        self.feedback = Some(
+            "You have imported an older Wheel of Destiny configuration. Some values may have changed. Save Wheel applies it through the server",
+        );
         Ok(())
     }
 }

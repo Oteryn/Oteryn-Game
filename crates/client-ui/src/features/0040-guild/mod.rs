@@ -184,3 +184,7 @@ mod tests {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod flow_tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_s03.rs"]
+mod e2e_s03;

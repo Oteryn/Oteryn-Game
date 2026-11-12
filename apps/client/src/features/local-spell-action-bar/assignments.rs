@@ -20,6 +20,82 @@ pub enum SpellAim {
     #[default]
     Target,
 }
+impl SpellAim {
+    /// Dialog order of "Target Options".
+    pub const ALL: [Self; 3] = [Self::Target, Self::Facing, Self::Cursor];
+    pub fn option(self) -> oteryn_client_ui::spell_action_bar::TargetOption {
+        use oteryn_client_ui::spell_action_bar::TargetOption;
+        match self {
+            Self::Target => TargetOption::TowardsTarget,
+            Self::Facing => TargetOption::FacingDirection,
+            Self::Cursor => TargetOption::TowardsCursor,
+        }
+    }
+}
+/// Cardinal direction from the caster to the cursor tile: east/west win ties over north/south.
+pub(crate) fn cursor_direction(
+    own: (i32, i32),
+    cursor: (i32, i32),
+) -> Option<oteryn_session::StepDirection> {
+    use oteryn_session::StepDirection;
+    let (dx, dy) = (cursor.0 - own.0, cursor.1 - own.1);
+    if dx == 0 && dy == 0 {
+        None
+    } else if dx.abs() >= dy.abs() {
+        Some(if dx < 0 {
+            StepDirection::West
+        } else {
+            StepDirection::East
+        })
+    } else {
+        Some(if dy < 0 {
+            StepDirection::North
+        } else {
+            StepDirection::South
+        })
+    }
+}
+#[cfg(test)]
+mod cursor_direction_tests {
+    use super::*;
+    use oteryn_session::StepDirection;
+    #[test]
+    fn cursor_direction_prefers_east_west_on_ties_and_the_dominant_axis() {
+        assert_eq!(
+            cursor_direction((10, 10), (12, 12)),
+            Some(StepDirection::East)
+        );
+        assert_eq!(
+            cursor_direction((10, 10), (8, 8)),
+            Some(StepDirection::West)
+        );
+        assert_eq!(
+            cursor_direction((10, 10), (11, 13)),
+            Some(StepDirection::South)
+        );
+        assert_eq!(
+            cursor_direction((10, 10), (9, 6)),
+            Some(StepDirection::North)
+        );
+        assert_eq!(cursor_direction((10, 10), (10, 10)), None);
+    }
+    #[test]
+    fn spell_aim_options_follow_the_dialog_order_and_labels() {
+        assert_eq!(
+            SpellAim::ALL.map(|aim| aim.option().label()),
+            [
+                "Cast towards target",
+                "Cast in facing direction",
+                "Cast towards cursor position"
+            ]
+        );
+    }
+}
+/// Highest item upgrade tier an Equip hotkey can be bound to.
+pub const MAX_UPGRADE_TIER: u8 = 10;
+fn send_by_default() -> bool {
+    true
+}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum BarAction {
@@ -35,9 +111,15 @@ pub enum BarAction {
     },
     Equip {
         definition: NonZeroU32,
+        /// Upgrade tier the hotkey is bound to (0 = any); the equip request carries no tier yet.
+        #[serde(default)]
+        upgrade_tier: u8,
     },
     Text {
         text: String,
+        /// `true` sends the text at once, `false` inserts it into the chat input.
+        #[serde(default = "send_by_default")]
+        send_automatically: bool,
     },
     Use {
         definition: NonZeroU32,
@@ -65,9 +147,10 @@ fn valid_leaf(action: &BarAction) -> bool {
                 && words.len() <= 128
                 && !name.chars().chain(words.chars()).any(char::is_control)
         }
-        BarAction::Text { text } => {
+        BarAction::Text { text, .. } => {
             !text.trim().is_empty() && text.len() <= 1020 && !text.contains('\0')
         }
+        BarAction::Equip { upgrade_tier, .. } => *upgrade_tier <= MAX_UPGRADE_TIER,
         BarAction::Multi { .. } | BarAction::Passive { .. } => false,
         _ => true,
     }
@@ -140,7 +223,7 @@ impl PlayLink {
     }
 }
 pub(in crate::play) fn set_action(mailbox: &mut Mailbox, slot: usize, action: BarAction) -> bool {
-    if let BarAction::Equip { definition } = &action
+    if let BarAction::Equip { definition, .. } = &action
         && !mailbox.hotkey_equip.items.contains(&definition.get())
     {
         return false;
@@ -179,7 +262,15 @@ impl SettingsState {
 }
 
 pub(in crate::play) fn activate(link: &PlayLink, slot: NonZeroU32) -> bool {
-    activate_shared(&mut lock(&link.mailbox), &link.commands, slot)
+    let (handled, insert) = {
+        let mut mailbox = lock(&link.mailbox);
+        let handled = activate_shared(&mut mailbox, &link.commands, slot);
+        (handled, mailbox.custom_chat_paste.is_some())
+    };
+    if insert {
+        link.open_chat();
+    }
+    handled
 }
 pub(in crate::play) fn activate_shared(
     mailbox: &mut Mailbox,
@@ -240,38 +331,33 @@ fn activate_inner(
                 .find(|entry| entry.name == name && entry.words == words && entry.available)
                 && let Some(index) = NonZeroU32::new(entry.cast_index)
             {
-                let command = match aim {
-                    SpellAim::Target => crate::combat_input::CombatCommand::Cast(index),
-                    SpellAim::Facing => crate::combat_input::CombatCommand::CastFacing {
-                        spell: index,
-                        direction: None,
-                    },
-                    SpellAim::Cursor => {
-                        let Some((_, cursor)) = &mailbox.bar_actions.cursor else {
-                            mailbox.spell_bar.feedback =
-                                "Cursor is outside the game window or battle list".into();
-                            return true;
-                        };
-                        let Some(actor) = mailbox.bar_actions.own_actor else {
-                            return true;
-                        };
-                        use oteryn_session::StepDirection;
-                        let direction = if cursor.position.x < actor.position.x {
-                            Some(StepDirection::West)
-                        } else if cursor.position.x > actor.position.x {
-                            Some(StepDirection::East)
-                        } else if cursor.position.y < actor.position.y {
-                            Some(StepDirection::North)
-                        } else if cursor.position.y > actor.position.y {
-                            Some(StepDirection::South)
-                        } else {
-                            None
-                        };
-                        crate::combat_input::CombatCommand::CastFacing {
-                            spell: index,
-                            direction,
-                        }
-                    }
+                let cursor_aim = if aim == SpellAim::Cursor {
+                    let Some((_, cursor)) = &mailbox.bar_actions.cursor else {
+                        mailbox.spell_bar.feedback =
+                            "Cursor is outside the game window or battle list".into();
+                        return true;
+                    };
+                    let Some(actor) = mailbox.bar_actions.own_actor else {
+                        return true;
+                    };
+                    Some(oteryn_client_ui::spell_aim_mode::CursorAim {
+                        position: oteryn_session::SpellTargetPosition {
+                            x: cursor.position.x,
+                            y: cursor.position.y,
+                            floor: cursor.position.floor,
+                        },
+                        direction: cursor_direction(
+                            (actor.position.x, actor.position.y),
+                            (cursor.position.x, cursor.position.y),
+                        ),
+                    })
+                } else {
+                    None
+                };
+                let Some(command) =
+                    oteryn_client_ui::spell_aim_mode::cast_command(aim.option(), index, cursor_aim)
+                else {
+                    return true;
                 };
                 let _ = commands.send(crate::combat_input::PlayCommand::Combat(command));
             } else {
@@ -282,8 +368,12 @@ fn activate_inner(
         BarAction::Use { definition, mode } => {
             super::item_actions::use_item(mailbox, commands, definition, mode)
         }
-        BarAction::Equip { definition } => {
+        BarAction::Equip {
+            definition,
+            upgrade_tier,
+        } => {
             mailbox.hotkey_equip.item_definition = definition.get();
+            mailbox.hotkey_equip.upgrade_tier = upgrade_tier;
             if let Some(command) =
                 oteryn_client_ui::hotkey_equip::control_request(&mut mailbox.hotkey_equip)
                 && commands
@@ -294,7 +384,18 @@ fn activate_inner(
                 mailbox.spell_bar.feedback = "Session unavailable".into();
             }
         }
-        BarAction::Text { text } => {
+        BarAction::Text {
+            text,
+            send_automatically: false,
+        } => {
+            use oteryn_client_ui::chat::ComposerMode;
+            mailbox.chat.text.clone_from(&text);
+            mailbox.custom_chat_paste = Some(text);
+            if mailbox.chat.console.mode == ComposerMode::Off {
+                mailbox.chat.console.mode = ComposerMode::Temporary;
+            }
+        }
+        BarAction::Text { text, .. } => {
             let draft = std::mem::replace(&mut mailbox.chat.text, text);
             crate::play::feature_0007_chat::input::enqueue(
                 mailbox,
@@ -321,8 +422,16 @@ pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
             super::amount::visible_count(mailbox, definition.get())
                 .map_or_else(|| "?".into(), |count| count.to_string())
         ),
-        BarAction::Equip { definition } => format!(
-            "Equip {definition}\n{}\nVisible: {}",
+        BarAction::Equip {
+            definition,
+            upgrade_tier,
+        } => format!(
+            "Equip {definition}{}\n{}\nVisible: {}",
+            if *upgrade_tier == 0 {
+                String::new()
+            } else {
+                format!(" (tier {upgrade_tier})")
+            },
             if mailbox.hotkey_equip.items.contains(&definition.get()) {
                 "Carried"
             } else {
@@ -331,7 +440,13 @@ pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
             super::amount::visible_count(mailbox, definition.get())
                 .map_or_else(|| "?".into(), |count| count.to_string())
         ),
-        BarAction::Text { text } => format!("Say: {text}"),
+        BarAction::Text {
+            text,
+            send_automatically,
+        } => format!(
+            "{}: {text}",
+            if *send_automatically { "Say" } else { "Insert" }
+        ),
         BarAction::Passive { ability } => match ability {
             PassiveAbility::BattleInstinct => mailbox.battle_instinct_status.snapshot.map_or_else(
                 || "Battle Instinct\nUnknown".into(),
@@ -424,7 +539,7 @@ fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
                 .iter()
                 .find(|entry| entry.rune_item == Some(definition.get()))
         }
-        BarAction::Equip { definition } => {
+        BarAction::Equip { definition, .. } => {
             return mailbox.hotkey_equip.items.contains(&definition.get())
                 && !mailbox.hotkey_equip.pending;
         }

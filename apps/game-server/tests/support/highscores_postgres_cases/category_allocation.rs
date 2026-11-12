@@ -31,6 +31,15 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
         ] {
             h.pool.execute(sqlx::AssertSqlSafe(format!("ALTER TABLE {table} DROP CONSTRAINT {table}_category_check, ADD CONSTRAINT {table}_category_check CHECK(category BETWEEN 1 AND 14)"))).await?;
         }
+        // Restore the historical touch function too: today's 2801 function deliberately
+        // withholds Loyalty 13, while the pre1107 fixture must seed both revision floors.
+        let current_touch: String = sqlx::query_scalar("SELECT pg_get_functiondef('game_public_highscores_touch(uuid,smallint)'::regprocedure)")
+            .fetch_one(&h.pool).await?;
+        let withheld = "IF p_category = 13 THEN\n        RETURN;\n    END IF;";
+        assert_eq!(current_touch.matches(withheld).count(), 1);
+        h.pool
+            .execute(sqlx::AssertSqlSafe(current_touch.replace(withheld, "")))
+            .await?;
         let mut tokens = Vec::new();
         for category in [13_i32, 14] {
             let mut pair = Vec::new();
@@ -49,6 +58,7 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
             .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
         assert_eq!(metadata_before.len(), 2);
         assert!(metadata_before.iter().all(|row| row.1 == 2));
+        h.pool.execute(sqlx::AssertSqlSafe(current_touch)).await?;
         dataset(h, 300, 1, "druid", 1000, world()).await?;
         sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,floor(extract(epoch FROM statement_timestamp())/1209600)::bigint,encode($2,'hex')::uuid,7,1000)")
             .bind(id(WORLD).as_slice()).bind(generated(300).as_slice()).execute(&h.pool).await?;
@@ -142,19 +152,33 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
         for category in [13_i32, 15, 16] {
             assert!(sqlx::query("INSERT INTO game_world_highscore_snapshots(world_id,category,computed_at_ms,source_cut,row_count) VALUES(encode($1,'hex')::uuid,$2,0,'reserved',0)").bind(id(WORLD).as_slice()).bind(category).execute(&h.pool).await.is_err());
             assert!(sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category) VALUES(encode($1,'hex')::uuid,$2)").bind(id(WORLD).as_slice()).bind(category).execute(&h.pool).await.is_err());
-            assert_eq!(served_category(u8::try_from(category)?), category == 16);
+            // 2801 later admits Loyalty 13; 1107's historical checks here still refuse it.
+            assert_eq!(
+                served_category(u8::try_from(category)?),
+                matches!(category, 13 | 16)
+            );
         }
         for category in [15_i16, 16] {
             assert!(sqlx::query("INSERT INTO game_public_highscores(world_id,category,projection_revision,revised_at) VALUES(encode($1,'hex')::uuid,$2,1,0)").bind(id(WORLD).as_slice()).bind(category).execute(&h.pool).await.is_err());
         }
-        // The historical1107 checks above still exclude16. Restore the current
-        // forward migration's category bounds before exercising today's publisher.
+        // The historical1107 checks above still exclude16 and 13. Restore the current
+        // forward migrations' category bounds before exercising today's publisher.
         let current = include_str!("../../../migrations/2727_boss_difficulty_victories.sql");
         let bounds = current
             .split_once("-- Phosphorus Record category admission.")
             .ok_or("2727 category bounds")?
             .1;
         h.pool.execute(bounds).await?;
+        let loyalty = include_str!("../../../migrations/2801_loyalty_highscore_category.sql");
+        let bounds = loyalty
+            .split_once("\nALTER TABLE game_world_highscore_snapshots\n")
+            .ok_or("2801 category bounds")?
+            .1;
+        h.pool
+            .execute(sqlx::AssertSqlSafe(format!(
+                "ALTER TABLE game_world_highscore_snapshots\n{bounds}"
+            )))
+            .await?;
         assert!(matches!(
             h.root
                 .read_highscore_page(world(), 14, None, 1, u64::try_from(tokens[3])?, asking())
@@ -165,7 +189,7 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
             h.root
                 .read_highscore_page(world(), 13, None, 1, u64::try_from(tokens[1])?, asking())
                 .await,
-            Err(SnapshotError::NotSupported)
+            Err(SnapshotError::SnapshotExpired)
         ));
         for family in ["highscores", "all"] {
             sqlx::query("SELECT game_public_projection_resync($1,false)")
@@ -201,6 +225,16 @@ fn tibiadrome_category_migration_retires_old_tokens_and_preserves_revision_floor
                 "correct source category {category} publishes"
             );
         }
+        // A published Loyalty 13 snapshot never reaches the public projection.
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_public_highscore_outbox WHERE category=13"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            0
+        );
+        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT projection_revision FROM game_public_highscores WHERE world_id=encode($1,'hex')::uuid AND category=13").bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?,metadata_before[0].1);
         let revision14:i64=sqlx::query_scalar("SELECT projection_revision FROM game_public_highscores WHERE world_id=encode($1,'hex')::uuid AND category=14").bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(
             revision14,

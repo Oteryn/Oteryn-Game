@@ -278,3 +278,188 @@ fn active_named_battle_list_survives_character_switches() -> Result<(), Box<dyn 
 
 #[path = "metadata.rs"]
 mod metadata;
+
+#[test]
+fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
+    use crate::play::feature_0017_attack::view::{BattleListPreferences, BattleSort};
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let row = |id, kind, health| WorldSpatialEntity {
+        display_name: None,
+        kind,
+        entity: EntityRef {
+            identity: [id; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 1,
+            y: 2,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: health,
+        },
+    };
+    let creature = row(1, EntityKind::Creature, 80);
+    let player = row(2, EntityKind::Player, 30);
+    let rows = [creature, player];
+    let list = |players, creatures, sort| BattleListPreferences {
+        players,
+        creatures,
+        sort,
+        ..Default::default()
+    };
+    assert_eq!(
+        list(true, false, BattleSort::Name).rows(&rows),
+        vec![player]
+    );
+    assert_eq!(
+        list(false, true, BattleSort::Name).rows(&rows),
+        vec![creature]
+    );
+    assert_eq!(
+        list(true, true, BattleSort::HealthAscending).rows(&rows),
+        vec![player, creature]
+    );
+    assert_eq!(
+        list(true, true, BattleSort::HealthDescending).rows(&rows),
+        vec![creature, player]
+    );
+    assert_eq!(
+        list(true, true, BattleSort::Identity).rows(&rows),
+        vec![creature, player]
+    );
+}
+
+#[test]
+fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::PlayView;
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let (link, mut commands, _) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    let creature = EntityRef {
+        identity: [7; 16],
+        generation: 1,
+    };
+    view.entities = vec![WorldSpatialEntity {
+        display_name: None,
+        kind: EntityKind::Creature,
+        entity: creature,
+        position: ActorPosition {
+            x: 2,
+            y: 1,
+            floor: 0,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    }];
+    let tile = TileCoord::new(2, 1);
+    let target = crate::input::Targetable {
+        tile,
+        kind: crate::input::TargetKind::Entity,
+        glyph: true,
+        entity: Some(creature),
+        item: None,
+    };
+    view.scene = crate::scene::Scene::centered_with(
+        std::sync::Arc::new(crate::map::World::builtin()?),
+        None,
+        TileCoord::new(1, 1),
+        crate::input::StepDir::South,
+        &[],
+        &[target],
+    )?;
+    assert!(!view.attack_toggle_click(TileCoord::new(0, 0), &link));
+    assert!(view.attack_toggle_click(tile, &link));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(CombatCommand::Attack(attacked))
+            if attacked == creature
+    ));
+    lock(&link.mailbox).battle.combat = Some(ActorCombatState {
+        target: Some(creature),
+        modes: FightModes::DEFAULT,
+        in_fight: true,
+    });
+    assert!(view.attack_toggle_click(tile, &link));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(CombatCommand::Stop)
+    ));
+    Ok(())
+}
+
+#[test]
+fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_input_guard()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::PlayView;
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let (link, mut commands, _) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    let entity = |id: u8, x: i32| {
+        (
+            EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            x,
+        )
+    };
+    let (other, other_x) = entity(8, 2);
+    let (own, own_x) = entity(9, 3);
+    view.entities = [(other, other_x), (own, own_x)]
+        .into_iter()
+        .map(|(entity, x)| WorldSpatialEntity {
+            display_name: None,
+            kind: EntityKind::Player,
+            entity,
+            position: ActorPosition { x, y: 1, floor: 0 },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        })
+        .collect();
+    let targets = [(other, other_x), (own, own_x)].map(|(entity, x)| crate::input::Targetable {
+        tile: TileCoord::new(x, 1),
+        kind: crate::input::TargetKind::Entity,
+        glyph: true,
+        entity: Some(entity),
+        item: None,
+    });
+    view.scene = crate::scene::Scene::centered_with(
+        std::sync::Arc::new(crate::map::World::builtin()?),
+        None,
+        TileCoord::new(1, 1),
+        crate::input::StepDir::South,
+        &[],
+        &targets,
+    )?;
+    view.set_own_identity(own.identity);
+    assert!(!view.attack_toggle_click(TileCoord::new(3, 1), &link));
+    assert!(commands.try_recv().is_err());
+    assert!(view.attack_toggle_click(TileCoord::new(2, 1), &link));
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Attack(attacked))
+            if attacked == other
+    ));
+    lock(&link.mailbox).death.dead = true;
+    assert!(!view.attack_toggle_click(TileCoord::new(2, 1), &link));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

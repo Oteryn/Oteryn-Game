@@ -89,6 +89,14 @@ impl<'a> Reader<'a> {
     }
 }
 pub(super) fn decode(bytes: &[u8]) -> WireResult<Reply> {
+    let (reply, rest) = decode_prefix(bytes)?;
+    if !rest.is_empty() {
+        return Err("trailing modal bytes");
+    }
+    Ok(reply)
+}
+/// The reply and the bytes after it; an answer reply always takes every remaining byte.
+pub(super) fn decode_prefix(bytes: &[u8]) -> WireResult<(Reply, &[u8])> {
     if bytes.len() > MAX_REPLY_BYTES {
         return Err("modal reply exceeds its bound");
     }
@@ -150,8 +158,5 @@ pub(super) fn decode(bytes: &[u8]) -> WireResult<Reply> {
         }
         _ => return Err("unknown modal reply"),
     };
-    if !reader.0.is_empty() {
-        return Err("trailing modal bytes");
-    }
-    Ok(reply)
+    Ok((reply, reader.0))
 }

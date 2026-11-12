@@ -24,6 +24,7 @@ pub use floor_assembly::FloorAssemblyTarget;
 
 mod house;
 mod seed_drop;
+mod subtree;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -932,7 +933,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         }
     }
 
-    // B3-3: a pickup brings the whole stack into the Character.
+    // B3-3: every external pickup brings its root and all descendants into the Character.
     if !house_target
         && matches!(
             source,
@@ -948,11 +949,9 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             Err(ItemWeightRefused::Unknown) => return refuse(LoopMoveRefusal::WeightUnknown),
             Err(ItemWeightRefused::DefinitionMismatch) => return refuse(LoopMoveRefusal::Rejected),
         };
-        let subtree_weight = if height > 0
-            && let (Some(context), Some(item)) = (house, item)
-            && house::path(tx, context, item).await?.is_some()
-        {
-            Some(house::subtree_weight(tx, content, item, world).await?)
+        let subtree_weight = if height > 0 {
+            let item = item.ok_or(DurabilityError::InvalidStoredState)?;
+            Some(subtree::weight(tx, content, item, world).await?)
         } else {
             None
         };
@@ -970,7 +969,9 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             // one unique incoming root; this sentinel is never stored or used as a source.
             item_instance_id: item.unwrap_or([0; 16]),
             definition: definition.clone(),
-            quantity,
+            // Whole trees keep their complete weight above; a legitimate leaf split
+            // contributes only the requested units, not the source's remainder.
+            quantity: count,
         };
         let incoming = [IncomingWeight {
             item: &incoming_item,
