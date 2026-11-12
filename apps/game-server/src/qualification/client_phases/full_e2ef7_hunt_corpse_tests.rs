@@ -3,9 +3,9 @@ use super::*;
 
 fn position(x: i32) -> ActorPosition {
     ActorPosition {
-        x,
-        y: 100,
-        floor: 7,
+        x: x - 98,
+        y: 0,
+        floor: 8,
     }
 }
 
@@ -101,6 +101,7 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
     let mut revision = 0;
     let mut turns = 0;
     let mut attacked = false;
+    let mut actor_position = position(100);
     loop {
         let Ok(bytes) = light_read(&mut stream).await else {
             return Ok(());
@@ -235,6 +236,38 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
                 }
                 vec![8, 1]
             }
+            1 => {
+                let direction = native::world_spatial::decode_step_intent(command.payload)
+                    .map_err(|e| format!("hunt step input: {e:?}"))?;
+                assert_eq!(direction, StepDirection::East);
+                actor_position.x += 1;
+                let payload = spatial::encode_world_spatial_entities_delta_with_item_handles(
+                    &spatial::WorldSpatialEntitiesDelta {
+                        content_generation: [1; 32],
+                        actor_position,
+                        enter: vec![],
+                        update: vec![],
+                        leave: vec![],
+                    },
+                )
+                .map_err(|e| format!("hunt step spatial encoding: {e:?}"))?;
+                sequence += 1;
+                send(
+                    &mut stream,
+                    &native::encode_state_delta(
+                        1,
+                        sequence,
+                        1,
+                        revision,
+                        revision + 1,
+                        spatial::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                        &payload,
+                    )?,
+                )
+                .await?;
+                revision += 1;
+                native::world_spatial::encode_step_result(StepDisposition::Moved)
+            }
             other => return Err(format!("unexpected hunt command {other}").into()),
         };
         sequence += 1;
@@ -299,7 +332,7 @@ async fn replay(scenario: Replay) -> TestResult {
             bundle_digest: [2; 32],
             reset_epoch: 0,
             origin: position(100),
-            first_visible_floor: 7,
+            first_visible_floor: 8,
         },
         // An old corpse at the death tile must never satisfy the hunt.
         entities: vec![creature(), corpse(11, 104)],
@@ -310,9 +343,17 @@ async fn replay(scenario: Replay) -> TestResult {
         released: false,
         tree: Default::default(),
     };
+    let (bytes, pins) = crate::map::boot::tests::floor_bundle();
+    let world = crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::tests::floor_pins(pins),
+        WorldId::decode(&v7(1, 1))?,
+        ChannelId::decode(&v7(2, 1))?,
+        crate::map::boot::tests::floor_items,
+    )?;
     let result = tokio::time::timeout(
         Duration::from_secs(2),
-        forge_attack_corpse(&mut client, creature(), 1),
+        forge_attack_corpse(&mut client, &world, creature(), 1),
     )
     .await;
     assert!(
@@ -330,6 +371,12 @@ async fn replay(scenario: Replay) -> TestResult {
         );
     }
     assert_eq!(xp_before, 0);
+    if matches!(scenario, Replay::Ranged) {
+        assert!(
+            hunt_spawn_approach(tile(client.position)?, tile(corpse(12, 104).position)?),
+            "accepted ranged corpse must be approached before looting"
+        );
+    }
     drop(client);
     peer.await??;
     Ok(())
@@ -376,4 +423,9 @@ fn hunt_corpse_replay_selects_uniquely_nearest_corpse() -> TestResult {
 #[test]
 fn hunt_corpse_replay_waits_when_corpses_are_equally_plausible() -> TestResult {
     run_replay(Replay::Ambiguous)
+}
+
+#[test]
+fn hunt_corpse_replay_approaches_accepted_ranged_corpse_before_looting() -> TestResult {
+    run_replay(Replay::Ranged)
 }

@@ -6392,6 +6392,7 @@ async fn forge_hunt(
 // exercise the same attack, receive and corpse selection path as the journey.
 async fn forge_attack_corpse(
     client: &mut ForgeClient,
+    world: &BundleWorld,
     entity: spatial::WorldSpatialEntity,
     stacks: u8,
 ) -> TestResult<(native::item_view::ItemHandle, u64)> {
@@ -6446,7 +6447,7 @@ async fn forge_attack_corpse(
                 ..
             } = corpse.detail
         {
-            break handle;
+            break (handle, tile(corpse.position)?);
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -6457,6 +6458,12 @@ async fn forge_attack_corpse(
         }
     };
     client.hunt = None;
+    let (corpse, position) = corpse;
+    let path = route(world, tile(client.position)?, |at| {
+        hunt_spawn_approach(at, position)
+    })
+    .ok_or("observed forge corpse has no reachable loot approach")?;
+    client.walk(world, &path).await?;
     Ok((corpse, xp_before))
 }
 
@@ -6543,7 +6550,7 @@ async fn forge_hunt_inner(
     })
     .ok_or("observed forge creature has no reachable unprotected melee approach")?;
     client.walk(world, &path).await?;
-    let (corpse, xp_before) = forge_attack_corpse(client, entity, stacks).await?;
+    let (corpse, xp_before) = forge_attack_corpse(client, world, entity, stacks).await?;
     client.attack_target(None).await?;
     client.barrier().await?;
     if client.experience().await? <= xp_before {
