@@ -42,6 +42,7 @@ pub(super) struct PickerState {
     selected: Option<usize>,
     channel: Option<usize>,
     page: usize,
+    page_rows: usize,
     revision: u64,
     rendered: Option<(u64, u64)>,
 }
@@ -86,7 +87,7 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     skin: Res<Skin>,
     mut state: ResMut<PickerState>,
-    mut roots: Query<(Entity, &mut Node), With<Picker>>,
+    mut roots: Query<(Entity, &mut Node, &ComputedNode), With<Picker>>,
     mut focus: ResMut<InputFocus>,
     controls: Query<&PickerControl>,
 ) {
@@ -97,7 +98,7 @@ pub(super) fn project(
         {
             focus.clear();
         }
-        for (root, mut node) in &mut roots {
+        for (root, mut node, _) in &mut roots {
             node.display = Display::None;
             if state.request.is_some() {
                 commands.entity(root).despawn_children();
@@ -118,11 +119,24 @@ pub(super) fn project(
         state.revision = 0;
         state.rendered = None;
     }
+    // Reserve the existing 29/16px padding, two 13px text lines, three 20px
+    // control strips and their 5px gaps. Each character row consumes 20 + 5px.
+    // ComputedNode converts the real target/DPI/UI scale back to logical pixels.
+    let page_rows = roots.iter().next().map_or(1, |(_, _, node)| {
+        let logical_height = node.size().y * node.inverse_scale_factor;
+        let fixed_height = 29. + 16. + 13. * 2. + 20. * 3. + 5. * 4.;
+        (((logical_height * 0.95 - fixed_height) / 25.).floor() as usize).clamp(1, PAGE_ROWS)
+    });
+    if state.page_rows != page_rows {
+        state.page_rows = page_rows;
+        state.page = state.selected.unwrap_or(0) / page_rows;
+        state.rendered = None;
+    }
     let key = (request.id, state.revision);
     if state.rendered == Some(key) {
         return;
     }
-    for (root, mut node) in &mut roots {
+    for (root, mut node, _) in &mut roots {
         node.display = Display::Flex;
         commands.entity(root).despawn_children();
         let panel = commands
@@ -162,8 +176,8 @@ pub(super) fn project(
             .rows
             .iter()
             .enumerate()
-            .skip(state.page * PAGE_ROWS)
-            .take(PAGE_ROWS)
+            .skip(state.page * page_rows)
+            .take(page_rows)
         {
             let label = format!(
                 "{} — {}{}",
@@ -200,7 +214,7 @@ pub(super) fn project(
                 ..default()
             })
             .id();
-        let pages = request.rows.len().max(1).div_ceil(PAGE_ROWS);
+        let pages = request.rows.len().max(1).div_ceil(page_rows);
         let previous = add_button(
             &mut commands,
             &skin,
@@ -370,7 +384,8 @@ fn activate(
             None
         }
         Choice::Next => {
-            state.page = (state.page + 1).min(request.rows.len().max(1).div_ceil(PAGE_ROWS) - 1);
+            state.page = (state.page + 1)
+                .min(request.rows.len().max(1).div_ceil(state.page_rows.max(1)) - 1);
             None
         }
         Choice::Play => state
@@ -505,6 +520,220 @@ mod tests {
                 .is_none()
         );
         assert_eq!(app.world().resource::<InputFocus>().get(), None);
+        Ok(())
+    }
+    #[test]
+    fn scaled_picker_keeps_footer_inside_frame_and_selected_row_on_resize()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use bevy::{
+            app::{HierarchyPropagatePlugin, PropagateSet},
+            camera::{ComputedCameraValues, RenderTargetInfo},
+            text::{FontCx, RemSize},
+            ui::{
+                ComputedUiRenderTargetInfo, ComputedUiTargetCamera, UiSystems, ui_layout_system,
+                ui_surface::UiSurface, update::propagate_ui_target_cameras,
+            },
+        };
+        // Feed source-declared single-line heights into Taffy without requiring
+        // proprietary font assets or a platform font loader in this layout test.
+        fn measure_source_lines(
+            scale: Res<UiScale>,
+            mut text: Query<(
+                &bevy::text::LineHeight,
+                &TextFont,
+                &mut bevy::ui::ContentSize,
+            )>,
+        ) {
+            for (height, font, mut content) in &mut text {
+                let height = match (height, font.font_size) {
+                    (bevy::text::LineHeight::Px(height), _) => *height,
+                    (
+                        bevy::text::LineHeight::RelativeToFont(factor),
+                        bevy::text::FontSize::Px(size),
+                    ) => factor * size,
+                    _ => continue,
+                };
+                content.set(bevy::ui::NodeMeasure::Fixed(bevy::ui::FixedMeasure {
+                    size: Vec2::new(100. * scale.0, height * scale.0),
+                }));
+            }
+        }
+        let (bridge, callback) = SelectionBridge::new();
+        let mut owner = HostOwner::new(None)?;
+        owner.selection = bridge;
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            source::GlobalUiPlugin,
+            HierarchyPropagatePlugin::<ComputedUiTargetCamera>::new(PostUpdate),
+            HierarchyPropagatePlugin::<ComputedUiRenderTargetInfo>::new(PostUpdate),
+        ))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .init_resource::<UiScale>()
+        .init_resource::<UiSurface>()
+        .init_resource::<FontCx>()
+        .init_resource::<RemSize>()
+        .init_resource::<Assets<TextureAtlasLayout>>()
+        .insert_non_send(owner)
+        .configure_sets(
+            PostUpdate,
+            (
+                UiSystems::Prepare,
+                UiSystems::Propagate,
+                UiSystems::Content,
+                UiSystems::Layout,
+            )
+                .chain(),
+        )
+        .configure_sets(
+            PostUpdate,
+            PropagateSet::<ComputedUiTargetCamera>::default().in_set(UiSystems::Propagate),
+        )
+        .configure_sets(
+            PostUpdate,
+            PropagateSet::<ComputedUiRenderTargetInfo>::default().in_set(UiSystems::Propagate),
+        )
+        .add_systems(Startup, setup)
+        .add_systems(Update, (poll, project).chain())
+        .add_systems(
+            PostUpdate,
+            propagate_ui_target_cameras.in_set(UiSystems::Prepare),
+        )
+        .add_systems(
+            PostUpdate,
+            bevy::ui::widget::update_image_content_size_system.in_set(UiSystems::Content),
+        )
+        .add_systems(PostUpdate, measure_source_lines.in_set(UiSystems::Content))
+        .add_systems(PostUpdate, ui_layout_system.in_set(UiSystems::Layout));
+        app.world_mut().spawn(Camera2d);
+        app.world_mut().spawn((
+            Window {
+                resolution: (1024, 720).into(),
+                ..default()
+            },
+            bevy::window::PrimaryWindow,
+        ));
+        app.update();
+        let worker = thread::spawn(move || {
+            let rows = (0..8)
+                .map(|index| crate::character_selection::CharacterRow {
+                    character: OwnerCharacter {
+                        character_id: format!("server-{index}"),
+                        world_id: "world".into(),
+                        name: format!("Character {index}"),
+                        availability: CharacterAvailability::Available,
+                    },
+                    world_name: "World".into(),
+                    channels: vec![("channel".into(), "Channel".into())],
+                    available: true,
+                })
+                .collect::<Vec<_>>();
+            callback(&rows, "server-7", CancellationToken::new())
+        });
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while app
+            .world()
+            .non_send::<HostOwner>()
+            .selection
+            .pending()
+            .is_none()
+            && Instant::now() < deadline
+        {
+            app.world_mut().non_send_mut::<HostOwner>().selection.poll();
+            thread::yield_now();
+        }
+        for (width, height, scale) in [
+            (1024, 720, 2.),
+            (800, 400, 2.),
+            (1024, 720, 1.),
+            (1024, 720, 2.),
+        ] {
+            app.world_mut().resource_mut::<UiScale>().0 = scale;
+            for mut camera in app
+                .world_mut()
+                .query::<&mut Camera>()
+                .iter_mut(app.world_mut())
+            {
+                camera.computed = ComputedCameraValues {
+                    target_info: Some(RenderTargetInfo {
+                        physical_size: UVec2::new(width, height),
+                        scale_factor: 1.,
+                    }),
+                    ..default()
+                };
+            }
+            for mut window in app
+                .world_mut()
+                .query::<&mut Window>()
+                .iter_mut(app.world_mut())
+            {
+                window.resolution.set_physical_resolution(width, height);
+            }
+            for _ in 0..3 {
+                app.update();
+            }
+            let panel = app
+                .world_mut()
+                .query_filtered::<&ChildOf, With<source::DialogCaption>>()
+                .iter(app.world())
+                .next()
+                .ok_or("caption")?
+                .parent();
+            let panel_node = app
+                .world()
+                .get::<ComputedNode>(panel)
+                .ok_or("panel geometry")?;
+            let panel_transform = app
+                .world()
+                .get::<UiGlobalTransform>(panel)
+                .ok_or("panel position")?;
+            let bottom = panel_transform.translation.y + panel_node.size().y / 2.;
+            let controls = app
+                .world_mut()
+                .query::<(&PickerControl, &ComputedNode, &UiGlobalTransform)>()
+                .iter(app.world())
+                .map(|(id, node, transform)| {
+                    (
+                        id.id.clone(),
+                        transform.translation - node.size() / 2.,
+                        node.size(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            for id in ["selection.play", "selection.cancel"] {
+                let (_, min, size) = controls
+                    .iter()
+                    .find(|(name, _, _)| name == id)
+                    .ok_or("footer button")?;
+                assert!(
+                    min.y >= 0. && min.y + size.y <= bottom && min.y + size.y <= height as f32,
+                    "{id} {}+{} outside panelbottom {bottom} /window {height} atscale {scale}",
+                    min.y,
+                    size.y
+                );
+                assert!(size.y > 0.);
+            }
+            assert_eq!(app.world().resource::<PickerState>().selected, Some(7));
+            assert!(controls.iter().any(|(id, _, _)| id == "selection.row.7"));
+        }
+        let id = app
+            .world()
+            .non_send::<HostOwner>()
+            .selection
+            .pending()
+            .ok_or("pending")?
+            .id;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .selection
+            .respond(id, SelectionAction::Cancel);
+        assert_eq!(
+            worker.join().map_err(|_| "selector worker")?,
+            SelectionAction::Cancel
+        );
         Ok(())
     }
 }
