@@ -105,19 +105,14 @@ impl NativeLoginConfig {
 
 /// Opens `url` in the system browser without waiting for it.
 pub fn open_system_browser(url: &str) -> bool {
-    #[cfg(windows)]
-    let mut command = {
-        let mut command = std::process::Command::new("rundll32");
-        command.args(["url.dll,FileProtocolHandler", url]);
-        command
+    let platform = if cfg!(windows) {
+        BrowserPlatform::Windows
+    } else if cfg!(target_os = "macos") {
+        BrowserPlatform::MacOs
+    } else {
+        BrowserPlatform::Unix
     };
-    #[cfg(not(windows))]
-    let mut command = {
-        let mut command = std::process::Command::new("xdg-open");
-        command.arg(url);
-        command
-    };
-    command
+    browser_command(platform, url)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
@@ -126,6 +121,25 @@ pub fn open_system_browser(url: &str) -> bool {
             std::thread::spawn(move || child.wait());
         })
         .is_ok()
+}
+
+enum BrowserPlatform {
+    Windows,
+    MacOs,
+    Unix,
+}
+
+fn browser_command(platform: BrowserPlatform, url: &str) -> std::process::Command {
+    let mut command = match platform {
+        BrowserPlatform::Windows => std::process::Command::new("rundll32"),
+        BrowserPlatform::MacOs => std::process::Command::new("open"),
+        BrowserPlatform::Unix => std::process::Command::new("xdg-open"),
+    };
+    if matches!(platform, BrowserPlatform::Windows) {
+        command.arg("url.dll,FileProtocolHandler");
+    }
+    command.arg(url);
+    command
 }
 
 impl NativeLoginConfig {
@@ -138,6 +152,34 @@ impl NativeLoginConfig {
             login_client(&platform, &gateway, &self.oauth_client_id, self.retry_unit)
         {
             self.device_sessions.sign_out(&client).await;
+        }
+    }
+}
+
+#[cfg(test)]
+mod browser_command_tests {
+    use super::*;
+
+    #[test]
+    fn browser_commands_keep_the_url_in_one_argument_without_a_shell() {
+        let url = "https://example.invalid/authorize?state=a%20b&other=$(false)";
+        for (platform, program, prefix) in [
+            (
+                BrowserPlatform::Windows,
+                "rundll32",
+                Some("url.dll,FileProtocolHandler"),
+            ),
+            (BrowserPlatform::MacOs, "open", None),
+            (BrowserPlatform::Unix, "xdg-open", None),
+        ] {
+            let command = browser_command(platform, url);
+            assert_eq!(command.get_program(), program);
+            let arguments: Vec<_> = command.get_args().collect();
+            if let Some(prefix) = prefix {
+                assert_eq!(arguments, [prefix, url]);
+            } else {
+                assert_eq!(arguments, [url]);
+            }
         }
     }
 }
