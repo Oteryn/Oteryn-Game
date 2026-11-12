@@ -209,7 +209,14 @@ stop_runtime_diagnostics() {
 pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
 start_pg_sampler() {
   mkdir -p "$PG_OBS"
-  pg_observe sample --out "$PG_OBS/activity.log" &
+  # Start python3 itself in the background, not a subshell running pg_observe:
+  # $! must be the sampler so stop_pg_sampler's SIGTERM reaches it. A shell
+  # wrapper died on SIGTERM and left the sampler polling forever with the run's
+  # stdout open, so the caller's `run.sh | tee` never saw EOF and the step hung
+  # after NODE_BOOT_RESULT until the job timeout. Its stdout is not the run's pipe.
+  python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" sample --out "$PG_OBS/activity.log" \
+    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot \
+    < /dev/null > /dev/null 2>> "$PG_OBS/sampler.err" &
   PG_SAMPLER_PID=$!
 }
 stop_pg_sampler() {
