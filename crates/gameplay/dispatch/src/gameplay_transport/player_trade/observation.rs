@@ -280,7 +280,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         runtime: &ChannelRuntimeV1,
         leaf: &TradeLeaf,
-    ) -> Result<wire::Offer, ResultCode> {
+    ) -> Result<wire::Offer, CheckError> {
         let (definition, count) = leaf
             .definition_and_quantity()
             .map_err(|_| ResultCode::Rejected)?;
@@ -288,11 +288,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self
             .active_generation
             .and_then(|g| g.native_gameplay())
-            .ok_or(ResultCode::Rejected)?;
+            .ok_or_else(|| {
+                CheckError::Caused(CommandOutcome::rejected("native_gameplay_missing"))
+            })?;
         let Some((tradeable, pickupable)) =
             NativeItemWeights(native).player_trade_flags(&definition)
         else {
-            return Err(ResultCode::NotTradeable);
+            return Err(ResultCode::NotTradeable.into());
         };
         oteryn_gameplay_economy::player_trade::LeafFacts {
             direct_backpack_entry: true,
@@ -303,7 +305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: count,
         }
         .check()
-        .map_err(result)?;
+        .map_err(CheckError::from)?;
         Ok(wire::Offer {
             definition: definition_ref(index, &definition)
                 .ok_or(ResultCode::NotTradeable)?
