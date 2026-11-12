@@ -32,7 +32,6 @@ url = "=2.5.8"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
-oteryn-identity = { version = "=0.1.0", path = "../identity" }
 
 [lints]
 workspace = true

@@ -162,7 +162,7 @@ PKCE exchange. This is current-main readiness, not evidence at the unchanged lan
 Platform obligations for a challenge-specific successor.
 
 **Driver added, runtime unverified — `web_identity_pkce_isolation`.**
-`G:crates/platform-client/tests/web_identity_pkce_isolation.rs` is invoked by
+`G:tests/security/auth/tests/web_identity_pkce_isolation.rs` is invoked by
 `tools/qualification/game_platform/run.sh` before the dev-client phase. Drive a real
 cookie-jar HTTP browser journey: GET form/CSRF, wrong password, real password,
 authorize/consent, loopback callback and Game's `NativeLoginClient` token exchange.

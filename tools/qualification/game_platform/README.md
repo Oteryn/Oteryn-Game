@@ -38,7 +38,7 @@ real testing-only `oteryn-portal seed` paths. Passwords and signing keys are
 random per run. Fresh account evidence uses `platform_security` /
 `fresh_admission` from the pinned harness settings.
 
-`web_identity_pkce_isolation` is a real `oteryn-platform-client` integration
+`web_identity_pkce_isolation` is a real `oteryn-security-auth-tests` integration
 journey, running on a 64 MiB thread with a sixty-second deadline (also bounded
 by GNU timeout after compilation). Its origin-scoped cookie jars drive real
 form/CSRF, wrong-password refusal, missing/bad CSRF, login rotation, consent,
