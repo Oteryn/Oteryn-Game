@@ -13,6 +13,7 @@ pub(super) struct AuditOutput {
     path: Option<PathBuf>,
     last: Vec<u8>,
     error_reported: bool,
+    update: u64,
 }
 impl AuditOutput {
     pub fn new(path: Option<PathBuf>) -> Self {
@@ -20,6 +21,7 @@ impl AuditOutput {
             path,
             last: Vec::new(),
             error_reported: false,
+            update: 0,
         }
     }
 }
@@ -33,6 +35,7 @@ struct Bounds {
 #[derive(Serialize)]
 struct Snapshot<'a> {
     schema: &'static str,
+    update: u64,
     lifecycle: Phase,
     generation: u64,
     login_visible: bool,
@@ -79,6 +82,10 @@ pub(super) fn write(
         Has<bevy::ui::InteractionDisabled>,
     )>,
 ) {
+    // Native drivers wait for picking/layout updates. Disabled without --ui-audit.
+    if output.path.is_some() {
+        output.update = output.update.saturating_add(1);
+    }
     let Some(path) = &output.path else {
         return;
     };
@@ -144,6 +151,7 @@ pub(super) fn write(
     bounds.sort_by(|a, b| a.id.cmp(&b.id));
     let snapshot = Snapshot {
         schema: "oteryn.bevy-ui-audit.v1",
+        update: output.update,
         lifecycle: owner.phase,
         generation: owner.generation(),
         login_visible: owner.login.visible,
