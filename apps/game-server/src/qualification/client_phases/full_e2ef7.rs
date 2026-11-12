@@ -3557,25 +3557,28 @@ async fn release_when_unlocked_inner(
     }
 }
 
-async fn acquisition_step<T>(
+fn acquisition_step<T>(
     step: &str,
     work: impl std::future::Future<Output = TestResult<T>>,
-) -> TestResult<T> {
-    let started = tokio::time::Instant::now();
-    evidence(&format!("acquisition step={step} state=start elapsed_ms=0"));
-    tokio::pin!(work);
-    loop {
-        tokio::select! {
-            result = &mut work => {
-                evidence(&format!(
-                    "acquisition step={step} state={} elapsed_ms={}",
-                    if result.is_ok() { "complete" } else { "failed" },
-                    started.elapsed().as_millis(),
-                ));
-                return result;
-            }
-            () = tokio::time::sleep(Duration::from_secs(10)) => {
-                evidence(&format!("acquisition step={step} state=pending elapsed_ms={}", started.elapsed().as_millis()));
+) -> impl std::future::Future<Output = TestResult<T>> {
+    // Keep nested hunt/acquisition futures off the composed qualification frame.
+    let mut work = Box::pin(work);
+    async move {
+        let started = tokio::time::Instant::now();
+        evidence(&format!("acquisition step={step} state=start elapsed_ms=0"));
+        loop {
+            tokio::select! {
+                result = &mut work => {
+                    evidence(&format!(
+                        "acquisition step={step} state={} elapsed_ms={}",
+                        if result.is_ok() { "complete" } else { "failed" },
+                        started.elapsed().as_millis(),
+                    ));
+                    return result;
+                }
+                () = tokio::time::sleep(Duration::from_secs(10)) => {
+                    evidence(&format!("acquisition step={step} state=pending elapsed_ms={}", started.elapsed().as_millis()));
+                }
             }
         }
     }
