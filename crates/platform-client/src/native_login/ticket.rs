@@ -41,8 +41,10 @@ pub(super) async fn issue(
                     PublicClass::TemporarilyUnavailable,
                 ))?;
             #[cfg(test)]
-            let delay = super::tests::ticket_delay(delay);
+            super::tests::ticket_wait(false);
             tokio::time::sleep(delay).await;
+            #[cfg(test)]
+            super::tests::ticket_wait(true);
             retried = true;
         };
         let received = Instant::now();
