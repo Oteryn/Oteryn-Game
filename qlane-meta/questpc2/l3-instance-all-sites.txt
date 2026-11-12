@@ -1,0 +1,60 @@
+crates/gameplay/durability/src/durability/party_kill_xp.rs:107:pub(crate) fn death_matches_fence(death: &[u8], fence: &CurrentCharacterGameplayFence) -> bool {
+crates/gameplay/durability/src/durability/party_kill_xp.rs:441:        assert!(death_matches_fence(&channel, &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:442:        assert!(!death_matches_fence(&instance, &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:444:        assert!(death_matches_fence(&instance, &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:445:        assert!(!death_matches_fence(&channel, &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:448:        assert!(!death_matches_fence(&foreign, &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:451:        assert!(!death_matches_fence(&foreign, &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:453:            assert!(!death_matches_fence(&instance[..length], &fence));
+crates/gameplay/durability/src/durability/party_kill_xp.rs:456:        assert!(!death_matches_fence(&instance, &fence));
+crates/gameplay/durability/src/durability/character_hazard/primal.rs:56:            .any(|fence| !super::super::party_kill_xp::death_matches_fence(death_key, fence))
+crates/gameplay/durability/src/durability/quest_state/soul_war/native.rs:4:use crate::durability::party_kill_xp::death_matches_fence;
+crates/gameplay/durability/src/durability/quest_state/soul_war/native.rs:41:        if !death_matches_fence(death_key, fence) {
+crates/gameplay/durability/src/durability/quest_state/rotten_blood.rs:239:        if !super::super::party_kill_xp::death_matches_fence(death_key, &fence) {
+crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:314:        let endgame_kill = super::kill_reward::tracks_native_progression(&entry.creature);
+crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:364:                        entry.base_experience().ok_or(DurabilityError::InvalidStoredState)?,
+crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:461:                            base_xp: entry.base_experience().ok_or(DurabilityError::InvalidStoredState)?,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:109:fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:138:    PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:155:        encounter_experience: None,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:171:fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:1032:fn entry_for(creature: ExactActorRef) -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/party_xp.rs:212:        .base_experience()
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92:pub struct PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:97:    pub(super) encounter_experience: Option<oteryn_simulation_determinism::ExactI64>,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:144:pub(super) fn tracks_native_progression(creature: &str) -> bool {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:151:impl PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:152:    pub(super) fn base_experience(&self) -> Option<i64> {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:156:            .or_else(|| self.encounter_experience.map(|amount| amount.get()))
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:198:            encounter_experience: None,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1423:                        PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1427:                            encounter_experience: None,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1472:            if top.present().is_some() && tracks_native_progression(&creature) {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1477:                    refuse("encounter_experience_unavailable", &creature);
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1500:                entry.encounter_experience =
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1792:    let entry = PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1808:        encounter_experience: None,
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2519:        if let Some(experience) = entry.encounter_experience {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:2527:            captured.encounter_experience =
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/endgame.rs:27:    if case == Case::SoulWarLateDefeat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/endgame.rs:103:    if case == Case::PrimalDefeat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/endgame.rs:107:    } else if case == Case::RottenBloodDefeat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:69:    SoulWarLateDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:70:    SoulWarFinalDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:71:    RottenBloodDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:72:    PrimalDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:153:    run_scenario(Case::SoulWarFinalDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:158:    run_scenario(Case::RottenBloodDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:163:    run_scenario(Case::SoulWarLateDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:168:    run_scenario(Case::PrimalDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:191:        let endgame_death = matches!(case, Case::SoulWarDefeat | Case::SoulWarLateDefeat | Case::SoulWarFinalDefeat | Case::RottenBloodDefeat | Case::PrimalDefeat);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:192:        let late = matches!(case, Case::LateRewards | Case::SoulWarLateDefeat);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:240:            Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat => Some("oteryn:creature.goshnar_s_spite"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:242:            Case::PrimalDefeat => Some("oteryn:creature.the_primal_menace"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:243:            Case::SoulWarFinalDefeat => Some("oteryn:creature.goshnar_s_megalomania_green"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:244:            Case::RottenBloodEntry | Case::RottenBloodDefeat => Some("oteryn:creature.bakragore"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:537:            if case != Case::PrimalDefeat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:544:            if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:554:            if !matches!(case, Case::SoulWarEntry | Case::SoulWarDefeat | Case::SoulWarLateDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:560:                if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:568:                if matches!(case, Case::SoulWarFinalEntry | Case::SoulWarFinalDefeat) {

@@ -1,0 +1,11 @@
+panpipe-key-bag-regression	PASS
+panpipe-key-committed-selectors	PASS
+panpipe-key-selector-binding	PASS
+panpipe-key-world-facts	PASS
+panpipe-key-content-claims	PASS
+panpipe-key-server-content	PASS
+panpipe-key-server-world	PASS
+panpipe-key-pin-check	PASS
+panpipe-key-fmt-check	PASS
+panpipe-key-fixture-fmt	PASS
+panpipe-key-diff-check	PASS

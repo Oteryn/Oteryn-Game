@@ -1,0 +1,208 @@
+{
+  "task_id": "questpc7",
+  "state": "AUTHORING",
+  "initial_base": "29dcc3111",
+  "head": "140f8d912afbf6a4e68388da2ec23c645432e059",
+  "branch": "detached HEAD",
+  "frozen_sha": null,
+  "pr": null,
+  "whole_quest_counts": {
+    "QUALIFIED": 0,
+    "BLOCKED": 8,
+    "ACTIVE": 25
+  },
+  "requested_titles": 94,
+  "recorded_titles": 33,
+  "missing_title_scope": 61,
+  "completed_quest_batches": 0,
+  "qualified_shared_mechanisms": [
+    "Giant Smithhammer asymmetric passage predicate"
+  ],
+  "rust_and_content_checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 15.118138840000029,
+      "log": ".questpc7/asymmetric-rechecked-fmt.log"
+    },
+    {
+      "name": "mounted-fmt",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_asymmetric_lever.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+      ],
+      "exit_code": 0,
+      "seconds": 0.04006251200007682,
+      "log": ".questpc7/asymmetric-rechecked-mounted-fmt.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "--locked",
+        "--offline",
+        "check",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "seconds": 76.36065958099971,
+      "log": ".questpc7/asymmetric-rechecked-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "--locked",
+        "--offline",
+        "clippy",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 174.46592652800064,
+      "log": ".questpc7/asymmetric-rechecked-clippy.log"
+    },
+    {
+      "name": "units",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "--locked",
+        "--offline",
+        "test",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "seconds": 12.607060235000063,
+      "log": ".questpc7/asymmetric-rechecked-units.log"
+    },
+    {
+      "name": "pg",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "--locked",
+        "--offline",
+        "test",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_giant_smithhammer",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "seconds": 383.6918657289998,
+      "log": ".questpc7/asymmetric-rechecked-pg.log"
+    },
+    {
+      "name": "content",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "--locked",
+        "--offline",
+        "test",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "seconds": 149.11584046400003,
+      "log": ".questpc7/asymmetric-rechecked-content.log"
+    },
+    {
+      "name": "world",
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "--locked",
+        "--offline",
+        "test",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "seconds": 169.4110766949998,
+      "log": ".questpc7/asymmetric-rechecked-world.log"
+    },
+    {
+      "name": "tree",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/quest_tree_authoring.py",
+        "content",
+        "--check",
+        "--source-packet",
+        "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"
+      ],
+      "exit_code": 0,
+      "seconds": 32.31963704999998,
+      "log": ".questpc7/asymmetric-rechecked-tree.log"
+    }
+  ],
+  "python_authoring_tests": {
+    "passed": 15,
+    "log": ".questpc7/asymmetric-authoring-green.log"
+  },
+  "generated_diff_audit": {
+    "files": 31,
+    "unexpected_non_hash_changes": 0,
+    "log": ".questpc7/asymmetric-generated-diff-audit.json"
+  },
+  "source_consistency": {
+    "state": "PASS",
+    "log": ".questpc7/asymmetric-consistency-current.log",
+    "exit_code": 0,
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/run_checks.py",
+      "--part",
+      "checks"
+    ]
+  },
+  "source_donor_replay": {
+    "state": "PASS",
+    "python": "/home/mole/oteryn-cache/venv-ci312/bin/python",
+    "log": ".questpc7/asymmetric-donor-current-check.log",
+    "exit_code": 0,
+    "command": [
+      "/home/mole/oteryn-cache/venv-ci312/bin/python",
+      "tools/content-schema/quest-authoring/quest_donor_source_authoring.py",
+      "--check"
+    ]
+  },
+  "unfinished": "25 pinned Game quest paths; missing scope for 61 further requested titles. No full quest batch is qualified.",
+  "external_snapshots_observed": [
+    "3b1e0f68f",
+    "140f8d912afbf6a4e68388da2ec23c645432e059"
+  ]
+}

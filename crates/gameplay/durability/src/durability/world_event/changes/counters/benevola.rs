@@ -61,7 +61,8 @@ impl BenevolaHandover {
                 quest: "oteryn:quest/worldchange/benevola".into(),
                 effects: Vec::new(),
                 completes: false,
-                experience: None, world_change: None,
+                experience: None,
+                world_change: None,
             }],
         )
         .map(Arc::new)
@@ -212,7 +213,8 @@ mod tests {
                     quest: "oteryn:quest/other".into(),
                     effects: Vec::new(),
                     completes: false,
-                    experience: None, world_change: None,
+                    experience: None,
+                    world_change: None,
                 }]
             )
             .is_err()

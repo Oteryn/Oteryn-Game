@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "bindings": [
+    {
+      "callback": "oteryn:quest-callback/formogar-hoist-3059",
+      "expected": {
+        "position": null,
+        "unique": 3059,
+        "action": null,
+        "appearance": null
+      },
+      "selector": {
+        "position": {
+          "x": 32157,
+          "y": 31125,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5770
+      },
+      "sources": [
+        "content/world/placements/region-z09-x125-y121.b3:sha256:70df9da5a434155ce919dd5057ac24d948afe684fc01e0e8ae4a5a077451eb5e"
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/formogar-hoist-3060",
+      "expected": {
+        "position": null,
+        "unique": 3060,
+        "action": null,
+        "appearance": null
+      },
+      "selector": {
+        "position": {
+          "x": 32157,
+          "y": 31125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5770
+      },
+      "sources": [
+        "content/world/placements/region-z10-x125-y121.b3:sha256:3eee23ab13970525b08cca863894db89460f451f79ed3a6dc004a49a5529628e"
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/formogar-hoist-3061",
+      "expected": {
+        "position": null,
+        "unique": 3061,
+        "action": null,
+        "appearance": null
+      },
+      "selector": {
+        "position": {
+          "x": 32157,
+          "y": 31125,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5770
+      },
+      "sources": [
+        "content/world/placements/region-z11-x125-y121.b3:sha256:2f07fee857bc1ccce0eaad692c666f98c96ee9681ac4b21520a8b79e4a0bfe5d"
+      ]
+    }
+  ]
+}

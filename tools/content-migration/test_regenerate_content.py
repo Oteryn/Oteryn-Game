@@ -295,9 +295,13 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
         directory = "tools/content-schema/quest-authoring/samples/completion242/"
         callback = "content/quests/world-callbacks.json"
         proof = [{"path": callback, "sha256": "old"}, {"path": "other", "sha256": "kept"}]
-        approval = {"proof_inputs": proof, "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
-        receipt = {"proof_inputs": proof, "changes": ["reviewed"],
+        compiler = "tools/compiler.py"
+        compiler_inputs = [{"path": compiler, "sha256": "old"}]
+        approval = {"compiler_inputs": compiler_inputs, "proof_inputs": proof,
+                    "approved_core_digests": ["core"], "approved_graphs": ["graph"]}
+        receipt = {"compiler_inputs": compiler_inputs, "proof_inputs": proof, "changes": ["reviewed"],
                    "approval": {"path": directory + "source-fix-approval.json", "sha256": "old"}}
+        write(root, compiler, "# merged compiler\n")
         write(root, callback, {"schema": 1, "callbacks": []})
         write(root, directory + "source-fix-approval.json", approval)
         write(root, directory + "source-fix-receipt.json", receipt)
@@ -308,6 +312,9 @@ def test_callback_proof_refresh_preserves_reviewed_snapshots() -> None:
             rc.refresh_quest_callback_proof()
             assert first == [path.read_bytes() for path in paths]
         approval["proof_inputs"][0]["sha256"] = hashlib.sha256((root / callback).read_bytes()).hexdigest()
+        compiler_inputs[0]["sha256"] = sha(root, compiler)
+        assert approval["proof_inputs"] == proof
+        assert receipt["proof_inputs"] == proof
         receipt["approval"]["sha256"] = hashlib.sha256(first[0]).hexdigest()
         assert json.loads(first[0]) == approval
         assert json.loads(first[1]) == receipt
@@ -384,6 +391,9 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         world = root / "content/world"
         write(root, rc.PIN_PATH, PIN_TEST + f'const TREE_SHA256: &str = "{"0" * 64}";\n')
         write(root, "content/world/definitions/reference.json", {})
+        write(root, "content/world/placements/index.json", {"palette": [], "regions": []})
+        client = root / "crates/client-assets/src/world.rs"
+        write(root, str(client.relative_to(root)), f'pub const PLACEMENT_INDEX_SHA256: &str = "{"0" * 64}";\n')
         write(root, "content/world/provenance/imports.json", {"batches": [{"batch_id": key} for key in ["legacy-a", "legacy-b", "g4-item-fx-audio295-raw-evidence-r1", "seasonal-cake-creature-crystal-201189f-r1"]]})
         write(root, "apps/game-server/tests/content_npc_catalogue.rs", f'assert_eq!(catalogue.source_tree_digest(), "{"0" * 64}");\n')
         path = root / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
@@ -394,9 +404,36 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         assert 'assert_eq!(batches.len(), 3);' in text
         assert 'assert_eq!(historical.len(), 2);' in text
         assert 'assert_eq!(&batches[..prior.len()], prior.as_slice());' in text
+        placement_sha = hashlib.sha256((world / "placements/index.json").read_bytes()).hexdigest()
+        assert f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";' in client.read_text()
+
+def test_source_cohort_includes_installed_successors() -> None:
+    installed = []
+
+    class Measured(Exception):
+        pass
+
+    def measure():
+        assert installed == [rc.ROOT], "measure only the complete installed World"
+        raise Measured
+
+    with patch.object(sys, "argv", ["regenerate_content.py"]), \
+            patch.object(rc, "run"), \
+            patch.object(rc, "refresh_quest_callback_proof"), \
+            patch.object(rc, "materialize_world"), \
+            patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
+        try:
+            rc.main()
+        except Measured:
+            pass
+        else:
+            raise AssertionError("the complete World cohort must be measured")
+
 
 def main() -> None:
     tests = [
+        test_source_cohort_includes_installed_successors,
         test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
         test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,
         test_no_stage_checks_binary_conflicts_without_decoding,

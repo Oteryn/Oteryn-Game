@@ -1,0 +1,62 @@
+name: Node boot real-clock nightly qualification
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-boot-real-clock-nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  node-boot:
+    name: Node boot / shipped binaries against the real Platform
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+
+      - name: Validate harness
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/node_boot/run.sh
+          echo 'NODE_BOOT_EVIDENCE static_validation=PASS shell=parsed'
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          OTERYN_NODE_BOOT_REAL_CLOCK: "1"
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
+          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true

@@ -1,0 +1,11 @@
+{
+  "state": "COMPILING_WIP_CHECKPOINT",
+  "main": "87957a7fa774d2979ae708688a199d8024b5122c",
+  "merge_commit": "5f68638f8",
+  "workspace_all_targets": "PASS2m57s",
+  "fmt": "PASS",
+  "native_test": "Goblin first PG attempt18.6,66.448987651s failedMalformed before quest action; capability fixture corrected; valid mechanic RED still pending, not claimed",
+  "quest_data": "quest-specific producer source/recipe/price verification PASS,2callbacks,7start tracks,7tool instances,1125gold; runtime hook remains unwired",
+  "owner_rule": "push compiling progress at least every30minutes; do not wait for more verification",
+  "scope": "4 ACTIVE unchanged; live-creature capture and other shared features remain qengine2-owned"
+}

@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-migration/register_spell_families.py",
+  "exit": 0,
+  "duration_seconds": 75.864
+}

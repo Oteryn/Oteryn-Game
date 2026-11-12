@@ -304,7 +304,7 @@ pub(super) fn destination(
         .destination());
     }
     let p = origin.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     Ok(MovementLocalPosition {
         x: p.x
             .checked_add(dx)
@@ -316,6 +316,29 @@ pub(super) fn destination(
     })
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Acquire before taking either Channel guard; only checkout is retryable.
+    pub(in crate::gameplay_transport) async fn acquire_field_step_pass(
+        &self,
+    ) -> Result<
+        crate::durability::IssuedSemanticPass,
+        crate::gameplay_transport::connection::AdmissionRefusal,
+    > {
+        // Retry only RootUnavailable. Keep transaction,
+        // field refusal and reconciliation results outside this retry scope.
+        super::super::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.root
+                    .try_issue_semantic_pass()
+                    .map_err(|error| match error {
+                        crate::durability::DurabilityError::RootUnavailable => {
+                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable
+                        }
+                        _ => crate::gameplay_transport::connection::AdmissionRefusal::Rejected,
+                    })
+            })
+            .await
+    }
+
     /// Runtime and state locks are held by the real transport caller. Ground
     /// advisory and SQL row locks remain held through the synchronous physical
     /// movement commit. This read-only transaction creates no cast command.
@@ -323,6 +346,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_with_field_ingress(
         &self,
         permit: &mut crate::durability::spell_owner_commit::SpellLanePermit,
+        pass: Result<
+            crate::durability::IssuedSemanticPass,
+            crate::gameplay_transport::connection::AdmissionRefusal,
+        >,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -389,8 +416,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return fail();
         }
         let before = states.get(runtime, actor, session).cloned();
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return fail();
+        let pass = match pass {
+            Ok(pass) => pass,
+            Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable) => {
+                super::super::operator_event("event=step_rejected_holder_busy");
+                return fail();
+            }
+            Err(_) => return fail(),
         };
         // The physical result is retained before rollback/pool-return awaits.
         // Transaction cleanup failure cannot turn an actual movement commit

@@ -46,6 +46,7 @@ struct ServeState {
     push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
     input_after_refresh: bool,
+    next_periodic_refresh: u8,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: Option<BufferedStep>,
@@ -98,6 +99,18 @@ struct ServeState {
     policy: LivenessPolicy,
 }
 
+impl Drop for ServeState {
+    fn drop(&mut self) {
+        if let Some(buffered) = &self.buffered {
+            // Only a frame still waiting here is proven not to have entered its
+            // movement owner. An in-flight STEP has already taken this buffer.
+            let _ =
+                self.commands
+                    .cancel_buffered_step(&buffered.frame, self.generation, self.sequence);
+        }
+    }
+}
+
 enum ServeEnd {
     Transferred(Box<AdmittedSession>),
     Disconnected,
@@ -109,6 +122,15 @@ enum ServeEnd {
 impl ServeEnd {
     #[track_caller]
     fn finish(self, admitted: AdmittedSession) -> ConnectionEnd {
+        self.finish_with_phase(admitted, None)
+    }
+
+    #[track_caller]
+    fn finish_with_phase(
+        self,
+        admitted: AdmittedSession,
+        phase: Option<&'static str>,
+    ) -> ConnectionEnd {
         let reason = match &self {
             Self::Transferred(_) => "transferred",
             Self::Disconnected => "disconnected",
@@ -120,8 +142,9 @@ impl ServeEnd {
             Self::ControlLost(path) => format!(" path={path}"),
             _ => String::new(),
         };
+        let phase = phase.map_or_else(String::new, |phase| format!(" phase={phase}"));
         operator_event(&format!(
-            "event=serve_end reason={reason}{path} source={} next_command_id={} server_sequence={}",
+            "event=serve_end reason={reason}{path}{phase} source={} next_command_id={} server_sequence={}",
             std::panic::Location::caller(),
             admitted.continuity.next_command_id,
             admitted.continuity.server_sequence,
@@ -304,12 +327,16 @@ where
                 }
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
+            let inbound_phase = next.phase();
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,
                 Ok(None) => continue,
                 Err(end) => {
                     authority.player_trade_disconnected(session.admitted.game_session_id);
-                    return end.finish(authority.current_activity_connection(session.admitted));
+                    return end.finish_with_phase(
+                        authority.current_activity_connection(session.admitted),
+                        Some(inbound_phase),
+                    );
                 }
             };
             if let Err(end) = command::execute(stream, authority, &mut session, input).await {

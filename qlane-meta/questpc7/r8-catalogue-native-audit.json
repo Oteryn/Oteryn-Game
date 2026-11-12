@@ -1,0 +1,3456 @@
+{
+  "selected_claims": 133,
+  "definitions_found": 133,
+  "distinct_items": 151,
+  "native_profile_rows": 3680,
+  "issues": [],
+  "items": [
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i10189",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i10217",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i10420",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.petrified_scream_quest",
+          "placement": 0,
+          "role": "root",
+          "count": 5,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11450",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11603",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.adoreduh",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11605",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11609",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.crystalwand2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11615",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11699",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i1781",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.goblintemple",
+          "placement": 0,
+          "role": "child",
+          "count": 5,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21203",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings",
+          "placement": 0,
+          "role": "child",
+          "count": 5,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings",
+          "placement": 0,
+          "role": "child",
+          "count": 10,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21333",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i21334",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i22158",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i22160",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i23732",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i23734",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i23986",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.halls_of_hope.reward1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.halls_of_hope.reward2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.halls_of_hope.reward3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.halls_of_hope.reward4",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.halls_of_hope.reward5",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i24964",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i266",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deadarcher",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i268",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deadarcher",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i27261",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i27262",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i27270",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2821",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2853",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.deadarcher",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.draconia2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.dragoncorpse",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.geomancer",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.goblintemple",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.longsword3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.minohell2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4502",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.fishing_box",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2854",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 20,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 20,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 20,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2856",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 5,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 5,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 5,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2955",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.fanfare",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2969",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3008",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3008,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3600",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3600,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3610",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3610,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3620",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3620,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3667",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3667,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4603",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 4603,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id5010",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 5010,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id5010",
+          "placement": 1,
+          "role": "root",
+          "count": 1,
+          "key_number": 5010,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2970",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3800",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3800,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3802",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3802,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4502",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 4502,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4601",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 4601,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2972",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3980",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3980,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2973",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.key.id3520",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 3520,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2989",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.longsword3",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2995",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3004",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.longsword2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3007",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest1",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3014",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.madmageroom1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3026",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.alawars_vault1",
+          "placement": 0,
+          "role": "root",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3027",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_5.lone_medusa",
+          "placement": 0,
+          "role": "root",
+          "count": 4,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3028",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest1",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.geomancer",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.mintwallincyclops",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond",
+          "placement": 0,
+          "role": "root",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3029",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest1",
+          "placement": 0,
+          "role": "child",
+          "count": 4,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.geomancer",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+          "placement": 0,
+          "role": "child",
+          "count": 2,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.devilhemet1",
+          "placement": 0,
+          "role": "root",
+          "count": 4,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3031",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.goblintemple",
+          "placement": 0,
+          "role": "child",
+          "count": 50,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.longsword3",
+          "placement": 0,
+          "role": "child",
+          "count": 76,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4502",
+          "placement": 0,
+          "role": "child",
+          "count": 23,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls",
+          "placement": 0,
+          "role": "child",
+          "count": 98,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u6_4.berserker_treasure.rewards.white_pearls",
+          "placement": 0,
+          "role": "child",
+          "count": 77,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+          "placement": 0,
+          "role": "child",
+          "count": 48,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold",
+          "placement": 0,
+          "role": "root",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3032",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.isleofthemists",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3035",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.fishing_box",
+          "placement": 0,
+          "role": "child",
+          "count": 5,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines",
+          "placement": 0,
+          "role": "child",
+          "count": 2,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+          "placement": 0,
+          "role": "child",
+          "count": 10,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.desert1",
+          "placement": 0,
+          "role": "root",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+          "placement": 0,
+          "role": "root",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3039",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.doublehero1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3044",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_5.elephant_tusk",
+          "placement": 0,
+          "role": "root",
+          "count": 2,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3049",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.demonaring1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3051",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.draconia2",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.demonaring2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3052",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest1",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_5.darashia_dragon",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3055",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest1",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3068",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.crystalwand1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3081",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.draconia2",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3093",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.doublehero2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.ghoulroom2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3097",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.geomancer",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.deeperfibula3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3123",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3147",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.longsword3",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4502",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3155",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3210",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.madmageroom2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3266",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.battleaxe",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3269",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.devilhemet3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3279",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.circleroom1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3283",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.minohell3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3285",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.longsword1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3292",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.combatknife",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3298",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4502",
+          "placement": 0,
+          "role": "child",
+          "count": 4,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3300",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.katanacorpse2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3301",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.alawars_vault2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3307",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.barbarianaxe1",
+          "placement": 1,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3310",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhamer",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3313",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.griffinshield2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3315",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3317",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.barbarianaxe1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3318",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deeperfibula5",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3320",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.fireaxe2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3323",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.circleroom2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.griffinshield3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3350",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deadarcher",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3353",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3354",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.bear_chest2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3356",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.devilhemet2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3358",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.bear_chest3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3360",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest4",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3361",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3367",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.katanacorpse1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3369",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deeperfibula2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3374",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.dragoncorpse",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3379",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.doublet",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3381",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.blackknight1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3383",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.darkarmor",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3384",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.key.id4502",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3391",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.crusaderhelmet",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3409",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.edrongoblin2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3419",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.blackknight2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3420",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.behemothquest3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3428",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deeperfibula1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3430",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.dragoncorpse",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3433",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.griffinshield1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3447",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.minohell2",
+          "placement": 0,
+          "role": "child",
+          "count": 10,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3448",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.deadarcher",
+          "placement": 0,
+          "role": "child",
+          "count": 5,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.minohell2",
+          "placement": 0,
+          "role": "child",
+          "count": 4,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+          "placement": 0,
+          "role": "child",
+          "count": 60,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3449",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+          "placement": 0,
+          "role": "child",
+          "count": 30,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3450",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3463",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.longsword3",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3483",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.minohell1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3506",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironhelmet",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3551",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.goblintemple",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3579",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.captain_iglues",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3734",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.bloodherb",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i4871",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.explorerbrooch",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5080",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5878",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.minotaurleatherquest",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5880",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.ironore",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5921",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.heavenblossom",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5924",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5940",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i5947",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6107",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i645",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6499",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6528",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6569",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "placement": 0,
+          "role": "child",
+          "count": 10,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+          "placement": 0,
+          "role": "child",
+          "count": 10,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+          "placement": 0,
+          "role": "child",
+          "count": 10,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6570",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6574",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7158",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.fishing_box",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7159",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.fishing_box",
+          "placement": 0,
+          "role": "child",
+          "count": 3,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7183",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7290",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7342",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 20,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 20,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 20,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7343",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": 8,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7364",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7365",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 100,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7372",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7375",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7377",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7380",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+          "placement": 1,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7384",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7389",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+          "placement": 1,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7390",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7392",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+          "placement": 2,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7400",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.formorgar_mines",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7406",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7415",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+          "placement": 2,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7429",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+          "placement": 2,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7434",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+          "placement": 1,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7439",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.helheim",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7440",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7443",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+          "placement": 0,
+          "role": "child",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7528",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7529",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7530",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7531",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    },
+    {
+      "definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i9685",
+        "revision_ref": "definition-r1"
+      },
+      "uses": [
+        {
+          "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth",
+          "placement": 0,
+          "role": "root",
+          "count": 1,
+          "key_number": 0,
+          "recipe_capacity": null,
+          "reward_claim_path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
+        }
+      ]
+    }
+  ]
+}

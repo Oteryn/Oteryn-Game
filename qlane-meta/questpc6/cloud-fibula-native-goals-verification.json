@@ -1,0 +1,77 @@
+{
+  "scope": "Personal one-shot native-origin death goals only. Whole Fibula authored supplement remains IN_PROGRESS pending expertise portal and terminal completion.",
+  "source": "tools/content-schema/quest-authoring/samples/native-kill-goals.json",
+  "engine": "Reuse retained native lethal queue, exact most-damage principal/lease capture, Character revision sequencer and QuestCause::CreatureDeath receipts. No new queue, instance, ordinary loot admission or XP policy.",
+  "postgres": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "duration_seconds": 46.44,
+      "marker_seconds": 46.433782934,
+      "failure": "Native Dragon corpse row inadmissible and no recognized quest-only path; death never entered retained queue."
+    },
+    "green": {
+      "cases": 1,
+      "duration_seconds": 100.33,
+      "outer_marker_seconds": 100.330559135,
+      "goal_marker_seconds": 42.59693677,
+      "assertions": [
+        "pre-activation refusal",
+        "wrong native spawn origin",
+        "wrong species at native origin",
+        "encounter copy at exact origin refused",
+        "command cause cannot manufacture a kill",
+        "actual native lethal damage, duplicate death capture and cancelled take retry",
+        "eight unique credited deaths capped at8; ninth and drain replay unchanged",
+        "settlement releases native corpse pin before fixture actor retirement"
+      ]
+    },
+    "discarded_intermediate_attempts": "Finite fixture actor capacity failed97.34s before positive counter case; retired settled fixture actors and added actual fixture tiles. Missing ExactActorRef import was corrected before final qualified run. No limit or assertion weakened."
+  },
+  "checks": {
+    "cargo_check": "four changed crates all-targets passed2m33s",
+    "quest_units": "268 passed10.59s, including closed-run and foreign-counter guards",
+    "grizzly_units": "9 passed; existing source party/principal/replay rules unchanged",
+    "clippy": "four changed crates all-target/all-feature -D warnings passed3m04s",
+    "format": "four packages plus mounted files passed",
+    "producer": "1 normalization unit passed0.029s; native_kill_goals.py --check passed;21 exact source origins"
+  },
+  "inherited_unit_repair": "owner_scope_excludes_dawnport_from_runtime_state_and_callbacks expected only original registry and altar although HEAD f91534062 already loaded shared-access and shared-outfit registries. Extend explicit expected registry set; retain exact equality and Dawnport exclusion. The final native PG rerun includes the registry expectation repair and Clippy then_some correction.",
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc6-root-fibula-goals-red.log",
+      "sha256": "ac8762d7a2b2df3fea129c114a5713eaa874ef482f6041acfddb60d9710880b6"
+    },
+    "green": {
+      "path": "/tmp/questpc6-root-fibula-goals-green.log",
+      "sha256": "4f398a8c86955c46094f2a94844906bb7f605ab5c27e4773c3f41dab65ee08a2"
+    },
+    "green-qualified": {
+      "path": "/tmp/questpc6-root-fibula-goals-green-qualified.log",
+      "sha256": "86efd5adbeb6eca605d521b42f03c594f0e087d701ad6b4e51ffca8e28ec0b7d"
+    },
+    "check": {
+      "path": "/tmp/questpc6-root-fibula-goals-check.log",
+      "sha256": "b8a8cff2b86d94149376c29497f8c9e8cf3b7762f380ca823dcf72acfbc0df37"
+    },
+    "quest-units-final": {
+      "path": "/tmp/questpc6-root-fibula-goals-quest-units-final.log",
+      "sha256": "a57d4406137d68c9a7dd91db12cda3399f614b76a71cd40dfe458a3d87dc9135"
+    },
+    "grizzly-units": {
+      "path": "/tmp/questpc6-root-fibula-goals-grizzly-units.log",
+      "sha256": "93b6d421d0b0ae622690426c15e13d080d6359f8e4d1bd57b5c1243a6efea324"
+    },
+    "clippy": {
+      "path": "/tmp/questpc6-root-fibula-goals-clippy.log",
+      "sha256": "9f9a54a874cb89003a2201a8bd8537e7a2cbbe7e7357fef090a2d8dbc3fff72d"
+    },
+    "green-checked": {
+      "path": "/tmp/questpc6-root-fibula-goals-green-checked.log",
+      "sha256": "5e5ef11bdb2531cad1e1a9df6f099b3193cd70d50860312f0dc21b1b21e27690"
+    },
+    "clippy-final": {
+      "path": "/tmp/questpc6-root-fibula-goals-clippy-final.log",
+      "sha256": "86ab7a455b7aa74bf65c013173e81a6df5c09a3142d8d72e0f5d16263db8f54c"
+    }
+  }
+}

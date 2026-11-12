@@ -662,13 +662,11 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         &base, &admitted,
     )?;
     // The fixture map holds none of the real chests: every ready claim is a candidate that
-    // does not bind, and the 7 waiting plain records are left out. KEY-1 adds 21 key
-    // variants; W15b adds 67 native recipes. Questpc4 admits three full-charge
-    // plain leaves and the complete Triangle Tower/Desert bags through the same binder.
+    // does not bind. QUEST-FINISH admits all plain records through exact source
+    // charge/fluid projections and excludes both Dawnport records
+    // while preserving their source data. Falcon uses its separate cycle owner.
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
-    // ITEMHOLD-Q (#3017) admits two native containers and the full-charge Power Ring leaf.
-    // These are source-backed candidates even though this tiny map has none of their chests.
-    assert_eq!(candidates, 315);
+    assert_eq!(candidates, 328);
     for key in [
         "oteryn:reward-claim.kv.ornamentedshield",
         "oteryn:reward-claim.kv.triangletower",
@@ -685,13 +683,29 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         );
     }
     assert!(report.served.is_empty());
+    assert!(report.served.is_empty());
     assert_eq!(
         report
             .left_out
             .iter()
             .filter(|(_, why)| *why == LeftOut::NotReady)
             .count(),
-        7
+        0
+    );
+    for (reason, expected) in [(LeftOut::OwnerExcluded, 2), (LeftOut::Variant, 6)] {
+        assert_eq!(
+            report
+                .left_out
+                .iter()
+                .filter(|(_, why)| *why == reason)
+                .count(),
+            expected
+        );
+    }
+    assert_eq!(
+        report.left_out.len(),
+        8,
+        "every remaining record has its exact owner"
     );
     Ok(())
 }

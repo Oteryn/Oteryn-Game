@@ -1,0 +1,449 @@
+{
+  "batch_id": "door-startup-integration-2026-11-07",
+  "base_sha": "293b85c88",
+  "reused": [
+    "97c922c33",
+    "e0aca57413e36818be5406052ac656d240236b15"
+  ],
+  "implementation": "Adopt the published direct fenced once-claim read, sealed native opening/displacement, whole-carrier rollback, and pinned startup chest overlay. Remove parallel local storage projection and door registry. Retain exact revision retry and stale-proof-before-projection assertions in the published carrier unit.",
+  "proof": [
+    {
+      "name": "atomic-unit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-entities",
+        "--features",
+        "test-support",
+        "--lib",
+        "source_step_projection_refusal_restores_the_entire_carrier",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 3.526,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-atomic-unit.log"
+    },
+    {
+      "name": "annihilator-door",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "annihilator_reward_door_tracks_the_real_shared_claim",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 350.821,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "ANNIHILATOR_REWARD_DOOR POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-annihilator-door.log"
+    },
+    {
+      "name": "actual-claim",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 55.473,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "W15B_STORAGE_CHOICE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-actual-claim.log"
+    },
+    {
+      "name": "party-entry",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_annihilator_party_encounter_fail_closed",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 56.425,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "POSTGRES_CASE_COMPLETED annihilator-entry",
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-party-entry.log"
+    },
+    {
+      "name": "banshee",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "m06q_placed_quest_door_use_wire_requires_durable_storage",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 54.454,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "M06Q EXECUTED: placed action 10089",
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-banshee.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 96.264,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 199.993,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-clippy.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.717,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-merge-fmt.log"
+    },
+    {
+      "name": "startup-selectors",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "annihilator_captured_startup_chests_share_the_real_claim",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 84.196,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "ANNIHILATOR_CAPTURED_CHESTS POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-startup-selectors.log"
+    },
+    {
+      "name": "collision-unit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-world",
+        "--lib",
+        "opening_door_collision_exception_keeps_other_solids_blocking",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 78.12,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-collision-unit.log"
+    },
+    {
+      "name": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 145.966,
+      "counts": [
+        [
+          "123",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-content.log"
+    },
+    {
+      "name": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 57.486,
+      "counts": [
+        [
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-world.log"
+    },
+    {
+      "name": "pin",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "run",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc2-door-merge-pin"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 26.725,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-pin.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 56.538,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 85.817,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-clippy.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.814,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-door-startup-combined-fmt.log"
+    }
+  ],
+  "python_cases": {
+    "effect_source": 5,
+    "group_source": 3,
+    "chest_overlay": 11
+  },
+  "source_capture_and_overlay_check": "PASS; 27 exact chest/access selectors",
+  "postgres_version": 180006,
+  "postgres_test_execution_seconds": {
+    "door": 55.97,
+    "startup": 55.46
+  },
+  "whole_quest_qualifications": 0,
+  "superseded_checkpoint": "BATCH-local-door-prototype-2026-11-07.json remains historical; its product prototype is superseded by the source-correct shared owner.",
+  "failed_attempts": [
+    {
+      "error": "test executable No such file or directory (os error 2)",
+      "counted_as_pg_proof": false,
+      "correction": "Cargo rebuilt the missing executable; exact selector test reran and passed. Stop executable deletion during active builds."
+    }
+  ],
+  "self_review": "Read direct claim gate, source movement proof, transaction rollback, source selectors, schema and merged tree. No additional runtime change needed. No reward/storage gate invented; source geometry unchanged. Whole lifecycle remains separate.",
+  "next": "Desert Dungeon four-station party rite; source facts and reusable atomic offering/movement plan at /tmp/questpc2-desert-mechanism-plan.json."
+}

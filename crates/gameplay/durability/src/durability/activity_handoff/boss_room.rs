@@ -9,6 +9,8 @@ use oteryn_gameplay_encounter_rules::boss_room::{
     AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
 };
 
+mod quest_entry;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BossRoomDefinition {
     pub boss_key: String,
@@ -481,6 +483,18 @@ pub(super) async fn prepare_in_transaction(
         let Some(level) = level else {
             return Ok(Err(ActivityRefusal::AuthorityRejected));
         };
+        if let Some(refusal) = quest_entry::validate(
+            tx,
+            &definition.boss_creature_key,
+            p.source.character_id,
+            level,
+            r.participants.len(),
+            now,
+        )
+        .await?
+        {
+            return Ok(Err(refusal));
+        }
         let cooldown:Option<i64>=sqlx::query_scalar("SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE")
             .bind(p.source.character_id.as_bytes().as_slice()).bind(&r.activity_key).fetch_optional(&mut **tx).await?;
         facts.push(ParticipantFact {
@@ -663,6 +677,30 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     sqlx::query("INSERT INTO game_character_boss_difficulty_records(character_id,boss_key,highest_defeated) SELECT p.character_id,a.boss_key,a.difficulty FROM game_boss_room_activities a JOIN game_boss_room_participants p ON p.admission=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND a.difficulty IS NOT NULL ORDER BY p.character_id ON CONFLICT(character_id,boss_key) DO UPDATE SET highest_defeated=greatest(game_character_boss_difficulty_records.highest_defeated,excluded.highest_defeated)")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).execute(&mut **tx).await?;
     Ok(BossRoomDefeatDecision::Recorded)
+}
+
+/// Native Instance progression consumes the exact W02 victory, not merely a
+/// matching creature name. The party-XP caller independently proves its current
+/// scope and Character fences in this transaction. A late death may earn normal
+/// XP, but cannot acquire the timed encounter's Quest/Hazard entitlement.
+pub async fn native_defeat_earned_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    creature: &str,
+    death: [u8; 16],
+) -> Result<bool> {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = scope
+    else {
+        return Ok(true);
+    };
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_activities a JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric AND g.state=2 AND a.boss_creature_key=$4 AND a.defeat_id=encode($5,'hex')::uuid AND a.state IN (2,4))")
+        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+        .bind(generation.get().to_string()).bind(creature).bind(death.as_slice())
+        .fetch_one(&mut **tx).await.map_err(Into::into)
 }
 
 /// Compatibility for the existing nonreward death owner: a deterministic late

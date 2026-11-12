@@ -14,6 +14,8 @@ import hashlib
 import json
 import xml.etree.ElementTree as ET
 
+from native_profile_composition import encode_native_profile
+
 # Item id -> (podium kind, use-transform partner, wrap kit). Kind 1 renown, 2 vigour, 3 tenacity.
 PODIUMS = {
     35973: (1, 35974, 23398),
@@ -73,7 +75,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in taxonomy and key in keys:
             record['authoring']['taxonomy'] = copy.deepcopy(taxonomy[key])
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

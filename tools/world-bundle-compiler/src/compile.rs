@@ -898,6 +898,14 @@ impl State<'_> {
                     ))
                 })?;
             let mut item = item.clone();
+            if item.attrs.count == Some(0)
+                && matches!(
+                    self.resolver.resolve(key),
+                    Resolution::Resolved(Family::Item, _)
+                )
+            {
+                item.attrs = item.attrs.with_legacy_default_item_count();
+            }
             if let Some(to) = item.attrs.teleport {
                 let from = (tile.x, tile.y, z);
                 self.teleports_seen.insert(from);
@@ -1426,6 +1434,9 @@ impl<'a> Context<'a, '_> {
                 top_level = top_level.saturating_add(1);
             }
             let mut attrs = item.attrs.clone();
+            if matches!(own, Some(Resolution::Resolved(Family::Item, _))) {
+                attrs = attrs.with_legacy_default_item_count();
+            }
             if let Some(teleport) = teleport {
                 attrs.teleport = teleport;
                 if teleport.is_none() {

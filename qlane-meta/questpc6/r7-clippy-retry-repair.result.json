@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-content -p oteryn-gameplay-durability -p oteryn-gameplay-quests -p oteryn-gameplay-social -p oteryn-gameplay-dispatch -p oteryn-gameplay-combat -p oteryn-gameplay-encounters -p oteryn-gameplay-npc -p oteryn-game-server -p oteryn-client --all-targets --all-features --quiet -- -D warnings",
+  "exit": 0,
+  "duration_seconds": 87.511
+}

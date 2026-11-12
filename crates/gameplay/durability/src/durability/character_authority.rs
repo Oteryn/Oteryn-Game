@@ -276,7 +276,10 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &checked).await?;
+                    observe_character_authority_check(
+                        CharacterAuthorityCheck::RecoveryFence,
+                        assert_recovery_fence(&mut tx, &checked).await,
+                    )?;
                     verify_character_integrity(&mut tx, definitions.as_deref()).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok::<(), CharacterAuthorityError>(()))
@@ -774,6 +777,8 @@ pub(super) async fn account_security(
 
 // UNION ALL arm order is irrelevant: the query checks only for the existence of an
 // invalid row; chain continuity and latest state are joined by Character revision.
+// Keep the additive view aligned with game_character_progression_consistency_guard.
+// It includes premium and prey receipts, so neither may be repeated as another arm.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_bazaar_character_revision_chain",
     "game_character_bestiary_kill_receipts",
@@ -781,9 +786,8 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_charm_receipts",
     "game_character_death_receipts",
     "game_character_familiar_receipts",
+    "game_character_hazard_revision_chain_rotten_blood_arena",
     "game_character_monk_state_receipts",
-    "game_character_premium_revision_chain",
-    "game_character_prey_receipts",
     "game_character_proficiency_receipts",
     "game_character_quest_receipts",
     "game_character_stance_receipts",
@@ -791,6 +795,8 @@ const RECEIPT_CHAIN_TABLES: &[&str] = &[
     "game_character_xp_receipts",
 ];
 
+// Migration 0539 changes only declaration metadata and preserves immutable receipts.
+// Both receipt comparisons retain its exact legacy-to-current exception.
 static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
     let chain = RECEIPT_CHAIN_TABLES
         .iter()
@@ -843,7 +849,9 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision) \
          UNION ALL \
@@ -856,12 +864,70 @@ static CHARACTER_INTEGRITY_SQL: LazyLock<String> = LazyLock::new(|| {
              OR x.content_revision <> s.content_revision \
              OR x.simulation_revision <> s.simulation_revision \
              OR x.evidence_revision <> s.evidence_revision \
-             OR x.declaration_revision <> s.declaration_revision \
+             OR NOT (x.declaration_revision = s.declaration_revision \
+                     OR (x.declaration_revision = 'character-progression-differences-v1-c6d0829911772c01b4a229a5bb0aa8f9' \
+                         AND s.declaration_revision = 'character-progression-differences-v1-aa9d260834741d235ba9bd77e14888bf')) \
              OR x.policy_revision <> s.policy_revision \
              OR x.reward_revision <> s.reward_revision \
          LIMIT 1"
     )
 });
+
+enum CharacterAuthorityCheck {
+    RecoveryFence,
+    OfflineTraining,
+    NpcPurchase,
+    Creation,
+    Bazaar,
+    RevisionChain,
+    Appearance,
+    BuildChain,
+    ProficiencyHistory,
+    FamiliarChain,
+    SpellFamiliarGroup,
+    SpellItemChain,
+    AuditPayload,
+}
+
+impl CharacterAuthorityCheck {
+    const fn as_str(&self) -> &'static str {
+        match self {
+            Self::RecoveryFence => "recovery_fence",
+            Self::OfflineTraining => "offline_training",
+            Self::NpcPurchase => "npc_purchase",
+            Self::Creation => "creation",
+            Self::Bazaar => "bazaar",
+            Self::RevisionChain => "revision_chain",
+            Self::Appearance => "appearance",
+            Self::BuildChain => "build_chain",
+            Self::ProficiencyHistory => "proficiency_history",
+            Self::FamiliarChain => "familiar_chain",
+            Self::SpellFamiliarGroup => "spell_familiar_group",
+            Self::SpellItemChain => "spell_item_chain",
+            Self::AuditPayload => "audit_payload",
+        }
+    }
+}
+
+fn observe_character_authority_check<T>(
+    stage: CharacterAuthorityCheck,
+    result: std::result::Result<T, DurabilityError>,
+) -> std::result::Result<T, DurabilityError> {
+    result.inspect_err(|_| {
+        oteryn_error_codes::emit(
+            "oteryn-game-server",
+            &oteryn_error_codes::Line::new(
+                oteryn_error_codes::Level::Warn,
+                "durability",
+                "character_authority_check_failed",
+            )
+            .field(
+                "stage",
+                oteryn_error_codes::FieldValue::Owned(stage.as_str().to_owned()),
+            ),
+        );
+    })
+}
 
 /// Complete first-slice integrity: each root has exactly one creation receipt, from the
 /// operator bootstrap with its reconstructed intent binding or from a committed create
@@ -874,10 +940,22 @@ async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<(), DurabilityError> {
-    super::offline_training_state::verify(tx).await?;
-    super::npc_purchase::verify_purchase_integrity(tx).await?;
-    creation_integrity::verify(tx).await?;
-    super::bazaar::recovery::verify(tx).await?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::OfflineTraining,
+        super::offline_training_state::verify(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::NpcPurchase,
+        super::npc_purchase::verify_purchase_integrity(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::Creation,
+        creation_integrity::verify(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::Bazaar,
+        super::bazaar::recovery::verify(tx).await,
+    )?;
     // P03 progression is optional at revision one because initialization is a
     // separate owner.  Once a Character advances, typed state and a complete,
     // gap-free immutable receipt chain must explain the global revision and the
@@ -887,23 +965,54 @@ async fn verify_character_integrity(
     // (0032), familiar state change (0033) or quest transition (0056), each
     // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
-    sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
-        .fetch_optional(&mut **tx)
-        .await?
-        .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
-    super::character_appearance::verify_character_appearance_integrity(tx)
-        .await
-        .map_err(|error| match error {
-            super::character_appearance::AppearanceReadError::InvalidStoredState => {
-                DurabilityError::InvalidStoredState
-            }
-            super::character_appearance::AppearanceReadError::Storage(error) => error.into(),
-        })?;
-    verify_character_build_chain(tx).await?;
-    verify_all_character_proficiency_histories(tx, definitions).await?;
-    super::character_familiar::verify_familiar_chain(tx).await?;
-    super::spell_familiar_group::verify_familiar_group(tx).await?;
-    super::spell_item_transaction::verify_spell_item_chain(tx).await?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::RevisionChain,
+        sqlx::query(CHARACTER_INTEGRITY_SQL.as_str())
+            .fetch_optional(&mut **tx)
+            .await
+            .map_err(DurabilityError::from)
+            .and_then(|row| row.map_or(Ok(()), |_| Err(DurabilityError::Unavailable))),
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::Appearance,
+        super::character_appearance::verify_character_appearance_integrity(tx)
+            .await
+            .map_err(|error| match error {
+                super::character_appearance::AppearanceReadError::InvalidStoredState => {
+                    DurabilityError::InvalidStoredState
+                }
+                super::character_appearance::AppearanceReadError::Storage(error) => error.into(),
+            }),
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::BuildChain,
+        verify_character_build_chain(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::ProficiencyHistory,
+        verify_all_character_proficiency_histories(tx, definitions).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::FamiliarChain,
+        super::character_familiar::verify_familiar_chain(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::SpellFamiliarGroup,
+        super::spell_familiar_group::verify_familiar_group(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::SpellItemChain,
+        super::spell_item_transaction::verify_spell_item_chain(tx).await,
+    )?;
+    observe_character_authority_check(
+        CharacterAuthorityCheck::AuditPayload,
+        verify_character_audit_payloads(tx).await,
+    )
+}
+
+async fn verify_character_audit_payloads(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<(), DurabilityError> {
     // A self-consistent hash is not semantic evidence: every retained payload
     // must be exactly the registered encoding of its root's identities.
     let mut after = String::from("00000000-0000-0000-0000-000000000000");

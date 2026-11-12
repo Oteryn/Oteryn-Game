@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from native_profile_composition import encode_native_profile
+
 ROOT = Path(__file__).resolve().parents[2]
 PATH = "tools/content-schema/native-gameplay/grizzly-debris-item-profiles.json"
 IDS = {6475, 6476, 6477, 6478, 6479, 6480, 6481, 6482, 6483, 6485, 6486}
@@ -34,7 +36,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if present & set(keys):
         raise ValueError("GRIZZLY_DEBRIS_PROFILE_RECORD_SET")
     document["records"] = sorted(document["records"] + records, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(data).hexdigest()

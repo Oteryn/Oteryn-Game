@@ -1,0 +1,372 @@
+{
+  "schema": 1,
+  "goals": [
+    {
+      "key": "oteryn:quest-transition/native-kill/elvenbane-demon-skeleton-east",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-east",
+      "activation": "oteryn:quest-callback/elvenbane-basement-entry",
+      "count": 1,
+      "origins": [
+        {
+          "creature": "oteryn:creature.demon_skeleton",
+          "floor": 3,
+          "x": 32592,
+          "y": 31644,
+          "source_pointer": "/records/1175/declaration/points/1"
+        }
+      ],
+      "requires": [
+        {
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "count": 1
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-00000-01999.json",
+          "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+          "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+          "lines": "Elvenbane Quest/s3-s4"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/native-kill/elvenbane-demon-skeleton-west",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-west",
+      "activation": "oteryn:quest-callback/elvenbane-basement-entry",
+      "count": 1,
+      "origins": [
+        {
+          "creature": "oteryn:creature.demon_skeleton",
+          "floor": 3,
+          "x": 32589,
+          "y": 31646,
+          "source_pointer": "/records/1175/declaration/points/2"
+        }
+      ],
+      "requires": [
+        {
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "count": 1
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-00000-01999.json",
+          "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+          "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+          "lines": "Elvenbane Quest/s3-s4"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/native-kill/elvenbane-dragon",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+      "activation": "oteryn:quest-callback/elvenbane-basement-entry",
+      "count": 1,
+      "origins": [
+        {
+          "creature": "oteryn:creature.dragon",
+          "floor": 5,
+          "x": 32590,
+          "y": 31645,
+          "source_pointer": "/records/1440/declaration/points/0"
+        }
+      ],
+      "requires": [],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-02000-03999.json",
+          "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+          "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+          "lines": "Elvenbane Quest/s3-s4"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/native-kill/elvenbane-elf-arcanist",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/elf-arcanist",
+      "activation": "oteryn:quest-callback/elvenbane-basement-entry",
+      "count": 1,
+      "origins": [
+        {
+          "creature": "oteryn:creature.elf_arcanist",
+          "floor": 3,
+          "x": 32590,
+          "y": 31643,
+          "source_pointer": "/records/1175/declaration/points/0"
+        }
+      ],
+      "requires": [
+        {
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "count": 1
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-00000-01999.json",
+          "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+          "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+          "lines": "Elvenbane Quest/s3-s4"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/native-kill/elvenbane-minotaur-mage",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/minotaur-mage",
+      "activation": "oteryn:quest-callback/elvenbane-basement-entry",
+      "count": 1,
+      "origins": [
+        {
+          "creature": "oteryn:creature.minotaur_mage",
+          "floor": 4,
+          "x": 32592,
+          "y": 31643,
+          "source_pointer": "/records/26/declaration/points/0"
+        }
+      ],
+      "requires": [
+        {
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "count": 1
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-02000-03999.json",
+          "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+          "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+          "lines": "Elvenbane Quest/s3-s4"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/native-kill/elvenbane-orc-shaman",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "phase": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+      "counter": "oteryn:quest-progress/elvenbane/native-defenders/orc-shaman",
+      "activation": "oteryn:quest-callback/elvenbane-basement-entry",
+      "count": 1,
+      "origins": [
+        {
+          "creature": "oteryn:creature.orc_shaman",
+          "floor": 4,
+          "x": 32590,
+          "y": 31647,
+          "source_pointer": "/records/28/declaration/points/0"
+        }
+      ],
+      "requires": [
+        {
+          "counter": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "count": 1
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-02000-03999.json",
+          "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+          "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+          "lines": "Elvenbane Quest/s3-s4"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/native-kill/fibula-cavern",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "phase": "oteryn:quest-progress/fibula/supplement",
+      "counter": "oteryn:quest-progress/fibula/cavern_kills",
+      "activation": "oteryn:quest-reward/fibula-key-first",
+      "count": 8,
+      "origins": [
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32232,
+          "y": 32481,
+          "floor": 10,
+          "source_pointer": "/records/932/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon_lord",
+          "x": 32234,
+          "y": 32488,
+          "floor": 10,
+          "source_pointer": "/records/954/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32236,
+          "y": 32474,
+          "floor": 10,
+          "source_pointer": "/records/900/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon_lord",
+          "x": 32236,
+          "y": 32495,
+          "floor": 10,
+          "source_pointer": "/records/983/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32238,
+          "y": 32479,
+          "floor": 10,
+          "source_pointer": "/records/922/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon_lord",
+          "x": 32242,
+          "y": 32487,
+          "floor": 10,
+          "source_pointer": "/records/951/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32247,
+          "y": 32491,
+          "floor": 10,
+          "source_pointer": "/records/961/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32248,
+          "y": 32496,
+          "floor": 10,
+          "source_pointer": "/records/984/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32256,
+          "y": 32477,
+          "floor": 10,
+          "source_pointer": "/records/915/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32256,
+          "y": 32489,
+          "floor": 10,
+          "source_pointer": "/records/962/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32256,
+          "y": 32499,
+          "floor": 10,
+          "source_pointer": "/records/998/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32265,
+          "y": 32479,
+          "floor": 10,
+          "source_pointer": "/records/927/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32266,
+          "y": 32494,
+          "floor": 10,
+          "source_pointer": "/records/972/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32271,
+          "y": 32485,
+          "floor": 10,
+          "source_pointer": "/records/943/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32272,
+          "y": 32498,
+          "floor": 10,
+          "source_pointer": "/records/999/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32273,
+          "y": 32477,
+          "floor": 10,
+          "source_pointer": "/records/906/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32277,
+          "y": 32494,
+          "floor": 10,
+          "source_pointer": "/records/977/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32278,
+          "y": 32468,
+          "floor": 10,
+          "source_pointer": "/records/868/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32279,
+          "y": 32480,
+          "floor": 10,
+          "source_pointer": "/records/923/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon_lord",
+          "x": 32281,
+          "y": 32470,
+          "floor": 10,
+          "source_pointer": "/records/873/declaration/points/0"
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "x": 32281,
+          "y": 32474,
+          "floor": 10,
+          "source_pointer": "/records/895/declaration/points/0"
+        }
+      ],
+      "sources": [
+        {
+          "path": "content/world/spawns/spawns-34000-35999.json",
+          "sha256": "b1a9de667ffebaed9f8b9e4b5c216f259a965b3e70541690580d7b3fc0f8be36"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+          "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+          "lines": "6863-7011"
+        }
+      ]
+    }
+  ]
+}

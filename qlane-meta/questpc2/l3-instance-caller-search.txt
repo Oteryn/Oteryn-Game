@@ -1,0 +1,39 @@
+crates/gameplay/durability/src/durability/character_hazard/primal.rs:34:pub async fn apply_hazard_kill_in_transaction(
+crates/gameplay/durability/src/durability/character_hazard/primal.rs:57:            .any(|fence| !death_matches_scope(death_key, fence))
+crates/gameplay/durability/src/durability/character_hazard/primal.rs:103:fn death_matches_scope(death: &[u8; 52], fence: &CurrentCharacterGameplayFence) -> bool {
+crates/gameplay/durability/src/durability/quest_state/soul_war.rs:24:pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};
+crates/gameplay/durability/src/durability/quest_state/soul_war/native.rs:28:pub async fn apply_soul_war_kill_in_transaction(
+crates/gameplay/durability/src/durability/quest_state/rotten_blood.rs:188:pub async fn apply_rotten_blood_kill_in_transaction(
+crates/gameplay/durability/src/durability/character_hazard.rs:16:pub use primal::apply_hazard_kill_in_transaction;
+crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:509:                        if let Err(error) = crate::durability::quest_state::soul_war::apply_soul_war_kill_in_transaction(
+crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:512:                        if let Err(error) = crate::durability::quest_state::rotten_blood::apply_rotten_blood_kill_in_transaction(
+crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:515:                        if let Err(error) = crate::durability::character_hazard::apply_hazard_kill_in_transaction(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:5:use crate::durability::quest_state::soul_war::{SoulWarCommand, apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:147:            apply_soul_war_kill_in_transaction(&mut tx, owner.holder, &source.death_key,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:149:            crate::durability::quest_state::rotten_blood::apply_rotten_blood_kill_in_transaction(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:152:            crate::durability::character_hazard::apply_hazard_kill_in_transaction(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:307:    apply_soul_war_kill_in_transaction(&mut tx, owner.holder, &victory_death,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:482:        let wrong_grant = apply_soul_war_kill_in_transaction(&mut historic, &h.node, &bystander_death,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/endgame.rs:93:    if case == Case::RottenBloodDefeat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/endgame.rs:100:        if case == Case::SoulWarDefeat { assert_eq!(flags, 4); }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:68:    SoulWarDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:69:    SoulWarFinalDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:70:    RottenBloodDefeat,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:146:    run_scenario(Case::SoulWarDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:151:    run_scenario(Case::SoulWarFinalDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:156:    run_scenario(Case::RottenBloodDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:179:        let endgame_death = matches!(case, Case::SoulWarDefeat | Case::SoulWarFinalDefeat | Case::RottenBloodDefeat);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:228:            Case::SoulWarEntry | Case::SoulWarDefeat => Some("oteryn:creature.goshnar_s_spite"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:230:            Case::SoulWarFinalDefeat => Some("oteryn:creature.goshnar_s_megalomania_green"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:231:            Case::RottenBloodEntry | Case::RottenBloodDefeat => Some("oteryn:creature.bakragore"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:530:            if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:540:            if !matches!(case, Case::SoulWarEntry | Case::SoulWarDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:546:                if matches!(case, Case::RottenBloodEntry | Case::RottenBloodDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:554:                if matches!(case, Case::SoulWarFinalEntry | Case::SoulWarFinalDefeat) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:5:use crate::durability::character_hazard::apply_hazard_kill_in_transaction;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:146:        apply_hazard_kill_in_transaction(&mut tx, owner.holder, &death,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:164:    assert!(apply_hazard_kill_in_transaction(&mut tx, owner.holder, &first,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:170:    assert!(apply_hazard_kill_in_transaction(&mut tx, owner.holder, &wrong_scope,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:172:    assert!(apply_hazard_kill_in_transaction(&mut tx, owner.holder, &first,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:174:    assert!(apply_hazard_kill_in_transaction(&mut tx, owner.holder, &first,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hazard/hazard_primal.rs:181:    assert!(apply_hazard_kill_in_transaction(&mut tx, owner.holder, &historic,

@@ -1,0 +1,89 @@
+{
+  "batch_id": "annihilator-reward-door-2026-11-07",
+  "base_sha": "7579f39b9",
+  "scope": "Generic once-claim reward door with native opening collision, occupied close displacement and atomic native movement/door projection. Existing party encounter engine and reward-choice owner reused.",
+  "changes": [
+    "Add a current recovery/node/item-fenced read of the exact durable RewardClaim; never create shadow progress, claims or Items.",
+    "Add exclusive optional effects.reward_door and a source-pinned Annihilator action10102/5113-5114 binding with the original sealed-door feedback.",
+    "Keep appearance, collision and revision in the native door book. A sealed opening proof ignores only the selected future-open door, still checking other solids, doors, movement context, reach and PZ rules.",
+    "Compose native movement with the final door CAS. Roll back the entire native carrier on failed projection.",
+    "Close pushes the sole doorway occupant E,S,N,W with source IGNOREBLOCKCREATURE. Refuse multiple occupants or no qualified destination. Preserve existing automatic step-out closing.",
+    "Use production-activated movement cells in the new wire fixture; keep the existing reward-choice cohort unchanged. Verify retained door/helper bytes through the existing qengine authoring tool."
+  ],
+  "red": [
+    {
+      "log": "/tmp/questpc2-annihilator-door-red.log",
+      "postgres_version": 180006,
+      "duration_seconds": 2.9,
+      "failure": "source reward door callback missing"
+    },
+    {
+      "log": "/tmp/questpc2-annihilator-door-green-retry.log",
+      "postgres_version": 180006,
+      "duration_seconds": 43.58,
+      "failure": "fixture StartNotEnterable; entry anchor was a closed door, corrected to adjacent walkable tile"
+    },
+    {
+      "log": "/tmp/questpc2-annihilator-door-open-proof-final.log",
+      "postgres_version": 180006,
+      "duration_seconds": 47.65,
+      "failure": "NotPossible opening; fixture used default-room cells with a production pin, corrected to activated room cells without relaxing guards"
+    }
+  ],
+  "green": {
+    "postgres_cases": 1,
+    "postgres_version": 180006,
+    "postgres_duration_seconds": 44.47,
+    "postgres_log": "/tmp/questpc2-annihilator-door-override-final.log",
+    "postgres_assertions": [
+      "literal USE opening and exact command replay",
+      "visible/collision revision and actual native relocation",
+      "source E-priority occupied close displacement",
+      "reopen and real native chest claim/MINT with one root, one child, one achievement",
+      "claimed reward refuses explicit close and subsequent reopen",
+      "native step-out close",
+      "unrelated exact claim remains false",
+      "stale item fence refuses the durable gate read"
+    ],
+    "unit_cases": 3,
+    "unit_logs": [
+      "/tmp/questpc2-reward-door-schema-test.log",
+      "/tmp/questpc2-reward-door-atomic-test.log",
+      "/tmp/questpc2-reward-door-collision-override-final.log"
+    ],
+    "pure_unit_zero_second_duration_is_not_pg_proof": true,
+    "python_source_effect_cases": 5,
+    "python_group_cases": 3,
+    "content_integration_cases": 123,
+    "content_integration_duration_seconds": 2.52,
+    "world_repository_cases": 5,
+    "world_repository_duration_seconds": 45.76,
+    "check_crates": [
+      "quests",
+      "durability",
+      "entities",
+      "world",
+      "dispatch"
+    ],
+    "check_duration_seconds": 6.7,
+    "clippy": "all five changed crates, all targets and all features, -D warnings",
+    "clippy_duration_seconds": 23.43,
+    "logs": {
+      "check": "/tmp/questpc2-reward-door-check-override-final.log",
+      "clippy": "/tmp/questpc2-reward-door-clippy-override-final.log",
+      "content": "/tmp/questpc2-reward-door-content-integration.log",
+      "world": "/tmp/questpc2-reward-door-world-repository.log",
+      "fmt": "/tmp/questpc2-reward-door-final-fmt-update.log",
+      "governance": "/tmp/questpc2-reward-door-final-governance.log",
+      "pin": "/tmp/questpc2-reward-door-pin-check.log"
+    },
+    "pin_check": "PASS; tooling digest f11e3f836b7b742c69126d7a088001b579f3f9c6fd2ca1da5a42621a634dff1a",
+    "zero_test_pg_results_accepted": false
+  },
+  "generation": "qengine_access.py owns the authored shared-access callback. Native registration tooling ran; raid_catalogue.py restored its baseline registration exactly. No other content files change. No manually edited pins or generated hashes.",
+  "whole_quest_qualifications": 0,
+  "self_review": "Generic physical owner only; actual durable claim remains the sole reward authority. Both claim states and native effects are tested without SQL quest-progress injection. Source and parser bounds stay closed. Annihilator still needs the continuous source entry-to-earned-reward route; no whole-quest claim inferred from isolated mechanics.",
+  "environment": "Repeated os error28 and failed links before final PG are not counted as passes. Failed linker temporary executables and superseded object outputs were the main leak; exact cleanup ledger /tmp/questpc2-failed-link-artifact-recovery.json. Retained latest objects, source and PG. Native/clippy/durability caches were SHA256-verified and retained behind original-path symlinks under /tmp. A superseded regular library is similarly retained. No Cargo clean, profile/RUSTFLAGS changes, disabled incremental, reinstall, credentials or full suite.",
+  "next": "Continue the continuous Annihilator source room entry-to-reward composition using the published encounter/reward owners, then proceed through all remaining L3 quests.",
+  "final_review_hardening": "Respect live passable overrides before ignoring other native door entries; refuse a selected door already changed/hidden/overridden by another callback. Extended collision unit passed, then repeated focused PG (44.47s), five-crate check (6.70s) and clippy (23.43s). Content data and pin inputs unchanged by this runtime-only hardening; their completed checks remain applicable."
+}

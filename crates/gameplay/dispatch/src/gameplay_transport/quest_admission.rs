@@ -101,6 +101,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.refresh_grizzly_kill_snapshot(session).await;
         let _ = self.bounty_talisman_for_session(session).await;
+        self.refresh_native_objective_snapshot(session).await;
+        let disguise_retry = self.refresh_quest_disguise(session).await;
+        if (self.refresh_quest_guardians(session).await || disguise_retry)
+            && let Ok(mut sessions) = self.states.quest_sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            let retry = std::time::Instant::now() + std::time::Duration::from_secs(5);
+            entry.retry_at = Some(entry.retry_at.map_or(retry, |existing| existing.min(retry)));
+        }
     }
 
     /// [`Self::current_quest_fence`] for an admission step: a failed read (such as a busy
@@ -129,19 +138,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
     {
+        self.current_quest_fence_durable(session)
+            .await
+            .map_err(|_| ())
+    }
+
+    /// Preserve the acquisition error for command callers that retry only a busy holder.
+    pub(super) async fn current_quest_fence_durable(
+        &self,
+        session: GameSessionId,
+    ) -> Result<
+        Option<crate::durability::character_progression::CurrentCharacterGameplayFence>,
+        crate::durability::DurabilityError,
+    > {
+        use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
+        let (current, _) = store.current_session_at(session).await?;
         if current.session_state() == crate::foundation::GameSessionState::Terminal {
             return Ok(None);
         }
         let character_id =
             domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                .map_err(|_| ())?;
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
         let record = self
             .root
             .read_current_character(self.character, character_id)
             .await
-            .map_err(|_| ())?;
+            .map_err(|error| match error {
+                CharacterAuthorityError::Unavailable(error) => error,
+                CharacterAuthorityError::Rejected
+                | CharacterAuthorityError::Conflict
+                | CharacterAuthorityError::NameUnavailable => DurabilityError::CommitRejected,
+            })?;
         Ok(Some(
             crate::durability::character_progression::CurrentCharacterGameplayFence {
                 character_id,

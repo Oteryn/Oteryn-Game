@@ -163,6 +163,56 @@ impl CurrentOwnerMovementPosition<'_> {
             .read_movement_position(self.continuity, actor.0)
     }
 
+    /// One same-floor adjacent grid move. The existing cardinal API keeps its
+    /// four-neighbour contract; diagonals use the same exact-owner CAS for
+    /// player/creature slots and never acquire NPC relocation authority.
+    pub fn commit_grid_step(
+        &mut self,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let before = expected.position();
+        let (Some(dx), Some(dy)) = (next.x.checked_sub(before.x), next.y.checked_sub(before.y))
+        else {
+            return Err(CarrierError::MovementNonCardinal);
+        };
+        if next.floor != before.floor
+            || !(-1..=1).contains(&dx)
+            || !(-1..=1).contains(&dy)
+            || (dx == 0 && dy == 0)
+        {
+            return Err(CarrierError::MovementNonCardinal);
+        }
+        if dx == 0 || dy == 0 {
+            return self.commit_cardinal(expected, next);
+        }
+        let index = self
+            .carrier
+            .validate_ref(self.continuity, expected.0.actor_ref)?;
+        let mut committed = self.carrier.compare_commit_position(
+            self.continuity,
+            expected.0,
+            expected.0.version.context,
+            LocalPosition {
+                x: next.x,
+                y: next.y,
+                floor: next.floor,
+            },
+        )?;
+        committed.version.facing = Some(if dx > 0 {
+            MovementFacing::East
+        } else {
+            MovementFacing::West
+        });
+        match &mut self.carrier.slots[index] {
+            Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
+                *position = Some(committed.version)
+            }
+            _ => unreachable!("exact grid commit proved a player or creature slot"),
+        }
+        Ok(MovementPositionSnapshot(committed))
+    }
+
     pub fn commit_cardinal(
         &mut self,
         expected: MovementPositionSnapshot,

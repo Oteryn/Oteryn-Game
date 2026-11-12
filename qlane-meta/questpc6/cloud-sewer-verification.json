@@ -1,0 +1,49 @@
+{
+  "base_head": "db355fae2d4900be2728eca6d645f72376134b5a",
+  "kind": "Inherited implementation verification and required formatting repair",
+  "postgres": {
+    "version": "18.6",
+    "test_filter": "devil_helmet_pressure_plate_",
+    "passed": 6,
+    "failed": 0,
+    "execution_seconds": 122.25,
+    "markers": [
+      {
+        "name": "devil-helmet-sewer-use-existing",
+        "duration_seconds": 67.499530243
+      },
+      {
+        "name": "devil-helmet-sewer-unrelated",
+        "duration_seconds": 68.579628871
+      },
+      {
+        "name": "devil-helmet-sewer-use",
+        "duration_seconds": 76.197874362
+      },
+      {
+        "name": "devil-helmet-sewer",
+        "duration_seconds": 77.111506536
+      },
+      {
+        "name": "devil-helmet-sewer-existing",
+        "duration_seconds": 53.420082913
+      },
+      {
+        "name": "devil-helmet-sewer-use-blocked",
+        "duration_seconds": 53.658634442
+      }
+    ]
+  },
+  "checks": {
+    "cargo_check_dispatch_all_targets": "PASS, 4m15s",
+    "cargo_fmt_dispatch_check": "PASS",
+    "clippy": "PASS, dispatch all targets/all features, -D warnings; 5m22s",
+    "projection_unit": "PASS 1/1; unit only, not PostgreSQL"
+  },
+  "source_hashes": {
+    "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects/dropdown.rs": "3913a52af88bae9ea917ce39dbf2a322ef24790b12d86fbdc4f5ed1cd99290da",
+    "crates/gameplay/dispatch/src/gameplay_transport/loop_move.rs": "9ac621e9c60328e436796a62fec3e41677b9e59a2be859436d7204fc6ae37374",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pressure_plate_sewer.rs": "ba66b302b545f8815a4c4e3d391985a8c5047e6e742edacb5c87fc947d5ca1a8"
+  },
+  "qualification": "Mechanism slice only. No whole quest newly qualified."
+}

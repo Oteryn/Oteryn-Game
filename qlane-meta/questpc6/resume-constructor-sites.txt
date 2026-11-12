@@ -1,0 +1,58 @@
+apps/game-server/src/node/serve/qualification_fixture.rs:154:        let request = RewardClaimMintRequest {
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:493:            ("oteryn:reward-claim.kv.variant", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:494:            ("oteryn:reward-claim.kv.waiting", LeftOut::NotReady),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:495:            ("oteryn:reward-claim.kv.hours", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:496:            ("oteryn:reward-claim.kv.container", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:497:            ("oteryn:reward-claim.kv.two", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:498:            ("oteryn:reward-claim.kv.grant", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:580:                LeftOut::UnencodedField
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:582:            ("oteryn:reward-claim.kv.zero", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:583:            ("oteryn:reward-claim.kv.wide", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:584:            ("oteryn:reward-claim.kv.container", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:585:            ("oteryn:reward-claim.kv.stack", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:586:            ("oteryn:reward-claim.kv.plain_key", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:607:            LeftOut::ItemNotAdmitted
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:674:            .filter(|(_, why)| *why == LeftOut::NotReady)
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:805:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:806:    RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:825:fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1716:        let key = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2183:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:69:            bag.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:95:                    bad.contents = vec![RewardClaimMintContent {
+crates/gameplay/social/src/interaction/chest_use.rs:311:    let mint_request = RewardClaimMintRequest {
+crates/gameplay/content/src/content/world_reward_claims.rs:285:        return Ok(Err(LeftOut::OwnerExcluded));
+crates/gameplay/content/src/content/world_reward_claims.rs:291:        return Ok(Err(LeftOut::Variant));
+crates/gameplay/content/src/content/world_reward_claims.rs:294:        return Ok(Err(LeftOut::NotReady));
+crates/gameplay/content/src/content/world_reward_claims.rs:325:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:346:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:355:        return Ok(Err(LeftOut::ItemNotAdmitted));
+crates/gameplay/content/src/content/world_reward_claims.rs:1111:            Ok(Err(LeftOut::ItemNotAdmitted))
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:150:pub struct RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:162:pub struct RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1830:    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1832:        RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1864:        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1900:        let key = |number: Option<u16>| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1910:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1914:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1918:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1933:        let with_quest = |number| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2037:        bag.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2061:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2068:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2127:        container.contents = vec![RewardClaimMintContent {
+crates/gameplay/quests/src/quest/loader.rs:238:            .filter(|track| super::in_runtime_scope(&track.quest))
+crates/gameplay/quests/src/quest/loader.rs:245:            .filter(|transition| super::in_runtime_scope(&transition.quest))
+crates/gameplay/quests/src/quest/world_callbacks.rs:136:    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
+crates/gameplay/quests/src/quest/mod.rs:78:pub(super) fn in_runtime_scope(quest: &str) -> bool {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:156:                            RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:169:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:105:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:67:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:203:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:661:            contents.push(RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:677:        Some(RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:637:    let mut request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:456:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:248:    let request = RewardClaimMintRequest {

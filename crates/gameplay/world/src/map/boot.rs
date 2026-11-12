@@ -100,6 +100,44 @@ impl From<FactsRefusal> for BootRefusal {
     }
 }
 
+/// The production bundle Item lookup. A known pinned reference may have no
+/// native profile: its unknown facts stay blocking/non-pickupable. Terrain-backed
+/// floor classification remains the map owner's existing qualified fallback.
+pub fn native_item_definition(
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    key: &str,
+) -> Option<ItemDefinition> {
+    use crate::content::{ReferenceItemField, ReferenceItemType};
+    let index = gameplay.and_then(|state| state.item_index())?;
+    let revision = index.revision(key)?;
+    let reference = index.definition_ref("Item", key, revision)?;
+    let profile = gameplay
+        .and_then(|state| state.item_policy(key, revision))
+        .map(|policy| policy.record());
+    let pickupable = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.physical, ReferenceItemField::Known(physical)
+                if physical.pickupable == ReferenceItemField::Known(true)
+        )
+    });
+    let door = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.classification, ReferenceItemField::Known(classification)
+                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+        )
+    });
+    let attributes = profile.map(|profile| &profile.attributes);
+    Some(ItemDefinition {
+        reference,
+        solid: attributes.and_then(|attributes| attributes.blocks_movement),
+        blocks_projectile: attributes
+            .and_then(|attributes| attributes.blocks_projectile)
+            .unwrap_or(true),
+        pickupable,
+        door,
+    })
+}
+
 /// A Channel booted from a world bundle: the shared base, its empty overlay, the start tile and
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]
@@ -817,7 +855,7 @@ impl BundleCollisionData {
                 .map
                 .facts
                 .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
-                && !self.map.facts.doors().blocks(pos)
+                && !super::floor::CellBlocker::blocks(&self.map.facts, cell)
             {
                 CollisionClass::Walkable
             } else {
@@ -2259,6 +2297,73 @@ pub mod tests {
                 })
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn opening_door_collision_exception_keeps_other_solids_blocking() -> Result<(), Box<dyn Error>>
+    {
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let key = super::super::view::placement_key(DOOR_AT, 1).ok_or("door key")?;
+        assert!(world.map.facts.opening_door_enterable(world.base(), key));
+        assert!(
+            !world
+                .map
+                .facts
+                .opening_door_enterable(world.base(), key + 1)
+        );
+        let original = world
+            .map
+            .facts
+            .base_entry(DOOR_AT, 1, 0)
+            .ok_or("door facts")?;
+        assert!(
+            world
+                .map
+                .facts
+                .apply_quest_callback(key, 0, original, &[], &[], false, None)
+        );
+        assert!(
+            !world.map.facts.opening_door_enterable(world.base(), key),
+            "a different callback must not be bypassed by the native door owner"
+        );
+        let (bytes, mut load) =
+            bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        let blocker = data
+            .sectors
+            .iter()
+            .flat_map(|sector| &sector.tiles)
+            .find(|tile| tile.x == 7)
+            .and_then(|tile| tile.items.get(1))
+            .ok_or("blocker")?
+            .clone();
+        data.sectors
+            .iter_mut()
+            .flat_map(|sector| &mut sector.tiles)
+            .find(|tile| tile.x == 6)
+            .ok_or("door tile")?
+            .items
+            .push(blocker);
+        let bytes =
+            oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &Default::default())?;
+        load.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| {
+                let mut facts = door_items(key)?;
+                if key == "oteryn:item.tibia.i1000" {
+                    facts.solid = Some(true);
+                    facts.blocks_projectile = true;
+                }
+                Some(facts)
+            },
+        )?;
+        assert!(!world.map.facts.opening_door_enterable(world.base(), key));
         Ok(())
     }
 

@@ -1,0 +1,19 @@
+{
+  "claim": "oteryn:reward-claim.quest.key.id3620",
+  "qualification": "Mintwallin prison-key source USE/mint/replay/refusal; source association stays unlinked; no whole Mintwallin access certificate",
+  "test": "quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal",
+  "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3620 (32411, 32155, -15) native_source=true duration=5.630022771s",
+  "duration_seconds": 5.630022771,
+  "result": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+    "exit": 0,
+    "duration_seconds": 78.57
+  },
+  "test_source_sha256": "ce2010cf61f9269218c6b4c7c90af073b76f45fd2aa590e7f61879b90ebde4e6",
+  "post_promotion_result": {
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+    "exit": 0,
+    "duration_seconds": 55.148
+  },
+  "post_promotion_marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3620 (32411, 32155, -15) native_source=true duration=5.542130326s"
+}
