@@ -502,6 +502,7 @@ fn corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
 // Time actual server STEP deltas of automatic walking. Client retries/sleeps
 // never determine the cadence. Every intermediate tile must arrive in order.
 async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
+    let basis = spatial_basis::current(client)?;
     let (&from, rest) = cells.split_first().ok_or("C17a empty speed corridor")?;
     let &to = rest.last().ok_or("C17a speed corridor has no steps")?;
     if tile(client.world_spatial().actor_position)? != from {
@@ -513,7 +514,7 @@ async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestRe
         .target_walk(ActorPosition {
             x: i32::from(to.x),
             y: i32::from(to.y),
-            floor: -i16::from(to.floor),
+            floor: basis.floor(to.floor),
         })
         .await?;
     if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
@@ -1066,6 +1067,7 @@ pub(super) async fn acquire_rune(
     world: &BundleWorld,
     id: u32,
 ) -> TestResult<(std::num::NonZeroU32, u64)> {
+    let basis = spatial_basis::current(client)?;
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
@@ -1123,7 +1125,7 @@ pub(super) async fn acquire_rune(
                     && npc.placements.iter().any(|p| {
                         entity.position.x == i32::from(p.x)
                             && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
+                            && entity.position.floor == basis.floor(p.floor)
                     })
             })
         })
@@ -1395,12 +1397,8 @@ pub(super) fn rune_corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<Ti
     }
     None
 }
-fn actor_position(at: TilePos) -> ActorPosition {
-    ActorPosition {
-        x: i32::from(at.x),
-        y: i32::from(at.y),
-        floor: -i16::from(at.floor),
-    }
+fn actor_position(at: TilePos, basis: spatial_basis::Basis) -> ActorPosition {
+    basis.position(at)
 }
 
 async fn paralyze(
@@ -1563,6 +1561,7 @@ async fn barriers(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
+    let basis = spatial_basis::current(client)?;
     let book = native_spell_book()?;
     let index = provisioning::item_index()?;
     let mut expected = Vec::new();
@@ -1604,7 +1603,7 @@ async fn barriers(
         walk(client, world, &path).await?;
         let from = tile(client.world_spatial().actor_position)?;
         let cells = rune_corridor(world, from).ok_or("C16a barrier approach unavailable")?;
-        let target = actor_position(cells[1]);
+        let target = actor_position(cells[1], basis);
         let direction = [
             StepDirection::North,
             StepDirection::East,
@@ -1644,7 +1643,7 @@ async fn barriers(
         }
         let blocked = client.step_retrying(direction).await?;
         if blocked.disposition != StepDisposition::Blocked
-            || client.world_spatial().actor_position != actor_position(from)
+            || client.world_spatial().actor_position != actor_position(from, basis)
         {
             return Err(format!(
                 "C16a rune {id} normal barrier did not block traversal: {blocked:?}"
@@ -1928,6 +1927,7 @@ async fn player_first_vocation(
     world: &BundleWorld,
     vocation: &str,
 ) -> TestResult {
+    let basis = spatial_basis::current(client)?;
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -1948,7 +1948,7 @@ async fn player_first_vocation(
                     && npc.placements.iter().any(|p| {
                         entry.position.x == i32::from(p.x)
                             && entry.position.y == i32::from(p.y)
-                            && entry.position.floor == -i16::from(p.floor)
+                            && entry.position.floor == basis.floor(p.floor)
                     })
             })
         })
@@ -2137,10 +2137,11 @@ async fn orient(
     target: oteryn_dev_client::EntityRef,
     toward: bool,
 ) -> TestResult<ActorPosition> {
+    let basis = spatial_basis::current(client)?;
     use oteryn_protocol_oteryn::target_move as wire;
     let target_at = creature(client, target)?.position;
     let from = tile(client.world_spatial().actor_position)?;
-    let here = actor_position(from);
+    let here = actor_position(from, basis);
     if here
         .x
         .abs_diff(target_at.x)
@@ -2156,7 +2157,7 @@ async fn orient(
         .into_iter()
         .find(|direction| {
             destination(world, from, *direction).is_some_and(|next| {
-                let next = actor_position(next);
+                let next = actor_position(next, basis);
                 next.floor == here.floor
                     && next
                         .x
@@ -2496,6 +2497,7 @@ async fn challenge(
     world: &BundleWorld,
     peer_cancelled: &mut bool,
 ) -> TestResult {
+    let basis = spatial_basis::current(client)?;
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
     let book = native_spell_book()?;
     let words = "exeta res";
@@ -2519,7 +2521,7 @@ async fn challenge(
         );
         let target_at = creature(&peer, monster)?.position;
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            let at = actor_position(at);
+            let at = actor_position(at, basis);
             at.floor == target_at.floor
                 && at != peer.world_spatial().actor_position
                 && at.x.abs_diff(target_at.x).max(at.y.abs_diff(target_at.y)) == 1
@@ -2610,7 +2612,7 @@ async fn challenge(
         // would only prove target invalidation, not expiry of Challenge.
         let monster_at = creature(&peer, monster)?.position;
         let retreat = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            let at = actor_position(at);
+            let at = actor_position(at, basis);
             at.floor == monster_at.floor
                 && at.x.abs_diff(monster_at.x).max(at.y.abs_diff(monster_at.y)) == 3
                 && tile(at)
@@ -3927,7 +3929,7 @@ mod continuation_three_tests {
                 identity: [7; 16],
                 generation: 1,
             },
-            position: actor_position(TOWN),
+            position: actor_position(TOWN, spatial_basis::Basis::Legacy),
             detail: EntityDetail::Actor {
                 direction: StepDirection::South,
                 appearance_ref: 1,

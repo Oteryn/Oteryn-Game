@@ -4005,6 +4005,7 @@ async fn acquire(
     key: &str,
     count: u32,
 ) -> TestResult<std::num::NonZeroU32> {
+    let basis = spatial_basis::current(client)?;
     use native::npc_service as npc;
     use oteryn_dev_client::client_runtime::npc_shop as shop;
     let revision = definitions
@@ -4091,7 +4092,7 @@ async fn acquire(
                                 == ActorPosition {
                                     x: i32::from(p.x),
                                     y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
+                                    floor: basis.floor(p.floor),
                                 }
                         })
                 })

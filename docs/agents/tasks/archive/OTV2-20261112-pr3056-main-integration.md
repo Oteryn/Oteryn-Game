@@ -131,9 +131,9 @@ Published E2E dependency1afdfa86ff8a3cb7f62b5a310c1be0806e76983a is also normal-
 merged into this actual branch. Its sole World conflict resolves to blob
 617c6c1da3c82e0cb3a656cf75404b22ce9da201: the full published E2E body plus exactly
 the two existing QMECH signed-floor conversions, including the moved reconnect.
-The broader thirteen-site floor family is not changed in this checkpoint; its
-canonical frame gating remains the coordinator's separate disposition. No3111
-source or unaccepted audit rewrite is imported.
+The broader thirteen-site floor family is repaired below after the coordinator's
+bounded serving-profile contract check. No3111 source or unaccepted audit rewrite
+is imported.
 
 The actual accepted-main upgrade exposed four QMECH migration compatibility
 repairs.1357 and2734 admit exactly the reviewed fresh predecessor cause array or
@@ -175,16 +175,53 @@ blocks after cached initialization/terminal handling, the captured ingredient
 debit and its accurate refusal text. Static source proof binds the successor to
 7980797b9d2a45234462062c4bd59e1f184cdbdc626f26713c4eacc1f8ca7bb0,
 retains the complete old fallback and checks function OID/owner/security/config/
-ACL after replacement. This is source-level evidence, not execution.
+ACL after replacement. The separately executed schema proof below validates both
+installed histories; runtime gameplay qualification remains pending.
 
 The540 SQL files have unique versions; the new highest version2815 is reserved
 by coordinator comment6832114090. All540 SHA384 values are held in
-`/workspace/scratch/pr3056-forward-540-author-checkpoint.json`. Both post2811
-predecessor equality and the complete current-main540 fresh/upgrade proof remain
-pending actual SQL execution and independent SQL review. Generated-input
-provenance, the remaining qualified floor-consumer contract, independent material
-review and full GitHub qualification also remain pending. No deadline or proof
-budget changes are made.
+`/workspace/scratch/pr3056-forward-540-author-checkpoint.json`. Both actual SQL
+histories now pass: fresh540/540 and real accepted-main3ce upgrade540/540, with
+pre2815 guard5cfab2ac and postguard7980797b equal in both. Function identity,
+owner, security, configuration and ACL remain unchanged; both owned databases
+were cleaned with zero remaining. The independent seven-file forward SQL review
+at3dda reports zero confirmed P0/P1/P2. The authoritative qualified SQL manifest
+is `/workspace/scratch/pr3056-forward-540-qualified-sql-manifest.json`; every
+one of its540 source SHA384 values still matches after this non-SQL overlay.
+This is schema/install evidence, not runtime, native or MAX501 qualification.
+
+The thirteen floor-consumer roots now use one private serving-basis helper across
+World/F1/F4/F5/F6/F7, including downstream F1/F5 position arguments and the PvP
+victim's own basis. The initial two correct QMECH conversions are not applied a
+second time. Each of the six preimages was checked against the approved input;
+the seventh helper was absent. All seven final blobs match the independently
+prepared overlay exactly. Every original string literal, assertion count and
+evidence call remains; the strict first-town-entry assertion is byte-identical.
+
+The live helper requires currently selected capability385 plus current gated
+snapshot domain19/type2 for Native or type1 for Legacy, and rejects absent,
+unknown or position-inconsistent evidence. Neither absent capability nor floor
+zero manufactures Legacy. The coordinator traced the actual standard WORLD
+profile: node_boot WORLD stages the native gameplay manifest; channel boot offers
+native presentation using its combat room directly; the wire-position accessor
+uses that same combat room and validated pin/cell/frame. Thus a valid current
+Native row is promised on this profile, rather than being replaced by UNKNOWN.
+Explicit Legacy remains available to the pure fixture tests. This private helper
+adds no product API, global state, config switch or alternate authority.
+
+The helper mounts once in the World owner; its descendant consumers retain their
+existing `super` imports and require no wider visibility. The actual-source
+bounded Clippy probe passes all seven tests through cached real DevClient getter
+APIs, current dispatch projection methods and real spatial codec. Its only
+capability scaffold is the exact current385 constant. It covers Native/Legacy,
+floor zero, Native→House→Native current markers, absent/unknown/mismatched evidence,
+codec projection and the strict town negative. It does not typecheck or execute
+the complete game server or WORLD scenario.
+
+Generated-input provenance, independent whole material-delta review and full
+GitHub qualification remain pending. Auxiliary generator PR3145 now binds3dda;
+its candidate artifact requires consumed-input identity verification before reuse
+on the later source head. No deadline or proof budget changes are made.
 
 ## Validation
 
@@ -200,6 +237,9 @@ budget changes are made.
   non-Instance byte parity for all six files and negative identity checks rejecting
   both unaccepted audit optimizer overlays. This is static source evidence.
 - `git diff --check`: PASS; no unresolved index stages or conflict markers.
-- Forward bridge child: only new2815 file; exact bytes/SHA384;540 unique versions
-  and held complete SQL manifest. No fresh/current-main upgrade execution claim.
+- Forward bridge child: only new2815 file; exact bytes/SHA384;540 unique versions;
+  actual fresh540/540 and current-main upgrade540/540; full SQL identity retained.
+- Floor overlay: exact preimages and seven final blobs; all assertions/evidence
+  retained; one private helper/mount. `basis_probe.py`: Clippy PASS,7/7 tests.
+  Full game-server typing/runtime remains GitHub qualification.
 - Full successor qualification and generator completion remain pending.
