@@ -205,6 +205,7 @@ fn pc01_charm_progression_scenario() -> Result<(), Error> {
                     // Ending with a request in flight clears pending, selection, drafts and confirmed state.
                     link.charm_progression_request(Intent::Query);
                     assert!(link.charm_progression_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.charm_progression_panel();
                     assert!(!ended.pending);

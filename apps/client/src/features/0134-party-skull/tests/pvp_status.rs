@@ -68,6 +68,8 @@ fn own_pvp_status_crosses_session_caller_and_rejects_bad_replies() -> Result<(),
                     assert!(link.party_skull_panel().unjustified.is_none());
                     assert!(link.party_skull_panel().skull_timer.is_none());
                     link.party_skull_request(Intent::Query);
+                    assert!(link.party_skull_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     Ok(())
                 })
@@ -175,6 +177,8 @@ fn frag_limits_and_open_situations_cross_caller_and_clear_on_refusal() -> Result
                     assert!(refused.black_limits_milli.is_none());
                     assert!(refused.feedback.contains("refused"));
                     link.party_skull_request(Intent::Query);
+                    assert!(link.party_skull_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     Ok(())
                 })
