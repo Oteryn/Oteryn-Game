@@ -1,1 +1,0 @@
-Public synthetic fixtures copied byte-for-byte from Oteryn/Oteryn-Platform merged main commit 24bdde3f1fd727d51a3d61a32e85d80b45757c52, path docs/contracts/fixtures/premium-snapshot-v1/. Contract: docs/contracts/OTERYN_V2_PREMIUM_TIME_SNAPSHOT_CONTRACT.md at that commit. Verified every Git blob against that commit. No production trust keys or credentials.

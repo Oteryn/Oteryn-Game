@@ -1,0 +1,22 @@
+[
+  {
+    "status": 401,
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_TICKET_REJECTED\",\"public_class\":\"AUTHENTICATION_REQUIRED\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 400,
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_RATE_LIMITED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 429,
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_RATE_LIMITED\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 503,
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8000\"}"
+  },
+  {
+    "status": 503,
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"}}"
+  }
+]
