@@ -8,6 +8,23 @@ use super::{
 use bevy::{prelude::*, window::PrimaryWindow};
 use serde::Serialize;
 use std::path::PathBuf;
+
+/// In the explicit UI audit mode, F12 captures the rendered window through Bevy.
+/// GPU capture also works on native test displays without a desktop compositor.
+pub(super) fn capture_on_key(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    output: Res<AuditOutput>,
+) {
+    if keys.just_pressed(KeyCode::F12)
+        && let Some(path) = &output.path
+    {
+        use bevy::render::view::screenshot::{Screenshot, save_to_disk};
+        commands
+            .spawn(Screenshot::primary_window())
+            .observe(save_to_disk(path.with_extension("png")));
+    }
+}
 #[derive(Resource)]
 pub(super) struct AuditOutput {
     path: Option<PathBuf>,
@@ -31,6 +48,15 @@ struct Bounds {
     bounds_physical: [f32; 4],
     bounds_logical: [f32; 4],
     enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_metrics: Option<TextMetrics>,
+}
+#[derive(Serialize)]
+struct TextMetrics {
+    focused: bool,
+    characters: usize,
+    glyphs: usize,
+    visible: bool,
 }
 #[derive(Serialize)]
 struct Snapshot<'a> {
@@ -67,11 +93,15 @@ pub(super) fn write(
     )>,
     login_controls: Query<
         (
+            Entity,
             Option<&LoginField>,
             Option<&LoginControl>,
             &ComputedNode,
             &UiGlobalTransform,
             Has<bevy::ui::InteractionDisabled>,
+            Option<&bevy::text::EditableText>,
+            Option<&bevy::text::TextLayoutInfo>,
+            Option<&InheritedVisibility>,
         ),
         Or<(With<LoginField>, With<LoginControl>)>,
     >,
@@ -81,6 +111,7 @@ pub(super) fn write(
         &UiGlobalTransform,
         Has<bevy::ui::InteractionDisabled>,
     )>,
+    focus: Option<Res<bevy::input_focus::InputFocus>>,
 ) {
     // Native drivers wait for picking/layout updates. Disabled without --ui-audit.
     if output.path.is_some() {
@@ -113,10 +144,13 @@ pub(super) fn write(
             bounds_physical: physical,
             bounds_logical: physical.map(|v| v / window.scale_factor()),
             enabled: !disabled,
+            text_metrics: None,
         });
     }
     if owner.login.visible && owner.selection.pending().is_none() {
-        for (field, control, node, transform, disabled) in &login_controls {
+        for (entity, field, control, node, transform, disabled, editable, layout, visibility) in
+            &login_controls
+        {
             let id = field
                 .map(LoginField::id)
                 .or_else(|| control.map(|control| control.id()));
@@ -130,6 +164,13 @@ pub(super) fn write(
                     bounds_physical: physical,
                     bounds_logical: physical.map(|v| v / window.scale_factor()),
                     enabled: !disabled,
+                    // Public connection fields only: expose counts, never field contents.
+                    text_metrics: editable.map(|text| TextMetrics {
+                        focused: focus.as_ref().and_then(|focus| focus.get()) == Some(entity),
+                        characters: text.value().chars().count(),
+                        glyphs: layout.map_or(0, |layout| layout.glyphs.len()),
+                        visible: visibility.is_some_and(|visibility| visibility.get()),
+                    }),
                 });
             }
         }
@@ -144,6 +185,7 @@ pub(super) fn write(
                     bounds_physical: physical,
                     bounds_logical: physical.map(|v| v / window.scale_factor()),
                     enabled: !disabled,
+                    text_metrics: None,
                 });
             }
         }

@@ -21,6 +21,7 @@ use std::{ffi::OsString, path::PathBuf};
 pub struct Options {
     pub ui_assets: PathBuf,
     pub preferences: Option<PathBuf>,
+    /// Optional diagnostic state; F12 also writes a rendered PNG beside this path.
     pub ui_audit: Option<PathBuf>,
     pub login_settings: Option<PathBuf>,
 }
@@ -110,7 +111,8 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
         )
             .chain(),
     )
-    .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout));
+    .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout))
+    .add_systems(Update, audit::capture_on_key);
     app.init_non_send::<input::NativeInput>().add_systems(
         Update,
         input::route
