@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OTERYN — klient 2D</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/client.mjs"></script>
+</head>
+<body>
+  <header><strong>OTERYN</strong><span>Three.js · klient deweloperski 2D</span><button id="disconnect">Rozłącz</button></header>
+  <main>
+    <p id="status" role="status" aria-live="polite">Uruchamianie prezentacji…</p>
+    <div class="viewport"><canvas tabindex="0" aria-label="Świat gry. Ruch strzałkami lub WASD." hidden></canvas></div>
+    <p id="details"></p>
+    <nav aria-label="Sterowanie ruchem">
+      <button data-direction="north" aria-label="Północ">↑</button>
+      <button data-direction="west" aria-label="Zachód">←</button>
+      <button data-direction="south" aria-label="Południe">↓</button>
+      <button data-direction="east" aria-label="Wschód">→</button>
+    </nav>
+    <p class="note">Strzałki / WASD. Ruch i widoczność zatwierdza serwer Rust.<br>Ten etap wymaga lokalnego adaptera. Nie jest wydaniem produkcyjnym ani klientem bez instalacji.</p>
+  </main>
+</body>
+</html>
