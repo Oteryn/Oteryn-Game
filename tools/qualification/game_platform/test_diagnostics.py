@@ -51,6 +51,17 @@ class Diagnostics(unittest.TestCase):
             ('{"secret":["first-private-value","later-private-value",["nested-private-value"]]}', ["first-private-value", "later-private-value", "nested-private-value"]),
             (r'\"secret\":[\"escaped-first-value\",\"escaped-later-value\"]', ["escaped-first-value", "escaped-later-value"]),
         ]
+        cases += [
+            ("https://alice:private'password@example.test/path", ['alice', "private'password"]),
+            ('https://alice:private"password@example.test/path', ['alice', 'private"password']),
+            ('https://alice:private%27password@example.test/path', ['alice', 'private%27password']),
+            ('https://alice:private:password@example.test/path', ['alice', 'private:password']),
+            ("custom+tls://alice:private'part@later-private@example.test/path", ['alice', "private'part", 'later-private']),
+            ("password=prefix'private-suffix", ['prefix', 'private-suffix']),
+            ('password=prefix"private-suffix', ['prefix', 'private-suffix']),
+            ('password=prefix%27private-suffix', ['prefix', 'private-suffix']),
+            ('password=prefix:private-suffix', ['prefix', 'private-suffix']),
+        ]
         for index, (payload, secrets) in enumerate(cases):
             with self.subTest(case=index), tempfile.TemporaryDirectory() as directory:
                 work = Path(directory)
@@ -67,6 +78,16 @@ class Diagnostics(unittest.TestCase):
                 for secret in secrets:
                     self.assertNotIn(secret, sanitized)
                 self.assertIn("error[E0308]: mismatched types", sanitized)
+
+    def test_authority_and_secret_value_boundaries(self):
+        for boundary in ["/path", "?query=value", "#fragment", " trailing text"]:
+            value = "https://alice:private'part@later-part@example.test" + boundary
+            self.assertEqual(redact(value), "https://[REDACTED]@example.test" + boundary)
+        for delimiter in [" ", ",", ";", "&", ")", "}", "]"]:
+            for quote in ["'", '\"']:
+                self.assertEqual(redact("password=prefix" + quote + "suffix" + delimiter + "after"), "password=[REDACTED]" + delimiter + "after")
+        self.assertEqual(redact('password="prefix\\\"suffix" after'), "password=[REDACTED] after")
+        self.assertEqual(redact("password='quoted value' after"), "password=[REDACTED] after")
 
     def test_diagnostics_survive_unchanged(self):
         text = ("   Compiling oteryn-platform-client v0.1.0\n"

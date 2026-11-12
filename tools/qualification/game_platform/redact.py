@@ -57,7 +57,9 @@ def value_end(text, start):
                     return position + 1
             position += 1
         return len(text)
-    match = re.match(r'''[^\s,;&}\]"']+''', text[start:])
+    # Quotes embedded in an unquoted value are data, not terminators.
+    # If its structure is ambiguous, consume the whole token up to a delimiter.
+    match = re.match(r'''[^\s,;&)}\]]+''', text[start:])
     return start + len(match[0]) if match else start
 
 
@@ -77,7 +79,16 @@ def redact_fields(text):
 def redact(contents, evidence=()):
     # Evidence is supplied by the caller, never inferred from untrusted log text.
     approved = {value.removeprefix("sha256:") for value in evidence if re.fullmatch(r"(?:sha256:)?(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64})", value)}
-    contents = re.sub(r'''(?i)\b([a-z][a-z0-9+.-]*://)[^\s/"'<>\\@]+@''', lambda m: m[1] + MASK + "@", contents)
+
+    def userinfo(match):
+        # Authority boundaries, not quote heuristics, determine URL userinfo.
+        # Use the final @ so unusual/ambiguous credentials fail closed.
+        authority = match[2]
+        if "@" not in authority:
+            return match[0]
+        return match[1] + MASK + "@" + authority.rsplit("@", 1)[1]
+
+    contents = re.sub(r"(?i)\b([a-z][a-z0-9+.-]*://)([^\s/?#]*)", userinfo, contents)
     contents = re.sub(r'''(?i)\bpostgres(?:ql)?://[^\s"'<>\\]+''', MASK, contents)
     contents = re.sub(r'''(?i)(\b(?:Bearer|OterynDevice)\s+)[^\s"'<>},;\\]+''', lambda m: m[1] + MASK, contents)
     contents = re.sub(r"\botd1\.[A-Za-z0-9_-]+", MASK, contents)
