@@ -13,9 +13,11 @@ struct State {
 #[derive(Default)]
 pub(super) struct HolderPriority {
     state: Mutex<State>,
+    pub(in crate::durability) house_cursor: std::sync::atomic::AtomicUsize,
 }
 
 tokio::task_local! {
+    static BACKGROUND_PROGRESS: Vec<(Arc<HolderPriority>, Arc<AtomicBool>)>;
     static BACKGROUND_OPERATION: Option<(Arc<HolderPriority>, Arc<AtomicBool>)>;
 }
 
@@ -40,9 +42,41 @@ pub(super) async fn operation<F: Future>(priority: &Arc<HolderPriority>, future:
         .await
 }
 
+/// Observe a scheduler branch without extending any of its unit grants.
+pub(super) async fn sweep_progress<F: Future>(priority: &Arc<HolderPriority>, future: F) -> (F::Output, bool) {
+    let progress = Arc::new(AtomicBool::new(false));
+    let mut observers = BACKGROUND_PROGRESS.try_with(Clone::clone).unwrap_or_default();
+    observers.push((Arc::clone(priority), Arc::clone(&progress)));
+    // A shared sweep may be reached from an admitted actor's granted cadence.
+    // Its population must arbitrate afresh; restore the caller's grant on exit.
+    let output = BACKGROUND_PROGRESS.scope(observers, BACKGROUND_OPERATION.scope(None, future)).await;
+    (output, progress.load(Ordering::Relaxed))
+}
+
+/// Observe acquisition, rather than a helper's result: even an empty successful
+/// discovery consumed its turn and must advance the scheduler's cursor.
+pub(super) async fn operation_progress<F: Future>(
+    priority: &Arc<HolderPriority>,
+    future: F,
+) -> (F::Output, bool) {
+    if let Some(granted) = BACKGROUND_OPERATION.try_with(|operation| {
+        operation.as_ref().and_then(|(current, granted)|
+            Arc::ptr_eq(current, priority).then(|| Arc::clone(granted)))
+    }).ok().flatten() {
+        let output = future.await;
+        return (output, granted.load(Ordering::Relaxed));
+    }
+    let granted = Arc::new(AtomicBool::new(false));
+    let output = BACKGROUND_OPERATION
+        .scope(Some((Arc::clone(priority), Arc::clone(&granted))), future)
+        .await;
+    (output, granted.load(Ordering::Relaxed))
+}
+
 pub(super) fn inherit_operation<F: Future>(future: F) -> impl Future<Output = F::Output> {
     let operation = BACKGROUND_OPERATION.try_with(Clone::clone).ok().flatten();
-    BACKGROUND_OPERATION.scope(operation, future)
+    let progress = BACKGROUND_PROGRESS.try_with(Clone::clone).unwrap_or_default();
+    BACKGROUND_PROGRESS.scope(progress, BACKGROUND_OPERATION.scope(operation, future))
 }
 
 /// Keeps a foreground owner's demand visible across waits and separate passes.
@@ -108,6 +142,9 @@ impl HolderPriority {
         }
         let holder = acquire()?;
         if !granted {
+            let _ = BACKGROUND_PROGRESS.try_with(|observers| {
+                for (priority, observer) in observers { if std::ptr::eq(self, Arc::as_ptr(priority)) { observer.store(true, Ordering::Relaxed); } }
+            });
             state.until = (state.foreground > 0).then_some(now + window);
             if let Some(grant) = grant {
                 grant.store(true, Ordering::Relaxed);
@@ -273,6 +310,65 @@ mod tests {
                 holder.set(foreground_holder);
             }
             drop(demand);
+        });
+        Ok(())
+    }
+
+    #[test]
+    fn background_sweep_observation_never_grants_the_sweep() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+        runtime.block_on(async {
+            let priority = Arc::new(HolderPriority::default());
+            let other = Arc::new(HolderPriority::default());
+            let now = Instant::now();
+            let _demand = priority.foreground(now, WINDOW);
+            let (result, observed) = sweep_progress(&priority, async {
+                let (result, unrelated) = sweep_progress(&other, async {
+                    let inherited = Arc::clone(&priority);
+                    tokio::spawn(inherit_operation(async move {
+                        operation(&inherited, async {
+                            assert_eq!(inherited.background(now + WINDOW, WINDOW, || Some(())), Some(()));
+                            assert_eq!(inherited.background(now + WINDOW, WINDOW, || Some(())), Some(()));
+                        }).await;
+                    })).await?;
+                    operation(&priority, async {
+                        assert_eq!(priority.background(now + WINDOW, WINDOW, || Some(())), None);
+                    }).await;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }).await;
+                result?;
+                assert!(!unrelated, "progress belongs to the observed root");
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }).await;
+            result?;
+            assert!(observed);
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+    }
+
+    #[test]
+    fn background_progress_advances_only_on_acquisition() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        runtime.block_on(async {
+            let priority = Arc::new(HolderPriority::default());
+            let now = Instant::now();
+            let _demand = priority.foreground(now, WINDOW);
+            let (_, acquired) = operation_progress(&priority, async {
+                assert_eq!(priority.background(now, WINDOW, || Some(())), None);
+            }).await;
+            assert!(!acquired);
+            let (_, acquired) = operation_progress(&priority, async {
+                assert_eq!(priority.background(now + WINDOW, WINDOW, || Some(())), Some(()));
+                let (_, nested) = operation_progress(&priority, async {
+                    assert_eq!(priority.background(now + WINDOW, WINDOW, || Some(())), Some(()));
+                }).await;
+                assert!(nested);
+            }).await;
+            assert!(acquired);
+            let (_, acquired) = operation_progress(&priority, async {
+                assert_eq!(priority.background(now + WINDOW, WINDOW, || Some(())), None);
+            }).await;
+            assert!(!acquired);
         });
         Ok(())
     }

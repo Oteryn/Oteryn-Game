@@ -100,15 +100,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
-            let _ = self.flush_daily_kill_statistics().await;
-            self.tick_timed_items().await;
-            if !self.ensure_source_map_initialized().await {
-                continue;
+            let start = self.background_start("source-cycle", 7);
+            for index in (start..7).chain(0..start) {
+                self.background_turn("source-cycle", index + 1, async {
+                    match index {
+                        0 => {
+                            let _ = self
+                                .root
+                                .with_background_operation(self.flush_daily_kill_statistics())
+                                .await;
+                        }
+                        1 => self.tick_timed_items().await,
+                        2 => {
+                            let _ = self.ensure_source_map_initialized().await;
+                        }
+                        3 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_source_item_deadlines())
+                                    .await;
+                            }
+                        }
+                        4 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.drain_quest_encounter_deadlines().await;
+                            }
+                        }
+                        5 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.drain_source_party_deadlines_bounded().await;
+                            }
+                        }
+                        _ => {
+                            if self.ensure_source_map_initialized().await {
+                                let _ = self.drain_native_ai_timers().await;
+                            }
+                        }
+                    }
+                })
+                .await;
             }
-            self.drain_source_item_deadlines().await;
-            self.drain_quest_encounter_deadlines().await;
-            self.drain_source_party_deadlines_bounded().await;
-            let _ = self.drain_native_ai_timers().await;
             if let Some(cycle) = npc_voices.as_mut() {
                 self.emit_npc_voices(cycle, self.owner_now().get()).await;
             }
@@ -132,10 +163,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             states.next_party_deadline_pass_us = now.saturating_add(1_000_000);
         }
-        let _ = self.drain_source_house_dispositions().await;
-        let _ = self.drain_source_pvp_expiry().await;
-        let _ = self.drain_source_party_expiry().await;
-        let _ = self.drain_source_party_offline_presence().await;
+        let start = self.background_start("party-deadlines", 4);
+        for index in (start..4).chain(0..start) {
+            self.background_turn("party-deadlines", index + 1, async {
+                match index {
+                    0 => {
+                        let _ = self.drain_source_house_dispositions().await;
+                    }
+                    1 => {
+                        let _ = self
+                            .root
+                            .with_background_operation(self.drain_source_pvp_expiry())
+                            .await;
+                    }
+                    2 => {
+                        let _ = self
+                            .root
+                            .with_background_operation(self.drain_source_party_expiry())
+                            .await;
+                    }
+                    _ => {
+                        let _ = self
+                            .root
+                            .with_background_operation(self.drain_source_party_offline_presence())
+                            .await;
+                    }
+                }
+            })
+            .await;
+        }
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {

@@ -1327,11 +1327,44 @@ impl DurabilityRoot {
     /// The holder is still checked out non-blockingly for each pass; completion or
     /// cancellation drops the grant, including when the caller is a long-lived scheduler.
     pub async fn with_background_operation<F: Future>(&self, future: F) -> F::Output {
+        // Bound layout depth when scheduler units nest task-local grant scopes.
+        let future = Box::pin(future);
         if holder_queue::is_background() {
             foreground::operation(&self.holder_priority, future).await
         } else {
             future.await
         }
+    }
+
+    /// Runs one bounded scheduler unit and reports whether it consumed a grant.
+    /// Schedulers use acquisition (including empty reads) to resume past completed
+    /// units, while a refused unit retains its place. Do not wrap a sweep.
+    pub async fn with_background_operation_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> (F::Output, bool) {
+        let future = Box::pin(future);
+        if holder_queue::is_background() {
+            foreground::operation_progress(&self.holder_priority, future).await
+        } else {
+            (future.await, true)
+        }
+    }
+
+    /// Observe progress in a sweep without granting it access. Excludes any
+    /// caller grant for this scope; each item establishes its own operation.
+    pub async fn with_background_sweep_progress<F: Future>(&self, future: F) -> (F::Output, bool) {
+        let future = Box::pin(future);
+        if holder_queue::is_background() {
+            foreground::sweep_progress(&self.holder_priority, future).await
+        } else {
+            (future.await, true)
+        }
+    }
+
+    pub(crate) fn next_house_disposition(&self, count: usize) -> Option<usize> {
+        holder_queue::is_background().then(||
+            self.holder_priority.house_cursor.fetch_add(1, Ordering::Relaxed) % count.max(1))
     }
 
     /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).

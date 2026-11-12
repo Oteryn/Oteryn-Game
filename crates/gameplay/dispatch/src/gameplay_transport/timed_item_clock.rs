@@ -53,10 +53,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
-        self.drain_corpse_deadlines().await;
-        self.refresh_terrain_tools().await;
-
-        let sessions = {
+        let mut sessions = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
                 return;
@@ -80,34 +77,48 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .retain(|session, _| present.contains(session));
-        for (actor, session) in sessions {
-            let Some(_permit) = self.spell_lane_permit().await else {
-                return;
-            };
-            self.checkpoint_timed_equipment(actor, session, false).await;
-            self.drain_quest_timers(actor, session).await;
-        }
         let converters: Vec<GameSessionId> = {
             let mut active = self.states.timed_items.magic_converters.lock().await;
             active.retain(|session, _| present.contains(session));
             active.keys().copied().collect()
         };
-        for session in converters {
-            let Some(_permit) = self.spell_lane_permit().await else {
-                return;
-            };
-            if !self
-                .root
-                .with_background_operation(self.tick_magic_converter(session))
-                .await
-            {
-                self.states
-                    .timed_items
-                    .magic_converters
-                    .lock()
-                    .await
-                    .remove(&session);
-            }
+        // Stable order, one cursor across equipment, quests and converters as
+        // well as the two scope projections. A refused unit cannot restart a prefix.
+        sessions.sort_by_key(|(_, session)| *session.as_bytes());
+        let mut converters = converters;
+        converters.sort_by_key(|session| *session.as_bytes());
+        let count = 2 + sessions.len() * 2 + converters.len();
+        let start = self.background_start("item-clock", count);
+        for index in (start..count).chain(0..start) {
+            self.background_unit("item-clock", index + 1, async {
+                match index {
+                    0 => self.drain_corpse_deadlines().await,
+                    1 => self.refresh_terrain_tools().await,
+                    index if index < 2 + sessions.len() * 2 => {
+                        let (actor, session) = sessions[(index - 2) / 2];
+                        let Some(_permit) = self.spell_lane_permit().await else {
+                            return;
+                        };
+                        if (index - 2) % 2 == 0 {
+                            self.checkpoint_timed_equipment(actor, session, false).await;
+                        } else {
+                            self.drain_quest_timers(actor, session).await;
+                        }
+                    }
+                    index => {
+                        let session = converters[index - 2 - sessions.len() * 2];
+                        if !self.tick_magic_converter(session).await {
+                            self.states
+                                .timed_items
+                                .magic_converters
+                                .lock()
+                                .await
+                                .remove(&session);
+                        }
+                    }
+                }
+            })
+            .await;
         }
     }
 

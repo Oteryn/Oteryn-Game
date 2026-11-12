@@ -2,14 +2,14 @@
 use super::*;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 
-pub(super) async fn drain(
+pub(super) async fn candidates(
     root: &DurabilityRoot,
     permit: &SpellLanePermit,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
     scope: RuntimeScopeRefV1,
     generation: u64,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     let recovery = authority
         .record_for(root)
         .map_err(|_| HouseDispositionError::Rejected)?;
@@ -52,36 +52,49 @@ pub(super) async fn drain(
             })
         })
         .await?;
-    for house in candidates {
-        let node = node.clone();
-        let recovery = recovery.clone();
-        let mut p = p.clone();
-        p["house"] = house.into();
-        root.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, permit| {
-                Box::pin(async move {
-                    let mut tx =
-                        super::super::spell_item_transaction::begin_spell_owner_transaction(
-                            holder, deadline,
-                        )
-                        .await?;
-                    super::super::spell_item_transaction::assert_spell_item_scope_with_recovery(
-                        &mut tx, permit, &recovery, &node, scope, generation,
+    Ok(candidates)
+}
+
+pub(super) async fn advance(
+    root: &DurabilityRoot,
+    permit: &SpellLanePermit,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+    house: String,
+) -> Result<()> {
+    let recovery = authority.record_for(root).map_err(|_| HouseDispositionError::Rejected)?;
+    let mut p = scope_payload(scope, generation)?;
+    let mut context = permit;
+
+    let node = node.clone();
+    p["house"] = house.into();
+    root.try_issue_semantic_pass()?
+        .run_with_context(&mut context, move |holder, deadline, permit| {
+            Box::pin(async move {
+                let mut tx =
+                    super::super::spell_item_transaction::begin_spell_owner_transaction(
+                        holder, deadline,
                     )
-                    .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
-                    let result = job(&mut tx, &node, "advance", &p).await?;
-                    if let Some(operation) = result.as_str() {
-                        audit::write(&mut tx, &node, &p, operation).await?;
-                    }
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(())
-                })
+                    .await?;
+                super::super::spell_item_transaction::assert_spell_item_scope_with_recovery(
+                    &mut tx, permit, &recovery, &node, scope, generation,
+                )
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+                let result = job(&mut tx, &node, "advance", &p).await?;
+                if let Some(operation) = result.as_str() {
+                    audit::write(&mut tx, &node, &p, operation).await?;
+                }
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(())
             })
-            .await?;
-    }
+        })
+        .await?;
     Ok(())
 }
+
 async fn job(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,

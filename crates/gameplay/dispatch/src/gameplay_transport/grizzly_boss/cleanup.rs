@@ -11,7 +11,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(false);
         };
-        let retries = self
+        let start = self.background_start("grizzly-phase", 2);
+        let mut complete = true;
+        for index in (start..2).chain(0..start) {
+            complete &= self
+                .background_turn("grizzly-phase", index + 1, async {
+                    if index == 0 {
+                        self.grizzly_return_units(&permit).await
+                    } else {
+                        self.grizzly_entry_units(&permit).await
+                    }
+                })
+                .await?;
+        }
+        Ok(complete)
+    }
+
+    async fn grizzly_return_units(&self, permit: &SpellLanePermit) -> Result<bool, RespawnExit> {
+        let mut retries = self
             .states
             .grizzly_boss
             .returns
@@ -24,12 +41,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .unwrap_or_default();
         let mut complete = true;
-        for (session, actor, entry) in retries {
+        retries.sort_by_key(|(session, _, _)| *session.as_bytes());
+        let start = self.background_start("grizzly-returns", retries.len());
+        let count = retries.len();
+        for index in (start..count).chain(0..start) {
+            let (session, actor, entry) = &retries[index];
             // A prior expiry COMMIT may have succeeded without its response. The
             // remembered predecessor is only a retry obligation, never return authority.
             let reconciled = self
-                .root
-                .with_background_operation(async {
+                .background_unit("grizzly-returns", index + 1, async {
                     match self
                         .root
                         .pending_grizzly_boss_entry(self.character, entry.character_id)
@@ -38,7 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(Some(current)) if current.cause == entry.cause => {
                             current.state == GrizzlyBossEntryState::ReturnPending
                                 && self
-                                    .return_grizzly_visit(&permit, actor, session, &current)
+                                    .return_grizzly_visit(permit, *actor, *session, &current)
                                     .await
                         }
                         Ok(_) => true,
@@ -47,11 +67,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .await;
             if reconciled && let Ok(mut entries) = self.states.grizzly_boss.returns.lock() {
-                entries.remove(&session);
+                entries.remove(session);
             } else if !reconciled {
                 complete = false;
             }
         }
+        Ok(complete)
+    }
+
+    async fn grizzly_entry_units(&self, permit: &SpellLanePermit) -> Result<bool, RespawnExit> {
         let binding = {
             let runtime = self.runtime.lock().await;
             runtime.owner_fence().map_err(|_| RespawnExit::StaleOwner)?;
@@ -60,10 +84,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(channel_id) = binding.channel_id() else {
             return Err(RespawnExit::StaleOwner);
         };
+        let mut complete = true;
         let page = self
             .root
             .with_background_operation(async {
-                let entries = match self
+                let mut entries = match self
                     .root
                     .active_grizzly_boss_entries(
                         self.character,
@@ -80,8 +105,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     Err(_) => return Ok(None),
                 };
+                let start = self.background_start("grizzly-entries", entries.len());
+                entries.rotate_left(start);
+                if !entries.is_empty()
+                    && let Ok(mut cursors) = self.states.background_cursors.lock()
+                {
+                    cursors.insert("grizzly-entries", start + 1);
+                }
                 let first_complete = if let Some(entry) = entries.first() {
-                    self.retire_due_grizzly_visit(&permit, entry, binding.scope_generation())
+                    self.retire_due_grizzly_visit(permit, entry, binding.scope_generation())
                         .await?
                 } else {
                     true
@@ -97,7 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             complete &= self
                 .root
                 .with_background_operation(self.retire_due_grizzly_visit(
-                    &permit,
+                    permit,
                     entry,
                     binding.scope_generation(),
                 ))

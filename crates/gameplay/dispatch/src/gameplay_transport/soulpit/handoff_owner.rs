@@ -91,7 +91,11 @@ impl NativeSoulpitHandoff {
             .runtime_scope()
             .world_id();
         let owner = ActivityHandoffOwner::new(admission.root.clone());
-        let mut after = None;
+        let mut after = *admission
+            .activity_runtimes
+            .soulpit_after
+            .lock()
+            .map_err(|_| ())?;
         let mut next = None;
         loop {
             // Discovery shares the first room's grant, so the page read cannot
@@ -107,6 +111,11 @@ impl NativeSoulpitHandoff {
                     else {
                         return Ok(None);
                     };
+                    *admission
+                        .activity_runtimes
+                        .soulpit_after
+                        .lock()
+                        .map_err(|_| ())? = bindings.first().map(|binding| binding.handoff_id);
                     let due = if let Some(binding) = bindings.first() {
                         self.drive_soulpit_room(
                             admission,

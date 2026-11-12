@@ -18,7 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn refresh_due_quest_sessions(&self) {
         let now = std::time::Instant::now();
         let runtime = self.runtime.lock().await;
-        let due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
+        let mut due: Vec<GameSessionId> = match self.states.quest_sessions.lock() {
             Ok(mut sessions) => sessions
                 .iter_mut()
                 .filter_map(|(session, entry)| {
@@ -37,23 +37,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return,
         };
         drop(runtime);
-        for session in due {
-            self.root
-                .with_background_operation(async {
-                    self.refresh_quest_session(session, false).await;
-                    let wheel_deferred =
-                        self.states
-                            .wheel_sessions
-                            .lock()
-                            .ok()
-                            .is_some_and(|sessions| {
-                                sessions.get(&session).is_some_and(Option::is_none)
-                            });
-                    if wheel_deferred {
-                        self.admit_wheel_session(session).await;
-                    }
-                })
-                .await;
+        due.sort_by_key(|session| *session.as_bytes());
+        let start = self.background_start("quest-refresh", due.len());
+        let count = due.len();
+        for index in (start..count).chain(0..start) {
+            let session = due[index];
+            self.background_unit("quest-refresh", index + 1, async {
+                self.refresh_quest_session(session, false).await;
+                let wheel_deferred = self
+                    .states
+                    .wheel_sessions
+                    .lock()
+                    .ok()
+                    .is_some_and(|sessions| sessions.get(&session).is_some_and(Option::is_none));
+                if wheel_deferred {
+                    self.admit_wheel_session(session).await;
+                }
+            })
+            .await;
         }
     }
 

@@ -21,6 +21,7 @@ mod analyser;
 pub mod atelier;
 mod attack;
 mod automatic_spell_progression;
+mod background_sweep;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;

@@ -351,7 +351,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn drain_native_ai_timers(
         &self,
     ) -> Result<FireReport, Error> {
+        self.root
+            .with_background_operation(self.drain_native_ai_timer_unit())
+            .await
+    }
+
+    async fn drain_native_ai_timer_unit(&self) -> Result<FireReport, Error> {
         let now = self.owner_now();
+        let selected = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            let Some(timer) = states.spell_timers.as_ref() else {
+                return Ok(FireReport::default());
+            };
+            timer
+                .next_due_payload(
+                    &runtime,
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+                )?
+                .map(|payload| payload.binding().command)
+        };
         // Refresh external access before taking the Channel owner locks: refresh
         // itself reads those owners and must never recursively acquire the turn.
         let ordinary = {
@@ -379,7 +398,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .unwrap_or_default()
         };
         let mut access = Vec::new();
-        for saved in &delayed {
+        for saved in delayed
+            .iter()
+            .filter(|saved| Some(saved.binding.command) == selected)
+        {
             access.push((
                 saved.binding.caster,
                 saved.binding.command.game_session_id(),
@@ -390,7 +412,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await,
             ));
         }
-        for saved in &ordinary {
+        for saved in ordinary
+            .iter()
+            .filter(|saved| Some(saved.binding.command) == selected)
+        {
             if !access.iter().any(|(actor, session, _)| {
                 *actor == saved.binding.caster
                     && *session == saved.binding.command.game_session_id()
@@ -431,6 +456,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut casters: Vec<QualifiedCaster> = Vec::new();
         let store = FreshAdmissionStore::from_root(self.root.clone());
         for source in proposals {
+            if Some(source.command()) != selected {
+                continue;
+            }
             if casters
                 .iter()
                 .any(|caster| caster.source.same_source(&source))
