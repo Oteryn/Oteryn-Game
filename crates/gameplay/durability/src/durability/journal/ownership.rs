@@ -6,6 +6,15 @@ pub(super) async fn approved_cut(
     tx: &mut Transaction<'_, Postgres>,
     s: &ReadGameJournalCursorV1,
 ) -> Result<bool> {
+    let deleted: bool =
+        sqlx::query_scalar("SELECT game_journal_deleted($1::text::uuid,$2::text::uuid)")
+            .bind(&s.account_id)
+            .bind(&s.character_id)
+            .fetch_one(&mut **tx)
+            .await?;
+    if deleted {
+        return Ok(false);
+    }
     let Some(character) = &s.character_id else {
         return Ok(true);
     };

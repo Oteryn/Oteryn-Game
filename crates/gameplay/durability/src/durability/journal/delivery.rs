@@ -165,30 +165,37 @@ impl JournalOutbox for ProducerStore<'_, '_, '_> {
 }
 
 impl ProducerStore<'_, '_, '_> {
-    /// Bounded, restartable due-queue. Rechecks every stream after at most 30s
-    /// while idle; retained ACKs do not remove a stream from cursor scans.
-    pub async fn next_due(&self, source: &str) -> Result<Option<(ReadGameJournalCursorV1, u64)>> {
+    pub async fn claim_due(&self, source: &str, limit: u8) -> Result<Vec<DeliveryClaim>> {
         let recovery = self.authority.record_for(self.root).map_err(invalid)?;
         let source = source.to_owned();
         self.root.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            assert_recovery_fence(&mut tx,&recovery).await?;
-            sqlx::query("SELECT game_journal_purge()").execute(&mut *tx).await?;
-            let row=sqlx::query("SELECT stream_key,retry_attempt FROM game_journal_streams s WHERE active AND family='ITEMS' AND source_authority=$1 AND next_delivery_at<=clock_timestamp() AND EXISTS(SELECT 1 FROM game_journal_outbox o WHERE o.stream_key=s.stream_key) ORDER BY next_delivery_at,stream_key LIMIT 1")
-                .bind(source).fetch_optional(&mut *tx).await?;
-            let due=row.map(|r|->Result<_>{let b:Vec<u8>=r.try_get("stream_key")?;Ok((ReadGameJournalCursorV1::decode(&b).map_err(invalid)?,u64::try_from(r.try_get::<i64,_>("retry_attempt")?).map_err(invalid)?))}).transpose()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(due)
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;
+            let rows=sqlx::query("SELECT stream_key,retry_attempt,claim_token::text FROM game_journal_claim($1,$2)").bind(source).bind(i32::from(limit)).fetch_all(&mut *tx).await?;
+            let claims=rows.into_iter().map(|r|->Result<_>{let key:Vec<u8>=r.try_get("stream_key")?;Ok(DeliveryClaim{stream:ReadGameJournalCursorV1::decode(&key).map_err(invalid)?,attempt:u64::try_from(r.try_get::<i64,_>("retry_attempt")?).map_err(invalid)?,token:r.try_get("claim_token")?})}).collect::<Result<Vec<_>>>()?;
+            commit_semantic_transaction(tx,deadline).await?;Ok(claims)
         })).await
     }
-    pub async fn schedule(
+    pub async fn claim_current(&self, claim: &DeliveryClaim) -> Result<bool> {
+        let recovery = self.authority.record_for(self.root).map_err(invalid)?;
+        let key = claim.stream.encode().map_err(invalid)?;
+        let token = claim.token.clone();
+        self.root.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;
+            let live:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_journal_streams WHERE stream_key=$1 AND claim_token=$2::text::uuid AND claim_until>clock_timestamp() AND active AND NOT quarantined)").bind(key).bind(token).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await?;Ok(live)
+        })).await
+    }
+    pub async fn finish(
         &self,
-        stream: &ReadGameJournalCursorV1,
+        claim: &DeliveryClaim,
         attempt: u64,
         delay: std::time::Duration,
         progress: bool,
-    ) -> Result<()> {
+        quarantine: bool,
+    ) -> Result<bool> {
         let recovery = self.authority.record_for(self.root).map_err(invalid)?;
-        let key = stream.encode().map_err(invalid)?;
+        let key = claim.stream.encode().map_err(invalid)?;
+        let token = claim.token.clone();
         let attempt = i64::try_from(attempt).map_err(invalid)?;
         self.root
             .try_issue_semantic_pass()?
@@ -196,11 +203,36 @@ impl ProducerStore<'_, '_, '_> {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    sqlx::query("SELECT game_journal_schedule($1,$2,$3,$4)")
+                    let applied: bool = sqlx::query_scalar(
+                        "SELECT game_journal_schedule($1,$2::text::uuid,$3,$4,$5,$6)",
+                    )
+                    .bind(key)
+                    .bind(token)
+                    .bind(attempt)
+                    .bind(delay.as_secs_f64())
+                    .bind(progress)
+                    .bind(quarantine)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(applied)
+                })
+            })
+            .await
+    }
+    pub async fn release_claim(&self, claim: &DeliveryClaim) -> Result<()> {
+        let recovery = self.authority.record_for(self.root).map_err(invalid)?;
+        let key = claim.stream.encode().map_err(invalid)?;
+        let token = claim.token.clone();
+        self.root
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    sqlx::query("SELECT game_journal_release_claim($1,$2::text::uuid)")
                         .bind(key)
-                        .bind(attempt)
-                        .bind(delay.as_secs_f64())
-                        .bind(progress)
+                        .bind(token)
                         .execute(&mut *tx)
                         .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -232,4 +264,12 @@ impl ProducerStore<'_, '_, '_> {
             })
             .await
     }
+}
+
+/// Opaque, expiring delivery ownership; never part of the export wire.
+#[derive(Debug, Clone)]
+pub struct DeliveryClaim {
+    pub stream: ReadGameJournalCursorV1,
+    pub attempt: u64,
+    pub token: String,
 }

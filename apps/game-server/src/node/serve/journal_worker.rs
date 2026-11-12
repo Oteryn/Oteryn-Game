@@ -2,11 +2,11 @@
 use super::*;
 use crate::durability::journal::ProducerStore;
 use crate::native_admission_source::journal::publisher::{
-    JournalDescriptor, JournalExportConfig, MtlsJournalPeer, Publisher, Step,
+    JournalDescriptor, JournalExportConfig, JournalRateGate, MtlsJournalPeer, Publisher,
 };
 fn configured(
     config: &super::super::super::config::NodeConfig,
-) -> Result<Option<Publisher<MtlsJournalPeer>>, BootError> {
+) -> Result<Option<Vec<Publisher<MtlsJournalPeer>>>, BootError> {
     if !config.game_journal_items_export_enabled {
         return Ok(None);
     }
@@ -87,24 +87,30 @@ fn configured(
         &refs,
     )
     .map_err(|_| invalid("journal.identity_separation"))?;
-    Publisher::new(
-        JournalExportConfig {
-            game_journal_items_export_enabled: true,
-            ..Default::default()
-        },
-        MtlsJournalPeer::new(descriptor),
-        journal.source_authority.clone(),
-    )
-    .map(Some)
-    .map_err(|_| invalid("journal.source_authority"))
+    let gate = JournalRateGate::default();
+    (0..4)
+        .map(|_| {
+            Publisher::new(
+                JournalExportConfig {
+                    game_journal_items_export_enabled: true,
+                    ..Default::default()
+                },
+                MtlsJournalPeer::with_gate(descriptor.clone(), gate.clone()),
+                journal.source_authority.clone(),
+            )
+            .map_err(|_| invalid("journal.source_authority"))
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Some)
 }
+
 pub(super) async fn run(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     config: &super::super::super::config::NodeConfig,
     stop: &CancellationToken,
 ) {
-    let mut publisher = match configured(config) {
+    let mut publishers = match configured(config) {
         Ok(value) => value,
         Err(_) => {
             eprintln!("event=game_journal_configuration reason=invalid");
@@ -112,58 +118,28 @@ pub(super) async fn run(
         }
     };
     let outbox = ProducerStore { root, authority };
-    let mut ticks = tokio::time::interval(Duration::from_secs(1));
+    let mut ticks = tokio::time::interval(Duration::from_millis(250));
     ticks.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-    let mut pending = None;
     loop {
         if first(ticks.tick(), stop.cancelled()).await.is_none() {
             break;
         }
         let _ = outbox.maintenance().await;
-        if let Some((stream, attempt, delay, progress)) = &pending {
-            if outbox
-                .schedule(stream, *attempt, *delay, *progress)
-                .await
-                .is_ok()
-            {
-                pending = None;
-            }
-            continue;
-        }
-        let Some(publisher) = publisher.as_mut() else {
+        let (Some(publishers), Some(journal)) = (publishers.as_mut(), config.journal.as_ref())
+        else {
             continue;
         };
-        let Some(journal) = config.journal.as_ref() else {
-            continue;
-        };
-        let Ok(Some((stream, attempt))) = outbox.next_due(&journal.source_authority).await else {
-            continue;
-        };
-        publisher.restore_retry_attempt(attempt);
-        let started = std::time::Instant::now();
-        let Some(step) = first(publisher.step(&stream, &outbox), stop.cancelled()).await else {
-            break;
-        };
-        let (delay, progress) = match step {
-            Step::Accepted => (Duration::ZERO, true),
-            Step::Idle => (
-                Duration::from_secs(28).saturating_sub(started.elapsed()),
-                true,
-            ),
-            Step::RetryAfter(delay) => (delay, false),
-            Step::Disabled => (Duration::from_secs(29), false),
-            Step::Quarantined => {
-                eprintln!("event=game_journal_unavailable reason=authority_or_history");
-                (Duration::from_secs(29), false)
-            }
-        };
-        if outbox
-            .schedule(&stream, publisher.retry_attempt(), delay, progress)
-            .await
-            .is_err()
+        // The shared peer gate limits the pool to 120 requests/minute; each
+        // consumer has one in-flight exchange. Drain a bounded due batch, not
+        // one stream per timer tick. Cancellation leaves expiring claims.
+        if first(
+            outbox.deliver_due(&journal.source_authority, publishers),
+            stop.cancelled(),
+        )
+        .await
+        .is_none()
         {
-            // A failed schedule write never permits an early network retry.
-            pending = Some((stream, publisher.retry_attempt(), delay, progress));
+            break;
         }
     }
 }

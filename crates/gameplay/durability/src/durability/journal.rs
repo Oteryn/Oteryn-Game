@@ -10,7 +10,8 @@ use sqlx::{Postgres, Row, Transaction};
 pub(in crate::durability) mod capture;
 mod delivery;
 mod ownership;
-pub use delivery::ProducerStore;
+mod scheduling;
+pub use delivery::{DeliveryClaim, ProducerStore};
 type Result<T> = std::result::Result<T, DurabilityError>;
 fn invalid<T>(_: T) -> DurabilityError {
     DurabilityError::InvalidStoredState

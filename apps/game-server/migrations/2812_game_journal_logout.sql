@@ -7,6 +7,10 @@ CREATE TABLE game_journal_streams (
  account_id UUID NOT NULL,
  recovery_generation NUMERIC(20,0) NOT NULL CHECK(recovery_generation BETWEEN 1 AND 18446744073709551615),
  retained_floor NUMERIC(20,0) NOT NULL DEFAULT 0 CHECK(retained_floor>=0),
+ claim_token UUID,
+ claim_until TIMESTAMPTZ,
+ quarantined BOOLEAN NOT NULL DEFAULT false,
+ privacy_fenced_at TIMESTAMPTZ,
  next_delivery_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
  retry_attempt BIGINT NOT NULL DEFAULT 0 CHECK(retry_attempt>=0),
  last_progress_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
@@ -28,6 +32,9 @@ CREATE TABLE game_journal_outbox (
  payload_expires_at TIMESTAMPTZ NOT NULL,
  retain_until TIMESTAMPTZ NOT NULL,
  erased_at TIMESTAMPTZ,
+ erasure_reason TEXT CHECK(erasure_reason IN('EXPIRY','DELETION')),
+ tombstone_until TIMESTAMPTZ,
+ CHECK((erased_at IS NULL)=(erasure_reason IS NULL) AND (erased_at IS NULL)=(tombstone_until IS NULL)),
  CHECK((export_bytes IS NULL)=(erased_at IS NOT NULL)),
  created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
  acknowledged_at TIMESTAMPTZ,
@@ -37,7 +44,8 @@ CREATE TABLE game_journal_outbox (
    REFERENCES game_journal_streams(stream_key,source_authority,recovery_generation)
 );
 CREATE INDEX game_journal_expiry ON game_journal_outbox(retain_until) WHERE export_bytes IS NOT NULL;
-CREATE INDEX game_journal_due ON game_journal_streams(next_delivery_at) WHERE active;
+CREATE INDEX game_journal_tombstone_expiry ON game_journal_outbox(tombstone_until) WHERE erased_at IS NOT NULL;
+CREATE INDEX game_journal_due ON game_journal_streams(next_delivery_at) WHERE active AND NOT quarantined;
 -- The primary key covers stream FK lookups, ordered replay and bounded publication.
 REVOKE ALL ON game_journal_streams,game_journal_outbox FROM PUBLIC;
 GRANT SELECT ON game_journal_streams,game_journal_outbox TO oteryn_game_runtime;

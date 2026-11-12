@@ -17,6 +17,7 @@ pub struct JournalExportConfig {
     pub journal_progress_publish_enabled: bool,
 }
 /// Constructed only with a distinct journal identity using the existing verifier.
+#[derive(Clone)]
 pub struct JournalDescriptor(ProducerDescriptor);
 impl JournalDescriptor {
     pub fn new(
@@ -46,17 +47,67 @@ pub trait JournalPeer {
         bytes: &[u8],
     ) -> impl Future<Output = Result<Vec<u8>, Failure>>;
 }
+/// Shared across consumers of one peer; reservations recheck later pauses.
+#[derive(Default)]
+struct GateState {
+    next: Option<tokio::time::Instant>,
+    pause: Option<(tokio::time::Instant, Duration)>,
+}
+#[derive(Clone, Default)]
+pub struct JournalRateGate(std::sync::Arc<tokio::sync::Mutex<GateState>>);
+impl JournalRateGate {
+    pub async fn wait(&self) {
+        loop {
+            let delay = {
+                let mut gate = self.0.lock().await;
+                let now = tokio::time::Instant::now();
+                let pause = gate
+                    .pause
+                    .map(|(at, delay)| delay.saturating_sub(now.duration_since(at)))
+                    .unwrap_or_default();
+                if !pause.is_zero() {
+                    Some(pause.min(Duration::from_secs(60)))
+                } else if let Some(next) = gate.next
+                    && next > now
+                {
+                    Some(next - now)
+                } else {
+                    gate.next = Some(now + Duration::from_millis(500));
+                    None
+                }
+            };
+            match delay {
+                Some(delay) => tokio::time::sleep(delay).await,
+                None => return,
+            }
+        }
+    }
+    pub async fn defer(&self, delay: Duration) {
+        let mut gate = self.0.lock().await;
+        let now = tokio::time::Instant::now();
+        let left = gate
+            .pause
+            .map(|(at, delay)| delay.saturating_sub(now.duration_since(at)))
+            .unwrap_or_default();
+        if delay > left {
+            gate.pause = Some((now, delay));
+        }
+    }
+}
 pub struct MtlsJournalPeer {
     descriptor: JournalDescriptor,
     capacity: TransientCapacity,
-    next_exchange: Option<tokio::time::Instant>,
+    gate: JournalRateGate,
 }
 impl MtlsJournalPeer {
-    pub const fn new(descriptor: JournalDescriptor) -> Self {
+    pub fn new(descriptor: JournalDescriptor) -> Self {
+        Self::with_gate(descriptor, JournalRateGate::default())
+    }
+    pub fn with_gate(descriptor: JournalDescriptor, gate: JournalRateGate) -> Self {
         Self {
             descriptor,
             capacity: TransientCapacity::new(),
-            next_exchange: None,
+            gate,
         }
     }
 }
@@ -68,11 +119,7 @@ impl JournalPeer for MtlsJournalPeer {
         ) {
             return Err(Failure::Quarantine);
         }
-        // Uniform spacing bounds the peer to 120 requests/minute without bursts.
-        if let Some(at) = self.next_exchange {
-            tokio::time::sleep_until(at).await;
-        }
-        self.next_exchange = Some(tokio::time::Instant::now() + Duration::from_millis(500));
+        self.gate.wait().await;
         let body = std::str::from_utf8(bytes).map_err(|_| Failure::Quarantine)?;
         let mut permit = self
             .capacity
@@ -86,6 +133,11 @@ impl JournalPeer for MtlsJournalPeer {
                     SourceError::InvalidDescriptor => Failure::Quarantine,
                     _ => Failure::Retry(None),
                 })?;
+        if matches!(status, 429 | 500..=599)
+            && let Some(delay) = retry
+        {
+            self.gate.defer(delay).await;
+        }
         classify_response(status, body, retry)
     }
 }

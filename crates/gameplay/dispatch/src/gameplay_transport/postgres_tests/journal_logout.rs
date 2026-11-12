@@ -192,9 +192,9 @@ fn scenario(
                     root: &h.root,
                     authority: &authority
                 }
-                .next_due(&stream.source_authority)
+                .claim_due(&stream.source_authority, 1)
                 .await?
-                .is_none(),
+                .is_empty(),
                 "registration alone is not export history"
             );
             // An ordinary gameplay save advances CharacterRevision, not the
@@ -380,13 +380,25 @@ fn scenario(
                     assert_eq!(&sent.sent[..3], &sent.sent[3..]);
                 }
                 stage.set("retention and restart scheduling");
-                outbox
-                    .schedule(&stream, 4, std::time::Duration::from_secs(999), false)
-                    .await?;
-                assert!(outbox.next_due(&stream.source_authority).await?.is_none());
-                outbox
-                    .schedule(&stream, 4, std::time::Duration::ZERO, false)
-                    .await?;
+                let claim = outbox
+                    .claim_due(&stream.source_authority, 1)
+                    .await?
+                    .pop()
+                    .ok_or("claim")?;
+                assert!(
+                    outbox
+                        .finish(&claim, 4, std::time::Duration::from_secs(999), false, false)
+                        .await?
+                );
+                assert!(
+                    outbox
+                        .claim_due(&stream.source_authority, 1)
+                        .await?
+                        .is_empty()
+                );
+                // Simulate that persisted deadline having elapsed, not an early
+                // schedule override (which is now forbidden).
+                sqlx::query("UPDATE game_journal_streams SET next_delivery_at=clock_timestamp() WHERE stream_key=$1").bind(&key).execute(&h.pool).await?;
                 let restarted_root = h.independent_root()?;
                 assert!(restarted_root.maintain_ready_once().await?);
                 super::journal_inventory::runtime_role(&restarted_root).await?;
@@ -398,12 +410,14 @@ fn scenario(
                     root: &restarted_root,
                     authority: &restarted_authority,
                 };
-                let (due, attempt) = restarted
-                    .next_due(&stream.source_authority)
+                let due = restarted
+                    .claim_due(&stream.source_authority, 1)
                     .await?
-                    .ok_or("restart due")?;
-                assert_eq!(due, stream);
-                assert_eq!(attempt, 4);
+                    .pop()
+                    .ok_or("restart claim")?;
+                assert_eq!(due.stream, stream);
+                assert_eq!(due.attempt, 4);
+                restarted.release_claim(&due).await?;
                 // Expiry blocks replay even before the periodic erasure sweep.
                 sqlx::query("UPDATE game_journal_outbox SET payload_expires_at=clock_timestamp()-interval '1 second' WHERE stream_key=$1").bind(&key).execute(&h.pool).await?;
                 use crate::native_admission_source::journal::publisher::JournalOutbox;
@@ -423,7 +437,10 @@ fn scenario(
                 .fetch_one(&h.pool)
                 .await?;
                 assert_eq!(floor, "3");
-                assert!(!restarted.current(&stream).await?);
+                assert!(
+                    restarted.current(&stream).await?,
+                    "ordinary expiry must not fence a healthy stream"
+                );
             } else {
                 assert_eq!(
                     Box::pin(publisher.step(&stream, &outbox)).await,
