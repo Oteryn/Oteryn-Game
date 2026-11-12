@@ -1,4 +1,4 @@
-//! Reuse the production Windows physical normalizer without another event/key schema.
+//! Reuse the production winit physical normalizer on every native desktop.
 use super::owner::HostOwner;
 use bevy::{prelude::*, winit::RawWinitWindowEvent};
 use oteryn_input_platform::InputPlatformAdapter;

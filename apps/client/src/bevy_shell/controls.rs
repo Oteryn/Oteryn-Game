@@ -22,7 +22,7 @@ impl HostOwner {
             .is_some_and(|p| p.link.preference_chat_open());
         // Every reset reaches every stateful router, including releases suppressed by a modal.
         let reset = [NormalizedInputEvent::DeviceLost];
-        let events = if blocked || self.draft().is_some() {
+        let events = if blocked || self.modal_active() {
             &reset[..]
         } else {
             events
@@ -36,7 +36,7 @@ impl HostOwner {
             self.open_graphics();
             return;
         }
-        if blocked || self.draft().is_some() {
+        if blocked || self.modal_active() {
             return;
         }
         let Some(play) = &mut self.play else {
@@ -64,15 +64,19 @@ impl HostOwner {
         for spell in spells {
             play.view.cast(spell);
         }
-        if crate::input::logout_key(&routed)
-            && (!self.settings.preferences.miscellaneous.confirm_logout || confirm_logout())
-        {
-            play.view.logout();
+        if crate::input::logout_key(&routed) {
+            if self.settings.preferences.miscellaneous.confirm_logout {
+                self.request_logout_confirmation();
+            } else {
+                play.view.logout();
+            }
+            return;
         }
         let suppress_primary = play
             .view
             .world_pointer_input(&play.link, &routed)
             .unwrap_or(true);
+        let mut context = None;
         for click in clicks {
             if suppress_primary && !click.secondary {
                 continue;
@@ -81,25 +85,22 @@ impl HostOwner {
             {
                 if click.secondary {
                     if !play.view.gameplay_secondary_click(&play.link) {
-                        #[cfg(windows)]
-                        play.view.properties_context_menu(&play.link, tile);
+                        context = Some(tile);
                         self.controls.mouse.context_closed();
+                        break;
                     }
                 } else if let Err(error) = play.view.primary_click(tile, &play.link) {
                     self.status = format!("Scene input failed: {error}");
                 }
             }
         }
+        if let Some(tile) = context {
+            self.request_world_context(tile);
+        }
     }
-}
 
-fn confirm_logout() -> bool {
-    #[cfg(windows)]
-    {
-        crate::device_login::confirm_action("Log out of the game?")
-    }
-    #[cfg(not(windows))]
-    {
-        false
+    /// A shared popup may consume the OS release; clear its retained pointer state.
+    pub(super) fn pointer_context_closed(&mut self) {
+        self.controls.mouse.context_closed();
     }
 }
