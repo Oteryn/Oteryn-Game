@@ -130,6 +130,14 @@ pub(in crate::gameplay_transport) async fn prepare(h: &Harness) -> TestResult<Np
     })
 }
 
+pub(super) fn fragment_definition(key: &str) -> crate::durability::item_mint::TypedDefinitionRef {
+    crate::durability::item_mint::TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: "definition-r1".into(),
+    }
+}
+
 pub(super) struct MechanicContent;
 impl crate::durability::item_transfer::ItemWeightLookup for MechanicContent {
     fn generation_digest(&self) -> [u8; 32] {
@@ -151,7 +159,17 @@ impl crate::durability::item_loop_move::ItemLoopContent for MechanicContent {
         d: &crate::durability::item_mint::TypedDefinitionRef,
     ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
         use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
-        if d.family != "Item" || d.revision_ref != "rev-1" {
+        let fragment = matches!(
+            d.production_key.as_str(),
+            "oteryn:item.tibia.i46625" | "oteryn:item.tibia.i46626"
+        );
+        if d.family != "Item"
+            || if fragment {
+                d.revision_ref != "definition-r1"
+            } else {
+                d.revision_ref != "rev-1"
+            }
+        {
             return None;
         }
         let bag = d.production_key == "oteryn:item.tibia.i2854";
@@ -184,7 +202,7 @@ pub(super) async fn paid_assets(h: &Harness) -> TestResult {
         (232, "oteryn:item.tibia.i46626", 100, 6),
         (235, "oteryn:item.tibia.i3043", 100, 7),
     ] {
-        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,key,"rev-1",count),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,key,if matches!(seed, 229 | 232) { "definition-r1" } else { "rev-1" },count),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
     }
     sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
         "INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,kind,request_binding,acting_character_id,account_id,world_id,channel_id,runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,committed_at,planned_platinum_item_instance_id,planned_gold_item_instance_id,backpack_item_instance_id) VALUES({occ},{operation},{event},1,sha256('seed'),{character},{account},{world},{channel},1,1,0,1,sha256('seed'),0,{p},{g},{bag}); INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,amount,balance_before,balance_after,acting_character_id) VALUES({entry},{operation},{account},{world},1,1000000000,0,1000000000,{character}); INSERT INTO game_account_bank_balances VALUES({account},{world},1000000000,{entry});",
@@ -216,7 +234,7 @@ pub(super) async fn small_fragment_stacks(h: &Harness) -> TestResult {
         .execute(&mut *tx)
         .await?;
     for (seed, ordinal) in [(148, 100), (151, 101), (154, 102)] {
-        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,"oteryn:item.tibia.i46625","rev-1",2),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,"oteryn:item.tibia.i46625","definition-r1",2),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     Ok(())

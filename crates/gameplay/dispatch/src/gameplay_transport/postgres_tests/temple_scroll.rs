@@ -484,10 +484,14 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice()).execute(&mut *tx).await?;
-    sqlx::raw_sql(sqlx::AssertSqlSafe(item(PARCEL, "oteryn:item.tibia.i2854", 1)))
+    sqlx::raw_sql(sqlx::AssertSqlSafe(item(PARCEL, "oteryn:item.tibia.i3503", 1)))
         .execute(&mut *tx)
         .await?;
-    into_inbox(&mut tx, PARCEL).await?;
+    // Build the parcel while carried. The MAIL owner below stamps and delivers
+    // its complete tree, retaining the source proof that admits Inbox contents.
+    sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,3,encode($5,'hex')::uuid)")
+        .bind(id(41).as_slice()).bind(id(BAG).as_slice()).bind(id(PARCEL).as_slice())
+        .bind(id(42).as_slice()).bind(id(205).as_slice()).execute(&mut *tx).await?;
     let lifetime = crate::durability::item_use::temple_scroll::TEMPLE_SCROLL_LIFETIME_MS;
     let mut scrolls = vec![(FRESH, lifetime - 3_600_000)];
     scrolls.extend(DUE.into_iter().filter(|seed| offline || *seed != WORN).map(|seed| (seed, -86_400_000)));
@@ -577,6 +581,20 @@ async fn seed_scrolls(h: &Harness, offline: bool) -> TestResult {
         .bind(id(41).as_slice())
         .execute(&mut *tx)
         .await?;
+    // Setup used the historical Item fixture convention; delivery itself runs
+    // the real MAIL writer with every native custody and source proof enabled.
+    sqlx::query("SET LOCAL session_replication_role=origin")
+        .execute(&mut *tx)
+        .await?;
+    let posted: bool = sqlx::query_scalar("SELECT game_mail_posting_apply(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,'oteryn:item.tibia.i3504',$7,sha256($7),encode($8,'hex')::uuid,$9,to_jsonb(i),to_jsonb(e)) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($6,'hex')::uuid")
+        .bind(id(206).as_slice()).bind(id(50).as_slice()).bind(id(42).as_slice())
+        .bind(id(43).as_slice()).bind(id(41).as_slice()).bind(id(PARCEL).as_slice())
+        .bind(b"temple-scroll-mailbox".as_slice()).bind(id(207).as_slice())
+        .bind(b"MAIL_POSTED".as_slice()).fetch_one(&mut *tx).await?;
+    assert!(posted, "the native parcel delivery must fit in the fixture Inbox");
+    let mailed: (String, i32) = sqlx::query_as("SELECT before_item->>'definition_production_key',item_count FROM game_mail_operations WHERE mail_id=encode($1,'hex')::uuid")
+        .bind(id(206).as_slice()).fetch_one(&mut *tx).await?;
+    assert_eq!(mailed, ("oteryn:item.tibia.i3503".into(), if offline { 5 } else { 2 }));
     tx.commit().await?;
     Ok(())
 }

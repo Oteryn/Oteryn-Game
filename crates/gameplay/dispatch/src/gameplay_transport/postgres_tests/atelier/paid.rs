@@ -3,7 +3,7 @@ use crate::durability::character_atelier::AtelierResources;
 use crate::durability::character_wheel::{
     WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelSlots, WheelVesselIntent,
 };
-use crate::durability::item_fee_burn::test_support::{definition, request as fee_request};
+use crate::durability::item_fee_burn::test_support::request as fee_request;
 use crate::gameplay_transport::atelier::{GemBuildCommand, GemBuildOutcome};
 use oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS;
 
@@ -33,7 +33,7 @@ pub(super) async fn exercise(
     let resources = Box::new(AtelierResources {
         content: &content,
         coins: fee_request(2, 1)?.change,
-        fragment: definition("oteryn:item.tibia.i46625"),
+        fragment: fixture::fragment_definition("oteryn:item.tibia.i46625"),
         supply_stash: false,
     });
     let session = crate::bestiary_postgres_harness::fence(1)?.game_session_id;
@@ -429,7 +429,7 @@ pub(super) async fn exercise(
             resources: Some(Box::new(AtelierResources {
                 content: &content,
                 coins: fee_request(3, 1)?.change,
-                fragment: definition("oteryn:item.tibia.i46626"),
+                fragment: fixture::fragment_definition("oteryn:item.tibia.i46626"),
                 supply_stash: false,
             })),
         };
@@ -469,7 +469,7 @@ pub(super) async fn exercise(
         resources: Some(Box::new(AtelierResources {
             content: &content,
             coins: fee_request(4, 1)?.change,
-            fragment: definition("oteryn:item.tibia.i46626"),
+            fragment: fixture::fragment_definition("oteryn:item.tibia.i46626"),
             supply_stash: false,
         })),
     };
