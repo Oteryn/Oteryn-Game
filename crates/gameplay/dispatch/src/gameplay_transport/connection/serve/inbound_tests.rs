@@ -614,3 +614,6 @@ fn background_visibility_refusal_keeps_container_open_and_retries_next_tick() ->
         .join()
         .map_err(|_| "visibility refusal test thread panicked")?
 }
+
+#[path = "background_regression_tests.rs"]
+mod background_regression_tests;
