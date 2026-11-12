@@ -5,6 +5,7 @@ use crate::{
     character_commands::{counter, source_authority_valid, uuid_v7},
 };
 use serde::{Deserialize, Serialize};
+pub mod progress;
 mod publish;
 pub use publish::*;
 
