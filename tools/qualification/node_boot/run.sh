@@ -96,8 +96,10 @@ esac
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
+# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
-  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 && -z "${NODE_BOOT_LIFECYCLE:-}" ]]; then
+  && -z "${NODE_BOOT_LIFECYCLE:-}" \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
