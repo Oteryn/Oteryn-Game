@@ -123,7 +123,7 @@ async fn kill(
 ) -> TestResult {
     travel_to_spawn(c, w, s, key)
         .await
-        .map_err(|e| format!("step boss-kill {key}: walking/spawn reply={e}"))?;
+        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step boss-kill {key}: walking/spawn reply={e}"), e) })?;
     let here = c.world_spatial().actor_position;
     let target = c
         .world_entities()

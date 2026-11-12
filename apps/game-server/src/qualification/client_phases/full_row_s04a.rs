@@ -126,7 +126,7 @@ async fn command(
         .ok_or_else(|| format!("step={step} observed=client-encoder-refused-request"))?;
     let response = vip::send(client.session_mut(), &command)
         .await
-        .map_err(|error| format!("step={step} observed=transport-error:{error}"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step={step} observed=transport-error:{error}"), error) })?;
     if response.status != CommandStatus::Accepted {
         return Err(format!(
             "step={step} observed=status:{:?},code:{} need=accepted-command-frame",

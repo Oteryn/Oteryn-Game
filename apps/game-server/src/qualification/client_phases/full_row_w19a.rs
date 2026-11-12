@@ -69,7 +69,7 @@ async fn earn_price(
         travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(client)
             .await
-            .map_err(|error| format!("step 1: rat ATTACK/loot observed={error}"))?;
+            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 1: rat ATTACK/loot observed={error}"), error) })?;
     }
     Ok(())
 }

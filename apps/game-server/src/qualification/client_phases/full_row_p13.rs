@@ -134,10 +134,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
 
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
         .await
-        .map_err(|error| format!("step=walk-to-training observed={error} need=reachable-rat"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=walk-to-training observed={error} need=reachable-rat"), error) })?;
     client_hunt::hunt(&mut client)
         .await
-        .map_err(|error| format!("step=combat-training observed={error} need=attack-damage-corpse-and-loot-deltas"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=combat-training observed={error} need=attack-damage-corpse-and-loot-deltas"), error) })?;
     evidence("P13_CHECK combat-training PASS attack-damage-corpse-use-loot-deltas");
     let after = snapshot(&mut client, "post-training-query").await?;
 

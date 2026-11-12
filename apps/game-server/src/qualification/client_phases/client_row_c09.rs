@@ -202,7 +202,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     for _ in 0..3 {
         client_hunt::hunt(&mut client)
             .await
-            .map_err(|error| format!("C09 combat: {error}"))?;
+            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("C09 combat: {error}"), error) })?;
         if client
             .actor_vitals()
             .is_some_and(|v| v.health < full.health)

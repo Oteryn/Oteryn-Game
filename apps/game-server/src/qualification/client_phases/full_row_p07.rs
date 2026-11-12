@@ -25,6 +25,7 @@ struct Observations {
 
 impl Observations {
     fn fail(&mut self, step: &str, observed: impl std::fmt::Debug) {
+        verdict::record_assertion(step);
         let detail = format!("step={step};observed={observed:?}").replace(' ', "_");
         evidence(&format!("P07_CHECK status=FAIL {detail}"));
         self.failures.push(detail);
@@ -107,6 +108,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
             value
         }
         Err(error) => {
+            verdict::record_error(error.as_ref());
             seen.fail("1-query-state-and-resources", &error);
             (
                 atelier::AtelierReply {
@@ -365,13 +367,13 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         seen.fail("6-stale-refusal", &response);
     }
 
-    let durable = query(&mut client).await;
+    let durable = verdict::observe(query(&mut client)).await;
     if durable.is_err() {
         seen.fail("7-pre-logout-state", &durable);
     }
     logout(&mut client).await?;
     let mut fresh = connect_world(clients, 0xa8).await?;
-    let fresh_state = query(&mut fresh).await;
+    let fresh_state = verdict::observe(query(&mut fresh)).await;
     match (&durable, &fresh_state) {
         (Ok(before), Ok(after)) if before == after && !after.0.refused => {
             seen.pass("7-fresh-admission-durable-state");

@@ -327,13 +327,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x7a, 0).await?;
-    let outcome = body(&mut client, clients, world).await;
-    let closed = finish(&mut client).await;
+    let outcome = verdict::observe(body(&mut client, clients, world)).await;
+    let closed = verdict::observe(finish(&mut client)).await;
     let data = outcome?;
     closed?;
     let mut fresh = connect_character(clients, 0x7b, 0).await?;
-    let checked = verify(&mut fresh, clients, &data).await;
-    let closed = finish(&mut fresh).await;
+    let checked = verdict::observe(verify(&mut fresh, clients, &data)).await;
+    let closed = verdict::observe(finish(&mut fresh)).await;
     checked?;
     closed
 }

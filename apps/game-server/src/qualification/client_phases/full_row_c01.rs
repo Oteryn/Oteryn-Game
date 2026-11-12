@@ -151,7 +151,7 @@ async fn chase_or_stand(
     let here = tile(client.world_spatial().actor_position)?;
     let target = at(client)?;
     let away = route(world, here, |tile| gap(tile, target) >= 3).ok_or("step=chase observed=no-route-away-from-target")?;
-    walk(client, world, &away).await.map_err(|error| format!("step=chase observed=step-away:{error}"))?;
+    walk(client, world, &away).await.map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=chase observed=step-away:{error}"), error) })?;
     let left = tile(client.world_spatial().actor_position)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
     let mut moved = false;
@@ -212,7 +212,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     for (name, fight) in [("offensive", FightMode::Offensive), ("balanced", FightMode::Balanced), ("defensive", FightMode::Defensive)] {
         for (suffix, chase) in [("stand", ChaseMode::Stand), ("chase", ChaseMode::Chase)] {
             travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await
-                .map_err(|error| format!("step={name}-{suffix} observed={error} need=walk-to-live-rat"))?;
+                .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step={name}-{suffix} observed={error} need=walk-to-live-rat"), error) })?;
             let observed = mode_attack(&mut client, world, FightModes { fight_mode: fight, chase, secure: true }).await?;
             defenses.push(observed);
             let case = CASES.iter().copied().find(|case| *case == format!("{name}-{suffix}")).ok_or("mode case registry")?;

@@ -216,14 +216,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut b = match connect_character(clients, 0x81, 1).await {
         Ok(b) => b,
         Err(error) => {
+            verdict::record_error(error.as_ref());
             finish(&mut a).await.ok();
             return Err(error);
         }
     };
-    let outcome = body(&mut a, &mut b, clients).await;
+    let outcome = verdict::observe(body(&mut a, &mut b, clients)).await;
 
-    let closed_b = finish(&mut b).await;
-    let closed_a = finish(&mut a).await;
+    let closed_b = verdict::observe(finish(&mut b)).await;
+    let closed_a = verdict::observe(finish(&mut a)).await;
     outcome?;
     closed_b?;
     closed_a

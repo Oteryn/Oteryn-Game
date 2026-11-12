@@ -163,13 +163,13 @@ async fn verify(
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x70).await?;
-    let outcome = body(&mut client, clients).await;
-    let closed = finish(&mut client).await;
+    let outcome = verdict::observe(body(&mut client, clients)).await;
+    let closed = verdict::observe(finish(&mut client)).await;
     let data = outcome?;
     closed?;
     let mut fresh = connect_world(clients, 0x71).await?;
-    let checked = verify(&mut fresh, clients, &data).await;
-    let closed = finish(&mut fresh).await;
+    let checked = verdict::observe(verify(&mut fresh, clients, &data)).await;
+    let closed = verdict::observe(finish(&mut fresh)).await;
     checked?;
     closed
 }

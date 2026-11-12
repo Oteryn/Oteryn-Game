@@ -35,6 +35,7 @@ impl Journey {
     }
 
     fn check(&mut self, step: u8, condition: bool, observed: impl std::fmt::Debug) {
+        if !condition { verdict::record_assertion("task-board-check"); }
         let observed = format!("{observed:?}").replace('\n', " ");
         if condition {
             evidence(&format!(
@@ -79,9 +80,7 @@ async fn send(
 ) -> TestResult<Reply> {
     task_board::send_full(client.session_mut(), &request(action, selection))
         .await
-        .map_err(|error| {
-            format!("task-board action={action} selection={selection}: {error:?}").into()
-        })
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("task-board action={action} selection={selection}: {error:?}"), error) })
 }
 
 async fn query(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<Reply> {
@@ -98,10 +97,10 @@ async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult 
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut journey = Journey::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), run(&mut journey, clients)).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(run(&mut journey, clients))).await;
     match result {
         Ok(Ok(())) => {}
-        Ok(Err(error)) => journey.check(0, false, format!("journey-error:{error}")),
+        Ok(Err(error)) => { verdict::record_error(error.as_ref()); journey.check(0, false, format!("journey-error:{error}")) },
         Err(_) => journey.check(0, false, "journey-timeout"),
     }
     journey.finish();

@@ -172,8 +172,8 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x76).await?;
-    let outcome = body(&mut client, clients).await;
-    let closed = finish(&mut client).await;
+    let outcome = verdict::observe(body(&mut client, clients)).await;
+    let closed = verdict::observe(finish(&mut client)).await;
     outcome?;
     closed
 }

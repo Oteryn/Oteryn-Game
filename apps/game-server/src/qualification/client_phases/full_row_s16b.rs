@@ -196,7 +196,7 @@ async fn earn_level_eight(
             return Err(format!("step level-8 timeout after ATTACK: observed={before:?}; server needs reachable credited spawns").into());
         }
         super::travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await
-            .map_err(|error| format!("step level-8 legitimate rat route: {error}"))?;
+            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step level-8 legitimate rat route: {error}"), error) })?;
         let here = client.world_spatial().actor_position;
         let target = client.world_entities().and_then(|entities| entities.iter().find(|entry| {
             entry.kind == EntityKind::Creature && entry.position.floor == here.floor

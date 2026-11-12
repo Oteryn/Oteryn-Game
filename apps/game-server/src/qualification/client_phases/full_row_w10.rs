@@ -25,6 +25,7 @@ struct StepFailure {
     step: u8,
     observed: String,
     need: &'static str,
+    source: Option<Box<dyn std::error::Error>>,
 }
 
 type StepResult<T = ()> = Result<T, StepFailure>;
@@ -34,10 +35,14 @@ fn failed(step: u8, observed: impl std::fmt::Display, need: &'static str) -> Ste
         step,
         observed: observed.to_string().replace(' ', "_"),
         need,
+        source: None,
     }
 }
 
-async fn command(client: &mut DevClientSession, selection: Option<u8>) -> TestResult<(CommandStatus, Vec<u8>)> {
+async fn command(
+    client: &mut DevClientSession,
+    selection: Option<u8>,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let payload = selection.map_or_else(Vec::new, |level| vec![level]);
     let reply = client
         .session_mut()
@@ -105,17 +110,19 @@ fn primal_positions(bytes: &[u8]) -> TestResult<Vec<TilePos>> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> StepResult {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE").map_err(|error| {
-        failed(1, error, "the node-boot compiled world bundle")
-    })?)
-    .map_err(|error| failed(1, error, "the node-boot compiled world bundle"))?;
-    let pin: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(required("NODE_BOOT_WORLD_PIN").map_err(|error| {
-            failed(1, error, "the node-boot world pin")
-        })?)
-        .map_err(|error| failed(1, error, "the node-boot world pin"))?,
+    let bytes = std::fs::read(
+        required("NODE_BOOT_WORLD_BUNDLE")
+            .map_err(|error| failed_error(1, error, "the node-boot compiled world bundle"))?,
     )
-    .map_err(|error| failed(1, error, "a valid node-boot world pin"))?;
+    .map_err(|error| failed_error(1, error, "the node-boot compiled world bundle"))?;
+    let pin: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(
+            required("NODE_BOOT_WORLD_PIN")
+                .map_err(|error| failed_error(1, error, "the node-boot world pin"))?,
+        )
+        .map_err(|error| failed_error(1, error, "the node-boot world pin"))?,
+    )
+    .map_err(|error| failed_error(1, error, "a valid node-boot world pin"))?;
     let world = load_world(
         bytes.clone(),
         &pin,
@@ -123,36 +130,36 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         ChannelId::decode(&clients.channel)
             .map_err(|error| failed(1, error, "a valid channel id"))?,
     )
-    .map_err(|error| failed(1, error, "the production world loader to accept the bundle"))?;
+    .map_err(|error| failed_error(1, error, "the production world loader to accept the bundle"))?;
     let mut client = connect_world(clients, 0xd0)
         .await
-        .map_err(|error| failed(1, error, "fresh native admission"))?;
+        .map_err(|error| failed_error(1, error, "fresh native admission"))?;
 
     accepted(
         1,
         command(&mut client, None)
             .await
-            .map_err(|error| failed(1, error, "a Hazard query reply"))?,
+            .map_err(|error| failed_error(1, error, "a Hazard query reply"))?,
         [1, 1],
     )?;
     accepted(
         2,
         command(&mut client, Some(1))
             .await
-            .map_err(|error| failed(2, error, "a Hazard selection reply"))?,
+            .map_err(|error| failed_error(2, error, "a Hazard selection reply"))?,
         [1, 1],
     )?;
     rejected(
         2,
         command(&mut client, Some(2))
             .await
-            .map_err(|error| failed(2, error, "a locked-level refusal"))?,
+            .map_err(|error| failed_error(2, error, "a locked-level refusal"))?,
     )?;
 
     let positions = primal_positions(&bytes)
-        .map_err(|error| failed(3, error, "an authored Primal Menace spawn"))?;
+        .map_err(|error| failed_error(3, error, "an authored Primal Menace spawn"))?;
     let from = tile(client.world_spatial().actor_position)
-        .map_err(|error| failed(3, error, "a valid actor position"))?;
+        .map_err(|error| failed_error(3, error, "a valid actor position"))?;
     let path = route(world, from, |at| {
         positions.iter().any(|position| {
             position.floor == at.floor
@@ -162,13 +169,16 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     .ok_or_else(|| {
         failed(
             3,
-            format!("no_reachable_primal_spawn;authored={};from={from:?}", positions.len()),
+            format!(
+                "no_reachable_primal_spawn;authored={};from={from:?}",
+                positions.len()
+            ),
             "an ordinary walkable route from admission to the authored Primal Ordeal encounter",
         )
     })?;
     walk(&mut client, world, &path)
         .await
-        .map_err(|error| failed(3, error, "accepted STEP replies to the Primal encounter"))?;
+        .map_err(|error| failed_error(3, error, "accepted STEP replies to the Primal encounter"))?;
     let at = client.world_spatial().actor_position;
     let target = client
         .world_entities()
@@ -178,16 +188,27 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
                 .find(|entity| {
                     entity.kind == oteryn_dev_client::EntityKind::Creature
                         && entity.position.floor == at.floor
-                        && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
+                        && entity
+                            .position
+                            .x
+                            .abs_diff(at.x)
+                            .max(entity.position.y.abs_diff(at.y))
+                            <= 1
                 })
                 .copied()
         })
-        .ok_or_else(|| failed(3, "spawn_reached_but_no_creature_frame", "a visible Primal Menace entity"))?;
+        .ok_or_else(|| {
+            failed(
+                3,
+                "spawn_reached_but_no_creature_frame",
+                "a visible Primal Menace entity",
+            )
+        })?;
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
         .await
-        .map_err(|error| failed(3, error, "an ATTACK reply"))?;
+        .map_err(|error| failed_error(3, error, "an ATTACK reply"))?;
     if attack.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(failed(
             3,
@@ -214,32 +235,38 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         client
             .service_liveness(Duration::from_millis(100))
             .await
-            .map_err(|error| failed(3, error, "continued native combat frames"))?;
+            .map_err(|error| failed_error(3, error, "continued native combat frames"))?;
         client.take_events();
     }
     client
         .session_mut()
         .attack_target(None)
         .await
-        .map_err(|error| failed(3, error, "an attack-stop reply"))?;
+        .map_err(|error| failed_error(3, error, "an attack-stop reply"))?;
 
     accepted(
         4,
         command(&mut client, None)
             .await
-            .map_err(|error| failed(4, error, "the post-kill Hazard unlock delta"))?,
+            .map_err(|error| failed_error(4, error, "the post-kill Hazard unlock delta"))?,
         [2, 1],
     )?;
     accepted(
         4,
         command(&mut client, Some(2))
             .await
-            .map_err(|error| failed(4, error, "the level-2 Hazard selection delta"))?,
+            .map_err(|error| failed_error(4, error, "the level-2 Hazard selection delta"))?,
         [2, 2],
     )?;
     let inventory_before = client
         .inventory()
-        .ok_or_else(|| failed(4, "inventory_snapshot_missing", "the pre-loot inventory frame"))?
+        .ok_or_else(|| {
+            failed(
+                4,
+                "inventory_snapshot_missing",
+                "the pre-loot inventory frame",
+            )
+        })?
         .entries
         .clone();
     let second = client
@@ -267,7 +294,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .session_mut()
         .attack_target(Some(&second.entity))
         .await
-        .map_err(|error| failed(4, error, "a scaled-combat ATTACK reply"))?;
+        .map_err(|error| failed_error(4, error, "a scaled-combat ATTACK reply"))?;
     if second_attack.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(failed(
             4,
@@ -291,14 +318,14 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         client
             .service_liveness(Duration::from_millis(100))
             .await
-            .map_err(|error| failed(4, error, "scaled combat/vitals frames"))?;
+            .map_err(|error| failed_error(4, error, "scaled combat/vitals frames"))?;
         client.take_events();
     }
     client
         .session_mut()
         .attack_target(None)
         .await
-        .map_err(|error| failed(4, error, "the scaled attack-stop reply"))?;
+        .map_err(|error| failed_error(4, error, "the scaled attack-stop reply"))?;
     let inventory_after = client
         .inventory()
         .ok_or_else(|| failed(4, "post_kill_inventory_missing", "the loot inventory delta"))?
@@ -318,7 +345,7 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         .session_mut()
         .logout()
         .await
-        .map_err(|error| failed(5, error, "an accepted logout reply"))?
+        .map_err(|error| failed_error(5, error, "an accepted logout reply"))?
         .result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -327,18 +354,25 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
     drop(client);
     let mut client = connect_world(clients, 0xd1)
         .await
-        .map_err(|error| failed(5, error, "fresh native readmission"))?;
+        .map_err(|error| failed_error(5, error, "fresh native readmission"))?;
     if client.join_snapshot().game_session_id == old_session {
-        return Err(failed(5, "session_not_fresh", "a new admitted game session"));
+        return Err(failed(
+            5,
+            "session_not_fresh",
+            "a new admitted game session",
+        ));
     }
     accepted(
         5,
         command(&mut client, None)
             .await
-            .map_err(|error| failed(5, error, "the reloaded Hazard state"))?,
+            .map_err(|error| failed_error(5, error, "the reloaded Hazard state"))?,
         [2, 2],
     )?;
-    if client.inventory().is_none_or(|inventory| inventory.entries != inventory_after) {
+    if client
+        .inventory()
+        .is_none_or(|inventory| inventory.entries != inventory_after)
+    {
         return Err(failed(
             5,
             "loot_inventory_changed_after_fresh_admission",
@@ -349,14 +383,16 @@ async fn journey(clients: &SeamClients<'_>) -> StepResult {
         5,
         command(&mut client, Some(3))
             .await
-            .map_err(|error| failed(5, error, "the reloaded locked-level refusal"))?,
+            .map_err(|error| failed_error(5, error, "the reloaded locked-level refusal"))?,
     )?;
     Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+            .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W10.full status=PASS seconds={:.3}",
@@ -394,4 +430,38 @@ mod tests {
         assert!(rejected(2, (CommandStatus::Rejected, Vec::new())).is_ok());
         assert!(rejected(2, (CommandStatus::Accepted, Vec::new())).is_err());
     }
+}
+
+impl std::error::Error for StepFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref()
+    }
+}
+
+impl verdict::IndexedError for StepFailure {
+    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
+        self
+    }
+}
+
+impl std::fmt::Display for StepFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "step={};observed={};need={}",
+            self.step, self.observed, self.need
+        )
+    }
+}
+
+fn failed_error(
+    step: u8,
+    error: impl Into<Box<dyn std::error::Error>>,
+    need: &'static str,
+) -> StepFailure {
+    let error = error.into();
+    verdict::record_error(error.as_ref());
+    let mut failure = failed(step, &error, need);
+    failure.source = Some(error);
+    failure
 }

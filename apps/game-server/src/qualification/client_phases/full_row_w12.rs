@@ -31,6 +31,7 @@ const SOURCE_GAP: &str = "source:crates/gameplay/domain/src/domain/cyclopedia/ba
 struct Failure {
     step: u8,
     observed: String,
+    source: Option<Box<dyn std::error::Error>>,
 }
 
 impl Failure {
@@ -38,6 +39,7 @@ impl Failure {
         Box::new(Self {
             step,
             observed: observed.into(),
+            source: None,
         })
     }
 }
@@ -48,7 +50,11 @@ impl std::fmt::Display for Failure {
     }
 }
 
-impl std::error::Error for Failure {}
+impl std::error::Error for Failure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref()
+    }
+}
 
 fn intent(operation: u8, area: u32, amount: u32) -> [u8; wire::MAX_REQUEST_BYTES] {
     let mut bytes = [0; wire::MAX_REQUEST_BYTES];
@@ -72,7 +78,12 @@ async fn exchange(
 async fn query(client: &mut DevClientSession, step: u8) -> Result<wire::MapResult, Box<Failure>> {
     let reply = exchange(client, wire::COMMAND_TYPE_CYCLOPEDIA_QUERY, &[])
         .await
-        .map_err(|error| Failure::new(step, format!("query-error={error}")))?;
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            let mut failure = Failure::new(step, format!("query-error={error}"));
+            failure.source = Some(error.into());
+            failure
+        })?;
     if reply.status != CommandStatus::Accepted {
         return Err(Failure::new(step, format!("query-reply={reply:?}")));
     }
@@ -92,7 +103,12 @@ async fn action(
         &intent(operation, 1, amount),
     )
     .await
-    .map_err(|error| Failure::new(step, format!("command-error={error}")))?;
+    .map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        let mut failure = Failure::new(step, format!("command-error={error}"));
+        failure.source = Some(error.into());
+        failure
+    })?;
     if reply.status != CommandStatus::Accepted {
         return Err(Failure::new(step, format!("command-reply={reply:?}")));
     }
@@ -110,11 +126,12 @@ fn stable(before: &wire::MapResult, after: &wire::MapResult) -> bool {
 }
 
 async fn logout(client: &mut DevClientSession, step: u8) -> Result<(), Box<Failure>> {
-    let reply = client
-        .session_mut()
-        .logout()
-        .await
-        .map_err(|error| Failure::new(step, format!("logout-error={error}")))?;
+    let reply = client.session_mut().logout().await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        let mut failure = Failure::new(step, format!("logout-error={error}"));
+        failure.source = Some(error.into());
+        failure
+    })?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(Failure::new(step, format!("logout-reply={reply:?}")));
     }
@@ -122,9 +139,12 @@ async fn logout(client: &mut DevClientSession, step: u8) -> Result<(), Box<Failu
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
-    let mut client = connect_world(clients, 0xb8)
-        .await
-        .map_err(|error| Failure::new(1, format!("admission={error}")))?;
+    let mut client = connect_world(clients, 0xb8).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        let mut failure = Failure::new(1, format!("admission={error}"));
+        failure.source = Some(error.into());
+        failure
+    })?;
     let first_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client, 1).await?;
 
@@ -159,7 +179,13 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
                     floor: i16::from(-floor),
                 })
                 .await
-                .map_err(|error| Failure::new(4, format!("walk-to-poi={x},{y},{floor}:{error}")))?;
+                .map_err(|error| {
+                    verdict::record_error(verdict::IndexedError::as_error(&error));
+                    let mut failure =
+                        Failure::new(4, format!("walk-to-poi={x},{y},{floor}:{error}"));
+                    failure.source = Some(error.into());
+                    failure
+                })?;
             if walked.status != CommandStatus::Accepted || walked.payload != [8, 1] {
                 return Err(Failure::new(4, format!("walk-reply={walked:?}")));
             }
@@ -182,7 +208,12 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
                 client
                     .service_liveness(Duration::from_millis(100))
                     .await
-                    .map_err(|error| Failure::new(4, format!("walk-liveness={error}")))?;
+                    .map_err(|error| {
+                        verdict::record_error(verdict::IndexedError::as_error(&error));
+                        let mut failure = Failure::new(4, format!("walk-liveness={error}"));
+                        failure.source = Some(error.into());
+                        failure
+                    })?;
             }
             let before = progress.found;
             progress = action(&mut client, 4, 3, 0).await?;
@@ -207,7 +238,12 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
         &intent(1, 2, 0),
     )
     .await
-    .map_err(|error| Failure::new(6, format!("malformed-command-error={error}")))?;
+    .map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        let mut failure = Failure::new(6, format!("malformed-command-error={error}"));
+        failure.source = Some(error.into());
+        failure
+    })?;
     if malformed.status != CommandStatus::Rejected || !malformed.payload.is_empty() {
         return Err(Failure::new(6, format!("malformed-reply={malformed:?}")));
     }
@@ -215,9 +251,12 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     logout(&mut client, 7).await?;
     drop(client);
 
-    let mut fresh = connect_world(clients, 0xb9)
-        .await
-        .map_err(|error| Failure::new(7, format!("fresh-admission={error}")))?;
+    let mut fresh = connect_world(clients, 0xb9).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        let mut failure = Failure::new(7, format!("fresh-admission={error}"));
+        failure.source = Some(error.into());
+        failure
+    })?;
     if fresh.join_snapshot().game_session_id == first_session {
         return Err(Failure::new(7, "fresh-admission-reused-session"));
     }
@@ -232,10 +271,16 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     cleanup?;
 
     if started.code == 2 {
-        return Err(Failure::new(3, format!("premium-required;reply={started:?}")));
+        return Err(Failure::new(
+            3,
+            format!("premium-required;reply={started:?}"),
+        ));
     }
     if !progress.discovered || progress.found != 7 || progress.area_percent != 100 {
-        return Err(Failure::new(4, format!("discovery-incomplete={progress:?}")));
+        return Err(Failure::new(
+            4,
+            format!("discovery-incomplete={progress:?}"),
+        ));
     }
     if goal.code != 0 {
         return Err(Failure::new(5, format!("goal-donation-refused={goal:?}")));
@@ -250,7 +295,9 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
+            .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=W12.full status=PASS seconds={:.3}",
@@ -293,11 +340,9 @@ mod tests {
                 amount: 7
             })
         );
-        assert!(wire::decode_request(
-            wire::COMMAND_TYPE_CYCLOPEDIA_INTENT,
-            &intent(1, 2, 0)
-        )
-        .is_err());
+        assert!(
+            wire::decode_request(wire::COMMAND_TYPE_CYCLOPEDIA_INTENT, &intent(1, 2, 0)).is_err()
+        );
         let state = wire::MapResult {
             code: 0,
             revision: 1,

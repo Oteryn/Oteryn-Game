@@ -31,6 +31,7 @@ struct StepFailure {
     step: u8,
     observed: String,
     need: &'static str,
+    source: Option<Box<dyn std::error::Error>>,
 }
 
 impl std::fmt::Display for StepFailure {
@@ -70,10 +71,14 @@ async fn management_command(
             &request.encode(),
         )
         .await
-        .map_err(|error| StepFailure {
-            step: 1,
-            observed: format!("transport-{error}"),
-            need: "responsive-hireling-management-route",
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            StepFailure {
+                step: 1,
+                observed: format!("transport-{error}"),
+                need: "responsive-hireling-management-route",
+                source: Some(error.into()),
+            }
         })?;
     let reply = management::Reply::decode(&response.payload);
     Ok((response.status, reply))
@@ -94,42 +99,54 @@ async fn talk(
         },
     )
     .await
-    .map_err(|error| StepFailure {
-        step: 3,
-        observed: format!("talk-{text}-transport-{error}"),
-        need: "responsive-projected-hireling-dialogue",
+    .map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        StepFailure {
+            step: 3,
+            observed: format!("talk-{text}-transport-{error}"),
+            need: "responsive-projected-hireling-dialogue",
+            source: Some(error.into()),
+        }
     })?;
     if disposition != wire::NpcIntentDisposition::Ok {
         return Err(StepFailure {
             step: 3,
             observed: format!("talk-{text}-disposition-{disposition:?}"),
             need: "admitted-owner-hireling-service",
+            source: None,
         });
     }
     let delta = client
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
         .await
-        .map_err(|error| StepFailure {
-            step: 3,
-            observed: format!("talk-{text}-delta-{error}"),
-            need: "hireling-conversation-delta",
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            StepFailure {
+                step: 3,
+                observed: format!("talk-{text}-delta-{error}"),
+                need: "hireling-conversation-delta",
+                source: Some(error.into()),
+            }
         })?;
     wire::decode_npc_conversation(&delta.payload).map_err(|error| StepFailure {
         step: 3,
         observed: format!("talk-{text}-invalid-delta-{error:?}"),
         need: "decodable-hireling-conversation-delta",
+        source: None,
     })
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    let mut client = connect_world(clients, 0xe1)
-        .await
-        .map_err(|error| StepFailure {
+    let mut client = connect_world(clients, 0xe1).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        StepFailure {
             step: 1,
             observed: format!("admission-{error}"),
             need: "fresh-player-admission",
-        })?;
+            source: Some(error.into()),
+        }
+    })?;
     if !client
         .selected_capabilities()
         .contains(&management::CAPABILITY_HIRELING_MANAGEMENT_V1)
@@ -138,6 +155,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             step: 1,
             observed: "capability-250-not-selected".into(),
             need: "activated-hireling-capability",
+            source: None,
         });
     }
 
@@ -153,6 +171,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 step: 1,
                 observed: format!("status-{status:?}-reply-{reply:?}"),
                 need: "player-obtainable-owned-house-and-hireling-lamp",
+                source: None,
             });
         }
     };
@@ -163,16 +182,19 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             step: 2,
             observed: format!("invalid-x-{}", position.x),
             need: "house-position-in-wire-range",
+            source: None,
         })?,
         y: u16::try_from(position.y).map_err(|_| StepFailure {
             step: 2,
             observed: format!("invalid-y-{}", position.y),
             need: "house-position-in-wire-range",
+            source: None,
         })?,
         floor: i8::try_from(position.floor).map_err(|_| StepFailure {
             step: 2,
             observed: format!("invalid-floor-{}", position.floor),
             need: "house-position-in-wire-range",
+            source: None,
         })?,
     };
     let response = client
@@ -183,10 +205,14 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
             &summon.encode(),
         )
         .await
-        .map_err(|error| StepFailure {
-            step: 2,
-            observed: format!("transport-{error}"),
-            need: "responsive-hireling-summon-route",
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            StepFailure {
+                step: 2,
+                observed: format!("transport-{error}"),
+                need: "responsive-hireling-summon-route",
+                source: Some(error.into()),
+            }
         })?;
     if response.status != CommandStatus::Accepted
         || hireling::decode_reply(&response.payload) != Some(true)
@@ -198,6 +224,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 response.status, response.payload
             ),
             need: "walkable-owned-house-non-door-tile",
+            source: None,
         });
     }
 
@@ -220,6 +247,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                     step: 2,
                     observed: "projection-lost-matching-binding".into(),
                     need: "summoned-hireling-entity-projection",
+                    source: None,
                 })?
         }
         reply => {
@@ -227,6 +255,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 step: 2,
                 observed: format!("projection-status-{status:?}-reply-{reply:?}"),
                 need: "summoned-hireling-entity-projection",
+                source: None,
             });
         }
     };
@@ -238,6 +267,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 step: 3,
                 observed: format!("talk-{word}-conversation-{conversation:?}"),
                 need: "cook-service-dialogue-and-delivery",
+                source: None,
             });
         }
         if word == "food"
@@ -250,6 +280,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 step: 3,
                 observed: format!("talk-food-reply-{:?}", conversation.lines),
                 need: "player-obtainable-cook-hireling-skill",
+                source: None,
             });
         }
         if word == "carrot pie"
@@ -262,6 +293,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
                 step: 3,
                 observed: format!("talk-carrot-pie-reply-{:?}", conversation.lines),
                 need: "earned-90000-gold-and-inbox-capacity",
+                source: None,
             });
         }
     }
@@ -270,6 +302,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         step: 4,
         observed: "food-delivered-awaiting-player-inbox-use".into(),
         need: "native-inbox-item-use-route-in-e12-journey",
+        source: None,
     })
 }
 
@@ -302,5 +335,17 @@ mod tests {
         assert!(encoded.starts_with("State"));
         assert!(encoded.ends_with("no_house"));
         assert!(!encoded.contains(char::is_whitespace));
+    }
+}
+
+impl std::error::Error for StepFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref()
+    }
+}
+
+impl verdict::IndexedError for StepFailure {
+    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
+        self
     }
 }

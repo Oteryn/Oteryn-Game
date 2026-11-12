@@ -54,6 +54,7 @@ impl Row {
 
     fn fail(&mut self, step: &'static str, observed: impl std::fmt::Display) {
         if STEPS.contains(&step) && !self.passed.contains(&step) && !self.failures.iter().any(|(s, _)| *s == step) {
+            verdict::record_assertion(step);
             let observed = observed.to_string();
             evidence(&format!("C03_CHECK {step} FAIL observed={observed}"));
             self.failures.push((step, observed));
@@ -66,6 +67,7 @@ impl Row {
 
     fn finish(mut self, result: TestResult) {
         if let Err(error) = result {
+            verdict::record_error(error.as_ref());
             match STEPS.iter().copied().find(|s| !self.passed.contains(s) && !self.failures.iter().any(|(f, _)| f == s)) {
                 Some(step) => self.fail(step, error),
                 // An error after every step was judged (the final logout, say) still fails the row.

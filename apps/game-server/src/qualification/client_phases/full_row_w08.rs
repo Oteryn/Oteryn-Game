@@ -48,11 +48,13 @@ impl Row {
         if ACTIONS.contains(&action) && self.passed.insert(action) {
             evidence(&format!("W08_CHECK {action} PASS observed={observed:?}"));
         } else {
+            verdict::record_assertion(action);
             self.failure = Some(format!("duplicate-or-unknown-action:{action}"));
         }
     }
 
     fn fail(&mut self, step: &'static str, observed: impl std::fmt::Display) {
+        verdict::record_assertion(step);
         let message = format!("step={step};observed={observed}");
         evidence(&format!("W08_CHECK {step} FAIL {message}"));
         self.failure.get_or_insert(message);

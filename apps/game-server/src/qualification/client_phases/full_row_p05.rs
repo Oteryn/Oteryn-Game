@@ -30,6 +30,7 @@ const TALISMAN_ITEM: u32 = 51_978;
 struct StepFailure {
     step: u8,
     observed: String,
+    source: Option<Box<dyn std::error::Error>>,
 }
 
 impl std::fmt::Display for StepFailure {
@@ -38,7 +39,11 @@ impl std::fmt::Display for StepFailure {
     }
 }
 
-impl std::error::Error for StepFailure {}
+impl std::error::Error for StepFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_deref()
+    }
+}
 
 fn sanitize(value: &str) -> String {
     value
@@ -66,6 +71,7 @@ async fn command(
     let payload = full::encode_request(&request).map_err(|error| StepFailure {
         step: 1,
         observed: format!("request-encode-{error:?}"),
+        source: None,
     })?;
     let response = client
         .session_mut()
@@ -75,31 +81,43 @@ async fn command(
             &payload,
         )
         .await
-        .map_err(|error| StepFailure {
-            step: 1,
-            observed: format!("transport-{error}"),
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            StepFailure {
+                step: 1,
+                observed: format!("transport-{error}"),
+                source: Some(error.into()),
+            }
         })?;
     let reply = if response.payload.is_empty() {
         None
     } else {
-        Some(full::decode_reply(&response.payload).map_err(|error| StepFailure {
-            step: 1,
-            observed: format!("status-{:?}-decode-{error:?}", response.status),
-        })?)
+        Some(
+            full::decode_reply(&response.payload).map_err(|error| StepFailure {
+                step: 1,
+                observed: format!("status-{:?}-decode-{error:?}", response.status),
+                source: None,
+            })?,
+        )
     };
     Ok((response.status, reply))
 }
 
-fn accepted(step: u8, result: (CommandStatus, Option<full::Reply>)) -> Result<full::Reply, StepFailure> {
+fn accepted(
+    step: u8,
+    result: (CommandStatus, Option<full::Reply>),
+) -> Result<full::Reply, StepFailure> {
     let (status, reply) = result;
     let reply = reply.ok_or_else(|| StepFailure {
         step,
         observed: format!("status-{status:?}-missing-reply"),
+        source: None,
     })?;
     if status != CommandStatus::Accepted || reply.refusal != 0 {
         return Err(StepFailure {
             step,
             observed: format!("status-{status:?}-refusal-{}", reply.refusal),
+            source: None,
         });
     }
     Ok(reply)
@@ -122,47 +140,118 @@ fn item_count(client: &DevClientSession) -> TestResult<u32> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    let mut client = connect_character(clients, 0xd5, 0)
-        .await
-        .map_err(|error| StepFailure { step: 1, observed: format!("admission-{error}") })?;
+    let mut client = connect_character(clients, 0xd5, 0).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        StepFailure {
+            step: 1,
+            observed: format!("admission-{error}"),
+            source: Some(error.into()),
+        }
+    })?;
 
     let before = accepted(1, command(&mut client, 4, 0).await?)?;
-    evidence(&format!("P05_CHECK step=1 status=PASS bounty_points={} talisman_level={}", before.bounty_points, before.talisman[0].level));
+    evidence(&format!(
+        "P05_CHECK step=1 status=PASS bounty_points={} talisman_level={}",
+        before.bounty_points, before.talisman[0].level
+    ));
 
-    let items_before = item_count(&client).map_err(|error| StepFailure { step: 2, observed: format!("inventory-before-{error}") })?;
+    let items_before = item_count(&client).map_err(|error| { verdict::record_error(error.as_ref()); StepFailure {
+        step: 2,
+        observed: format!("inventory-before-{error}"),
+        source: Some(error),
+    } })?;
     let _bought = accepted(2, command(&mut client, 17, 0).await?)?;
-    let items_after = item_count(&client).map_err(|error| StepFailure { step: 2, observed: format!("inventory-after-{error}") })?;
+    let items_after = item_count(&client).map_err(|error| { verdict::record_error(error.as_ref()); StepFailure {
+        step: 2,
+        observed: format!("inventory-after-{error}"),
+        source: Some(error),
+    } })?;
     if items_after != items_before + 1 {
-        return Err(StepFailure { step: 2, observed: format!("status-Accepted-refusal-0-missing-inventory-delta-before-{items_before}-after-{items_after}") });
+        return Err(StepFailure {
+            step: 2,
+            observed: format!(
+                "status-Accepted-refusal-0-missing-inventory-delta-before-{items_before}-after-{items_after}"
+            ),
+            source: None,
+        });
     }
     evidence("P05_CHECK step=2 status=PASS purchase-and-inventory-delta");
 
     let duplicate = command(&mut client, 17, 0).await?;
-    let duplicate_reply = duplicate.1.ok_or_else(|| StepFailure { step: 3, observed: format!("status-{:?}-missing-reply", duplicate.0) })?;
-    let duplicate_items = item_count(&client).map_err(|error| StepFailure { step: 3, observed: format!("inventory-{error}") })?;
-    if duplicate.0 != CommandStatus::Accepted || duplicate_reply.refusal == 0 || duplicate_items != items_after {
-        return Err(StepFailure { step: 3, observed: format!("status-{:?}-refusal-{}-items-{duplicate_items}-expected-{items_after}", duplicate.0, duplicate_reply.refusal) });
+    let duplicate_reply = duplicate.1.ok_or_else(|| StepFailure {
+        step: 3,
+        observed: format!("status-{:?}-missing-reply", duplicate.0),
+        source: None,
+    })?;
+    let duplicate_items = item_count(&client).map_err(|error| { verdict::record_error(error.as_ref()); StepFailure {
+        step: 3,
+        observed: format!("inventory-{error}"),
+        source: Some(error),
+    } })?;
+    if duplicate.0 != CommandStatus::Accepted
+        || duplicate_reply.refusal == 0
+        || duplicate_items != items_after
+    {
+        return Err(StepFailure {
+            step: 3,
+            observed: format!(
+                "status-{:?}-refusal-{}-items-{duplicate_items}-expected-{items_after}",
+                duplicate.0, duplicate_reply.refusal
+            ),
+            source: None,
+        });
     }
     evidence("P05_CHECK step=3 status=PASS duplicate-purchase-refused-no-delta");
 
     let opened = accepted(4, command(&mut client, 7, 0).await?)?;
-    let offer = opened.bounty.offers.first().ok_or_else(|| StepFailure { step: 4, observed: "status-Accepted-refusal-0-missing-bounty-offer".into() })?;
+    let offer = opened.bounty.offers.first().ok_or_else(|| StepFailure {
+        step: 4,
+        observed: "status-Accepted-refusal-0-missing-bounty-offer".into(),
+        source: None,
+    })?;
     let race = offer.race.clone();
     let required = offer.required;
     let selected = accepted(4, command(&mut client, 8, 0).await?)?;
-    if selected.bounty.active.as_ref().map(|task| task.race.as_str()) != Some(race.as_str()) {
-        return Err(StepFailure { step: 4, observed: "status-Accepted-refusal-0-missing-selected-bounty-delta".into() });
+    if selected
+        .bounty
+        .active
+        .as_ref()
+        .map(|task| task.race.as_str())
+        != Some(race.as_str())
+    {
+        return Err(StepFailure {
+            step: 4,
+            observed: "status-Accepted-refusal-0-missing-selected-bounty-delta".into(),
+            source: None,
+        });
     }
-    Err(StepFailure { step: 4, observed: format!("status-Accepted-refusal-0-combat-route-needed-race-{race}-required-{required}") })
+    Err(StepFailure {
+        step: 4,
+        observed: format!(
+            "status-Accepted-refusal-0-combat-route-needed-race-{race}-required-{required}"
+        ),
+        source: None,
+    })
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     match result {
-        Ok(Ok(())) => evidence(&format!("e2e_all scenario=P05.full status=PASS seconds={:.3}", started.elapsed().as_secs_f64())),
-        Ok(Err(error)) => evidence(&format!("e2e_all scenario=P05.full status=FAIL seconds={:.3} evidence={error}", started.elapsed().as_secs_f64())),
-        Err(_) => evidence(&format!("e2e_all scenario=P05.full status=FAIL seconds={:.3} evidence=step-timeout-observed-no-reply", started.elapsed().as_secs_f64())),
+        Ok(Ok(())) => evidence(&format!(
+            "e2e_all scenario=P05.full status=PASS seconds={:.3}",
+            started.elapsed().as_secs_f64()
+        )),
+        Ok(Err(error)) => evidence(&format!(
+            "e2e_all scenario=P05.full status=FAIL seconds={:.3} evidence={error}",
+            started.elapsed().as_secs_f64()
+        )),
+        Err(_) => evidence(&format!(
+            "e2e_all scenario=P05.full status=FAIL seconds={:.3} evidence=step-timeout-observed-no-reply",
+            started.elapsed().as_secs_f64()
+        )),
     }
 }
 
@@ -172,6 +261,17 @@ mod tests {
 
     #[test]
     fn evidence_is_one_token() {
-        assert_eq!(sanitize("status Accepted / missing delta"), "status-Accepted---missing-delta");
+        assert_eq!(
+            sanitize("status Accepted / missing delta"),
+            "status-Accepted---missing-delta"
+        );
+    }
+}
+
+
+
+impl verdict::IndexedError for StepFailure {
+    fn as_error(&self) -> &(dyn std::error::Error + 'static) {
+        self
     }
 }

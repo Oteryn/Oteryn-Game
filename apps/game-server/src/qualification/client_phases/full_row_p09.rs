@@ -139,7 +139,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     claim(&mut client, 4)
         .await
-        .map_err(|e| format!("step-2 unopened refusal: {e}"))?;
+        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step-2 unopened refusal: {e}"), e) })?;
     if wall(&mut client).await? != initial {
         return Err("step-2 refusal changed daily wall".into());
     }
@@ -163,7 +163,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let before_cards = wildcards(&mut client).await?;
     claim(&mut client, 1)
         .await
-        .map_err(|e| format!("step-4 claim: {e}"))?;
+        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step-4 claim: {e}"), e) })?;
     let claimed = wall(&mut client).await?;
     let after_cards = wildcards(&mut client).await?;
     let reward = crate::content::daily_reward::DailyRewardContent::catalogue()
@@ -178,7 +178,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     claim(&mut client, 2)
         .await
-        .map_err(|e| format!("step-6 duplicate refusal: {e}"))?;
+        .map_err(|e| { verdict::record_error(verdict::IndexedError::as_error(&e)); verdict::context(format!("step-6 duplicate refusal: {e}"), e) })?;
     if wall(&mut client).await? != claimed || wildcards(&mut client).await? != after_cards {
         return Err("step-6 duplicate changed wall or reward cards".into());
     }

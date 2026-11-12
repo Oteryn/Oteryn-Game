@@ -447,7 +447,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // player BUY; if the served world offers no legitimate knife route, report
     // that observed step rather than manufacturing one.
     let knife_ref = buy(&mut client, world, &index, "oteryn:item.tibia.i5908", 1).await
-        .map_err(|error| format!("step 4 skinning prerequisite after completed fishing/refusal: observed={error}; server needs a reachable player acquisition route for oteryn:item.tibia.i5908"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 4 skinning prerequisite after completed fishing/refusal: observed={error}; server needs a reachable player acquisition route for oteryn:item.tibia.i5908"), error) })?;
     let knife =
         carried(&client, knife_ref).ok_or("step 4 bought knife missing from native inventory")?;
     let corpse = hunt_corpse(&mut client, world, &bytes).await?;

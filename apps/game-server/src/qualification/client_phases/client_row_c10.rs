@@ -65,7 +65,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     client_hunt::hunt(&mut client)
         .await
-        .map_err(|error| format!("C10 client hunt: {error}"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("C10 client hunt: {error}"), error) })?;
     let regenerated = wait_soul(&mut client, |soul| soul == debit.value.soul + 1, Duration::from_secs(130)).await?;
     capture(&before, &debit, &regenerated);
     Ok(())

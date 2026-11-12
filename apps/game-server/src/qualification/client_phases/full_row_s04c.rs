@@ -158,7 +158,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (muted_text, muted_reply) = muted.ok_or("step 5: 32 real World lines never reached the spam mute; server must expose the shared limiter")?;
     require_no_line(&mut client, ChatRoom::World, &muted_text)
         .await
-        .map_err(|error| format!("step 5 muted reply {muted_reply:?}: {error}"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 5 muted reply {muted_reply:?}: {error}"), error) })?;
 
     let old_session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result

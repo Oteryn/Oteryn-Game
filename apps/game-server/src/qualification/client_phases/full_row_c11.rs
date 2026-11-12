@@ -48,11 +48,13 @@ impl Row {
         if ACTIONS.contains(&action) && self.passed.insert(action) {
             evidence(&format!("C11_CHECK {action} PASS observed={detail:?}"));
         } else {
+            verdict::record_assertion(action);
             self.failures
                 .push(format!("step={action} observed=duplicate-or-unknown"));
         }
     }
     fn fail(&mut self, action: &'static str, error: impl std::fmt::Display) {
+        verdict::record_assertion(action);
         let error = format!("step={action} observed={error}");
         evidence(&format!("C11_CHECK {action} FAIL {error}"));
         self.failures.push(error);
@@ -98,6 +100,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xcb).await?;
     if let Err(error) = choose_monk(&mut client, world, &bytes).await {
+        verdict::record_error(error.as_ref());
         row.fail("player-monk-choice", error);
     } else {
         row.pass("player-monk-choice", "Oressa-confirmed");
@@ -113,6 +116,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut builders_ok = true;
     for expected in 1..=5 {
         if let Err(error) = cast(&mut client, &book, "exori infir pug", Some(expected)).await {
+            verdict::record_error(error.as_ref());
             row.fail("builders-to-five", format!("builder={expected} {error}"));
             builders_ok = false;
         }
@@ -123,7 +127,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     match cast(&mut client, &book, "exori infir nia", Some(0)).await {
         Ok(reply) => row.pass("spender-to-zero", reply),
-        Err(error) => row.fail("spender-to-zero", error),
+        Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("spender-to-zero", error) },
     }
     wait_spell(&mut client, &book, "exori infir nia").await?;
     let before = client.actor_vitals().copied().ok_or("C11 vitals absent")?;
@@ -149,7 +153,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                 client.actor_vitals()
             ),
         ),
-        Err(error) => row.fail("zero-spender-path", error),
+        Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("zero-spender-path", error) },
     }
 
     battle_queries(row, &mut client).await;
@@ -164,7 +168,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "fresh-admission-monk",
             format!("reply={reply:?} vitals={:?}", fresh.actor_vitals()),
         ),
-        Err(error) => row.fail("fresh-admission-monk", error),
+        Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("fresh-admission-monk", error) },
     }
     logout(&mut fresh).await
 }
@@ -268,7 +272,7 @@ async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
             Some(status) => row.fail("battle-instinct-snapshot", format!("decoded={status:?}; server must expose a legitimate player Wheel acquisition path before active Battle Instinct can be qualified")),
             None => row.fail("battle-instinct-snapshot", format!("reply={reply:?} malformed status payload")),
         },
-        Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => row.fail("battle-instinct-snapshot", error),
+        Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("battle-instinct-snapshot", error) },
     }
     match client
         .session_mut()
@@ -283,7 +287,7 @@ async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
             row.pass("malformed-refusal", reply.status)
         }
         Ok(reply) => row.fail("malformed-refusal", format!("reply={reply:?}")),
-        Err(error) => row.fail("malformed-refusal", error),
+        Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("malformed-refusal", error) },
     }
 }
 

@@ -179,9 +179,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "oteryn:creature.poison_spider",
     )
     .await
-    .map_err(|error| {
-        format!("step 4 walk-to-combat: observed={error}; need reachable authored lethal spawn")
-    })?;
+    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 4 walk-to-combat: observed={error}; need reachable authored lethal spawn"), error) })?;
     client.session_mut().attack_target(None).await?;
     let encounter = client.world_spatial().actor_position;
     let health = client

@@ -177,15 +177,15 @@ async fn body(client: &mut DevClientSession) -> TestResult<(u32, u8, u64)> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0x72).await?;
-    let outcome = body(&mut client).await;
-    let closed = finish(&mut client).await;
+    let outcome = verdict::observe(body(&mut client)).await;
+    let closed = verdict::observe(finish(&mut client)).await;
     let (definition, level, revision) = outcome?;
     closed?;
     drop(client);
 
     let mut fresh = connect_world(clients, 0x73).await?;
-    let durable = durable_selection(&mut fresh, definition, level, revision).await;
-    let closed = finish(&mut fresh).await;
+    let durable = verdict::observe(durable_selection(&mut fresh, definition, level, revision)).await;
+    let closed = verdict::observe(finish(&mut fresh)).await;
     durable?;
     closed
 }

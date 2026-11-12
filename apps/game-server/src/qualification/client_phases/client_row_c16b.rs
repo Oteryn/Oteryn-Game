@@ -27,8 +27,8 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let mut caster = connect_world(clients, 0x16).await?;
-    let outcome = capture(&mut caster, clients, world).await;
-    let cleanup = full_e2ef5::rune_cleanup(&mut caster, world).await;
+    let outcome = verdict::observe(capture(&mut caster, clients, world)).await;
+    let cleanup = verdict::observe(full_e2ef5::rune_cleanup(&mut caster, world)).await;
     outcome?;
     cleanup
 }
@@ -44,7 +44,7 @@ async fn capture(
         .ok_or("C16b Paralyze rune not in pinned spell book")?;
     let (reference, _) = full_e2ef5::acquire_rune(caster, world, 3165).await?;
     let mut target = connect_character(clients, 0x17, 0).await?;
-    let result = tokio::time::timeout(Duration::from_secs(120), async {
+    let result = verdict::indexed_timeout(Duration::from_secs(120), async {
         let path = route(world, tile(target.world_spatial().actor_position)?, |at| {
             full_e2ef5::rune_corridor(world, at).is_some()
         })
@@ -112,7 +112,7 @@ async fn capture(
         Ok::<(), Box<dyn std::error::Error>>(())
     })
     .await;
-    let cleanup = full_e2ef5::with_observer_liveness(caster, full_e2ef5::rune_cleanup(&mut target, world)).await;
+    let cleanup = verdict::observe(full_e2ef5::with_observer_liveness(caster, full_e2ef5::rune_cleanup(&mut target, world))).await;
     result.map_err(|_| "C16b journey exceeded 120s")??;
     cleanup
 }

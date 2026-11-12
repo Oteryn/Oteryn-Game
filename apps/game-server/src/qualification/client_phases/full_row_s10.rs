@@ -237,7 +237,7 @@ async fn earn(
         walk(client, world, &path).await?;
         client_hunt::hunt(client)
             .await
-            .map_err(|error| format!("step earn-fare: real combat/loot failed: {error}"))?;
+            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;
     }
     Ok(())
 }

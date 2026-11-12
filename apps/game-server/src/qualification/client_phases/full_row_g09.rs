@@ -302,7 +302,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .first()
         .copied()
         .ok_or("step=fresh observed=watch-missing-after-readmission")?;
-    let result = read_time(&mut fresh, again).await;
+    let result = verdict::observe(read_time(&mut fresh, again)).await;
     logout(&mut fresh).await?;
     result
 }

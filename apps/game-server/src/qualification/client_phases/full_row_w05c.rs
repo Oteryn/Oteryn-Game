@@ -158,11 +158,9 @@ async fn approach(
     let path = full_route(world, start, target).ok_or_else(|| {
         format!("step=walk-weekday-destination observed=no-route from={start:?} to={target:?} need=player-reachable-Rashid-placement")
     })?;
-    walk(client, world, &path).await.map_err(|error| {
-        format!(
+    walk(client, world, &path).await.map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!(
             "step=walk-weekday-destination observed={error} need=accepted-STEP-and-spatial-delta"
-        )
-    })?;
+        ), error) })?;
     let entities = client.world_entities().ok_or_else(|| {
         format!("step=observe-weekday-spawn observed=missing-world-entities need=exactly-one-NPC-at-{target:?}")
     })?;

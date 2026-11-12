@@ -52,6 +52,7 @@ fn token(value: &str) -> String {
 /// Record a probe result: `Ok` keeps going, an error becomes a `probe=observed` failure entry.
 fn record(failures: &mut Vec<String>, probe: &str, result: TestResult) {
     if let Err(error) = result {
+        verdict::record_error(error.as_ref());
         failures.push(format!("probe={probe};observed={error}"));
     }
 }

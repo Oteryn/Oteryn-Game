@@ -67,6 +67,7 @@ impl Row {
     }
 
     fn fail(&mut self, step: &str, observed: impl std::fmt::Display) {
+        verdict::record_assertion(step);
         let detail = format!("step={step}:observed={observed}");
         evidence(&format!("S05_CHECK status=FAIL {detail}"));
         self.failures.push(detail);
@@ -255,7 +256,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if let Some(path) = route(world, from, |candidate| candidate == at) {
         match walk(&mut client, world, &path).await {
             Ok(()) => row.pass("walk-entrance", at),
-            Err(error) => row.fail("walk-entrance", error),
+            Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("walk-entrance", error) },
         }
     } else {
         row.fail("walk-entrance", format!("no-player-route:{from:?}->{at:?}"));

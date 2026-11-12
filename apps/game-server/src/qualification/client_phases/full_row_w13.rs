@@ -66,7 +66,7 @@ async fn required_hunt(
         .ok_or_else(|| format!("step-{step}: {target} hunt had no inventory before combat"))?;
     client_hunt::hunt(client)
         .await
-        .map_err(|error| format!("step-{step}: {target} combat/loot observed {error}"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-{step}: {target} combat/loot observed {error}"), error) })?;
     let after = client
         .inventory()
         .cloned()
@@ -131,7 +131,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &selected.creature_key,
     )
     .await
-    .map_err(|error| format!("step-4: selected creature route/spawn observed {error}"))?;
+    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-4: selected creature route/spawn observed {error}"), error) })?;
     required_hunt(&mut client, 4, "selected creature").await?;
     evidence("W13_CHECK step=4 selected-creature-killed-and-looted");
 
@@ -144,12 +144,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &selected.creature_key,
     )
     .await
-    .map_err(|error| format!("step-5: boosted creature respawn observed {error}"))?;
+    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-5: boosted creature respawn observed {error}"), error) })?;
     let step_5_observed = required_hunt(&mut client, 5, "respawned selected creature").await?;
 
     travel_to_spawn(&mut client, world, &metadata.spawns, &selected.boss_key)
         .await
-        .map_err(|error| format!("step-6: selected boss route/spawn observed {error}"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-6: selected boss route/spawn observed {error}"), error) })?;
     let step_6_observed = required_hunt(&mut client, 6, "selected boss").await?;
 
     // The player protocol currently exposes neither the XP award nor which

@@ -122,8 +122,8 @@ async fn earn_gold(
             return Err(format!("combat-loot-budget-exhausted:gold={}:required={PRICE}", carried_gold(client)?).into());
         }
         travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await
-            .map_err(|error| format!("rat-walk:{error}"))?;
-        client_hunt::hunt(client).await.map_err(|error| format!("rat-combat-loot:{error}"))?;
+            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("rat-walk:{error}"), error) })?;
+        client_hunt::hunt(client).await.map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("rat-combat-loot:{error}"), error) })?;
     }
     Ok(())
 }

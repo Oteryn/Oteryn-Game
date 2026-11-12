@@ -213,11 +213,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xdf).await?;
     acquire(&mut client, world, 3030, 1)
         .await
-        .map_err(|error| {
-            format!(
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!(
                 "step=buy-small-ruby observed={error};needed:player-gold-500-and-reachable-seller"
-            )
-        })?;
+            ), error) })?;
     let handle = client
         .inventory()
         .and_then(|inventory| {

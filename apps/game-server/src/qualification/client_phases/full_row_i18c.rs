@@ -377,9 +377,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bag = reference(2853)?;
     acquire(&mut client, world, 2853, 1)
         .await
-        .map_err(|error| {
-            format!("step=buy-bag observed={error};needed:player-gold-and-reachable-seller")
-        })?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=buy-bag observed={error};needed:player-gold-and-reachable-seller"), error) })?;
     let at = here(&client);
     drop_first(&mut client, Some(bag)).await?;
     let (outcome, view) = browse_open(&mut client, at).await?;

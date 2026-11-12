@@ -141,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (chest, path) = select_route(world, tile(client.world_spatial().actor_position)?)?;
     walk(&mut client, world, &path)
         .await
-        .map_err(|error| format!("step-2: walking to {} failed: {error}", chest.claim))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step-2: walking to {} failed: {error}", chest.claim), error) })?;
     let first = use_chest(&mut client, &chest).await?;
     if first != UseDisposition::Committed {
         return Err(format!("step-3: first USE reply={first:?} claim={}", chest.claim).into());

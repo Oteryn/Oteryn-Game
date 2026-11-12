@@ -91,9 +91,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .map(actor_position);
     client = client_disconnect_resume::recover(client, clients, expected)
         .await
-        .map_err(|error| {
-            format!("step=2 reconnect observed={error} need=committed CompleteReconnect")
-        })?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=2 reconnect observed={error} need=committed CompleteReconnect"), error) })?;
     let (monster, own) = actors(&client)?;
     evidence("S15B_CHECK step=2 committed-reconnect PASS");
 
@@ -133,7 +131,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let mut fresh = connect_world(clients, 0x8c)
         .await
-        .map_err(|error| format!("step=5 fresh admission observed={error}"))?;
+        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=5 fresh admission observed={error}"), error) })?;
     travel_to_spawn(&mut fresh, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let (monster, own) = actors(&fresh)?;
     fresh.take_events();
