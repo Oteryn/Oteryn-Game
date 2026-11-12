@@ -22,6 +22,11 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/reshape.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/temple_scroll.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board/token_case.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/atelier.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/atelier/v2.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/connection/serve/command.rs
   - docs/agents/tasks/archive/OTV2-20261112-pr3115-wu26-qualification.md
 ```
 
@@ -85,3 +90,42 @@ Authoring is complete; merge and post-merge qualification remain pending. The
 freeze comment binds the exact head. Merge result: squash merge of #3115, only
 after qualification. #3098 takes accepted server main afterwards; no force push,
 red-Node waiver or protection bypass is authorized by this record.
+
+## Qualification successor after the first runner batch
+
+The exact a6e312236 generation passed native qualification, but five PostgreSQL
+cases failed. Their complete logs were collected before this next generation:
+
+- The second small-fragment fixture reused immutable item identities from the
+  earlier paid scenario. It now has its own 157/160/163 identities and ordinals;
+  its reader observes that exact fresh batch. No retired row is reused or deleted.
+- The PostgreSQL MAX-token case still expected the old overflow refusal. Both
+  MAX-1 and MAX now prove a successful zero-credit claim, unchanged token
+  balance/ledger/source count, XP/points and exact receipt replay. Genuine
+  arithmetic-overflow cases retain their strict refusal assertions.
+- The shared Summer Templar fixture used gem resistance as total Life Drain
+  immunity. The accepted production cap is thirty percent. Existing direct
+  equipment protection now isolates that independent damage source, retaining
+  the energy/holy assertions and the production cap.
+- The first non-Premium command-6214 step returned outer Rejected instead of its
+  required Accepted refusal payload in two independent existing compositions.
+  Its exact rejecting branch is still UNKNOWN. Temporary cfg(test)-only
+  DBG-PR3115-6214 markers attribute outer permit/selection, decoder/fence, runtime
+  predicate and commit-error branches without changing their return conditions.
+  They must be removed after a matched diagnosis and before final integration.
+  This is a diagnostic qualification candidate, not a claim that this case is
+  repaired or that a failing candidate may merge.
+- The Activity cancellation case failed at its initial entry COMMIT, before the
+  cancellation barrier, with an indeterminate outcome after 2001 milliseconds.
+  The identical case passed in the existing composed client run. Its earlier
+  underlying cause remains UNKNOWN; no write retry, deadline increase, waiver or
+  speculative source change is included. The legitimate new-head qualification
+  required by the confirmed repairs must execute it again.
+
+A real-schema PostgreSQL identity probe reproduced reuse of retired seed148;
+the fresh second batch committed while retaining three retired and three live
+rows with quantity sum six, then removed its own database. This is fixture SQL
+evidence, not execution of the complete Rust scenarios. Formatting, locked
+metadata, governance and whitespace checks are repeated on the successor. The
+unchanged Quest source is not rebuilt locally. Final native/PostgreSQL/Node
+checks remain with GitHub runners, and the unresolved cases remain explicit.

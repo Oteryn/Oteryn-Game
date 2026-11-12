@@ -131,56 +131,46 @@ pub(super) async fn bigint_boundary(
 ) -> TestResult {
     // A historical balance above the Winter Update 2026 cap of 10 is kept, and a
     // claim pays XP and points but credits no token.
-    let task = completed_fixture(harness, Some(i64::MAX - 1)).await?;
-    let before = full_board(owner, admitted, 4, 0, "").await?;
-    assert_eq!(before.bounty.rerolls, u64::try_from(i64::MAX - 1)?);
-    assert_eq!(before.bounty.state, 3);
-    let before_xp = experience(harness).await?;
-    let command = admitted.continuity.next_command_id;
-    let claimed = full_board(owner, admitted, 9, 0, "").await?;
-    assert_eq!(
-        (
-            claimed.refusal,
-            claimed.bounty.state,
-            claimed.bounty.rerolls
-        ),
-        (0, 1, u64::try_from(i64::MAX - 1)?)
-    );
-    assert_eq!(
-        claimed.bounty_points,
-        before.bounty_points + u64::from(task.points)
-    );
-    assert_eq!(
-        (claimed.points, claimed.soulseals),
-        (before.points, before.soulseals)
-    );
-    assert_eq!(
-        experience(harness).await?,
-        before_xp + i64::try_from(task.experience)?
-    );
-    assert_eq!(token_balance(harness).await?, i64::MAX - 1);
-    let committed = value_snapshot(harness).await?;
-    let replay = serve_from(owner, admitted, command, &[full_request(9, 0, "")]).await?;
-    assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
-    assert_eq!(
-        wire::full::decode_reply(&replay[0].2).map_err(debug)?,
-        claimed
-    );
-    assert_eq!(value_snapshot(harness).await?, committed);
-
-    // The BIGINT owner boundary still refuses before consuming the completed bounty.
-    completed_fixture(harness, Some(i64::MAX)).await?;
-    let before = full_board(owner, admitted, 4, 0, "").await?;
-    assert_eq!(
-        (before.bounty.state, before.bounty.rerolls),
-        (3, i64::MAX.unsigned_abs())
-    );
-    let mut expected = before;
-    expected.refusal = 11;
-    let refused = overflow_and_replay(owner, harness, admitted, 9).await?;
-    assert_eq!(refused, expected);
+    for balance in [i64::MAX - 1, i64::MAX] {
+        let task = completed_fixture(harness, Some(balance)).await?;
+        let before = full_board(owner, admitted, 4, 0, "").await?;
+        assert_eq!(before.bounty.rerolls, u64::try_from(balance)?);
+        assert_eq!(before.bounty.state, 3);
+        let before_xp = experience(harness).await?;
+        let entries = token_entries(harness).await?;
+        let sources: i64 = sqlx::query_scalar("SELECT count(*) FROM game_task_board_token_sources WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+        let command = admitted.continuity.next_command_id;
+        let claimed = full_board(owner, admitted, 9, 0, "").await?;
+        assert_eq!(
+            (claimed.refusal, claimed.bounty.state, claimed.bounty.rerolls),
+            (0, 1, u64::try_from(balance)?)
+        );
+        assert_eq!(
+            claimed.bounty_points,
+            before.bounty_points + u64::from(task.points)
+        );
+        assert_eq!(
+            (claimed.points, claimed.soulseals),
+            (before.points, before.soulseals)
+        );
+        assert_eq!(experience(harness).await?, before_xp + i64::try_from(task.experience)?);
+        assert_eq!(token_balance(harness).await?, balance);
+        assert_eq!(token_entries(harness).await?, entries);
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_token_sources WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_one(&harness.pool).await?, sources);
+        let effects: serde_json::Value = sqlx::query_scalar("SELECT effects FROM game_task_board_receipts WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid AND cause_ordinal=$3::text::numeric AND cause_kind='command' AND committed_character_revision IS NOT NULL")
+            .bind(id(41).as_slice()).bind(admitted.game_session_id.as_bytes().as_slice()).bind(command.to_string())
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(effects["reroll_tokens_granted"], serde_json::json!(0));
+        let committed = value_snapshot(harness).await?;
+        let replay = serve_from(owner, admitted, command, &[full_request(9, 0, "")]).await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(wire::full::decode_reply(&replay[0].2).map_err(debug)?, claimed);
+        assert_eq!(value_snapshot(harness).await?, committed);
+    }
     println!(
-        "<TASK_BOARD> POSTGRES_CASE_COMPLETED: bounty_token_bigint_boundary_and_overflow_refusal_replay"
+        "<TASK_BOARD> POSTGRES_CASE_COMPLETED: historical_bigint_bounty_claim_keeps_balance_and_replays_zero_credit"
     );
 
     // WU26-02: at ten stored tokens the claim credits zero; its receipt records the
