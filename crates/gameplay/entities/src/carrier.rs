@@ -32,6 +32,8 @@ macro_rules! test_support_pub {
 
 pub mod activity_transfer;
 mod actor_memos;
+mod arena_match;
+mod tibiadrome;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -112,6 +114,7 @@ mod owner_views;
 mod party_reward_occurrence_tests;
 
 mod player_control;
+pub use player_control::RuntimeSessionAbsence;
 
 mod positions;
 
@@ -146,6 +149,8 @@ pub mod runtime_actor_source_reservation;
 
 #[path = "carrier/runtime_actor_source_step.rs"]
 pub mod runtime_actor_source_step;
+#[path = "carrier/source_scene.rs"]
+pub mod source_scene;
 
 #[path = "carrier/runtime_actor_spell.rs"]
 pub mod runtime_actor_spell;
@@ -227,6 +232,7 @@ pub use spawn_realization::SpawnDriveReport;
 use spawn_realization::SpawnDriveWindow;
 use spawn_realization::SpawnRealization;
 pub use spawn_realization::SpawnSourceId;
+pub use spawn_realization::WorldSpawnProjection;
 
 /// Authority supplied by a future, independently accepted assignment consumer.
 ///
@@ -608,8 +614,7 @@ impl CreatureDeathOccurrenceKey {
         self.actor.runtime_scope
     }
 
-    /// Existing Ground custody only accepts Channel deaths. Callers must explicitly
-    /// refuse an Instance instead of borrowing its origin Channel identity.
+    /// An Instance has no Channel projection; its origin is not its identity.
     pub const fn channel_id(self) -> Option<ChannelId> {
         ExactActorRef(self.actor).channel_id()
     }
@@ -624,6 +629,33 @@ impl CreatureDeathOccurrenceKey {
 
     pub const fn actor_local_generation(self) -> u64 {
         self.actor.actor_local_generation.0
+    }
+
+    /// Lossless native occurrence framing. Legacy Channel bytes stay unchanged;
+    /// the Instance tag keeps otherwise identical identifiers disjoint.
+    pub fn native_bytes(self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(53);
+        match self.runtime_scope() {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => {
+                bytes.extend_from_slice(world_id.as_bytes());
+                bytes.extend_from_slice(channel_id.as_bytes());
+            }
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => {
+                bytes.push(2);
+                bytes.extend_from_slice(world_id.as_bytes());
+                bytes.extend_from_slice(&instance_id);
+            }
+        }
+        bytes.extend_from_slice(&self.scope_ownership_generation().get().to_be_bytes());
+        bytes.extend_from_slice(&self.actor_local_id().to_be_bytes());
+        bytes.extend_from_slice(&self.actor_local_generation().to_be_bytes());
+        bytes
     }
 }
 
@@ -1106,6 +1138,7 @@ pub struct ScopeRuntimeV1 {
     spawn_schedule: spawn::RespawnSchedule,
     boss_spawns: Vec<BossSpawn>,
     raid_spawns: raid_spawn::RaidSpawnLedger,
+    world_change_cycles: Option<(u64, std::collections::BTreeMap<String, u64>)>,
     daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
     echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
@@ -1252,6 +1285,7 @@ impl ChannelRuntimeV1 {
             spawn_schedule: spawn::RespawnSchedule::default(),
             boss_spawns: Vec::new(),
             raid_spawns: raid_spawn::RaidSpawnLedger::default(),
+            world_change_cycles: None,
             daily_boost: None,
             echo_wardens: echo_warden::EchoRuntime::default(),
             forge_next_tick_micros: 0,
@@ -1517,7 +1551,8 @@ impl ChannelRuntimeV1 {
                         y: cell.y,
                         floor: cell.floor,
                     };
-                    let occupied = self.carrier.cell_occupied(context, local);
+                    let occupied = !self.spawn_point_enabled(point)?
+                        || self.carrier.cell_occupied(context, local);
                     if !occupied {
                         let actor = match self.carrier.respawn_into_free_cell(
                             &self.continuity,

@@ -45,6 +45,7 @@ pub(super) async fn execute(
     proposal: &ProfileAbilityProposal,
     parties: &ReferenceParties,
     now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) {
     let Ok(stamp) = runtime.issue_owner_work() else {
         return;
@@ -69,7 +70,12 @@ pub(super) async fn execute(
     let result = owner.execute_current(
         runtime,
         stamp,
-        states,
+        &mut super::super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+            states,
+            attack,
+            catalogue: charms,
+            root: GameplayDecisionRoot::from_bytes(native.source_digest()),
+        },
         &catalog,
         source,
         proposal,

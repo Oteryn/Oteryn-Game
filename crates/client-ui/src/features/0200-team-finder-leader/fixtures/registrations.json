@@ -2,19 +2,40 @@
   {
     "mechanic": "0200-team-finder-leader",
     "kind": "handlers",
-    "id": "0200-team-finder-leader-unsupported",
-    "status": "unsupported",
-    "reason": "S14a implements the server leader listing; the client Team Finder window remains pending.",
+    "id": "0200-team-finder-leader-command-390",
+    "status": "supported",
     "commands": [
-      390,
+      390
+    ],
+    "direction": "client_to_server",
+    "capability": 200,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State is owned by the server; no local settings.",
+      "input": "Leader editor controls are in the combined Team Finder window."
+    }
+  },
+  {
+    "mechanic": "0200-team-finder-leader",
+    "kind": "handlers",
+    "id": "0200-team-finder-leader-command-391",
+    "status": "supported",
+    "commands": [
       391
     ],
+    "direction": "client_to_server",
+    "capability": 200,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "State is owned by the server; no local settings.",
+      "input": "Leader editor controls are in the combined Team Finder window."
     }
+  },
+  {
+    "mechanic": "0200-team-finder-leader",
+    "status": "supported",
+    "kind": "panels",
+    "id": "0200-team-finder-leader-panel",
+    "entry": "view.rs::panel_text"
   }
 ]

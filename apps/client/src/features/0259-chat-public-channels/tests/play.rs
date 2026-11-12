@@ -94,11 +94,28 @@ fn public_channel_commands_leave_the_outbox_and_server_state_updates_the_panel()
                 let peer = Peer {
                     commands: Arc::clone(&commands),
                     rooms: ChatRoomSet::default(),
-                    lines: vec![],
+                    lines: vec![ChatLine::Room {
+                        room: ChatRoom::World,
+                        speaker_name: "Other Player".into(),
+                        text: "welcome".into(),
+                    }],
                 };
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 wait_for(&link, |panel| panel.selected).await?;
+                let event = oteryn_input_actions::NormalizedInputEvent::Key {
+                    code: oteryn_input_actions::KeyCode::new(6)?,
+                    state: oteryn_input_actions::ButtonState::Pressed,
+                    modifiers: oteryn_input_actions::Modifiers::one(
+                        oteryn_input_actions::Modifier::Control,
+                    ),
+                    repeat: false,
+                };
+                assert!(link.chat_public_input(&[event]));
+                assert!(link.chat_public_panel().open);
+                assert!(
+                    panel_text(&link.chat_public_panel()).contains("[World] Other Player: welcome")
+                );
                 link.chat_public_request(Intent::Open(ChatRoom::Tutor));
                 wait_for(&link, |panel| panel.rooms.contains(ChatRoom::Tutor)).await?;
                 link.chat_public_text("hello tutors".into());
@@ -115,7 +132,15 @@ fn public_channel_commands_leave_the_outbox_and_server_state_updates_the_panel()
                     })
                 })
                 .await?;
-                assert!(panel_text(&link.chat_public_panel()).contains("[Tutor] Player One:"));
+                assert!(
+                    panel_text(&link.chat_public_panel())
+                        .contains("[Tutor] Player One: hello tutors")
+                );
+                link.chat_public_request(Intent::Close(ChatRoom::Tutor));
+                wait_for(&link, |panel| {
+                    !panel.pending && !panel.rooms.contains(ChatRoom::Tutor)
+                })
+                .await?;
                 assert!(matches!(
                     commands
                         .lock()

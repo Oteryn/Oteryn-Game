@@ -1,0 +1,253 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.a_pirates_tail",
+  "runtime_enabled": false,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/pirates-tail-familiar-entry",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33734,
+          "y": 31273,
+          "floor": -7
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33922,
+        "y": 31370,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_60/apirates_tail/ratmiral_killed",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You are not allowed to use this yet.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:122"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/pirates-tail-cheesy-entry",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "trigger": "step_in",
+      "selector": {
+        "action": 47501,
+        "position": {
+          "x": 33927,
+          "y": 31368,
+          "floor": -7
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33927,
+        "y": 31366,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:68"
+      ],
+      "success_message": "Chedar is spicy, mould is blue, you took like a donkey and smell like a one too."
+    },
+    {
+      "key": "oteryn:quest-callback/pirates-tail-cheesy-chess",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "trigger": "step_in",
+      "selector": {
+        "action": 47502,
+        "position": {
+          "x": 33924,
+          "y": 31365,
+          "floor": -7
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33919,
+        "y": 31366,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:100"
+      ],
+      "success_message": "The quicksand pulls you down."
+    },
+    {
+      "key": "oteryn:quest-callback/pirates-tail-cheesy-exit",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33925,
+          "y": 31355,
+          "floor": -7
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33799,
+        "y": 31321,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:117"
+      ],
+      "success_message": "You set sail and leave. But on your way you back you hit a reef and the boat springs a leak. You only just reach the coasts."
+    }
+  ],
+  "holds": [
+    {
+      "reason": "The existing map has native teleport34111 on ordinal2 at33734,31273,z7 leading to33966,31378,z15. Ordinary movement resolves that native teleport before selecting quest callbacks from the landed snapshot, so the source two-boss guard at the entry position cannot be qualified. The source callback expects33922,31370,z7. Map and movement owner remain unchanged.",
+      "required_operation": "Owner-qualified resolution of the exact map teleport collision or an existing guard before native teleport; no guessed position or owner extension.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590288251",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "decision_points": [
+        5,
+        7
+      ],
+      "map_witness": {
+        "origin": {
+          "x": 33734,
+          "y": 31273,
+          "floor": -7
+        },
+        "region": "content/world/placements/region-z07-x131-y122.b3",
+        "region_sha256": "56fde17dccc110a898bea10d2f3ceb7276dc8779d8a8c00bd9a6a9e7e5e3608c",
+        "ordinal": 2,
+        "source_item_id": 34111,
+        "native_destination": {
+          "x": 33966,
+          "y": 31378,
+          "floor": -15
+        },
+        "native_destination_region": "content/world/placements/region-z15-x132-y122.b3",
+        "native_destination_region_sha256": "b23eb4546931476f24e6187c1a986a521dd7866d2369d5c819a802a0be69eb04",
+        "source_destination": {
+          "x": 33922,
+          "y": 31370,
+          "floor": -7
+        },
+        "source_destination_region": "content/world/placements/region-z07-x132-y122.b3",
+        "source_destination_region_sha256": "ec3277390fc5e8aa11a0979e0aaa3b5beca30ea8f57c7d9141a799480eb5734d"
+      },
+      "execution_sources": [
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor.rs:508",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/paced_movement.rs:176",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:434"
+      ],
+      "callback_keys": [
+        "oteryn:quest-callback/pirates-tail-familiar-entry"
+      ],
+      "additional_schema_hold": {
+        "missing_fields": [
+          "storage.read_only"
+        ],
+        "proof": "Crystal reads both boss completion flags; it does not rewrite either. Both guards are preserved as read-only source obligations.",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+      }
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/pirates-tail-cheesy-entry"
+      ],
+      "missing_fields": [
+        "success_message"
+      ],
+      "proof": "Crystal sends this exact MESSAGE_EVENT_ADVANCE after the teleport. The unchanged callback schema cannot project that success text; dropping the field would omit an explicit source effect.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:68"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/pirates-tail-cheesy-chess"
+      ],
+      "missing_fields": [
+        "success_message"
+      ],
+      "proof": "Crystal sends this exact MESSAGE_EVENT_ADVANCE after the teleport. The unchanged callback schema cannot project that success text; dropping the field would omit an explicit source effect.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:100"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/pirates-tail-cheesy-exit"
+      ],
+      "missing_fields": [
+        "success_message"
+      ],
+      "proof": "Crystal sends this exact MESSAGE_EVENT_ADVANCE after the teleport. The unchanged callback schema cannot project that success text; dropping the field would omit an explicit source effect.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:117"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+      "additional_hold": {
+        "reason": "The source position-only Action applies to the boat Item1760 at ordinal1. The unchanged adapter accepts position-only USE only at ordinal0; do not replace the source selector or broaden the adapter.",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:119",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:88"
+        ],
+        "map_region": "content/world/placements/region-z07-x132-y122.b3",
+        "map_region_sha256": "ec3277390fc5e8aa11a0979e0aaa3b5beca30ea8f57c7d9141a799480eb5734d",
+        "position": {
+          "x": 33925,
+          "y": 31355,
+          "floor": -7
+        },
+        "source_item_id": 1760,
+        "ordinal": 1
+      }
+    }
+  ]
+}

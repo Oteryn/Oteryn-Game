@@ -2,18 +2,32 @@
   {
     "mechanic": "0098-quick-loot",
     "kind": "handlers",
-    "id": "0098-quick-loot-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0098-quick-loot-commands",
+    "status": "supported",
     "commands": [
       114
     ],
+    "direction": "client_to_server",
+    "capability": 98,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "State is owned by the server; no local settings."
     }
+  },
+  {
+    "mechanic": "0098-quick-loot",
+    "status": "supported",
+    "kind": "keybindings",
+    "id": "0098-quick-loot-open",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+Q",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0098-quick-loot",
+    "status": "supported",
+    "kind": "panels",
+    "id": "0098-quick-loot-panel",
+    "entry": "view.rs::panel_text"
   }
 ]

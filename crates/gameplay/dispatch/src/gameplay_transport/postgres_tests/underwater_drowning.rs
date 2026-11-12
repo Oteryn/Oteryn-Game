@@ -82,6 +82,7 @@ fn underwater_row(portals: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)
             kind: TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(150),
+            blocks_projectile: None,
         }),
     };
     let item = |key: &str, id| PaletteEntry {
@@ -375,7 +376,7 @@ fn scenario_in_world(
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         deps.runtime
             .lock()
@@ -416,10 +417,21 @@ fn scenario_in_world(
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
+                effects: Default::default(),
+                state_operations: Vec::new(),
+                world_change: None,
+                actor_kind: Default::default(),
+                opening_only: false,
+                requires_world_admission: false,
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
+                use_range: 1,
+                disguise: None,
                 selector: Selector {
+                    position_aliases: Vec::new(),
+                    native: None,
+                    ordinal: None,
                     position: Some(position(trigger)),
                     unique: None,
                     action: None,
@@ -429,12 +441,27 @@ fn scenario_in_world(
                 reversible: false,
                 passages: vec![],
                 teleport: Some(position(destination)),
+                facing: None,
+                world_requirements: vec![],
+                remote_teleport: None,
+                item_reward: None,
+                reward_bundle: false,
+                achievements: vec![],
+                activation: None,
+                completes: false,
+                requirements: None,
                 storage: if refused {
                     vec![Storage {
                         track: "fixture:unknown-track".into(),
                         minimum: 0,
                         maximum: 0,
                         set: 1,
+                        set_if: None,
+                        preserve: false,
+                        increment: false,
+                        at_least: false,
+                        read_only: false,
+                        add: None,
                     }]
                 } else {
                     vec![]
@@ -442,10 +469,16 @@ fn scenario_in_world(
                 offerings: vec![],
                 minimum_level: None,
                 experience: None,
+                premium_required: false,
                 monk_reward: None,
+                present: Vec::new(),
+                required_travel: Vec::new(),
                 item_on_target: None,
                 return_on_failure: refused,
+                failure_teleport: None,
                 failure_message: None,
+                success_message: None,
+                native_rule: None,
                 sources: vec![],
             };
             install(&owner, actor, session, false).await?;
@@ -931,7 +964,7 @@ fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
                 .map_err(debug)?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             deps.initialize(&owner).await;
             deps.runtime
                 .lock()

@@ -1,5 +1,70 @@
 use super::*;
 
+#[path = "questpc2_source_profile_cohort.rs"]
+mod questpc2_source_profile_cohort;
+
+#[test]
+fn equipment_effects_owner_regeneration_reads_worn_item_in_own_slot_only() -> TestResult {
+    use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+
+    let modifier = |kind: &str, parameter: &str, value: u64| {
+        serde_json::json!({"kind":kind,
+          "parameter":{"state":"KNOWN","value":{"kind":parameter,"value":value}},
+          "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},
+          "target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(
+        serde_json::json!([
+            modifier("HEALTH_GAIN", "SIGNED_POINTS", 6),
+            modifier("HEALTH_TICKS", "MILLISECONDS", 6_000),
+            modifier("MANA_GAIN", "SIGNED_POINTS", 24),
+            modifier("MANA_TICKS", "MILLISECONDS", 6_000),
+        ]),
+        Some(0),
+    )?)?;
+    let regeneration = EquipmentRegeneration {
+        health_gain: 6,
+        health_ticks_ms: 6_000,
+        mana_gain: 24,
+        mana_ticks_ms: 6_000,
+    };
+    for slot in 1..=10 {
+        assert_eq!(
+            equipped_regeneration(
+                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
+                &content,
+            ),
+            Some(if slot == 9 {
+                vec![(9, regeneration)]
+            } else {
+                vec![]
+            }),
+            "slot {slot}"
+        );
+    }
+
+    let gain_only = native(&fixture_input(
+        serde_json::json!([modifier("HEALTH_GAIN", "SIGNED_POINTS", 6)]),
+        Some(0),
+    )?)?;
+    assert_eq!(
+        equipped_regeneration(
+            &snapshot(&gain_only, "oteryn:item.tibia.i2854", 9),
+            &gain_only,
+        ),
+        Some(vec![])
+    );
+    let ordinary = native(&input()?)?;
+    assert_eq!(
+        equipped_regeneration(
+            &snapshot(&ordinary, "oteryn:item.tibia.i2854", 9),
+            &ordinary,
+        ),
+        Some(vec![])
+    );
+    Ok(())
+}
+
 /// The item profiles before any mechanic added its own; all of them are unchanged.
 const ORIGINAL_PROFILES: usize = 432;
 
@@ -79,14 +144,24 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from
     // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
     ("MONKQUEST", 7),
+    // C19b: Newhaven's 34017, 21348, 21400, 21350 and 50166 are source-qualified
+    // by build_newhaven_starter_profiles.py (Canary 04b83b51 items.xml + official 15.30).
+    // Each has known speed_bonus=0; preserve the exact unknown-speed set below.
+    ("NEWHAVEN-C19B", 5),
     // P11: condition potions 7439/7440/7443/49271 from Crystal 201189f potions.lua:1-31
     // (tools/content-migration/condition_potion_profiles.py). All have speed_bonus=0.
     ("P11-CONDITION-POTIONS", 4),
     // P11: mechanical rod 9306 from Crystal 201189f items.xml:25156-25159
     // (tools/content-migration/gathering_item_profiles.py). It has speed_bonus=0.
     ("P11-MECHANICAL-FISHING", 1),
+    // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
+    // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
+    ("QNPCFX", 1),
+    // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
+    ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
+    ("QUESTPC8-MERGED", 151),
     ("QUICKLOOT-1", 9),
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
@@ -101,9 +176,24 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // All 97 additions have speed_bonus=0.
     // Ten also belong to cohorts added on main; W15 contributes 87 distinct new keys.
     ("QUESTCHEST-W15", 87),
+    // ITEMHOLD-Q: captured wolf, dog collar, Monolith Kit, Bottled Dragon Breath
+    // and Guardian Ring from itemhold_q{,_remaining}.py; the newly qualified
+    // Ornamented Shield recipe also closes over lyre 2949 in quest_callback_profiles.py.
+    // All six retain the source-qualified speed_bonus=0 (ITEMHOLD-Q review evidence).
+    ("ITEMHOLD-Q", 6),
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
+    // Batch 3 admits only the canonical demon helmet 3387 through quest_callback_profiles.py.
+    // Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:9970-9986
+    // and data-global/startup/tables/chest.lua:806-811 confirm the single reward and
+    // no speed attribute (speed_bonus=0); boots 3554 and shield 3420 already exist.
+    (
+        "QUESTPC2-SOURCE-CLOSURE",
+        questpc2_source_profile_cohort::IDS.len()
+            - questpc2_source_profile_cohort::SHARED_WITH_MAIN.len(),
+    ),
+    ("QUESTS3-DEMON-HELMET", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.
@@ -134,6 +224,14 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // P18 Forge shares that existing core profile and adds no duplicate.
     ("W06-ECHO", 24),
     ("W07-SOULPIT", 821),
+    // W10-PRIMAL: generated by primal_item_profiles.py --refresh-cohort.
+    // Crystal ff7ede59 data/items/items.xml:71977,73314-73335; Items 39176, 39527..=39530, speed_bonus=0.
+    ("W10-PRIMAL", 5),
+    // W15c debris 6475..=6483 and 6485/6486, captured by
+    // tools/content-schema/native-gameplay/build_grizzly_debris_profiles.py from Crystal
+    // 201189f items.xml:17891-17893 (no speed override). src/items/items.hpp:38 defaults
+    // speed to zero; all eleven profiles preserve that qualified speed_bonus=0.
+    ("W15C-GRIZZLY-DEBRIS", 11),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
     // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
     ("W18-FLUID", 20),
@@ -183,6 +281,65 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // IDS from Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml.
     // None has a speed override, so all five keep speed_bonus=0.
     ("M08-M10-SEWER-HARVEST", 5),
+    // I14 special potions: antidote potion 7644 and magic shield potion 35563, added to
+    // tools/content-migration/condition_potion_profiles.py IDS from Crystal potions.lua.
+    // Neither has a speed override, so both keep speed_bonus=0.
+    ("I14-POTIONS", 2),
+    // SRVENC W02: thirteen new keys among the 22 captured Sugar Daddy corpse/loot
+    // profiles (boss-reward-item-profiles.json; boss_reward_item_profiles.py).
+    // Canary47df data-otservbr-global/monster/bosses/sugar_daddy.lua:21-25,76-132:
+    // 45639..=45643, 48114, 48249..=48251, 48253, 48254, 48256 and corpse 48416.
+    // Each retains captured speed_bonus=0; the raw-attribute loop and the exact
+    // independently pinned unknown-speed set below remain unchanged.
+    ("SRVENC-W02", 13),
+    // SRVGAP-C1: eight pinned Canary starter profiles have no speed override.
+    ("SRVGAP-C1", 8),
+    // The pinned dispenser-item-profiles.json adds 22 source-qualified dispenser
+    // definitions (25879..=25914, its exact source subset), all with speed_bonus=0.
+    ("SRVGAP-DISPENSERS", 22),
+    // srx1-potion-profiles.json adds 53162..=53164, each with speed_bonus=0.
+    // These remain the same original SRX-1 cohorts. SEASON coalesces identical
+    // dispenser facts into the base, so the supplement now carries only the
+    // remaining overrides/new keys; the merged key inventory counts each once.
+    ("SRX1-POTIONS", 3),
+    // SV16 Echo catalysts 51588, 51589 and 54266, added to the W06/W07 overlay
+    // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
+    // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
+    ("SV16-ECHO-CATALYSTS", 3),
+    // WORLDCHG: 41 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 40),
+    // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
+    ("SRV9-MARRIAGE", 2),
+    ("QUESTPC7-HOT-CORPSES", 8),
+    ("QUESTPC7-HOT-FISHBURGER", 1),
+    ("QUESTPC7-SMITH-CORPSES", 4),
+    ("QUESTPC7-SMITH", 1),
+    ("QUESTPC7-SLUG-CORPSES", 4),
+    ("QUESTPC7-MARSH-CORPSES", 4),
+    // BEGIN GENERATED QREADY PROFILE ADDITIONS
+    // Regenerate: python3 tools/contracts/update_equipment_profile_additions.py
+    // tools/content-schema/native-gameplay/qready1-reward-item-profiles.json
+    // Source-qualified zero speed: 3068, 3323, 3383, 3579, 3734, 4871.
+    ("QREADY1", 6),
+    // tools/content-migration/qready2_native_profiles.py
+    // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
+    ("QREADY2", 5),
+    // END GENERATED QREADY PROFILE ADDITIONS
+    // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.
+    ("QUESTPC7-REGISTERED-UNION", 97),
+    // SEASON W18:2126 exact initialized House source profiles. Relative to the
+    // frozen9668e0a04 base (including loadout/SRX updates),1959 keys are new.
+    // Source: house-decoration-profiles.json, Crystal201189f items.xml and
+    // both pinned appearance banks; no original key is removed or relabeled.
+    ("SEASON-W18-HOUSE", 1959),
+    // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
+    // qengine-reward-item-profiles.json (pinned Canary items.xml/appearance).
+    // The exact packet carries speed_bonus=0 for every record, checked below.
+    ("QENGINE-REWARDS", 53),
+    // W05d:48 canonical seasonal profiles;35 further keys are new after the
+    // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
+    // Cake and Halloween donor locators/hashes); all have qualified speed0.
+    ("SEASON-W05D", 35),
 ];
 
 #[test]
@@ -190,10 +347,278 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
+    // QENGINE2 adds exactly the 128 independently captured physical quest Items.
+    // In particular the pre-existing pick keeps its unknown equipment speed;
+    // custody completion must not replace that owner with a fabricated zero.
+    let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    )))?;
+    let additions = proof["records"]
+        .as_array()
+        .ok_or("QENGINE2 source profiles")?;
+    let mut added_keys = std::collections::BTreeSet::new();
+    for source in additions {
+        let key = source["production_definition"]["production_key"]
+            .as_str()
+            .ok_or("QENGINE2 source key")?;
+        assert!(
+            added_keys.insert(key),
+            "duplicate QENGINE2 source key {key}"
+        );
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing QENGINE2 source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        let expected = if key == "oteryn:item.tibia.i3456" {
+            None
+        } else {
+            Some(0)
+        };
+        assert_eq!(profile.attributes.speed_bonus, expected, "{key}");
+    }
+    assert_eq!(added_keys.len(), 128);
+    for id in [3029, 3035, 3205, 3212, 3234, 3607] {
+        assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
+    }
+    let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
+    )))?;
+    let npc_additions = npc_proof["records"]
+        .as_array()
+        .ok_or("NPC source profiles")?;
+    assert_eq!(npc_additions.len(), 1);
     assert_eq!(
-        profiles.records.len(),
-        ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+        npc_additions[0]["production_definition"]["production_key"],
+        "oteryn:item.tibia.i52636"
     );
+    let venison = profiles
+        .records
+        .iter()
+        .find(|row| row.production_definition.production_key == "oteryn:item.tibia.i52636")
+        .ok_or("missing NPC venison profile")?;
+    assert!(venison.admission.materializable);
+    assert_eq!(venison.attributes.speed_bonus, Some(0));
+    let world_change_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/world-change-item-profiles.json"
+    )))?;
+    let world_change_records = world_change_proof["records"]
+        .as_array()
+        .ok_or("world-change profiles")?;
+    assert_eq!(world_change_records.len(), 41);
+    for source in world_change_records {
+        let key = source["production_definition"]["production_key"]
+            .as_str()
+            .ok_or("world-change key")?;
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing world-change source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    for id in [9585, 9586] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing marriage source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+
+    // Independently enumerated source admissions already carried by this lane.
+    let source_ids = questpc2_source_profile_cohort::IDS;
+    assert_eq!(
+        source_ids
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        source_ids.len()
+    );
+    for id in source_ids {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing questpc2 source profile {key}"))?;
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    let later_main_profiles = PROFILE_ADDITIONS
+        .iter()
+        .filter(|(name, _)| {
+            matches!(
+                *name,
+                "QENGINE-REWARDS"
+                    | "QREADY1"
+                    | "QREADY2"
+                    | "QUESTPC2-SOURCE-CLOSURE"
+                    | "QUESTPC4-STAG-ITEMS"
+                    | "QUESTPC7-HOT-CORPSES"
+                    | "QUESTPC7-HOT-FISHBURGER"
+                    | "QUESTPC7-MARSH-CORPSES"
+                    | "QUESTPC7-REGISTERED-UNION"
+                    | "QUESTPC7-SLUG-CORPSES"
+                    | "QUESTPC7-SMITH"
+                    | "QUESTPC7-SMITH-CORPSES"
+                    | "QUESTPC8-MERGED"
+                    | "SEASON-W05D"
+                    | "SEASON-W18-HOUSE"
+                    | "SRV9-MARRIAGE"
+                    | "SRVENC-W02"
+                    | "W10-PRIMAL"
+                    | "WORLDCHG"
+            )
+        })
+        .map(|(_, count)| count)
+        .sum::<usize>();
+    assert_eq!(later_main_profiles, 2442);
+    const QENGINE2_BASE_PROFILES: usize = 53;
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 75);
+    let baseline = ORIGINAL_PROFILES
+        + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+        + QENGINE2_BASE_PROFILES
+        - npc_additions.len()
+        - later_main_profiles; // Post-baseline main cohorts are already in the generated delta.
+    assert_eq!(baseline, 3663);
+    let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json"
+    )))?;
+    assert_eq!(custody["schema"], 1);
+    assert_eq!(custody["base"], "1ae39c7fb9bef09c3cd50d16410374f4134b1676");
+    assert_eq!(
+        custody["base_count"].as_u64(),
+        Some(u64::try_from(baseline)?)
+    );
+    let manifest: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/spells.manifest.json"
+    )))?;
+    for (field, pin) in [
+        "item_profiles",
+        "item_profile_updates",
+        "starting_loadout_item_profiles",
+    ]
+    .into_iter()
+    .zip(custody["inputs"].as_array().ok_or("custody input pins")?)
+    {
+        assert_eq!(
+            pin["path"],
+            format!(
+                "content/{}",
+                manifest[field]["path"].as_str().ok_or("path")?
+            )
+        );
+        assert_eq!(pin["sha256"], manifest[field]["sha256"]);
+    }
+    let extra = custody["added_keys"]
+        .as_array()
+        .ok_or("custody additions")?;
+    let mut custody_keys = std::collections::BTreeSet::new();
+    for key in extra {
+        let key = key.as_str().ok_or("custody key")?;
+        assert!(custody_keys.insert(key), "duplicate custody identity");
+        assert!(
+            profiles
+                .records
+                .iter()
+                .any(|p| p.production_definition.production_key == key),
+            "missing custody identity {key}"
+        );
+    }
+    // Main's QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+    // They join the same exact regenerated post-base census and are counted once.
+    assert_eq!(profiles.records.len(), baseline + custody_keys.len());
+    // Independently replay the closed source packets' zero-speed facts;
+    // the unchanged per-row raw-ability and unknown-speed checks below still
+    // reject loss, invention or accidental overwrite of any prior owner rule.
+    for (path, expected_count) in [
+        ("house-decoration-profiles.json", 2126),
+        ("seasonal-item-profiles.json", 48),
+        ("qengine-reward-item-profiles.json", 128),
+    ] {
+        let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../tools/content-schema/native-gameplay")
+                .join(path),
+        )?)?;
+        let records = source["records"]
+            .as_array()
+            .ok_or("missing source Item profiles")?;
+        assert_eq!(records.len(), expected_count, "{path}");
+        for source in records {
+            let key = source["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("source Item key")?;
+            let actual = profiles
+                .records
+                .iter()
+                .find(|row| row.production_definition.production_key == key)
+                .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
+            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
+                assert!(
+                    source["attributes"]["speed_bonus"].is_null(),
+                    "source speed {path}:{key}"
+                );
+                assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            } else {
+                assert_eq!(
+                    source["attributes"]["speed_bonus"],
+                    serde_json::json!(0),
+                    "source speed {path}:{key}"
+                );
+                assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
+            }
+            assert!(actual.admission.materializable, "{path}:{key}");
+        }
+    }
+    for id in [2949, 12369, 14156, 33330, 44179, 52732] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified ITEMHOLD-Q profile {key}"))?;
+        assert!(record.admission.materializable, "{key}");
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
+    // SRX-1 qualifies zero speed for these 34 newly admitted writing items.
+    // The producer preserves 2815/2821/3505/3507 under their existing owners;
+    // those four therefore retain their unknown-speed assertions below.
+    for id in [
+        637, 638, 639, 640, 641, 642, 2598, 2605, 2813, 2814, 2817, 2818, 2819, 2824, 2825, 2826,
+        2828, 2829, 2830, 2831, 2832, 2834, 2838, 2839, 2840, 2841, 2843, 2844, 2845, 2846, 2847,
+        4842, 4843, 7879,
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified writing profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+        assert!(
+            !matches!(record.semantics.equipment, ReferenceItemField::Known(_)),
+            "writing profile {key} remains non-equipment",
+        );
+    }
+    for id in [34017, 21348, 21400, 21350, 50166] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified Newhaven profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     for id in [2859, 3217, 18931, 19084, 19089, 19129] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles
@@ -227,6 +652,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
+    let diary = profiles
+        .records
+        .iter()
+        .find(|r| r.production_definition.production_key == "oteryn:item.tibia.i3212")
+        .ok_or("source-qualified White Raven diary")?;
+    assert_eq!(diary.attributes.speed_bonus, Some(0));
+    assert!(added_keys.contains("oteryn:item.tibia.i3212"));
     for record in profiles.records {
         let abilities = item_ability_profile(&record.semantics)?;
         let sum = abilities.abilities.iter().try_fold(0_i32, |sum, ability| {
@@ -282,6 +714,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             record.production_definition.production_key
         );
     }
+
     assert_eq!(
         unknown_speed,
         [
@@ -299,23 +732,22 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         // I14G preserves absent speed for the five additional non-equipment consumables.
         .chain([3250, 7642, 23374, 23375, 23535].map(|id| format!("oteryn:item.tibia.i{id}")))
-        // READ-WRITE-1: the 19 readable profiles carry no speed attribute and are not equipment.
+        // READ-WRITE-1: retain unknown speed for the original readable cohort,
+        // except 2598/2605 now explicitly qualified by SRX-1 writing above.
         .chain(
             [
-                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2598, 2602, 2605,
-                6121, 6122, 10322, 12782, 12783,
+                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2602, 6121, 6122,
+                10322, 12782, 12783,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
         .chain(
             [
-                347, 401, 635, 636, 637, 638, 639, 640, 641, 642, 2813, 2814, 2815, 2817, 2818, 2819,
-                2821, 2824, 2825, 2826, 2827, 2828, 2829, 2830, 2831, 2832, 2833, 2834, 2835,
-                2838, 2839, 2840, 2841, 2842, 2843, 2844, 2845, 2846, 2847, 3212, 3505, 3507,
-                4100, 4842, 4843, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 7879, 8150,
-                8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
-                9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
-                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266, 31268,
+                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835, 2842, 3505, 3507, 4100,
+                5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150, 8151, 8155, 8156, 8737, 9206,
+                9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214, 9215, 9216, 9217, 9218, 9219, 9220,
+                9221, 9222, 9223, 9224, 9538, 9614, 15276, 15633, 19072, 19073, 19074, 21445,
+                27932, 27933, 27934, 28572, 31266, 31268,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
@@ -521,6 +953,45 @@ fn equipment_effects_owner_uses_primary_slot_and_extra_never_suppresses() -> Tes
         assert_eq!(effects.speed, 0);
         assert!(effects.suppressions.is_empty());
     }
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_invisibility_reads_worn_item_in_own_slot_only() -> TestResult {
+    let invisible = |value| {
+        serde_json::json!({"kind":"INVISIBILITY",
+          "parameter":{"state":"KNOWN","value":{"kind":"BOOLEAN","value":value}},
+          "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(
+        serde_json::json!([invisible(true)]),
+        Some(0),
+    )?)?;
+    for slot in 1..=10 {
+        assert_eq!(
+            equipped_invisibility(
+                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
+                &content
+            ),
+            Some(slot == 9),
+            "slot {slot}"
+        );
+    }
+
+    let content = native(&fixture_input(
+        serde_json::json!([invisible(false)]),
+        Some(0),
+    )?)?;
+    assert_eq!(
+        equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
+        Some(false)
+    );
+
+    let content = native(&input()?)?;
+    assert_eq!(
+        equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
+        Some(false)
+    );
     Ok(())
 }
 

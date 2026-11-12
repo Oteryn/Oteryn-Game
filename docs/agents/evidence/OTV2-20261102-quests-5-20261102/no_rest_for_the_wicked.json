@@ -1,0 +1,878 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "no_rest_for_the_wicked",
+    "elements": 34,
+    "auto": 0,
+    "manual": 34,
+    "statuses": {
+      "LEFT_OUT": 33,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 1
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 2,
+      "reply_paragraphs": 2,
+      "conversations": 1
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Wejście Arbaziloth",
+      "pattern": "P06",
+      "trigger": "dźwignia34058/32394/14;5pól34058/32395..32399/14",
+      "condition": "BossLever: occupancy;cooldown20h",
+      "effect": "teleport34034/32340/14;Arbaziloth34034/32330/14;Forgemaster34033/32330/14;exit34058/32403/14",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_lever.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Inicjalizacja walki",
+      "pattern": "P25",
+      "trigger": "onUseExtra/onLever",
+      "condition": "startEvent zastępowany; opóźnienie100ms",
+      "effect": "nowy stan;usuń stare fire/demons;2Overcharged Demon;clock co2s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:348",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Cztery progi HP",
+      "pattern": "P30",
+      "trigger": "Arbaziloth onHealthChange",
+      "condition": "kolejne80/60/40/20%;healing pominięty",
+      "effect": "obetnij primary+secondary do floor(maxHP×share);pendingPhase blokuje dalsze uderzenia;takt0 uruchamia fazę",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:165",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "Open fire",
+      "pattern": "P30",
+      "trigger": "początek każdej fazy",
+      "condition": "bossId zgodny;pendingPhase",
+      "effect": "phase+1;invulnerable;purplefire po1500ms",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:155",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "Losowe pole ognia",
+      "pattern": "P16",
+      "trigger": "timer spawnFire",
+      "condition": "żywy boss;invulnerable;!cracked;do30prób po walkable nonteleport tiles",
+      "effect": "usuń stary49362;utwórz na polu innym niż boss;imp distance effect",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:134",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Zwabienie na ogień",
+      "pattern": "P24",
+      "trigger": "monster StepIn item49362 w34026..34040/32324..32340/14",
+      "condition": "dokładny bossId;invulnerable;!cracked",
+      "effect": "usuńfire;cracked=true",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:204",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Wędka",
+      "pattern": "P30",
+      "trigger": "FishingRod3483 na aktualnym bossie",
+      "condition": "invulnerable;cracked;roll1..100>50",
+      "effect": "invulnerable=false;cracked=false;outfit1799..1802;wyczyść targety graczy/ognie;po4fazie timer3s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:252",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "Zabicie Forgemaster",
+      "pattern": "P07",
+      "trigger": "ArbazilothForgemasterDeath",
+      "condition": "zgodny forgemasterId",
+      "effect": "forgemasterKilled=true;blokuje hardmode",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:393",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Przejście hardmode",
+      "pattern": "P30",
+      "trigger": "timer po4udanej wędce",
+      "condition": "żywyboss;!forgemasterKilled;!hardMode;żywyForgemaster",
+      "effect": "usuńForgemaster/boss;spawn Enraged Arbaziloth fullHP;hardMode=true",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:219",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "Odtwarzanie demonów",
+      "pattern": "P16",
+      "trigger": "co2s lub bossThink",
+      "condition": "żywyboss;countOvercharged<2;brakdemonEvent",
+      "effect": "po5s odtwórz brakujące1/2 na34029/32328/14 i34037/32328/14",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_fight.lua:298",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 11,
+      "step": "Pierwsze zwycięstwo",
+      "pattern": "P21",
+      "trigger": "śmierć Arbaziloth;onDeathForDamagingPlayers",
+      "condition": "nazwa arbaziloth;każdy kwalifikujący damage player;KillArbaziloth<2",
+      "effect": "Questlog1;KillArbaziloth2;ForgemasterDoor>=1;outfity1808/1809 bezNPC",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_death.lua:18",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Dziesięć zwycięstw hard",
+      "pattern": "P08",
+      "trigger": "ta sama śmierć",
+      "condition": "hardMode i zgodnybossId;ForgemasterDoor<2",
+      "effect": "KV no-rest-for-the-wicked/hard-kills+1;przy>=10 ForgemasterDoor2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/arbaziloth_death.lua:45",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "Klucz/dostęp",
+      "pattern": "P13",
+      "trigger": "The Forgemaster: key",
+      "condition": "ForgemasterDoor.Questline2",
+      "effect": "ForgeMaster.AccessDoor1;ForgemasterDoor.Questline3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:176",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/no_rest_for_the_wicked.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/no_rest_for_the_wicked.json"
+      ]
+    },
+    {
+      "row": 14,
+      "step": "Doomforge portal",
+      "pattern": "P03",
+      "trigger": "StepIn37000,aid9915@34041/32330/14",
+      "condition": "brak żywego bossa i wynik OSTATNIEJ walki hard",
+      "effect": "zostaw native teleport mapy; inaczej teleport fromPosition; cel z mapy, nie ze skryptu",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/forge_teleport.lua:11",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "forge_teleport.lua:17–24 wymaga wyniku ostatniej walki hard i braku żywego bossId; udane wejście wykonuje sam item teleportu mapy. Nie ma dowodu kwalifikacji tego powiązania w zamkniętym ownerze spotkania.",
+      "missing_owner_function": "Dowód wyniku ArbazilothFight / żywego bossId / natywny teleport mapy",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "Przywołanie Twisterror",
+      "pattern": "P22",
+      "trigger": "50054@33824/32295/9",
+      "condition": "Game storage47976!=10",
+      "effect": "zużyj1;counter+1;przy10:spawn po10s;despawn po600s;resetcounter po3600s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/miniboss.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "Przywołanie Gralvalon",
+      "pattern": "P22",
+      "trigger": "50055@33809/32295/10",
+      "condition": "Game storage47977!=10",
+      "effect": "zużyj1;counter+1;przy10:spawn po10s;despawn po600s;resetcounter po3600s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/miniboss.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "Przywołanie Malvaroth",
+      "pattern": "P22",
+      "trigger": "50101@33770/32393/8",
+      "condition": "Game storage47978!=10",
+      "effect": "zużyj1;counter+1;przy10:spawn po10s;despawn po600s;resetcounter po3600s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/miniboss.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Nagroda Forgemaster 57237",
+      "pattern": "P05",
+      "trigger": "Useuid57237",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49520×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 19,
+      "step": "Nagroda Forgemaster 57238",
+      "pattern": "P05",
+      "trigger": "Useuid57238",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49522×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 20,
+      "step": "Nagroda Forgemaster 57239",
+      "pattern": "P05",
+      "trigger": "Useuid57239",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49523×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 21,
+      "step": "Nagroda Forgemaster 57240",
+      "pattern": "P05",
+      "trigger": "Useuid57240",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49524×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 22,
+      "step": "Nagroda Forgemaster 57241",
+      "pattern": "P05",
+      "trigger": "Useuid57241",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49525×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 23,
+      "step": "Nagroda Forgemaster 57242",
+      "pattern": "P05",
+      "trigger": "Useuid57242",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49526×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 24,
+      "step": "Nagroda Forgemaster 57243",
+      "pattern": "P05",
+      "trigger": "Useuid57243",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49527×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 25,
+      "step": "Nagroda Forgemaster 57244",
+      "pattern": "P05",
+      "trigger": "Useuid57244",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49530×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 26,
+      "step": "Nagroda Forgemaster 57245",
+      "pattern": "P05",
+      "trigger": "Useuid57245",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49528×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 27,
+      "step": "Nagroda Forgemaster 57246",
+      "pattern": "P05",
+      "trigger": "Useuid57246",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "49529×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 28,
+      "step": "Nagroda Forgemaster 57247",
+      "pattern": "P05",
+      "trigger": "Useuid57247",
+      "condition": "ForgemasterDoor.Reward<1; brak osobnego guardu dostępu w callbacku",
+      "effect": "50250×1;Reward1;Questline3;wspólny wybór jednejz11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/no_rest_for_the_wicked_rewards.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 29,
+      "step": "Doomforge materiały critical",
+      "pattern": "P10",
+      "trigger": "NPC craft/weapon/critical/yes",
+      "condition": "topic4;wszystkie materiały;brońtier0;recipe w tabeli forgeItem",
+      "effect": "zużyj 49892×1,12541×1,22728×100,49894×500,5954×50,6499×350,6558×350 oraz brońbazową;dajwariant z forgeItem",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:124",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 30,
+      "step": "Doomforge materiały mana",
+      "pattern": "P10",
+      "trigger": "NPC craft/weapon/mana/yes",
+      "condition": "topic4;wszystkie materiały;brońtier0;recipe w tabeli forgeItem",
+      "effect": "zużyj 49891×1,22730×100,49894×500,6499×750,9647×200 oraz brońbazową;dajwariant z forgeItem",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:133",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 31,
+      "step": "Doomforge materiały life",
+      "pattern": "P10",
+      "trigger": "NPC craft/weapon/life/yes",
+      "condition": "topic4;wszystkie materiały;brońtier0;recipe w tabeli forgeItem",
+      "effect": "zużyj 49893×1,9663×100,49894×500,6558×750,5906×50 oraz brońbazową;dajwariant z forgeItem",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:140",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 32,
+      "step": "Doomforge mapowanie33wariantów",
+      "pattern": "P30",
+      "trigger": "NPC weapon selection",
+      "condition": "11typów broni×3ulepszenia;tylko tier0",
+      "effect": "konkretne requiredID→forgedID w tabeli;bez przenoszenia tierów",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:80",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 33,
+      "step": "Deklaracja immunity",
+      "pattern": "P30",
+      "trigger": "TheForgeMasterImmunity event",
+      "condition": "monster",
+      "effect": "efekt HITAREA;onHealthChange zwraca true zamiast czterechwartości; brak dowodu poprawnej implementacji odporności",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/no_rest_for_the_wicked/the_forgemaster_immunity.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Sama deklaracja zdarzenia odporności nie kwalifikuje podłączenia zdarzenia i jego reguły do aktywnego spotkania; wymaga wspólnego ownera walki.",
+      "missing_owner_function": "Combat immunity event binding",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 34,
+      "step": "Lai",
+      "pattern": "P09",
+      "trigger": "NPC Lai",
+      "condition": "szkielet callbacków; brak mission/reward",
+      "effect": "donor nie implementuje rozmówquesta; luka danych",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lai.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Crystal lai.lua nie zawiera tego przepływu nagrody. Wzmianka o Global/Lai jest tylko komentarzem donora arbaziloth_death.lua:1–5, nie dowodem z Global. Zgodnie z ANSWER zachowano donorowe automatyczne rozliczenie Arbazilotha jako osobny held element, bez wymyślania rozmowy.",
+      "missing_owner_function": "Brak źródłowego dialogu questa",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589432653"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589432653",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}

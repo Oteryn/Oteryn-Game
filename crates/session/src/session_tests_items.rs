@@ -36,7 +36,7 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
                 selected,
                 &[],
                 item_snapshot(vec![])?,
-                &[(9, 1, 1, payload)],
+                &[(9, 1, 1, payload), (14, 1, 1, vec![])],
             )
             .await?;
             let command = read_frame(&mut server).await?;
@@ -247,10 +247,12 @@ fn item_peer(
 fn the_advertised_set_carries_capability_4_with_its_requirement() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&item_view::CAPABILITY_ITEM_VIEW_MOVE_V1));
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES));
-    // CL25J: hotkey equip, forge and browse field now use the existing equipment
-    // decoder and gated container-tree route, so their prerequisites are advertised.
+    // Equipment and typed container-tree prerequisites remain advertised.
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&12));
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&14));
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(
+        &oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1
+    ));
 }
 
 #[test]

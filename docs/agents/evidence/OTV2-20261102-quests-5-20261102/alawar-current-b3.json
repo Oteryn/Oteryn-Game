@@ -1,0 +1,297 @@
+{
+  "repo": "/home/mole/quests-5-20261102",
+  "head": "5fbe99b378d51c9cb69b2a49b28edf3b63ba7de4",
+  "codec": "OTERYN_WORLD_REGION_B3/v1",
+  "format_source": {
+    "path": "tools/content-schema/world-authoring/world_region_codec.py",
+    "sha256": "593f370d9ec59f349f705c8dda35e8a44865bd6387f0219be83039877da9086c",
+    "decode_region_line": 370,
+    "decode_sector_line": 254
+  },
+  "palette_source": {
+    "path": "content/world/placements/index.json",
+    "sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393"
+  },
+  "ordinal_rule": "Enumerate only depth=0 entries, preserving decoder stacking order; container children have no top-level ordinal.",
+  "identity_note": "source_item_id is a source identity, not an automatically qualified runtime appearance selector.",
+  "tiles": [
+    {
+      "requested": {
+        "x": 32201,
+        "y": 31571,
+        "z": 10,
+        "native_floor": -10
+      },
+      "path": "content/world/placements/region-z10-x125-y123.b3",
+      "sha256": "baa395eddedd4db9d57a832cb75649fbac84d54e02f29042f67bd69fa4f5d379",
+      "status": "DECODED_CURRENT_CHECKOUT",
+      "flags": 8,
+      "house": 0,
+      "zones": [],
+      "entries": [
+        {
+          "flat_index": 0,
+          "depth": 0,
+          "top_level_ordinal": 0,
+          "position_only_use_anchor": true,
+          "palette_index": 167,
+          "palette": {
+            "key": "oteryn:item.tibia.i351",
+            "provisional": false,
+            "source_item_id": 351
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 1,
+          "depth": 0,
+          "top_level_ordinal": 1,
+          "position_only_use_anchor": false,
+          "palette_index": 1835,
+          "palette": {
+            "key": "oteryn:item.tibia.i2317",
+            "provisional": false,
+            "source_item_id": 2317
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 2,
+          "depth": 0,
+          "top_level_ordinal": 2,
+          "position_only_use_anchor": false,
+          "palette_index": 1982,
+          "palette": {
+            "key": "oteryn:item.tibia.i2472",
+            "provisional": false,
+            "source_item_id": 2472
+          },
+          "attributes": null
+        }
+      ],
+      "top_level_count": 3
+    },
+    {
+      "requested": {
+        "x": 32107,
+        "y": 31568,
+        "z": 9,
+        "native_floor": -9
+      },
+      "path": "content/world/placements/region-z09-x125-y123.b3",
+      "sha256": "00065c4a03743b76416f3711def842e6be09685605975224ecddb2c5acb2336b",
+      "status": "DECODED_CURRENT_CHECKOUT",
+      "flags": 0,
+      "house": 0,
+      "zones": [],
+      "entries": [
+        {
+          "flat_index": 0,
+          "depth": 0,
+          "top_level_ordinal": 0,
+          "position_only_use_anchor": true,
+          "palette_index": 5303,
+          "palette": {
+            "key": "oteryn:item.tibia.i6967",
+            "provisional": false,
+            "source_item_id": 6967
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 1,
+          "depth": 0,
+          "top_level_ordinal": 1,
+          "position_only_use_anchor": false,
+          "palette_index": 5367,
+          "palette": {
+            "key": "oteryn:item.tibia.i7033",
+            "provisional": false,
+            "source_item_id": 7033
+          },
+          "attributes": null
+        }
+      ],
+      "top_level_count": 2
+    },
+    {
+      "requested": {
+        "x": 32187,
+        "y": 31622,
+        "z": 8,
+        "native_floor": -8
+      },
+      "path": "content/world/placements/region-z08-x125-y123.b3",
+      "sha256": "e4ef1bbd59efc477af53dc72435cdbe4d39d974fdef6de5ed468692394ebfbd7",
+      "status": "DECODED_CURRENT_CHECKOUT",
+      "flags": 0,
+      "house": 0,
+      "zones": [],
+      "entries": [
+        {
+          "flat_index": 0,
+          "depth": 0,
+          "top_level_ordinal": 0,
+          "position_only_use_anchor": true,
+          "palette_index": 213,
+          "palette": {
+            "key": "oteryn:item.tibia.i409",
+            "provisional": false,
+            "source_item_id": 409
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 1,
+          "depth": 0,
+          "top_level_ordinal": 1,
+          "position_only_use_anchor": false,
+          "palette_index": 1499,
+          "palette": {
+            "key": "oteryn:item.tibia.i1949",
+            "provisional": false,
+            "source_item_id": 1949
+          },
+          "attributes": null
+        }
+      ],
+      "top_level_count": 2
+    },
+    {
+      "requested": {
+        "x": 32107,
+        "y": 31566,
+        "z": 9,
+        "native_floor": -9
+      },
+      "path": "content/world/placements/region-z09-x125-y123.b3",
+      "sha256": "00065c4a03743b76416f3711def842e6be09685605975224ecddb2c5acb2336b",
+      "status": "DECODED_CURRENT_CHECKOUT",
+      "flags": 0,
+      "house": 0,
+      "zones": [],
+      "entries": [
+        {
+          "flat_index": 0,
+          "depth": 0,
+          "top_level_ordinal": 0,
+          "position_only_use_anchor": true,
+          "palette_index": 5303,
+          "palette": {
+            "key": "oteryn:item.tibia.i6967",
+            "provisional": false,
+            "source_item_id": 6967
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 1,
+          "depth": 0,
+          "top_level_ordinal": 1,
+          "position_only_use_anchor": false,
+          "palette_index": 1499,
+          "palette": {
+            "key": "oteryn:item.tibia.i1949",
+            "provisional": false,
+            "source_item_id": 1949
+          },
+          "attributes": null
+        }
+      ],
+      "top_level_count": 2
+    },
+    {
+      "requested": {
+        "x": 32105,
+        "y": 31567,
+        "z": 9,
+        "native_floor": -9
+      },
+      "path": "content/world/placements/region-z09-x125-y123.b3",
+      "sha256": "00065c4a03743b76416f3711def842e6be09685605975224ecddb2c5acb2336b",
+      "status": "DECODED_CURRENT_CHECKOUT",
+      "flags": 0,
+      "house": 0,
+      "zones": [],
+      "entries": [
+        {
+          "flat_index": 0,
+          "depth": 0,
+          "top_level_ordinal": 0,
+          "position_only_use_anchor": true,
+          "palette_index": 5303,
+          "palette": {
+            "key": "oteryn:item.tibia.i6967",
+            "provisional": false,
+            "source_item_id": 6967
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 1,
+          "depth": 0,
+          "top_level_ordinal": 1,
+          "position_only_use_anchor": false,
+          "palette_index": 1982,
+          "palette": {
+            "key": "oteryn:item.tibia.i2472",
+            "provisional": false,
+            "source_item_id": 2472
+          },
+          "attributes": null
+        }
+      ],
+      "top_level_count": 2
+    },
+    {
+      "requested": {
+        "x": 32109,
+        "y": 31567,
+        "z": 9,
+        "native_floor": -9
+      },
+      "path": "content/world/placements/region-z09-x125-y123.b3",
+      "sha256": "00065c4a03743b76416f3711def842e6be09685605975224ecddb2c5acb2336b",
+      "status": "DECODED_CURRENT_CHECKOUT",
+      "flags": 0,
+      "house": 0,
+      "zones": [],
+      "entries": [
+        {
+          "flat_index": 0,
+          "depth": 0,
+          "top_level_ordinal": 0,
+          "position_only_use_anchor": true,
+          "palette_index": 5303,
+          "palette": {
+            "key": "oteryn:item.tibia.i6967",
+            "provisional": false,
+            "source_item_id": 6967
+          },
+          "attributes": null
+        },
+        {
+          "flat_index": 1,
+          "depth": 0,
+          "top_level_ordinal": 1,
+          "position_only_use_anchor": false,
+          "palette_index": 1982,
+          "palette": {
+            "key": "oteryn:item.tibia.i2472",
+            "provisional": false,
+            "source_item_id": 2472
+          },
+          "attributes": null
+        }
+      ],
+      "top_level_count": 2
+    }
+  ],
+  "runtime_matcher": {
+    "path": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs",
+    "sha256": "b800b96064949d76a0af9b055ef92abb465f884f2ab0176390085b27b6ed1463",
+    "line": 81,
+    "snippet": "fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {\n    let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {\n        return false;\n    };\n    let selector = &callback.selector;\n    selector.position.is_none_or(|p| tile(p) == pos)\n        && (selector.position.is_none()\n            || selector.unique.is_some()\n            || selector.action.is_some()\n            || selector.appearance.is_some()\n            || ordinal == 0)\n        && map\n            .facts\n            .quest_callback_matches(key, selector.unique, selector.action, None)\n        && (map\n            .facts\n            .quest_callback_matches(key, None, None, selector.appearance)\n            || ((selector.position.is_some()\n                || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)\n                && selector.appearance.is_some_and(|appearance| {\n                    // The Crystal plate callback is registered by item appearance. Plain\n                    // placements are omitted from the sparse attribute index. Resolve\n                    // their palette through the selected base stack, never a client item id.\n                    map.overlay\n                        .base()\n                        .tile(pos.x, pos.y, pos.floor)\n                        .and_then(|tile| {\n                            tile.ids()\n                                .iter()\n                                .zip(tile.depths())\n                                .filter(|(_, depth)| **depth == 0)\n                                .nth(usize::from(ordinal))\n                        })\n                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))\n                        .is_some_and(|facts| facts.appearance_id == appearance)\n                })))\n}"
+  },
+  "modified_consumed_paths": []
+}

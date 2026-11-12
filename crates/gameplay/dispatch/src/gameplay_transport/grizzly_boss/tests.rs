@@ -22,15 +22,11 @@ fn grizzly_room_catalogue_requires_map_evidence_and_preserves_source_entry_spawn
             assert!(!room.contains(different_floor));
             admitted += 1;
         } else {
-            // Q2 refuses the three source coordinates whose map Item facts are unknown.
-            assert!(
-                [2, 6, 16].contains(&boss.id),
-                "unexpected omitted room {}",
-                boss.name
-            );
+            return Err(format!("missing source-qualified room {}", boss.id).into());
         }
     }
-    assert_eq!(admitted, 27);
+    // W15c admits the debris and ground 9290; rooms 2, 6 and 16 now have map evidence.
+    assert_eq!(admitted, 30);
     Ok(())
 }
 

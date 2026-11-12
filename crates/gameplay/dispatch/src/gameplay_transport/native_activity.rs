@@ -50,6 +50,7 @@ pub(super) struct NativeActivityAttempt<'a> {
     destination: RegisteredRuntime<'a>,
     request: ActivityEnterRequest,
     boss_room: bool,
+    soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     sources: Vec<AdmittedSession>,
     physical: ActivityTransferReservation,
     spells: PreparedActivitySpellStates,
@@ -223,6 +224,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 },
             };
             let payload = encode_activity_scope(&ActivityScopeSnapshot {
+                requires_ack: [source, destination]
+                    .iter()
+                    .filter_map(|session| session.item_fence)
+                    .filter_map(|fence| {
+                        self.activity_runtimes
+                            .get(fence.runtime_scope, fence.scope_ownership_generation.get())
+                    })
+                    .any(|owner| {
+                        owner.template.as_ref().is_some_and(|template| {
+                            template.key == crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY
+                        })
+                    }),
                 handoff: commit.handoff_id,
                 source_session: *source.game_session_id.as_bytes(),
                 session: *destination.game_session_id.as_bytes(),
@@ -288,13 +301,73 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         self.finish_native_activity(pending).await.map(Some)
     }
 
+    pub(super) async fn retry_native_soulpit(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        intent: &[u8],
+    ) -> Result<Option<NativeActivityOutcome>, ()> {
+        let key = ActivityAttemptKey {
+            session: admitted.game_session_id,
+            connection_generation: admitted.continuity.connection_generation,
+            command,
+        };
+        let pending = self
+            .activity_runtimes
+            .attempts
+            .lock()
+            .map_err(|_| ())?
+            .get(&key)
+            .cloned();
+        let Some(pending) = pending else {
+            return Ok(None);
+        };
+        {
+            let attempt = pending.lock().await;
+            if attempt
+                .soulpit
+                .as_ref()
+                .is_none_or(|entry| entry.intent != intent)
+            {
+                return Ok(Some(NativeActivityOutcome::Refused(
+                    ActivityRefusal::ReplayConflict,
+                )));
+            }
+        }
+        self.retry_native_activity(
+            admitted,
+            command,
+            crate::durability::soulpit::SOULPIT_ACTIVITY_KEY,
+        )
+        .await
+    }
+
     /// Server-side callers supply authored cells and a preallocated scope. Every
     /// source fence, position, lease, pin and live participant is checked again
     /// under both native owners before the durable writer sees the request.
     pub(super) async fn enter_native_activity(
         &self,
+        request: ActivityEnterRequest,
+        boss_room: bool,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, boss_room, None)
+            .await
+    }
+
+    pub(super) async fn enter_native_soulpit(
+        &self,
+        request: ActivityEnterRequest,
+        soulpit: crate::durability::soulpit::SoulpitEntryRequest,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, false, Some(soulpit))
+            .await
+    }
+
+    async fn enter_native_activity_inner(
+        &self,
         mut request: ActivityEnterRequest,
         boss_room: bool,
+        soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
         if request.command_id == 0
@@ -346,6 +419,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let attempt = pending.lock().await;
             if attempt.request.activity_key != request.activity_key
                 || attempt.boss_room != boss_room
+                || attempt.soulpit != soulpit
             {
                 return refuse(ActivityRefusal::ReplayConflict);
             }
@@ -385,14 +459,23 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::ContentChanged);
         }
+        let origin_pin = {
+            let runtime = source.runtime.lock().await;
+            ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
         let boss_definition = if boss_room {
             let owner = ActivityHandoffOwner::new(self.root.clone());
             let Some(definition) = owner
-                .read_boss_room(
+                .read_boss_room_with_pin(
                     self.character,
                     self.holder,
                     initiator.source,
                     &request.activity_key,
+                    origin_pin,
                 )
                 .await
                 .map_err(|_| ())?
@@ -531,6 +614,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 || source.states.newhaven_travel.held(admitted.game_session_id)
                 || source
                     .states
+                    .dawnport_departures
+                    .held(admitted.game_session_id)
+                || source
+                    .states
                     .dawnport_trials
                     .lock()
                     .map_err(|_| ())?
@@ -592,8 +679,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 floor: participant.destination_cell.floor,
             };
             if !super::respawn_cell_admissible(
-                destination_view.movement_cells.index(),
-                destination_view.movement_cells.scope(),
+                destination_view.movement_cells().index(),
+                destination_view.movement_cells().scope(),
                 destination.scope.world_id(),
                 actual_pin.server_artifact_digest,
                 doors.blocking_cells(),
@@ -671,6 +758,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 destination: destination.clone(),
                 request,
                 boss_room,
+                soulpit,
                 sources,
                 physical,
                 spells: held,
@@ -765,7 +853,27 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 );
             }
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if attempt.boss_room {
+            let result = if let Some(entry) = &attempt.soulpit {
+                let native = self
+                    .active_generation
+                    .and_then(crate::content::ActiveGeneration::native_gameplay)
+                    .ok_or(())?;
+                let source_permit = if source_first {
+                    &_first_lane
+                } else {
+                    &_second_lane
+                };
+                owner
+                    .enter_soulpit(
+                        self.character,
+                        self.holder,
+                        source_permit,
+                        attempt.request.clone(),
+                        entry,
+                        native,
+                    )
+                    .await
+            } else if attempt.boss_room {
                 owner
                     .enter_boss_room(self.character, self.holder, attempt.request.clone())
                     .await

@@ -1,0 +1,14 @@
+{
+  "module": "social",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "account_achievement_integrity_fault",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

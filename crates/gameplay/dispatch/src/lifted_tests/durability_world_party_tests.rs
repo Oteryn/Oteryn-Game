@@ -510,7 +510,26 @@ mod fresh_source {
                 key_id: key_id.into(),
                 public_key: self.key.verifying_key().to_bytes(),
                 trusted: true,
-                provenance: provenance(FreshEvidencePurposeV1::SigningTrust, self.now),
+                provenance: self
+                    .rows
+                    .iter()
+                    .find_map(|row| {
+                        matches!(row.key, AdmissionAuthorityGuardKeyV1::SigningTrust { .. }).then(
+                            || FreshEvidenceProvenanceV1 {
+                                source_authority: row.source.authority.clone(),
+                                purpose: FreshEvidencePurposeV1::SigningTrust,
+                                scope: Fnd04EvidenceScope::FreshAdmission,
+                                source_revision: row.source.source_revision,
+                                accepted_source_revision: row.source.source_revision,
+                                decision_identity: row.source.decision_identity.clone(),
+                                accepted_decision_identity: row.source.decision_identity.clone(),
+                                source_observed_at: row.source.source_observed_at,
+                                clock_uncertainty_seconds: row.source.clock_uncertainty_seconds,
+                                publication_revision: row.publication_revision,
+                            },
+                        )
+                    })
+                    .unwrap_or_else(|| provenance(FreshEvidencePurposeV1::SigningTrust, self.now)),
             })
         }
         fn account_security(
@@ -824,8 +843,32 @@ mod fresh_source {
     }
 }
 
+/// Borrow the same independently published owners in another native PG fixture.
+pub(crate) struct FreshPlayerOwners<'a> {
+    pub root: crate::durability::DurabilityRoot,
+    pub node: crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    pub recovery: &'a crate::character_recovery_fence::CharacterRecoveryStore,
+}
 async fn bootstrap_party_character(
     h: &Harness,
+    character: u8,
+    account: u8,
+    now: i64,
+) -> TestResult<crate::domain::CharacterId> {
+    bootstrap_owned_character(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        character,
+        account,
+        now,
+    )
+    .await
+}
+async fn bootstrap_owned_character(
+    h: &FreshPlayerOwners<'_>,
     character: u8,
     account: u8,
     now: i64,
@@ -932,11 +975,49 @@ pub(crate) async fn committed_fresh_player(
 ) -> TestResult<
     crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
 > {
+    committed_fresh_player_owned(
+        &FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
+        character,
+        account,
+        session,
+        now,
+    )
+    .await
+}
+pub(crate) async fn committed_fresh_player_owned(
+    h: &FreshPlayerOwners<'_>,
+    character: u8,
+    account: u8,
+    session: u8,
+    now: i64,
+) -> TestResult<
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+> {
+    committed_fresh_player_with_operation(h, character, account, session, now)
+        .await
+        .map(|(current, _)| current)
+}
+
+/// Preserve the actual committed operation for ordinary equipment admission.
+pub(crate) async fn committed_fresh_player_with_operation(
+    h: &FreshPlayerOwners<'_>,
+    character: u8,
+    account: u8,
+    session: u8,
+    now: i64,
+) -> TestResult<(
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+    crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
     use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
-    let character_id = bootstrap_party_character(h, character, account, now).await?;
+    let character_id = bootstrap_owned_character(h, character, account, now).await?;
     let mut source = fresh_source::Source::new(now, *character_id.as_bytes(), account, session)?;
     let guards = AdmissionGuardStore::from_root(h.root.clone());
     // Keep independently committed runtime/signing publications exactly as actually read.
@@ -949,6 +1030,20 @@ pub(crate) async fn committed_fresh_player(
         if let Some(row) = row {
             source.rows[index + 2] = row;
         }
+    }
+    // Bind the independently read runtime publication, including its actual policy.
+    if let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Runtime {
+        ownership_generation, route_revision, runtime_observation_revision, ruleset_revision,
+        content_revision, map_revision, world_policy_revision, offer_revision, ..
+    } = &source.rows[2].state {
+        source.current.scope_ownership_generation = *ownership_generation;
+        source.current.route_revision = route_revision.clone();
+        source.current.runtime_observation_revision = runtime_observation_revision.clone();
+        source.current.ruleset_revision = ruleset_revision.clone();
+        source.current.content_revision = content_revision.clone();
+        source.current.map_revision = map_revision.clone();
+        source.current.world_policy_revision = world_policy_revision.clone();
+        source.current.offer_revision = offer_revision.clone();
     }
     let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
     guards.publish(&publication).await.map_err(debug)?;
@@ -970,7 +1065,7 @@ pub(crate) async fn committed_fresh_player(
     );
     assert_eq!(current.current_connection_generation().get(), 1);
     assert_eq!(current.current_character_lease().generation(), 2);
-    Ok(current)
+    Ok((current, request.operation().clone()))
 }
 
 /// D88 initialization and A13 vocation choice use the actual Character writers. The

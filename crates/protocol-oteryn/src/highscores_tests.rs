@@ -25,6 +25,8 @@ fn row() -> HighscoreRow {
 
 fn page() -> HighscoresResult {
     HighscoresResult {
+        world: None,
+        own_page: None,
         category: 1,
         snapshot_id: 300,
         computed_at: 1700,
@@ -48,6 +50,8 @@ fn query_golden_vectors_and_semantic_defaults() {
         (
             FIRST_QUERY,
             HighscoresQuery {
+                world: None,
+                details: false,
                 category: 1,
                 vocation: 0,
                 page: 1,
@@ -57,6 +61,8 @@ fn query_golden_vectors_and_semantic_defaults() {
         (
             NEXT_QUERY,
             HighscoresQuery {
+                world: None,
+                details: false,
                 category: 10,
                 vocation: 5,
                 page: 2,
@@ -158,6 +164,8 @@ fn query_integer_ranges_do_not_narrow_opaque_tokens_or_unsupported_categories() 
         for vocation in 0..=5 {
             for (page, snapshot_id) in [(1, 0), (1, 1), (2, 300), (u32::MAX, u64::MAX)] {
                 let query = HighscoresQuery {
+                    world: None,
+                    details: false,
                     category,
                     vocation,
                     page,
@@ -470,6 +478,8 @@ fn all_declared_field_bounds_fit_the_fnd02_parent() {
         value: u64::MAX,
     };
     let result = HighscoresResult {
+        world: None,
+        own_page: None,
         category: u32::MAX,
         snapshot_id: u64::MAX,
         computed_at: i64::MAX,
@@ -594,3 +604,25 @@ fn the_registries_bind_the_highscores_constants() {
 #[cfg(test)]
 #[path = "highscores_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn drome_allocated_categories_preserve_native_query_and_ranked_result_grammar() {
+    for category in [14, 17] {
+        let query = decode_highscores_query(&[0x08, category, 0x18, 1])
+            .expect("independent Drome query wire fixture");
+        assert_eq!(query.category, u32::from(category));
+        assert_eq!(
+            encode_highscores_query(query).expect("Drome query"),
+            [0x08, category, 0x18, 1]
+        );
+        let mut result = page();
+        result.category = u32::from(category);
+        result.rows = vec![row()];
+        result.own_row = Some(row());
+        let encoded = encode_highscores_result(&result).expect("Drome ranked result");
+        assert_eq!(
+            decode_highscores_result(&encoded).expect("Drome result decode"),
+            result
+        );
+    }
+}

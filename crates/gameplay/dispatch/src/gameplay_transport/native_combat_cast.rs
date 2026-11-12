@@ -2340,7 +2340,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(native) = active.native_gameplay() else {
             return rejected();
         };
-        let Some(_room) = self.rooms.gate_native_combat_cast() else {
+        let Some(_room) = self.rooms().gate_native_combat_cast() else {
             return rejected();
         };
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -2502,6 +2502,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
             attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.settle_invisible_target(&runtime, &states, actor, session, self.owner_now());
             let state = attack.combat_state(actor, session, self.owner_now());
             (
                 legacy.as_ref().and_then(|r| r.creature).or(state.target),
@@ -2523,7 +2524,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.rooms.gate_native_combat_cast().ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms().gate_native_combat_cast().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.spell).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
@@ -2640,11 +2641,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;
-                        prepared.equipment=rune_item_cast::equipment_successor(&prepared.equipment,reserved.consumption())
-                            .map_err(|_|DurabilityError::Unavailable)?;
+                        if !runtime.is_tibiadrome(actor) {
+                            prepared.equipment=rune_item_cast::equipment_successor(&prepared.equipment,reserved.consumption())
+                                .map_err(|_|DurabilityError::Unavailable)?;
+                        }
                     }
                     let mut request=source_cost_request(&prepared,spell).map_err(|_|DurabilityError::Unavailable)?;
-                    if let Some(reserved)=rune_reservation {
+                    if let Some(reserved)=rune_reservation && !runtime.is_tibiadrome(actor) {
                         request.operations.push(crate::durability::spell_items_abi::SpellItemOperation::ConsumeInventory(
                             reserved.consumption().clone()));
                     }
@@ -2702,7 +2705,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 }else{true};
                 let rune_current=if let (Some(_), Some(rune))=(attempt.legacy.as_ref(), attempt.rune.as_ref()) {
                     match rune_item_cast::reserve(&mut tx,&authority,runtime,room,content,spell,rune).await {
-                        Ok(reservation)=>attempt.request.operations.iter().any(|operation|
+                        Ok(reservation)=>runtime.is_tibiadrome(actor) || attempt.request.operations.iter().any(|operation|
                             matches!(operation,crate::durability::spell_items_abi::SpellItemOperation::ConsumeInventory(source)
                                 if source==reservation.consumption())),
                         Err(_)=>false,
@@ -2714,7 +2717,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     pvp_modes,attempt.request.operations.iter().any(|operation|matches!(operation,
                         crate::durability::spell_items_abi::SpellItemOperation::MintGround{definition,..}
                         if definition.field_class!=crate::durability::spell_items_abi::SpellFieldClass::NotField))).await.is_ok();
-                (if pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
+                let drome_items_current=attempt.request.operations.is_empty()
+                    || owner.drome_item_changes_allowed(runtime,actor,attempt.prepared.tile_facts.keys().copied());
+                (if drome_items_current && pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())
                 } else { Err(Error::SnapshotChanged) }).map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))
@@ -2884,6 +2889,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
             attack.record_committed_shared_experience_batch(&runtime,content,

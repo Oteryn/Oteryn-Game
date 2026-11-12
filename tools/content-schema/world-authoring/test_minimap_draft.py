@@ -340,6 +340,7 @@ class BuildAndValidateTest(unittest.TestCase):
         self.addCleanup(patcher.stop)
         return convert.build(
             {
+                **fixtures.QUEST_ACCESS_INPUT,
                 convert.OTBM: self.otbm(self.base_tiles()),
                 convert.ITEMS_XML: ITEMS_XML,
                 **(self.blobs if blobs is None else blobs),

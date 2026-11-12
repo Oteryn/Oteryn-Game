@@ -162,6 +162,9 @@ pub(super) async fn apply(
         return rejected();
     };
     let service = match &pending.service {
+        PremiumNpcService::PhoenixPreparation => PurchaseService::Blessing(
+            crate::content::npc_catalogue::premium_services::PHOENIX_PREPARATION.into(),
+        ),
         PremiumNpcService::Henricus => {
             PurchaseService::Blessing("oteryn:service.blessing.henricus".into())
         }
@@ -232,7 +235,7 @@ pub(super) async fn apply(
                 {
                     "You must complete The Inquisition Quest first."
                 }
-                PurchaseRefusal::NotEligible => "You cannot be promoted yet.",
+                PurchaseRefusal::NotEligible => "You are not eligible for this service yet.",
                 PurchaseRefusal::AlreadyHeld
                     if service.key() == "oteryn:service.blessing.henricus" =>
                 {
@@ -260,7 +263,12 @@ pub(super) async fn apply(
 }
 
 fn completion(intent: &NpcTalkIntent, receipt: &PurchaseReceipt) -> NpcTalkOutcome {
+    let preparation = receipt.service.key()
+        == crate::content::npc_catalogue::premium_services::PHOENIX_PREPARATION;
     let line = match receipt.service {
+        PurchaseService::Blessing(_) if preparation => {
+            "You are prepared. Ask Pydar for the Spark of the Phoenix."
+        }
         PurchaseService::Promotion(_) => "You are now promoted.",
         PurchaseService::Blessing(ref key) if key == "oteryn:service.blessing.henricus" => {
             "You have received the blessings of the Inquisition."
@@ -268,7 +276,7 @@ fn completion(intent: &NpcTalkIntent, receipt: &PurchaseReceipt) -> NpcTalkOutco
         PurchaseService::Blessing(_) => "You have received the blessing.",
     };
     NpcTalkOutcome {
-        inventory_changed: true,
+        inventory_changed: !preparation,
         ..NpcConversations::bank_reply(intent, line.into())
     }
 }
@@ -312,13 +320,34 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     actor: ExactActorRef,
     command: UseCommand,
 ) -> Option<NpcTalkOutcome> {
+    if let Some(outcome) = super::marriage::replay(admission, command, None).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::seasonal::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::cake::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::grizzly::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::catalogue::resume(admission, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::quest_dialogue::resume(admission, command).await {
         return Some(outcome);
     }
     if let Some(outcome) = super::endgame::resume(admission, command).await {
         return Some(outcome);
     }
     if let Some(outcome) = super::monk::resume(admission, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::viola::resume(admission, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::catalogue::resume(admission, command).await {
         return Some(outcome);
     }
     if let Some(outcome) = super::classic_quests::resume(admission, command).await {

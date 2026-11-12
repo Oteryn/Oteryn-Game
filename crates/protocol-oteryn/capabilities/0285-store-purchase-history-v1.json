@@ -1,0 +1,19 @@
+{
+  "id": 285,
+  "name": "STORE_PURCHASE_HISTORY_V1",
+  "constant": "store::CAPABILITY_STORE_PURCHASE_HISTORY_V1",
+  "requires": [
+    154
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    501
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

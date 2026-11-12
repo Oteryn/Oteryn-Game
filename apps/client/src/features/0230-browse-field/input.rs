@@ -12,7 +12,7 @@ impl PlayLink {
                 .is_err()
         {
             mailbox.browse_field.pending = false;
-            mailbox.browse_field.feedback = Some("The session has ended".into());
+            mailbox.browse_field.feedback = Some(tr!("The session has ended").into());
         }
     }
     pub fn browse_field_input(
@@ -31,3 +31,41 @@ impl PlayLink {
         true
     }
 }
+
+impl PlayLink {
+    pub fn browse_field_move(
+        &self,
+        source: oteryn_session::ItemHandle,
+        destination: oteryn_session::ItemMoveDestination,
+    ) {
+        enqueue_move(&self.mailbox, &self.commands, source, destination);
+    }
+}
+pub(in crate::play) fn enqueue_move(
+    mailbox: &crate::play::mailbox::SharedMailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    source: oteryn_session::ItemHandle,
+    destination: oteryn_session::ItemMoveDestination,
+) {
+    let mut m = lock(mailbox);
+    if !m.browse_field.selected || m.browse_field.pending {
+        return;
+    }
+    m.browse_field.pending = true;
+    m.browse_field.feedback = None;
+    if commands
+        .send(PlayCommand::BrowseFieldMove(
+            oteryn_session::ItemMoveIntent {
+                source,
+                destination,
+            },
+        ))
+        .is_err()
+    {
+        m.browse_field.pending = false;
+        m.browse_field.feedback = Some(tr!("The session has ended").into());
+    }
+}
+
+#[path = "up.rs"]
+mod up;

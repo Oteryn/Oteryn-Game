@@ -1,0 +1,297 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "alawars_vault",
+    "elements": 7,
+    "auto": 5,
+    "manual": 2,
+    "statuses": {
+      "CALLBACK_DATA_IMPLEMENTED": 3,
+      "ALREADY_PRESENT_DATA": 2,
+      "LEFT_OUT": 2
+    },
+    "new_callbacks": 3,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/alawars-vault-lever",
+    "oteryn:quest-callback/alawars-vault-entrance",
+    "oteryn:quest-callback/alawars-vault-exit"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Jednorazowa dźwignia i cztery pozycje ścian",
+      "pattern": "P01",
+      "trigger": "uid30008; item2772 @32180/31633/8",
+      "condition": "item.itemid=2772; cztery pozycje wall2129",
+      "effect": "usuń2129 na32186..32189/31626/8 oraz dźwignię; usunięcie nie zmienia getId przechowywanego shared_ptr (C++ witness w NIEZNANE)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/alawars_vault/action-lever.lua:10",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "Pierwsza skrzynia",
+      "pattern": "P05",
+      "trigger": "uid6045;32105/31567/9;item2472",
+      "condition": "useKV; questName AlawarsVault1",
+      "effect": "3026×3; jednorazowy claim wspólnego helpera",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:918",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "ALREADY_PRESENT_DATA",
+      "implementation": [
+        "content/interactions/reward_claims/reward-claims-00000-00099.json"
+      ],
+      "reason": "Canonical claims kv.alawars_vault1 / kv.alawars_vault2 już zawierają odpowiednio 3026×3 i 3301×1. Nie dodano drugiej nagrody ani identity.",
+      "missing_owner_function": "Istniejący RewardClaimMint",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Nie rozszerzono fizycznego placement binding; gotowość definicji nie dowodzi grywalności całej mapy.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/interactions/reward_claims/reward-claims-00000-00099.json"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "Druga skrzynia",
+      "pattern": "P05",
+      "trigger": "uid6046;32109/31567/9;item2472",
+      "condition": "useKV; questName AlawarsVault2",
+      "effect": "3301×1; osobny jednorazowy claim",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:925",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "ALREADY_PRESENT_DATA",
+      "implementation": [
+        "content/interactions/reward_claims/reward-claims-00000-00099.json"
+      ],
+      "reason": "Canonical claims kv.alawars_vault1 / kv.alawars_vault2 już zawierają odpowiednio 3026×3 i 3301×1. Nie dodano drugiej nagrody ani identity.",
+      "missing_owner_function": "Istniejący RewardClaimMint",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Nie rozszerzono fizycznego placement binding; gotowość definicji nie dowodzi grywalności całej mapy.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/interactions/reward_claims/reward-claims-00000-00099.json"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "Skrzynia klucza4502 i komplet zawartości torby",
+      "pattern": "P05",
+      "trigger": "Use uid5008; item2472 @32201/31571/10",
+      "condition": "Storage.Quest.Key.ID4502=4502 <1; backpack obecny i recursive empty slots>=1; freeCapacity/100>=80.00",
+      "effect": "Daj container2853 z dziećmi2970×1 (actionId4502),3031×23,3147×1,3298×4,3384×1; ustaw storage4502=1. Brak konsumpcji klucza; to jednorazowy claim skrzyni.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:435-443",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Istniejący canonical claim ma pełną torbę i child key_number4502, lecz fizyczna skrzynia2472 nie ma mapowegoUID5008. Nie duplikowano nagrody; brak kwalifikowanego physical binding.",
+      "missing_owner_function": "WorldBundle source binding / RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590576487"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:435-443",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:365",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/system/quest_reward_common.lua:232-264",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/system/quest_reward_common.lua:270-307",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/system/quest_reward_common.lua:315-329",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/system/quest_reward_common.lua:375-380",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_key.lua:162-165",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:6507-6511"
+      ],
+      "prepared_data_coverage": "Istniejące canonical source DATA zachowano bez zmian. Obecność deklaracji i source_binding nie oznacza mapowego UID/action ani gotowej rozgrywki.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590576487",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "Drzwi Alawar na klucz4502",
+      "pattern": "P02",
+      "trigger": "Użycie klucza z actionId4502 na drzwiach @32107/31568/9; door actionId4502",
+      "condition": "item.actionid==target.actionid==4502 oraz target.itemid należy do rodziny KeyDoorTable; fizyczny itemId drzwi w startup jest false i wymaga odczytu mapy.",
+      "effect": "Locked door→open; open/closed door→locked według KeyDoorTable; brak zużycia klucza i brak zmiany quest storage. Niezgodny klucz na locked door odmawia.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_key.lua:162-165",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Fizyczne locked door7033 istnieje, lecz nie ma action4502. Istniejący key-door owner wymaga zgodności klucza i action; nie otwarto drzwi bezwarunkowo.",
+      "missing_owner_function": "WorldBundle source action binding / native key-door owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590576487"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_key.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_key.lua:162-165",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:365",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:49-89",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/doors/key_door.lua:55-77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/doors/key_door.lua:80-84"
+      ],
+      "prepared_data_coverage": "Istniejące canonical source DATA zachowano bez zmian. Obecność deklaracji i source_binding nie oznacza mapowego UID/action ani gotowej rozgrywki.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590576487",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Teleport wejściowy Alawar38010",
+      "pattern": "P03",
+      "trigger": "StepIn uid38010; item1949 @32187/31622/8",
+      "condition": "creature jest graczem; istnieje TeleportUnique[38010]; brak guardu storage/poziomu",
+      "effect": "Teleport32107/31567/9; CONST_ME_TELEPORT w miejscu docelowym; bez zmiany storage.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:671-677",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Literalny teleport zapisany w istniejącym StepIn; selektor zawiera dokładną pozycję i appearance1949 z obecnego B3. Brak zmiany wspólnego ownera.",
+      "missing_owner_function": "Istniejący world callback StepIn",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "CONST_ME_TELEPORT w docelowym polu nie ma kwalifikowanej publikacji; sam teleport pozostaje zgodnie z ANSWER6589906637 pkt6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:334",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:671-677",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:97-116",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 7,
+      "step": "Teleport wyjściowy Alawar38011",
+      "pattern": "P03",
+      "trigger": "StepIn uid38011; item1949 @32107/31566/9",
+      "condition": "creature jest graczem; istnieje TeleportUnique[38011]; brak guardu storage/poziomu",
+      "effect": "Teleport32189/31625/4; CONST_ME_TELEPORT w miejscu docelowym; bez zmiany storage.",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:679-684",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Literalny teleport zapisany w istniejącym StepIn; selektor zawiera dokładną pozycję i appearance1949 z obecnego B3. Brak zmiany wspólnego ownera.",
+      "missing_owner_function": "Istniejący world callback StepIn",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "CONST_ME_TELEPORT w docelowym polu nie ma kwalifikowanej publikacji; sam teleport pozostaje zgodnie z ANSWER6589906637 pkt6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:334",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:679-684",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:97-116",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    }
+  ]
+}

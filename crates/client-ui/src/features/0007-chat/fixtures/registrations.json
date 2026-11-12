@@ -2,18 +2,49 @@
   {
     "mechanic": "0007-chat",
     "kind": "handlers",
-    "id": "0007-chat-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0007-chat-console",
+    "status": "supported",
+    "commands": [
+      6117
+    ],
+    "direction": "client_to_server",
+    "capability": 7,
+    "entry": "protocol.rs::console_request",
+    "test": "tests/state.rs::console_metadata_query_is_bounded",
+    "not_applicable": {
+      "settings": "Console controls are local presentation preferences."
+    }
+  },
+  {
+    "mechanic": "0007-chat",
+    "kind": "handlers",
+    "id": "0007-chat-input",
+    "status": "supported",
     "commands": [
       13
     ],
+    "direction": "client_to_server",
+    "capability": 7,
+    "entry": "protocol.rs::request",
+    "test": "tests/state.rs::speech_and_named_private_input_are_validated_and_serialized",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Chat policy is server-owned."
     }
+  },
+  {
+    "mechanic": "0007-chat",
+    "kind": "keybindings",
+    "id": "0007-chat-keybindings",
+    "status": "supported",
+    "entry": "input.rs::open_key",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+C"
+  },
+  {
+    "mechanic": "0007-chat",
+    "kind": "panels",
+    "id": "0007-chat-panels",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

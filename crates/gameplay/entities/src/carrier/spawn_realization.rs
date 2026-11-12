@@ -1,5 +1,8 @@
 use super::*;
 
+mod world_projection;
+pub use world_projection::WorldSpawnProjection;
+
 /// A content-authored spawn source's small stable ordinal within its scope (content input,
 /// §4.8; never decoded from a client handle).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,6 +29,9 @@ pub struct SpawnDefinition {
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SpawnPointDefinition {
+    base_creature: String,
+    enabled: bool,
+    world_change: Option<(String, u64)>,
     /// Oteryn default, not Reference-qualified: standalone area factor (no event composition).
     /// Assigned only by the admitted map owner.
     cyclopedia_improved: bool,
@@ -71,6 +77,9 @@ impl SpawnDefinition {
                     (
                         cell,
                         SpawnPointDefinition {
+                            base_creature: creature_target_identity.clone(),
+                            enabled: true,
+                            world_change: None,
                             cyclopedia_improved: false,
                             respawn_delay_micros,
                             creature_target_identity: creature_target_identity.clone(),
@@ -144,6 +153,9 @@ impl SpawnDefinition {
                     Ok((
                         cell,
                         SpawnPointDefinition {
+                            base_creature: creature.clone(),
+                            enabled: true,
+                            world_change: None,
                             cyclopedia_improved: false,
                             respawn_delay_micros: activation_micros(respawn_delay_ms)?,
                             creature_target_identity: creature,
@@ -672,7 +684,10 @@ impl ChannelRuntimeV1 {
                 source: spawn.source.0,
                 ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
             };
-            if gone && self.spawn_schedule.pending(point).is_none() {
+            if gone
+                && spawn.definition.points[cell].enabled
+                && self.spawn_schedule.pending(point).is_none()
+            {
                 // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
                 // (Crystal `spawn_monster.cpp:443-458`).
                 let mut timing = spawn.definition.timing(cell)?;
@@ -711,6 +726,39 @@ impl ChannelRuntimeV1 {
             .map(|index| &self.carrier.spawns[index])
             .ok_or(CarrierError::UnknownSpawnSource)
     }
+    /// Install a bounded durable World projection before admitting its native deaths.
+    /// The live runtime cannot move backwards or cross into another save epoch.
+    pub fn install_world_change_cycles(
+        &mut self,
+        epoch: u64,
+        cycles: std::collections::BTreeMap<String, u64>,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if cycles.len() > 256
+            || cycles
+                .iter()
+                .any(|(key, generation)| key.len() > 128 || *generation == 0)
+            || self
+                .world_change_cycles
+                .as_ref()
+                .is_some_and(|(old_epoch, old)| {
+                    *old_epoch != epoch
+                        || old.iter().any(|(key, generation)| {
+                            cycles.get(key).is_none_or(|next| next < generation)
+                        })
+                })
+        {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        self.world_change_cycles = Some((epoch, cycles));
+        Ok(())
+    }
+
+    /// Frozen by the existing lethal-turn producer; never reconstructed during replay.
+    pub fn world_change_cycles(&self) -> Option<&(u64, std::collections::BTreeMap<String, u64>)> {
+        self.world_change_cycles.as_ref()
+    }
+
     /// Install only the durable epoch choice; repeated installation never compounds rates.
     pub fn install_daily_boost(
         &mut self,
@@ -1021,6 +1069,7 @@ impl ChannelActorCarrier {
         cell: LocalPosition,
     ) -> bool {
         self.slots.iter().any(|slot| match slot {
+            Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost => false,
             Slot::Occupied {
                 committed: true,
                 position: Some(version),

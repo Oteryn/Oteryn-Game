@@ -76,8 +76,10 @@ impl DurabilityRoot {
                 ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
                 citizenship.filter(|_| progress.is_some_and(|value| value >= 8))
             } else { citizenship };
+            // assert_gameplay_fence already holds the Character root FOR UPDATE.
+            // SELECT FOR UPDATE here would require the direct UPDATE grant we revoke.
             let before: Option<i32> = sqlx::query_scalar(
-                "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid FOR UPDATE"
+                "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid"
             ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let before = before.unwrap_or(default_town);
             let town = citizenship.unwrap_or(before);
@@ -135,10 +137,13 @@ impl DurabilityRoot {
                 }
             }
             let town: i32 = sqlx::query_scalar(
-                "INSERT INTO game_character_home_towns(character_id,town_id) \
-                 VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE \
-                 SET town_id=EXCLUDED.town_id RETURNING town_id"
+                "SELECT game_character_home_town_write(encode($1,'hex')::uuid, \
+                 encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,$6)"
             ).bind(fence.character_id.as_bytes().as_slice())
+                .bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(fence.connection_generation.get().to_string())
+                .bind(fence.character_lease_generation.to_string())
+                .bind(fence.scope_ownership_generation.get().to_string())
                 .bind(town).fetch_one(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(town as u32))

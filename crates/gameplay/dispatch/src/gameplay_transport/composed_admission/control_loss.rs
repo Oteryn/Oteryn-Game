@@ -9,13 +9,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         generation: u64,
     ) {
-        if let Ok(mut lost) = self.states.lost.lock()
-            && lost
-                .get(&session)
-                .is_some_and(|entry| entry.continuity.connection_generation == generation)
-        {
-            lost.remove(&session);
-        }
+        self.states.remove_lost_if(session, |entry| {
+            entry.continuity.connection_generation == generation
+        });
     }
 
     /// CHARM-DESC-FENCE-LEASE step (a): fence the slot's damage writes for `session` under the
@@ -66,7 +62,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         hold: &mut FenceHold,
     ) -> UnendedSettle {
-        let Ok(current) = store.current_session(hold.session).await else {
+        let Ok(current) = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("logout_settle", async || {
+                store.current_session(hold.session).await
+            })
+            .await
+        else {
             return UnendedSettle::Unknown;
         };
         if current.session_state() == GameSessionState::Terminal {
@@ -119,7 +120,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Presence is advisory. Resolve the terminal session's canonical character
                 // even when its peer never selected CHAT and has no local chat entry.
                 let store = FreshAdmissionStore::from_root(self.root.clone());
-                if let Ok(current) = store.current_session(session).await
+                let current = AdmissionRetryBudget::for_command(self.root)
+                    .retry_durability("retire_session", async || {
+                        store.current_session(session).await
+                    })
+                    .await;
+                let current_scope = current.as_ref().ok().map(|s| s.current_runtime_scope());
+                if let Ok(current) = current
                     && current.session_state() == GameSessionState::Terminal
                     && let Ok(target) = oteryn_protocol_oteryn::CharacterId::decode(
                         current.current_character_lease().character_id().as_bytes(),
@@ -128,6 +135,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.vip_presence_publish_target(target, false).await;
                 }
                 self.states.forget_session(session);
+                if AdmissionRetryBudget::for_command(self.root)
+                    .retry_durability("account_closure", async || {
+                        let absent = {
+                            let runtime = self.runtime.lock().await;
+                            current_scope.and_then(|scope| {
+                                runtime
+                                    .prove_player_session_absent_in(session, scope)
+                                    .ok()
+                                    .flatten()
+                            })
+                        }
+                        .ok_or(crate::durability::DurabilityError::CommitRejected)?;
+                        self.root
+                            .acknowledge_account_closure_offline(
+                                self.character,
+                                self.holder,
+                                absent,
+                            )
+                            .await
+                    })
+                    .await
+                    .is_err()
+                {
+                    return GraceExpiryResult::Unknown;
+                }
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -161,6 +193,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> bool {
         self.hold_step_within(actor, session, Duration::MAX).await
+    }
+
+    /// A retried release can be hit before it acquires its transition fence.
+    /// Relinquish its foreground preference only when a combat wait actually
+    /// starts, retaining the existing window on a quick no-fight recheck.
+    pub(in crate::gameplay_transport) async fn hold_while_in_fight_releasing_demand(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        foreground: &mut Option<crate::durability::ForegroundDemand>,
+    ) -> bool {
+        self.hold_step_within_with_demand(actor, session, Duration::MAX, Some(foreground))
+            .await
     }
 
     /// A release serialized with Activity transitions must never wait for a
@@ -225,6 +270,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         limit: Duration,
     ) -> bool {
+        self.hold_step_within_with_demand(actor, session, limit, None)
+            .await
+    }
+
+    async fn hold_step_within_with_demand(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        limit: Duration,
+        foreground: Option<&mut Option<crate::durability::ForegroundDemand>>,
+    ) -> bool {
         let now = self.owner_now();
         let mut step = {
             let states = self.states.spell_states.lock().await;
@@ -240,6 +296,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Recheck before release even when its cached ordinary hit lock has elapsed;
             // a session with no cached lock entry contributed to no PvP harm here.
             if !self.refresh_pvp_locks(actor, session).await {
+                if let Some(demand) = foreground {
+                    drop(demand.take());
+                }
                 tokio::time::sleep(Duration::from_millis(250).min(limit)).await;
                 return true;
             }
@@ -250,6 +309,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(step) = step else {
             return false;
         };
+        if let Some(demand) = foreground {
+            drop(demand.take());
+        }
         tokio::time::sleep(step).await;
         if self.ensure_source_map_initialized().await {
             self.drain_monster_melee().await;

@@ -27,6 +27,7 @@ pub struct Targetable {
     pub glyph: bool,
     /// The server entity drawn there, when it is one a click may attack.
     pub entity: Option<EntityRef>,
+    pub item: Option<crate::play::GroundItem>,
 }
 /// Selects an entity before an object; the last candidate of a kind wins, matching draw order.
 #[must_use]
@@ -181,18 +182,21 @@ mod tests {
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             },
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Entity,
                 glyph: false,
                 entity: None,
+                item: None,
             },
             Targetable {
                 tile: t(2, 2),
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             },
         ];
         assert_eq!(
@@ -228,7 +232,14 @@ mod tests {
     fn primary_click_becomes_a_gameplay_action_at_the_pointer() -> Result<(), InputError> {
         let mut actions = MouseActions::new()?;
         let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
-        assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
+        assert_eq!(
+            clicks,
+            vec![ClickAction {
+                x: 100.0,
+                y: 60.0,
+                secondary: false
+            }]
+        );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
         Ok(())
     }
@@ -274,7 +285,11 @@ mod tests {
         actions.route(&[primary(ButtonState::Released), moved(30, 40)?]);
         assert_eq!(
             actions.route(&[primary(ButtonState::Pressed)]),
-            vec![ClickAction { x: 30.0, y: 40.0 }]
+            vec![ClickAction {
+                x: 30.0,
+                y: 40.0,
+                secondary: false
+            }]
         );
         actions.route(&[
             primary(ButtonState::Released),

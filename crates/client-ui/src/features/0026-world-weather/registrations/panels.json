@@ -1,0 +1,7 @@
+{
+  "mechanic": "0026-world-weather",
+  "kind": "panels",
+  "id": "0026-world-weather-overlay",
+  "status": "supported",
+  "entry": "view.rs::overlay"
+}

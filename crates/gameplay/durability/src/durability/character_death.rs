@@ -42,13 +42,16 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::domain::death::calculate_death_build_family_loss;
 use crate::domain::progression::{
     CurrentProgressionSnapshot, FiniteProgressionPolicy, ProgressionOperation,
-    ProgressionRevisionContext, calculate_progression,
+    ProgressionRevisionContext,
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use oteryn_simulation_determinism::ExactI64;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+
+mod public_cause;
+pub use public_cause::PublicDeathCause;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 const DEATH_BINDING_VERSION: u8 = 1;
@@ -90,6 +93,7 @@ pub struct DeathCell {
 /// durable set when a new death commits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharacterDeathRequest<const N: usize> {
+    pub public_cause: Option<PublicDeathCause>,
     pub occurrence: PlayerDeathOccurrence,
     pub context: ProgressionRevisionContext<String>,
     pub policy_revision: String,
@@ -156,8 +160,10 @@ pub struct ConsumedRespawn {
 
 mod adventurer;
 mod commit;
+pub mod forecast;
 pub mod items;
 pub mod promotion;
+mod protection;
 mod settlement;
 
 /// P20 consumes the admission's exact respawn in the citizenship/position transaction.
@@ -760,6 +766,9 @@ fn command_binding<const N: usize>(
         fence.character_id,
         &request.pvp_contributors,
     )?;
+    if let Some(cause) = request.public_cause {
+        cause.bind(&mut semantic)?;
+    }
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = Vec::with_capacity(33);
     binding.push(DEATH_BINDING_VERSION);
@@ -875,10 +884,12 @@ fn decode_build_state(
 fn decode_death_build(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<Option<CommittedDeathBuildLoss>, DurabilityError> {
-    let vocation: Option<String> = row.try_get("vocation")?;
-    let before = decode_build_state(row, vocation.as_deref(), "_before")?;
-    let after = decode_build_state(row, vocation.as_deref(), "_after")?;
-    let binding: Vec<u8> = row.try_get("command_binding")?;
+    let before = DurableBuildState::stored_array(row, "vocation", "families_before")?;
+    let after = DurableBuildState::stored_array(row, "vocation", "families_after")?;
+    let stored_binding: Vec<u8> = row.try_get("command_binding")?;
+    // Bless wraps the complete original death/build/item binding. Decode that
+    // original header after removing the already validated retained selection.
+    let (_, binding) = promotion::split_charm_loss(&stored_binding)?;
     // C20b appends the selection digest to the original versioned death/build
     // binding. Keep decoding the original header and optional formula digest.
     let binding = if row
@@ -891,7 +902,7 @@ fn decode_death_build(
             .ok_or(DurabilityError::InvalidStoredState)?;
         &binding[..end]
     } else {
-        binding.as_slice()
+        binding
     };
     match (before, after) {
         (None, None) if binding.len() == 33 && binding[0] == DEATH_BINDING_VERSION => Ok(None),
@@ -942,22 +953,13 @@ pub(super) async fn load_death_build(
 }
 
 fn bind_death_build<'q>(
-    mut query: sqlx::query::Query<'q, sqlx::Postgres, sqlx::postgres::PgArguments>,
+    query: sqlx::query::Query<'q, sqlx::Postgres, sqlx::postgres::PgArguments>,
     build: Option<&CommittedDeathBuildLoss>,
 ) -> sqlx::query::Query<'q, sqlx::Postgres, sqlx::postgres::PgArguments> {
-    query = query.bind(build.map(|build| build.before.vocation().to_owned()));
-    for state in [
-        build.map(|build| &build.before),
-        build.map(|build| &build.after),
-    ] {
-        let values = state.map(build_families);
-        for family in 0..8 {
-            query = query
-                .bind(values.map(|values| i32::from(values[family].0)))
-                .bind(values.map(|values| i64::try_from(values[family].1).unwrap_or(i64::MAX)));
-        }
-    }
     query
+        .bind(build.map(|build| build.before.vocation().to_owned()))
+        .bind(build.map(|build| build.before.family_values()))
+        .bind(build.map(|build| build.after.family_values()))
 }
 
 async fn update_death_build(
@@ -1005,7 +1007,7 @@ async fn load_receipt(
                 level_before, level_after, experience_before, experience_after, \
                 experience_lost, blessings_before, blessings_after, death_world_id::text, \
                 death_channel_id::text, death_instance_id::text, death_scope_kind, death_spatial_position, death_map_revision, \
-                amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after \
+                amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, ARRAY[magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before]::bigint[] AS families_before, ARRAY[magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after]::bigint[] AS families_after \
            FROM game_character_death_receipts \
           WHERE death_occurrence_id = encode($1,'hex')::uuid",
     )
@@ -1117,6 +1119,7 @@ mod tests {
     fn request() -> CharacterDeathRequest<2> {
         let context = context();
         CharacterDeathRequest {
+            public_cause: None,
             pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(1)).expect("occurrence"),
             context: context.clone(),
@@ -1169,6 +1172,31 @@ mod tests {
             scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
             expected_character_revision: CharacterRevision::new(2).expect("revision"),
         }
+    }
+
+    #[test]
+    fn public_death_cause_changes_occurrence_binding_without_changing_legacy_none() {
+        let mut death = request();
+        let legacy = command_binding(&fence(), &death).expect("legacy binding");
+        assert_eq!(
+            legacy,
+            command_binding(&fence(), &death.clone()).expect("same binding")
+        );
+        death.public_cause = PublicDeathCause::creature("oteryn:creature.dragon", "Dragon");
+        let creature = command_binding(&fence(), &death).expect("creature binding");
+        assert_ne!(legacy, creature);
+        death.public_cause = Some(PublicDeathCause::Player {
+            character_id: id(90),
+        });
+        assert_ne!(
+            creature,
+            command_binding(&fence(), &death).expect("player binding")
+        );
+        death.public_cause = None;
+        assert_eq!(
+            legacy,
+            command_binding(&fence(), &death).expect("unchanged legacy binding")
+        );
     }
 
     #[test]
@@ -1791,6 +1819,7 @@ mod death_build_postgres {
             death_loss_rounding: RoundingMode::Floor,
         };
         Ok(CharacterDeathRequest {
+            public_cause: None,
             pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
             context,
@@ -2113,6 +2142,190 @@ mod death_build_postgres {
             assert_eq!(replay, CharacterDeathOutcome::AlreadyCommitted(committed));
             assert_eq!(snapshot(h).await?, before);
             Ok(())
+        })
+    }
+
+    fn pubproj_threaded(test: fn() -> TestResult) -> TestResult {
+        std::thread::Builder::new()
+            .name("pubproj-death-postgres".into())
+            .stack_size(64 << 20)
+            .spawn(move || test().map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "public death PostgreSQL worker panicked")?
+            .map_err(Into::into)
+    }
+
+    #[test]
+    fn public_native_creature_death_capture_is_atomic_immutable_and_binding_replayed() -> TestResult
+    {
+        pubproj_threaded(|| {
+            let started = std::time::Instant::now();
+            let result = run("pubproj_native_cause", async |h| {
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let mut death = request(94)?;
+                death.public_cause = PublicDeathCause::creature("oteryn:creature.dragon", "Dragon");
+                // Failure after private killer capture must roll the entire fenced death back.
+                sqlx::query("CREATE FUNCTION pubproj_classification_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'PUBPROJ rollback probe'; END $$").execute(&h.pool).await?;
+                sqlx::query("CREATE TRIGGER pubproj_classification_failure BEFORE INSERT ON game_public_death_classifications FOR EACH ROW EXECUTE FUNCTION pubproj_classification_failure()").execute(&h.pool).await?;
+                assert!(
+                    h.root
+                        .commit_character_death(&authority, &h.node, fence(1)?, death.clone())
+                        .await
+                        .is_err()
+                );
+                assert_eq!(h.root_revision().await?, "1");
+                assert_eq!(h.count("game_character_death_receipts").await?, 0);
+                assert_eq!(h.count("game_public_death_killers").await?, 0);
+                assert_eq!(h.count("game_public_death_classifications").await?, 0);
+                sqlx::query(
+                "DROP TRIGGER pubproj_classification_failure ON game_public_death_classifications",
+            )
+            .execute(&h.pool)
+            .await?;
+                let outcome = h
+                    .root
+                    .commit_character_death(&authority, &h.node, fence(1)?, death.clone())
+                    .await
+                    .map_err(debug)?;
+                assert!(matches!(outcome, CharacterDeathOutcome::Committed(_)));
+                let captured:(String,String,String,bool)=sqlx::query_as("SELECT k.kind,k.creature_key,k.name,c.pvp FROM game_public_death_killers k JOIN game_public_death_classifications c USING(death_occurrence_id)").fetch_one(&h.pool).await?;
+                assert_eq!(
+                    captured,
+                    (
+                        "creature".into(),
+                        "oteryn:creature.dragon".into(),
+                        "Dragon".into(),
+                        false
+                    )
+                );
+                let count: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_public_v2_outbox WHERE family='character_deaths'",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert!(count > 0);
+                let killer_key: String =
+                    sqlx::query_scalar("SELECT killer_key FROM game_public_death_classifications")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(killer_key, "oteryn:creature.dragon");
+
+                assert!(matches!(
+                    h.root
+                        .commit_character_death(&authority, &h.node, fence(1)?, death.clone())
+                        .await
+                        .map_err(debug)?,
+                    CharacterDeathOutcome::AlreadyCommitted(_)
+                ));
+                assert_eq!(h.count("game_public_death_classifications").await?, 1);
+                death.public_cause =
+                    PublicDeathCause::creature("oteryn:creature.dragon_lord", "Dragon");
+                assert!(matches!(
+                    h.root
+                        .commit_character_death(&authority, &h.node, fence(1)?, death)
+                        .await,
+                    Err(CharacterProgressionError::ConflictingOccurrence)
+                ));
+                assert!(
+                    sqlx::query("UPDATE game_public_death_killers SET name='Other'")
+                        .execute(&h.pool)
+                        .await
+                        .is_err()
+                );
+                assert!(
+                    sqlx::query("DELETE FROM game_public_death_classifications")
+                        .execute(&h.pool)
+                        .await
+                        .is_err()
+                );
+                Ok(())
+            });
+            if result.is_ok() && harness::configured_admin().is_some() {
+                eprintln!(
+                    "PUBPROJ_POSTGRES_EXECUTED family=character_deaths test=native_creature_capture elapsed_ms={}",
+                    started.elapsed().as_millis()
+                );
+            }
+            result
+        })
+    }
+
+    #[test]
+    fn public_unclassified_historical_death_is_unavailable_until_hidden() -> TestResult {
+        pubproj_threaded(|| {
+            let started = std::time::Instant::now();
+            let result = run("pubproj_legacy_classification", async |h| {
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                h.root
+                    .commit_character_death(&authority, &h.node, fence(1)?, request(93)?)
+                    .await
+                    .map_err(debug)?;
+
+                let killer_key: String =
+                    sqlx::query_scalar("SELECT killer_key FROM game_public_death_classifications")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(
+                    killer_key, "unknown",
+                    "no actual final source is not the first damage contributor"
+                );
+                // Model genuine pre-installation history: a valid fenced receipt exists,
+                // but no durable classifier/killer evidence ever existed for that death.
+                // Replication is fixture setup only; production guards stay installed.
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("DELETE FROM game_public_death_classifications")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("DELETE FROM game_public_death_killers")
+                    .execute(&mut *tx)
+                    .await?;
+                tx.commit().await?;
+                sqlx::query("SELECT game_public_v2_deaths(encode($1,'hex')::uuid)")
+                    .bind(fence(1)?.character_id.as_bytes().as_slice())
+                    .execute(&h.pool)
+                    .await?;
+                let unknown:bool=sqlx::query_scalar("SELECT payload='null'::jsonb FROM game_public_v2_heads WHERE family='character_deaths' AND subject=encode($1,'hex')::uuid::text").bind(fence(1)?.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert!(
+                    unknown,
+                    "recent unclassified history cannot fabricate a known empty ledger"
+                );
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("UPDATE game_character_roots SET lifecycle=2 WHERE character_id=encode($1,'hex')::uuid").bind(fence(1)?.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                sqlx::query("SELECT game_public_v2_deaths(encode($1,'hex')::uuid)")
+                    .bind(fence(1)?.character_id.as_bytes().as_slice())
+                    .execute(&h.pool)
+                    .await?;
+                let suppressed:bool=sqlx::query_scalar("SELECT payload='[]'::jsonb FROM game_public_v2_heads WHERE family='character_deaths' AND subject=encode($1,'hex')::uuid::text").bind(fence(1)?.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert!(
+                    suppressed,
+                    "privacy suppression remains safe with absent historical classification"
+                );
+                Ok(())
+            });
+            if result.is_ok() && harness::configured_admin().is_some() {
+                eprintln!(
+                    "PUBPROJ_POSTGRES_EXECUTED family=character_deaths test=legacy_unavailable elapsed_ms={}",
+                    started.elapsed().as_millis()
+                );
+            }
+            result
         })
     }
 

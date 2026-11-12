@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33605,
+          "y": 31468,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32456,
+        "y": 32291,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33601,
+          "y": 31468,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32456,
+        "y": 32291,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32456,
+          "y": 32290,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33614,
+        "y": 31494,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32203,
+          "y": 32303,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33614,
+        "y": 31494,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5"
+      ]
+    }
+  ]
+}

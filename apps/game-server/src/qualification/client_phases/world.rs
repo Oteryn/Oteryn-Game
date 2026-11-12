@@ -5,6 +5,22 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+include!("character_core.rs");
+include!("character_release.rs");
+include!("floor_journey.rs");
+include!("full_e2ef7_mount.rs");
+include!("full_e2ef5_mount.rs");
+#[path = "map_journey.rs"]
+mod map_journey;
+include!("native_content.rs");
+#[path = "full_e2ef1.rs"]
+mod provisioning;
+include!("quest_journal.rs");
+#[path = "starter_inventory.rs"]
+mod starter_inventory;
+#[path = "verdict.rs"]
+pub(crate) mod verdict;
+
 pub(crate) const TOWN: TilePos = TilePos {
     x: 32369,
     y: 32238,
@@ -17,7 +33,6 @@ pub(crate) fn load_world(
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<BundleWorld> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -42,10 +57,10 @@ pub(crate) fn load_world(
             start: TOWN,
         },
     )?;
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
-    let room = crate::content::qualify_selected_native_gameplay_room(world, &input)?;
+    let input = native_input()?;
+    // Prewarm before the world pass admits its first client.
+    native_spell_book()?;
+    let room = crate::content::qualify_selected_native_gameplay_room(world, input)?;
     let issuance = crate::content::NativeEntryActivationIssuance {
         world_id: world,
         activation_sequence: 1,
@@ -59,7 +74,7 @@ pub(crate) fn load_world(
         &crate::content::NodeBootQuiescence::before_channel_runtime(),
         world,
         &issuance,
-        &input,
+        input,
     )?;
     let native = controller
         .active()
@@ -142,6 +157,10 @@ fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> 
         StepDirection::East => CardinalStep::East,
         StepDirection::South => CardinalStep::South,
         StepDirection::West => CardinalStep::West,
+        StepDirection::NorthEast => CardinalStep::NorthEast,
+        StepDirection::SouthEast => CardinalStep::SouthEast,
+        StepDirection::SouthWest => CardinalStep::SouthWest,
+        StepDirection::NorthWest => CardinalStep::NorthWest,
     };
     let position = |(x, y, z): (i32, i32, i32)| {
         Some(TilePos {
@@ -191,6 +210,15 @@ fn near_locker(world: &BundleWorld, at: TilePos) -> bool {
     })
 }
 
+fn town_route_retry_delay(
+    disposition: StepDisposition,
+    stationary: bool,
+    attempt: u8,
+) -> Option<Duration> {
+    (disposition == StepDisposition::Rejected && stationary && attempt <= 5)
+        .then_some(Duration::from_millis(500))
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -198,10 +226,37 @@ async fn walk(
 ) -> TestResult {
     for &direction in path {
         let before = client.world_spatial().actor_position;
-        let outcome = client.step_retrying(direction).await?;
-        if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
-            return Err(format!("town route step {direction:?}: {outcome:?}").into());
+        let mut outcome = client.step_retrying(direction).await?;
+        for attempt in 1..=6 {
+            if outcome.disposition != StepDisposition::Rejected
+                || client.world_spatial().actor_position != before
+            {
+                break;
+            }
+            evidence(&format!(
+                "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
+                destination(world, tile(before)?, direction),
+                client.world_spatial().actor_position,
+            ));
+            let Some(delay) = town_route_retry_delay(
+                outcome.disposition,
+                client.world_spatial().actor_position == before,
+                attempt,
+            ) else {
+                break;
+            };
+            tokio::time::sleep(delay).await;
+            outcome = client.step_retrying(direction).await?;
         }
+        if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
+            return Err(format!(
+                "town route step {direction:?} from={before:?} expected={:?} actual={:?}: {outcome:?}",
+                destination(world, tile(before)?, direction),
+                client.world_spatial().actor_position,
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
         let after = client.world_spatial().actor_position;
         if Some(tile(after)?) != destination(world, tile(before)?, direction) {
             return Err(format!(
@@ -214,13 +269,47 @@ async fn walk(
     Ok(())
 }
 
-pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResult {
+pub(super) async fn logout_retrying_busy(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<(
+    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+    String,
+    usize,
+    bool,
+)> {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        let outcome = client
+            .session_mut()
+            .logout()
+            .await
+            .map_err(|error| format!("logout attempt {attempts} failed: {error}"))?;
+        if outcome.result != Some(LogoutResult::Busy) {
+            return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
+        }
+        client.service_liveness(Duration::from_millis(250)).await
+            .map_err(|error| format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"))?;
+    }
+}
+
+pub(super) async fn journeys(
+    clients: &SeamClients<'_>,
+    packet_clients: &SeamClients<'_>,
+    path: &Path,
+) -> TestResult {
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
-        bytes,
+        bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
@@ -229,6 +318,54 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
     ));
+    let groups = verdict::Groups::from_env()?;
+    // The required core keeps its ordinary pair; packet journeys own a separate pair.
+    let mut client = connect_world(clients, 0x70).await?;
+    let entered_at = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "world_fixture role=core phase=first_entry position={entered_at:?}"
+    ));
+    if entered_at != TOWN {
+        return Err(format!(
+            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+        )
+        .into());
+    }
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    }
+    drop(client);
+    {
+        let clients = packet_clients;
+        include!("full_e2ef6_mount.rs");
+        if groups.runs("f5") {
+            full_e2ef5::run(clients, &world).await;
+        }
+        for index in 0..clients.accounts.len() {
+            wait_character_released(clients, index).await?;
+        }
+        if groups.runs("f4") {
+            include!("full_e2ef4_mount.rs");
+        }
+        // F4 can drop its socket; require terminal release before the core starts.
+        for index in 0..clients.accounts.len() {
+            wait_character_released(clients, index).await?;
+        }
+        evidence(&format!(
+            "world_fixture role=packets phase=terminal_release accounts={}",
+            clients.accounts.len()
+        ));
+    }
+    // The core/profile pair has not inherited packet movement, loot or death.
+    if !groups.runs("core") {
+        evidence("e2e_groups core=skipped");
+        return Ok(());
+    }
+    let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
+    if let Err(error) = &profile_result {
+        evidence(&format!("world_profile state=failed error={error}"));
+    }
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
         if !client.selected_capabilities().contains(&capability) {
@@ -236,9 +373,6 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
                 format!("qualified World did not offer journey capability {capability}").into(),
             );
         }
-    }
-    if tile(client.world_spatial().actor_position)? != TOWN {
-        return Err("Platform-created character did not enter the configured town".into());
     }
     let snapshot = client
         .session_mut()
@@ -249,6 +383,18 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
+    // Resume from the profile journey's saved cell and travel normally to town.
+    let from = tile(client.world_spatial().actor_position)?;
+    evidence(&format!(
+        "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
+    ));
+    let back = route(&world, from, |at| at == TOWN).ok_or_else(|| {
+        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
+    })?;
+    walk(&mut client, &world, &back).await?;
+    client = character_core(client, clients, &world).await?;
+    client = include!("full_e2ef3_registration.rs");
+    client = floor_journey(client, clients, &world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
@@ -301,13 +447,12 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     let old_session = client.join_snapshot().game_session_id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        if client.session_mut().logout().await?.result
-            == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-        {
+        let logout = client.session_mut().logout().await?;
+        if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("death relog logout was not accepted".into());
+            return Err(format!("death relog logout was not accepted: {logout:?}").into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
@@ -328,7 +473,84 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
 
     drop(client);
-    Ok(())
+    profile_result
+}
+
+async fn profile_journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    bytes: &[u8],
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    // Catalogue classification takes several seconds in a debug build. Prepare it
+    // before admission so the peer can keep acknowledging probes during the journey.
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let model = map_journey::MapModel::load(world, bytes, &root)?;
+    let client = connect_character(clients, 0x6e, 0).await?;
+    let mut client = provisioning::provision(client, clients, 0).await?;
+    let pz = if world
+        .base()
+        .tile(TOWN.x, TOWN.y, TOWN.floor)
+        .is_some_and(|tile| tile.protection_zone())
+    {
+        client_spell_journey::protection_zone_probe(&mut client, true).await
+    } else {
+        Err("configured town start is not a bundle PZ".into())
+    };
+    let outside: TestResult = async {
+        let path = route(world, TOWN, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+        })
+        .ok_or("no reachable outside-PZ comparison tile")?;
+        walk(&mut client, world, &path).await?;
+        client_spell_journey::protection_zone_probe(&mut client, false).await
+    }
+    .await;
+    let pz = pz.and(outside);
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("PZ comparison has no return route")?;
+    walk(&mut client, world, &back).await?;
+    let map = map_journey::run(&mut client, world, &model).await;
+    let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
+        Ok(()) => client_combat_journey::combat_journey(&mut client).await,
+        Err(error) => Err(error),
+    };
+    let spells = client_spell_journey::spell_journey(&mut client, pz).await;
+    // Combat may still hold the logout/PZ lock. Settle it outside the temple
+    // before restoring the peer that main's trade/party phases use.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let logout = client.session_mut().logout().await?;
+        if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("profile combat lock did not settle before logout: {logout:?}").into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    drop(client);
+    client = connect_character(clients, 0x6f, 0).await?;
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == TOWN
+    })
+    .ok_or("profile journey has no return route")?;
+    walk(&mut client, world, &back).await?;
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("profile journey logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    }
+    map?;
+    combat?;
+    spells
 }
 
 async fn connect_world(
@@ -338,12 +560,32 @@ async fn connect_world(
     connect_character(clients, tag, 1).await
 }
 
+fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT_CONNECTION: AtomicU64 = AtomicU64::new(1);
+    let sequence = NEXT_CONNECTION
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+            value.checked_add(1)
+        })
+        .map_err(|_| "qualification connection counter exhausted")?;
+    let mut nonce = [tag; 32];
+    nonce[24..].copy_from_slice(&sequence.to_be_bytes());
+    let mut attempt = v7(tag, 0x05);
+    attempt[8..].copy_from_slice(&sequence.to_be_bytes());
+    // Preserve all 64 counter bits around the UUIDv7 version and RFC variant.
+    attempt[6] |= (sequence >> 62) as u8;
+    attempt[8] = (attempt[8] & 0x3f) | 0x80;
+    Ok((nonce, attempt))
+}
+
 pub(super) async fn connect_character(
     clients: &SeamClients<'_>,
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    wait_character_released(clients, index).await?;
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+    let (nonce, attempt) = fresh_grant_material(tag)?;
     let grant = Grant {
         signing: clients.signing,
         key_id: clients.key_id,
@@ -353,23 +595,23 @@ pub(super) async fn connect_character(
         channel_id: clients.channel,
         security_generation: generation,
         scope_generation: clients.scope_generation,
-        nonce: [tag; 32],
-        attempt: v7(tag, 0x05),
+        nonce,
+        attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
-    Ok(
-        oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-            address: clients.address,
-            server_name: "localhost",
-            root_certificate: clients.certificate,
-            schema_revision: 1,
-            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-            admission_material: token.as_bytes(),
-            client_build_id: "oteryn-dev-client/world-qualification",
-            deadline: Duration::from_secs(20),
-        })
-        .await?,
-    )
+    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: clients.address,
+        server_name: "localhost",
+        root_certificate: clients.certificate,
+        schema_revision: 1,
+        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+        admission_material: token.as_bytes(),
+        client_build_id: "oteryn-dev-client/world-qualification",
+        deadline: Duration::from_secs(20),
+    })
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
 }
 
 async fn travel_to_spawn(
@@ -482,6 +724,17 @@ pub(crate) fn smoke() -> TestResult {
         route(&world, TOWN, |at| near_locker(&world, at)).is_some(),
         "town depot must be reachable"
     );
+    let floor_path = route(&world, TOWN, |at| at.floor != TOWN.floor)
+        .ok_or("town floor-change route must be reachable")?;
+    let mut landing = TOWN;
+    for direction in floor_path {
+        landing = destination(&world, landing, direction).ok_or("floor route landing")?;
+    }
+    assert_ne!(landing.floor, TOWN.floor);
+    assert!(
+        route(&world, landing, |at| at == TOWN).is_some(),
+        "town floor-change route must have a return path"
+    );
     let rats: Vec<_> = project
         .families
         .spawns
@@ -552,4 +805,81 @@ async fn shop_journey(
         return Ok(());
     };
     client_npc_shop::transact(client, target.entity, clients).await
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_nbtown_checks_first_entry_before_mutating_packets() -> TestResult {
+    let source = include_str!("world.rs");
+    let (_, journey) = source
+        .split_once("pub(super) async fn journeys(")
+        .ok_or("missing world journey")?;
+    let (journey, _) = journey
+        .split_once("async fn profile_journey(")
+        .ok_or("missing profile journey boundary")?;
+    let entry_check = journey
+        .find("if entered_at != TOWN {")
+        .ok_or("missing strict Platform-created town assertion")?;
+    for packet in [
+        "include!(\"full_e2ef6_mount.rs\")",
+        "full_e2ef5::run(clients",
+        "include!(\"full_e2ef4_mount.rs\")",
+        "profile_journey(clients",
+    ] {
+        let packet_start = journey.find(packet).ok_or("missing mutating packet")?;
+        assert!(
+            entry_check < packet_start,
+            "town entry checked after {packet}"
+        );
+    }
+    let mount = include_str!("full_e2ef6_mount.rs");
+    let starter = mount
+        .find("full_e2ef6::run_starter(clients)")
+        .ok_or("missing pristine starter row")?;
+    let packet = mount
+        .find("full_e2ef7::run_packet(clients,")
+        .ok_or("missing F7 packet")?;
+    let remaining = mount
+        .find("full_e2ef6::run(clients")
+        .ok_or("missing remaining F6 rows")?;
+    assert!(starter < packet && packet < remaining);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_nbfix_fresh_grants_for_reconnects_and_colliding_tags() -> TestResult {
+    let mut nonces = std::collections::BTreeSet::new();
+    let mut attempts = std::collections::BTreeSet::new();
+    for tag in [0xe0, 0xa1, 0xa0, 0xe0, 0xa1, 0xa0] {
+        let (nonce, attempt) = fresh_grant_material(tag)?;
+        assert!(nonces.insert(nonce), "reused grant nonce for tag {tag}");
+        assert!(attempts.insert(attempt), "reused attempt for tag {tag}");
+        assert_eq!(nonce[0], tag);
+        assert_eq!(attempt[7], tag);
+        assert_eq!(attempt[6] >> 4, 7);
+        assert_eq!(attempt[8] >> 6, 2);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
+    for attempt in 1..=6 {
+        assert_eq!(
+            town_route_retry_delay(StepDisposition::Rejected, true, attempt),
+            (attempt <= 5).then_some(Duration::from_millis(500)),
+        );
+        for disposition in [StepDisposition::Moved, StepDisposition::Blocked] {
+            assert_eq!(town_route_retry_delay(disposition, true, attempt), None);
+        }
+        for disposition in [
+            StepDisposition::Moved,
+            StepDisposition::Blocked,
+            StepDisposition::Rejected,
+        ] {
+            assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
+        }
+    }
 }

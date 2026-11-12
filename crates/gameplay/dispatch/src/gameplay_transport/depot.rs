@@ -146,7 +146,7 @@ pub(super) async fn execute(
             states.is_dead(actor),
             states.has_pending_spell_commit(actor, command.game_session_id),
         );
-        let town = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)
+        let town = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
             .as_ref()
             .and_then(locker);
         (native, town)

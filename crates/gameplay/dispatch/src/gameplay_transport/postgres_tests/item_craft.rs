@@ -123,7 +123,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -211,7 +211,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let (_, replayed, _) = exchange(&restarted, admitted, 1, &payload, None).await?;
         assert_eq!(replayed, UseDisposition::Committed);
@@ -274,6 +274,9 @@ pub(super) async fn exchange(
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
@@ -323,17 +326,31 @@ pub(super) async fn exchange(
     let mut client_task = std::pin::pin!(client_task);
     let mut end = None;
     let mut result = None;
+    let mut maintenance = std::pin::pin!(maintain_ready(owner));
     tokio::time::timeout(std::time::Duration::from_secs(30), std::future::poll_fn(|context| {
+        if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
+            return Poll::Ready(result);
+        }
         if end.is_none() && let Poll::Ready(value) = serving.as_mut().poll(context) {
             end = Some(value);
         }
         if result.is_none() && let Poll::Ready(value) = client_task.as_mut().poll(context) {
             result = Some(value);
         }
-        if end.is_some() && result.is_some() { Poll::Ready(()) } else { Poll::Pending }
-    })).await?;
+        if end.is_some() && result.is_some() { Poll::Ready(Ok(())) } else { Poll::Pending }
+    })).await??;
     let end = end.ok_or("server did not finish")?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else { return Err(format!("{end:?}").into()); };
     let (result, actual) = result.ok_or("client did not finish")??;
     Ok((admitted, result, actual))
+}
+
+/// Stand in for the node maintenance driver while a fixture serves a connection.
+pub(super) async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    loop {
+        if owner.root.has_ready_demand() {
+            owner.root.maintain_ready_once().await.map_err(debug)?;
+        }
+        tokio::task::yield_now().await;
+    }
 }

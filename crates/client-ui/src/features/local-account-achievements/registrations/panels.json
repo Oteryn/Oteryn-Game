@@ -1,0 +1,7 @@
+{
+  "mechanic": "local-account-achievements",
+  "kind": "panels",
+  "id": "local-account-achievements-panels",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

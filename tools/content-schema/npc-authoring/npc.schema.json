@@ -5,7 +5,7 @@
   "description": "Candidate NPC authoring bundle converted from a pinned OTS datapack. Source-scoped key, OTS_HYPOTHESIS_ONLY evidence, never Game truth. See docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md.",
   "type": "object",
   "required": ["schema", "key", "evidence", "source", "status"],
-  "properties": {
+  "properties": {"visibility":{"type":"string","enum":["public","hidden"],"default":"public"},
     "schema": {"const": "OTERYN_NPC_AUTHORING_CANDIDATE/v1"},
     "key": {"type": "string", "pattern": "^(canary|crystal):npc/[a-z0-9_'.-]+$"},
     "evidence": {"const": "OTS_HYPOTHESIS_ONLY"},

@@ -353,6 +353,7 @@ fn scenario() -> TestResult {
                 current.character_id,
                 crate::gameplay_transport::character_info::unix_now_ms(),
                 None,
+                None,
             )
             .await
             .map_err(debug)?;

@@ -135,7 +135,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -208,7 +208,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
 
         // Two distinct inputs produce one receipt, one Item and one bounded audit envelope.
@@ -240,7 +240,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let (_, replayed, _) = exchange(&owner, initial, 1, &first_payload, None).await?;
         assert_eq!(replayed, UseDisposition::Committed);
@@ -253,7 +253,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let mut historical = initial;
         let mut historical_fence = fence;
@@ -267,7 +267,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let mut changed = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
             initial.continuity.selected_capabilities.as_slice(),

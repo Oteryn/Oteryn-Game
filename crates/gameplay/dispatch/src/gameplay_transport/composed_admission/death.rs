@@ -17,6 +17,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        if self.runtime.lock().await.is_tibiadrome(actor) {
+            return self.drome_death(actor, session, death).await;
+        }
         if matches!(
             actor.runtime_scope(),
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
@@ -413,6 +416,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         settled: &mut Option<actor_spell::PlayerDeath>,
     ) -> bool {
+        if self.runtime.lock().await.is_tibiadrome(actor) {
+            return self.drome_sync(session, true).await;
+        }
         let death = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
@@ -578,8 +584,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         runtime
             .place_admitted_respawn(actor, session, respawn_cell(recorded), |cell| {
                 respawn_cell_admissible(
-                    self.movement_cells.index(),
-                    self.movement_cells.scope(),
+                    self.movement_cells().index(),
+                    self.movement_cells().scope(),
                     self.world_id,
                     pinned_digest,
                     door.blocking_cells(),

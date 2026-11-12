@@ -19,6 +19,20 @@ pub trait GrizzlyPremiumGate: Sync {
     ) -> impl std::future::Future<Output = StoredResult<bool>> + Send;
 }
 
+/// Optional native authority fails closed for premium source requirements.
+impl<G: GrizzlyPremiumGate> GrizzlyPremiumGate for Option<&G> {
+    async fn task_permitted(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        account: [u8; 16],
+    ) -> StoredResult<bool> {
+        match self {
+            Some(gate) => gate.task_permitted(tx, account).await,
+            None => Ok(false),
+        }
+    }
+}
+
 /// Kill/report/cancel paths need no Premium decision. Absence of the native Premium
 /// owner may never grant a premium task, including before an activation was observed.
 pub struct NoGrizzlyPremium;
@@ -75,6 +89,9 @@ impl DurabilityRoot {
             gate,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -113,6 +130,9 @@ impl DurabilityRoot {
             gate,
             policy,
             None,
+            None,
+            None,
+            None,
         )
         .await
     }
@@ -142,6 +162,9 @@ impl DurabilityRoot {
             None,
             Some(source),
             &NoGrizzlyPremium,
+            None,
+            None,
+            None,
             None,
             None,
         )
@@ -441,7 +464,7 @@ pub(super) async fn evaluate<G: GrizzlyPremiumGate, const N: usize>(
         }
         _ => None,
     };
-    Ok(rules::plan_action(
+    let mut planned = rules::plan_action(
         state,
         GrizzlyActor {
             level,
@@ -457,7 +480,21 @@ pub(super) async fn evaluate<G: GrizzlyPremiumGate, const N: usize>(
         | GrizzlyRefusal::InvalidBoss
         | GrizzlyRefusal::ProgressionUnavailable => QuestRefusal::NotSupported,
         _ => QuestRefusal::StageMismatch,
-    }))
+    });
+    // A delayed native death may still credit its source task, but cannot enter
+    // a chosen stage that began after the snapshot captured on its lethal turn.
+    if let GrizzlyAction::KillCreature { observed_revision, .. }
+        | GrizzlyAction::BossKill { observed_revision, .. } = action
+    {
+        let advanced: bool = sqlx::query_scalar(
+            "SELECT coalesce((SELECT committed_character_revision > $3::text::numeric              FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid              AND track_key=$2),false)")
+            .bind(character.as_bytes().as_slice()).bind(rules::campaign::PHASE)
+            .bind(observed_revision.to_string()).fetch_one(&mut **tx).await?;
+        if advanced && let Ok(plan) = &mut planned {
+            plan.changes.retain(|c| !rules::campaign::TRACKS.contains(&c.track.as_str()));
+        }
+    }
+    Ok(planned)
 }
 
 /// Crystal awards XP before checking the point cap (NPC:462-463,485-503).

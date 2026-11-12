@@ -15,7 +15,7 @@ use oteryn_protocol_oteryn::{
     },
 };
 
-const LISTING: LeaderListing = LeaderListing {
+pub(super) const LISTING: LeaderListing = LeaderListing {
     min_level: 8,
     max_level: 120,
     vocation_mask: 15,
@@ -614,14 +614,29 @@ pub(super) async fn drive(
             assert!(browse(&mut member_peer).await?.is_empty());
         }
         Case::Logout => {
-            let fence = owner
-                .current_quest_fence(leader_peer.admitted.game_session_id)
+            let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root);
+            let fence = retry
+                .retry_unavailable(async || {
+                    owner
+                        .current_quest_fence(leader_peer.admitted.game_session_id)
+                        .await
+                        .map_err(|_| {
+                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable
+                        })
+                })
                 .await
                 .map_err(|error| format!("logout preflight current gameplay fence: {error:?}"))?
                 .ok_or("logout preflight session unexpectedly terminal")?;
-            owner
-                .root
-                .read_pvp_state(owner.character, owner.holder, fence)
+            retry
+                .retry_unavailable(async || {
+                    owner
+                        .root
+                        .read_pvp_state(owner.character, owner.holder, fence)
+                        .await
+                        .map_err(|_| {
+                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable
+                        })
+                })
                 .await
                 .map_err(|error| format!("logout preflight current PvP owner read: {error:?}"))?;
             eprintln!("S14BC tf_logout stage=wire_logout");

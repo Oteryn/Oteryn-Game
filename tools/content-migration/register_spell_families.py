@@ -76,12 +76,38 @@ COIN_ADMISSION = {
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     manifest = json.loads(generated[NATIVE_MANIFEST])
+    # W05d: pin the same fresh Creature/Item candidate's canonical loot closure,
+    # rather than a previous generation's on-disk Creature binding census.
+    from cake_native_successor import loot_successor
+    loot_path = REPOSITORY_PINS['loot_tables']
+    generated[loot_path] = loot_successor(root, json.loads(generated[spell_import.PROVIDER_DESTINATIONS['creature_profiles']]),
+                                        json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']]))
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
-            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+            "sha256": hashlib.sha256(generated[path] if path in generated else (root / path).read_bytes()).hexdigest(),
+        }
+    source = root / "content/cosmetics/outfits/authoring.json"
+    output = "content/cosmetics/outfits/native-cosmetics.json"
+    if source.exists() or (root / output).exists() or "cosmetics" in manifest:
+        tool = root / "tools/content-schema/cosmetics-authoring/cosmetics_authoring.py"
+        spec = importlib.util.spec_from_file_location("canonical_cosmetics_registration", tool)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        qualified = module.materialized_outputs(root)
+        if output not in qualified:
+            raise ValueError("COSMETICS_PIN_REQUIRES_CANONICAL_AUTHORING")
+        generated.update(qualified)
+        manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
+        manifest["cosmetics"] = {
+            "path": Path(os.path.relpath(output, "content")).as_posix(),
+            "sha256": hashlib.sha256(qualified[output]).hexdigest(),
         }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
+    # The fresh Cake/native closure is pinned before WORLDCHG refines only its
+    # closed source admission facts and re-pins that same final loot document.
+    import world_change_loot_inputs
+    world_change_loot_inputs.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
 
 
 GENERIC_ITEM = 40450
@@ -301,6 +327,13 @@ def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None
 
 
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
+    from native_profile_composition import compact_native_profile_scope
+    from qualification_inputs import appearance_input_scope
+    with appearance_input_scope(), compact_native_profile_scope():
+        return _outputs(root, include_prey=include_prey)
+
+
+def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     """Prepare the entire registration before writing any file.
 
     Legacy shard counts describe legacy definitions only. Imported collections have
@@ -317,14 +350,28 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     admit_current_staff_profile(root, generated)
     import tutorial_movement_profiles
     tutorial_movement_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import grizzly_debris_profiles
+    grizzly_debris_profiles.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import authored_static_item_constructors
+    authored_static_item_constructors.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import loop_training_profiles
     loop_training_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import timed_item_profiles
     timed_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import craft_runtime_profiles
     craft_runtime_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import floor_assembly_profiles
+    floor_assembly_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import key_door_item_profiles
     key_door_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import source_gate_item_profiles
+    source_gate_item_profiles.admit(root, generated, spell_import.canonical_bytes)
+    import party_rite_item_profiles
+    party_rite_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import tool_item_profiles
     tool_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import forge_creature_profiles
@@ -353,12 +400,20 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     writable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mail_item_profiles
     mail_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import encounter_source_regions
+    encounter_source_regions.apply_native(root, generated, spell_import.canonical_bytes)
     import summer_source_qualification
     summer_source_qualification.apply_native(root, generated, spell_import.canonical_bytes)
     import fluid_container_profiles
     fluid_container_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import marriage_item_profiles
+    marriage_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import monk_reward_profiles
     monk_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import qengine_reward_item_profiles
+    qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_finish_newhaven_items
+    quest_finish_newhaven_items.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import podium_item_profiles
     podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
@@ -369,6 +424,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     condition_potion_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import drome_item_profiles
     drome_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import starting_loadout_profiles
+    starting_loadout_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import newhaven_starter_profiles
+    newhaven_starter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
@@ -391,19 +450,102 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # Retain established native owners while admitting every shop and chest Item.
     import grizzly_shop_profiles
-    import quests_2_emperor_item_profiles
     import quest_callback_profiles
+    import quests_2_emperor_item_profiles
+    import quest_batch3_item_profiles
+    import qengine_reward_item_profiles
     grizzly_shop_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     quests_2_emperor_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import qready2_native_profiles
+    quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes, extra_keys=qready2_native_profiles.keys(root))
+    import qengine_reward_item_profiles
+    quest_batch3_item_profiles.admit_recipes(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc7_marsh_corpse_profiles
+    questpc7_marsh_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc7_slug_corpse_profiles
+    questpc7_slug_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc7_smith_corpse_profiles
+    questpc7_smith_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc7_smith_item_profile
+    questpc7_smith_item_profile.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc7_hot_fishburger_profile
+    questpc7_hot_fishburger_profile.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc7_hot_corpse_profiles
+    questpc7_hot_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import qnpcfx_item_profiles
+    qnpcfx_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import qready1_reward_profiles
+    qready1_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_corpse_profiles
+    quest_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import authored_npc_item_profiles
+    authored_npc_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_loot_profiles
+    quest_loot_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import build_questpc4_stag_item_profiles
+    build_questpc4_stag_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import itemhold_q
+    itemhold_q.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import world_change_profiles
+    world_change_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Crystal santa_claus.lua:111-119 places these gifts through the ordinary
+    # admitted container and stack owners, rather than a seasonal Item alias.
+    import seasonal_item_profiles
+    seasonal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # W18 source recipes use admitted Item identities and retain earlier owners'
+    # policies; only qualified rotation/USE and top-order facts are enriched.
+    import house_decoration_actions
+    house_decoration_actions.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
+    import questpc7_thaian_native
+    questpc7_thaian_native.apply(root, generated, spell_import.canonical_bytes)
+    # W02: preserve all established Item owners, then complete the pinned
+    # Sugar Daddy corpse and existing loot table's native custody closure.
+    import boss_reward_item_profiles
+    boss_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Primal's source pod and four corpse stages retain their exact Ground-only
+    # custody; neither the visual pod nor a corpse is an inventory loot yield.
+    import primal_item_profiles
+    primal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Carry the exact explicit-empty Lua witness into the frozen native provider too.
+    import primal_reference_overlay
+    primal_reference_overlay.apply_native(root, generated, NATIVE_MANIFEST, spell_import.canonical_bytes)
+    # A known shield in the first hand must not hide the equipped melee weapon.
+    # Complete only unknown kinds from agreeing admitted taxonomy and pinned XML.
+    import hand_weapon_kinds
+    hand_weapon_kinds.apply_native(root, generated, spell_import.canonical_bytes)
+    import sys
+    sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
+    import native_goal_corpse_items
+    native_goal_corpse_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import native_goal_loot_items
+    native_goal_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc2_soul_loot_items
+    questpc2_soul_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc2_rotten_loot_items
+    questpc2_rotten_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # T174: qualify boot slots only after every shop/loot Item cohort is present.
+    imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
     pin_repository_inputs(root, generated)
+    # Refresh only the three admitted World-change input sources after repository pins.
+    # Probabilities/quantities stay byte-semantically pinned; Item policies own admission.
+    import world_change_loot_inputs
+    world_change_loot_inputs.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import questpc7_marsh_loot
+    questpc7_marsh_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import questpc7_slug_loot
+    questpc7_slug_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import questpc7_smith_corpse_loot
+    questpc7_smith_corpse_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    import questpc7_hot_corpse_loot
+    questpc7_hot_corpse_loot.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
@@ -415,6 +557,11 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
+    # SRX-1 keeps the historical single-line provider byte-identical. The loader
+    # composes only the changed records from a separately pinned small supplement.
+    import srx1_profile_updates
+    srx1_profile_updates.generate(root, generated, item_path, NATIVE_MANIFEST,
+                                 provider_order, spell_import.canonical_bytes)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
     # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
@@ -435,6 +582,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
         native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
+    pin_repository_inputs(root, generated)
+
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.
     if include_prey:
@@ -442,6 +591,14 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
         prey_difficulty.apply_native(root, generated, spell_import.canonical_bytes)
 
     descriptors = spell_import.descriptors(root, generated)
+    fragment = starting_loadout_profiles.FRAGMENT
+    descriptors.setdefault("Item", []).append({
+        "path": fragment, "sha256": hashlib.sha256(generated[fragment]).hexdigest(),
+        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "record_count": len(json.loads(generated[fragment])["records"]),
+        "schema_contract": {"kind": "rust_serde", "path": spell_import.NATIVE_SCHEMA_CONTRACTS["item_profiles"]},
+        "representation": "native_profile_overlay", "creates_canonical_identities": False,
+        "runtime_activation": False,
+    })
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
         index["spell_imports"] = descriptors.get(family, [])

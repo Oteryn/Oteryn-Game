@@ -114,6 +114,11 @@ impl RespawnSchedule {
         self.pending.get(&point).copied()
     }
 
+    /// A phase retires the old occurrence before changing its admitted point.
+    pub(super) fn cancel(&mut self, point: SpawnPoint) -> Option<PendingRespawn> {
+        self.pending.remove(&point)
+    }
+
     #[must_use]
     pub fn len(&self) -> usize {
         self.pending.len()

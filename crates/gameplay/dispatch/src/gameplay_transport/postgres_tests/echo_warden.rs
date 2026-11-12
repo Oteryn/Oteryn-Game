@@ -17,6 +17,9 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
+mod echo_warden_current;
+mod echo_warden_expiry;
+
 const CREATURE: &str = "oteryn:creature.rat";
 const POSITION: MovementLocalPosition = MovementLocalPosition {
     x: 2,
@@ -26,11 +29,12 @@ const POSITION: MovementLocalPosition = MovementLocalPosition {
 
 #[test]
 fn echo_warden_all_damagers_first_species_replay_and_real_scroll_custody_postgres() -> TestResult {
+    let started = std::time::Instant::now();
     if fixture::configured_admin().is_none() {
         eprintln!("ECHO_WARDEN POSTGRES_CASE_NOT_RUN: no configured PostgreSQL route");
         return Ok(());
     }
-    std::thread::Builder::new()
+    let result = std::thread::Builder::new()
         .name("echo-warden-dispatch".into())
         .stack_size(64 << 20)
         .spawn(|| {
@@ -46,7 +50,12 @@ fn echo_warden_all_damagers_first_species_replay_and_real_scroll_custody_postgre
         })?
         .join()
         .map_err(|_| "Echo Warden scenario thread panicked")?
-        .map_err(Into::into)
+        .map_err(Into::into);
+    eprintln!(
+        "SV16 ECHO_REWARDS POSTGRES_CASE_EXECUTED duration={:?} result={result:?}",
+        started.elapsed()
+    );
+    result
 }
 
 async fn scenario(h: &Harness) -> TestResult {
@@ -80,7 +89,23 @@ async fn scenario(h: &Harness) -> TestResult {
         );
     let active = controller.active().ok_or("active native generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let room = pin.qualified_room().clone();
+    let bundle = echo_warden_current::world(world, channel)?;
+    let cells = bundle
+        .movement_cells(pin.qualified_room().movement_cells())
+        .map_err(debug)?;
+    let room = pin
+        .qualified_room()
+        .bundle_view(
+            cells,
+            bundle.frame_binding_digest(world),
+            bundle.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: POSITION.x,
+                y: POSITION.y,
+                floor: POSITION.floor,
+            },
+        )
+        .ok_or("Echo bundle room")?;
     let pin = ChannelContentPin::from_activation(
         world,
         pin.activation_sequence(),
@@ -173,10 +198,10 @@ async fn scenario(h: &Harness) -> TestResult {
         .and_then(|facts| facts.bestiary_stars)
         .ok_or("native stars")?;
     assert_eq!(stars, 1);
-    for item in 53751..=53774 {
+    for item in (53751..=53774).chain([54266, 51588, 51589]) {
         assert!(
             native.reward_table().admitted_source_item(item).is_some(),
-            "native scroll {item} must be materializable"
+            "native Echo reward {item} must be materializable"
         );
     }
     let principal = crate::combat::CapturedRewardPrincipal {
@@ -245,6 +270,11 @@ async fn scenario(h: &Harness) -> TestResult {
             4
         );
         assert_eq!(scrolls(h).await?, i64::try_from(round + 1)?);
+        assert_eq!(
+            catalysts(h).await?,
+            i64::try_from(round + 1)?,
+            "one real catalyst per Warden death"
+        );
         // Replayed lethal capture re-enters the actual queue, Charm owner and loot receipts.
         {
             let mut runtime = owner.runtime.lock().await;
@@ -258,6 +288,11 @@ async fn scenario(h: &Harness) -> TestResult {
         }
         drain(&owner, players[1].1).await?;
         assert_eq!(scrolls(h).await?, i64::try_from(round + 1)?);
+        assert_eq!(
+            catalysts(h).await?,
+            i64::try_from(round + 1)?,
+            "replay cannot mint another catalyst"
+        );
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_character_echo_warden_kill_receipts"
@@ -353,7 +388,9 @@ async fn scenario(h: &Harness) -> TestResult {
         second.current_character_lease().character_id().as_bytes(),
     )
     .await?;
+    echo_warden_expiry::verify(&owner, players[0], h).await?;
     spend_echo_major_points(&owner, native, [players[0].1, players[1].1]).await?;
+    echo_warden_current::verify(&owner, players[0], h).await?;
     assert!(
         sqlx::query("DELETE FROM game_character_echo_warden_rewards")
             .execute(&h.pool)
@@ -658,6 +695,30 @@ fn raid(
     now_ms: u64,
     command: u64,
 ) -> TestResult<ExactActorRef> {
+    portal(runtime, player, now_ms, command)?;
+    assert!(
+        runtime
+            .activate_echo_portal(player.0, player.1, now_ms + 30_000, 7)
+            .map_err(debug)?
+    );
+    runtime
+        .drive_echo_wardens(now_ms + 30_000, |_| true)
+        .map_err(debug)?;
+    runtime
+        .visible_entities()
+        .creatures
+        .into_iter()
+        .map(|entry| entry.actor)
+        .find(|actor| runtime.echo_variant(*actor) == Some(EchoVariant::Warden))
+        .ok_or_else(|| "physical Warden missing".into())
+}
+
+fn portal(
+    runtime: &mut ChannelRuntimeV1,
+    player: (ExactActorRef, GameSessionId),
+    now_ms: u64,
+    command: u64,
+) -> TestResult<[u8; 16]> {
     let initial = runtime
         .admit_encounter_actor(CREATURE, 20, POSITION)
         .map_err(debug)?;
@@ -698,21 +759,7 @@ fn raid(
     runtime
         .drive_echo_wardens(now_ms + 30_000, |_| true)
         .map_err(debug)?;
-    assert!(
-        runtime
-            .activate_echo_portal(player.0, player.1, now_ms + 30_000, 7)
-            .map_err(debug)?
-    );
-    runtime
-        .drive_echo_wardens(now_ms + 30_000, |_| true)
-        .map_err(debug)?;
-    runtime
-        .visible_entities()
-        .creatures
-        .into_iter()
-        .map(|entry| entry.actor)
-        .find(|actor| runtime.echo_variant(*actor) == Some(EchoVariant::Warden))
-        .ok_or_else(|| "physical Warden missing".into())
+    Ok(occurrence)
 }
 
 fn record(
@@ -751,5 +798,10 @@ async fn drain(owner: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionI
 
 async fn scrolls(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_family='Item' AND definition_production_key BETWEEN 'oteryn:item.tibia.i53751' AND 'oteryn:item.tibia.i53774'")
+        .fetch_one(&h.pool).await?)
+}
+
+async fn catalysts(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_family='Item' AND definition_production_key IN ('oteryn:item.tibia.i54266','oteryn:item.tibia.i51588','oteryn:item.tibia.i51589')")
         .fetch_one(&h.pool).await?)
 }

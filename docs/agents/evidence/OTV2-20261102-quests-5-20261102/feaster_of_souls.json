@@ -1,0 +1,1560 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "feaster_of_souls",
+    "elements": 45,
+    "auto": 14,
+    "manual": 31,
+    "statuses": {
+      "CALLBACK_DATA_IMPLEMENTED": 14,
+      "PHYSICAL_SELECTOR_LEFT_OUT": 2,
+      "LEVEL_GATE_LEFT_OUT": 12,
+      "LEFT_OUT": 17
+    },
+    "new_callbacks": 14,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/feaster-of-souls-slab-01",
+    "oteryn:quest-callback/feaster-of-souls-slab-02",
+    "oteryn:quest-callback/feaster-of-souls-slab-03",
+    "oteryn:quest-callback/feaster-of-souls-slab-04",
+    "oteryn:quest-callback/feaster-of-souls-slab-05",
+    "oteryn:quest-callback/feaster-of-souls-slab-06",
+    "oteryn:quest-callback/feaster-of-souls-slab-07",
+    "oteryn:quest-callback/feaster-of-souls-slab-08",
+    "oteryn:quest-callback/feaster-of-souls-slab-09",
+    "oteryn:quest-callback/feaster-of-souls-slab-10",
+    "oteryn:quest-callback/feaster-of-souls-irgix-exit",
+    "oteryn:quest-callback/feaster-of-souls-unaz-exit",
+    "oteryn:quest-callback/feaster-of-souls-vok-exit",
+    "oteryn:quest-callback/feaster-of-souls-brain-head-exit"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "slab 01",
+      "pattern": "P03",
+      "trigger": "step_in (33484, 31435, 8)",
+      "condition": "gracz",
+      "effect": "teleport(33483, 31452, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:2",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "slab 02",
+      "pattern": "P03",
+      "trigger": "step_in (33481, 31452, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33486, 31435, 8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:3",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "slab 03",
+      "pattern": "P03",
+      "trigger": "step_in (33558, 31467, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33573, 31467, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:4",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "slab 04",
+      "pattern": "P03",
+      "trigger": "step_in (33570, 31467, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33555, 31467, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:5",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "slab 05",
+      "pattern": "P03",
+      "trigger": "step_in (33549, 31440, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33537, 31440, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:6",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 6,
+      "step": "slab 06",
+      "pattern": "P03",
+      "trigger": "step_in (33539, 31440, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33550, 31439, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:7",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 7,
+      "step": "slab 07",
+      "pattern": "P03",
+      "trigger": "step_in (33540, 31411, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33528, 31410, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:8",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 8,
+      "step": "slab 08",
+      "pattern": "P03",
+      "trigger": "step_in (33531, 31410, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33541, 31412, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:9",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 9,
+      "step": "slab 09",
+      "pattern": "P03",
+      "trigger": "step_in (33535, 31444, 8)",
+      "condition": "gracz",
+      "effect": "teleport(33546, 31444, 8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:10",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 10,
+      "step": "slab 10",
+      "pattern": "P03",
+      "trigger": "step_in (33544, 31444, 8)",
+      "condition": "gracz",
+      "effect": "teleport(33533, 31444, 8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:11",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_slab.lua:23"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 11,
+      "step": "rock 01",
+      "pattern": "P03",
+      "trigger": "use (33221, 31703, 7)",
+      "condition": "gracz",
+      "effect": "teleport(33876, 31884, 8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_rock_entrance.lua:2",
+      "initial_import": "AUTO",
+      "import_kind": "RĘCZNIE",
+      "status": "PHYSICAL_SELECTOR_LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor wybiera kliknięty map item przez position fallback po UID/AID/item-ID. Obecny position-only Use wybiera tylko ordinal0. Donor i bieżący WorldBundle mają wieloelementowe stosy (4/2); nie ma źródłowego wskazania jednego rock appearance. Całe dwa przejścia wycofano do pytania o równoważny selector; bez arbitralnego ID i bez zmiany wspólnego matchera. Pierwszy ANSWER pkt7, drugi ANSWER pkt1/6.",
+      "missing_owner_function": "Use object selector / WorldBundle physical binding",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590265482"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_rock_entrance.lua:7-20",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/creature/actions.cpp:312-341",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/items/tile.cpp:1896-1906"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590265482",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.held-rocks.json",
+        "feaster-rock-map-witness.json",
+        "rock-selectors-question.md"
+      ]
+    },
+    {
+      "row": 12,
+      "step": "rock 02",
+      "pattern": "P03",
+      "trigger": "use (33876, 31883, 8)",
+      "condition": "gracz",
+      "effect": "teleport(33220, 31704, 7)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_rock_entrance.lua:3",
+      "initial_import": "AUTO",
+      "import_kind": "RĘCZNIE",
+      "status": "PHYSICAL_SELECTOR_LEFT_OUT",
+      "implementation": [],
+      "reason": "Donor wybiera kliknięty map item przez position fallback po UID/AID/item-ID. Obecny position-only Use wybiera tylko ordinal0. Donor i bieżący WorldBundle mają wieloelementowe stosy (4/2); nie ma źródłowego wskazania jednego rock appearance. Całe dwa przejścia wycofano do pytania o równoważny selector; bez arbitralnego ID i bez zmiany wspólnego matchera. Pierwszy ANSWER pkt7, drugi ANSWER pkt1/6.",
+      "missing_owner_function": "Use object selector / WorldBundle physical binding",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590265482"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_rock_entrance.lua:7-20",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/creature/actions.cpp:312-341",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/items/tile.cpp:1896-1906"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590265482",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.held-rocks.json",
+        "feaster-rock-map-witness.json",
+        "rock-selectors-question.md"
+      ]
+    },
+    {
+      "row": 13,
+      "step": "entrance 01",
+      "pattern": "P03",
+      "trigger": "step_in (32962, 31497, 7)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33647, 31438, 10); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 14,
+      "step": "entrance 02",
+      "pattern": "P03",
+      "trigger": "step_in (32963, 31497, 7)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33647, 31438, 10); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 15,
+      "step": "entrance 03",
+      "pattern": "P03",
+      "trigger": "step_in (32883, 32518, 7)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33613, 31415, 8); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 16,
+      "step": "entrance 04",
+      "pattern": "P03",
+      "trigger": "step_in (32884, 32518, 7)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33613, 31415, 8); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:5",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 17,
+      "step": "entrance 05",
+      "pattern": "P03",
+      "trigger": "step_in (32625, 32076, 7)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(31914, 32354, 8); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:6",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 18,
+      "step": "entrance 06",
+      "pattern": "P03",
+      "trigger": "step_in (32626, 32076, 7)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(31914, 32354, 8); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:7",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 19,
+      "step": "entrance 07",
+      "pattern": "P03",
+      "trigger": "step_in (33863, 31854, 9)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33602, 31443, 10); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 20,
+      "step": "entrance 08",
+      "pattern": "P03",
+      "trigger": "step_in (33601, 31441, 10)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33861, 31855, 9); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 21,
+      "step": "entrance 09",
+      "pattern": "P03",
+      "trigger": "step_in (31904, 32346, 9)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33573, 31461, 8); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:10",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 22,
+      "step": "entrance 10",
+      "pattern": "P03",
+      "trigger": "step_in (33572, 31459, 8)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(31904, 32348, 9); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:11",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 23,
+      "step": "entrance 11",
+      "pattern": "P03",
+      "trigger": "step_in (33581, 31465, 9)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33887, 31786, 8); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:12",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 24,
+      "step": "entrance 12",
+      "pattern": "P03",
+      "trigger": "step_in (33886, 31784, 8)",
+      "condition": "gracz; level≥250",
+      "effect": "teleport(33581, 31466, 9); odmowa do fromPosition; UWAGA: minimum_level w main wymaga storage; bez sztucznego tracka",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_entrances.lua:13",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEVEL_GATE_LEFT_OUT",
+      "implementation": [],
+      "reason": "Parser obecnego kontraktu odrzuca minimum_level bez storage, a executor potrzebuje kwalifikowanego current-level check. Oba rozszerzenia napisano lokalnie, lecz drugi ANSWER pkt1 zabrania zmian wspólnego adaptera; ANSWER 6590302110 pkt3 potwierdza brak istniejącej drogi i A/Left out dla 12 wejść. Nie włącza się wejść i nie dodaje fikcyjnego tracka. 12 wejść wymaga rzeczywistych current actor facts level>=250, bez fikcyjnego storage. Brak facts lub level249 odmawia i zachowuje return_on_failure; test rzeczywistego StepIn przekazany root.",
+      "missing_owner_function": "P03 level-only",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590041819",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "answer_point": 3,
+      "source_implementation": [
+        "feaster_of_souls.level_callbacks.json",
+        "level-only-implementation.patch",
+        "level-only-tests.patch"
+      ]
+    },
+    {
+      "row": 25,
+      "step": "Wyjście irgix",
+      "pattern": "P03",
+      "trigger": "StepIn (33467, 31396, 8)",
+      "condition": "gracz",
+      "effect": "teleport(33493, 31400, 8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:45",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:65-68"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 26,
+      "step": "Wyjście unaz",
+      "pattern": "P03",
+      "trigger": "StepIn (33562, 31492, 8)",
+      "condition": "gracz",
+      "effect": "teleport(33563, 31477, 8)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:49",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:65-68"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 27,
+      "step": "Wyjście vok",
+      "pattern": "P03",
+      "trigger": "StepIn (33505, 31485, 9)",
+      "condition": "gracz",
+      "effect": "teleport(33509, 31451, 9)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:53",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:65-68"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 28,
+      "step": "Wyjście Brain Head",
+      "pattern": "P03",
+      "trigger": "StepIn(31946,32334,10)",
+      "condition": "gracz",
+      "effect": "teleport(31971,32325,10)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:141",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "14 bezwarunkowych teleportów zachowuje pozycje, odmowę przy braku map tile i istniejący selector StepIn. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:141",
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/teleport.lua:18-21"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "feaster_of_souls.callbacks.json"
+      ]
+    },
+    {
+      "row": 29,
+      "step": "Pokój Irgix the Flimsy",
+      "pattern": "P06/P16/P17/P25",
+      "trigger": "StepIn(33491, 31398, 8)",
+      "condition": "brak gracza w pokoju; level≥250; canFightBoss(name)",
+      "effect": "usuń potwory; spawn Irgix the Flimsy; teleport(33467, 31405, 8); cooldown20h; wyrzuć graczy po10min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:2-107",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 30,
+      "step": "Pokój Unaz the Mean",
+      "pattern": "P06/P16/P17/P25",
+      "trigger": "StepIn(33566, 31475, 8)",
+      "condition": "brak gracza w pokoju; level≥250; canFightBoss(name)",
+      "effect": "usuń potwory; spawn Unaz the Mean; teleport(33576, 31494, 8); cooldown20h; wyrzuć graczy po10min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:16-107",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 31,
+      "step": "Pokój Vok The Freakish",
+      "pattern": "P06/P16/P17/P25",
+      "trigger": "StepIn(33509, 31450, 9)",
+      "condition": "brak gracza w pokoju; level≥250; canFightBoss(name)",
+      "effect": "usuń potwory; spawn Vok The Freakish; teleport(33508, 31494, 9); cooldown20h; wyrzuć graczy po10min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_minis_feaster.lua:30-107",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 32,
+      "step": "Brain Head: przyjęcie uczestników",
+      "pattern": "P06/P17",
+      "trigger": "32 pola entrancesTiles; StepIn",
+      "condition": "level≥250; !locked; countPlayers(IgnoredByMonsters)<5; cooldown≤now",
+      "effect": "teleport(31963,32324,10); cooldown10h; odmowa na(31971,32325,10)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:2-41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 33,
+      "step": "Brain Head: fale i zamknięcie",
+      "pattern": "P27/P16/P25/P30",
+      "trigger": "Encounter startOnEnter",
+      "condition": "!monstersSpawned",
+      "effect": "Brain Head +8 Cerebellum; po30s locked=true; po270s usuń graczy; reset locked=false i usuń potwory, lecz bez resetu monstersSpawned",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_brain_head.lua:53-93",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 34,
+      "step": "Dźwignia The Fear Feaster",
+      "pattern": "P06/P16/P17/P25",
+      "trigger": "Use(33733, 31471, 14)",
+      "condition": "level≥250; BossLever: occupancy/cooldown; minPlayers domyślnie1",
+      "effect": "spawn/teleport z tabeli; cooldown domyślnie20h; czaswalki domyślnie20min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_fear_feaster.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 35,
+      "step": "Dźwignia The Dread Maiden",
+      "pattern": "P06/P16/P17/P25",
+      "trigger": "Use(33738, 31506, 14)",
+      "condition": "level≥250; BossLever: occupancy/cooldown; minPlayers domyślnie1",
+      "effect": "spawn/teleport z tabeli; cooldown domyślnie20h; czaswalki domyślnie20min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_dread_maiden.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 36,
+      "step": "Dźwignia The Pale Worm",
+      "pattern": "P06/P16/P17/P25",
+      "trigger": "Use(33771, 31504, 14)",
+      "condition": "level≥250; BossLever: occupancy/cooldown; minPlayers domyślnie1",
+      "effect": "spawn/teleport z tabeli; cooldown domyślnie20h; czaswalki 25min",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_pale_worm.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 37,
+      "step": "The Unwelcome: dźwignia i Brother Worm",
+      "pattern": "P06/P16/P17/P30",
+      "trigger": "Use(33735,31537,14)",
+      "condition": "level≥250; pięć padów; BossLever occupancy/cooldown",
+      "effect": "spawn Unwelcome natychmiast; Brother Worm po20000ms; każde beginSharedLife(os.time()) wywołane osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_the_unwelcome_lever.lua:1-44",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne przyjęcie, occupancy, spawny, terminy i timeout/cleanup wymagają kwalifikowanego ownera spotkania. pierwszego ANSWER pkt5 zabrania rozszerzania wspólnego BossActivityHandoff/Soulpit/W02 w tej partii; nie uruchamia się samego spawnu ani częściowego startu.",
+      "missing_owner_function": "Właściciel spotkania / lifecycle / world state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 38,
+      "step": "Brother Worm: śmierć",
+      "pattern": "P30",
+      "trigger": "CreatureEvent BrotherWormDeath",
+      "condition": "pierwszy The Unwelcome w skanie kwadratu±30 na tym piętrze",
+      "effect": "odejmij jego maxHealth i zakończ skan",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/creaturescripts_brother_worm_death.lua:3-23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Śmierć Brother Worm zmienia HP wybranego Unwelcome. Brak kwalifikacji wspólnego kontraktu shared-life i odbiorcy obrażeń; pierwszego ANSWER pkt5, żadnego samodzielnego SET ukończenia.",
+      "missing_owner_function": "Combat / shared-life owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 39,
+      "step": "Zabicie the fear feaster",
+      "pattern": "P07/P21",
+      "trigger": "FeasterOfSoulsBossDeath; the fear feaster",
+      "condition": "każdy istniejący Player(key) z damage map; bez wymogu party/dystansu",
+      "effect": "FeasterOfSouls.TheFearFeasterKilled=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_bosses_killed.lua:2-18",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Crystal rozlicza graczy odnalezionych przez Player(key) z damage map; helper nie sprawdza tu health>0. Obecnego rozliczenia Grizzly party/most-damage nie wolno traktować jako równoważnego adaptera; potrzebne wspólne powiązanie kill settlement, poza zakresem pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Kill settlement / damage-map beneficiaries",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1082"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 40,
+      "step": "Zabicie the dread maiden",
+      "pattern": "P07/P21",
+      "trigger": "FeasterOfSoulsBossDeath; the dread maiden",
+      "condition": "każdy istniejący Player(key) z damage map; bez wymogu party/dystansu",
+      "effect": "FeasterOfSouls.TheDreadMaidenKilled=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_bosses_killed.lua:3-18",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Crystal rozlicza graczy odnalezionych przez Player(key) z damage map; helper nie sprawdza tu health>0. Obecnego rozliczenia Grizzly party/most-damage nie wolno traktować jako równoważnego adaptera; potrzebne wspólne powiązanie kill settlement, poza zakresem pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Kill settlement / damage-map beneficiaries",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1082"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 41,
+      "step": "Zabicie the unwelcome",
+      "pattern": "P07/P21",
+      "trigger": "FeasterOfSoulsBossDeath; the unwelcome",
+      "condition": "każdy istniejący Player(key) z damage map; bez wymogu party/dystansu",
+      "effect": "FeasterOfSouls.TheUnwelcomeKilled=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_bosses_killed.lua:4-18",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Crystal rozlicza graczy odnalezionych przez Player(key) z damage map; helper nie sprawdza tu health>0. Obecnego rozliczenia Grizzly party/most-damage nie wolno traktować jako równoważnego adaptera; potrzebne wspólne powiązanie kill settlement, poza zakresem pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Kill settlement / damage-map beneficiaries",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1082"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 42,
+      "step": "Zabicie the pale worm",
+      "pattern": "P07/P21",
+      "trigger": "FeasterOfSoulsBossDeath; the pale worm",
+      "condition": "każdy istniejący Player(key) z damage map; bez wymogu party/dystansu",
+      "effect": "FeasterOfSouls.ThePaleWormKilled=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_bosses_killed.lua:5-18",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Crystal rozlicza graczy odnalezionych przez Player(key) z damage map; helper nie sprawdza tu health>0. Obecnego rozliczenia Grizzly party/most-damage nie wolno traktować jako równoważnego adaptera; potrzebne wspólne powiązanie kill settlement, poza zakresem pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Kill settlement / damage-map beneficiaries",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1082"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 43,
+      "step": "Brama Pale Worm",
+      "pattern": "P03",
+      "trigger": "StepIn(33570,31444,10)",
+      "condition": "FearFeasterKilled,DreadMaidenKilled,UnwelcomeKilled wszystkie≥0",
+      "effect": "przepuść; przy braku lista nazw i fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_portal_pale_worm.lua:1-29",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło czyta 3 storage, niczego nie zapisuje, przy braku buduje listę bossów i wraca do fromPosition. Nie należy dodawać sztucznych SET tych flag ani zastępować listy statyczną wiadomością; zamknięty world callback nie ma tego read-only warunku i payloadu.",
+      "missing_owner_function": "StepIn guard / dynamic presentation",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 44,
+      "step": "Pale Worm: nagroda wyglądu",
+      "pattern": "P12/P30",
+      "trigger": "paleWormDeath.onPrepareDeath",
+      "condition": "wszyscy gracze w spectators(center33805,31504,14;promienie11); Received==-1 dla wyglądu",
+      "effect": "lookTypes1271/1270; Received=1; Beyonder dla każdego gracza w spectators",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/creaturescripts_pale_worm_death.lua:1-23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna nagroda 1271/1270, Received=1 oraz Beyonder dla source spectators wymaga kwalifikowanego appearance/achievement ownera i beneficjentów. Nie zapisano Received bez grantu; zakres pytania i pierwszego ANSWER pkt5–6.",
+      "missing_owner_function": "Quest appearance / achievement grant",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 45,
+      "step": "Wormling: deklaracja niepodpiętego callbacka",
+      "pattern": "P30",
+      "trigger": "WormlingDeath.onDeath",
+      "condition": "top creature na polach AREA_SQUARE1X1 jest graczem; brak rejestracji w monster/wormling.lua",
+      "effect": "deklaracja earth750; NIE potwierdzono wykonania u donora",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/creaturescripts_wormling_death.lua:1-28",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Ciało WormlingDeath istnieje, lecz donorowy wormling nie rejestruje tego eventu. pierwszego ANSWER pkt3 dopuszcza naprawę oczywistego niepodpięcia po kwalifikacji, ale hook obrażeń pozostaje w ownerze walki poza pierwszego ANSWER pkt5; nie twierdzimy, że callback wykonywał się u donora.",
+      "missing_owner_function": "Monster death registration / combat owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "additional_sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/feaster_of_souls/wormling.lua:1-97"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    }
+  ]
+}

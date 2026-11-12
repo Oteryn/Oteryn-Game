@@ -5,6 +5,10 @@
 //! The template's item must be a container of the active Content generation; otherwise nothing
 //! is written and the entry proceeds without a starter item (`NotAdmitted`).
 
+mod newhaven;
+
+pub use oteryn_gameplay_items::starter_grant::NewhavenStarterOutcome;
+
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
 use super::item_loop_move::ItemLoopContent;
@@ -13,16 +17,18 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use serde_json::json;
 
-pub use oteryn_gameplay_items::starter_grant::{StarterTemplate, StarterGrantOutcome};
+pub use oteryn_gameplay_items::starter_grant::{
+    StarterGrantOutcome, StarterTemplate, StartingLoadout,
+};
 
-fn grant_error(error: EquipmentError) -> DurabilityError {
+pub(super) fn grant_error(error: EquipmentError) -> DurabilityError {
     match error {
         EquipmentError::Durability(error) => error,
         EquipmentError::Database(_) | EquipmentError::Rejected(_) => DurabilityError::Unavailable,
     }
 }
 
-async fn new_uuid(
+pub(super) async fn new_uuid(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> std::result::Result<[u8; 16], DurabilityError> {
     let bytes: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(game_character_uuid_v7())")
@@ -44,6 +50,44 @@ impl DurabilityRoot {
         content: &C,
         template: &StarterTemplate,
     ) -> std::result::Result<StarterGrantOutcome, DurabilityError> {
+        self.grant_starter_plan(recovery, node, fence, content, template, None)
+            .await
+    }
+
+    /// SRVGAP-C1: the whole vocation kit commits with its original backpack receipt.
+    pub async fn grant_starting_loadout<C: ItemLoopContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        content: &C,
+        loadout: &StartingLoadout,
+    ) -> std::result::Result<StarterGrantOutcome, DurabilityError> {
+        if !loadout.matches_source() {
+            return Ok(StarterGrantOutcome::NotAdmitted);
+        }
+        let template = StarterTemplate {
+            definition: loadout.backpack.clone(),
+            revision: "starter-kit-r2".into(),
+            ..StarterTemplate::main()
+        };
+        self.grant_starter_plan(recovery, node, fence, content, &template, Some(loadout))
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "legacy and full-kit grants share one transaction and fence"
+    )]
+    async fn grant_starter_plan<C: ItemLoopContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        content: &C,
+        template: &StarterTemplate,
+        loadout: Option<&StartingLoadout>,
+    ) -> std::result::Result<StarterGrantOutcome, DurabilityError> {
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -57,6 +101,21 @@ impl DurabilityRoot {
                 facts.definition == template.definition && facts.container_capacity.is_some()
             })
             && (1..=100).contains(&template.quantity);
+        let admitted = admitted
+            && loadout.is_none_or(|loadout| {
+                content.loop_facts(&loadout.backpack).is_some_and(|facts| {
+                    facts
+                        .container_capacity
+                        .is_some_and(|capacity| capacity >= loadout.items.len() as u32)
+                }) && loadout.items.iter().all(|(definition, quantity, _)| {
+                    content.loop_facts(definition).is_some_and(|facts| {
+                        facts.definition == *definition
+                            && oteryn_gameplay_items::stacking::stack_maximum(facts.stack)
+                                .is_ok_and(|(maximum, _)| *quantity <= maximum)
+                    })
+                })
+            });
+        let loadout = loadout.cloned();
         let digest = content.loop_content_digest();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -68,6 +127,11 @@ impl DurabilityRoot {
                     .await
                     .map_err(grant_error)?;
                     let character = fence.character_id;
+                    if let Some(loadout) = &loadout {
+                        let vocation: String = sqlx::query_scalar("SELECT COALESCE((SELECT vocation FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid),'none')")
+                            .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        if vocation != loadout.vocation { return Err(DurabilityError::Unavailable); }
+                    }
                     sqlx::query(
                         "SELECT pg_advisory_xact_lock(hashtextextended(\
                          'oteryn:starter-grant:' || encode($1, 'hex'), 0))",
@@ -105,7 +169,28 @@ impl DurabilityRoot {
                     } else {
                         Some(new_uuid(&mut tx).await?)
                     };
-                    let envelope = serde_json::to_vec(&json!({
+                    let mut children = Vec::new();
+                    let mut ordinal = 0_u32;
+                    let mut equipment_revision = None;
+                    if !occupied && let Some(loadout) = &loadout {
+                        let slots: Vec<i16> = sqlx::query_scalar("SELECT slot FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid ORDER BY slot")
+                            .bind(character.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+                        for (definition, quantity, desired_slot) in &loadout.items {
+                            // oteryn-choice: preserve occupied equipment; donor addItem also falls back to the backpack.
+                            let slot = if slots.contains(&i16::from(*desired_slot)) { 0 } else { *desired_slot };
+                            if slot == 0 { ordinal += 1; }
+                            let child = new_uuid(&mut tx).await?;
+                            children.push(json!({"item": child.iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
+                                "family": definition.family, "key": definition.production_key,
+                                "revision": definition.revision_ref, "quantity": quantity, "slot": slot,
+                                "ordinal": if slot == 0 { Some(ordinal) } else { None }}));
+                        }
+                        if children.iter().any(|child| child["slot"] != 0) {
+                            equipment_revision = Some(sqlx::query_scalar::<_, String>("SELECT revision::text FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+                                .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?);
+                        }
+                    }
+                    let mut envelope = json!({
                         "character": character.as_bytes(),
                         "template": template.key,
                         "template_revision": template.revision,
@@ -117,17 +202,18 @@ impl DurabilityRoot {
                         "quantity": template.quantity,
                         "outcome": if occupied { "SKIPPED" } else { "MINTED" },
                         "item": item,
-                    }))
-                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    });
+                    if !children.is_empty() { envelope["loadout"] = json!(&children); }
+                    let envelope = serde_json::to_vec(&envelope).map_err(|_| DurabilityError::InvalidStoredState)?;
                     sqlx::query(
                         "INSERT INTO game_character_starter_grants (character_id, template_key, \
                                 template_revision, world_id, definition_family, \
                                 definition_production_key, definition_revision_ref, quantity, \
                                 outcome, item_instance_id, transaction_id, event_id, \
-                                grant_envelope, grant_envelope_sha256) \
+                                grant_envelope, grant_envelope_sha256, loadout, equipment_revision_before) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, $5, $6, \
                                  $7, $8, $9, encode($10,'hex')::uuid, encode($11,'hex')::uuid, \
-                                 encode($12,'hex')::uuid, $13, sha256($13))",
+                                 encode($12,'hex')::uuid, $13, sha256($13), $14, $15::text::numeric)",
                     )
                     .bind(character.as_bytes().as_slice())
                     .bind(&template.key)
@@ -142,6 +228,8 @@ impl DurabilityRoot {
                     .bind(transaction_id.as_slice())
                     .bind(event_id.as_slice())
                     .bind(envelope.as_slice())
+                    .bind(serde_json::Value::Array(children.clone()))
+                    .bind(&equipment_revision)
                     .execute(&mut *tx)
                     .await?;
                     if let Some(item) = item {
@@ -174,6 +262,27 @@ impl DurabilityRoot {
                         .bind(transaction_id.as_slice())
                         .execute(&mut *tx)
                         .await?;
+                    }
+                    if let Some(backpack) = item {
+                        for child in &children {
+                            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES($1::text::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,1,encode($7,'hex')::uuid)")
+                                .bind(child["item"].as_str()).bind(world.as_bytes().as_slice())
+                                .bind(child["family"].as_str()).bind(child["key"].as_str()).bind(child["revision"].as_str())
+                                .bind(child["quantity"].as_i64()).bind(transaction_id.as_slice()).execute(&mut *tx).await?;
+                            if child["slot"] == 0 {
+                                sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,character_id,parent_item_instance_id,placement_ordinal,world_id,placed_transaction_id) VALUES($1::text::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid)")
+                                    .bind(child["item"].as_str()).bind(character.as_bytes().as_slice()).bind(backpack.as_slice())
+                                    .bind(child["ordinal"].as_i64()).bind(world.as_bytes().as_slice()).bind(transaction_id.as_slice()).execute(&mut *tx).await?;
+                            } else {
+                                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$2,$3::text::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid)")
+                                    .bind(character.as_bytes().as_slice()).bind(child["slot"].as_i64().and_then(|slot| i16::try_from(slot).ok()))
+                                    .bind(child["item"].as_str()).bind(world.as_bytes().as_slice()).bind(transaction_id.as_slice()).execute(&mut *tx).await?;
+                            }
+                        }
+                        if equipment_revision.is_some() {
+                            sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1,last_transaction_id=encode($2,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid")
+                                .bind(character.as_bytes().as_slice()).bind(transaction_id.as_slice()).execute(&mut *tx).await?;
+                        }
                     }
                     sqlx::query("SET CONSTRAINTS ALL IMMEDIATE")
                         .execute(&mut *tx)

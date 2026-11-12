@@ -527,16 +527,34 @@ async fn open_tuple(runtime: PgPool) -> Result<Type2EventTuple, sqlx::Error> {
 /// A raw mint reservation as the migration owner with every trigger on, `seed` choosing its
 /// identities, `revision` its writer-set revision and `forged` the marker it supplies.
 fn reservation(seed: u8, revision: &str, forged: bool) -> String {
+    reservation_for_schema(seed, revision, forged, true)
+}
+
+fn reservation_for_schema(seed: u8, revision: &str, forged: bool, death_scope: bool) -> String {
+    // Migration 1152 introduces explicit death scope columns; the schema-78
+    // activation-backfill fixture must retain the historical insert shape.
+    let (scope_columns, scope_values) = if death_scope {
+        (
+            "death_scope_kind,death_scope_key,",
+            format!(
+                "1,game_item_death_scope_key({},1::smallint,{},NULL),",
+                uuid(WORLD),
+                uuid(CHANNEL)
+            ),
+        )
+    } else {
+        ("", String::new())
+    };
     format!(
         "INSERT INTO game_item_mint_reservations \
-           (death_world_id, death_channel_id, death_scope_ownership_generation, \
+           ({scope_columns}death_world_id, death_channel_id, death_scope_ownership_generation, \
             death_actor_local_id, death_actor_local_generation, loot_table_family, \
             loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
             draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
             occurred_at, envelope, fence_scope_ownership_generation, fence_holder_node_id, \
             fence_holder_registration_revision, work_units_used, reserved_at, \
             type2_schema_revision, type2_pre_activation) \
-         VALUES ({world}, {channel}, 1, {seed}, 1, 'LootTable', 'fixture:loot.forged', 'loot-r1', \
+         VALUES ({scope_values}{world}, {channel}, 1, {seed}, 1, 'LootTable', 'fixture:loot.forged', 'loot-r1', \
             'fixture:purpose.drop', 1, decode(repeat('cd',33),'hex'), {tx}, {ev}, {item}, 1000, \
             decode(repeat('ab',16),'hex'), 1, {node}, 0, 0, 900, {revision}, {forged})",
         world = uuid(WORLD),
@@ -882,7 +900,7 @@ fn existing_reservations_are_backfilled_as_pre_activation() -> TestResult {
     run(async |admin| {
         let database = Database::create(admin, "backfill", Some(BEFORE_ACTIVATION_SCHEMA)).await?;
         let pool = PgPool::connect(&database.url).await?;
-        let mint = reservation(170, "", false);
+        let mint = reservation_for_schema(170, "", false, false);
         let mint = mint
             .replace(
                 ", \

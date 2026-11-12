@@ -5,6 +5,7 @@ use super::*;
 use crate::gameplay_transport::item_view::ItemViewSnapshotDomain as OwnedDomain;
 
 pub(super) struct InitialSnapshot {
+    pub(super) spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     pub(super) overlay_served: bool,
     pub(super) overlay_revision: u64,
     pub(super) vitals: Option<(u64, ActorVitals)>,
@@ -19,6 +20,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     admitted: &mut AdmittedSession,
     domains: &mut Vec<OwnedDomain>,
 ) -> Result<InitialSnapshot, ServeEnd> {
+    super::analyser::snapshot(authority, admitted, domains).await?;
     if admitted
         .continuity
         .selected_capabilities
@@ -166,7 +168,10 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
             payload,
         });
     }
+    let spell_catalog =
+        super::spell_catalog::SessionCatalog::initial(authority, actor, admitted, domains).await?;
     Ok(InitialSnapshot {
+        spell_catalog,
         overlay_served,
         overlay_revision,
         vitals,
@@ -205,6 +210,11 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
     {
         let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        if admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ) {
+            view = view.with_house_container_capacity();
+        }
         if admitted
             .continuity
             .selected_capabilities
@@ -236,7 +246,10 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         let Some(inventory) =
             item_move::observe_inventory(authority, actor, admitted.game_session_id, &view).await
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(super::setup::failed(
+                "event=join_prepare_failed phase=inventory",
+                ServeEnd::Disconnected,
+            ));
         };
         let reopen = match view.carried_open_corpse() {
             Some(key) => authority.observe_item_target(actor, key).await,
@@ -264,8 +277,17 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
     let mut appearances = SessionAppearance::new(selected_capabilities);
     let mut visibility = None;
     if selected_capabilities.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-        let Some(channel) = authority.observe_visible_entities(actor).await else {
-            return Err(ServeEnd::Disconnected);
+        let Some(channel) = crate::gameplay_transport::entity_names::observe(
+            authority,
+            actor,
+            selected_capabilities,
+        )
+        .await
+        else {
+            return Err(super::setup::failed(
+                "event=join_prepare_failed phase=visibility",
+                ServeEnd::Disconnected,
+            ));
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
             .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1));
@@ -280,7 +302,10 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             )
             .await
         else {
-            return Err(ServeEnd::Disconnected);
+            return Err(super::setup::failed(
+                "event=join_prepare_failed phase=appearances",
+                ServeEnd::Disconnected,
+            ));
         };
         if let Some(item_view) = &item_view {
             admitted.continuity.item_view = item_view.continuity();
@@ -349,6 +374,13 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             payload: views_snapshot.payload,
         });
         let views = ContainerViewState::default();
+        let views = if admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ) {
+            views.with_house_container_capacity()
+        } else {
+            views
+        };
         container_views = Some(
             if admitted
                 .continuity
@@ -541,7 +573,7 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
     baseline: WorldSpatialObservation,
 ) -> Result<WorldSnapshot, ServeEnd> {
     // MAP-WIRE-2: with capability 18 (which requires 4), domain 17 above every revision the
-    // session has seen, with fresh map handles. It must fit the single snapshot chunk.
+    // session has seen, with fresh map handles. It uses the bounded snapshot transfer.
     let mut world_map = None;
     let map_snapshot;
     if let Some(items) = item_view.as_mut().filter(|_| {
@@ -565,6 +597,26 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
             payload: map_snapshot.payload,
         });
         world_map = Some(view);
+    }
+    if selected_capabilities
+        .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS,
+            revision: 0,
+            snapshot_type: 1,
+            payload: Vec::new(),
+        });
+    }
+    if selected_capabilities
+        .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::presentation::STATE_DOMAIN_AMBIENT_SOUND,
+            revision: 0,
+            snapshot_type: 1,
+            payload: Vec::new(),
+        });
     }
     // CLOCK-1 (§11.3): with capability 19 (which requires 6), domain 18 at the session's current
     // revision; a resume or transfer sends only this snapshot and never replays a delta.

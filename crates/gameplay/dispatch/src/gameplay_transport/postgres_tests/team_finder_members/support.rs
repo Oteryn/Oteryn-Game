@@ -4,11 +4,12 @@ use crate::foundation::{ChannelId, ChannelRuntimeV1, MessageType, WorldId, decod
 use crate::gameplay_transport::{
     capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
     connection::{
-        AdmittedSession, ConnectionEnd, ControllerBinding, FirstEntryOutcome, IDLE_LIVENESS,
-        SessionContinuity, serve_admitted,
+        AdmittedSession, ConnectionEnd, ControllerBinding, FirstEntryOutcome,
+        FreshAdmissionAuthority, IDLE_LIVENESS, SessionContinuity, serve_admitted,
     },
     last_position::AdmissionPosition,
     tcp_tls::{read_frame, write_frame},
+    team_finder_members::SessionTeamFinderView,
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_protocol_oteryn::{
@@ -130,6 +131,24 @@ impl Peer {
         self.stream.shutdown().await?;
         Ok(())
     }
+}
+
+// Force the background-read/command overlap without sleeps or a larger deadline.
+async fn busy_holder<T>(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    command: impl std::future::Future<Output = Option<T>>,
+) -> TestResult<T> {
+    use std::task::Poll;
+    let pass = owner.root.try_issue_semantic_pass()?;
+    let mut command = std::pin::pin!(command);
+    let waiting =
+        std::future::poll_fn(|context| Poll::Ready(command.as_mut().poll(context).is_pending()))
+            .await;
+    assert!(waiting, "a busy holder must wait rather than disconnect");
+    pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    tokio::time::timeout(crate::durability::DB_PASS_DEADLINE, command)
+        .await?
+        .ok_or_else(|| "command lost the returned holder".into())
 }
 
 pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
@@ -271,6 +290,64 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             &AdmissionPosition::FirstLogin,
             fence,
         ));
+    }
+    if case == Case::Cancel {
+        // A concurrent owner work item owns the Root lane. A cold bootstrap
+        // must queue before touching its holder. Cancel this probe while queued
+        // so all three real connections below still exercise cold startup.
+        let _lane = owner
+            .spell_lane
+            .acquire()
+            .await
+            .map_err(|_| "probe lane unresolved")?;
+        assert!(h.root.is_ready());
+        let mut probe = admitted[2];
+        let mut preparing = std::pin::pin!(owner.prepare_quest_callback_resume(&mut probe));
+        let pending = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(preparing.as_mut().poll(cx).is_pending())
+        })
+        .await;
+        assert!(pending, "cold bootstrap must wait for the owner lane");
+        assert!(
+            h.root.is_ready(),
+            "cold bootstrap borrowed the Root outside the owner lane"
+        );
+    }
+    if case == Case::Logout {
+        // Exercise both Team Finder dispatch owners against a known busy holder;
+        // the persistent wire scenario below still proves logout and relog.
+        let admitted = admitted[2];
+        let mut view = SessionTeamFinderView::default();
+        let query = wire::encode_query(TeamFinderQuery::Browse { after: None }).map_err(debug)?;
+        let (accepted, bytes) = busy_holder(
+            &owner,
+            owner.team_finder_members_command(
+                admitted,
+                100,
+                wire::COMMAND_TYPE_TEAM_FINDER_QUERY,
+                &query,
+                &mut view,
+            ),
+        )
+        .await?;
+        assert!(accepted);
+        assert_eq!(
+            wire::decode_result(&bytes).map_err(debug)?,
+            TeamFinderResult::Browse {
+                listings: Vec::new(),
+                next: None,
+            }
+        );
+        assert!(
+            busy_holder(
+                &owner,
+                owner.team_finder_leader(admitted, 101, Some(super::cases::LISTING)),
+            )
+            .await?
+        );
+        assert_eq!(h.count("game_team_finder_active_listings").await?, 1);
+        assert!(busy_holder(&owner, owner.team_finder_leader(admitted, 102, None)).await?);
+        assert_eq!(h.count("game_team_finder_leader_listings").await?, 0);
     }
     let (mut server0, client0) = tokio::io::duplex(65_536);
     let (mut server1, client1) = tokio::io::duplex(65_536);

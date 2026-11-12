@@ -1,8 +1,6 @@
-//! W10/W11 live lever prerequisites and the existing W02 consumer boundary.
-//!
-//! W10/W11 have no qualified native boss Instance. Their command 178 replies REJECTED;
-//! internally the endgame seam returns ContentUnavailable, never a fake handoff.
-//! Other boss activities retain the shared native owner (PR #2784, ANSWER 6547426887).
+//! Endgame prerequisites for the shared qualified native activity owner.
+//! Crystal 201189f actions/bosses_levers/the_primal_manace.lua:6-12;
+//! quests/rotten_blood_quest/movements_blood_entrance.lua:20-32.
 
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::character_progression::CharacterProgressionError;
@@ -10,6 +8,45 @@ use oteryn_gameplay_encounters::bosses::endgame_entry::{
     self, Encounter, EntryFacts, EntryRefusal, QuestFamily,
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
+
+/// Crystal 201189f the_primal_manace.lua:2-4 binds the lever boss to its
+/// captured creature. Template and creature aliases must share entry policy.
+pub(super) fn canonical_boss_key(key: &str) -> Option<String> {
+    // Soul War's source rooms are declared in soul_war.lua rather than the
+    // literal lever capture. Reuse the same closed phase identity as entry;
+    // the activity owner still requires its independently qualified room.
+    let creature = key
+        .strip_prefix("oteryn:boss.")
+        .map(|suffix| format!("oteryn:creature.{suffix}"));
+    if let Some(encounter) = Encounter::from_boss_key(creature.as_deref().unwrap_or(key)) {
+        return encounter
+            .boss_key()
+            .strip_prefix("oteryn:creature.")
+            .map(|suffix| format!("oteryn:boss.{suffix}"));
+    }
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers().ok()?;
+    candidates
+        .iter()
+        .find(|candidate| {
+            candidate.creature_key.as_deref() == Some(key)
+                || candidate.boss_key().as_deref() == Some(key)
+        })?
+        .boss_key()
+}
+
+pub(super) fn encounter_for_boss_key(key: &str) -> Option<Encounter> {
+    let creature = key
+        .strip_prefix("oteryn:boss.")
+        .map(|suffix| format!("oteryn:creature.{suffix}"));
+    if let Some(encounter) = Encounter::from_boss_key(creature.as_deref().unwrap_or(key)) {
+        return Some(encounter);
+    }
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers().ok()?;
+    let candidate = candidates
+        .iter()
+        .find(|candidate| candidate.boss_key().as_deref() == Some(key))?;
+    Encounter::from_boss_key(candidate.creature_key.as_deref()?)
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn endgame_boss_entry(
@@ -21,7 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(request) => request,
             Err(_) => return Ok(Err(EntryRefusal::InvalidInput)),
         };
-        let Some(encounter) = Encounter::from_boss_key(&request.boss_key) else {
+        let Some(encounter) = encounter_for_boss_key(&request.boss_key) else {
             return Ok(Err(EntryRefusal::ContentUnavailable));
         };
         let Some(fence) =
@@ -86,12 +123,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             access,
             chain_ready,
         };
-        // Until W02 is composed this is a principal-only prerequisite preview. It cannot
-        // admit even a solo group. W02 resolves the real lever roster, reloads every current
-        // Quest fact under its admission locks, and calls this same group consumer.
-        Ok(endgame_entry::enter(encounter, &[facts], |_| async {
-            Err(EntryRefusal::ContentUnavailable)
-        })
-        .await)
+        // This validates quest prerequisites only. The caller must still resolve a
+        // qualified content template and perform the shared native scope handoff.
+        Ok(endgame_entry::enter(encounter, &[facts], |_| async { Ok(()) }).await)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn canonical_endgame_aliases_retain_their_entry_policy() -> Result<(), String> {
+        for key in [
+            "oteryn:creature.goshnar_s_spite",
+            "oteryn:creature.goshnar_s_megalomania_green",
+            "oteryn:creature.the_primal_menace",
+            "oteryn:creature.bakragore",
+        ] {
+            let canonical = super::canonical_boss_key(key).ok_or("canonical boss")?;
+            assert_eq!(
+                super::encounter_for_boss_key(&canonical),
+                super::Encounter::from_boss_key(key),
+                "canonical aliases must not bypass the prerequisite gate: {key}"
+            );
+        }
+        Ok(())
     }
 }

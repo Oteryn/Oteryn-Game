@@ -23,6 +23,12 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            103 => crate::cast_chat::apply(self, server_sequence, payload),
+            15 => crate::analyser_transport::apply(self, server_sequence, payload),
+            100 => crate::spell_catalog::apply(self, server_sequence, payload),
+            player_trade::STATE_DOMAIN_PLAYER_TRADE => {
+                self.apply_trade_delta(server_sequence, delta)
+            }
             npc_service::STATE_DOMAIN_NPC_CONVERSATION
             | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
                 if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {
@@ -63,8 +69,17 @@ impl<S: SessionStream> Session<S> {
                 }
                 Ok(event)
             }
+            52 => crate::pvp_expert::apply(self, server_sequence, payload),
+            18 => crate::world_light::apply(self, server_sequence, payload),
+            22 => crate::weather::apply(self, server_sequence, payload),
+            19 | 20 | 101 | oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS => crate::presentation::apply(self, server_sequence, payload),
+            14 => crate::container_tree::apply(self, server_sequence, delta),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
+            40 => crate::server_save_countdown::apply(self, server_sequence, payload),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
+            oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES => {
+                crate::achievement_notices_transport::apply(self, server_sequence, payload)
+            }
             oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {
                 crate::server_messages::apply(self, server_sequence, payload)
             }
@@ -78,26 +93,34 @@ impl<S: SessionStream> Session<S> {
                     world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                     self.spatial_revision,
                 )?;
-                let entities_delta = if self.is_selected(CAPABILITY_ITEM_VIEW_MOVE_V1) {
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(
+                let fields =
+                    world_spatial_entities::EntityFields::selected(self.selected_capabilities());
+                let (entities_delta, lights, icons) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_icons(
                         delta.payload,
-                    )?
-                } else {
-                    world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)?
-                };
+                        fields,
+                    )?;
                 if entities_delta.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }
                 let next = match &self.entities {
-                    Some(stored) => stored.after(&entities_delta)?,
+                    Some(stored) => stored.after(&entities_delta, &lights)?,
                     None => {
                         return Err(SessionError::UnselectedDomain { domain_id });
                     }
                 };
                 appearance_state::validate_entities(self.appearance.as_ref(), Some(&next))?;
+                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| {
+                    !next.get(&icon.entity).is_some_and(|entity| entity.kind == EntityKind::Player)
+                })) {
+                    return Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame));
+                }
                 self.entities = Some(next);
                 self.world_spatial.actor_position = entities_delta.actor_position;
                 self.spatial_revision = new_revision;
+                if let Some(icons) = icons {
+                    return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
+                }
                 Ok(SessionEvent::WorldSpatialEntities(applied(
                     server_sequence,
                     base_revision,

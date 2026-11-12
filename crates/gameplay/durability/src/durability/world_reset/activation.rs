@@ -24,7 +24,10 @@ impl DurabilityRoot {
         if let Some(epoch) = activate(self, node, *reset, target).await? {
             return Ok(Some(epoch));
         }
-        if !self.retire_world_reset_ground(authority, node, reset).await? {
+        if !self
+            .retire_world_reset_ground(authority, node, reset)
+            .await?
+        {
             return Ok(None);
         }
         Ok(activate(self, node, *reset, target).await?)
@@ -37,9 +40,15 @@ async fn activate(
     reset: RetiringWorldReset,
     target: &QualifiedNativeEntryRoom,
 ) -> Result<Option<u64>> {
+    let world_changes = crate::durability::world_event::prepare_catalogue()?;
     let owner = root.clone();
     let node = node.clone();
-    let map = target.movement_cells().scope().map_revision.as_str().to_owned();
+    let map = target
+        .movement_cells()
+        .scope()
+        .map_revision
+        .as_str()
+        .to_owned();
     let server = target.compiled().server_digest();
     let client = target.compiled().client_digest();
     let frame = target.frame_binding().digest();
@@ -54,6 +63,9 @@ async fn activate(
                 census::WorldResetDrain::NotCurrent => return Ok(None),
                 census::WorldResetDrain::CapacityExceeded => return Err(DurabilityError::InvalidStoredState),
             }
+        }
+        if phase.as_deref()!=Some("ACTIVATED") {
+            crate::durability::cake_event::before_reset(&mut tx,reset.world).await?;
         }
         let fact = node.fact();
         let outcome: Option<String> = sqlx::query_scalar("SELECT game_world_reset_activate(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,$5,$6,$7,$8,encode($9,'hex')::uuid,$10::text::numeric)")
@@ -70,7 +82,8 @@ async fn activate(
         if let Some(epoch) = epoch {
             // Same transaction as epoch, calendar and content issuance. Historical
             // replay verifies the immutable decision; it never redraws at channel boot.
-            crate::durability::world_event::record_reset(&mut tx, reset.world, epoch, outcome.as_deref() == Some("NEW_EPOCH")).await?;
+            crate::durability::world_event::record_reset(&mut tx, reset.world, epoch, outcome.as_deref() == Some("NEW_EPOCH"), &world_changes).await?;
+            crate::durability::cake_event::after_reset(&mut tx,reset.world,epoch).await?;
         }
         commit_semantic_transaction(tx, deadline).await?;
         Ok(epoch)

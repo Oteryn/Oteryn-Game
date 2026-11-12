@@ -21,7 +21,8 @@ pub(super) struct Source {
 pub(super) struct Facts {
     pub mounts: u32,
     pub outfits: u32,
-    pub full_outfits: [bool; 3],
+    pub full_outfits: [bool; 4],
+    pub formal_dress_quest: bool,
 }
 
 impl Source {
@@ -46,15 +47,22 @@ impl Source {
         .await?;
         let account = AccountId::from_bytes(*account.as_bytes())
             .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let facts: Vec<_> = read_account_appearance_unlocks(tx, account, &self.grant_keys)
+        let grants = read_account_appearance_unlocks(tx, account, &self.grant_keys)
             .await
             .map_err(|error| match error {
                 AppearanceReadError::Storage(error) => DurabilityError::from(error),
                 AppearanceReadError::InvalidStoredState => DurabilityError::InvalidStoredState,
-            })?
-            .into_iter()
+            })?;
+        // Formal Dress is also sold (outfits.xml:134,266); only the quest grant is
+        // the completion source. Interpret both views through the same admitted mapping.
+        let quest_facts: Vec<_> = grants
+            .iter()
+            .filter(|fact| fact.source_kind == "quest")
+            .map(|fact| (fact.unlock_key.clone(), fact.content_revision.clone()))
+            .collect();
+        let facts: Vec<_> = grants.into_iter()
             // Match the appearance owner's earned-unlock seam. Store does not authorize.
-            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming"))
+            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming" | "item_action"))
             .map(|fact| (fact.unlock_key, fact.content_revision))
             .collect();
         let outfits = self.content.outfit_keys().filter_map(|key| {
@@ -66,12 +74,18 @@ impl Source {
                 ],
             ))
         });
-        Ok(project(
-            &self.content,
-            &facts,
-            outfits,
-            self.content.mount_keys(),
-        ))
+        let mut result = project(&self.content, &facts, outfits, self.content.mount_keys());
+        let quest_unlocks = EarnedCosmetics {
+            content: &self.content,
+            facts: &quest_facts,
+        };
+        result.formal_dress_quest = self.content.outfit_keys().any(|key| {
+            let key = key.to_owned();
+            quest_unlocks.outfit(&key) == UnlockFact::Compatible
+                && self.content.look_type(&key, Sex::Female) == Some(1461)
+                && self.content.look_type(&key, Sex::Male) == Some(1460)
+        });
+        Ok(result)
     }
 }
 
@@ -89,24 +103,21 @@ fn project<'a, C: AppearanceContent<String>>(
         // PR #2782 Q3=B: count each earned canonical identity once. Crystal's
         // player_functions.cpp:3306-3311 / player.cpp:6840-6850 insert an outfitsMap entry
         // for an earned addon too. Native starter content alone is not an earned grant.
-        let base_granted = unlocks.outfit(&key) == UnlockFact::Compatible;
-        let addon_count = content.outfit_addon_count(&key).unwrap_or(0);
-        let starter = [Sex::Female, Sex::Male]
-            .into_iter()
-            .any(|sex| content.outfit_is_starter(&key, sex));
-        let earned_starter_addon = starter
-            && (1..=addon_count).any(|addon| unlocks.addon(&key, addon) == UnlockFact::Compatible);
-        if base_granted || earned_starter_addon {
-            owned_outfits.insert(key.clone());
-        }
+        let addon_count=content.outfit_addon_count(&key).unwrap_or(0);
+        let any_earned=[Sex::Female,Sex::Male].into_iter().any(|sex| {
+            unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Outfit(&key),Some(sex))==UnlockFact::Compatible
+                || (content.outfit_is_starter(&key,sex) && (1..=addon_count).any(|addon|
+                    unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Addon(&key,addon),Some(sex))==UnlockFact::Compatible))
+        });
+        if any_earned {owned_outfits.insert(key.clone());}
         if addon_count < 2 {
             continue;
         }
         for (sex, look) in [Sex::Female, Sex::Male].into_iter().zip(looks) {
-            let base = content.outfit_is_starter(&key, sex) || base_granted;
+            let base = content.outfit_is_starter(&key, sex) || unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Outfit(&key),Some(sex))==UnlockFact::Compatible;
             let addons = (1..=2).all(|addon| {
                 content.addon_is_starter(&key, sex, addon)
-                    || unlocks.addon(&key, addon) == UnlockFact::Compatible
+                    || unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Addon(&key,addon),Some(sex)) == UnlockFact::Compatible
             });
             if base && addons {
                 full_looks.insert(look);
@@ -124,6 +135,7 @@ fn project<'a, C: AppearanceContent<String>>(
                 .count(),
         )
         .unwrap_or(u32::MAX),
+        formal_dress_quest: false,
         full_outfits: FullOutfit::ALL.map(|outfit| {
             outfit
                 .looks()
@@ -205,7 +217,8 @@ mod tests {
             Facts {
                 mounts: 1,
                 outfits: 1,
-                full_outfits: [false; 3]
+                full_outfits: [false; 4],
+                formal_dress_quest: false
             }
         );
         let full = facts(&["quest.outfit", "quest.first", "quest.second", "quest.mount"]);
@@ -214,19 +227,20 @@ mod tests {
             Facts {
                 mounts: 1,
                 outfits: 1,
-                full_outfits: [true, false, false]
+                full_outfits: [true, false, false, false],
+                formal_dress_quest: false
             }
         );
         assert_eq!(
             evaluate(&full, [1457, 128]).full_outfits,
-            [false; 3],
+            [false; 4],
             "one matching look is insufficient"
         );
         let mut incompatible = full;
         incompatible[2].1 = "retired".to_owned();
         assert_eq!(
             evaluate(&incompatible, [1457, 1456]).full_outfits,
-            [false; 3]
+            [false; 4]
         );
     }
 

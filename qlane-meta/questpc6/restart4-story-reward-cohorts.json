@@ -1,0 +1,1515 @@
+{
+  "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal": {
+    "quests": [
+      "canary:quest/an_interest_in_botany_quest",
+      "canary:quest/barbarian_arena_quest",
+      "canary:quest/beggar_outfits_quest",
+      "canary:quest/children_of_the_revolution_quest",
+      "canary:quest/cults_of_tibia_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach": {
+        "claim": "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach",
+        "placements": [
+          {
+            "position": {
+              "x": 33004,
+              "y": 31530,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2523",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6296
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2807",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6296
+              }
+            ]
+          }
+        ],
+        "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+        "placements": [
+          {
+            "position": {
+              "x": 32231,
+              "y": 31068,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2031",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6221
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2316",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6221
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+        "placements": [
+          {
+            "position": {
+              "x": 32231,
+              "y": 31065,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2023",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6220
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2308",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6220
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+        "placements": [
+          {
+            "position": {
+              "x": 32235,
+              "y": 31064,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2053",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6224
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2338",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6224
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32235,
+              "y": 31066,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2046",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6223
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2331",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6223
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32235,
+              "y": 31068,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2039",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6222
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2324",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6222
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+        "placements": [
+          {
+            "position": {
+              "x": 32231,
+              "y": 31061,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2069",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6226
+              },
+              {
+                "accepted_override": "PR2770 Q4/A: retain accepted two100stacks over donor Container:addItem clamp",
+                "citation": "crystal:data-global/startup/tables/chest.lua:2354",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6226
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+        "placements": [
+          {
+            "position": {
+              "x": 32231,
+              "y": 31058,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2061",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6225
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2346",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6225
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+        "placements": [
+          {
+            "position": {
+              "x": 32235,
+              "y": 31057,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2091",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6229
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2376",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6229
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32235,
+              "y": 31059,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2084",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6228
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2369",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6228
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32235,
+              "y": 31061,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2077",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6227
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2362",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6227
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+        "placements": [
+          {
+            "position": {
+              "x": 32231,
+              "y": 31054,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2107",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6231
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2392",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6231
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+        "placements": [
+          {
+            "position": {
+              "x": 32231,
+              "y": 31051,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2099",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6230
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2384",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6230
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons": {
+        "claim": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+        "placements": [
+          {
+            "position": {
+              "x": 32235,
+              "y": 31050,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2129",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6234
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2414",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6234
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32235,
+              "y": 31052,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2122",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6233
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2407",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6233
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32235,
+              "y": 31054,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2115",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6232
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2400",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6232
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff": {
+        "claim": "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff",
+        "placements": [
+          {
+            "position": {
+              "x": 33167,
+              "y": 31600,
+              "z": 15
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1782",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6189
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2067",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6189
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1": {
+        "claim": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge1",
+        "placements": [
+          {
+            "position": {
+              "x": 33247,
+              "y": 31161,
+              "z": 6
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2472",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6289
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2756",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6289
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2": {
+        "claim": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.chest_tome_of_knowledge2",
+        "placements": [
+          {
+            "position": {
+              "x": 33264,
+              "y": 31130,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2486",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6291
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2770",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6291
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil": {
+        "claim": "oteryn:reward-claim.quest.u8_54.children_of_the_revolution.flask_of_extra_greasy_oil",
+        "placements": [
+          {
+            "position": {
+              "x": 33327,
+              "y": 31410,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2479",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6290
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2763",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6290
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.kv.petrified_scream_quest": {
+        "claim": "oteryn:reward-claim.kv.petrified_scream_quest",
+        "placements": [
+          {
+            "position": {
+              "x": 32739,
+              "y": 31426,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2664",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6313
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2941",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6313
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      }
+    }
+  },
+  "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal": {
+    "quests": [
+      "canary:quest/dark_trails_quest",
+      "canary:quest/dreamer_s_challenge_quest",
+      "canary:quest/druid_outfits_quest",
+      "canary:quest/ferumbras_ascension_quest",
+      "canary:quest/forgotten_knowledge_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings": {
+        "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward05_gloth_and_belongings",
+        "placements": [
+          {
+            "position": {
+              "x": 33468,
+              "y": 32083,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2591",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6304
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2861",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6303
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings": {
+        "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward10_gloth_and_belongings",
+        "placements": [
+          {
+            "position": {
+              "x": 33487,
+              "y": 32085,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2599",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6305
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2869",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6304
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook": {
+        "claim": "oteryn:reward-claim.quest.u10_50.dark_trails.reward_small_notebook",
+        "placements": [
+          {
+            "position": {
+              "x": 33457,
+              "y": 32073,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2584",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6303
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2854",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6302
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword": {
+        "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.bplong_sword",
+        "placements": [
+          {
+            "position": {
+              "x": 32860,
+              "y": 32249,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1831",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6195
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2116",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6195
+              }
+            ]
+          }
+        ],
+        "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+        "reason": "quest_container_chests_authored_book_text_survives_replay",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book": {
+        "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+        "placements": [
+          {
+            "position": {
+              "x": 32850,
+              "y": 32285,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1839",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6196
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2124",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6196
+              }
+            ]
+          }
+        ],
+        "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond": {
+        "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond",
+        "placements": [
+          {
+            "position": {
+              "x": 32835,
+              "y": 32223,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1878",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6201
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2163",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6201
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine": {
+        "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine",
+        "placements": [
+          {
+            "position": {
+              "x": 32749,
+              "y": 32341,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1846",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6197
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2131",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6197
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32751,
+              "y": 32341,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1854",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6198
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2139",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6198
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32753,
+              "y": 32341,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1862",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6199
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2147",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6199
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 32755,
+              "y": 32341,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1870",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6200
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2155",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6200
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain": {
+        "claim": "oteryn:reward-claim.quest.u7_8.druid_outfits.wolf_tooth_chain",
+        "placements": [
+          {
+            "position": {
+              "x": 32939,
+              "y": 31776,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1791",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6190
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2076",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6190
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones": {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.stone_coffins_bones",
+        "placements": [
+          {
+            "position": {
+              "x": 33393,
+              "y": 32373,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2624",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6308
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2894",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6307
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night": {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.the_rite_of_eternal_night",
+        "placements": [
+          {
+            "position": {
+              "x": 33384,
+              "y": 32323,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2617",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6307
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2887",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6306
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth": {
+        "claim": "oteryn:reward-claim.quest.u10_90.ferumbras_ascension.vampire_teeth",
+        "placements": [
+          {
+            "position": {
+              "x": 33408,
+              "y": 32396,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2631",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6309
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2908",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6309
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.halls_of_hope.reward1": {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward1",
+        "placements": [
+          {
+            "position": {
+              "x": 32349,
+              "y": 32194,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:292",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6001
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:591",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6001
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.halls_of_hope.reward2": {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward2",
+        "placements": [
+          {
+            "position": {
+              "x": 32382,
+              "y": 32368,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:298",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6002
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:597",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6002
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.halls_of_hope.reward3": {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward3",
+        "placements": [
+          {
+            "position": {
+              "x": 32287,
+              "y": 32119,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:304",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6003
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:603",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6003
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.halls_of_hope.reward4": {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward4",
+        "placements": [
+          {
+            "position": {
+              "x": 32389,
+              "y": 32001,
+              "z": 6
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:310",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6004
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:609",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6004
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.halls_of_hope.reward5": {
+        "claim": "oteryn:reward-claim.halls_of_hope.reward5",
+        "placements": [
+          {
+            "position": {
+              "x": 32449,
+              "y": 32109,
+              "z": 8
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:316",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6005
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:615",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6005
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.kv.ghostsilver_lantern_quest": {
+        "claim": "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
+        "placements": [
+          {
+            "position": {
+              "x": 32825,
+              "y": 31664,
+              "z": 9
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2639",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6310
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2916",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6310
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.kv.imbuing_crystal_quest": {
+        "claim": "oteryn:reward-claim.kv.imbuing_crystal_quest",
+        "placements": [
+          {
+            "position": {
+              "x": 33026,
+              "y": 31662,
+              "z": 14
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2655",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6312
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2932",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6312
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.kv.painting_of_agirl_quest": {
+        "claim": "oteryn:reward-claim.kv.painting_of_agirl_quest",
+        "placements": [
+          {
+            "position": {
+              "x": 32883,
+              "y": 31686,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2647",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6311
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2924",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6311
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      }
+    }
+  },
+  "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal": {
+    "quests": [
+      "canary:quest/hidden_threats_quest",
+      "canary:quest/hunter_outfits_quest",
+      "canary:quest/knight_outfits_quest",
+      "canary:quest/koshei_the_deathless_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01": {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+        "placements": [
+          {
+            "position": {
+              "x": 33080,
+              "y": 32014,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1009",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6095
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1309",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6095
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02": {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+        "placements": [
+          {
+            "position": {
+              "x": 33031,
+              "y": 32050,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1016",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6096
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1316",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6096
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file": {
+        "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+        "placements": [
+          {
+            "position": {
+              "x": 33078,
+              "y": 31980,
+              "z": 13
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1002",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6094
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1302",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6094
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow": {
+        "claim": "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+        "placements": [
+          {
+            "position": {
+              "x": 32369,
+              "y": 32795,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1799",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6191
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2084",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6191
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest": {
+        "claim": "oteryn:reward-claim.quest.u7_8.knight_outfits.ramsays_helmet_chest",
+        "placements": [
+          {
+            "position": {
+              "x": 32860,
+              "y": 32516,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1807",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6192
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2092",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6192
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+        "placements": [
+          {
+            "position": {
+              "x": 33194,
+              "y": 32458,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2146",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6236
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2431",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6236
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+        "placements": [
+          {
+            "position": {
+              "x": 33305,
+              "y": 32277,
+              "z": 10
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2153",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6237
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2438",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6237
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+        "placements": [
+          {
+            "position": {
+              "x": 33212,
+              "y": 32593,
+              "z": 7
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2160",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6238
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2445",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6238
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+        "placements": [
+          {
+            "position": {
+              "x": 33053,
+              "y": 32468,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2167",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6239
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2452",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6239
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_gold",
+        "placements": [
+          {
+            "position": {
+              "x": 33273,
+              "y": 32470,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2188",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6242
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2473",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6242
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+        "placements": [
+          {
+            "position": {
+              "x": 33261,
+              "y": 32444,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2174",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6240
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2459",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6240
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum": {
+        "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+        "placements": [
+          {
+            "position": {
+              "x": 33261,
+              "y": 32448,
+              "z": 12
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:2181",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 6241
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:2466",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 6241
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      }
+    }
+  }
+}

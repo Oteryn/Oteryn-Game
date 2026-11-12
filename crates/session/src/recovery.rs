@@ -51,6 +51,13 @@ impl<S: SessionStream> Session<S> {
         direction: StepDirection,
     ) -> Result<RecoveryState, SessionError> {
         self.ensure_usable()?;
+        if direction.is_diagonal()
+            && !self.is_selected(world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1)
+        {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+            });
+        }
         self.next_command_id
             .checked_add(1)
             .ok_or(SessionError::CommandIdExhausted)?;
@@ -102,6 +109,13 @@ impl<S: SessionStream> Session<S> {
         .await?;
         let envelope = decode_wire_envelope(&frame)?;
         envelope.validate(Direction::ServerToClient, false)?;
+        // A resume the server took but cannot join (`SESSION_JOIN_UNAVAILABLE`) ends with its
+        // `ProtocolError`: keep its code and trace.
+        if let Some(error) =
+            session_exchange::terminal_protocol_error(&envelope, &previous.selected_capabilities)?
+        {
+            return Err(error);
+        }
         if envelope.message_type() != MessageType::ServerResumeAccepted {
             return Err(SessionError::UnexpectedMessage {
                 expected: MessageType::ServerResumeAccepted,

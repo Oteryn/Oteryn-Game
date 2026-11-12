@@ -336,7 +336,7 @@
   "compiler_inputs": [
     {
       "path": "tools/content-schema/quest-authoring/amend_monk_source_receipt.py",
-      "sha256": "6ef13056cc46c9263d61415e1bd503f97d31238cf8e63904bbce37627635ec7c"
+      "sha256": "6117549553349d6691d9e09660ba2bdb871ca17ab6d8fd67b43fdf37b511c8ae"
     },
     {
       "path": "tools/content-schema/quest-authoring/lua_writers.py",
@@ -364,11 +364,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree.schema.json",
-      "sha256": "fa6765c57fe18ff40b935821d3b13f58041c19ae6760af6220e436d2b9adcbf0"
+      "sha256": "d67629a2a840ce69dfb743b2f08f081918f47f00a69842588aae16e8e044c34c"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
-      "sha256": "64d967028c5d6e8d1ff5ee6c3a07c4e7d47d683b40784c731173152ebadbe45d"
+      "sha256": "9700bb5055dfa2966ef1a1d9fe37e5f782964ee82b51ea98e6ecff08a8957338"
     },
     {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
@@ -494,7 +494,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "f36eb02068fa0ab77da81d6cda024893583ffb4dd1d0eb3d92a43c0cd535bf48"
+      "sha256": "032de9fef9a4cc95f668e16e8d8ff8a4cb56fec4a9a5d729868d0446268b84f8"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
@@ -642,7 +642,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
-      "sha256": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
+      "sha256": "5f9c5a6aa180e67f638adc7d234b84dcc2514ffb912495ee12fb0bf7cd81ed1e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/uid-range-fix/graphs.json",

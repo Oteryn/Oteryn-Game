@@ -46,3 +46,9 @@ impl AppearanceState {
         Ok(())
     }
 }
+
+impl ItemDictionary {
+    pub(super) fn references(&self) -> Vec<u32> {
+        self.references.iter().copied().collect()
+    }
+}

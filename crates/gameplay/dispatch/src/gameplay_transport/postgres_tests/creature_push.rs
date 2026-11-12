@@ -30,7 +30,7 @@ const OUT_OF_REACH: u8 = 6;
 const EXHAUSTED: u8 = 7;
 
 /// Grass 0..=12 x 0..=8 on floor 7 (Tibia-keyed, so every tile has spell facts); a wall at (5, 2); every tile with x >= 8 is a protection zone.
-fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -44,6 +44,7 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
             kind,
             walkable,
             ground_speed: walkable.map(|_| 150),
+            blocks_projectile: None,
         }),
     };
     let manifest = Manifest {
@@ -80,6 +81,30 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
                 TerrainKind::Ground,
                 Some(true),
             ),
+            PaletteEntry {
+                key: "oteryn:item.tibia.i3944".into(),
+                family: Family::Item,
+                id: 3,
+                terrain: None,
+            },
+            PaletteEntry {
+                key: "oteryn:item.tibia.i3945".into(),
+                family: Family::Item,
+                id: 4,
+                terrain: None,
+            },
+            PaletteEntry {
+                key: "oteryn:item.tibia.i12368".into(),
+                family: Family::Item,
+                id: 5,
+                terrain: None,
+            },
+            PaletteEntry {
+                key: "oteryn:item.tibia.i12369".into(),
+                family: Family::Item,
+                id: 6,
+                terrain: None,
+            },
         ],
         draft_areas: vec![],
         skipped_provisional_keys: vec![],
@@ -91,6 +116,11 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     for y in 0..=8 {
         for x in 0..=12 {
             let mut palettes = vec![if (x, y) == (3, 5) { 2 } else { 0 }];
+            if let Some(trap) = trap
+                && (x, y) == (4, 2)
+            {
+                palettes.push(if trap == 12368 { 5 } else { 3 });
+            }
             if (x, y) == (5, 2) {
                 palettes.push(1);
             }
@@ -142,15 +172,15 @@ fn creature_push_real_dispatch_moves_and_refuses_on_postgres() -> TestResult {
         .stack_size(64 << 20)
         .spawn(|| {
             // One qualification spawn per runtime: the unpushable profile gets its own run.
-            scenario("creature_push_np", true)?;
-            scenario("creature_push", false)
+            scenario("creature_push_np", true, None)?;
+            scenario("creature_push", false, None)
         })?
         .join()
         .map_err(|_| "creature push e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
+fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(), String> {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, seed, true, false).await?;
         prepare_current_session(&h).await?;
@@ -170,7 +200,7 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
         )?;
         let active = controller.active().ok_or("active")?;
         deps.room = pin.qualified_room().clone();
-        let (bytes, pins) = bundle()?;
+        let (bytes, pins) = bundle(trap)?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = boot(
             &bytes,
@@ -185,7 +215,21 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
             },
             deps.admitted.world_id,
             deps.admitted.channel_id,
-            |_| None,
+            |key| {
+                Some(crate::map::facts::ItemDefinition {
+                    reference: std::num::NonZeroU32::new(match key {
+                        "oteryn:item.tibia.i3944" => 4,
+                        "oteryn:item.tibia.i3945" => 5,
+                        "oteryn:item.tibia.i12368" => 6,
+                        "oteryn:item.tibia.i12369" => 7,
+                        _ => return None,
+                    })?,
+                    solid: Some(false),
+                    blocks_projectile: false,
+                    pickupable: false,
+                    door: false,
+                })
+            },
         )
         .map_err(debug)?;
         let cells = world
@@ -223,7 +267,7 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -236,7 +280,9 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
         );
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = if unpushable {
+            let result = if let Some(trap) = trap {
+                relocation_tiles_scenario(&mut client, &owner, admitted, trap).await
+            } else if unpushable {
                 unpushable_scenario(&mut client, &owner).await
             } else {
                 client_scenario(&mut client, &deps, &owner, admitted).await
@@ -464,5 +510,171 @@ async fn client_scenario(
     assert_eq!(position(owner, target).await?, at(8, 5));
     assert_eq!(push(client, 13, target_ref, at(8, 6)).await?, MOVED);
     assert_eq!(position(owner, target).await?, at(8, 6));
+    Ok(())
+}
+
+// Crystal 201189f8 data/scripts/movements/trap.lua:12-44,59-69: forced movement
+// has the same creature StepIn damage/transform and StepOut reopening as walking.
+#[test]
+fn reaudit_relocation_tiles_monster_push_trap_entry_exit_postgres() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("srv_b3_relocation_tiles", false, Some(3944)))?
+        .join()
+        .map_err(|_| "relocation tiles e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn reaudit_relocation_tiles_monster_push_wolf_capture_postgres() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario("srv_b3_relocation_wolf", false, Some(12368)))?
+        .join()
+        .map_err(|_| "relocation wolf e2e panicked")?
+        .map_err(Into::into)
+}
+
+async fn relocation_tiles_scenario(
+    client: &mut DuplexStream,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    trap: u16,
+) -> TestResult {
+    use crate::map::view::MapFacts;
+    use oteryn_protocol_oteryn::creature_push::CreaturePushDisposition;
+    prepare(client, owner).await?;
+    let actor = admitted.runtime_actor.ok_or("pusher")?;
+    let key = if trap == 12368 {
+        "oteryn:creature.starving_wolf"
+    } else {
+        "oteryn:creature.troll"
+    };
+    let troll = spawn(owner, key, at(3, 2)).await?;
+    let target = reference(owner, troll).await?;
+    let health = owner
+        .runtime
+        .lock()
+        .await
+        .live_creature_health(troll)
+        .ok_or("health")?;
+    let map = owner.bundle_map().ok_or("bundle")?;
+    let trap_pos = TilePos {
+        x: 4,
+        y: 2,
+        floor: -7,
+    };
+    let appearance = || -> TestResult<u16> {
+        Ok(map
+            .facts
+            .base_entry(trap_pos, 1, if trap == 12368 { 5 } else { 3 })
+            .ok_or("trap")?
+            .appearance_id)
+    };
+    let intent = |destination: MovementLocalPosition| CreaturePushIntent {
+        target,
+        destination: ActorPosition {
+            x: destination.x,
+            y: destination.y,
+            floor: destination.floor,
+        },
+    };
+    assert_eq!(appearance()?, trap);
+    assert_eq!(
+        owner
+            .push_creature_now(actor, admitted.game_session_id, intent(at(4, 2)))
+            .await,
+        CreaturePushDisposition::Moved
+    );
+    if trap == 12368 {
+        // Crystal trap.lua:39-42: capture removes the wolf and creates item 12369.
+        assert!(
+            !owner.runtime.lock().await.contains_live_creature(troll),
+            "a pushed Starving Wolf must be captured"
+        );
+        let stack = crate::map::view::compose_tile(&map.overlay, &map.facts, trap_pos)
+            .map_err(debug)?
+            .ok_or("wolf trap tile")?;
+        assert!(
+            stack
+                .entries
+                .iter()
+                .any(|entry| entry.facts.appearance_id == 12369)
+        );
+        assert_eq!(appearance()?, 12368);
+        return Ok(());
+    }
+    assert_eq!(position(owner, troll).await?, at(4, 2));
+    assert_eq!(
+        appearance()?,
+        3945,
+        "a pushed monster must close the trap on entry"
+    );
+    let after = owner
+        .runtime
+        .lock()
+        .await
+        .live_creature_health(troll)
+        .ok_or("health after entry")?;
+    let policy = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(troll)
+        .map_err(debug)?
+        .state
+        .policy;
+    assert_eq!(policy.definition_key, "oteryn:creature.troll");
+    let mitigation = policy.mitigation.ok_or("Troll mitigation")?;
+    assert_eq!((mitigation.numerator, mitigation.denominator), (8, 25));
+    let earth = policy
+        .resistances
+        .iter()
+        .find(|resistance| resistance.damage_type == "earth")
+        .ok_or("Troll Earth resistance")?;
+    assert_eq!(
+        (earth.percent.numerator, earth.percent.denominator),
+        (-10, 1)
+    );
+    // Crystal trap 3944 deals 15..30 Earth damage. The pinned Troll's 0.32%
+    // mitigation truncates each positive raw hit to raw - 1; its 10% Earth
+    // weakness then rounds that result. Check the exact possible one-hit set.
+    let expected_hits: Vec<u64> = (15..=30).map(|raw| ((raw - 1) * 11 + 5) / 10).collect();
+    assert!(
+        expected_hits.contains(&(health - after)),
+        "one trap hit: {health} -> {after}"
+    );
+    place(owner, admitted, at(3, 3)).await?;
+    assert_eq!(
+        owner
+            .push_creature_now(actor, admitted.game_session_id, intent(at(5, 2)))
+            .await,
+        CreaturePushDisposition::NotEnoughRoom
+    );
+    assert_eq!(
+        appearance()?,
+        3945,
+        "refused movement cannot reopen the trap"
+    );
+    assert_eq!(
+        owner.runtime.lock().await.live_creature_health(troll),
+        Some(after)
+    );
+    assert_eq!(
+        owner
+            .push_creature_now(actor, admitted.game_session_id, intent(at(4, 3)))
+            .await,
+        CreaturePushDisposition::Moved
+    );
+    assert_eq!(position(owner, troll).await?, at(4, 3));
+    assert_eq!(
+        appearance()?,
+        3944,
+        "a pushed monster must reopen the trap on exit"
+    );
+    assert_eq!(
+        owner.runtime.lock().await.live_creature_health(troll),
+        Some(after)
+    );
     Ok(())
 }

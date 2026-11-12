@@ -1,0 +1,666 @@
+{
+  "schema": "OTERYN_DARK_TRAILS_DIALOGUE_V1",
+  "replies": {
+    "ezebeth-invite": {
+      "lines": [
+        "Well, there is little where we need help beyond the normal tasks you can do for the city. However, there is one thing out of the ordinary where some {assistance} would be appreciated."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:63-63"
+    },
+    "ezebeth-already": {
+      "lines": [
+        "You already asked for a mission, go to the next."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:66-66"
+    },
+    "ezebeth-assistance": {
+      "lines": [
+        "It's nothing really important, so no one has yet found the time to look it up. It concerns the town's beggars that have started to behave {strange} lately."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:71-71"
+    },
+    "ezebeth-start": {
+      "lines": [
+        "They usually know better than to show up in the streets and harass our citizens, but lately they've grown more bold or desperate or whatever. I ask you to investigate what they are up to. If necessary, you may scare them away a bit."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:76-76"
+    },
+    "beggar-want": {
+      "lines": [
+        "The guys from the magistrate sent you here, didn't they?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:64-64"
+    },
+    "beggar-want-other": {
+      "lines": [
+        "The guys from the magistrate sent you here, didn't they?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:64-64"
+    },
+    "beggar-report": {
+      "lines": [
+        "Thought so. You'll have to talk to the king though. The beggar king that is. The king does not grant an audience to just everyone. You know how those kings are, don't you? ... ",
+        "However, to get an audience with the king, you'll have to help his subjects a bit. ... ",
+        "His subjects that would be us, the poor, you know? ... ",
+        "So why don't you show your dedication to the poor? Go and help Chavis at the poor house. He's collecting food for people like us. ... ",
+        "If you brought enough of the stuff you'll see that the king will grant you entrance in his {palace}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:68-72"
+    },
+    "jacob-investigate": {
+      "lines": [
+        "I'm glad to see you back alive and healthy. Did you find anything interesting that you want to {report}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:59-59"
+    },
+    "jacob-report": {
+      "lines": [
+        "A sacrificial site? Damn, sounds like some freakish cult or something. Just great. And this ancient structure you talked about that's not part of the sewers? You'd better see the local historian about that, man. ...",
+        "He can make more sense of what you found there. His name is Barazbaz. He should be in the magistrate building."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:118-119"
+    },
+    "jacob-already": {
+      "lines": [
+        "You already reported this mission, go to the next."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:124-124"
+    },
+    "elliott-investigate": {
+      "lines": [
+        "I'm glad to see you back alive and healthy. Did you find anything interesting that you want to {report}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:59-59"
+    },
+    "elliott-report": {
+      "lines": [
+        "A sacrificial site? Damn, sounds like some freakish cult or something. Just great. And this ancient structure you talked about that's not part of the sewers? You'd better see the local historian about that, man. ...",
+        "He can make more sense of what you found there. His name is Barazbaz. He should be in the magistrate building."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:115-116"
+    },
+    "elliott-already": {
+      "lines": [
+        "You already reported this mission, go to the next."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:121-121"
+    },
+    "barazbaz-ritual": {
+      "lines": [
+        "Ancient structures in the sewers you say? Well, our city has had a certain bloody past, even before it has been city at all. But to investigate the archives for what you may have found is a time-consuming process. ...",
+        "Usually, I'm too much bound to my duties to the city to sacrifice time for such an endeavour. ...",
+        "But on the other hand, just now is the time of an important decision of the magistrate concerning the funding of the archives. It is a matter easily overlooked by our good citizens. ...",
+        "If you'd be so kind to place just one of your votes for the funding of the archives, I would be inclined to take the time for your investigation in turn. ...",
+        "Just go to Marvin in the magistrate and vote for a greater funding of the archives. Afterwards, I might be able to present you with some first results of my investigations on your behalf."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:59-63"
+    },
+    "barazbaz-archives": {
+      "lines": [
+        "Excellent! Concerning the ancient ruins that you have found, well, if you are not familiar with the city's history, feel free to browse a few books here. I will only refer to some basics here, so I don't waste your time. ...",
+        "The first humans that lived here and that we have any records of lived in slavery of an ancient evil. ...",
+        "The nature of this evil is up to debate, but there are hints that this evil predated the settlement of men and that it perhaps was part of a more ancient civilisation or caused the downfall of the latter. ...",
+        "After that evil had been overcome, much was sealed away. Some say that only forbidden knowledge had been sealed, but others like me were always worried that more had been hidden. ...",
+        "Something like the ruins you have found. What you have seen there hints to a new incident, though. As if someone or something was searching for something. In the past, when those ruins were buried, people were primitive and superstitious. ...",
+        "Today, we have advanced far more and could have the ruins investigated in a far more efficient way. And that is what I would just recommend you to do: get a necrometer from magistrate Jondrin upstairs and investigate the ruins thoroughly."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:69-74"
+    },
+    "roswitha-harsin": {
+      "lines": [
+        "I'm sorry, but Harsin no longer lives here. He ordered a local named Quandon to transport all his stuff somewhere. I don't know where he moved, but Quandon should be able to help you with this information."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/roswitha.lua:59-59"
+    },
+    "sholley-quandon": {
+      "lines": [
+        "A transporter dead? This is more then alarming. It seems Harsin is up to something and whatever it is, it's nothing good at all. But not all is lost. A local medium, Barnabas, has truly the gift to speak to the dead. ...",
+        "I'll mark his home on your map. He should be able to get the information you need to locate Harsin."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:69-70"
+    },
+    "sholley-body-missing": {
+      "lines": [
+        "Already clicked the body on the house Roswitha ?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:75-75"
+    },
+    "terrence-manway": {
+      "lines": [
+        "I'm not allowed to let just anyone pass. If you have proven your willingness and effort to participate in the fighting, I'm allowed to let you pass."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:59-59"
+    },
+    "terrence-manway-denied": {
+      "lines": [
+        "Ahhhhhhhh! "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:62-62"
+    },
+    "terrence-effort": {
+      "lines": [
+        "You fought hard enough against the minotaurs. Since you've shown so much effort in our war, I'll let you pass through the gate."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:66-66"
+    },
+    "ghost-witness": {
+      "lines": [
+        "He murdered me. I shouldn't have trusted him! The money! All that money blinded me! To the east I brought his stuff. In night and darkness, covered by some kind of magic of his. The minotaurs did not bother us, like he promised. ...",
+        "His ... his true name is Shargon and he is a priest of some kind. He belongs to a powerful secret society and is looking for something on their behalves. ...",
+        "We brought his stuff to a hideout, I'll mark it on your map! The things that I've seen there! Horrible, horrible things! I fled, but he found me, killed me. He murdered me!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:59-61"
+    },
+    "ghost-witness-hello": {
+      "lines": [
+        "He murdered me. I shouldn't have trusted him! The money! All that money blinded me! To the east I brought his stuff. In night and darkness, covered by some kind of magic of his. The minotaurs did not bother us, like he promised. ...",
+        "His ... his true name is Shargon and he is a priest of some kind. He belongs to a powerful secret society and is looking for something on their behalves. ...",
+        "We brought his stuff to a hideout, I'll mark it on your map! The things that I've seen there! Horrible, horrible things! I fled, but he found me, killed me. He murdered me!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:59-61"
+    },
+    "ghost-greet-other": {
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:65-65"
+    },
+    "ghost-hello-other": {
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/quandons_ghost.lua:65-65"
+    },
+    "source-only:a_beggar:82": {
+      "lines": [
+        "Hi! What is it, what d'ye {want}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_beggar.lua:82-82"
+    },
+    "source-only:barazbaz:79": {
+      "lines": [
+        "I know that handwriting you describe! It belongs to a traveller from far away. Magistrate Sholley introduced him \tto me and she was quite excited to learn more about our city's past. ...",
+        "I should have thought of him right in the beginning when I heard the stuff you mentioned. But I haven't seen him for a while. You should ask Sholley about her friend to learn about his whereabouts."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:79-82"
+    },
+    "source-only:barazbaz:87": {
+      "lines": [
+        "You need to kill the {The Ravager}, click on statue and then come here say {ritual}, {abandoned sewers}, {notebook} and after this find Roswitha and talk with she."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:87-87"
+    },
+    "source-only:barazbaz:93": {
+      "lines": [
+        "Oh, hello there!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barazbaz.lua:93-93"
+    },
+    "source-only:barnabas_dee:59": {
+      "lines": [
+        "Do you already have 15 units of blue pollen with you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:59-59"
+    },
+    "source-only:barnabas_dee:62": {
+      "lines": [
+        "I am afraid my supplies of peppermoon bell powder have gone flat again. Please provide me with the pollen of this flower. ...",
+        "It only blooms underground in a cavern to the northwest. I will need 15 units of pollen. Bring them to me and we shall conduct a seance."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:62-65"
+    },
+    "source-only:barnabas_dee:73": {
+      "lines": [
+        "Ah! Did you bring me the peppermoon bell pollen I asked for?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:73-73"
+    },
+    "source-only:barnabas_dee:79": {
+      "lines": [
+        "Ah! Well done! Now we shall proceed with the seance, yes?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:79-79"
+    },
+    "source-only:barnabas_dee:85": {
+      "lines": [
+        "Ah! Well done! These 15 doses will suffice for now. Here, take this vote for your effort."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:85-85"
+    },
+    "source-only:barnabas_dee:97": {
+      "lines": [
+        "No no no, I need 15 doses of freshly harvested pollen! Please, harvest those 15 doses yourself, to make absolutely sure you have first-rate quality. I am afraid nothing less will do."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:97-97"
+    },
+    "source-only:barnabas_dee:101": {
+      "lines": [
+        "Splendid. Let me make the final preparations... There. Are you ready, too?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:101-101"
+    },
+    "source-only:barnabas_dee:104": {
+      "lines": [
+        "So let us begin. Please concentrate with me. Concentrate! ...",
+        "Concentrate! ...",
+        "Concentrate! ...",
+        "Concentrate! ...",
+        "Concentrate! ...",
+        "Do you feel something?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:104-111"
+    },
+    "source-only:barnabas_dee:114": {
+      "lines": [
+        "Yes, take care, the gate is opening! Can you see a bright light?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:114-114"
+    },
+    "source-only:barnabas_dee:117": {
+      "lines": [
+        "Ahhhhhhhh! "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:117-117"
+    },
+    "source-only:barnabas_dee:393": {
+      "lines": [
+        "Welcome to my humble abode. If you come for new sorcerer {spells}, you have come to the right place."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:393-393"
+    },
+    "source-only:barnabas_dee:394": {
+      "lines": [
+        "Take care, child"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:394-394"
+    },
+    "source-only:barnabas_dee:395": {
+      "lines": [
+        "'The impetuosity of youth', as my friend Mordecai would say."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:395-395"
+    },
+    "source-only:doubleday:63": {
+      "lines": [
+        "Yes, well I am working on something very time-consuming at the moment. You see, a lot of us don't have time to go out much, to converse even just to meet and talk about recent discoveries. ...",
+        "So I thought about a device to help communication in this wonderful city. I already had a helper, he was easily... 'stressed' and quit. Didn't have time to find a new one. ...",
+        "So, if you'd like to help - there is a lot to do for me to bring my plans to fruition - and if you help me, you will earn my {votes} for the {magistrate} in turn! Are you in?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:63-67"
+    },
+    "source-only:doubleday:72": {
+      "lines": [
+        "Good! Quite good! You know, there are actually several things I want you to address. ...",
+        "First, there is the problem with {communication}, second I need someone to {probe} part of the sewers and last - {combinatorics}!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:72-75"
+    },
+    "source-only:doubleday:78": {
+      "lines": [
+        "Very nice, there you go! Just bring me the printout from the probe after deploying it! You can request a new probing {device} or a new {detector} if you lose it - but it takes some time for me to get a new one ready so be careful with that stuff."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:78-78"
+    },
+    "source-only:doubleday:88": {
+      "lines": [
+        "Hey, let's try to be reasonable here, alright? That's a bit too much for what you did, isn't it? It may seem that way but the number of votes I can offer isn't limitless."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:88-88"
+    },
+    "source-only:doubleday:91": {
+      "lines": [
+        "Good, you just gained 1 genuine votes in the magistrate!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:91-91"
+    },
+    "source-only:doubleday:101": {
+      "lines": [
+        "Alright, there you go - please, try to be more careful with my equipment next time!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:101-101"
+    },
+    "source-only:doubleday:109": {
+      "lines": [
+        "Because of my {experiments} with the {glooth}, some things in the new sewers of Rathleton aren't exactly 'in order' anymore - if you follow me. A sort of mushroom has formed down there and some... 'things' now nest in the lower drainage areas. ...",
+        "Could you please just go down there and check if this is caused by... my... version of the {glooth}? You know, just some experiments I did to alter the basic elemental structure of the {glooth}, nothing personal. ...",
+        "If you'd just take this very tiny probing device I designed to analyse the {coloured glooth} and, you know, go down there and place it - oh, and I'll also give you this really tiny {detector}, modified to find a spot where to place the {probe} - so?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:109-113"
+    },
+    "source-only:doubleday:116": {
+      "lines": [
+        "Very good, these readings do tell me a lot - the coloured glooth may be instable but it has some... 'interesting' effects on its surroundings. Oh - no worries, you will be perfectly safe. I will also take back my detector now, thanks. ..",
+        "Feel free to help me deploy more probes whenever you like."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:116-119"
+    },
+    "source-only:doubleday:126": {
+      "lines": [
+        "Well, let's see, you helped me 1 times before exchanging any votes - how many votes do you want me to give you in exchange?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:126-126"
+    },
+    "source-only:doubleday:129": {
+      "lines": [
+        "Well, let's see, you helped me 1 times before exchanging any votes - how many votes do you want me to give you in {exchange}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:129-129"
+    },
+    "source-only:doubleday:134": {
+      "lines": [
+        "Alright then, that's 2 vote(s) you want - I won't take them back, are you sure?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:134-134"
+    },
+    "source-only:doubleday:139": {
+      "lines": [
+        "Alright then, that's 1 vote(s) you want - I won't take them back, are you sure?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:139-139"
+    },
+    "source-only:doubleday:144": {
+      "lines": [
+        "To actually 'find' a suitable location to deploy the probing device for my measurements, you should use my mono detector. The device detects singular chemical structures of any material or fabric I feed it with and signals it! ...",
+        "If you have lost your detector or your probing device, I can hand out another - it will take some time, however. Do you need a new one?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:144-147"
+    },
+    "source-only:doubleday:150": {
+      "lines": [
+        "You must wait until the detector is ready again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:150-150"
+    },
+    "source-only:doubleday:157": {
+      "lines": [
+        "Hello there, hmm just... just wait right there, I'll be with you in a second. Just getting this {experiment} done..."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:157-157"
+    },
+    "source-only:elliott:62": {
+      "lines": [
+        "You want to enter the abandoned sewers? That's rather dangerous and not a good idea, man. That part of the sewers was not sealed off for nothing, you know? ...",
+        "But hey, it's your life, bro. So here's the deal. I'll let you into the abandoned sewers if you help me with our {mission}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:62-65"
+    },
+    "source-only:elliott:68": {
+      "lines": [
+        "Wow, you already did it, that's fast. I'm used to a more laid-back attitude from most people. It's a shame to risk losing you to some collapsing tunnels, but a deal is a deal. ...",
+        "I hereby grant you the permission to enter the abandoned part of the sewers. Take care, man! ...",
+        "If you find something interesting, come back to talk about the {abandoned sewers}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:68-72"
+    },
+    "source-only:elliott:81": {
+      "lines": [
+        "The sewers need repair. You in?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:81-81"
+    },
+    "source-only:elliott:84": {
+      "lines": [
+        "Elliott's keeps calling it that. It's just another job! You fixed some broken pipes and stuff? Let me check, {ok}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:84-84"
+    },
+    "source-only:elliott:89": {
+      "lines": [
+        "Good. Broken pipe and generator pieces, there's smoke evading. That's how you recognise them. See how you can fix them using your hands. Need about, oh, twenty of them at least repaired. Report to me or Jacob"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:89-89"
+    },
+    "source-only:elliott:101": {
+      "lines": [
+        "Good. Thanks, man. That's one vote you got for helping us with this. If you want to redo this task just say {abandoned sewers} to repeat it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:101-101"
+    },
+    "source-only:elliott:129": {
+      "lines": [
+        "<nods>"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:129-129"
+    },
+    "source-only:elliott:130": {
+      "lines": [
+        "<nods> Yeah."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:130-130"
+    },
+    "source-only:ezebeth:82": {
+      "lines": [
+        "Nice work, take your outfit."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:82-82"
+    },
+    "source-only:ezebeth:88": {
+      "lines": [
+        "You already have the outfit."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:88-88"
+    },
+    "source-only:ezebeth:94": {
+      "lines": [
+        "Receive the second addon."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:94-94"
+    },
+    "source-only:ezebeth:100": {
+      "lines": [
+        "Receive the first addon."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:100-100"
+    },
+    "source-only:ezebeth:106": {
+      "lines": [
+        "We provide addons to people dedicated to our city. So the first addon is granted to someone who has voted for each of the available shortcuts and each dungeon at least once. ...",
+        "The second addon is granted to someone who has voted for each bossfight at least once."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:106-109"
+    },
+    "source-only:ezebeth:118": {
+      "lines": [
+        "Hello! I guess you are here for a {mission}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:118-118"
+    },
+    "source-only:jacob:62": {
+      "lines": [
+        "You want to enter the abandoned sewers? That's rather dangerous and not a good idea, man. That part of the sewers was not sealed off for nothing, you know? ...",
+        "But hey, it's your life, bro. So here's the deal. I'll let you into the abandoned sewers if you help me with our {mission}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:62-65"
+    },
+    "source-only:jacob:68": {
+      "lines": [
+        "Wow, you already did it, that's fast. I'm used to a more laid-back attitude from most people. It's a shame to risk losing you to some collapsing tunnels, but a deal is a deal. ...",
+        "I hereby grant you the permission to enter the abandoned part of the sewers. Take care, man! ...",
+        "If you find something interesting, come back to talk about the {abandoned sewers}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:68-72"
+    },
+    "source-only:jacob:81": {
+      "lines": [
+        "The sewers need repair. You in?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:81-81"
+    },
+    "source-only:jacob:84": {
+      "lines": [
+        "Elliott's keeps calling it that. It's just another job! You fixed some broken pipes and stuff? Let me check, {ok}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:84-84"
+    },
+    "source-only:jacob:87": {
+      "lines": [
+        "If you want to redo this task just say {abandoned sewers} to repeat it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:87-87"
+    },
+    "source-only:jacob:92": {
+      "lines": [
+        "Good. Broken pipe and generator pieces, there's smoke evading. That's how you recognise them. See how you can fix them using your hands. Need about, oh, twenty of them at least repaired. Report to me or Jacob"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:92-92"
+    },
+    "source-only:jacob:104": {
+      "lines": [
+        "Good. Thanks, man. That's one vote you got for helping us with this."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:104-104"
+    },
+    "source-only:jacob:132": {
+      "lines": [
+        "<nods> Hi."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:132-132"
+    },
+    "source-only:jacob:133": {
+      "lines": [
+        "<nods> See ya."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:133-133"
+    },
+    "source-only:jondrin:58": {
+      "lines": [
+        "A necrometer? Have you any idea how rare and expensive a necrometer is? There is no way I could justify giving a necrometer to an inexperienced adventurer. Hm, although ... if you weren't inexperienced that would be a different matter. ...",
+        "Did you do any measuring task for Doubleday lately?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jondrin.lua:58-61"
+    },
+    "source-only:jondrin:64": {
+      "lines": [
+        "You already got the Necrometer."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jondrin.lua:64-64"
+    },
+    "source-only:jondrin:67": {
+      "lines": [
+        "Indeed I heard you did a good job out there. <sigh> I guess that means I can hand you one of our necrometers. Handle it with care."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jondrin.lua:67-67"
+    },
+    "source-only:jondrin:76": {
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jondrin.lua:76-76"
+    },
+    "source-only:marvin:59": {
+      "lines": [
+        "So far you earned x votes. Each single vote can be spent on a different topic or you're also able to cast all your votes on one voting. ...",
+        "Well in the topic b you have the possibility to vote for the funding of the {archives}, import of bug {milk} or street {repairs}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:59-62"
+    },
+    "source-only:marvin:65": {
+      "lines": [
+        "You can't vote yet."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:65-65"
+    },
+    "source-only:marvin:69": {
+      "lines": [
+        "How many of your x votes do you want to cast?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:69-69"
+    },
+    "source-only:marvin:74": {
+      "lines": [
+        "Did I get that right: You want to cast 1 of your votes on funding the {archives}?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:74-74"
+    },
+    "source-only:marvin:84": {
+      "lines": [
+        "Thanks, you successfully cast your vote. Feel free to continue gathering votes by helping the city! Farewell."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:84-84"
+    },
+    "source-only:marvin:92": {
+      "lines": [
+        "Ah, you come just in time for the special voting about the most recent {funding} project. I guess you want to participate in it."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:92-92"
+    },
+    "source-only:roswitha:69": {
+      "lines": [
+        "Hello, my lad. Sit down, have a drink, why don't you?"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/roswitha.lua:69-69"
+    },
+    "source-only:sholley:59": {
+      "lines": [
+        "So you have proven yourself a true friend of our city. It's hard to believe but I think your words only give substance to suspicions my heart had harboured since quite a while. ...",
+        "So Harsin is probably not the person he appeared to be. Actually I haven't heard from him for quite a while. He was resident in the local bed and breakfast hotel. You should be able to find him there or at least to learn about his whereabouts."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:59-62"
+    },
+    "source-only:sholley:83": {
+      "lines": [
+        "Hi!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:83-83"
+    },
+    "source-only:terrence:75": {
+      "lines": [
+        " Hey there, you are surely interested in helping the Rathleton city guard, right? Right - especially now since the dreaded minotaurs gain more ground every day."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/terrence.lua:75-75"
+    },
+    "source-only:the_beggar_king:63": {
+      "lines": [
+        "So I guess you are the one that the magistrate is sending to look after us, eh? "
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:63-63"
+    },
+    "source-only:the_beggar_king:66": {
+      "lines": [
+        "You need some quests then come and talk with me again."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:66-66"
+    },
+    "source-only:the_beggar_king:71": {
+      "lines": [
+        "Fine. But the first thing you have to know is that we are not the city's problem. We are just trying to survive. We usually seek shelter in the sewers.",
+        "There we are comparatively warm and safe. At least we were. But recently something has changed. There is {something} in the sewers. And it is hunting us."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:71-74"
+    },
+    "source-only:the_beggar_king:79": {
+      "lines": [
+        "Yeah. No one has seen it and lived to tell the tale. People are missing and sometimes there are {traces} of blood or someone heard a scream, but that's all. We have no idea if the killer is a man or a beast, but there is something out there"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:79-79"
+    },
+    "source-only:the_beggar_king:84": {
+      "lines": [
+        "Some of the more daring of us tried to follow the tracks that were left, but they always lost the trail close to the {abandoned sewers}, in the east of the sewer system."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:84-84"
+    },
+    "source-only:the_beggar_king:89": {
+      "lines": [
+        "Some parts of the sewers were abandoned when they were beyond repair due to old age and earthquakes. ...",
+        "That part was never truly well liked. There were rumours that the workers found some ancient structures there and that it was ripe with accidents during the construction. ...",
+        "The city sealed those parts off, and I have no idea how anything could get in or out without the permission of the magistrate. ... ",
+        "But since you are investigating on their behalf, you might work out some agreement with them, if you're mad enough to enter the sewers at all. ... ",
+        "However, you will have to talk to one of the Glooth Brothers who are responsible for the sewer system's maintenance. You'll find them somewhere down there."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:89-95"
+    },
+    "source-only:the_beggar_king:103": {
+      "lines": [
+        "Hi! You look like someone on a {mission}."
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:103-103"
+    },
+    "source-only:the_beggar_king:104": {
+      "lines": [
+        "Good bye!"
+      ],
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:104-104"
+    }
+  }
+}

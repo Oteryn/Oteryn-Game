@@ -48,6 +48,7 @@ pub struct CharmConnectionContent {
     charms: Vec<CharmKey>,
     races: Vec<(BestiaryRaceKey, BestiaryRace)>,
     effects: BTreeMap<String, EffectDefinition>,
+    runtime_consumers: bool,
 }
 
 impl CharmConnectionContent {
@@ -104,7 +105,13 @@ impl CharmConnectionContent {
             charms,
             races: bound_races,
             effects: bound_effects,
+            runtime_consumers: false,
         })
+    }
+
+    pub(in super::super) fn with_runtime_consumers(mut self, ready: bool) -> Self {
+        self.runtime_consumers = ready;
+        self
     }
 
     fn request(&self) -> CharmProgressionReadRequest {
@@ -182,10 +189,8 @@ impl CharmConnectionContent {
                     .get(usize::from(stage))
                     .copied()
                     .unwrap_or(0),
-                // This prepared reader has no connected production Charm effect consumer.
-                // Calculation readiness in a definition cannot prove live effect availability.
-                // A qualified owner connection must supply that availability before activation.
-                effect_active: false,
+                // Standalone readers stay unavailable; the qualified native owner connects consumers.
+                effect_active: self.runtime_consumers,
             });
         }
         let charms = CharmView {

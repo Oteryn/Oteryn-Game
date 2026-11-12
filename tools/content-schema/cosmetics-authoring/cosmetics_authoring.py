@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -59,6 +60,8 @@ def parse(data: bytes):
 def promotion_paths(document):
     result = {"/source_manifest_sha256", "/source_appearances_sha256", "/palette",
               "/fallbacks/female", "/fallbacks/male"}
+    if "item_acquisitions" in document:
+        result.add("/item_acquisitions")
     if "grant_mappings" in document:
         result.add("/grant_mappings")
     for family, fields in [
@@ -108,6 +111,8 @@ def validate(authoring):
     seen = set()
     for promotion in authoring["promotions"]:
         path = promotion["path"]
+        if (path == "/item_acquisitions" and promotion["source_kind"] != "OWNER_DECISION"):
+            raise ValueError("item acquisition requires explicit owner promotion")
         if (path not in expected or path in seen
                 or canonical(promotion["value"]) != canonical(pointer(document, path))):
             raise ValueError("missing, duplicated or mismatched cosmetic promotion")
@@ -130,6 +135,12 @@ def validate(authoring):
         keys.add(row["key"])
         if row["speed_bonus"] != authoring["profile"]["mount_speed_bonus"]:
             raise ValueError("Reference ruleset mount speed disagreement")
+    acquisitions = set()
+    for row in document.get("item_acquisitions", []):
+        atom(row["item_key"])
+        if row["item_key"] in acquisitions:
+            raise ValueError("duplicate item acquisition")
+        acquisitions.add(row["item_key"])
     grants = set()
     mounts = {row["key"] for row in document["mounts"]}
     for mapping in document.get("grant_mappings", []):
@@ -143,7 +154,17 @@ def validate(authoring):
             outfit = outfits.get(target["outfit_key"])
             valid = outfit is not None and (target["kind"] == "Outfit"
                     or target["addon"] <= outfit["addon_count"])
-        if not valid:
+        aliases = mapping.get("outfit_aliases", [])
+        if aliases and target["kind"] == "Mount":
+            raise ValueError("mount grant cannot have outfit aliases")
+        for key in aliases:
+            alias = outfits.get(key)
+            original = outfits.get(target.get("outfit_key"))
+            if (alias is None or original is None or key == original["key"]
+                    or any(alias[sex] != original[sex] for sex in ("female", "male"))
+                    or (target["kind"] == "Addon" and target["addon"] > alias["addon_count"])):
+                raise ValueError("cosmetics alias must retain exact source looks and addon")
+        if not valid or (mapping.get("sex") is not None and target["kind"] == "Mount"):
             raise ValueError("unknown cosmetics grant target")
     for sex in ["female", "male"]:
         fallback = document["fallbacks"][sex]
@@ -252,6 +273,19 @@ def build(authoring, manifest_path: Path) -> bytes:
     return result
 
 
+def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path, *, authoring_bytes=None):
+    """Pin maintained source inputs; derive the large validated section only in memory."""
+    authoring = read(authoring_path) if authoring_bytes is None else authoring_bytes
+    section = build(parse(authoring), manifest_path)
+    relative = lambda path: Path(os.path.relpath(path, output_path.parent)).as_posix()
+    return canonical({
+        "schema": "OTERYN_NATIVE_COSMETICS_INPUT/v1",
+        "authoring": {"path": relative(authoring_path), "sha256": sha(authoring)},
+        "source_manifest": {"path": relative(manifest_path), "sha256": sha(read(manifest_path))},
+        "section_sha256": sha(section),
+    })
+
+
 def materialized_outputs(root: Path):
     """Called by the real tree materializer. Missing facts create no content, pin or fallback."""
     source = root / AUTHORING
@@ -259,7 +293,7 @@ def materialized_outputs(root: Path):
         if (root / OUTPUT).exists():
             raise ValueError("native cosmetics output has missing authoring source")
         return {}
-    return {OUTPUT: build(parse(read(source)), root / MANIFEST)}
+    return {OUTPUT: provisioning_input(source, root / MANIFEST, root / OUTPUT)}
 
 
 def main():
@@ -269,7 +303,7 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    result = build(parse(read(args.authoring)), args.manifest)
+    result = provisioning_input(args.authoring, args.manifest, args.output)
     if args.check:
         if not args.output.is_file() or args.output.read_bytes() != result:
             raise ValueError("cosmetics output missing or different")

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0330-staff-tools",
+  "kind": "keybindings",
+  "id": "0330-staff-tools-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+0",
+  "entry": "input.rs::open_key"
+}

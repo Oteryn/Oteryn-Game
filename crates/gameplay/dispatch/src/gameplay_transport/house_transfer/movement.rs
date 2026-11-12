@@ -66,8 +66,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || state.lease.generation() != fence.character_lease_generation
             || states.is_dead(actor)
             || states.has_pending_spell_commit(actor, session)
-            || self.movement_cells.scope().world_id != self.world_id
-            || self.movement_cells.scope().generation_digest
+            || self.movement_cells().scope().world_id != self.world_id
+            || self.movement_cells().scope().generation_digest
                 != runtime.content_pin().server_artifact_digest()
             || crate::gameplay_transport::item_ref_admission::pinned_index(
                 &runtime,
@@ -222,7 +222,7 @@ impl Turn<'_, '_, '_, '_> {
             .map_err(|_| MovementError::NotQualified)?;
         let origin = movement(current.state().position);
         let (direction, facing) = cardinal(self.direction);
-        let cells = self.owner.movement_cells;
+        let cells = self.owner.movement_cells();
         let blocker = HouseBlocker {
             cells,
             bundle: self.owner.bundle_map(),
@@ -350,6 +350,10 @@ fn cardinal(direction: StepDirection) -> (CardinalStep, MovementFacing) {
         StepDirection::East => (CardinalStep::East, MovementFacing::East),
         StepDirection::South => (CardinalStep::South, MovementFacing::South),
         StepDirection::West => (CardinalStep::West, MovementFacing::West),
+        StepDirection::NorthEast => (CardinalStep::NorthEast, MovementFacing::East),
+        StepDirection::SouthEast => (CardinalStep::SouthEast, MovementFacing::East),
+        StepDirection::SouthWest => (CardinalStep::SouthWest, MovementFacing::West),
+        StepDirection::NorthWest => (CardinalStep::NorthWest, MovementFacing::West),
     }
 }
 
@@ -414,7 +418,7 @@ fn resolve_destination(
         )?;
         return Ok((destination, destination.floor != origin.floor));
     }
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let destination = MovementLocalPosition {
         x: origin
             .x
@@ -456,7 +460,7 @@ impl CellBlocker for HouseBlocker<'_> {
         };
         let door = self.bundle.map_or_else(
             || self.doors.contains(&cell),
-            |bundle| crate::map::floor::BundleDoors(bundle.facts.doors()).blocks(cell),
+            |bundle| crate::map::floor::BundleDoors(&bundle.facts).blocks(cell),
         );
         outside || door || self.items.get(&cell).is_some_and(|item| item.0)
     }
@@ -600,7 +604,7 @@ impl PlacementCheck<'_, '_, '_, '_> {
             || self.record.coordinate_frame_digest != pin.frame_binding_digest()
             || self.record.server_artifact_digest != pin.server_artifact_digest()
             || self.record.map_revision_digest != self.runtime.map_revision_digest()
-            || self.owner.movement_cells.scope().generation_digest != pin.server_artifact_digest()
+            || self.owner.movement_cells().scope().generation_digest != pin.server_artifact_digest()
             || content.source_digest() != pin.server_artifact_digest()
             || read.interior.house.house_key() != self.candidate.house
             || read.interior.house.runtime_scope().ok() != Some(self.candidate.scope)
@@ -612,7 +616,7 @@ impl PlacementCheck<'_, '_, '_, '_> {
             return false;
         };
         let at = cell(movement(self.candidate.position));
-        let cells = self.owner.movement_cells;
+        let cells = self.owner.movement_cells();
         let blocker = HouseBlocker {
             cells,
             bundle: self.owner.bundle_map(),

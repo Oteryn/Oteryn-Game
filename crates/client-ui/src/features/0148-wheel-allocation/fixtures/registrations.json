@@ -46,6 +46,24 @@
   },
   {
     "mechanic": "0148-wheel-allocation",
+    "kind": "handlers",
+    "id": "0148-wheel-allocation-gem-presentation",
+    "status": "supported",
+    "commands": [
+      6121
+    ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::gem_presentation_query",
+    "not_applicable": {
+      "state": "Existing 0148 Wheel/Gem panel owns correlated advisory state and original paid requests.",
+      "view": "Visual Gem Atelier uses original geometric gem/domain/quality/lock/vessel glyphs and executed modifier grade comparisons.",
+      "input": "Existing Wheel native button opens the Gem Atelier; mutation confirmations use original148 commands.",
+      "settings": "The current owner supplies every value and price."
+    }
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
     "kind": "keybindings",
     "id": "0148-wheel-allocation-open",
     "status": "supported",
@@ -73,6 +91,24 @@
     "entry": "protocol.rs::request",
     "not_applicable": {
       "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
+    }
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "kind": "handlers",
+    "id": "0148-wheel-allocation-wheel-presentation",
+    "status": "supported",
+    "commands": [
+      6119
+    ],
+    "direction": "client_to_server",
+    "capability": 148,
+    "entry": "protocol.rs::wheel_presentation_query",
+    "not_applicable": {
+      "state": "Existing0148 Wheel panel retains exact draft, correlated read and original161 mutations.",
+      "view": "Original graph geometry draws only server-provided topology and executed perk previews.",
+      "input": "Existing Wheel window opens the diagram; selection and point edits use shared native callbacks.",
+      "settings": "Topology, point budgets and bonuses remain server-owned."
     }
   }
 ]

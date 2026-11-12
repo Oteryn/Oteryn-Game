@@ -14,9 +14,17 @@ enum StepDirection {
   STEP_DIRECTION_EAST = 2;
   STEP_DIRECTION_SOUTH = 3;
   STEP_DIRECTION_WEST = 4;
+  // Only command1 intent with capability371. State/entity facing remains NORTH..WEST.
+  STEP_DIRECTION_NORTHEAST = 5;
+  STEP_DIRECTION_SOUTHEAST = 6;
+  STEP_DIRECTION_SOUTHWEST = 7;
+  STEP_DIRECTION_NORTHWEST = 8;
 }
 
 // ClientCommand.payload of command type 1. At most 4 encoded bytes.
+// Without capability371 only NORTH..WEST; with it the four diagonal values are admitted.
+// Diagonal step cost is three rounded cardinal durations. With13+371, receipt max333450ms;
+// capability13 alone retains111150ms. No field or byte bound changes.
 message WorldActorStepIntentV1 {
   StepDirection direction = 1;
 }
@@ -79,7 +87,8 @@ message WorldSpatialSnapshotV1 {
 // VIS-2 (MOVE-RL-11-VISIBILITY-V1, D84-D87): the second schema revision of domain 1, snapshot type
 // 2 and delta type 2, gated by the optional capability 6 WORLD_SPATIAL_ENTITIES. A session that
 // did not select the capability receives only the v1 types above (own actor). Payloads are at
-// most 33,792 bytes (256 entries x 128 B + 1,024 B header). Unknown, repeated and kind-
+// most 33,792 bytes without capability 286; with it, 50,688 bytes
+// (256 entries x 194 B + 1,024 B header). Unknown, repeated and kind-
 // inconsistent fields, duplicate identities and zero or unknown enum values fail closed.
 // ---------------------------------------------------------------------------------------------
 
@@ -101,8 +110,9 @@ message EntityRefV1 {
   uint64 generation = 2;
 }
 
-// At most 128 encoded bytes. Players, creatures and NPCs carry fields 5-7 and no fields 8-10; corpses and
-// ground items carry fields 8-9 (and 10 under capability 4) and no fields 3, 5-7 or 11-12.
+// At most 128 encoded bytes, or 194 under capability 286. Players, creatures and NPCs carry
+// fields 5-7 and no fields 8-10; corpses and ground items carry fields 8-9 (and 10 under
+// capability 4) and no fields 3, 5-7 or 11-13.
 // Players and creatures also carry fields 11-12 under capability 19; NPCs never do.
 message WorldSpatialEntityV1 {
   EntityKind kind = 1;
@@ -132,6 +142,11 @@ message WorldSpatialEntityV1 {
   // most once per 1,000 ms per entity.
   uint32 light_level = 11;
   uint32 light_color = 12;
+  // S-ENTNAME: required on players, creatures and NPCs only when capability 286
+  // WORLD_SPATIAL_ENTITIES_V2 is selected alongside capability 6. Non-blank UTF-8,
+  // at most 64 bytes, no control characters. Never on objects. Unknown to old
+  // decoders, so omitted unless negotiated. Named entries allow at most 194 bytes.
+  string display_name = 13;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),

@@ -85,6 +85,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             self.checkpoint_timed_equipment(actor, session, false).await;
+            self.drain_quest_timers(actor, session).await;
         }
         let converters: Vec<GameSessionId> = {
             let mut active = self.states.timed_items.magic_converters.lock().await;
@@ -343,6 +344,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             retired_effects = Some(effects);
             proficiency_equipment = equipment;
         }
+        let Some(invisible) = super::equipment_move::equipment_effects_owner::equipped_invisibility(
+            &proficiency_equipment,
+            native,
+        ) else {
+            return false;
+        };
         let runtime = self.runtime.lock().await;
         if self
             .install_proficiency_equipment(&runtime, actor, session, &proficiency_equipment)
@@ -354,6 +361,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.states.spell_states.lock().await;
         if let Some(state) = states.get_mut(&runtime, actor, session) {
             state.install_equipped_mana_shield(active_mana_shield);
+            state.install_equipped_invisibility(invisible);
             if let Some(effects) = retired_effects {
                 super::equipment_move::equipment_effects_owner::install_suppressions(
                     state, effects,

@@ -25,10 +25,39 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     );
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
+    // Preserve the same timeout/unknown close used by receipt-backed Item actions.
+    if let Ok(UseIntent {
+        target: UseTarget::WorldObject(target),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_event_world_object(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                target.clone(),
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+    {
+        return Some(Dispatch::Use(outcome));
+    }
     if admitted
         .continuity
         .selected_capabilities
         .contains(CAPABILITY_ITEM_USE_V1)
+        // Cube receipts belong to Channel sessions. A named-House handoff has
+        // its own session and must reach its owner after the shared trade check.
+        && !admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }))
         && let Ok(intent) = &decoded
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
@@ -87,7 +116,97 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }
     }
     if let Ok(intent) = &decoded
-        && (intent.use_with.is_some() || intent.use_with_map_item.is_some())
+        && intent.use_with.is_none()
+        && intent.use_with_map_item.is_none()
+        && intent.use_with_position.is_none()
+        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        )
+        && admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+        )
+    {
+        let resolved = match intent.target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
+            _ => None,
+        };
+        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+            return Some(Dispatch::Use(outcome));
+        }
+    }
+    // A map handle reaches only its explicit world owner. It never widens the
+    // carried-item or container admissions below; stale handles keep their refusal.
+    if let Ok(UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+        && let Some(key @ (ItemKey::MapBase { .. } | ItemKey::MapAdded(_))) =
+            item_view.as_ref().and_then(|view| view.resolve(*handle))
+        && let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_map_item(actor, UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: command.command_id,
+                item_fence: admitted.item_fence,
+            }, key),
+        ).await.ok()?
+    {
+        return Some(Dispatch::Use(outcome));
+    }
+    // The shared item-action owner also admits equipped hats and player-targeted toys.
+    // Map and position uses must reach their own receipt probes before an unrelated
+    // event-item inventory check can reject a historical command's stale fence.
+    if let Ok(intent) = &decoded
+        && (intent.use_with_map_item.is_none()
+            || (admitted.item_fence.is_some_and(|fence| {
+                matches!(
+                    fence.runtime_scope,
+                    crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                )
+            }) && matches!(
+                intent.use_with_map_item.as_ref(),
+                Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                    _
+                ))
+            )))
+        && intent.use_with_position.is_none()
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_ITEM_USE_V1)
+        && let UseTarget::Item(handle) = intent.target
+    {
+        let source = item_view.as_ref().and_then(|view| view.resolve(handle));
+        if let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_event_item(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+                intent.use_with.is_none_or(|target| {
+                    visibility.as_ref().is_some_and(|view| view.shows(target))
+                }),
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+        {
+            return Some(Dispatch::Use(outcome));
+        }
+    }
+    if let Ok(intent) = &decoded
+        && (intent.use_with.is_some() || intent.use_with_map_item.is_some()
+            || (intent.use_with_position.is_none() && matches!(intent.target, UseTarget::ItemByDefinition(_))))
     {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|v| v.resolve(handle)),
@@ -136,6 +255,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     }
                     _ => None,
                 };
+                if admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
+                    crate::foundation::RuntimeScopeRefV1::Instance{..}))
+                    && let Some(outcome)=tokio::time::timeout(std::time::Duration::from_secs(10),
+                        authority.use_dispenser_action(actor,UseCommand{game_session_id:admitted.game_session_id,
+                            command_id:command.command_id,item_fence:admitted.item_fence},intent.clone(),source,target))
+                        .await.ok()?.ok()? {
+                    return Some(Dispatch::Use(outcome));
+                }
                 // Carried targets otherwise enter the pick owner directly. Probe W07
                 // here, including historical receipts whose source handle was retired.
                 if let Some(outcome) = tokio::time::timeout(
@@ -230,6 +357,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 {
                     return Some(Dispatch::Use(outcome));
                 }
+                if let Some(outcome) = transport::house_destroy::dispatch_map_use(authority, actor, UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                }, intent.clone(), item_view.as_ref()).await {
+                    return Some(Dispatch::Use(outcome));
+                }
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,
@@ -296,7 +430,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                 // and one out of reach is TOO_FAR; anything else takes the corpse path.
                 let container = match (key, &*container_views) {
-                    (Some(key), Some(_)) => authority.observe_container(actor, admitted.item_fence, key).await,
+                    (Some(key), Some(_)) => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
                     _ => None,
                 };
                 let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
@@ -405,7 +539,10 @@ mod fluid_routing_tests {
         let fluid = route.find(".use_fluid_on_map(");
         let imbuement = route.find(".use_imbuement_item(");
         let key = route.find(".use_key_on_door(");
-        assert!(fluid.is_some() && imbuement.is_some() && key.is_some(), "handlers present");
+        assert!(
+            fluid.is_some() && imbuement.is_some() && key.is_some(),
+            "handlers present"
+        );
         assert!(imbuement < fluid, "imbuement handler before fluid");
         assert!(key < fluid, "key handler before fluid");
     }

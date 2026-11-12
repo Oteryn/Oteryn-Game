@@ -1,0 +1,7 @@
+{
+  "mechanic": "0009-highscores",
+  "kind": "panels",
+  "id": "0009-highscores-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

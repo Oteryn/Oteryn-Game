@@ -1,0 +1,869 @@
+{
+  "schema": 1,
+  "runtime_enabled": false,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3091,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32744,
+        "y": 31161,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 21,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3092",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3092,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32744,
+        "y": 31164,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 21,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3093",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3093,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32833,
+        "y": 31269,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 24,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3094",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3094,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32833,
+        "y": 31266,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 24,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3095",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3095,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32729,
+        "y": 31200,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 29,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3096",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3096,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32734,
+        "y": 31200,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 29,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3097",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3097,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32776,
+        "y": 31141,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 35,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3098",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3098,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32776,
+        "y": 31145,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 35,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3099",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3099,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32874,
+        "y": 31202,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 41,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3100",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3100,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32869,
+        "y": 31202,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 41,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3101",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3101,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32856,
+        "y": 31251,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 45,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:12"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3102",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3102,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32854,
+        "y": 31248,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 45,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 1018,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32773,
+        "y": 31116,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:17"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 1019,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32780,
+        "y": 31115,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:18"
+      ]
+    }
+  ],
+  "reason": "Complete source parameters retained; no unapproved shared-contract change or invented map binding is published.",
+  "holds": [
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3091"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3092",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3092"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:3"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3093",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3093"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:4"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3094",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3094"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:5"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3095",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3095"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:6"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3096",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3096"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:7"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3097",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3097"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:8"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3098",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3098"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:9"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3099",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3099"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:10"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3100",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3100"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:11"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3101",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3101"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:12"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3102",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33"
+          ],
+          "proof": "The donor only reads Questline; replacing the guard with SET0 or SET(threshold) would erase later progress (for example72 at a minimum21 gate).",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.unique=3102"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:13"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.unique=1018"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:17"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.unique=1019"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:18"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    }
+  ],
+  "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+}

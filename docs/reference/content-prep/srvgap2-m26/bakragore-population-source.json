@@ -1,0 +1,23 @@
+{
+  "reference_scope": "OTS_HYPOTHESIS_ONLY",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+  "sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178",
+  "checked_facts": [
+    {
+      "lines": "173-185",
+      "fact": "Close placement takes the first walkable of ten one-tile samples and falls back to the boss tile; createMonster may refuse placement."
+    },
+    {
+      "lines": "312-353",
+      "fact": "All three source kinds count within twenty same-floor tiles. Enabled population requests target-count Bloodjaws and four each of Mushrooms and Pillars; the Bloodjaw storage pauses only that kind."
+    },
+    {
+      "lines": "419-429",
+      "fact": "Mechanics-disabled onThink skips ensureSummons completely, unlike Vemiath."
+    }
+  ],
+  "remaining": "Native teleport/agony/essence phases, Mushroom fuse/explosion and complete room qualification remain separate requirements."
+}

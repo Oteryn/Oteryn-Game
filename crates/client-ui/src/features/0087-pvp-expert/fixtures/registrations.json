@@ -2,18 +2,32 @@
   {
     "mechanic": "0087-pvp-expert",
     "kind": "handlers",
-    "id": "0087-pvp-expert-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0087-pvp-expert-command-103",
+    "status": "supported",
     "commands": [
       103
     ],
+    "direction": "client_to_server",
+    "capability": 87,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0087-pvp-expert",
+    "kind": "keybindings",
+    "id": "0087-pvp-expert-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+E",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0087-pvp-expert",
+    "kind": "panels",
+    "id": "0087-pvp-expert-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

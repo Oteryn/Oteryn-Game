@@ -760,6 +760,9 @@ impl SpellSource {
             && !matches!(
                 ep.damage_type.as_str(),
                 "physical"
+                    // Crystal src/creatures/monsters/monsters.hpp:244 defaults an omitted family
+                    // to Undefined; Cake Golem's second attack preserves it.
+                    | "undefined"
                     | "fire"
                     | "earth"
                     | "energy"
@@ -2619,7 +2622,15 @@ impl DamageSpellOwner {
             }
             if source.element.as_deref() == Some("mana_drain") {
                 let outcome = vitals
-                    .apply_attack_mana_drain(runtime, target, session, amount, &occurrence, now)
+                    .apply_source_mana_drain(
+                        runtime,
+                        proposal.issuer,
+                        target,
+                        session,
+                        amount,
+                        &occurrence,
+                        now,
+                    )
                     .map(|mana| SpellTargetOutcome {
                         damage: None,
                         mana: Some(mana),
@@ -2630,8 +2641,9 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_typed_attack_damage(
+                vitals.apply_source_typed_attack_damage(
                     runtime,
+                    proposal.issuer,
                     target,
                     session,
                     amount,

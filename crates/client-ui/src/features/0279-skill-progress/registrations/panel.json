@@ -1,0 +1,7 @@
+{
+  "mechanic": "0279-skill-progress",
+  "kind": "panels",
+  "id": "0279-skill-progress-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

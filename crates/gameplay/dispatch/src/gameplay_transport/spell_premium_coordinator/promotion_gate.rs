@@ -12,7 +12,14 @@ impl NpcPurchaseGate for SpellPremiumCoordinator {
         service: &PurchaseService,
     ) -> Result<bool, DurabilityError> {
         // Inquisition completion permits this offer even after Premium lapses.
-        if service.key() == "oteryn:service.blessing.henricus" {
+        if service.key() == "oteryn:service.blessing.henricus"
+            || service.key() == crate::content::npc_catalogue::premium_services::PHOENIX_PREPARATION
+            || crate::content::blessing_catalogue::BlessingCatalogue::load()
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+                .blessings
+                .iter()
+                .any(|blessing| !blessing.premium && blessing.service == service.key())
+        {
             return Ok(true);
         }
         self.transaction_permission(tx, account, |status| match service {
@@ -116,5 +123,40 @@ impl crate::durability::npc_travel::NpcTravelGate for SpellPremiumCoordinator {
             )
         })
         .await
+    }
+}
+
+impl crate::durability::quest_state::grizzly::GrizzlyPremiumGate for QuestRewardPremium<'_> {
+    async fn task_permitted(
+        &self,
+        tx: &mut PremiumGateTx<'_>,
+        account: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        match self.0 {
+            Some(owner) => {
+                owner
+                    .transaction_permission(tx, account, |status| status.gate().premium_current())
+                    .await
+            }
+            None => Ok(false),
+        }
+    }
+}
+
+impl crate::durability::quest_state::grizzly::GrizzlyPremiumGate for super::QuestPremium<'_> {
+    async fn task_permitted(
+        &self,
+        tx: &mut PremiumGateTx<'_>,
+        account: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        match self.0 {
+            Some(owner) => {
+                crate::durability::quest_state::grizzly::GrizzlyPremiumGate::task_permitted(
+                    owner, tx, account,
+                )
+                .await
+            }
+            None => Ok(false),
+        }
     }
 }

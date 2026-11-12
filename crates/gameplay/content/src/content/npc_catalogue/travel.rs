@@ -18,6 +18,7 @@ pub struct TravelRoute {
     pub yalahar_gate: bool,
     pub yalahar_town_gate: Option<String>,
     pub quest_gate: Option<String>,
+    pub world_change: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -40,6 +41,13 @@ struct Correction {
     native_addition: bool,
     #[serde(default)]
     quest_gate: Option<String>,
+    #[serde(default)]
+    world_change: Option<String>,
+}
+
+/// Bind route corrections to the same revision as their production conversation book.
+pub fn revision_material() -> &'static str {
+    include_str!("travel_routes.json")
 }
 
 pub fn resolve(
@@ -48,9 +56,8 @@ pub fn resolve(
     services: &[ProjectV2DefinitionRef],
 ) -> Vec<TravelRoute> {
     static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections = CORRECTIONS.get_or_init(|| {
-        serde_json::from_str(include_str!("travel_routes.json")).unwrap_or_default()
-    });
+    let corrections =
+        CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default());
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
@@ -109,6 +116,7 @@ pub fn resolve(
                 yalahar_gate: correction.yalahar_gate,
                 yalahar_town_gate: correction.yalahar_town_gate.clone(),
                 quest_gate: correction.quest_gate.clone(),
+                world_change: correction.world_change.clone(),
             })
         })
         .collect()
@@ -116,11 +124,12 @@ pub fn resolve(
 
 #[cfg(test)]
 mod tests {
+    use super::revision_material;
+
     #[test]
     fn paid_travel_routes_preserve_all_195_corrected_fares_premium_and_arrivals()
     -> Result<(), Box<dyn std::error::Error>> {
-        let corrections: Vec<super::Correction> =
-            serde_json::from_str(include_str!("travel_routes.json"))?;
+        let corrections: Vec<super::Correction> = serde_json::from_str(revision_material())?;
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../../docs/reference/content-prep/travel-content-1");
         let source: serde_json::Value =
@@ -128,12 +137,23 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 227);
+        assert_eq!(corrections.len(), 234);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 227);
+        assert_eq!(keys.len(), 234);
+        let dalbrect = corrections
+            .iter()
+            .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
+            .ok_or("source-qualified Dalbrect route")?;
+        assert!(dalbrect.native_addition && !dalbrect.held && !dalbrect.premium);
+        assert_eq!((&*dalbrect.keyword, dalbrect.price), ("passage", 10));
+        assert_eq!((dalbrect.x, dalbrect.y, dalbrect.floor), (32190, 31957, 6));
+        assert_eq!(
+            dalbrect.quest_gate.as_deref(),
+            Some("oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log")
+        );
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let corrected = corrections
@@ -171,8 +191,7 @@ mod tests {
     // premium flags from its admitted correction and adds the gated Yalahar route.
     #[test]
     fn crystal_seagull_and_kendra_fares_and_arrivals() -> Result<(), Box<dyn std::error::Error>> {
-        let corrections: Vec<super::Correction> =
-            serde_json::from_str(include_str!("travel_routes.json"))?;
+        let corrections: Vec<super::Correction> = serde_json::from_str(revision_material())?;
         let find = |key: &str| {
             corrections
                 .iter()
@@ -335,8 +354,7 @@ mod tests {
     #[test]
     fn remaining_captain_routes_preserve_unlocks_and_custom_fares()
     -> Result<(), Box<dyn std::error::Error>> {
-        let rows: Vec<super::Correction> =
-            serde_json::from_str(include_str!("travel_routes.json"))?;
+        let rows: Vec<super::Correction> = serde_json::from_str(revision_material())?;
         for (key, track) in [
             (
                 "captain_max/calassa",

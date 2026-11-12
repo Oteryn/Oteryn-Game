@@ -144,6 +144,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(walkable),
             ground_speed: Some(150),
+            blocks_projectile: None,
         };
         Ok(match key {
             "terrain:grass" => Some(ground(true)),
@@ -152,6 +153,7 @@ impl KeyResolver for Resolver {
                 kind: TerrainKind::Wall,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
             _ => None,
         })

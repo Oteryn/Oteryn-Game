@@ -10,6 +10,23 @@ struct LiveSetup {
     world: snapshot::WorldSnapshot,
 }
 
+/// Why the join did not complete: before its snapshot reached the transport, while writing it,
+/// or after the client already holds it.
+enum JoinFailure {
+    Unprepared(ServeEnd),
+    Transport,
+    Delivered(ServeEnd),
+}
+
+impl From<ServeEnd> for JoinFailure {
+    fn from(end: ServeEnd) -> Self {
+        Self::Unprepared(end)
+    }
+}
+
+/// A join that could not be prepared reports `SESSION_JOIN_UNAVAILABLE` before the same end;
+/// a failed snapshot write has no transport left to report on, and a session that already
+/// joined ends as before (FND-02 §13.3: unresolved pending work only disconnects).
 pub(super) async fn prepare<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,
@@ -24,14 +41,62 @@ where
     A: FreshAdmissionAuthority,
 {
     let generation = admitted.continuity.connection_generation;
+    match join(
+        stream, admitted, authority, policy, actor, baseline, integrity,
+    )
+    .await
+    {
+        Ok(state) => Ok(state),
+        Err(JoinFailure::Unprepared(end)) => {
+            send_join_unavailable(stream, generation).await;
+            Err(end)
+        }
+        Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
+        Err(JoinFailure::Delivered(end)) => Err(end),
+    }
+}
+
+async fn join<S, A>(
+    stream: &mut S,
+    admitted: &mut AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+    actor: ExactActorRef,
+    baseline: WorldSpatialObservation,
+    integrity: integrity::Integrity,
+) -> Result<ServeState, JoinFailure>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let generation = admitted.continuity.connection_generation;
     let revision = admitted.continuity.spatial_revision;
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
     // that its objects carry their item handles under capability 4.
     let mut payloads = Vec::new();
+    let cast_chat_active = admitted.continuity.selected_capabilities.contains(291)
+        && admitted.continuity.selected_capabilities.contains(290);
+    if cast_chat_active {
+        payloads.push(
+            crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
+                domain_id: 103,
+                revision: 1,
+                snapshot_type: 1,
+                payload: oteryn_protocol_oteryn::cast::Message::CasterChatEmpty
+                    .encode()
+                    .map_err(|_| ServeEnd::Disconnected)?,
+            },
+        );
+    }
     if let Some(payload) = authority
         .activity_scope_snapshot(*admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?
+        .map_err(|_| {
+            failed(
+                "event=join_prepare_failed phase=activity_scope",
+                ServeEnd::Disconnected,
+            )
+        })?
     {
         // Initial/recovery projection is in the already admitted destination
         // stream. Its receipt binding precedes spatial and item state atomically.
@@ -44,7 +109,9 @@ where
             },
         );
     }
-    let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads).await?;
+    let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads)
+        .await
+        .map_err(|end| failed("event=join_prepare_failed phase=initial", end))?;
     let mut items = snapshot::items(
         authority,
         actor,
@@ -53,7 +120,8 @@ where
         baseline,
         revision,
     )
-    .await?;
+    .await
+    .map_err(|end| failed("event=join_prepare_failed phase=items", end))?;
     if let Some((notice_revision, payload)) = initial.notices.take() {
         payloads.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
@@ -71,7 +139,8 @@ where
         &mut payloads,
         &mut items.item_view,
     )
-    .await?;
+    .await
+    .map_err(|end| failed("event=join_prepare_failed phase=sessions", end))?;
     let world = snapshot::world(
         authority,
         actor,
@@ -81,7 +150,8 @@ where
         items.selected_capabilities,
         baseline,
     )
-    .await?;
+    .await
+    .map_err(|end| failed("event=join_prepare_failed phase=world", end))?;
     if admitted
         .continuity
         .selected_capabilities
@@ -90,11 +160,21 @@ where
         authority
             .player_trade_open(*admitted)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| {
+                failed(
+                    "event=join_prepare_failed phase=trade_open",
+                    ServeEnd::Disconnected,
+                )
+            })?;
         let (revision, state, _) = authority
             .player_trade_observation(admitted.game_session_id)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| {
+                failed(
+                    "event=join_prepare_failed phase=trade_observation",
+                    ServeEnd::Disconnected,
+                )
+            })?;
         payloads.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
                 domain_id: oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE,
@@ -120,14 +200,13 @@ where
     items.appearances.domain(&mut domains);
     domains.extend(server_save_countdown_transport::snapshot(admitted));
     domains.extend(tutorial_notices_transport::snapshot(admitted));
-    let snapshot =
-        encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
+    let snapshot = encode_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
-        return Err(ServeEnd::Disconnected);
+        return Err(ServeEnd::Disconnected.into());
     };
     for frame in &snapshot {
         if write_frame(stream, frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+            return Err(JoinFailure::Transport);
         }
     }
     zones_nologout_transport::delivered(admitted);
@@ -166,6 +245,16 @@ where
         },
     )
     .await
+    .map_err(JoinFailure::Delivered)
+}
+
+/// Logs the failed join phase with the code the client is sent.
+pub(super) fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
+    crate::gameplay_transport::operator_event(&format!(
+        "{event} code={}",
+        FoundationProtocolError::SessionJoinUnavailable.code()
+    ));
+    end
 }
 
 async fn live<A: FreshAdmissionAuthority>(
@@ -185,6 +274,7 @@ async fn live<A: FreshAdmissionAuthority>(
         world,
     } = setup;
     let snapshot::InitialSnapshot {
+        spell_catalog,
         overlay_served,
         notices_selected,
         achievement_notices,
@@ -206,6 +296,8 @@ async fn live<A: FreshAdmissionAuthority>(
         npc_active,
         combat_sent,
     } = sessions;
+    let cast_chat_active =
+        selected_capabilities.contains(291) && selected_capabilities.contains(290);
     let combat_active = combat_sent.is_some();
     let snapshot::WorldSnapshot {
         world_map,
@@ -244,14 +336,15 @@ async fn live<A: FreshAdmissionAuthority>(
     );
     cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     // SPELL-D8 §8.2: only an actor with `ACTOR_VITALS` has a Serene evaluation to run.
-    let serene = has_vitals.then(|| {
-        let mut serene = tokio::time::interval_at(
-            tokio::time::Instant::now() + SERENE_EVALUATION,
-            SERENE_EVALUATION,
-        );
-        serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-        serene
-    });
+    let serene = (has_vitals || spell_catalog.is_some() || selected_capabilities.contains(290))
+        .then(|| {
+            let mut serene = tokio::time::interval_at(
+                tokio::time::Instant::now() + SERENE_EVALUATION,
+                SERENE_EVALUATION,
+            );
+            serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            serene
+        });
     // QUEST-LOG-WIRE-1: only a session with domain 16 looks for a changed quest copy.
     let quest_log_refresh = quest_log.is_some().then(|| {
         let mut refresh = tokio::time::interval_at(
@@ -262,7 +355,7 @@ async fn live<A: FreshAdmissionAuthority>(
         refresh
     });
     // CHAT-WIRE-1: only a session with domain 12 drains its queued lines.
-    let chat_refresh = chat_active.then(|| {
+    let chat_refresh = (chat_active || cast_chat_active).then(|| {
         let mut refresh =
             tokio::time::interval_at(tokio::time::Instant::now() + CHAT_REFRESH, CHAT_REFRESH);
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -309,7 +402,8 @@ async fn live<A: FreshAdmissionAuthority>(
     let buffered: Option<BufferedStep> = None;
     // Each held frame carries whether it arrived behind a buffered step (SPEED-1) rather than
     // behind a running logout (LOGOUT-RL-01).
-    let held: std::collections::VecDeque<(Vec<u8>, bool)> = std::collections::VecDeque::new();
+    let held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)> =
+        std::collections::VecDeque::new();
     // CHASE-1 (RANGED-0 §8): when the next chase step is checked, on the same pacing clock as a
     // client step; at most one is pending. Armed by a combat tick that holds a chasing target
     // and by a chase step that moved.
@@ -318,6 +412,11 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        input_after_refresh: false,
+        next_periodic_refresh: 0,
+        activity_ack: None,
+        cast_chat_revision: u64::from(cast_chat_active),
+        spell_catalog,
         integrity,
         stash_rows: None,
         stash_revision: 0,
@@ -330,6 +429,22 @@ async fn live<A: FreshAdmissionAuthority>(
         actor,
         revision,
         sequence,
+        ambient_revision: 0,
+        item_effects_revision: 0,
+        sound_cursor: if selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+            || selected_capabilities
+                .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+            || selected_capabilities
+                .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+        {
+            authority
+                .observe_sounds(actor, admitted.game_session_id, u64::MAX)
+                .await
+                .map_or(0, |(cursor, _)| cursor)
+        } else {
+            0
+        },
         movement_effect_revision: authority
             .observe_movement_effects(0)
             .last()

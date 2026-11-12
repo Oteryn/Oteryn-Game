@@ -2,20 +2,77 @@
   {
     "mechanic": "0150-house-podium",
     "kind": "handlers",
-    "id": "0150-house-podium-unsupported",
-    "status": "unsupported",
-    "reason": "Native editor and projection rendering are not yet migrated.",
+    "id": "0150-house-podium-command-174",
+    "status": "supported",
     "commands": [
-      174,
-      175,
+      174
+    ],
+    "direction": "client_to_server",
+    "capability": 150,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0150-house-podium",
+    "kind": "handlers",
+    "id": "0150-house-podium-command-175",
+    "status": "supported",
+    "commands": [
+      175
+    ],
+    "direction": "client_to_server",
+    "capability": 150,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0150-house-podium",
+    "kind": "handlers",
+    "id": "0150-house-podium-command-176",
+    "status": "supported",
+    "commands": [
       176
     ],
+    "direction": "client_to_server",
+    "capability": 150,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Server authoritative.",
-      "protocol": "Codec is owned by protocol-oteryn.",
-      "view": "Pending native projection renderer.",
-      "input": "Pending native editor.",
-      "settings": "No client setting."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0150-house-podium",
+    "kind": "handlers",
+    "id": "0150-house-podium-command-739",
+    "status": "supported",
+    "commands": [
+      739
+    ],
+    "direction": "client_to_server",
+    "capability": 150,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0150-house-podium",
+    "kind": "keybindings",
+    "id": "0150-house-podium-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+P",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0150-house-podium",
+    "kind": "panels",
+    "id": "0150-house-podium-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

@@ -1,0 +1,290 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "thais_lighthouse",
+    "frozen_stage1": {
+      "total": 5,
+      "auto": 1,
+      "manual": 4
+    },
+    "authored_callback_definitions": 1,
+    "runtime_catalogue_callback_definitions": 1,
+    "runtime_exclusions": [],
+    "npc_source_files": 0,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Jeden dokładny callback wejścia.",
+    "left_out_summary": "UID30004/30005/25010 nieobecne; dynamiczna para portali i StepOut wymagają wspólnego wykonawcy."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 73,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+      ],
+      "disposition": {
+        "row_id": "R8A073",
+        "original_index": 73,
+        "quest": "thais_lighthouse",
+        "step": "Dźwignia drabiny",
+        "original_row": {
+          "quest": "thais_lighthouse",
+          "step": "Dźwignia drabiny",
+          "pattern": "P01",
+          "trigger": "Use UID30004",
+          "condition": "2772 otwiera; pozostały stan zamyka",
+          "effect": "2772↔2773;351↔7767 na32225,32276,8",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:5"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Źródłowy lever/passage callback jest zachowany, ale koniunkcja UID30004+appearance2772 nie ma natywnego obiektu. Nie zamieniamy go na samą pozycję.",
+        "missing_function": "Source-backed native binding UID30004 i osobna kwalifikacja lever2772↔2773 oraz passage351↔7767 przy zwykłym use.",
+        "question_ids": [
+          "thais_lighthouse-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:5"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-thais_lighthouse.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/thais-lighthouse-ladder",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 74,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+      ],
+      "disposition": {
+        "row_id": "R8A074",
+        "original_index": 74,
+        "quest": "thais_lighthouse",
+        "step": "Dźwignia portali: otwarcie",
+        "original_row": {
+          "quest": "thais_lighthouse",
+          "step": "Dźwignia portali: otwarcie",
+          "pattern": "P01/P03",
+          "trigger": "Use UID30005",
+          "condition": "item2772; gdy brak kompletnej pary1949",
+          "effect": "Tworzy1949 na32232,32276,9 i32225,32276,10;cele32225,32274,10 i32230,32276,9;lever2773",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:15"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Dokładne dwie pozycje/cele1949 i zachowanie2772/2773 są znane. UID30005 nie ma native bindingu; statyczny passage callback nie wykonuje source tworzenia/usuwania pary aktywnych teleportów.",
+        "missing_function": "Atomowy source lifecycle pary teleport objects1949 oraz stanu levera przy pełnej/niepełnej parze, po kwalifikacji UID30005.",
+        "question_ids": [
+          "thais_lighthouse-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:15"
+        ],
+        "evidence": [
+          "map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 75,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+      ],
+      "disposition": {
+        "row_id": "R8A075",
+        "original_index": 75,
+        "quest": "thais_lighthouse",
+        "step": "Dźwignia portali: usuwanie",
+        "original_row": {
+          "quest": "thais_lighthouse",
+          "step": "Dźwignia portali: usuwanie",
+          "pattern": "P01",
+          "trigger": "Use UID30005",
+          "condition": "Komplet2portalów1949; stan2772 lub2773",
+          "effect": "Usuwa oba;przy2773 ustawia2772, przy2772 pozostawia2772",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:18"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Dokładne dwie pozycje/cele1949 i zachowanie2772/2773 są znane. UID30005 nie ma native bindingu; statyczny passage callback nie wykonuje source tworzenia/usuwania pary aktywnych teleportów.",
+        "missing_function": "Atomowy source lifecycle pary teleport objects1949 oraz stanu levera przy pełnej/niepełnej parze, po kwalifikacji UID30005.",
+        "question_ids": [
+          "thais_lighthouse-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:18"
+        ],
+        "evidence": [
+          "map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 76,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+      ],
+      "disposition": {
+        "row_id": "R8A076",
+        "original_index": 76,
+        "quest": "thais_lighthouse",
+        "step": "Nacisk schodów",
+        "original_row": {
+          "quest": "thais_lighthouse",
+          "step": "Nacisk schodów",
+          "pattern": "P01",
+          "trigger": "StepIn UID25010",
+          "condition": "Dowolne creature; stairs429 istnieje",
+          "effect": "429→7767 na32225,32282,9;trigger→430",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_ADAPTER",
+        "reason": "UID25010 nie występuje native. StepIn dotyczy dowolnego creature, a osobny StepOut odwraca stairs/trigger; obecny player-only StepIn nie jest równoważnym callerem.",
+        "missing_function": "Kwalifikowany creature StepIn i StepOut dla jednego pressure tile, atomowe429↔7767 oraz source trigger430/431 w istniejącym world/movement ownerze.",
+        "question_ids": [
+          "thais_lighthouse-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6"
+        ],
+        "evidence": [
+          "map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 77,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+      ],
+      "disposition": {
+        "row_id": "R8A077",
+        "original_index": 77,
+        "quest": "thais_lighthouse",
+        "step": "Zwolnienie schodów",
+        "original_row": {
+          "quest": "thais_lighthouse",
+          "step": "Zwolnienie schodów",
+          "pattern": "P01",
+          "trigger": "StepOut UID25010",
+          "condition": "stairs7767 istnieje",
+          "effect": "7767→429;trigger→431; brakStepOut wcallbackmodel",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_ADAPTER",
+        "reason": "UID25010 nie występuje native. StepIn dotyczy dowolnego creature, a osobny StepOut odwraca stairs/trigger; obecny player-only StepIn nie jest równoważnym callerem.",
+        "missing_function": "Kwalifikowany creature StepIn i StepOut dla jednego pressure tile, atomowe429↔7767 oraz source trigger430/431 w istniejącym world/movement ownerze.",
+        "question_ids": [
+          "thais_lighthouse-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316254"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24"
+        ],
+        "evidence": [
+          "map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

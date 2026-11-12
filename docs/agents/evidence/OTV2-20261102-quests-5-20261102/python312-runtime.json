@@ -1,0 +1,13 @@
+{
+  "image": "python:3.12-slim-bookworm",
+  "image_id": "sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258",
+  "runtime": "/home/mole/quests5-python312-runtime",
+  "venv": "/home/mole/quests5-python312-venv",
+  "version": "Python 3.12.15",
+  "probe": {
+    "version": "3.12.15 (main, Oct  6 2026, 02:02:31) [GCC 12.2.0]",
+    "executable": "/home/mole/quests5-python312-venv/bin/python3",
+    "suffix": ".lua"
+  },
+  "source": "Oteryn/Oteryn-Game@5fbe99b378d51c9cb69b2a49b28edf3b63ba7de4:.github/workflows/quest-authoring-schema.yml:75-84"
+}

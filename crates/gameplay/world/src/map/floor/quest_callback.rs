@@ -9,6 +9,7 @@ struct CallbackTeleport<'a> {
     destination: MovementLocalPosition,
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
+    facing: Option<MovementFacing>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -22,6 +23,34 @@ pub fn prepare_quest_callback_teleport<'a>(
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
 ) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    prepare_quest_callback_teleport_facing(
+        runtime,
+        cells,
+        actor,
+        session,
+        expected,
+        destination,
+        pz_blocked,
+        closed,
+        None,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the proof binds the current actor, movement scope, landing rules and facing"
+)]
+pub fn prepare_quest_callback_teleport_facing<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+    facing: Option<MovementFacing>,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
     let proof = CallbackTeleport {
         cells,
         actor,
@@ -30,6 +59,7 @@ pub fn prepare_quest_callback_teleport<'a>(
         destination,
         pz_blocked,
         closed,
+        facing,
     };
     proof.check(runtime)?;
     Ok(proof)
@@ -69,7 +99,9 @@ impl crate::foundation::SourceStepCommitProof for CallbackTeleport<'_> {
             self.actor,
             self.expected,
             self.destination,
-            self.expected.facing().unwrap_or(MovementFacing::South),
+            self.facing
+                .or(self.expected.facing())
+                .unwrap_or(MovementFacing::South),
         )
     }
 }

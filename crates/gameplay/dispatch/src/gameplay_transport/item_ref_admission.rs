@@ -101,6 +101,7 @@ pub(super) fn visible_corpses(
                 &corpse.item.revision_ref,
             )?;
             Some(ChannelEntity {
+                display_name: None,
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                 kind: VisibleKind::Corpse {
@@ -360,19 +361,35 @@ pub(super) async fn observe_character_inventory(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<InventoryItems> {
-    let current = FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(game_session_id)
-        .await
-        .ok()?
-        .0;
-    if current.session_state() != GameSessionState::Active {
-        return None;
-    }
-    let character_id =
-        crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()).ok()?;
-    let backpack = admission
-        .root
-        .read_character_backpack(admission.character, character_id)
+    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
+    use crate::durability::DurabilityError;
+    // These reads share the root's single holder with the node cadence. A busy
+    // holder must not turn a valid join/resume into a missing inventory snapshot.
+    let backpack = super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_unavailable(async || {
+            let current = FreshAdmissionStore::from_root(admission.root.clone())
+                .current_session_at(game_session_id)
+                .await
+                .map_err(|error| match error {
+                    DurabilityError::RootUnavailable => Unavailable,
+                    _ => Rejected,
+                })?
+                .0;
+            if current.session_state() != GameSessionState::Active {
+                return Err(Rejected);
+            }
+            let character_id =
+                crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                    .map_err(|_| Rejected)?;
+            admission
+                .root
+                .read_character_backpack(admission.character, character_id)
+                .await
+                .map_err(|error| match error {
+                    ItemTransferError::Unavailable(DurabilityError::RootUnavailable) => Unavailable,
+                    _ => Rejected,
+                })
+        })
         .await
         .ok()?;
     let index = pinned_index(

@@ -1,0 +1,120 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "thais_quest",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "root/implementation-status.json",
+    "sha256": "1b48d46dbce6c98c52aa1df0c4cf29b5d033d596e63b17336c0adfbae2eeac6b"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 2,
+  "import_counts": {
+    "RĘCZNIE": 2
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "571311fe069c36d20e03a95b0d5ea90a1d331351cccf1cdeb39fc62a3faf7ce0",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "thais_quest",
+        "step": "Most Life Ring: oba kierunki",
+        "pattern": "P01",
+        "trigger": "Use aid30007 (nie UID); lever2772/2773",
+        "guard": "sześć pól x32410..32412,y32231..32232,z10",
+        "effect": "4610↔5770; każde topCreature przenieś do(32409,32231,10) w obu kierunkach; toggle2772/2773",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:16"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak źródłowej mutacji sześciu pól4610↔5770 z przeniesieniem topCreature; wspólny World owner pozostaje bez zmian. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:16",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "671364dcd637a910ff604c9fe5ce2ec0b5f6769417ba6952eaaea9d810e0c506",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "thais_quest",
+        "step": "Life Ring chest",
+        "pattern": "P05",
+        "trigger": "Use uid6131, item2469@(32443,32238,11)",
+        "guard": "KV lifering nieodebrany",
+        "effect": "bag2853; life ring3052×1; dragon necklace3085 argument200; zapis KV",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1593"
+        ],
+        "oteryn": "CZĘŚCIOWO — claim kv.lifering istnieje, not_playable; subtype/charges wymagają kwalifikacji; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Istniejący canonical claim kv.lifering zachowany.",
+      "left_out": "ITEM_SEMANTICS_MISSING/WAITING_IMPLEMENTATION dla jednego dragon necklace3085 z200ładunkami. Nie wydawać200sztuk ani częściowego worka. Decyzja R-CHARGED-REWARDS: Brakuje atomowego wydania naładowanych nagród jako 3085 x1 / 200 charges oraz 3083 x1 / 150 charges. Pełne nagrody i ich pozostałe składniki pozostają w hold; liczba ładunków nie staje się liczbą przedmiotów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773836"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1593",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1593-1599",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1831-1838"
+      ],
+      "evidence": {}
+    }
+  ]
+}

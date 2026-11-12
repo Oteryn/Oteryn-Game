@@ -6,7 +6,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
     /// on a fixture World.
     pub(in crate::gameplay_transport) fn bundle_map(&self) -> Option<&crate::map::boot::BundleMap> {
-        match self.movement_cells.index() {
+        match self.movement_cells().index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
                 Some(index.map())
             }
@@ -56,9 +56,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<world_spatial::ChannelEntities> {
         use world_spatial::VisibleKind;
         let runtime = self.runtime.lock().await;
-        if let Some(view) =
+        let states = self.states.spell_states.lock().await;
+        let now = self.owner_now();
+        if let Some(mut view) =
             house_hireling_view::entities(&runtime, actor, self.owner_now().get() / 1_000).ok()?
         {
+            view.entities.retain(|entry| {
+                !states.player_ref_hidden_from(
+                    &runtime,
+                    actor,
+                    world_spatial::EntityRef {
+                        identity: entry.identity,
+                        generation: entry.generation,
+                    },
+                    now,
+                )
+            });
+            self.states.staff_world.filter(actor, &mut view);
             return Some(view);
         }
         let visible = runtime.visible_entities();
@@ -73,7 +87,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map(|entry| (VisibleKind::Creature, entry)),
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
+        .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
+            display_name: None,
             health_percent: runtime
                 .companion_snapshot(entry.actor)
                 .ok()
@@ -107,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &runtime,
             self.active_generation,
         ))
+        .chain(self.source_volatile_entities(&runtime))
         .collect();
         // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
         // runtime actor-condition owner (players and creatures) and, for a player, its spell
@@ -117,7 +134,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now_us = self.owner_now().get();
         let mut lights = world_spatial::EntityLights::new();
         if let Ok(census) = runtime.positioned_melee_census() {
-            let states = self.states.spell_states.lock().await;
             for (actor, _, session) in census {
                 let spell = session
                     .and_then(|session| states.get(&runtime, actor, session))
@@ -145,12 +161,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        Some(world_spatial::ChannelEntities {
+        let mut view = world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
             observer: actor.placement_identity(),
             entities,
             lights,
             observed_at_ms: now_us / 1_000,
-        })
+        };
+        self.states.staff_world.filter(actor, &mut view);
+        Some(view)
     }
 }

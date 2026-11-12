@@ -1,0 +1,724 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "demon_oak",
+    "elements": 24,
+    "auto": 6,
+    "manual": 18,
+    "statuses": {
+      "CALLBACK_DATA_IMPLEMENTED": 6,
+      "LEFT_OUT": 16,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 2
+    },
+    "new_callbacks": 6,
+    "prepared_npc": {
+      "rules": 11,
+      "reply_paragraphs": 13,
+      "conversations": 1
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/demon-oak-square-1",
+    "oteryn:quest-callback/demon-oak-square-2",
+    "oteryn:quest-callback/demon-oak-square-3",
+    "oteryn:quest-callback/demon-oak-square-4",
+    "oteryn:quest-callback/demon-oak-square-5",
+    "oteryn:quest-callback/demon-oak-reward-grave"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Pole sekwencji 1",
+      "pattern": "P18",
+      "trigger": "StepIn uid 9001",
+      "condition": "max(Squares,0)=0",
+      "effect": "Squares=1; prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Losowy okrzyk jest osobnym elementem raportu, poza kontraktem prezentacji.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "Pole sekwencji 2",
+      "pattern": "P18",
+      "trigger": "StepIn uid 9002",
+      "condition": "max(Squares,0)=1",
+      "effect": "Squares=2; prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Losowy okrzyk jest osobnym elementem raportu, poza kontraktem prezentacji.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "Pole sekwencji 3",
+      "pattern": "P18",
+      "trigger": "StepIn uid 9003",
+      "condition": "max(Squares,0)=2",
+      "effect": "Squares=3; prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Losowy okrzyk jest osobnym elementem raportu, poza kontraktem prezentacji.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "Pole sekwencji 4",
+      "pattern": "P18",
+      "trigger": "StepIn uid 9004",
+      "condition": "max(Squares,0)=3",
+      "effect": "Squares=4; prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Losowy okrzyk jest osobnym elementem raportu, poza kontraktem prezentacji.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "Pole sekwencji 5",
+      "pattern": "P18",
+      "trigger": "StepIn uid 9005",
+      "condition": "max(Squares,0)=4",
+      "effect": "Squares=5; prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:19",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Losowy okrzyk jest osobnym elementem raportu, poza kontraktem prezentacji.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 6,
+      "step": "Okrzyk po poprawnym polu",
+      "pattern": "P30",
+      "trigger": "StepIn uid9001..9005",
+      "condition": "poprawny następny element sekwencji",
+      "effect": "losowy tekst z voices; brak osobnego postępu",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_squares.lua:23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Odmowa powrotu po zwycięstwie",
+      "pattern": "P03",
+      "trigger": "StepIn uid9000",
+      "condition": "Done>=1",
+      "effect": "teleport32716/32340/7",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_entrance.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "Minimalny poziom",
+      "pattern": "P03",
+      "trigger": "StepIn uid9000",
+      "condition": "level<120",
+      "effect": "teleport kick; okrzyk",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_entrance.lua:15",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Wejście i ocupancy",
+      "pattern": "P06",
+      "trigger": "StepIn uid9000",
+      "condition": "brak graczy w prostokącie wokół32716/32351/7;9388 lub Progress>=1",
+      "effect": "remove9388 jeśli jest;teleport32716/32347/7;Progress1; brak topora919 tylko ostrzega",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_entrance.lua:22",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "Przedstawienie problemu",
+      "pattern": "P09",
+      "trigger": "Oldrak: mission/demon oak → yes",
+      "condition": "Done<1;topic1",
+      "effect": "Progress1 potem2; pełna wypowiedź o hallowed axe",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oldrak.lua:101",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/demon_oak.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/demon_oak.json"
+      ]
+    },
+    {
+      "row": 11,
+      "step": "Błogosławienie topora",
+      "pattern": "P10",
+      "trigger": "Oldrak: axe → yes",
+      "condition": "Progress2;topic2;3274×1;1000gp bank/inventory",
+      "effect": "usuń3274 i1000gp;daj919",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oldrak.lua:137",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Zgłoszenie zwycięstwa",
+      "pattern": "P09",
+      "trigger": "Oldrak: mission/demon oak",
+      "condition": "Done1",
+      "effect": "Done2; opis grobu Yesim Adeit",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oldrak.lua:108",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/demon_oak.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/demon_oak.json"
+      ]
+    },
+    {
+      "row": 13,
+      "step": "Cięcie 914",
+      "pattern": "P30",
+      "trigger": "item919 na914",
+      "condition": "max(AxeBlowsBird,1)<11; total=sum(max(counters,0))",
+      "effect": "AxeBlowsBird=progress+1; fala5:Spectre/Blightwalker/Braindeath/Demon; fala10:Betrayed Wraith×2; ostatnie cięcie Demon; inne roll>=90 na1..100 daje4Bonebeast; earth170..210",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak.lua:67",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "Cięcie 915",
+      "pattern": "P30",
+      "trigger": "item919 na915",
+      "condition": "max(AxeBlowsLeft,1)<11; total=sum(max(counters,0))",
+      "effect": "AxeBlowsLeft=progress+1; fala5:Plaguesmith×2/Blightwalker; fala10:Dark Torturer/Blightwalker; ostatnie cięcie Demon; inne roll>=90 na1..100 daje4Bonebeast; earth170..210",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak.lua:67",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "Cięcie 916",
+      "pattern": "P30",
+      "trigger": "item919 na916",
+      "condition": "max(AxeBlowsRight,1)<11; total=sum(max(counters,0))",
+      "effect": "AxeBlowsRight=progress+1; fala5:Banshee/Plaguesmith/Hellhound; fala10:Grim Reaper; ostatnie cięcie Demon; inne roll>=90 na1..100 daje4Bonebeast; earth170..210",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak.lua:67",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "Cięcie 917",
+      "pattern": "P30",
+      "trigger": "item919 na917",
+      "condition": "max(AxeBlowsFace,1)<11; total=sum(max(counters,0))",
+      "effect": "AxeBlowsFace=progress+1; fala5:Plaguesmith/Hellhound×2; fala10:Undead Dragon/Hand of Cursed Fate; ostatnie cięcie Demon; inne roll>=90 na1..100 daje4Bonebeast; earth170..210",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak.lua:67",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "Koniec walki",
+      "pattern": "P30",
+      "trigger": "ponowne cięcie919",
+      "condition": "total44 i brak niesummonowanych potworów",
+      "effect": "Done1;Progress3;teleportkick; przy pozostałych potworach odmowa",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak.lua:85",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Obrażenia podłogi",
+      "pattern": "P30",
+      "trigger": "StepIn item918",
+      "condition": "random1..24=1",
+      "effect": "earth270..310",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/movements_area_damage.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna kompozycja wymaga wspólnego ownera spotkania, jego cyklu życia i trwałego rozliczenia; nie zastąpiono jej samym spawnem ani samym SET.",
+      "missing_owner_function": "BossActivity / WorldBundle / KillSettle",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589658666",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 19,
+      "step": "Okrzyki cykliczne",
+      "pattern": "P15",
+      "trigger": "GlobalEvent co15000ms",
+      "condition": "spectators w zasięgu; return jeśli któryś jest w questArea",
+      "effect": "losowy tekst z siedmiu; źródłowa kolejność spectators wpływa na early return",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/globalevents_demon_oak_voices.lua:17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 20,
+      "step": "Grób do nagród",
+      "pattern": "P03",
+      "trigger": "Use uid1001",
+      "condition": "Done2",
+      "effect": "teleport32714/32398/8; pozostaw Done2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_gravestone.lua:2",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Jawny CONST_ME_TELEPORT w actions_demon_oak_gravestone.lua:5 nie jest reprezentowany przez obecny schemat; nie zakwalifikowano równoważnej publikacji efektu. Sam teleport pozostawiono według ANSWER pkt6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 21,
+      "step": "Wybór nagrody 1002",
+      "pattern": "P05",
+      "trigger": "Use uid1002",
+      "condition": "Done2",
+      "effect": "3389×1;Done3 wspólne dla4skrzyń",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 22,
+      "step": "Wybór nagrody 1003",
+      "pattern": "P05",
+      "trigger": "Use uid1003",
+      "condition": "Done2",
+      "effect": "8077×1;Done3 wspólne dla4skrzyń",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 23,
+      "step": "Wybór nagrody 1004",
+      "pattern": "P05",
+      "trigger": "Use uid1004",
+      "condition": "Done2",
+      "effect": "14768×1;Done3 wspólne dla4skrzyń",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 24,
+      "step": "Wybór nagrody 1005",
+      "pattern": "P05",
+      "trigger": "Use uid1005",
+      "condition": "Done2",
+      "effect": "14769×1;Done3 wspólne dla4skrzyń",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}

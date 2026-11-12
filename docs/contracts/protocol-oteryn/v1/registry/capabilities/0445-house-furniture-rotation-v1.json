@@ -1,0 +1,15 @@
+{
+  "id": 445,
+  "name": "HOUSE_FURNITURE_ROTATION_V1",
+  "owner_decision": "W18-HOUSE-ROTATION-1",
+  "owner": "Game House decoration owner",
+  "requires": [
+    49
+  ],
+  "command_types": [
+    730
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES advertises the native bundle source path. Execution requires a current named-House actor and source catalogue, and rechecks session, lease, node and House generation on every request."
+}

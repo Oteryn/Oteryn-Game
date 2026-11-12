@@ -2,7 +2,7 @@
 //!
 //! Schema: `docs/contracts/protocol-oteryn/v1/analyser_v1.proto`, from ANALYSERS-0 §4 and §6.
 //! Capability 10 `ANALYSER_V1` and state domain 15 `ACTOR_ANALYSER` are leased by the #1622
-//! control plane; the server does not offer the capability before ANALYSER-EMIT-1.
+//! control plane; ANALYSER-EMIT-1 emits committed facts on the selected session.
 //!
 //! Decoding is strict, and encoding refuses the same values as a server fault before any byte is
 //! emitted: an empty or doubled oneof, zero or unknown enums, experience with `raw` 0, zero values, counts or item types,
@@ -20,7 +20,7 @@ use crate::charm_wire::{
 };
 use crate::damage_element::DamageElement;
 
-/// Registered capability `ANALYSER_V1`: state domain 15, no command type.
+/// Registered capability `ANALYSER_V1`: state domain 15 and optional item metadata query.
 pub const CAPABILITY_ANALYSER_V1: u32 = 10;
 /// Registered state domain `ACTOR_ANALYSER` (capability 10).
 pub const STATE_DOMAIN_ACTOR_ANALYSER: u32 = 15;
@@ -72,10 +72,15 @@ pub enum AnalyserDamageSource {
 /// `AnalyserFactV1`: exactly one fact.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AnalyserFact {
+    /// Exactly one credited creature death. Loot fragments never increment the kill count.
+    Kill {
+        race: AnalyserRace,
+    },
     Experience {
         raw: u64,
         gained: u64,
     },
+    /// Committed loot only; any number of fragments may follow one Kill.
     KillLoot {
         race: AnalyserRace,
         corpse_items: Vec<AnalyserItemCount>,
@@ -133,6 +138,11 @@ fn decode_item(input: &[u8]) -> WireResult<AnalyserItemCount> {
 pub fn encode_analyser_fact(fact: &AnalyserFact) -> WireResult<Vec<u8>> {
     let mut inner = Vec::new();
     let field = match fact {
+        AnalyserFact::Kill { race } => {
+            race_from_wire(race_to_wire(*race))?;
+            push_nonzero_varint_field(&mut inner, 1, race_to_wire(*race));
+            7
+        }
         AnalyserFact::Experience { raw, gained } => {
             if *raw == 0 {
                 return Err(AnalyserWireError::Malformed);
@@ -207,7 +217,7 @@ pub fn decode_analyser_fact(payload: &[u8]) -> WireResult<AnalyserFact> {
     let mut cursor = 0;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
-        if key & 0x07 != 2 || !(1..=6).contains(&(key >> 3)) {
+        if key & 0x07 != 2 || !(1..=7).contains(&(key >> 3)) {
             return Err(AnalyserWireError::Malformed);
         }
         let inner = read_bytes(payload, &mut cursor)?;
@@ -243,6 +253,12 @@ fn read_varints_and_items(
 
 fn decode_variant(field: u64, inner: &[u8]) -> WireResult<AnalyserFact> {
     Ok(match field {
+        7 => {
+            let [race] = read_uint32_fields::<1>(inner)?;
+            AnalyserFact::Kill {
+                race: race_from_wire(u64::from(race))?,
+            }
+        }
         1 => {
             let ([raw, gained, _], _) = read_varints_and_items(inner, false)?;
             if raw == 0 {

@@ -1,0 +1,1167 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "oramond",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-b/implementation-status.json",
+    "sha256": "98cc334442a4a9fea839a26080688aac4e308fee5a41e2eeeba4d92d7ee9ae92"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 29,
+  "import_counts": {
+    "RĘCZNIE": 27,
+    "AUTO": 2
+  },
+  "content_counts": {
+    "npc_rules_source_only": 36,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-b-oramond.json",
+      "sha256": "493d06e23694cab38141ceec7172123d7463dcd3e215e7184a26e1e004b6ad65",
+      "count": 36,
+      "category": "npc_rules_source_only"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "04b82194dff92f83784b2cf9ac45ad0e1b890f948e7eacfdaf9f14bebfa89fde",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Chavis: rozpoczęcie To Take Roots",
+        "pattern": "P09",
+        "trigger": "food",
+        "guard": "Mission<1",
+        "effect": "QuestLine=1 jeśli brak;Mission=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "f26ba32ca9985841b16d2a59e357b8a291ca7888baa47d551f046746ba8630a9",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "oramond",
+        "step": "To Take Roots: zebranie korzenia",
+        "pattern": "P02, P16",
+        "trigger": "Use item21104 lub21105",
+        "guard": "brak mission gate;random1..100≤50",
+        "effect": "item21291×1;transform+2;reset120s;initializeQuestLine/Mission;Count=max(1,old+1)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Potrzebny właściciel żywych obiektów, czasu, losowania i atomowych skutków; brak wymyślonych targetów/storage. Decyzja B-Q15: Brakuje losowego celu Probing per postać z trwałym zapisem oraz atomowego nadania nagrody/progresu; roots/pollen wymagają transformacji żywego obiektu świata z opóźnionym przywróceniem. Stan trzymany tylko w pamięci procesu nie zastępuje trwałego ownera.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876455"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "ee52644b0074952c1bed95b740819dba41ead6f53097d332299da77fbae2000b",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "oramond",
+        "step": "To Take Roots: nieudane zebranie",
+        "pattern": "P02, P16",
+        "trigger": "Use21104/21105; ponowne Use21106/21107",
+        "guard": "losowanie>50 albo roślina zużyta",
+        "effect": "transform+2 i120sreset bez nagrody; na zużytej tylko komunikat",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:27"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Potrzebny właściciel żywych obiektów, czasu, losowania i atomowych skutków; brak wymyślonych targetów/storage. Decyzja B-Q15: Brakuje losowego celu Probing per postać z trwałym zapisem oraz atomowego nadania nagrody/progresu; roots/pollen wymagają transformacji żywego obiektu świata z opóźnionym przywróceniem. Stan trzymany tylko w pamięci procesu nie zastępuje trwałego ownera.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876455"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:27",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e0f1eab6b129224463030f5a0bdbc823e2db02db6a2e18923c71574f0f2e8e52",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Chavis: oddanie5roots",
+        "pattern": "P10, P11, P13",
+        "trigger": "food→yes;topic1",
+        "guard": "Mission=1;Count≥5;remove21291×5",
+        "effect": "Count−5;Mission=−1;Door=1 jeśli brak;VotingPoints=max(1,old+1)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:69",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:83"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:69",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chavis.lua:83",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "834bae91fd03e1506fa24f7cf16e7e0186a715702aa75d4d91ed61a612ee36e8",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "oramond",
+        "step": "To Take Roots: drzwi",
+        "pattern": "P04",
+        "trigger": "door(33573,31982,7)",
+        "guard": "ToTakeRoots.Door",
+        "effect": "otwieranie wspólnej bramki",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:270"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólny wykonawca; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:127",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejąca bramka canonical; własne nadanie dostępu wymaga zakwalifikowanego callera NPC. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:270",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a136d4fd099352f688038d71ab014a676f26c3533c549a422c2a4c458f04bd85",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Doubleday: experiment/probe",
+        "pattern": "P09, P11, P17",
+        "trigger": "experiment→yes→probe→yes;topic1→2→3",
+        "guard": "Probing.Mission=−1 przy experiment",
+        "effect": "give21192 i21208;Mission1;MonoDetector=now+30min;QuestLine1 jeśli brak",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d3023865975aa2daaaedb5674cc2e905c86ebce49d29a1075d1c763602ab13fc",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Probing: wybór celu",
+        "pattern": "P02, P30",
+        "trigger": "Use21192",
+        "guard": "Mission≠0 i<2 (−1 dopuszczone);brak wpisuGUID wMONO_DETECTOR_MAP",
+        "effect": "losowy cel wareaA gdy player wareaA, inaczejareaB; pamięć procesu; bez storage target",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Potrzebny właściciel żywych obiektów, czasu, losowania i atomowych skutków; brak wymyślonych targetów/storage. Decyzja B-Q15: Brakuje losowego celu Probing per postać z trwałym zapisem oraz atomowego nadania nagrody/progresu; roots/pollen wymagają transformacji żywego obiektu świata z opóźnionym przywróceniem. Stan trzymany tylko w pamięci procesu nie zastępuje trwałego ownera.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876455"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "875b02f064953eec36584657b33b93f2c688052dcce6f42592b79da77dc4c3e1",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Probing: odczyt detektora",
+        "pattern": "P02, P30",
+        "trigger": "Use21192",
+        "guard": "jak wyżej;zapisany cel",
+        "effect": "sygnał odpowiedni gdy|dx|≤15 i|dy|≤15 i dz0;areaA33612,31867,10..33679,31983,10;areaB33607,31905,11..33664,31953,11",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Potrzebny właściciel żywych obiektów, czasu, losowania i atomowych skutków; brak wymyślonych targetów/storage. Decyzja B-Q15: Brakuje losowego celu Probing per postać z trwałym zapisem oraz atomowego nadania nagrody/progresu; roots/pollen wymagają transformacji żywego obiektu świata z opóźnionym przywróceniem. Stan trzymany tylko w pamięci procesu nie zastępuje trwałego ownera.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876455"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c008496fdb9b9f1ac3b7d6dbe99a960b0dac38c4ceeb9a081c91866fd27a81a1",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Probing: umieszczenie próbnika",
+        "pattern": "P02, P09",
+        "trigger": "Use21208",
+        "guard": "Mission≠0 i<2;item pos=fromPosition;odległość≤15 odcelu",
+        "effect": "remove21208;Mission=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Potrzebny właściciel żywych obiektów, czasu, losowania i atomowych skutków; brak wymyślonych targetów/storage. Decyzja B-Q15: Brakuje losowego celu Probing per postać z trwałym zapisem oraz atomowego nadania nagrody/progresu; roots/pollen wymagają transformacji żywego obiektu świata z opóźnionym przywróceniem. Stan trzymany tylko w pamięci procesu nie zastępuje trwałego ownera.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876455"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0e80c37119a798d5309636c96c2f0a0e72700f544eae821f2f9f842377045200",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Doubleday: report probe",
+        "pattern": "P09",
+        "trigger": "probe",
+        "guard": "Probing.Mission=2",
+        "effect": "Mission=3;DarkTrails.OramondTaskProbing=1; tekst mówi zabiera detector, kod go nie zabiera",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:115"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:115"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "bbef0849ea2d539315eb3ee6ea11367f7c186264fa71a8bce25fbeafd84e7a69",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Doubleday: exchange",
+        "pattern": "P09, P11",
+        "trigger": "exchange→2→yes→exchange→1→yes;topic4→5→6→7→8",
+        "guard": "Mission3 przy pierwszym exchange",
+        "effect": "Mission=−1;VotingPoints=max(1,old+1)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:87",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:124"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:87",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:124",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "cd9f812e8580531e0316d26e04e54e713fbb59d8fe92959e2b36f9125b7e39d2",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Doubleday: replacement detector",
+        "pattern": "P11, P17",
+        "trigger": "mono detector→yes;topic9",
+        "guard": "MonoDetector≤now",
+        "effect": "give21192 i21208;MonoDetector=now+30min; brakmission/itemmissingguard",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:100",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:142"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:100",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doubleday.lua:142",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "6a42786df1fb69e991c55d715c12535da2122929b0d93c9065aa24b9bf0aaab6",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "oramond",
+        "step": "jacob: Ancient Sewers start",
+        "pattern": "P09, P13",
+        "trigger": "mission→yes;topic1",
+        "guard": "AncientSewers.Mission<1",
+        "effect": "Mission1;Door1;QuestLine1 jeśli brak",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:79"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "10a29b0ae2b15abf6d117216e3c46c5fb3b30be1ab9fcc132841ab3b8c91f735",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "oramond",
+        "step": "jacob: Ancient Sewers report",
+        "pattern": "P09, P11",
+        "trigger": "mission→ok;topic2",
+        "guard": "Mission<22 (brak progu21 w donorze)",
+        "effect": "Mission22;VotingPoints=max(1,old+1); B-Q07",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:79",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:102"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:102",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "97d1283822568c3a135a3e8c3ebd2565f5ef169b633f341de5ad8439a0dbe49e",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "oramond",
+        "step": "jacob: reset / Dark Trails",
+        "pattern": "P09",
+        "trigger": "abandoned sewers",
+        "guard": "Mission22;DarkTrailsMission05≠1 w tej gałęzi",
+        "effect": "DarkTrails.Mission04=1 jeśli brak;AncientSewers.Mission=−1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jacob.lua:57"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "6fd893d56755c76352a4f5f45950a71fe2b0362fb51a655c0102a453d871e5de",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "oramond",
+        "step": "elliott: Ancient Sewers start",
+        "pattern": "P09, P13",
+        "trigger": "mission→yes;topic1",
+        "guard": "AncientSewers.Mission<1",
+        "effect": "Mission1;Door1;QuestLine1 jeśli brak",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:79"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a15789912115e2fbe847c211325889edf7e9a53a86ff978fe0731d15dd57c732",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "oramond",
+        "step": "elliott: Ancient Sewers report",
+        "pattern": "P09, P11",
+        "trigger": "mission→ok;topic2",
+        "guard": "Mission<22 (brak progu21 w donorze)",
+        "effect": "Mission22;VotingPoints=max(1,old+1); B-Q07",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:79",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:99"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:99",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1d86c52eb61426df4845e39c1d9593d97f71f5c703a4c04eb339e0be459196d1",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "oramond",
+        "step": "elliott: reset / Dark Trails",
+        "pattern": "P09",
+        "trigger": "abandoned sewers",
+        "guard": "Mission22;DarkTrailsMission05≠1 w tej gałęzi",
+        "effect": "DarkTrails.Mission04=1 jeśli brak;AncientSewers.Mission=−1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elliott.lua:57"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b5958afb0b16aaad20ab4774cb9d4ec73e4b50043535b962b2b5315d7a8b2525",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Ancient Sewers: drzwi",
+        "pattern": "P04",
+        "trigger": "door(33549,31974,10)",
+        "guard": "TheAncientSewers.Door",
+        "effect": "otwieranie wspólnej bramki",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:274"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólny wykonawca; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:127",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejąca bramka canonical; własne nadanie dostępu wymaga zakwalifikowanego callera NPC. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:274",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "eaea77aa5acf63437865725489b0d0356d887309deb29f11b2e2b6ba4114e0c0",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Ancient Sewers: naprawa krat",
+        "pattern": "P02, P16",
+        "trigger": "Use21039 lub21040",
+        "guard": "Mission≥1 i<20 albo=20",
+        "effect": "transform21792;reset120s;1..19→+1;20→21 iDarkTrails.Mission03=1 jeśli brak",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_ancient_sewers/actions_the_ancient_sewers.lua:19"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_ancient_sewers/actions_the_ancient_sewers.lua:19"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7763cb9763ef60916b19373d13411ce1978a8b6ac499cc07526df7003b957c91",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Barnabas Dee: pollen mission",
+        "pattern": "P09",
+        "trigger": "mission lub seance",
+        "guard": "Powder.Mission<1 rozpoczyna;seance wymagaMission1,DarkTrails16<1",
+        "effect": "Powder.Mission=1;QuestLine1 jeśli brak;topic1 przy pytaniu o oddanie",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne niezależne gałęzie zapisane w JSON, runtime nieaktywne. Przedwczesny report pozostaje literalny Crystal; B-Q07 nie został uznany za jawny błąd celu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "496ff605218b17d833e0161ea79da1deb51c3eab144c5243ede23b8b0855ab1f",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Pollen: zbieranie",
+        "pattern": "P02, P16",
+        "trigger": "Use21088",
+        "guard": "brak mission guard",
+        "effect": "item21089×1;transform21090;timer10min otrzymuje post-transformitem.itemid (B-Q08)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Potrzebny właściciel żywych obiektów, czasu, losowania i atomowych skutków; brak wymyślonych targetów/storage. Decyzja B-Q15: Brakuje losowego celu Probing per postać z trwałym zapisem oraz atomowego nadania nagrody/progresu; roots/pollen wymagają transformacji żywego obiektu świata z opóźnionym przywróceniem. Stan trzymany tylko w pamięci procesu nie zastępuje trwałego ownera.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876455"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/the_powder_of_the_stars/actions_blue_pollen.lua:19",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:9"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "effb07be73696b336827ce711862bc2c13a0475d7967d700e086ff5185331625",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Barnabas Dee:15pollen i głos",
+        "pattern": "P10, P11",
+        "trigger": "yes;topic1",
+        "guard": "getItemCount21089≥15;DarkTrails15≠1",
+        "effect": "remove15;Powder.Mission=−1;VotingPoints=max(1,old+1)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:75"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:75"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0ec2ff48a9019c46fd741690fb3f08f49de19c35a7c5d29e31de107629b62eaa",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Barnabas Dee:15pollen i Dark Trails",
+        "pattern": "P10, P09",
+        "trigger": "yes;topic1",
+        "guard": "getItemCount21089≥15;DarkTrails15=1",
+        "effect": "remove15;Powder.Mission=−1;DarkTrails15=2,topic2; dalsza seance jest zależnością innegoquesta",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:78"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/barnabas_dee.lua:78"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "f832a277adb534d2be280ea351191f16719860d9924a63ca78344a81c8452a90",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "oramond",
+        "step": "Glooth Fairy: globalny lever",
+        "pattern": "P06, P16, P22",
+        "trigger": "Use unique1020",
+        "guard": "GlobalStorage.GloothFairyTimer<now",
+        "effect": "timer=now+15min;po60s teleports leverRoomplayers naexit, istniejącychbossRoomplayers dodestination; usuńmonsters/spawnFairy; B-Q09",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/actions_glooth_fairy_lever.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/actions_glooth_fairy_lever.lua:58"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalny timer i dwa zestawy graczy/obszarów wymagają właściciela świata. Kierunku nie naprawiono przez domysł.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589111675"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/actions_glooth_fairy_lever.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/oramond/actions_glooth_fairy_lever.lua:58"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2880e6d9db4fce93708009071f646bb7851294d364af4fb62728129bee59bdb5",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "oramond",
+        "step": "VotingPoints: Marvin (zależność)",
+        "pattern": "P09, P10",
+        "trigger": "funding/archives/1/yes",
+        "guard": "DarkTrails7=1;VotingPoints≥1",
+        "effect": "VotingPoints−1;DarkTrails8=1; nie przenosić niezależnie całegoDarkTrails",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marvin.lua:57"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "91807d2f1b2d16a0e83a82f0f0d2d070e6e862825bb475039b82c18ffa8a7587",
+      "quest_row": 27,
+      "inventory": {
+        "quest": "oramond",
+        "step": "VotingPoints: Sholley (zależność)",
+        "pattern": "P09",
+        "trigger": "friend",
+        "guard": "DarkTrails12=1;13<1;VotingPoints≥50",
+        "effect": "DarkTrails13=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sholley.lua:57"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a643127da558055c2f6e53e59bfb519ee2ab0094202aadfed980af31a898507e",
+      "quest_row": 28,
+      "inventory": {
+        "quest": "oramond",
+        "step": "VotingPoints: Ezebeth (zależność)",
+        "pattern": "P12",
+        "trigger": "addon",
+        "guard": "DarkTrails outfit;votes≥6 albo≥3",
+        "effect": "odpowiednieaddony610/618 iGloothAddon; niezależny outfitquest",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:91"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ezebeth.lua:91"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b4fcd258996c1c72778198c7c8d8fe5c1b01f16b5679a81c1cfc2951c0401642",
+      "quest_row": 29,
+      "inventory": {
+        "quest": "oramond",
+        "step": "ToTakeRoots.Door: Beggar King (zależność)",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "DarkTrails1=2,2=1,ToTakeRoots.Door=1",
+        "effect": "DarkTrails2=2 po gałęzi topic",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Chroniona zależność Dark Trails/Glooth addon. Bez mirror track i bez częściowego zatwierdzenia własnych skutków.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222298"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_beggar_king.lua:61"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    }
+  ]
+}

@@ -38,7 +38,7 @@ fn house_wrap_dispatch_postgres_roundtrip_replay_and_refusal() -> TestResult {
                 let started = std::time::Instant::now();
                 let h =
                     Harness::create_with_admission_seed(admin, "house_wrap", true, false).await?;
-                let result = scenario(&h).await;
+                let result = scenario(&h,false).await;
                 h.cleanup().await?;
                 result?;
                 println!(
@@ -54,7 +54,23 @@ fn house_wrap_dispatch_postgres_roundtrip_replay_and_refusal() -> TestResult {
     Ok(())
 }
 
-async fn scenario(h: &Harness) -> TestResult {
+#[test]
+fn srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres()->TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
+    std::thread::Builder::new().stack_size(256<<20).spawn(||{
+        run(async |admin|{
+            let started=std::time::Instant::now();
+            let h=Harness::create_with_admission_seed(admin,"srx1_house_cask",true,false).await?;
+            let result=scenario(&h,true).await;
+            h.cleanup().await?;result?;
+            eprintln!("SRX1_PG House cask checkpoint/exhaustion/replay elapsed={:?}",started.elapsed());
+            Ok(())
+        }).map_err(|error|error.to_string())
+    })?.join().map_err(|_|"House cask PG thread panicked")??;
+    Ok(())
+}
+
+async fn scenario(h: &Harness,cask:bool) -> TestResult {
     super::reset();
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -85,7 +101,7 @@ async fn scenario(h: &Harness) -> TestResult {
     );
     let deps = Dependencies::with_content(pin, base.room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     // This fixture boots the bounded command set it will carry through the real handoff.
@@ -98,6 +114,7 @@ async fn scenario(h: &Harness) -> TestResult {
             id: 6,
             requires: &[],
         },
+        crate::gameplay_transport::capabilities::OfferedCapability {id:15,requires:&[4]},
         crate::gameplay_transport::capabilities::OfferedCapability {
             id: 49,
             requires: &[],
@@ -166,7 +183,7 @@ async fn scenario(h: &Harness) -> TestResult {
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 49, 86, 207])
+        SelectedCapabilities::select(owner.offered_capabilities(), if cask {&[4,6,15,49,86,207]} else {&[4, 6, 49, 86, 207]})
             .ok_or("wrap offer")?;
     let request = wire::Request {
         action: wire::Action::Wrap,
@@ -190,6 +207,18 @@ async fn scenario(h: &Harness) -> TestResult {
         .ok_or("house transfer outcome")?;
     let mut admitted = inside.ok_or("house transfer admission")?;
 
+    // NX-1 refresh must use the exact named-House owner, including on ordinary players.
+    let house_fence = admitted.item_fence.ok_or("House item fence")?;
+    let status = owner.root.staff_live_status(owner.character, owner.holder, house_fence).await.map_err(debug)?;
+    assert_eq!(status, crate::durability::staff::StaffLiveStatus::default());
+    let mut stale = house_fence;
+    stale.connection_generation = crate::foundation::ConnectionGeneration::new(
+        house_fence.connection_generation.get() + 1,
+    ).map_err(debug)?;
+    assert!(owner.root.staff_live_status(owner.character, owner.holder, stale).await.is_err());
+
+    if cask {return house_cask(&owner,h,admitted).await;}
+
     // Seed a real placed oven and a backpack, then restore every constraint before commands.
     super::item_look::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
@@ -211,6 +240,18 @@ async fn scenario(h: &Harness) -> TestResult {
         .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(&position).bind(id(74).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1)")
         .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
+    // This donor wrap target has no XML name. The panel must still advertise
+    // the real festive table using its current, source-qualified display name.
+    let mut festive_position=POSITION;festive_position[0]+=1;
+    let festive_position:Vec<u8>=festive_position.iter().flat_map(|v|v.to_be_bytes()).collect();
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i30231','definition-r1',1,1,encode($3,'hex')::uuid)")
+        .bind(id(75).as_slice()).bind(id(42).as_slice()).bind(id(76).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+        .bind(id(42).as_slice()).bind(HOUSE).bind(&festive_position).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,1,encode($5,'hex')::uuid)")
+        .bind(id(75).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(&festive_position).bind(id(77).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1)")
+        .bind(id(75).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(77).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     admitted.continuity.next_command_id = 1;
     assert_eq!(
@@ -218,10 +259,20 @@ async fn scenario(h: &Harness) -> TestResult {
         (CommandStatus::Accepted, wire::Reply::Committed(2))
     );
     assert_custody(h, "oteryn:item.tibia.i6371", false).await?;
+    let query_command = admitted.continuity.next_command_id;
+    let (status, catalogue) = furniture_query(&owner, &mut admitted, query_command, 0).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(catalogue.first(), Some(&7), "native furniture catalogue must be served by the real House owner");
+    let catalogue=wire::Catalogue::decode(&catalogue).ok_or("native catalogue codec")?;
+    assert_eq!(catalogue.acl_revision,1);
+    assert_eq!(catalogue.entries.len(),2);
+    assert!(catalogue.entries.iter().any(|entry|entry.item==id(75) && entry.action==wire::Action::Wrap && entry.name=="festive table"));
+    assert_eq!((catalogue.entries[0].item,catalogue.entries[0].revision,catalogue.entries[0].action),(id(71),2,wire::Action::Unwrap));
+    assert!(catalogue.entries[0].name.contains("oven"));
     // New composed owner / command directory forces durable replay, bypassing cached ingress.
     drop(owner);
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     admitted.continuity.next_command_id = 1;
@@ -325,7 +376,7 @@ async fn assert_custody(h: &Harness, key: &str, house: bool) -> TestResult {
         sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_instances")
             .fetch_one(&h.pool)
             .await?,
-        2
+        3
     );
     Ok(())
 }
@@ -398,9 +449,65 @@ async fn exchange_checked(
     reply.ok_or_else(|| format!("wrap command {command}: {end:?}").into())
 }
 
-fn wrap_bundle(
+pub(super) fn wrap_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    wrap_bundle_with_static_decorations(world, channel, &[])
+}
+
+pub(super) fn static_decoration_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i5302",7,0)])
+}
+
+pub(super) fn static_timed_decoration_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i35949",7,0)])
+}
+
+pub(super) fn static_bed_decoration_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i2491",7,0),("oteryn:item.tibia.i2492",7,1)])
+}
+
+struct StaticDecoration {
+    key: &'static str,
+    x: u16,
+    y: u16,
+    definition: crate::map::facts::ItemDefinition,
+}
+
+fn static_decoration_bundle_with(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+    declarations: &[(&'static str,u16,u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(world,None);
+    let native=controller.active().and_then(|active|active.native_gameplay()).ok_or("native generation")?;
+    let index=native.item_index().ok_or("Item index")?;
+    let mut extras=Vec::with_capacity(declarations.len());
+    for &(key,x,y) in declarations {
+        let reference=index.definition_ref("Item",key,"definition-r1").ok_or("decoration reference")?;
+        let policy=native.item_policy(key,"definition-r1").ok_or("decoration policy")?.record();
+        extras.push(StaticDecoration {key,x,y,definition:crate::map::facts::ItemDefinition {
+            reference,solid:policy.attributes.blocks_movement,
+            blocks_projectile:policy.attributes.blocks_projectile.ok_or("decoration projectile fact")?,
+            pickupable:false,door:false }});
+    }
+    wrap_bundle_with_static_decorations(world,channel,&extras)
+}
+
+fn wrap_bundle_with_static_decorations(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+    extras: &[StaticDecoration],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
@@ -414,10 +521,34 @@ fn wrap_bundle(
         .find(|t| t.x == 3)
         .ok_or("grass tile")?
         .clone();
+    let seed=sector.tiles.iter().find(|tile|tile.x==7).ok_or("House tile")?;
+    let ground=seed.items.first().ok_or("House ground")?.palette;
+    let flags=seed.flags;
+    // Clear only the fixture seed before placing actual native decorations.
+    for tile in &mut sector.tiles {
+        if tile.x == 7 { tile.items.truncate(1); }
+    }
+    for extra in extras {
+        let palette=if let Some(at)=data.manifest.palette.iter().position(|entry|entry.key==extra.key) {
+            u32::try_from(at)?
+        } else {
+            let at=u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {key:extra.key.into(),family:bundle::Family::Item,
+                id:extra.definition.reference.get()-1,terrain:None});
+            at
+        };
+        let item=oteryn_world_bundle::sector::Item {palette,depth:0,attrs:Default::default()};
+        if let Some(tile)=sector.tiles.iter_mut().find(|tile|tile.x==extra.x&&tile.y==extra.y) {
+            tile.house=3437;
+            tile.items.push(item);
+        } else {
+            sector.tiles.push(oteryn_world_bundle::sector::Tile {x:extra.x,y:extra.y,flags,house:3437,zones:Vec::new(),
+                items:vec![oteryn_world_bundle::sector::Item {palette:ground,depth:0,attrs:Default::default()},item]});
+        }
+    }
     for tile in &mut sector.tiles {
         if tile.x == 7 {
             tile.house = 3437;
-            tile.items.truncate(1);
         }
         if tile.x == 6 {
             tile.house = 3437;
@@ -429,6 +560,8 @@ fn wrap_bundle(
     entrance.x = 32309;
     entrance.y = 32805;
     sector.tiles.push(entrance);
+    // Native sector encoding orders by (y, x), including the second bed half.
+    sector.tiles.sort_by_key(|tile| (tile.y, tile.x));
     sector.sx = 1009;
     sector.sy = 1025;
     data.manifest.world.min_x = 32288;
@@ -457,7 +590,113 @@ fn wrap_bundle(
         },
         world,
         channel,
-        fixture::door_items,
+        |key| extras.iter().find(|extra|extra.key==key).map(|extra|extra.definition).or_else(||fixture::door_items(key)),
     )
     .map_err(debug)
 }
+
+async fn furniture_query(
+    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
+    command: u64, page: u16,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    let body = [3, page.to_be_bytes()[0], page.to_be_bytes()[1]];
+    let frame = encode_client_command(admitted.continuity.connection_generation,
+        &ClientCommandValue { command_id: command, command_type: wire::COMMAND_WRAP, payload: &body })?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_u32(u32::try_from(frame.len())?).await?;
+    client.write_all(&frame).await?; client.shutdown().await?;
+    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    drop(server);
+    if let ConnectionEnd::AdmittedThenDisconnected(current) | ConnectionEnd::AdmittedThenClosed(current, _) = end { *admitted = current; }
+    let mut bytes = Vec::new(); client.read_to_end(&mut bytes).await?;
+    let mut at = 0;
+    while at < bytes.len() {
+        let count = u32::from_be_bytes(bytes[at..at+4].try_into()?) as usize;
+        let envelope = decode_wire_envelope(&bytes[at+4..at+4+count])?; at += 4 + count;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload())?;
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
+    Err("missing furniture catalogue result".into())
+}
+
+async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut admitted:AdmittedSession)->TestResult {
+    use oteryn_protocol_oteryn::world_object::{UseIntent,UseTarget,MapUseTarget,UseDisposition};
+    use crate::gameplay_transport::item_view::ItemKey;
+    // Historical fixture with real named-House placement/provenance and a partial counter.
+    super::item_look::seed_main_backpack(h,&[("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i283",2),("oteryn:item.tibia.i25904",1)]).await?;
+    let mut tx=h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i25880','definition-r1',1,1,game_character_uuid_v7())")
+        .bind(id(80).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    let position:Vec<u8>=POSITION.iter().flat_map(|value|value.to_be_bytes()).collect();
+    sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+        .bind(id(42).as_slice()).bind(HOUSE).bind(&position).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,1,encode($5,'hex')::uuid)")
+        .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(&position).bind(id(81).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1)")
+        .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(81).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision) VALUES(encode($1,'hex')::uuid,3,1)")
+        .bind(id(80).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_timed_definitions VALUES('Item','oteryn:item.tibia.i25904','definition-r1',500,NULL,false) ON CONFLICT DO NOTHING").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision) VALUES(encode($1,'hex')::uuid,498,1)").bind(id(73).as_slice()).execute(&mut *tx).await?;
+    let mut keg_position=POSITION;keg_position[0]+=1;
+    let keg_position:Vec<u8>=keg_position.iter().flat_map(|value|value.to_be_bytes()).collect();
+    sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING").bind(id(42).as_slice()).bind(HOUSE).bind(&keg_position).execute(&mut *tx).await?;
+    tx.commit().await?;
+    charged_wrap::roundtrip(owner,h,&mut admitted).await?;
+    house_keg_custody(owner,h,admitted,keg_position).await?;
+    let intent=UseIntent{target:UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("flask handle")?),use_with:None,
+        use_with_map_item:Some(MapUseTarget::Item(std::num::NonZeroU64::new(2).ok_or("cask handle")?)),use_with_position:None};
+    let command=|id|crate::gameplay_transport::connection::UseCommand{game_session_id:admitted.game_session_id,command_id:id,item_fence:admitted.item_fence};
+    let actor=admitted.runtime_actor.ok_or("House actor")?;
+    let first=owner.use_dispenser_action(actor,command(6),intent.clone(),Some(ItemKey::Instance(id(71))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House first use unknown")?.ok_or("House dispenser production route")?;
+    assert_eq!(first.disposition,UseDisposition::Committed);
+    assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?,1);
+    let actor=admitted.runtime_actor.ok_or("House actor")?;
+    let last=owner.use_dispenser_action(actor,command(7),intent.clone(),Some(ItemKey::Instance(id(72))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House last use unknown")?.ok_or("House exhaustion route")?;
+    assert_eq!(last.disposition,UseDisposition::Committed);
+    let item:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(item,(0,2));
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT (SELECT count(*) FROM game_item_house_interior_locations WHERE item_instance_id=encode($1,'hex')::uuid)+(SELECT count(*) FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid)").bind(id(80).as_slice()).fetch_one(&h.pool).await?,0);
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i236' AND lifecycle=1").fetch_one(&h.pool).await?,3);
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&h.pool).await?,1);
+    for number in [6,7] {
+        let replay=owner.use_dispenser_action(actor,command(number),intent.clone(),None,None).await.map_err(|_|"House replay unknown")?.ok_or("House replay receipt")?;
+        assert_eq!(replay.disposition,UseDisposition::Committed);
+    }
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_consume_transform_records WHERE recipe='oteryn:dispenser.fill'").fetch_one(&h.pool).await?,2);
+    Ok(())
+}
+
+async fn house_keg_custody(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,admitted:AdmittedSession,position:Vec<u8>)->TestResult {
+    use crate::durability::house_interior::{HouseItemRequest,HouseItemAction,HouseCharacterSource,HouseItemOutcome,HouseBackpackFacts};
+    let fence=admitted.item_fence.ok_or("House inventory fence")?;
+    let before:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(73).as_slice()).fetch_one(&h.pool).await?;
+    let ordinal:String=sqlx::query_scalar("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(73).as_slice()).fetch_one(&h.pool).await?;
+    let mut request=HouseItemRequest{
+        command:crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(900).map_err(debug)?),
+        house:HouseId::new(admitted.world_id,HOUSE).ok_or("House")?,item_instance_id:id(73),
+        action:HouseItemAction::Place{source:HouseCharacterSource::Inventory{parent:id(70),ordinal:ordinal.parse()?},position},
+        expected_acl_revision:1,expected_guild_revisions:None,backpack:None,
+        content_revision:"content-1".into(),ruleset_revision:"ruleset-1".into(),sim_revision:"sim-1".into()};
+    let place=owner.root.freeze_house_item(owner.character,owner.holder,fence,request.clone()).await.map_err(debug)?;
+    let receipt=match owner.root.commit_house_item(owner.character,owner.holder,fence,&place).await.map_err(debug)? {
+        HouseItemOutcome::Committed(receipt)=>receipt,other=>return Err(format!("fresh House placement: {other:?}").into())};
+    assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(73).as_slice()).fetch_one(&h.pool).await?,before);
+    assert!(matches!(owner.root.commit_house_item(owner.character,owner.holder,fence,&place).await.map_err(debug)?,HouseItemOutcome::AlreadyCommitted(_)));
+    request.command=crate::foundation::CommandRef::new(fence.game_session_id,crate::foundation::CommandId::new(901).map_err(debug)?);
+    request.action=HouseItemAction::Take{placement:receipt.transaction_id,provenance_revision:1};
+    request.backpack=Some(HouseBackpackFacts{definition:crate::durability::item_mint::TypedDefinitionRef{family:"Item".into(),production_key:"oteryn:item.tibia.i2854".into(),revision_ref:"definition-r1".into()},capacity:20});
+    let take=owner.root.freeze_house_item(owner.character,owner.holder,fence,request).await.map_err(debug)?;
+    assert!(matches!(owner.root.commit_house_item(owner.character,owner.holder,fence,&take).await.map_err(debug)?,HouseItemOutcome::Committed(_)));
+    assert!(matches!(owner.root.commit_house_item(owner.character,owner.holder,fence,&take).await.map_err(debug)?,HouseItemOutcome::AlreadyCommitted(_)));
+    assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(73).as_slice()).fetch_one(&h.pool).await?,before);
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(73).as_slice()).fetch_one(&h.pool).await?,0);
+    eprintln!("SRX1_PG House keg placement/take/replay preserves 498 charges");
+    Ok(())
+}
+
+#[path = "house_wrap/charged_wrap.rs"]
+mod charged_wrap;

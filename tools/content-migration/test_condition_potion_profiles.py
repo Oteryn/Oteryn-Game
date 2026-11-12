@@ -1,4 +1,4 @@
-"""Four exact portable identities; condition use never masquerades as HP/MP restoration."""
+"""Exact portable identities; condition use never masquerades as HP/MP restoration."""
 import copy
 from contextlib import contextmanager
 import hashlib
@@ -29,11 +29,11 @@ def packet_root(packet):
 
 
 class ConditionPotionProfiles(unittest.TestCase):
-    def test_all_four_profiles_are_source_bound_and_condition_only(self):
+    def test_all_six_profiles_are_source_bound_and_condition_only(self):
         packet = json.loads((tool.ROOT / tool.PATH).read_bytes())
         rows = packet['records']
         self.assertEqual([r['production_definition']['production_key'] for r in rows],
-                         [f'oteryn:item.tibia.i{i}' for i in (7439, 7440, 7443, 49271)])
+                         [f'oteryn:item.tibia.i{i}' for i in (7439, 7440, 7443, 49271, 7644, 35563)])
         self.assertEqual(packet['source_revisions']['crystal'], '201189f871d23597b82caf88fd611454a2ddefb8')
         for row in rows:
             self.assertEqual(row['production_binding']['target']['key'], row['production_definition']['production_key'])
@@ -46,13 +46,16 @@ class ConditionPotionProfiles(unittest.TestCase):
         self.assertEqual(rows[1]['semantics']['use_requirements']['value']['vocations']['value'], ['DRUID', 'SORCERER'])
         self.assertEqual(rows[2]['semantics']['use_requirements']['value']['vocations']['value'], ['PALADIN'])
         self.assertEqual(rows[3]['semantics']['use_requirements']['value']['vocations']['state'], 'NOT_APPLICABLE')
+        self.assertEqual(rows[4]['semantics']['use_requirements']['value']['vocations']['state'], 'NOT_APPLICABLE')
+        self.assertEqual(rows[5]['semantics']['use_requirements']['value']['vocations']['value'], ['DRUID', 'SORCERER'])
+        self.assertEqual(rows[5]['semantics']['use_requirements']['value']['min_level']['value'], 14)
 
-    def test_registration_adds_four_and_rejects_duplicate_without_partial_write(self):
+    def test_registration_adds_six_and_rejects_duplicate_without_partial_write(self):
         planned = {'profiles': b'{"records":[]}', 'manifest': b'{"item_profiles":{}}'}
         canonical = lambda v: (json.dumps(v, sort_keys=True) + '\n').encode()
         order = lambda r: r['production_definition']['production_key']
         tool.admit(tool.ROOT, planned, 'profiles', 'manifest', order, canonical)
-        self.assertEqual(len(json.loads(planned['profiles'])['records']), 4)
+        self.assertEqual(len(json.loads(planned['profiles'])['records']), 6)
         self.assertEqual(json.loads(planned['manifest'])['item_profiles']['sha256'],
                          hashlib.sha256(planned['profiles']).hexdigest())
         before = copy.deepcopy(planned)

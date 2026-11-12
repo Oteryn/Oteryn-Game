@@ -11,5 +11,5 @@ match routing::bed::route(
 .await
 {
     Some(dispatch) => dispatch,
-    None => return Err(ServeEnd::ControlLost),
+    None => return Err(ServeEnd::ControlLost("bed")),
 }

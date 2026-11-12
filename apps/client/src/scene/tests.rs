@@ -35,6 +35,7 @@ fn a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference() -> Resu
         kind: TargetKind::Entity,
         glyph: true,
         entity: Some(entity),
+        item: None,
     };
     let mut scene = Scene::centered_with(
         world,
@@ -188,5 +189,21 @@ fn the_start_area_draws_real_sprites_around_the_player() -> Result<(), String> {
         off_floor.sprites().len(),
         scene.world.player(StepDir::South).len()
     );
+    Ok(())
+}
+
+#[test]
+fn t057_hiding_target_frame_preserves_selection() -> Result<(), BatchError> {
+    let mut scene = scene()?;
+    let picked = scene.select_tile(TileCoord::new(0, 0))?;
+    assert!(picked.is_some());
+    let shown = scene.sprites().len();
+    scene.target_frame = false;
+    scene.retain_target(picked)?;
+    assert_eq!(scene.target(), picked);
+    assert_eq!(scene.sprites().len() + 1, shown);
+    scene.target_frame = true;
+    scene.retain_target(picked)?;
+    assert_eq!(scene.sprites().len(), shown);
     Ok(())
 }

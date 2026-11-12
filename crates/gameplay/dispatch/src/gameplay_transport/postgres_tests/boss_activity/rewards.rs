@@ -15,20 +15,25 @@ const GOLD: &str = "oteryn:item.tibia.i3031";
 
 pub(super) fn source_boss(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    production: bool,
 ) -> TestResult<(String, crate::foundation::CompiledCreaturePolicy)> {
     let native = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("active native gameplay")?;
-    // The fixture's one test-only classification is compiled before activation.
-    // Production reward bosses remain unavailable under current corpse admission.
+    // Crystal data-global/monster/raids/grand_mother_foulscale.lua:5-25,40-46,78-97:
+    // the production case uses unchanged native boss classification/HP/corpse/loot.
+    // The original rat cases retain their explicitly test-only classification.
+    let creature = if production {
+        "oteryn:creature.grand_mother_foulscale"
+    } else {
+        "oteryn:creature.rat"
+    };
     let policy = native
         .policies()
         .policies()
         .iter()
-        .find(|policy| {
-            policy.definition_key == "oteryn:creature.rat" && policy.reward_boss == Some(true)
-        })
+        .find(|policy| policy.definition_key == creature && policy.reward_boss == Some(true))
         .ok_or("compiled native reward-boss fixture")?;
     let row = native
         .reward_table()
@@ -48,17 +53,25 @@ pub(super) fn source_boss(
         row.loot_table
             .entries
             .iter()
-            .any(|entry| entry.item.production_key == GOLD
+            .any(|entry| entry.item.production_key == reward_item(policy)
                 && entry
                     .probability_ppm
                     .is_some_and(|chance| f64::from(chance) * factor * 0.95 >= 1_000_000.0)),
-        "unchanged source gold is guaranteed by solo contribution even at minimum source jitter"
+        "unchanged source reward is guaranteed by solo contribution even at minimum source jitter"
     );
     let boss = row
         .boss
         .as_ref()
         .map_or_else(|| policy.definition_key.clone(), |boss| boss.key.clone());
     Ok((boss, policy.as_ref().clone()))
+}
+
+fn reward_item(policy: &crate::foundation::CompiledCreaturePolicy) -> &'static str {
+    if policy.definition_key == "oteryn:creature.grand_mother_foulscale" {
+        "oteryn:item.tibia.i5920"
+    } else {
+        GOLD
+    }
 }
 
 pub(super) async fn settle_and_collect(
@@ -68,6 +81,7 @@ pub(super) async fn settle_and_collect(
     admitted: AdmittedSession,
     policy: &crate::foundation::CompiledCreaturePolicy,
     late: bool,
+    require_corpse: bool,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("actual Instance fence")?;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
@@ -151,6 +165,18 @@ pub(super) async fn settle_and_collect(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Drained
     );
+    if require_corpse {
+        let first = super::instance_corpse::assert_mint(h, owner, admitted, policy).await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+        assert_eq!(
+            super::instance_corpse::assert_mint(h, owner, admitted, policy).await?,
+            first,
+            "native replay retains the corpse identity and exact audit bytes"
+        );
+    }
     let retained: (Vec<u8>, i16, Vec<u8>, bool, i64) = sqlx::query_as(
         "SELECT uuid_send(death_id),scope_kind,uuid_send(instance_id),channel_id IS NULL,minted_at FROM game_boss_reward_deaths",
     ).fetch_one(&h.pool).await?;
@@ -173,6 +199,16 @@ pub(super) async fn settle_and_collect(
             .await?,
         0,
         "personal reward bosses have no second ordinary-corpse loot copy"
+    );
+    // Crystal creature.cpp:711-721,777-782: personal rewards still leave one
+    // physical corpse. Its Ground custody and mint provenance retain the real
+    // Instance namespace; private loot must never also appear inside it.
+    let corpse: (i64, bool, Vec<u8>) = sqlx::query_as(
+        "SELECT count(*) OVER (), g.channel_id IS NULL, uuid_send(g.instance_id) FROM game_item_mint_receipts r JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.loot_purpose_key='CORPSE_MATERIALIZATION' AND g.scope_kind=2",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        (corpse.0, corpse.1, corpse.2.as_slice()),
+        (1, true, instance_id.as_slice())
     );
     if late {
         let terminal: (i16, bool, bool, i64) = sqlx::query_as(
@@ -299,7 +335,7 @@ pub(super) async fn settle_and_collect(
         "command 340 must expose the actual Instance death's personal group"
     );
     let ordinal: i32 = sqlx::query_scalar("SELECT item_ordinal FROM game_boss_reward_items WHERE death_id=encode($1,'hex')::uuid AND definition_production_key=$2 ORDER BY item_ordinal LIMIT 1")
-        .bind(death.as_slice()).bind(GOLD).fetch_one(&h.pool).await?;
+        .bind(death.as_slice()).bind(reward_item(policy)).fetch_one(&h.pool).await?;
     let selection = BossRewardSelection::Item {
         death,
         ordinal: u16::try_from(ordinal)?,
@@ -336,6 +372,9 @@ pub(super) async fn settle_and_collect(
         .spell_lane_permit()
         .await
         .ok_or("exact Instance lane")?;
+    let other_entitlements: serde_json::Value = sqlx::query_scalar(
+        "SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY item_ordinal),'[]'::jsonb) FROM game_boss_reward_items i WHERE death_id=encode($1,'hex')::uuid AND item_ordinal<>$2",
+    ).bind(death.as_slice()).bind(ordinal).fetch_one(&h.pool).await?;
     let first = h
         .root
         .collect_boss_rewards(
@@ -349,6 +388,8 @@ pub(super) async fn settle_and_collect(
         )
         .await?
         .ok_or("actual Instance collection")?;
+    // Item selection reports the remaining quantity of this ordinal; other
+    // source loot rolls retain their own personal entitlements.
     assert_eq!(
         (first.status, first.moved, first.remaining),
         (BossRewardCollectionStatus::Collected, 1, 0)
@@ -367,6 +408,16 @@ pub(super) async fn settle_and_collect(
         .await?
         .ok_or("retained Instance collection")?;
     assert_eq!(replay, first);
+    let retained_others: serde_json::Value = sqlx::query_scalar(
+        "SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY item_ordinal),'[]'::jsonb) FROM game_boss_reward_items i WHERE death_id=encode($1,'hex')::uuid AND item_ordinal<>$2",
+    ).bind(death.as_slice()).bind(ordinal).fetch_one(&h.pool).await?;
+    assert_eq!(
+        retained_others, other_entitlements,
+        "Item selection and replay preserve every unselected source entitlement"
+    );
+    assert_eq!(sqlx::query_scalar::<_, i64>(
+        "SELECT count(*) FROM game_boss_reward_items WHERE death_id=encode($1,'hex')::uuid AND collected_transaction_id IS NOT NULL",
+    ).bind(death.as_slice()).fetch_one(&h.pool).await?, 1);
     drop(permit);
     let audit: Vec<u8> = sqlx::query_scalar("SELECT a.envelope FROM game_boss_reward_item_collections c JOIN game_item_audit_outbox a USING(event_id)")
         .fetch_one(&h.pool).await?;

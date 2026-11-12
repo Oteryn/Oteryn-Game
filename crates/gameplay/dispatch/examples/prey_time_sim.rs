@@ -621,6 +621,41 @@ mod tests {
     use super::*;
 
     #[test]
+    fn cake_source_successor_loads_real_reward_artifact_and_refuses_missing_binding()
+    -> ModelResult<()> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let profiles: CreatureProfilesDocument = serde_json::from_slice(&fs::read(
+            root.join("content/creatures/definitions/spell-native-profiles.json"),
+        )?)?;
+        let raw = fs::read(root.join("tools/content-schema/native-gameplay/loot-tables.json"))?;
+        let section = LootTablesSection::decode(&raw, &profiles)?;
+        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
+        let cake = rewards
+            .row("oteryn:creature.cake_golem")
+            .map_err(|reason| reason.as_str())?;
+        // Crystal data-global/monster/quests/a_piece_of_cake/cake_golem.lua:73:
+        // one sweet substance has chance50000/MAX_LOOTCHANCE100000.
+        assert_eq!(cake.corpse_item.production_key, "oteryn:item.tibia.i12141");
+        assert_eq!(
+            cake.loot_table_ref.production_key,
+            "oteryn:loot.creature.cake_golem"
+        );
+        assert_eq!(cake.loot_table.entries.len(), 1);
+        assert_eq!(
+            cake.loot_table.entries[0].item.production_key,
+            "oteryn:item.tibia.i12143"
+        );
+        assert_eq!(cake.loot_table.entries[0].probability_ppm, Some(500_000));
+        let mut missing: serde_json::Value = serde_json::from_slice(&raw)?;
+        missing["creature_loot"]
+            .as_array_mut()
+            .ok_or("creature loot")?
+            .retain(|row| row["creature"]["key"] != "oteryn:creature.cake_golem");
+        assert!(LootTablesSection::decode(&serde_json::to_vec(&missing)?, &profiles).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn prey_model_real_combat_duel_is_seed_deterministic() -> ModelResult<()> {
         let constants = AttackConstants::checked_in().ok_or("constants")?;
         let preset = Preset {

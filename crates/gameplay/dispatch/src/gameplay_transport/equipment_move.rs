@@ -110,6 +110,19 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
     }
     /// Refuse timed forms the owner cannot host. Supported carried/equipped budgets
     /// are checkpointed by the production move path below.
+    fn supports_absolute_deadline(&self, key: &str, revision: &str) -> bool {
+        let Some(policy) = self.0.item_policy(key, revision) else {
+            return false;
+        };
+        policy.record().semantics.charges == ReferenceItemField::NotApplicable
+            && matches!(&policy.record().semantics.temporal, ReferenceItemField::Known(temporal)
+                if temporal.consumption_mode == ReferenceItemField::Known(crate::content::ReferenceTemporalMode::DurableAbsoluteDeadline))
+            && crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(
+                policy,
+            )
+            .is_ok()
+    }
+
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {
         if super::timed_item_content::unhosted_equipment_effect(production_key) {
             return true;
@@ -184,8 +197,22 @@ pub(super) async fn read_current_equipment(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<character_equipment::EquipmentSnapshot> {
-    let current = FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(game_session_id)
+    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
+    use crate::durability::DurabilityError;
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    let store = FreshAdmissionStore::from_root(admission.root.clone());
+    // Join snapshots interleave these reads for multiple admitted players.
+    // A busy holder proves neither an absent equipment view nor stale control.
+    let current = retry
+        .retry_unavailable(async || {
+            store
+                .current_session_at(game_session_id)
+                .await
+                .map_err(|error| match error {
+                    DurabilityError::RootUnavailable => Unavailable,
+                    _ => Rejected,
+                })
+        })
         .await
         .ok()?
         .0;
@@ -212,9 +239,19 @@ pub(super) async fn read_current_equipment(
         }
         digest
     };
-    let read = admission
-        .root
-        .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+    let read = retry
+        .retry_unavailable(async || {
+            admission
+                .root
+                .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+                .await
+                .map_err(|error| match error {
+                    character_equipment::EquipmentError::Durability(
+                        DurabilityError::RootUnavailable,
+                    ) => Unavailable,
+                    _ => Rejected,
+                })
+        })
         .await
         .ok()?;
     if read.fence() != &fence || read.equipment().content_digest != digest {
@@ -240,29 +277,7 @@ pub(super) async fn read_current_house_equipment(
     {
         return None;
     }
-    let digest = {
-        let runtime = admission.runtime.lock().await;
-        let house = runtime.house_actor_state(actor, session).ok()?;
-        if fence.game_session_id != session
-            || house.scope != fence.runtime_scope
-            || house.generation != fence.scope_ownership_generation
-            || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
-            || house.lease.generation() != fence.character_lease_generation
-        {
-            return None;
-        }
-        pinned_index(&runtime, admission.active_generation)?;
-        let digest = runtime.content_pin().server_artifact_digest();
-        if admission
-            .active_generation?
-            .native_gameplay()?
-            .source_digest()
-            != digest
-        {
-            return None;
-        }
-        digest
-    };
+    let digest = house_equipment_digest(admission, actor, session, fence).await?;
     let read = admission
         .root
         .read_house_equipment(
@@ -274,10 +289,41 @@ pub(super) async fn read_current_house_equipment(
         )
         .await
         .ok()?;
-    if read.fence() != &fence || read.equipment().content_digest != digest {
+    if read.fence() != &fence
+        || read.equipment().content_digest != digest
+        || house_equipment_digest(admission, actor, session, fence).await != Some(digest)
+    {
         return None;
     }
     Some(read.equipment().clone())
+}
+
+// A durable read can wait while native custody changes. Prove the same resident,
+// lease, scope generation and active content both before and after that read.
+async fn house_equipment_digest(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> Option<[u8; 32]> {
+    let runtime = admission.runtime.lock().await;
+    let house = runtime.house_actor_state(actor, session).ok()?;
+    if fence.game_session_id != session
+        || house.scope != fence.runtime_scope
+        || house.generation != fence.scope_ownership_generation
+        || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
+        || house.lease.generation() != fence.character_lease_generation
+    {
+        return None;
+    }
+    pinned_index(&runtime, admission.active_generation)?;
+    let digest = runtime.content_pin().server_artifact_digest();
+    (admission
+        .active_generation?
+        .native_gameplay()?
+        .source_digest()
+        == digest)
+        .then_some(digest)
 }
 
 /// Domain 9's occupied equipment slots of `game_session_id`'s Character, in ascending wire slot
@@ -288,6 +334,28 @@ pub(super) async fn observe_character_equipment(
     game_session_id: GameSessionId,
 ) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
     let equipment = read_current_equipment(admission, game_session_id).await?;
+    equipment_view(admission, equipment).await
+}
+
+/// The same domain-9 projection under the actual named-House actor and session.
+pub(super) async fn observe_house_character_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    game_session_id: GameSessionId,
+) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
+    let (current, _) = FreshAdmissionStore::from_root(admission.root.clone())
+        .current_session_at(game_session_id)
+        .await
+        .ok()?;
+    let fence = super::item_fence_of(current)?;
+    let equipment = read_current_house_equipment(admission, actor, game_session_id, fence).await?;
+    equipment_view(admission, equipment).await
+}
+
+async fn equipment_view(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    equipment: character_equipment::EquipmentSnapshot,
+) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
     let native = admission.active_generation?.native_gameplay()?;
     let index = pinned_index(
         &*admission.runtime.lock().await,

@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.a_father_s_burden_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I am relieved someone as capable as you will handle the task. Well, I need the parts of a sorcerer's robe, a paladin's bow, a knight's shield, and a druid's wand."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:173"
+      ],
+      "topics": [
+        1
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ use oteryn_client_runtime::daily_reward::{
     DailyRewardCommand, DailyRewardReply, DailyRewardResponse, daily_reward,
 };
 use oteryn_client_ui::daily_reward::{Intent, panel_text};
+use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
 use oteryn_session::{
     CommandStatus, LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome,
 };
@@ -12,10 +13,32 @@ use std::time::Duration;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Peer {
     commands: Arc<Mutex<Vec<DailyRewardCommand>>>,
+    claimed: bool,
+    returner_offer: Option<[u8; 16]>,
 }
 impl Stepper for Peer {
     fn daily_reward_selected(&self) -> bool {
         true
+    }
+    async fn feature(
+        &mut self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        assert_eq!(
+            (command.capability, command.kind),
+            (182, daily_reward::returner::QUERY)
+        );
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: daily_reward::returner::Reply {
+                state: if self.returner_offer.is_some() { 1 } else { 0 },
+                id: self.returner_offer,
+            }
+            .encode()
+            .map_err(|_| SessionError::SessionUnusable)?,
+        })
     }
     async fn daily_reward(
         &mut self,
@@ -28,12 +51,13 @@ impl Stepper for Peer {
         let reply = match command {
             DailyRewardCommand::Query => DailyRewardReply::Wall(daily_reward::DailyRewardWall {
                 lane_day: 12,
-                streak: 19,
+                streak: if self.claimed { 14 } else { 13 },
                 jokers: 2,
-                claimed: false,
-                claim_enabled: true,
+                claimed: self.claimed,
+                claim_enabled: !self.claimed,
             }),
             DailyRewardCommand::Claim => {
+                self.claimed = true;
                 DailyRewardReply::Result(daily_reward::DailyRewardResult {
                     disposition: 1,
                     transaction_id: Some([0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]),
@@ -83,21 +107,37 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
             let runtime = oteryn_client_runtime::ClientRuntime::new()?;
             runtime.block_on(async {
                 let commands = Arc::new(Mutex::new(Vec::new()));
-                let (peer_commands, peer) = (Arc::clone(&commands), Peer { commands });
+                let (peer_commands, peer) = (
+                    Arc::clone(&commands),
+                    Peer {
+                        commands,
+                        claimed: false,
+                        returner_offer: None,
+                    },
+                );
                 let (link, incoming, outbox) = play_channel();
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 ready(&link, false).await?;
-                link.daily_reward_request(Intent::Refresh);
+                assert!(
+                    include_str!("../../../windows_shell/input.rs")
+                        .contains("play.link.daily_reward_input(events)")
+                );
+                assert!(link.daily_reward_input(&[NormalizedInputEvent::Key {
+                    code: KeyCode::new(7)?,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::one(Modifier::Control),
+                    repeat: false,
+                }]));
+                assert!(link.daily_reward_panel().open);
                 ready(&link, true).await?;
                 assert!(panel_text(&link.daily_reward_panel()).contains("Day 12 of 30"));
+                let text = panel_text(&link.daily_reward_panel());
+                assert!(text.contains("Weapon proficiency XP: 7% chance to gain double XP"));
+                assert!(text.contains("Each eligible weapon proficiency XP award"));
+                assert!(text.contains("Refresh after claiming to update the bonus"));
                 link.daily_reward_request(Intent::Claim);
                 tokio::time::timeout(Duration::from_secs(3), async {
-                    while peer_commands
-                        .lock()
-                        .unwrap_or_else(PoisonError::into_inner)
-                        .len()
-                        < 2
-                    {
+                    while link.daily_reward_panel().pending {
                         tokio::task::yield_now().await;
                     }
                 })
@@ -110,6 +150,24 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                     link.daily_reward_panel().feedback,
                     Some("Daily reward claimed")
                 );
+                assert!(panel_text(&link.daily_reward_panel()).contains("Status: claimed"));
+                link.daily_reward_request(Intent::Claim);
+                assert_eq!(
+                    peer_commands
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .len(),
+                    2
+                );
+                link.daily_reward_request(Intent::Refresh);
+                ready(&link, true).await?;
+                assert!(
+                    link.daily_reward_panel()
+                        .wall
+                        .is_some_and(|wall| wall.claimed && !wall.claim_enabled)
+                );
+                assert!(panel_text(&link.daily_reward_panel())
+                    .contains("Weapon proficiency XP: 8% chance to gain double XP"));
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())
@@ -118,3 +176,11 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
         .join()
         .map_err(|_| "Daily reward UI test thread panicked")?
 }
+#[path = "details.rs"]
+mod details;
+
+#[path = "picker.rs"]
+mod picker;
+
+#[path = "returner.rs"]
+mod returner;

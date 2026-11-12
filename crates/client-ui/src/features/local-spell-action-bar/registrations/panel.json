@@ -1,0 +1,7 @@
+{
+  "mechanic": "local-spell-action-bar",
+  "kind": "panels",
+  "id": "local-spell-action-bar-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

@@ -12,6 +12,7 @@ pub(super) async fn recover(
     let sequence = client.last_server_sequence();
     let admissions = committed_admissions(clients.url).await?;
     let previous = client.disconnect_after_step(StepDirection::West).await?;
+    evidence("mechanic=disconnect_resume phase=pending_step_written_transport_dropped");
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
         if matches!(
@@ -25,6 +26,7 @@ pub(super) async fn recover(
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
+    evidence("mechanic=disconnect_resume phase=durable_loss_observed");
     let generation = platform_generation(clients.descriptor, &clients.accounts[1]).await?;
     let token = sign_recovery(
         clients.recovery,
@@ -52,6 +54,7 @@ pub(super) async fn recover(
         },
     )
     .await?;
+    evidence("mechanic=disconnect_resume phase=replacement_transport_joined");
     if resumed.join_snapshot().game_session_id.as_bytes() != &session
         || (resumed.world_spatial().actor_position != position
             && Some(resumed.world_spatial().actor_position) != expected_after_step)

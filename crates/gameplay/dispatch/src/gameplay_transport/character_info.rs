@@ -46,6 +46,7 @@ pub fn decode(payload: &[u8]) -> Result<CharacterInfoOperation, DecodeError> {
     };
     let title = |raw| CharacterTitle::from_id(raw).ok_or(DecodeError);
     match (tag, rest) {
+        (5, []) => Ok(CharacterInfoOperation::QueryPremium),
         (0, bytes) => Ok(CharacterInfoOperation::QuerySelf(page(bytes)?)),
         (1, bytes) if bytes.len() == 19 => {
             let mut character = [0; 16];
@@ -118,6 +119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 item_fence,
                 now,
                 self.appearance_context().map(|(_, content)| content),
+                self.bundle_map().map(|map| &map.overlay.base().subareas),
             )
             .await;
         // PAR-P12b: badges share the trigger points (Crystal checks both at login).
@@ -128,7 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The actor-cadence leg of [`Self::refresh_session_titles`] for a Character marked by a
-    /// kill settlement (level, tracked creature or boss).
+    /// kill settlement (level, tracked creature or boss) or Task Board point change.
     pub(super) async fn refresh_marked_titles(
         &self,
         actor: crate::foundation::ExactActorRef,
@@ -177,6 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let character = fence.character_id;
         let now = unix_now_ms();
         match operation {
+            CharacterInfoOperation::QueryPremium => super::premium_overview::query(self, admitted).await,
             CharacterInfoOperation::Unlock(title) => {
                 // Read native qualification and persist the title under one session fence.
                 // A client can name a title, never supply its proof or expiry.
@@ -189,6 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         title,
                         now,
                         self.appearance_context().map(|(_, content)| content),
+                        self.bundle_map().map(|map| &map.overlay.base().subareas),
                     )
                     .await
                 {
@@ -198,7 +202,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             CharacterInfoOperation::Select(title) => match self
                 .root
-                .select_character_title(self.character, self.holder, fence, title)
+                .select_character_title_at(self.character, self.holder, fence, title, now)
                 .await
             {
                 Ok(revision) => {
@@ -255,6 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     now,
                     self.appearance_context().map(|(_, content)| content),
+                    self.bundle_map().map(|map| &map.overlay.base().subareas),
                 )
                 .await
                 .is_err()
@@ -278,6 +283,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target,
                 now,
                 self.appearance_context().map(|(_, content)| content),
+                self.bundle_map().map(|map| &map.overlay.base().subareas),
             )
             .await
         {
@@ -325,6 +331,7 @@ mod tests {
         let mut look = vec![4];
         look.extend_from_slice(&[1; 16]);
         for payload in [
+            vec![5],
             vec![0, 0, 0, 50],
             visible,
             vec![2, 1],

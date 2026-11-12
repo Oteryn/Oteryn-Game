@@ -1,0 +1,17 @@
+{
+  "mechanic": "0117-boss-encounter",
+  "kind": "handlers",
+  "id": "0117-boss-encounter-activity-scope-ack",
+  "status": "supported",
+  "commands": [
+    710
+  ],
+  "direction": "client_to_server",
+  "capability": 117,
+  "entry": "activity_handoff.rs::acknowledge_activity",
+  "entry_owner": "session",
+  "not_applicable": {
+    "input": "The Session owner acknowledges the validated destination before releasing native input.",
+    "settings": "Scope acknowledgement is mandatory transport sequencing, with no player setting."
+  }
+}

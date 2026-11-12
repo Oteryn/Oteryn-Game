@@ -102,6 +102,74 @@ fn synthetic_command_and_mechanic_extend_only_additive_sources() -> Result<(), S
 }
 
 #[test]
+fn core_extension_requires_exact_contract_command_binding_and_test() -> Result<(), String> {
+    let f = Fixture::structure()?;
+    f.json(
+        "crates/protocol-oteryn/capabilities/0371-diagonal-movement-v1.json",
+        &json!({"id":371,"name":"DIAGONAL_MOVEMENT_V1","commands":[]}),
+    )?;
+    let feature = "crates/client-ui/src/features/0371-diagonal-movement";
+    f.write(&format!("{feature}/protocol.rs"), "fn handle() {}")?;
+    f.write(&format!("{feature}/tests.rs"), "fn proves_profile() {}")?;
+    let contract =
+        "docs/contracts/protocol-oteryn/v1/registry/capabilities/0371-diagonal-movement-v1.json";
+    let descriptor = "docs/contracts/protocol-oteryn/v1/registry/command_types/0001-world-actor-step-intent.json";
+    let entry = json!({"mechanic":"0371-diagonal-movement","kind":"handlers","id":"diagonal-handler",
+        "status":"supported","commands":[],"capability":371,"direction":"client_to_server",
+        "shared_commands":[1],"entry":"protocol.rs::handle","test":"tests.rs::proves_profile",
+        "not_applicable":{"state":"core command","view":"core command","input":"core command","settings":"core command"}});
+    let valid = json!({"id":371,"extends_core_commands":[1]});
+    f.json(contract, &valid)?;
+    f.json(descriptor, &json!({"id":1}))?;
+    f.json(&format!("{feature}/registrations/handlers.json"), &entry)?;
+    f.json(
+        &format!("{feature}/fixtures/registrations.json"),
+        &json!([entry]),
+    )?;
+    client_fragments::scan(&f.0)?;
+    for (mutation, expected) in [
+        "core extension capability mismatch",
+        "core extension differs from contract",
+        "core extension differs from contract",
+        "extension target is not a core command",
+        "missing Rust entry symbol tests.rs::missing",
+        "core extension differs from contract",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        f.json(contract, &valid)?;
+        f.json(descriptor, &json!({"id":1}))?;
+        let mut changed = entry.clone();
+        match mutation {
+            0 => changed["capability"] = json!(370),
+            1 => f.json(contract, &json!({"id":371}))?,
+            2 => changed["shared_commands"] = json!([2]),
+            3 => f.json(descriptor, &json!({"id":1,"capability":13}))?,
+            4 => changed["test"] = json!("tests.rs::missing"),
+            5 => {
+                changed["shared_commands"] = json!([1, 1]);
+                f.json(contract, &json!({"id":371,"extends_core_commands":[1,1]}))?;
+            }
+            _ => return Err("mutation".into()),
+        }
+        f.json(&format!("{feature}/registrations/handlers.json"), &changed)?;
+        f.json(
+            &format!("{feature}/fixtures/registrations.json"),
+            &json!([changed]),
+        )?;
+        let error = client_fragments::scan(&f.0)
+            .err()
+            .ok_or(format!("invalid extension {mutation} passed"))?;
+        assert!(
+            error.contains(expected),
+            "invalid extension {mutation}: {error}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn pushed_handler_requires_reducer_window_and_test() -> Result<(), String> {
     for missing in ["reducer", "window", "test"] {
         let f = Fixture::structure()?;
@@ -139,5 +207,76 @@ fn pushed_handler_requires_reducer_window_and_test() -> Result<(), String> {
         )?;
         assert!(client_fragments::scan(&f.0).is_err(), "missing {missing}");
     }
+    Ok(())
+}
+
+#[test]
+fn session_transport_handler_requires_actual_async_session_symbol_and_preserves_coverage()
+-> Result<(), String> {
+    let f = Fixture::structure()?;
+    f.json(
+        "crates/protocol-oteryn/capabilities/1000-transport-v1.json",
+        &json!({"id":1000,"name":"TRANSPORT_V1","commands":[1000]}),
+    )?;
+    f.json(
+        "docs/contracts/protocol-oteryn/v1/registry/command_types/1000-transport.json",
+        &json!({"id":1000,"capability":1000}),
+    )?;
+    let feature = "crates/client-ui/src/features/1000-transport";
+    let mut entry = json!({"mechanic":"1000-transport","kind":"handlers","id":"transport-handler",
+        "status":"supported","commands":[1000],"capability":1000,"direction":"client_to_server",
+        "entry_owner":"session","entry":"activity_handoff.rs::acknowledge",
+        "not_applicable":{"state":"Session owns transfer","protocol":"Session transport entry",
+            "view":"Native receipt presentation is separate","input":"Automatic transport acknowledgement",
+            "settings":"Mandatory transport sequencing"}});
+    f.json(&format!("{feature}/registrations/handler.json"), &entry)?;
+    f.json(
+        &format!("{feature}/fixtures/registrations.json"),
+        &json!([entry]),
+    )?;
+    let source = "impl<S> Session<S> { async fn acknowledge(&mut self) {} }";
+    f.write("crates/session/src/activity_handoff.rs", source)?;
+    let (_, coverage) = client_fragments::scan(&f.0)?;
+    assert!(
+        coverage
+            .iter()
+            .any(|row| row["mechanic"] == "1000-transport" && row["status"] == "supported")
+    );
+    for invalid in [
+        "impl<S> Session<S> { async fn other(&mut self) {} }",
+        "impl OtherOwner { async fn acknowledge(&mut self) {} }",
+        "impl<S> Session<S> { fn acknowledge(&mut self) {} }",
+        "async fn acknowledge() {}",
+    ] {
+        f.write("crates/session/src/activity_handoff.rs", invalid)?;
+        assert!(
+            client_fragments::scan(&f.0).is_err(),
+            "wrong transport symbol: {invalid}"
+        );
+    }
+    f.write("crates/session/src/activity_handoff.rs", source)?;
+    for invalid in ["missing.rs::acknowledge", "../outside.rs::acknowledge"] {
+        entry["entry"] = json!(invalid);
+        f.json(&format!("{feature}/registrations/handler.json"), &entry)?;
+        f.json(
+            &format!("{feature}/fixtures/registrations.json"),
+            &json!([entry]),
+        )?;
+        assert!(
+            client_fragments::scan(&f.0).is_err(),
+            "wrong transport path: {invalid}"
+        );
+    }
+    entry["entry"] = json!("activity_handoff.rs::acknowledge");
+    entry["commands"] = json!([]);
+    f.json(&format!("{feature}/registrations/handler.json"), &entry)?;
+    f.json(
+        &format!("{feature}/fixtures/registrations.json"),
+        &json!([entry]),
+    )?;
+    assert!(
+        client_fragments::scan(&f.0).is_err(),
+        "transport entry cannot remove command coverage"
+    );
     Ok(())
 }

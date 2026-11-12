@@ -1,0 +1,17 @@
+{
+  "id": 279,
+  "name": "SKILL_PROGRESS_V1",
+  "constant": "skill_progress::CAPABILITY_SKILL_PROGRESS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    495
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

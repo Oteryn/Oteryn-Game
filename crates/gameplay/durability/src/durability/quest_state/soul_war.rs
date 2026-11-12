@@ -18,7 +18,7 @@ use sha2::{Digest, Sha256};
 
 mod native;
 mod reward;
-mod storage;
+pub(in crate::durability) mod storage;
 mod terminal;
 pub(crate) use terminal::apply_soul_war_failed_final_in_transaction;
 pub use native::{apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction};
@@ -168,4 +168,14 @@ impl DurabilityRoot {
             Ok(Ok(outcome))
         })).await?
     }
+}
+
+
+/// Read-only status projection. Caller holds the admitted Character root fence.
+pub(crate) async fn read_taint_count_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    now_seconds: i64,
+) -> StoredResult<u8> {
+    Ok(storage::load(tx, character).await?.taint_count(now_seconds))
 }

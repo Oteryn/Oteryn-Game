@@ -3,12 +3,10 @@
 //! The Channel's budgeted NPC think must call this once per native think occurrence. This
 //! module owns only the interval and deterministic proposal; the actor's position remains in
 //! Movement. A proposal does not prove catalogue membership in the active runtime, current
-//! field/trigger absence, or permission to commit a step. Those owner handoffs are not installed.
+//! field/trigger absence, or permission to commit a step. The Channel presence cadence and
+//! current_map module prove those owner handoffs before committing a native step.
 
-#![allow(
-    dead_code,
-    reason = "NPC walking preparation awaits the source pin and budgeted owner caller"
-)]
+mod current_map;
 
 use super::chat_intent::ChatRuntime;
 use crate::ai_think::profile_schedule::decision_occurrence;
@@ -41,6 +39,23 @@ impl NpcWalkState {
         actor: ExactActorRef,
         book: &NpcWalkBook,
     ) -> Result<Option<Self>, WalkError> {
+        Self::build(runtime, actor, book, false)
+    }
+
+    pub(super) fn after_schedule(
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        book: &NpcWalkBook,
+    ) -> Result<Option<Self>, WalkError> {
+        Self::build(runtime, actor, book, true)
+    }
+
+    fn build(
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        book: &NpcWalkBook,
+        scheduled_anchor: bool,
+    ) -> Result<Option<Self>, WalkError> {
         runtime
             .owner_fence()
             .map_err(|_| WalkError::NotCurrentNpc)?;
@@ -56,7 +71,20 @@ impl NpcWalkState {
             .read(actor)
             .map_err(|_| WalkError::NotCurrentNpc)?;
         if snapshot.revision() != 1 {
-            return Err(WalkError::InitialPlacementUnavailable);
+            let schedule = oteryn_gameplay_entities::rashid_schedule::destination_at(
+                super::npc_trade_command::unix_ms_now(),
+            )
+            .placement;
+            let exact_schedule = key == oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY
+                && snapshot.position()
+                    == MovementLocalPosition {
+                        x: i32::from(schedule.x),
+                        y: i32::from(schedule.y),
+                        floor: -i16::from(schedule.floor),
+                    };
+            if !scheduled_anchor || !exact_schedule {
+                return Err(WalkError::InitialPlacementUnavailable);
+            }
         }
         Ok(Some(Self {
             actor,

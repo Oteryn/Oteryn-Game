@@ -133,6 +133,13 @@ const fn request_envelope_max(operation: Operation) -> usize {
         Operation::PublishWorldOnlineV1 => {
             super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
         }
+        Operation::PublishBazaarTransferabilityV1
+        | Operation::PublishBazaarCharacterCommandReceiptV2 => {
+            operation.request_bytes_max() + REQUEST_HEAD_BYTES
+        }
+        Operation::PublishWorldEventOutcomeV1 | Operation::PublishGuildSeasonV1 => {
+            operation.request_bytes_max() + REQUEST_HEAD_BYTES
+        }
         _ => REQUEST_ENVELOPE_BYTES,
     }
 }
@@ -185,6 +192,25 @@ async fn exchange_status(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
+        if let Some(max) = super::bazaar::transport::response_bytes(operation) {
+            let mut retry_after = None;
+            let (status, raw) = read_response_inner(
+                &mut tls,
+                false,
+                max,
+                true,
+                &[],
+                operation == Operation::ReadBazaarCommandIntentV1,
+                Some(&mut retry_after),
+                false,
+                crate::store::MAX_BACKOFF,
+            )
+            .await?;
+            return Ok((status, raw, retry_after));
+        }
+        if super::world_event_outcomes::is_operation(operation) {
+            return read_t94_response(&mut tls).await;
+        }
         if let Some(max) = super::store::response_bytes_max(operation) {
             let mut retry_after = None;
             let (status, raw) = read_response_inner(
@@ -195,6 +221,8 @@ async fn exchange_status(
                 &[],
                 false,
                 Some(&mut retry_after),
+                true,
+                crate::store::MAX_BACKOFF,
             )
             .await?;
             return Ok((status, raw, retry_after));
@@ -222,6 +250,7 @@ async fn exchange_status(
                 | Operation::PublishWorldHighscoresV1
                 | Operation::PublishCharacterProfileV1
                 | Operation::PublishWorldOnlineV1
+                | Operation::PublishWorldTotalsV1
                 | Operation::PublishPublicProjectionWatermarkV1
         ) {
             // §3 (LCFA and public projections): every projection response, success
@@ -240,6 +269,15 @@ async fn exchange_status(
             // apart so it is decided invalid rather than retried as unavailable.
             let oversized_ok = operation == Operation::ReadCharacterCommandIntentV1;
             read_response_framed(&mut tls, require_ok, body_max, false, &[], oversized_ok).await
+        } else if operation == Operation::PublishGameRestoreNoticeV1 {
+            read_response_bounded(
+                &mut tls,
+                require_ok,
+                super::restore_notice::RESPONSE_BYTES,
+                false,
+                &[],
+            )
+            .await
         } else if require_ok {
             read_response(&mut tls).await.map(|body| (200, body))
         } else {
@@ -247,7 +285,19 @@ async fn exchange_status(
         }?;
         Ok((status, raw, None))
     };
-    tokio::time::timeout(Duration::from_millis(EXCHANGE_DEADLINE_MS), future)
+    let exchange_millis = if matches!(
+        operation,
+        Operation::PublishBazaarTransferabilityV1
+            | Operation::PublishBazaarListingStatusV1
+            | Operation::PublishBazaarWatermarkV1
+            | Operation::PublishBazaarCharacterCommandReceiptV2
+    ) || super::world_event_outcomes::is_operation(operation)
+    {
+        5000
+    } else {
+        EXCHANGE_DEADLINE_MS
+    };
+    tokio::time::timeout(Duration::from_millis(exchange_millis), future)
         .await
         .map_err(|_| SourceError::Unavailable)?
 }
@@ -255,6 +305,27 @@ pub async fn read_response<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u
     read_response_status(stream, true)
         .await
         .map(|(_, body)| body)
+}
+async fn read_t94_response<S: AsyncRead + Unpin>(
+    stream: &mut S,
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
+    let mut retry_after = None;
+    let (status, raw) = read_response_inner(
+        stream,
+        false,
+        256,
+        true,
+        &[],
+        false,
+        Some(&mut retry_after),
+        false,
+        Duration::from_secs(10),
+    )
+    .await?;
+    if !matches!(status, 200 | 400 | 401 | 409 | 429 | 503) || (status != 200 && !raw.is_empty()) {
+        return Err(SourceError::InvalidInput);
+    }
+    Ok((status, raw, retry_after))
 }
 /// A final status: `HTTP/1.1 <200-599>[ <reason>]`; informational and
 /// malformed status lines are invalid.
@@ -318,12 +389,14 @@ pub(crate) async fn read_response_framed<S: AsyncRead + Unpin>(
         body_statuses,
         oversized_ok,
         None,
+        false,
+        crate::store::MAX_BACKOFF,
     )
     .await
 }
 #[allow(
     clippy::too_many_arguments,
-    reason = "Store additionally retains Retry-After while sharing the bounded HTTP parser"
+    reason = "Store and T94 share framing but have distinct Retry-After requirements"
 )]
 async fn read_response_inner<S: AsyncRead + Unpin>(
     stream: &mut S,
@@ -332,9 +405,50 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
     require_json: bool,
     body_statuses: &[u16],
     oversized_ok: bool,
-    mut store_retry: Option<&mut Option<Duration>>,
+    store_retry: Option<&mut Option<Duration>>,
+    require_retry_after: bool,
+    retry_after_max: Duration,
 ) -> Result<(u16, Vec<u8>), SourceError> {
-    if body_max == 0 || body_max > if store_retry.is_some() { 12288 } else { 8192 } {
+    read_response_impl(
+        stream,
+        require_ok,
+        body_max,
+        require_json,
+        body_statuses,
+        oversized_ok,
+        store_retry,
+        require_retry_after,
+        retry_after_max,
+        false,
+    )
+    .await
+}
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Coin framing has an independently bounded history page and strict error JSON"
+)]
+async fn read_response_impl<S: AsyncRead + Unpin>(
+    stream: &mut S,
+    require_ok: bool,
+    body_max: usize,
+    require_json: bool,
+    body_statuses: &[u16],
+    oversized_ok: bool,
+    mut store_retry: Option<&mut Option<Duration>>,
+    require_retry_after: bool,
+    retry_after_max: Duration,
+    coins: bool,
+) -> Result<(u16, Vec<u8>), SourceError> {
+    if body_max == 0
+        || body_max
+            > if coins {
+                65536
+            } else if store_retry.is_some() {
+                12288
+            } else {
+                8192
+            }
+    {
         return Err(SourceError::InvalidInput);
     }
     let mut head = Vec::with_capacity(1024);
@@ -449,20 +563,27 @@ async fn read_response_inner<S: AsyncRead + Unpin>(
             retry_after = Some(if delay.is_zero() {
                 delay
             } else {
-                delay.clamp(crate::store::POLL, crate::store::MAX_BACKOFF)
+                delay.clamp(crate::store::POLL, retry_after_max)
             });
         } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
         }
     }
+    if coins && code == 401 {
+        return Err(SourceError::Unauthorized);
+    }
     if let Some(target) = store_retry.as_mut() {
-        if !no_store || (code == 429 && retry_after.is_none_or(|delay| delay.is_zero())) {
+        if !no_store
+            || (require_retry_after
+                && code == 429
+                && retry_after.is_none_or(|delay| delay.is_zero()))
+        {
             return Err(SourceError::InvalidInput);
         }
         **target = retry_after;
     }
     if require_json
-        && (store_retry.is_none() || code == 200)
+        && (store_retry.is_none() || code == 200 || coins)
         && content_type.as_deref().is_none_or(|value| {
             let mut parts = value.split(';');
             !parts
@@ -612,7 +733,7 @@ mod tests {
 #[cfg(test)]
 mod envelope_tests {
     use super::*;
-    const OPERATIONS: [Operation; 18] = [
+    const OPERATIONS: [Operation; 19] = [
         Operation::ReadAccountSecurityV1,
         Operation::ReadFreshSigningTrustV1,
         Operation::ReadRecoveryAccountSecurityV2,
@@ -627,6 +748,7 @@ mod envelope_tests {
         Operation::ListPendingCharacterCommandsV1,
         Operation::ReadCharacterCommandIntentV1,
         Operation::PublishCharacterCommandReceiptV1,
+        Operation::PublishAccountClosureCommandReceiptV2,
         Operation::PublishWorldHighscoresV1,
         Operation::PublishCharacterProfileV1,
         Operation::PublishWorldOnlineV1,
@@ -760,6 +882,30 @@ mod character_command_response_tests {
 mod store_response_tests {
     use super::*;
     #[test]
+    fn t94_rate_limit_does_not_require_store_retry_header() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .build()?
+            .block_on(async {
+                let raw =
+                    b"HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\n";
+                let response = read_t94_response(&mut raw.as_slice()).await?;
+                assert_eq!(response, (429, Vec::new(), None));
+                let raw = b"HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 600\r\n\r\n";
+                assert_eq!(read_t94_response(&mut raw.as_slice()).await?.2, Some(Duration::from_secs(10)));
+                for mut raw in [
+                    b"HTTP/1.1 400 Bad\r\nContent-Length: 0\r\n\r\n".as_slice(),
+                    b"HTTP/1.1 400 Bad\r\nCache-Control: no-store\r\nContent-Length: 1\r\n\r\nx",
+                    b"HTTP/1.1 500 Bad\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\n",
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: 257\r\n\r\n",
+                ] {
+                    assert!(read_t94_response(&mut raw).await.is_err());
+                }
+                Ok::<(), SourceError>(())
+            })?;
+        Ok(())
+    }
+    #[test]
     fn store_response_bounds_and_retry_after() -> Result<(), Box<dyn std::error::Error>> {
         tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
             for status in [200, 409, 429, 503] {
@@ -767,7 +913,7 @@ mod store_response_tests {
                 let raw = format!("HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\nRetry-After: 17\r\n\r\n{body}", body.len());
                 let mut bytes = raw.as_bytes();
                 let mut retry_after = None;
-                let (got, decoded) = read_response_inner(&mut bytes, false, 12288, true, &[], false, Some(&mut retry_after)).await?;
+                let (got, decoded) = read_response_inner(&mut bytes, false, 12288, true, &[], false, Some(&mut retry_after), true, crate::store::MAX_BACKOFF).await?;
                 assert_eq!(got, status);
                 assert_eq!(decoded, body.as_bytes());
                 assert_eq!(retry_after, Some(Duration::from_secs(17)));
@@ -775,10 +921,10 @@ mod store_response_tests {
             for fields in ["", "Retry-After: x\r\n", "Retry-After: 1\r\nRetry-After: 2\r\n"] {
                 let raw = format!("HTTP/1.1 429 Limited\r\nCache-Control: no-store\r\nContent-Length: 0\r\n{fields}\r\n");
                 let mut bytes = raw.as_bytes();
-                assert!(read_response_inner(&mut bytes, false, 512, true, &[], false, Some(&mut None)).await.is_err());
+                assert!(read_response_inner(&mut bytes, false, 512, true, &[], false, Some(&mut None), true, crate::store::MAX_BACKOFF).await.is_err());
             }
             let raw = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: 513\r\n\r\n";
-            assert!(read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut None)).await.is_err());
+            assert!(read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut None), true, crate::store::MAX_BACKOFF).await.is_err());
             Ok::<(), SourceError>(())
         })?;
         Ok(())
@@ -789,10 +935,38 @@ mod store_response_tests {
         tokio::runtime::Builder::new_current_thread().build()?.block_on(async {
             let raw = b"HTTP/1.1 429 Busy\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 4294967295\r\n\r\n";
             let mut retry = None;
-            read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut retry)).await?;
+            read_response_inner(&mut raw.as_slice(), false, 512, true, &[], false, Some(&mut retry), true, crate::store::MAX_BACKOFF).await?;
             assert_eq!(retry, Some(crate::store::MAX_BACKOFF));
             Ok::<(), SourceError>(())
         })?;
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod bazaar_tests {
+    use super::*;
+    #[test]
+    fn bazaar_http_response_requires_no_store_and_bounded_retry_after()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+            let body=br#"{"contract_version":2,"result":"accepted"}"#;
+            let response=format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: {}\r\n\r\n{}",body.len(),std::str::from_utf8(body)?);
+            let mut retry=None;
+            let accepted=read_response_inner(&mut response.as_bytes(),false,256,true,&[],false,Some(&mut retry),false, crate::store::MAX_BACKOFF).await?;
+            assert_eq!(accepted,(200,body.to_vec()));
+            assert!(read_response_inner(&mut response.replace("Cache-Control: no-store\r\n","").as_bytes(),false,256,true,&[],false,Some(&mut retry),false, crate::store::MAX_BACKOFF).await.is_err());
+            let throttled=b"HTTP/1.1 429 Too Many Requests\r\nCache-Control: no-store\r\nRetry-After: 25\r\nContent-Length: 0\r\n\r\n";
+            let response=read_response_inner(&mut throttled.as_slice(),false,256,true,&[],false,Some(&mut retry),false, crate::store::MAX_BACKOFF).await?;
+            assert_eq!(response,(429,Vec::new()));
+            assert_eq!(retry,Some(Duration::from_secs(25)));
+            assert_eq!(super::super::bazaar::transport::retry_delay(Duration::from_secs(1), retry),Duration::from_secs(10));
+            assert!(request_envelope_max(Operation::PublishBazaarCharacterCommandReceiptV2)>=super::super::bazaar::transport::RECEIPT_BYTES+REQUEST_HEAD_BYTES);
+            Ok(())
+        })
+    }
+}
+
+#[path = "http1_mtls/coins.rs"]
+mod coins;
+pub(crate) use coins::exchange_coins;

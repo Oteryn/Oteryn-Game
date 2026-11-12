@@ -163,6 +163,7 @@ fn effect(track: impl Into<String>, from: QuestComparison, effect: QuestEffectKi
 
 fn transition(key: String, effects: Vec<QuestEffect>, experience: Option<i64>) -> QuestTransition {
     QuestTransition {
+        world_change: None,
         key,
         quest: QUEST.to_owned(),
         effects,

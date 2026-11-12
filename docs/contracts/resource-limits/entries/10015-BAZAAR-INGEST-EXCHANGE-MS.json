@@ -1,0 +1,23 @@
+{
+  "id": "BAZAAR-INGEST-EXCHANGE-MS",
+  "owner_contract": "OTERYN_GAME_BAZAAR_AUTHORITY_V1.md",
+  "resource": "Deadline per snapshot or receipt ingestion",
+  "unit": "milliseconds",
+  "hard_maximum": 5000,
+  "configurable_range": {
+    "minimum": 5000,
+    "maximum": 5000
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Closed schema and bounded transaction/transport refuse over-limit inputs; failed exchange retains custody and the original receipt.",
+  "client_visible": false,
+  "boundary_tests": [
+    "bazaar_transport_closed_routes_and_bounds_preserve_character_v1",
+    "bazaar_transport_pages_are_exact_and_nullable_states_are_closed"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/bazaar/transport.rs",
+    "crates/gameplay/durability/src/durability/bazaar/mod.rs"
+  ],
+  "notes": "Pinned contract candidate bounds, feature defaults enabled under the current owner instruction. Payload bound is measured protobuf: 34+34+11=79 bytes. No ANL envelope ceiling is enlarged."
+}

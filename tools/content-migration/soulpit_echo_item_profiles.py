@@ -1,7 +1,7 @@
 """W06/W07: source-qualified native custody profiles, through the existing Item importer.
 
 The reference-only Item shards stay unchanged. This overlay adds the exact pinned
-Crystal soul-core catalogue, prism, exalted core and basic imbuement scrolls to
+Crystal soul-core catalogue, prism, exalted core, basic scrolls and Echo catalysts to
 the native Item provider used by existing craft and corpse custody writers.
 """
 from __future__ import annotations
@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+from native_profile_composition import encode_native_profile
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
@@ -23,7 +25,7 @@ PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
 SCHEMA = 'OTERYN_NATIVE_SOULPIT_ECHO_ITEM_PROFILES/v1'
 # A source replay with --check reproduces this entire capture. Admission also binds the
 # catalogue and every custody field, so correlated edits cannot silently shrink a draw.
-CAPTURE_SHA256 = '94644f01fb0c574a33eb84f45abec2deb5e1f0c0316b57ac3f2684f0e9cc7192'
+CAPTURE_SHA256 = '5ebf02b389091c9d29e49a7df6810a4c9085289e69a84a8a1a1516dae3e1a62e'
 # Captured from the exact raw GitHub objects at PIN, never from a moving branch.
 SOURCE_HASHES = {
     'data/items/appearances.dat': '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1',
@@ -31,7 +33,7 @@ SOURCE_HASHES = {
     'src/items/items.hpp': '06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca',
     'src/items/items.cpp': 'f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d',
 }
-EXTRA_IDS = {37110, 49164, *range(53751, 53775)}
+EXTRA_IDS = {37110, 49164, 51588, 51589, 54266, *range(53751, 53775)}
 
 
 def capture(crystal: Path) -> dict:
@@ -133,7 +135,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         else:
             document['records'].append(record)
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

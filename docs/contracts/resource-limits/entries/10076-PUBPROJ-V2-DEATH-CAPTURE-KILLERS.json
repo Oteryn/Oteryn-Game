@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-V2-DEATH-CAPTURE-KILLERS",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md",
+  "resource": "Private classified cohort: 80 PvP contributors plus native creature final blow",
+  "unit": "records",
+  "hard_maximum": 81,
+  "configurable_range": {
+    "minimum": 81,
+    "maximum": 81
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Bounded complete replacement snapshots; overflow refuses the whole publication and retains its outbox. Private capture preserves the classified cohort and does not truncate to the public wire limit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/tests.rs:stable_killer_identity_player_creature_and_pvp_hidden"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2.rs",
+    "crates/gameplay/native-admission-source/src/descriptor.rs"
+  ],
+  "notes": "PUBPROJ owner 2026-11-07. Allocation is next free on d34807f5b plus lane offset 50. V2 public projection only; V1 accepted surfaces are unchanged."
+}

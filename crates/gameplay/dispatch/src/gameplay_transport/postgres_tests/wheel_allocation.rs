@@ -69,6 +69,27 @@ async fn send(
     Err(format!("Wheel result missing: {end:?}").into())
 }
 
+fn move_wheel_actor(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    x: i32,
+    y: i32,
+) -> TestResult {
+    loop {
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        let mut position = before.position();
+        assert_eq!(position.floor, -5);
+        if position.x != x {
+            position.x += (x - position.x).signum();
+        } else if position.y != y {
+            position.y += (y - position.y).signum();
+        } else {
+            return Ok(());
+        }
+        runtime.borrow_movement_position().commit_cardinal(before, position).map_err(debug)?;
+    }
+}
+
 fn next_fresh_wheel_action(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     // Functional refusals below must reach their own rule, not the shared UI limit.
     owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_millis(490))
@@ -123,19 +144,59 @@ enum WheelExtensionCase {
     Capacity,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum WheelCombatCase {
+    Unlocked,
+    Pve,
+    Pvp,
+    ProtectionZone,
+}
+
+#[test]
+fn wheel_pz_postgres_removal_outside_temple_without_lock() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::Unlocked)
+}
+
+#[test]
+fn wheel_pz_postgres_removal_refused_until_pve_expires() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::Pve)
+}
+
+#[test]
+fn wheel_pz_postgres_removal_refused_until_pvp_expires() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::Pvp)
+}
+
+#[test]
+fn wheel_pz_postgres_removal_in_non_temple_pz_while_in_fight() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::ProtectionZone)
+}
+
+fn run_wheel_combat_case(case: WheelCombatCase) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(None, Some(case)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Wheel combat PostgreSQL thread panic")??;
+    Ok(())
+}
+
 fn run_wheel_case(transition: Option<WheelExtensionCase>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(transition).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(transition, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Wheel live PostgreSQL thread panic")??;
     Ok(())
 }
 
-fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
+fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCase>) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "wheel_live_dispatch", true, false).await?;
@@ -336,7 +397,7 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             admitted.item_fence = Some(original_fence);
             // Crystal permits vessel replacement anywhere. No retained temple evidence is
             // needed when points are only added or kept (player_wheel.cpp:1763-1772).
-            let rooms = owner.rooms;
+            let rooms = owner.rooms.clone();
             owner.rooms = SeamRooms::new(None, None);
             assert_eq!(send(&owner, &mut admitted, &payload).await?, expected(false, 1, vessels)?);
             let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
@@ -554,6 +615,74 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             send(&owner, &mut admitted, &bytes).await?,
             reply(false, 1, points)?
         );
+        if let Some(case) = combat {
+            let in_pz = matches!(case, WheelCombatCase::ProtectionZone);
+            {
+                let mut runtime = owner.runtime.lock().await;
+                move_wheel_actor(&mut runtime, deps.actor, if in_pz { 2 } else { 0 }, if in_pz { 0 } else { 5 })?;
+                assert_eq!(
+                    crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                        &mut runtime, owner.movement_cells(), deps.actor,
+                    ),
+                    Some(in_pz),
+                );
+                let source = deps.room.source_world().ok_or("source world")?;
+                assert!(!source.permits_wheel_removal(
+                    crate::content::LogicalCell {
+                        x: if in_pz { 2 } else { 0 },
+                        y: if in_pz { 0 } else { 5 },
+                        z: -5,
+                    },
+                    oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_HORIZONTAL_RANGE,
+                    oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_RADIUS,
+                ), "case must be outside the legacy temple rectangle");
+                if matches!(case, WheelCombatCase::Pve | WheelCombatCase::ProtectionZone) {
+                    owner.states.attack.lock().await.record_hit_taken(
+                        &runtime, deps.actor, session, owner.owner_now(),
+                    );
+                }
+            }
+            if matches!(case, WheelCombatCase::Pvp | WheelCombatCase::ProtectionZone) {
+                crate::gameplay_transport::pvp_live::lock_mut(
+                    &mut *owner.states.spell_states.lock().await, deps.actor, session,
+                ).on_aggression(owner.owner_now());
+            }
+            let fact = owner.combat_lock_fact(deps.actor, session).await;
+            assert_eq!(fact.pve_in_fight_until.is_some(), matches!(case, WheelCombatCase::Pve | WheelCombatCase::ProtectionZone));
+            assert_eq!(fact.pvp == crate::gameplay_transport::combat_lock_fact::PvpLockSource::LiveBlocked, matches!(case, WheelCombatCase::Pvp | WheelCombatCase::ProtectionZone));
+            next_fresh_wheel_action(&mut owner)?;
+            let mut removal = wire::WheelAllocationRequest {
+                action: 1,
+                occurrence: id(180),
+                expected_revision: 1,
+                points: [0; 36],
+                vessels: None,
+            };
+            let blocked = matches!(case, WheelCombatCase::Pve | WheelCombatCase::Pvp);
+            assert_eq!(
+                send(&owner, &mut admitted, &wire::encode_wheel_request(&removal).map_err(debug)?).await?,
+                if blocked { reply(true, 1, points)? } else { reply(false, 2, [0; 36])? },
+                "Wheel removal must follow the logout combat lock with the current PZ fact",
+            );
+            if blocked {
+                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(61)).ok_or("expire combat lock")?;
+                let expired = owner.combat_lock_fact(deps.actor, session).await;
+                assert_eq!(expired.pve_in_fight_until, None);
+                assert_ne!(expired.pvp, crate::gameplay_transport::combat_lock_fact::PvpLockSource::LiveBlocked);
+                removal.action = 2;
+                removal.occurrence = id(181);
+                assert_eq!(
+                    send(&owner, &mut admitted, &wire::encode_wheel_request(&removal).map_err(debug)?).await?,
+                    reply(false, 2, [0; 36])?,
+                    "reset is permitted as soon as the lock expires",
+                );
+            }
+            eprintln!("WHEEL_PZ {case:?} POSTGRES_CASE_COMPLETED");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let (allocated_revision, allocated_vitals) = owner
             .observe_actor_vitals(deps.actor, session)
             .await
@@ -658,8 +787,15 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             points: [0; 36],
             vessels: None,
         };
-        let rooms = owner.rooms;
+        let rooms = owner.rooms.clone();
         owner.rooms = SeamRooms::new(None, None);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            move_wheel_actor(&mut runtime, deps.actor, 0, 5)?;
+            owner.states.attack.lock().await.record_hit_taken(
+                &runtime, deps.actor, session, owner.owner_now(),
+            );
+        }
         assert_eq!(
             send(
                 &owner,
@@ -668,9 +804,9 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             )
             .await?,
             reply(true, 1, points)?,
-            "reset action cannot manufacture temple authority"
+            "reset action cannot bypass a running combat lock"
         );
-        owner.rooms = rooms;
+        owner.rooms = rooms.clone();
         // A fresh composed owner reloads the committed allocation through admission.
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = controller.active();

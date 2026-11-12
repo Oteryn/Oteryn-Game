@@ -9,6 +9,8 @@ use oteryn_gameplay_encounter_rules::boss_room::{
     AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
 };
 
+mod quest_entry;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BossRoomDefinition {
     pub boss_key: String,
@@ -61,6 +63,7 @@ pub(super) struct BossAdmissionPlan {
     definition: BossRoomDefinition,
     now: i64,
     reset_epoch: u64,
+    difficulty: Option<i16>,
 }
 
 impl ActivityHandoffOwner {
@@ -70,6 +73,33 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         boss_key: &str,
+    ) -> Result<Option<BossRoomDefinition>> {
+        self.read_boss_room_inner(authority, node, fence, boss_key, None)
+            .await
+    }
+
+    /// Production lookup binds the current carrier's actual map/artifact pin.
+    /// Instance returns resolve their frozen origin pin only after proving the
+    /// independently current session fence; that history never grants authority.
+    pub async fn read_boss_room_with_pin(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        boss_key: &str,
+        origin_pin: ActivityContentPin,
+    ) -> Result<Option<BossRoomDefinition>> {
+        self.read_boss_room_inner(authority, node, fence, boss_key, Some(origin_pin))
+            .await
+    }
+
+    async fn read_boss_room_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        boss_key: &str,
+        origin_pin: Option<ActivityContentPin>,
     ) -> Result<Option<BossRoomDefinition>> {
         if boss_key.is_empty() || boss_key.len() > 512 {
             return Ok(None);
@@ -87,14 +117,27 @@ impl ActivityHandoffOwner {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if retained_participant(&mut tx, &root, fence).await?.is_none()
-                        || assert_item_only_fence(&mut tx, &fence, &node)
-                            .await?
-                            .is_err()
-                    {
+                    if retained_participant(&mut tx, &root, fence).await?.is_none() {
                         return Ok(None);
                     }
-                    let result = read_definition(&mut tx, &key).await?;
+                    let Ok(current) = assert_item_only_fence(&mut tx, &fence, &node).await? else {
+                        return Ok(None);
+                    };
+                    let origin_pin = if origin_pin.is_some()
+                        && let RuntimeScopeRefV1::Instance { instance_id, world_id } = fence.runtime_scope
+                    {
+                        let row = sqlx::query("SELECT p.coordinate_frame_digest,p.map_revision_digest,p.server_artifact_digest FROM game_activity_handoff_groups g JOIN game_activity_handoff_participants p USING(handoff_id,world_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND g.activity_key=$3 AND g.content_revision=$4 AND g.state=2 AND p.character_id=encode($5,'hex')::uuid FOR SHARE OF g,p")
+                            .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(&key)
+                            .bind(&current.content_revision).bind(fence.character_id.as_bytes().as_slice())
+                            .fetch_optional(&mut *tx).await?;
+                        let Some(row) = row else { return Ok(None); };
+                        Some(ActivityContentPin {
+                            coordinate_frame_digest: bytes32(row.try_get("coordinate_frame_digest")?)?,
+                            map_revision_digest: bytes32(row.try_get("map_revision_digest")?)?,
+                            server_artifact_digest: bytes32(row.try_get("server_artifact_digest")?)?,
+                        })
+                    } else { origin_pin };
+                    let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(result)
                 })
@@ -248,9 +291,26 @@ impl ActivityHandoffOwner {
 async fn read_definition(
     tx: &mut Transaction<'_, Postgres>,
     key: &str,
+    world: crate::foundation::WorldId,
+    content_revision: &str,
+    origin_pin: Option<ActivityContentPin>,
 ) -> Result<Option<BossRoomDefinition>> {
-    let row=sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_catalogue WHERE boss_key=$1 AND enabled FOR SHARE")
-        .bind(key).fetch_optional(&mut **tx).await?;
+    // Any production publication closes the legacy fallback for this World/boss,
+    // including when the current revision/frame has no qualified publication.
+    let published: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2)")
+        .bind(world.as_bytes().as_slice()).bind(key).fetch_one(&mut **tx).await?;
+    let row = if published {
+        let Some(pin) = origin_pin else {
+            return Ok(None);
+        };
+        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2 AND content_revision=$3 AND origin_frame_digest=$4 AND origin_map_digest=$5 AND server_artifact_digest=$6 AND enabled FOR SHARE")
+            .bind(world.as_bytes().as_slice()).bind(key).bind(content_revision)
+            .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
+            .bind(pin.server_artifact_digest.as_slice()).fetch_optional(&mut **tx).await?
+    } else {
+        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_catalogue c WHERE boss_key=$1 AND enabled AND NOT EXISTS(SELECT 1 FROM game_boss_room_publications p WHERE p.boss_key=c.boss_key) FOR SHARE")
+            .bind(key).fetch_optional(&mut **tx).await?
+    };
     let Some(row) = row else {
         return Ok(None);
     };
@@ -340,7 +400,62 @@ pub(super) async fn prepare_in_transaction(
     r: &ActivityEnterRequest,
     now: i64,
 ) -> Result<std::result::Result<BossAdmissionPlan, ActivityRefusal>> {
-    let Some(definition) = read_definition(tx, &r.activity_key).await? else {
+    let Some(initiator) = r
+        .participants
+        .iter()
+        .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
+    else {
+        return Ok(Err(ActivityRefusal::InvalidInput));
+    };
+    let creature: String = sqlx::query_scalar(
+        "SELECT boss_creature_key FROM game_boss_room_catalogue WHERE boss_key=$1",
+    )
+    .bind(&r.activity_key)
+    .fetch_one(&mut **tx)
+    .await?;
+    let maximum = oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&r.activity_key)
+        .or_else(|| oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&creature));
+    let difficulty = if let Some(maximum) = maximum {
+        let selected: Option<i16> = sqlx::query_scalar("SELECT selected_difficulty FROM game_boss_difficulty_contexts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND connection_generation=$3::text::numeric AND character_lease_generation=$4::text::numeric AND boss_key=$5 AND content_revision=$6 AND start_command_id=$7::text::numeric AND scope_key=$8 AND scope_ownership_generation=$9::text::numeric AND progress_details AND NOT closed FOR UPDATE")
+            .bind(initiator.source.character_id.as_bytes().as_slice()).bind(initiator.source.game_session_id.as_bytes().as_slice())
+            .bind(initiator.source.connection_generation.get().to_string()).bind(initiator.source.character_lease_generation.to_string())
+            .bind(&r.activity_key).bind(&r.content_revision).bind(r.command_id.to_string())
+            .bind(crate::durability::runtime_scope_assignment::assignment_scope_key(initiator.source.runtime_scope).as_slice()).bind(initiator.source.scope_ownership_generation.get().to_string()).fetch_optional(&mut **tx).await?;
+        let Some(selected) = selected else {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        };
+        for participant in &r.participants {
+            let highest: Option<i16> = sqlx::query_scalar("SELECT highest_defeated FROM game_character_boss_difficulty_records WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2")
+                .bind(participant.source.character_id.as_bytes().as_slice()).bind(&r.activity_key).fetch_optional(&mut **tx).await?;
+            if selected < 1
+                || selected
+                    > i16::try_from(maximum).map_err(|_| DurabilityError::InvalidStoredState)?
+                || selected > highest.unwrap_or(0) + 1
+            {
+                return Ok(Err(ActivityRefusal::AuthorityRejected));
+            }
+        }
+        Some(selected)
+    } else {
+        None
+    };
+    // enter_in_transaction already proved every current participant's revision.
+    // These captured map facts are expected physical bindings, not current-session authority.
+    let source = initiator.source_position;
+    let origin_pin = ActivityContentPin {
+        coordinate_frame_digest: source.coordinate_frame_digest,
+        map_revision_digest: source.map_revision_digest,
+        server_artifact_digest: source.server_artifact_digest,
+    };
+    let Some(definition) = read_definition(
+        tx,
+        &r.activity_key,
+        initiator.source.runtime_scope.world_id(),
+        &r.content_revision,
+        Some(origin_pin),
+    )
+    .await?
+    else {
         return Ok(Err(ActivityRefusal::ContentUnavailable));
     };
     if definition.content_revision != r.content_revision
@@ -368,6 +483,18 @@ pub(super) async fn prepare_in_transaction(
         let Some(level) = level else {
             return Ok(Err(ActivityRefusal::AuthorityRejected));
         };
+        if let Some(refusal) = quest_entry::validate(
+            tx,
+            &definition.boss_creature_key,
+            p.source.character_id,
+            level,
+            r.participants.len(),
+            now,
+        )
+        .await?
+        {
+            return Ok(Err(refusal));
+        }
         let cooldown:Option<i64>=sqlx::query_scalar("SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE")
             .bind(p.source.character_id.as_bytes().as_slice()).bind(&r.activity_key).fetch_optional(&mut **tx).await?;
         facts.push(ParticipantFact {
@@ -397,8 +524,12 @@ pub(super) async fn prepare_in_transaction(
             }
         }));
     }
-    let reset:Option<String>=sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR SHARE OF a,e")
-        .bind(r.destination_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let reset: Option<String> = sqlx::query_scalar(
+        "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
+    )
+    .bind(r.destination_scope.world_id().as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
     let Some(reset) = reset else {
         return Ok(Err(ActivityRefusal::AuthorityRejected));
     };
@@ -406,6 +537,7 @@ pub(super) async fn prepare_in_transaction(
         definition,
         now,
         reset_epoch: parse_u64(reset)?,
+        difficulty,
     }))
 }
 
@@ -453,10 +585,14 @@ pub(super) async fn commit_in_transaction(
             i64::try_from(r.time_limit_ms).map_err(|_| DurabilityError::InvalidStoredState)?,
         )
         .ok_or(DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_boss_room_activities(admission,world_id,instance_id,boss_key,content_revision,origin_channel_id,state,opened_at,deadline,boss_generation,after_kill_ms,boss_creature_key) \
-        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,encode($6,'hex')::uuid,1,$7,$8,1,$9,$10)")
+    sqlx::query("INSERT INTO game_boss_room_activities(admission,world_id,instance_id,boss_key,content_revision,origin_channel_id,state,opened_at,deadline,boss_generation,after_kill_ms,boss_creature_key,difficulty) \
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,encode($6,'hex')::uuid,1,$7,$8,1,$9,$10,$11)")
         .bind(r.handoff_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(&r.activity_key).bind(&r.content_revision).bind(channel_id.as_bytes().as_slice())
-        .bind(plan.now).bind(deadline).bind(i64::try_from(plan.definition.after_kill_ms).map_err(|_|DurabilityError::InvalidStoredState)?).bind(&plan.definition.boss_creature_key).execute(&mut **tx).await?;
+        .bind(plan.now).bind(deadline).bind(i64::try_from(plan.definition.after_kill_ms).map_err(|_|DurabilityError::InvalidStoredState)?).bind(&plan.definition.boss_creature_key).bind(plan.difficulty).execute(&mut **tx).await?;
+    if plan.difficulty.is_some() {
+        sqlx::query("UPDATE game_boss_difficulty_contexts SET closed=true WHERE character_id=encode($1,'hex')::uuid AND NOT closed AND start_command_id=$2::text::numeric")
+            .bind(r.initiating_character_id.as_bytes().as_slice()).bind(r.command_id.to_string()).execute(&mut **tx).await?;
+    }
     for p in &r.participants {
         sqlx::query("INSERT INTO game_boss_room_participants(admission,character_id,origin_game_session_id,origin_lease_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric)")
             .bind(r.handoff_id.as_slice()).bind(p.source.character_id.as_bytes().as_slice()).bind(p.source.game_session_id.as_bytes().as_slice()).bind(p.source.character_lease_generation.to_string()).execute(&mut **tx).await?;
@@ -536,7 +672,35 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     };
     sqlx::query("UPDATE game_boss_room_activities SET state=2,terminal_at=$3,exit_deadline=$4,defeat_id=encode($5,'hex')::uuid WHERE world_id=encode($1,'hex')::uuid AND instance_id=encode($2,'hex')::uuid AND state=1")
         .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(minted).bind(exit).bind(death.as_slice()).execute(&mut **tx).await?;
+    // This native death transaction already proved the exact room, generation and deadline.
+    // Credit the admitted roster, including participants whose connection has since ended.
+    sqlx::query("INSERT INTO game_character_boss_difficulty_records(character_id,boss_key,highest_defeated) SELECT p.character_id,a.boss_key,a.difficulty FROM game_boss_room_activities a JOIN game_boss_room_participants p ON p.admission=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND a.difficulty IS NOT NULL ORDER BY p.character_id ON CONFLICT(character_id,boss_key) DO UPDATE SET highest_defeated=greatest(game_character_boss_difficulty_records.highest_defeated,excluded.highest_defeated)")
+        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).execute(&mut **tx).await?;
     Ok(BossRoomDefeatDecision::Recorded)
+}
+
+/// Native Instance progression consumes the exact W02 victory, not merely a
+/// matching creature name. The party-XP caller independently proves its current
+/// scope and Character fences in this transaction. A late death may earn normal
+/// XP, but cannot acquire the timed encounter's Quest/Hazard entitlement.
+pub async fn native_defeat_earned_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    creature: &str,
+    death: [u8; 16],
+) -> Result<bool> {
+    let RuntimeScopeRefV1::Instance {
+        world_id,
+        instance_id,
+    } = scope
+    else {
+        return Ok(true);
+    };
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_activities a JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric AND g.state=2 AND a.boss_creature_key=$4 AND a.defeat_id=encode($5,'hex')::uuid AND a.state IN (2,4))")
+        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+        .bind(generation.get().to_string()).bind(creature).bind(death.as_slice())
+        .fetch_one(&mut **tx).await.map_err(Into::into)
 }
 
 /// Compatibility for the existing nonreward death owner: a deterministic late

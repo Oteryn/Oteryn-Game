@@ -25,13 +25,13 @@ fn npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals(
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "paid travel thread panicked")??;
     Ok(())
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     dependencies: &Dependencies,
     npc: EntityRef,
@@ -75,10 +75,24 @@ fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> Str
         .unwrap_or_default()
 }
 
-fn scenario() -> TestResult {
+pub(super) fn scenario_with_reward_callback() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(reward_fixture: bool) -> TestResult {
     run(async |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "npc_paid_travel", true, false).await?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            if reward_fixture {
+                "engnpc_paid_confirmation"
+            } else {
+                "npc_paid_travel"
+            },
+            true,
+            false,
+        )
+        .await?;
         eprintln!("POSTGRES_STARTED TRAVEL npc_paid_travel");
         prepare_current_session(&h).await?;
         let achievement_key = "oteryn:achievement/ship_s_kobold";
@@ -157,8 +171,57 @@ fn scenario() -> TestResult {
             Some(h.root.clone()),
         );
         let mut owner = dependencies.owner(&h, &authority);
+        if reward_fixture {
+            let source =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            let mut callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+                .map_err(debug)?
+                .into_iter()
+                .find(|c| c.key == "oteryn:quest-reward/knight-sword")
+                .ok_or("registered reward fixture")?;
+            let transition = source
+                .catalogue()
+                .transition(&callback.key)
+                .ok_or("registered reward transition")?
+                .clone();
+            let tracks = transition
+                .effects
+                .iter()
+                .map(|effect| {
+                    source
+                        .catalogue()
+                        .track(&effect.track)
+                        .cloned()
+                        .ok_or("registered reward track")
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            // Bind only this reward; unrelated native NPC programmes keep the
+            // original travel fixture's inactive state throughout the route matrix.
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::QuestStateCatalogue::new(
+                    "content-1",
+                    tracks,
+                    vec![transition],
+                )
+                .map_err(debug)?,
+            ));
+            callback.npc = "oteryn:npc.captain_bluebear".into();
+            callback.topic = 0;
+            callback.next_topic = 0;
+            callback.keywords = vec!["yes".into()];
+            callback.carried_item = None;
+            callback.storage.clear();
+            callback.state_ops.clear();
+            callback.participants.clear();
+            callback.requires.clear();
+            owner
+                .states
+                .npc_conversations
+                .fixture_reward_callbacks(vec![callback])?;
+        }
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.premium_coordinator = Some(&coordinator);
         owner.admit_premium(id(40), dependencies.admitted.game_session_id);
         let catalogue = NpcDataCatalogue::load(
@@ -250,8 +313,15 @@ fn scenario() -> TestResult {
                 generation: placed.generation,
             }
         };
+        if reward_fixture {
+            owner.refresh_quest_session(session, true).await;
+        }
         talk(&owner, &dependencies, npc, 1, "hi").await?;
         assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
+        if reward_fixture {
+            super::engnpc_paid_confirmation::assert_quote_scope(&mut owner, &dependencies, npc)
+                .await?;
+        }
         let refused = talk(&owner, &dependencies, npc, 3, "yes").await?;
         assert!(
             line(&refused).contains("don't have enough money"),
@@ -401,8 +471,13 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(untouched, (0, 0));
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1248, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1248,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         assert_eq!(
             slot.cursor(&h.root, &authority).await.map_err(debug)?.get(),
             current.expected_character_revision.get() + 1,
@@ -428,8 +503,13 @@ fn scenario() -> TestResult {
         assert_eq!(fees(&h).await?, 1);
         // Paid departure alone is not the donor's completed teleport.
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1248, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1248,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         let resumed = owner
             .resume_npc_bank(
                 dependencies.actor,
@@ -461,8 +541,13 @@ fn scenario() -> TestResult {
                 .await?;
         assert_eq!(pending, 0);
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1249, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1249,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         assert_eq!(
             owner
                 .revision_sequencer
@@ -500,8 +585,13 @@ fn scenario() -> TestResult {
         assert_eq!(fees(&h).await?, 1);
         // The same production talk owner serves Premium carpets and their route-specific discount.
         super::achievement_granters::assert_progress(
-            &h, achievement_key, 1249, false, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1249,
+            false,
+            "oteryn:npc-travel",
+        )
+        .await?;
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
         sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
         let pilot = {
@@ -567,11 +657,19 @@ fn scenario() -> TestResult {
             .position();
         assert_eq!((position.x, position.y, position.floor), (33270, 32441, 6));
         let first_achievement = super::achievement_granters::assert_progress(
-            &h, achievement_key, 1250, true, "oteryn:npc-travel",
-        ).await?;
+            &h,
+            achievement_key,
+            1250,
+            true,
+            "oteryn:npc-travel",
+        )
+        .await?;
         let occurrence: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(occurrence_id) FROM game_newhaven_travel_receipts WHERE command_id=16 AND arrived_at IS NOT NULL")
             .fetch_one(&h.pool).await?;
-        assert_eq!(first_achievement.as_ref().map(|fact| fact.1.as_slice()), Some(occurrence.as_slice()));
+        assert_eq!(
+            first_achievement.as_ref().map(|fact| fact.1.as_slice()),
+            Some(occurrence.as_slice())
+        );
         // Arrival consumption releases the travel hold back to the ordinary Movement owner.
         // Exercise that production handoff rather than only inspecting the relocated snapshot.
         tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
@@ -888,10 +986,20 @@ fn scenario() -> TestResult {
                 "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
             );
         }
-        assert_eq!(first_achievement, super::achievement_granters::assert_progress(
-            &h, achievement_key, 1250, true, "oteryn:npc-travel",
-        ).await?);
-        eprintln!("POSTGRES_CASE_COMPLETED P11 travel counts actual arrivals, fences and saturates");
+        assert_eq!(
+            first_achievement,
+            super::achievement_granters::assert_progress(
+                &h,
+                achievement_key,
+                1250,
+                true,
+                "oteryn:npc-travel",
+            )
+            .await?
+        );
+        eprintln!(
+            "POSTGRES_CASE_COMPLETED P11 travel counts actual arrivals, fences and saturates"
+        );
         drop(owner);
         drop(authority);
         drop(seal);
@@ -1001,6 +1109,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],

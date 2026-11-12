@@ -1,0 +1,14 @@
+{
+  "vectors": [
+    {
+      "name": "lifecycle_request",
+      "wire": "{\"contract_version\":2,\"operation\":\"ReadAccountClosureLifecycleV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"account_id\":\"0192a000-0000-7000-8000-000000000011\",\"termination_id\":\"0192a000-0000-7000-8000-000000000031\",\"recovery_generation\":\"3\",\"audience\":\"OTERYN_PLATFORM_CHARACTER_AUTHORITY\"}",
+      "sha256": "69ce22b29484797c25f6749fd5e95a6a1c2db855960417a398f3ef823b88f0ea"
+    },
+    {
+      "name": "lifecycle_response",
+      "wire": "{\"contract_version\":2,\"operation\":\"ReadAccountClosureLifecycleV1\",\"source_authority\":\"OTERYN_PLATFORM_CHARACTER_AUTHORITY\",\"account_id\":\"0192a000-0000-7000-8000-000000000011\",\"termination_id\":\"0192a000-0000-7000-8000-000000000031\",\"lifecycle_generation\":\"8\",\"source_revision\":\"30\",\"phase\":\"CLOSE\",\"financial_obligations_clear\":true,\"recovery_generation\":\"3\",\"observed_at\":\"1790000002\",\"valid_until\":\"1790000007\"}",
+      "sha256": "b25d885602eeae800d6f80b88f3eee27c2cf559c806868028a9ed96ab537737c"
+    }
+  ]
+}

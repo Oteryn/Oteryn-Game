@@ -47,7 +47,7 @@ Run the checks selected by changed paths and preserve `game-gate` and repository
 
 - **Defect finding and audits:** one sweep per lane or module produces one findings list (one Issue or one comment), not an Issue or PR per finding.
 - **Fixes:** group the findings of one module into one fix PR, within one lane's owned paths and one writer. A batch is one coherent, reviewable unit (one owner and its consumer, a contract and its store, and so on); about 500 hand-written changed lines (generated data excluded) or five findings is only a warning signal. Split only if the parts are independently reviewable and mergeable. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
-- **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
+- **Review:** a Codex review of every Game PR follows `docs/agents/OWNER_FUNDED_AI_POLICY.md`, *Owner review rule for every PR*: once after the first push, over the whole diff, at most two per PR. Other reviews are requested on the final head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
 - **CI:** run the local checks for every changed path before pushing and fix all failures of a run in one push. Push and CI economy: `docs/agents/CONTEXT_ROUTING.md`, *Push and CI economy*.
 - **Task records:** archive the task record in the final authoring commit of the PR that completes the task (`docs/agents/tasks/archive/README.md`). An archive-only PR is opened only under that README's exception, for records that could not close in their own PR.
 
@@ -70,13 +70,13 @@ These rules bind automated pull-request reviewers (Codex, Claude review) and the
 - **One complete pass.** Report every finding on the reviewed head in one review. Do not hold findings back for a later round.
 - **Re-review covers the delta.** A review of a head that only answers earlier findings reviews the commits since the last reviewed head. It raises no new finding on unchanged code unless it is a P0.
 - **P0 and P1 need a concrete path.** Name the input or state, the caller that reaches it and the wrong result. A hypothetical without a reachable caller is at most P2. P0: security, data loss, broken `main`. P1: wrong behaviour that a real caller reaches.
-- **P2 and lower never block.** Style, naming, refactor suggestions, missing optional tests and speculative hardening are P2 or lower. The author may fix them in the same push if it is cheap; otherwise they go to the next batch of that module. A P2 never starts a new push or review round on its own.
+- **P2 and lower never block.** Style, naming, refactor suggestions, missing optional tests and speculative hardening are P2 or lower. They go to the P2/P3 backlog and are fixed together in one grouped PR after the work that found them has merged (owner 2026-11-09); P0 and P1 are fixed at once. A P2 never starts a new push or review round on its own.
 - **No repeat findings.** A finding the author answered on its thread (fixed, or declined with the traced reason) is not raised again unless the code it names changed.
 - **Whole class in round one.** A finding names its defect class and lists every instance of it in the diff. A later round does not report a sibling instance that the first round could have seen.
 - **A clean review is a clean review.** A thumbs-up reaction or "Didn't find any major issues" on the reviewed head counts as a clean review. Nobody re-triggers a review on an unchanged head.
-- **Request review once per frozen head.** Keep the PR in draft until the head is frozen. Only the coordinator (or the standalone task owner) posts `@codex review`: once per head, and only when the head changes non-evidence code since the last reviewed head.
+- **Request review once per head.** Only the coordinator (or the standalone task owner) starts a Codex review, with `codex exec` (read-only) under `docs/agents/OWNER_FUNDED_AI_POLICY.md`; `@codex review` comments are not used. At most two Codex reviews per PR; a material change after the second one blocks the merge and goes to the owner.
 - **Narrow repair pushes.** A push that answers findings changes only what those findings need. It adds no new feature or refactor that would open a new review surface.
-- **Converge.** After two review rounds with findings, a further round is requested only for a P0 or P1 fixed in the last push. P2 threads may be resolved with `deferred: #<issue>`.
+- **Converge.** A PR gets at most two Codex reviews (rule above); never a third. For other reviewers, after two review rounds with findings a further round is requested only for a P0 or P1 fixed in the last push. P2 threads may be resolved with `deferred: #<issue>`.
 
 ## Silent operation
 

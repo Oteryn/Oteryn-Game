@@ -1,7 +1,82 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+#[path = "features/0288-ambient-sound/protocol.rs"]
+pub mod ambient_sound;
+#[path = "features/0350-item-effects/protocol.rs"]
+pub mod item_effects;
+
+/// Account achievement pages from core command 10.
+#[path = "features/local-account-achievements/mod.rs"]
+pub mod account_achievements;
+#[path = "features/0008-achievement-notices/protocol.rs"]
+pub mod achievement_notices;
+
+#[path = "features/0014-container-tree/protocol.rs"]
+pub mod container_tree;
+#[path = "features/0012-item-equip-drop/protocol.rs"]
+pub mod equipment;
+#[path = "features/0004-item-view-move/protocol.rs"]
+pub mod inventory;
+
+#[path = "features/0011-world-interaction/protocol.rs"]
+pub mod world_interaction;
+
+#[path = "features/0015-item-use/protocol.rs"]
+pub mod item_use;
+
+#[path = "features/0083-channel-list/protocol.rs"]
+pub mod channel_list;
+#[path = "features/0097-character-info/protocol.rs"]
+pub mod character_info_panel;
+#[path = "features/0146-container-sort/protocol.rs"]
+pub mod container_sort;
+#[path = "features/0057-cyclopedia-map/protocol.rs"]
+pub mod cyclopedia_map;
+#[path = "features/0103-guild-war/protocol.rs"]
+pub mod guild_war;
+#[path = "features/0099-guildhall/protocol.rs"]
+pub mod guildhall;
+#[path = "features/0049-house/protocol.rs"]
+pub mod house;
+#[path = "features/0059-house-move-out/protocol.rs"]
+pub mod house_move_out;
+#[path = "features/0086-house-transfer/protocol.rs"]
+pub mod house_transfer;
+#[path = "features/0134-party-skull/protocol.rs"]
+pub mod party_skull;
+#[path = "features/0076-player-report/protocol.rs"]
+pub mod player_report;
+#[path = "features/0039-timed-item/protocol.rs"]
+pub mod timed_item;
+
+pub use oteryn_session::property_services::support_intake;
+
+/// Cast wire values pass through the session boundary.
+pub use oteryn_session::cast;
+pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
+pub use oteryn_session::cast_chat::{CasterLine as CastCasterLine, Roster as CastRoster};
+pub use oteryn_session::cast_viewer::CastViewerSession;
+
+#[path = "features/0289-cast-view/protocol.rs"]
+pub mod cast_view;
+
 pub mod connection;
+mod cursor_spell;
+#[path = "features/0037-depot/protocol.rs"]
+pub mod depot;
+#[path = "features/0098-quick-loot/protocol.rs"]
+pub mod discovery;
 pub mod hotkey_equip;
+#[path = "features/0003-npc-service/protocol.rs"]
+pub mod npc_dialogue;
+#[path = "features/0149-raid-schedule/protocol.rs"]
+pub mod raid_schedule;
+#[path = "features/0053-world-event/protocol.rs"]
+pub mod world_event;
+#[path = "features/0019-world-light/protocol.rs"]
+pub mod world_light;
+#[path = "features/0026-world-weather/protocol.rs"]
+pub mod world_weather;
 
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};
@@ -109,6 +184,8 @@ pub mod cyclopedia_protocol {
     };
 }
 
+#[path = "features/0010-analyser/protocol.rs"]
+pub mod analyser;
 /// Attack command execution and disposition mapping.
 #[path = "features/0017-attack/protocol.rs"]
 pub mod attack;
@@ -120,6 +197,8 @@ pub mod quest_log;
 /// Spell command execution and feedback.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
+#[path = "features/0287-actor-spell-catalog/protocol.rs"]
+pub mod spell_catalog;
 
 /// Server-owned Animus mastery wire values.
 pub use oteryn_session::animus_mastery;
@@ -127,8 +206,23 @@ pub use oteryn_session::animus_mastery;
 /// Server-owned Exiva settings wire types.
 pub use oteryn_session::exiva;
 
+pub use oteryn_session::action_bar_cooldowns;
+pub use oteryn_session::battle_instinct_status;
+pub use oteryn_session::condition_status;
+pub use oteryn_session::death_protection;
 /// Loyalty skills wire values owned by the admitted session.
 pub use oteryn_session::loyalty_skills;
+pub use oteryn_session::mechanics_status;
+pub use oteryn_session::party_effects;
+pub use oteryn_session::potion_durations;
+pub use oteryn_session::premium_overview;
+pub use oteryn_session::rest_status;
+pub use oteryn_session::skill_display;
+pub use oteryn_session::skill_progress;
+pub use oteryn_session::weapon_proficiency_state;
+
+#[path = "features/0117-boss-encounter/protocol.rs"]
+pub mod boss_encounter;
 
 /// Personal boss reward commands through the admitted session.
 #[path = "features/0224-boss-rewards/protocol.rs"]
@@ -150,7 +244,8 @@ pub mod player_trade;
 pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
-    boss_difficulty, character_info, cyclopedia_character, cyclopedia_tracker, weapon_proficiency,
+    arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
+    cyclopedia_tracker, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]
@@ -158,6 +253,10 @@ pub mod prey;
 /// Wheel and Atelier command execution through the admitted session.
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
+
+/// Server target-cell walking through the admitted session.
+#[path = "features/0064-target-move/protocol.rs"]
+pub mod target_move;
 
 /// Task Board command execution through the admitted session.
 #[path = "features/0072-task-board/protocol.rs"]
@@ -171,10 +270,23 @@ pub mod cl25a_protocol {
     };
 }
 
+#[path = "features/0025-appearance/protocol.rs"]
+pub mod appearance;
+#[path = "features/0067-bestiary-charm-progression/protocol.rs"]
+pub mod charm_progression;
+/// Highscores through the admitted session command adapter.
+#[path = "features/0009-highscores/protocol.rs"]
+pub mod highscores;
+#[path = "features/0087-pvp-expert/protocol.rs"]
+pub mod pvp_expert;
+
 /// Admitted command transport for feature-local protocol adapters.
 pub mod raw_feature;
 /// Command and result vocabulary for server-owned mechanic panels.
 pub mod server_mechanic;
+
+#[path = "features/0031-tutorial-notices/protocol.rs"]
+pub mod tutorial_notices;
 
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
@@ -184,9 +296,16 @@ pub mod stash;
 #[path = "features/0081-npc-shop/protocol.rs"]
 pub mod npc_shop;
 
+/// Optional current Forge candidates and advisory pair quotes.
+#[path = "features/0152-item-forge/protocol.rs"]
+pub mod forge_preview;
+
 /// Imbuement commands executed through the admitted session.
 #[path = "features/0068-imbue/protocol.rs"]
 pub mod imbue;
+/// Optional material quotes for the existing shrine panel.
+#[path = "features/0447-imbuement-details/protocol.rs"]
+pub mod imbuement_details;
 
 /// VIP list, groups and consent commands.
 #[path = "features/0043-vip/protocol.rs"]
@@ -200,12 +319,33 @@ pub mod hireling;
 #[path = "features/0063-market/protocol.rs"]
 pub mod market;
 
+/// Local speech and named private messages.
+#[path = "features/0007-chat/protocol.rs"]
+pub mod chat;
+#[path = "features/0036-chat-guild-room/protocol.rs"]
+pub mod chat_guild_room;
+/// Private-channel membership controls and live transcript.
+#[path = "features/0080-chat-private-channel/protocol.rs"]
+pub mod chat_private_channel;
 /// Existing chat command and state types extended by capability 259.
 #[path = "features/0259-chat-public-channels/protocol.rs"]
 pub mod chat_public_channels;
 /// Protocol codecs consumed by the native controls for the CUI-3 feature set.
 pub mod cui3 {
+    pub use oteryn_session::property_services::house_podium;
     pub use oteryn_session::{
-        browse_field, daily_boost, depot_search, hotkey_equip, item_forge, item_view, store,
+        battle_metadata, browse_field, container_tree, daily_boost, depot_search, hotkey_equip,
+        item_forge, item_view, store,
     };
 }
+
+/// Optional server-executed Gem modifier presentation.
+pub use oteryn_session::gem_presentation;
+
+/// Optional authoritative Wheel graph and advisory draft preview.
+pub use oteryn_session::wheel_presentation;
+#[path = "features/0450-server-modal/protocol.rs"]
+pub mod server_modal;
+
+pub use oteryn_session::coin_market;
+pub use oteryn_session::coin_transfer;

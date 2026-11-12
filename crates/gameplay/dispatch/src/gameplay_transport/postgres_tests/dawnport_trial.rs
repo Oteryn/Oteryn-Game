@@ -66,6 +66,7 @@ fn trial_row() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],
@@ -221,7 +222,7 @@ fn scenario() -> TestResult {
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let mut admitted = deps.admitted;
         Box::pin(owner.admit_progression_session(&mut admitted)).await;
         let progression = owner

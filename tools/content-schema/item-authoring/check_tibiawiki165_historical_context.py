@@ -79,10 +79,10 @@ def hardlink_tree(source, target, excluded, detached=()):
 
 @contextmanager
 def historical_context(root=ROOT, native=False, weapon=False):
+    import historical_world_owner_context as world_context
+
     c = read_context(root)
-    with tempfile.TemporaryDirectory(
-        prefix="oteryn-explicit-old165-", dir=root.parent
-    ) as directory:
+    with tempfile.TemporaryDirectory(prefix="oteryn-explicit-old165-") as directory:
         path = Path(directory)
         # Writable Item-authoring outputs and their byte-identical decoders are
         # detached copies: formal verification rebuilds schemas/catalogs/templates.
@@ -95,16 +95,29 @@ def historical_context(root=ROOT, native=False, weapon=False):
                 detached=("content-schema/item-authoring",) if name == "tools" else (),
             )
         (path / BINDINGS).write_bytes(c["old165_bindings"]["raw_utf8"].encode())
-        (path / "docs").symlink_to(root / "docs", target_is_directory=True)
+        if weapon:
+            world_context.link_weapon_evidence(root, path / "docs")
+        else:
+            (path / "docs").symlink_to(root / "docs", target_is_directory=True)
         if not native and not weapon:
             (path / "content").symlink_to(root / "content", target_is_directory=True)
         else:
             (path / "content").mkdir()
             for p in (root / "content").iterdir():
-                if not (native and p.name == "items" or weapon and p.name == "world"):
+                if not (
+                    native
+                    and p.name == "items"
+                    or (native or weapon)
+                    and p.name == "world"
+                ):
                     (path / "content" / p.name).symlink_to(
                         p, target_is_directory=p.is_dir()
                     )
+            world_context.link_world(
+                root,
+                path / "content/world",
+                detached=("definitions",) if weapon else (),
+            )
         if native:
             (path / "content/items").mkdir()
             (path / "content/items/aliases.json").symlink_to(
@@ -123,11 +136,6 @@ def historical_context(root=ROOT, native=False, weapon=False):
             # Historical declarations are an explicit input view, never written
             # through the live World tree. All other current definitions remain.
             (path / "content/world/definitions").mkdir(parents=True)
-            for p in (root / "content/world").iterdir():
-                if p.name != "definitions":
-                    (path / "content/world" / p.name).symlink_to(
-                        p, target_is_directory=p.is_dir()
-                    )
             for p in (root / "content/world/definitions").iterdir():
                 if p.name != "declarations.json":
                     (path / "content/world/definitions" / p.name).symlink_to(
@@ -185,17 +193,24 @@ def current_weapon103(root=ROOT):
     import lower_item_weapon_metadata_packet as weapon
 
     _, owner_count = weapon_owner_scope(root)
-    # The unchanged compiler runs all103 raw/source/binding and scoped current
-    # Native name/type/weapon checks; ONLY declarations411 are historical input.
+    # The compiler runs all103 raw/source/binding and scoped current
+    # Native name/type/weapon checks; declarations411 and hash-exact owner receipts
+    # are historical inputs.
     # This does not admit any unsealed future source-owner batch.
     with historical_context(root, weapon=True) as path:
         actual = canonical(weapon.build(path))
-    expected = forge.checked(
-        root,
-        "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
-        "bc6da1ad6ff1c321ddcbd35887bed5c65eceb9fe769b71e2a077c39f85e75d97",
+    expected = json.loads(
+        forge.checked(
+            root,
+            "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
+            "bc6da1ad6ff1c321ddcbd35887bed5c65eceb9fe769b71e2a077c39f85e75d97",
+        )
     )
-    if actual != expected:
+    # The receipt stays frozen; replay reports the current compiler's digest.
+    expected["compiler"]["sha256"] = weapon.base.sha(
+        (root / weapon.COMPILER).read_bytes()
+    )
+    if actual != canonical(expected):
         raise ValueError("historical411/current103 packet reproduction drift")
     return {
         "current_owner_count": owner_count,

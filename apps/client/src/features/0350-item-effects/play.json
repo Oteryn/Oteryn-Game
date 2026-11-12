@@ -1,0 +1,8 @@
+{
+  "concerns": [
+    "protocol"
+  ],
+  "events": {
+    "ItemEffects": "item_effects"
+  }
+}

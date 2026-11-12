@@ -1,0 +1,10 @@
+{
+  "id": 6128,
+  "name": "COIN_MARKET_V1",
+  "owner_decision": "T125 owner decision B 2026-11-09",
+  "capability": 63,
+  "payload_schema": "docs/contracts/COIN_MARKET_GAME_V1.md#wire",
+  "result_schema": "docs/contracts/COIN_MARKET_GAME_V1.md#wire",
+  "max_payload_bytes": 256,
+  "max_result_payload_bytes": 65536
+}

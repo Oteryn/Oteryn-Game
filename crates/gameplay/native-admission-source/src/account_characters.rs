@@ -472,7 +472,7 @@ impl From<FenceUnusable> for FenceWrite {
 
 /// The fence directory, opened one component at a time without following a
 /// symbolic link anywhere in its path; every fence access is relative to it.
-fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
+pub(crate) fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
     let flags = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
     let start = if parent.is_absolute() { "/" } else { "." };
     let mut current = rustix::fs::openat(rustix::fs::CWD, start, flags, Mode::empty())
@@ -558,9 +558,24 @@ pub struct Publisher<C, S, K, F> {
 
 fn log(operation: &str, class: &str, elapsed: Duration) {
     // §7: operation, result class and timing only; never an AccountId or name.
-    eprintln!(
-        "oteryn-game-server event=account_characters_projection operation={operation} result={class} elapsed_ms={}",
-        elapsed.as_millis()
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "admission",
+            "account_characters_projection",
+        )
+        .field(
+            "operation",
+            oteryn_error_codes::FieldValue::Token(operation),
+        )
+        .field("result", oteryn_error_codes::FieldValue::Token(class))
+        .field(
+            "ms",
+            oteryn_error_codes::FieldValue::U64(
+                u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX),
+            ),
+        ),
     );
 }
 

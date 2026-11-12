@@ -1,0 +1,1864 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_north_mine",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/default_start",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_south_mine",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_west_mine",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/way_to_beregar",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_the_rotten",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1289"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/nokmir/mission-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.nokmir",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I don't see how you could help me. I'm in deep, deep trouble. I'm accused of having stolen a {ring} from Rerun, but I haven't."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/nokmir/mission-cleared",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.nokmir",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "WHAT?! I can't believe it. You saved my life... well, at least one week of it 'cause that would have been the time I had to spend in jail. If you want to, you can pass the door now and take a look at the northern mines. Have fun!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "value": 6
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_north_mine",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/nokmir/ring",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.nokmir",
+      "trigger": "say",
+      "keywords": [
+        "ring"
+      ],
+      "guards": [],
+      "reply": [
+        "He said he still had it after work. On that evening, {Grombur}, {Rerun} and me opened a cask of beer in one of the mine tunnels. We had a fun evening there. ...",
+        "On the next day, the guards brought me to emperor {Rehal}, and Rerun was there, too. He said I had stolen his ring. I'd never steal, you have to believe me."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:69"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/nokmir/grombur",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.nokmir",
+      "trigger": "say",
+      "keywords": [
+        "grombur"
+      ],
+      "guards": [],
+      "reply": [
+        "Maybe Grombur knows more than me. The thing is he won't talk to me, and he will surely not accuse his best friend as a liar. What a dilemma!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:77"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "mission",
+        "ring"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/nokmir/rerun",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.nokmir",
+      "trigger": "say",
+      "keywords": [
+        "rerun"
+      ],
+      "guards": [],
+      "reply": [
+        "He's a miner in the southern wing. Maybe he has lost the ring there... but even if I find the ring, no one will believe me. Someone should talk to Grombur. He's Rerun's best friend."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:82"
+      ],
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "mission",
+        "ring",
+        "grombur"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/nokmir/rehal",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.nokmir",
+      "trigger": "say",
+      "keywords": [
+        "rehal"
+      ],
+      "guards": [],
+      "reply": [
+        "He's a good emperor but I doubt he is wise enough to see the truth behind that false accusation against me. If just someone would find out the truth about that whole mess."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nokmir.lua:87"
+      ],
+      "topics": [
+        4
+      ],
+      "exclude_keywords": [
+        "mission",
+        "ring",
+        "grombur",
+        "rerun"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/hail-emperor",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "greet",
+      "keywords": [
+        "hail emperor"
+      ],
+      "guards": [],
+      "reply": [
+        "May Fire and Earth bless you, stranger. What leads you to Beregar, the dwarven city?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:63"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/reject-other-greeting",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 1000
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:63"
+      ],
+      "exclude_keywords": [
+        "hail emperor"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/nokmir",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "nokmir"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I always liked him and I still can't believe that he really stole that ring."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/ring-evidence",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "nokmir"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i8777",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Interesting. The fact that you have the ring means that Nokmir can't have stolen it. Combined with the information Grombur gave you, the case appears in a completely different light. ...",
+        "Let there be justice for all. Nokmir is innocent and acquitted from all charges! And Rerun... I want him in prison for this malicious act!"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i8777",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:82"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/grombur",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "grombur"
+      ],
+      "guards": [],
+      "reply": [
+        "He's very ambitious and always volunteers for the long shifts."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:87"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "nokmir"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/royal-rescue-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "op": "gt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "As you have proven yourself trustworthy I'm going to assign you a special mission. Are you interested?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:93"
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "grombur"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/royal-rescue-reward-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "My son was captured by trolls? Doesn't sound like him, but if you say so. Now you want a reward, huh? ..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:97"
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "grombur"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/royal-rescue-accept",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Splendid! My son Rehon set off on an expedition to the deeper mines. He and a group of dwarfs were to search for new veins of crystal. Unfortunately they have been missing for 2 weeks now. ...",
+        "Find my son and if he's alive bring him back. You will find a reactivated ore wagon tunnel at the entrance of the great citadel which leades to the deeper mines. If you encounter problems within the tunnel go ask Xorlosh, he can help you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:101"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "grombur",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/royal-rescue-reward",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Look at these dwarven legs. They were forged years ago by a dwarf who was rather tall for our kind. I want you to have them. Thank you for rescuing my son |PLAYERNAME|."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3398",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:109"
+      ],
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "grombur",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/emperor_rehal/decline",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.emperor_rehal",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Alright then, come back when you are ready."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/emperor_rehal.lua:115"
+      ],
+      "topics": [
+        1,
+        2
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "grombur",
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/grombur/nokmir",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.grombur",
+      "trigger": "say",
+      "keywords": [
+        "nokmir"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Oh well, I liked Nokmir. He used to be a good dwarf until that day on which he stole the ring from {Rerun}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grombur.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/grombur/rerun",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.grombur",
+      "trigger": "say",
+      "keywords": [
+        "rerun"
+      ],
+      "guards": [],
+      "reply": [
+        "Yeah, he's the lucky guy in this whole story. I heard rumours that emperor Rehal had plans to promote Nokmir, but after this whole thievery story, he might pick Rerun instead."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grombur.lua:65"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "nokmir"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/grombur/ale-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.grombur",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Got any dwarven brown ale?? I DON'T THINK SO....and Bolfana, the tavern keeper, won't sell you anything. I'm sure about that...she doesn't like humans... I tell you what, if you get me a cask of dwarven brown ale, I allow you to enter the mine. Alright?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grombur.lua:71"
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "rerun"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/grombur/ale-deliver",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.grombur",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i8774",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "HOW?....WHERE?....AHHHH, I don't mind....SLUUUUUURP....tastes a little flat but I had worse. Thank you. Just don't tell anyone that I let you in."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i8774",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_south_mine",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grombur.lua:75"
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "rerun"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/grombur/ale-accept",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.grombur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Haha, fine! Don't waste time and get me the ale. See you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/grombur.lua:80"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "nokmir",
+        "rerun",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/frafnar/cake-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.frafnar",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "There is indeed something you could do for me. You must know, I'm in love with Bolfona. I'm sure she'd have a beer with me if I got her a chocolate cake. Problem is that I can't leave this door as I'm on duty. Would you be so kind and help me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/frafnar.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/frafnar/cake-delivered",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.frafnar",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "So did you tell her that the cake came from me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/frafnar.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/frafnar/cake-accept",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.frafnar",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Great! She works in the tavern of Beregar. It's situated in the western part of the city. Bring her a chocolate cake and tell her that it was me who sent it."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/frafnar.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/frafnar/cake-report",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.frafnar",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Great! That's my breakthrough. Now she can't refuse to go out with me. I grant you access to the western part of the mine.",
+        "So did you tell her that the cake came from me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/door_west_mine",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/frafnar.lua:74"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/frafnar/cake-sent-no",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.frafnar",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "I hope your kidding 'cause I'll find out WHAT you've told her and I can get reeeeaaaalllly angry. I grant you access to the western part of the mine.....for NOW."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/frafnar.lua:83"
+      ],
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/bolfona/cake-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.bolfona",
+      "trigger": "say",
+      "keywords": [
+        "chocolate cake"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i8019",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Is that for me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/bolfona/cake-already-delivered",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.bolfona",
+      "trigger": "say",
+      "keywords": [
+        "chocolate cake"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "So did you tell her that the cake came from me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/bolfona/cake-delivery",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.bolfona",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i8019",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Err, thanks. I doubt it's from you. Who sent it?"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i8019",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:70"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "chocolate cake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/bolfona/cake-missing",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.bolfona",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Oh, I thought you have one."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:74"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "chocolate cake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/bolfona/sender-frafnar",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.bolfona",
+      "trigger": "say",
+      "keywords": [
+        "Frafnar"
+      ],
+      "guards": [],
+      "reply": [
+        "Oh, Frafnar. That's so nice of him. I gotta invite him for a beer."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:80"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "chocolate cake",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/bolfona/sender-other",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.bolfona",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Never heard that name. Well, I don't mind, thanks for the cake."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bolfona.lua:83"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "chocolate cake",
+        "yes",
+        "Frafnar"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/xorlosh/elevator-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.xorlosh",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Hmmmm, you could indeed help me. See this mechanism? Some son of a rotworm put WAY too much stuff on this elevator and now it's broken. I need 3 gear wheels to fix it. You think you could get them for me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/xorlosh.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/xorlosh/elevator-deliver",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.xorlosh",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i8775",
+          "count": 3
+        }
+      ],
+      "reply": [
+        "HOLY MOTHER OF ALL ROTWORMS! You did it and they are of even better quality than the old ones. You should be the first one to try the elevator, just jump on it. See you my friend."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i8775",
+          "count": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/xorlosh.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/xorlosh/elevator-accept",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.xorlosh",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "That would be great! Maybe a blacksmith can forge you some. Come back when you got them and ask me about your mission."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/xorlosh.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/xorlosh/tunnel",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.xorlosh",
+      "trigger": "say",
+      "keywords": [
+        "tunnel"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "There should be a book in our library about tunnelling. I don't have that much time to talk to you about that. ...",
+        "If you want to have some information, you'll just have to find that book. If you need some equipment, go ask Harog. You'll find the library in the north eastern wing of Beregar city."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/xorlosh.lua:75"
+      ],
+      "exclude_keywords": [
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/xorlosh/book",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.xorlosh",
+      "trigger": "say",
+      "keywords": [
+        "book"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The book about tunnelling is in the library which is located in the north eastern wing of Beregar city."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/xorlosh.lua:82"
+      ],
+      "exclude_keywords": [
+        "mission",
+        "yes",
+        "tunnel"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/tehlim/rescue-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.tehlim",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "I warn you, those trolls are WAY more dangerous than the usual kind. Alone, I can't do anything for my brothers. Find a way to the trolls' hideout and rescue my brothers. Are you willing to help me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tehlim.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/tehlim/rescue-accept",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.tehlim",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        " Great! I hope you find my brothers. Good luck!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tehlim.lua:66"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/rehon/cell-key",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.rehon",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i9172",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "By the Gods! You have the key to the cell! Thank you sooo much, mate. And now leave. I'll wait here until the air is clean and then I'm out of here."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i9172",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rehon.lua:56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/maris_mistrock/hidden-path",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.maris_mistrock",
+      "trigger": "say",
+      "keywords": [
+        "mistrock"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/way_to_beregar",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Do you smell this? It's the smell of fire... the fire of a forge. Many people searched this rock here for a hidden path, but they haven't found anything. ...",
+        "I'd search on Fenrock if I were you. Even though there's snow on the surface, it's still warm underground. There are often caves under fresh lava streams."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/way_to_beregar",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maris_mistrock.lua:67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/maris_mistrock/hidden-path-repeat",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.maris_mistrock",
+      "trigger": "say",
+      "keywords": [
+        "mistrock"
+      ],
+      "guards": [],
+      "reply": [
+        "Do you smell this? It's the smell of fire... the fire of a forge. Many people searched this rock here for a hidden path, but they haven't found anything. ...",
+        "I'd search on Fenrock if I were you. Even though there's snow on the surface, it's still warm underground. There are often caves under fresh lava streams."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maris_mistrock.lua:67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/treasure",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "treasure"
+      ],
+      "guards": [],
+      "reply": [
+        "LIKE MY TREASURE? WANNA PICK SOMETHING OUT OF IT?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7101
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:48"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/treasure-yes",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "ALRIGHT. BUT FIRST OF ALL I WANT YOU TO BRING ME SOMETHING IN EXCHANGE. SURPRISE ME....AND IF I LIKE IT, YOU MAY GET WHAT YOU DESERVE."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:49"
+      ],
+      "topics": [
+        7101
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/treasure-no",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "HAVE YOU SEEN THESE LEGENDARY ITEMS BACK THERE? WHO COULD REFUSE THE CHANCE OF OBTAINING ONE?!? SO WHAT IS YOUR ANSWER?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:50"
+      ],
+      "topics": [
+        7101
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/dungeon-offer",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "offer"
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "gt",
+          "value": 99
+        }
+      ],
+      "reply": [
+        "I GRANT YOU ACCESS TO THE DUNGEON IN THE NORTH. YOU'LL FIND SOME OF MY LIVING BROTHERS THERE....BUT.....EVERY TIME YOU WANT TO ENTER YOU HAVE TO GIVE ME SOMETHING PRECIOUS. ALRIGHT?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7102
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:52"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/dungeon-underlevel",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "offer"
+      ],
+      "guards": [],
+      "reply": [
+        "YOU LITTLE MAGGOT. COME BACK TO ME WHEN YOU CAN HANDLE A FIGHT AGAINST MY KIND."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/dungeon-yes",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "AS YOU WISH. WHAT DO YOU HAVE TO OFFER?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7103
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:55"
+      ],
+      "topics": [
+        7102
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/golden-mug",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "golden mug"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i2903",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "I LIKE THAT AND GRANT YOU ACCESS TO THE DUNGEON IN THE NORTH FOR THE NEXT FEW MINUTES. COME BACK ANYTIME AND BRING ME MORE TREASURES."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i2903",
+          "count": 1
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/pythius_the_rotten",
+          "value": 180
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:56"
+      ],
+      "topics": [
+        7103
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/golden-mug-missing",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "golden mug"
+      ],
+      "guards": [],
+      "reply": [
+        "THIS IS NOT WORTH BEING PART OF MY TREASURE! BRING ME SOMETHING ELSE."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:62"
+      ],
+      "topics": [
+        7103
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/unwanted-treasure",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "THIS IS NOT WORTH BEING PART OF MY TREASURE! BRING ME SOMETHING ELSE"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:63"
+      ],
+      "topics": [
+        7103
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/offer-declined",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "TELL ME IF YOU CHANGE YOUR MIND. MY TREASURE THIRSTS FOR GOLD."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:64"
+      ],
+      "topics": [
+        7102
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/lore-awaited",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "awaited"
+      ],
+      "guards": [],
+      "reply": [
+        "I HAVE A MISSION FOR YOU BUT YOU NEED TO DIE FIRST AND RETURN AS AN {UNDEAD} CREATURE. COME BACK TO ME WHEN YOU ACHIEVED THIS GOAL."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/lore-exchange",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "exchange"
+      ],
+      "guards": [],
+      "reply": [
+        "EVERYTHING YOU CARRY WITH YOU CAN ALSO BE FOUND IN MY {TREASURE}. BRING ME SOMETHING I DON'T OWN!!!"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:69"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/lore-mission",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [],
+      "reply": [
+        "I HAVE A MISSION FOR YOU BUT YOU NEED TO DIE FIRST AND RETURN AS AN {UNDEAD} CREATURE. COME BACK TO ME WHEN YOU ACHIEVED THIS GOAL."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_hidden_city_of_beregar_quest/pythius_the_rotten/lore-undead",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "npc": "oteryn:npc.pythius_the_rotten",
+      "trigger": "say",
+      "keywords": [
+        "undead"
+      ],
+      "guards": [],
+      "reply": [
+        "BOON AND BANE. I HAVE CHOSEN THIS LIFE VOLUNTARILLY AND I NEVER REGRET IT. MY {TREASURE} IS GROWING BIGGER EACH DAY."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/pythius_the_rotten.lua:71"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/bolfona.lua",
+      "sha256": "23b295ff5f0288dd7fe8bf41c8888cf34ab8be8b61dc12f29d748f72961f0218",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/emperor_rehal.lua",
+      "sha256": "d999eab852176c507b2c1d1eb0a9d95b4228270a153575f615f2ebed5ae2eb00",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/frafnar.lua",
+      "sha256": "2180e831ec6828243b2224a46bd6e2539bff26b9f5aa280efc451bf27005650b",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/grombur.lua",
+      "sha256": "7ac5c9ee3ed058cb0b7a75bbaccbbb155e9584e002859be30498c0ac50a41a5e",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/maris_mistrock.lua",
+      "sha256": "4bcd7342494cb23d49db54e1dfd0026034a8df39e445aefb16f3a185d91d97b1",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/nokmir.lua",
+      "sha256": "8af12241c65c567d210e398988b05baee32e7b89c5b7e44a1cbdbfae1da8f65b",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/pythius_the_rotten.lua",
+      "sha256": "edfda6ddc9704da9221d300d5858bfc7341efd4bc617bf7ff00369123b68bace",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/rehon.lua",
+      "sha256": "bf4c580b282fd6c494436383fed7de1b684e752159562070aee7d8aa682b2a93",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/tehlim.lua",
+      "sha256": "38bdab505f9c85e6121b5aa592dda71e69a23542d31e1a828c361df6ba44ca8b",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/xorlosh.lua",
+      "sha256": "308d8886bc6ccae21bd75f4c739e23a2d2c8c7fd9a021560273ca4aa65bbce9b",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

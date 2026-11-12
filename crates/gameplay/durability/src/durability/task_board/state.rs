@@ -81,6 +81,7 @@ pub(super) fn inactive(data: &TaskBoardData) -> bool {
 
 pub(super) fn cause_key(cause: QuestCause) -> (&'static str, [u8; 16], u64) {
     match cause {
+        QuestCause::ServerTimer(id) => ("server_timer", *id.as_bytes(), 0),
         QuestCause::CreatureDeath(id) => ("creature_death", *id.as_bytes(), 0),
         QuestCause::Command(command) => (
             "command",
@@ -147,7 +148,31 @@ pub(super) async fn record(
     outcome: &TaskBoardCommit,
     effects: Option<&oteryn_gameplay_quests::quest::task_board::full::TaskBoardEffects>,
 ) -> Result<(), DurabilityError> {
-    let (kind, cause, ordinal) = cause_key(request.cause);
+    record_action(
+        tx,
+        fence,
+        request.cause,
+        binding,
+        serde_json::to_value(&request.action).map_err(|_| DurabilityError::InvalidStoredState)?,
+        outcome,
+        effects,
+    )
+    .await
+}
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing receipt authority, binding, action and exact outcome are independent proofs"
+)]
+pub(super) async fn record_action(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    cause: QuestCause,
+    binding: &[u8],
+    action: serde_json::Value,
+    outcome: &TaskBoardCommit,
+    effects: Option<&oteryn_gameplay_quests::quest::task_board::full::TaskBoardEffects>,
+) -> Result<(), DurabilityError> {
+    let (kind, cause, ordinal) = cause_key(cause);
     let reply =
         serde_json::to_value(&outcome.view).map_err(|_| DurabilityError::InvalidStoredState)?;
     if serde_json::to_vec(&reply)
@@ -164,7 +189,7 @@ pub(super) async fn record(
         .bind(kind).bind(cause.as_slice()).bind(ordinal.to_string()).bind(binding)
         .bind(reply).bind(refusal)
         .bind(outcome.transition.as_ref().map(|t| t.committed_character_revision.get().to_string()))
-        .bind(serde_json::to_value(&request.action).map_err(|_| DurabilityError::InvalidStoredState)?)
+        .bind(action)
         .bind(serde_json::to_value(effects).map_err(|_| DurabilityError::InvalidStoredState)?)
         .execute(&mut **tx).await?;
     Ok(())
@@ -243,7 +268,7 @@ pub(super) async fn fits_capacity(
 pub(super) async fn advance(
     tx: &mut Transaction<'_, Postgres>,
     fence: CurrentCharacterGameplayFence,
-    request: &TaskBoardCommand,
+    cause: QuestCause,
     binding: &[u8],
     view: &TaskBoardView,
     changes: Vec<QuestTrackChange>,
@@ -305,7 +330,7 @@ pub(super) async fn advance(
     }
     // Commands that can consume owned items use the established quest USE receipt
     // family; the task-board receipt still binds the original command bytes.
-    let quest_cause = match request.cause {
+    let quest_cause = match cause {
         QuestCause::Command(command) => QuestCause::Use(command),
         other => other,
     };

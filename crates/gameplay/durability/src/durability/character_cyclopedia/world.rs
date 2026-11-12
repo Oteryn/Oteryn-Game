@@ -8,6 +8,8 @@ pub struct CyclopediaWorldBinding {
     pub generation: u64,
     pub bundle: [u8; 32],
     pub epoch: u64,
+    pub area: u32,
+    pub legacy_area: u32,
 }
 impl DurabilityRoot {
     pub async fn prepare_cyclopedia_epoch(
@@ -29,7 +31,7 @@ impl DurabilityRoot {
             let retiring:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING')")
                 .bind(binding.scope.world_id().as_bytes().as_slice()).fetch_one(&mut **tx).await?;
             if retiring {return Err(DurabilityError::Unavailable);}
-            let (_,improved)=storage::world(&mut tx,binding.scope.world_id(),binding.bundle,binding.epoch).await?;
+            let (_,improved)=storage::world(&mut tx,binding.scope.world_id(),binding.bundle,binding.epoch,binding.area,binding.legacy_area).await?;
             tx.commit(deadline).await?;
             Ok(improved)
         })).await

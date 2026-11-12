@@ -100,6 +100,12 @@ impl ChatRuntime {
             return false;
         }
         entry.public_rooms.admitted = Some(admitted);
+        // oteryn-choice: capability 288 opts into Crystal's optional mount voices
+        // (config.lua.dist:688-691). Bind it under the same connection-generation fence.
+        entry.mount_sounds = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1);
         entry.public_rooms.known = true;
         entry.public_rooms.selected = admitted
             .continuity
@@ -863,6 +869,48 @@ mod tests {
         assert_eq!(
             chat.public_send_gate(&admitted, ChatRoom::AdvertisingRookgaard, now),
             muted
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reaudit_mount_sound_selection_rejects_the_old_connection()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let session =
+            GameSessionId::decode(&[1, 144, 0, 0, 0, 1, 112, 0, 128, 0, 0, 0, 0, 0, 0, 1])?;
+        let chat = ChatRuntime::default();
+        chat.admit_as(
+            session,
+            "Aela",
+            None,
+            SemanticTimeMicros::from_micros(1_000_000),
+        );
+        let mut old = peer(session, 1, false)?;
+        old.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &[6, 7, 80, 288],
+            )
+            .ok_or("mount capability")?;
+        assert!(chat.public_begin(old));
+        assert!(
+            chat.sessions
+                .lock()
+                .map_err(|_| "sessions poisoned")?
+                .get(&session)
+                .ok_or("session")?
+                .mount_sounds
+        );
+        assert!(chat.public_begin(peer(session, 2, false)?));
+        assert!(!chat.public_begin(old));
+        assert!(
+            !chat
+                .sessions
+                .lock()
+                .map_err(|_| "sessions poisoned")?
+                .get(&session)
+                .ok_or("session")?
+                .mount_sounds
         );
         Ok(())
     }

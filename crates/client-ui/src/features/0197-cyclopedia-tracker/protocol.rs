@@ -12,11 +12,11 @@ pub enum Intent {
 }
 pub fn request(panel: &mut CyclopediaTrackerPanel, intent: Intent) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("Feature unavailable in this session");
+        panel.feedback = Some(tr!("Feature unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let typed = match intent {
@@ -31,7 +31,7 @@ pub fn request(panel: &mut CyclopediaTrackerPanel, intent: Intent) -> Option<Fea
         },
     };
     let Some(payload) = cyclopedia_tracker::encode_request(&typed) else {
-        panel.feedback = Some("Enter a valid creature id");
+        panel.feedback = Some(tr!("Enter a valid creature id"));
         return None;
     };
     panel.pending = true;
@@ -48,24 +48,33 @@ pub fn apply_result(panel: &mut CyclopediaTrackerPanel, result: &GatedCommandRes
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.feedback = Some("The server refused the tracker action");
+        panel.feedback = Some(tr!("The server refused the tracker action"));
         return false;
     }
     apply_snapshot(panel, &result.payload)
 }
 pub fn apply_snapshot(panel: &mut CyclopediaTrackerPanel, payload: &[u8]) -> bool {
-    let snapshot = cyclopedia_tracker::decode_snapshot(payload).or_else(|| {
-        cyclopedia_tracker::decode_domain_snapshot(payload)
-            .map(|(bestiary, bosstiary)| if panel.boss { bosstiary } else { bestiary })
-    });
+    let snapshot =
+        if let Some((bestiary, bosstiary)) = cyclopedia_tracker::decode_domain_snapshot(payload) {
+            panel.bestiary_snapshot = Some(bestiary.clone());
+            panel.bosstiary_snapshot = Some(bosstiary.clone());
+            Some(if panel.boss { bosstiary } else { bestiary })
+        } else {
+            cyclopedia_tracker::decode_snapshot(payload)
+        };
     match snapshot {
         Some(value) => {
+            if value.boss {
+                panel.bosstiary_snapshot = Some(value.clone());
+            } else {
+                panel.bestiary_snapshot = Some(value.clone());
+            }
             panel.snapshot = Some(value);
             panel.feedback = None;
             true
         }
         None => {
-            panel.feedback = Some("The server returned an invalid tracker snapshot");
+            panel.feedback = Some(tr!("The server returned an invalid tracker snapshot"));
             false
         }
     }

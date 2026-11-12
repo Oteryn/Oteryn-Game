@@ -91,6 +91,7 @@ impl DurabilityRoot {
             }
         }
         drop(keys);
+        let requirements = crate::durability::world_event::changes::raid_requirements()?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -123,6 +124,10 @@ impl DurabilityRoot {
             }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode($1,'hex'),0))")
                 .bind(request.world.as_bytes().as_slice()).execute(&mut *tx).await?;
+            // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:388-405 phase gate is preceded
+            // by the current durable event phase/timer settlement under this
+            // same fenced world lock; no detached worker advances the event.
+            crate::durability::cake_event::settle_current_world(&mut tx, request.world, request.reset_epoch).await?;
             // Retire previous-epoch firings before checking a new admitted epoch.
             // Their channel effects become LOST cleanup on the normal runner path.
             sqlx::query("UPDATE game_world_raid_firings SET state=3 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch<>$2::text::numeric AND state=1")
@@ -134,9 +139,16 @@ impl DurabilityRoot {
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
+                crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
+            } else { None };
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
+                if let Some(required) = requirements.get(candidate.key.as_str())
+                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
+                    continue;
+                }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
                 if (source_kind == 1 && legacy_running)
@@ -187,11 +199,24 @@ impl DurabilityRoot {
                     }
                 } else if let Some(window) = &candidate.calendar_window {
                     let clock = calendar::clock(&mut tx, request.world, request.now_ms).await?;
-                    let in_window = window.window.contains(clock.month, clock.month_day)
+                    // Startup-activated repeating cycles belong to the committed reset date,
+                    // so a delayed reset cannot start the next month's source early.
+                    let (month,day) = if window.repeat { (clock.epoch_month,clock.epoch_month_day) } else { (clock.month,clock.month_day) };
+                    let in_window = window.window.contains(month,day)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
-                    let persistent_fired = candidate.definition.despawn_after_ms.is_none()
+                    // Crystal globalevents_cake_raids.lua:9-29 registers 24
+                    // absolute daily slots: save06:00 + offset4, hourly modulo1440.
+                    // Its config:388-405 requires stage1 at the actual firing.
+                    let interval_due = if candidate.key.as_str() == "oteryn:raid.piece_of_cake" {
+                        let phase = crate::durability::raid_runner::cake::phase_one_in_transaction(
+                            &mut tx, request.world, request.reset_epoch).await?;
+                        clock.minute_of_day % 60 == 4
+                            && before.last_fired_at_ms.is_none_or(|last| last < clock.minute_started_at_ms)
+                            && phase.is_some_and(|progress| progress.phase_one_active())
+                    } else { interval_due };
+                    let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,

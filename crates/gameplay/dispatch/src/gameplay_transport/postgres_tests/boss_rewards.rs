@@ -40,10 +40,12 @@ mod privacy;
 mod concurrent;
 
 #[derive(Clone, Copy)]
-enum Case {
+pub(super) enum Case {
+    LargePrivateCorpse,
     Collection,
     Expiry,
     NativeDeath,
+    ProductionNativeDeath,
     OfflineReward,
     LivePrivacy,
     ConcurrentCollection,
@@ -65,6 +67,11 @@ fn boss_rewards_postgres_native_lethal_settlement_and_later_replay() -> TestResu
 }
 
 #[test]
+fn boss_rewards_postgres_production_boss_lethal_to_personal_item_custody() -> TestResult {
+    run_case(Case::ProductionNativeDeath)
+}
+
+#[test]
 fn boss_rewards_postgres_disconnected_contributor_keeps_earned_entitlement() -> TestResult {
     run_case(Case::OfflineReward)
 }
@@ -79,7 +86,7 @@ fn boss_rewards_postgres_concurrent_collectors_on_two_roots_transfer_once() -> T
     run_case(Case::ConcurrentCollection)
 }
 
-fn run_case(case: Case) -> TestResult {
+pub(super) fn run_case(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("BOSS_REWARDS POSTGRES_CASE_SKIPPED: OTERYN_TEST_POSTGRES_ADMIN_URL absent");
         return Ok(());
@@ -112,7 +119,11 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|error| format!("W03 fixture Character authority: {error:?}"))?;
         let mut deps = Dependencies::new()
             .map_err(|error| format!("W03 fixture native dependencies: {error:?}"))?;
-        let (controller, pin) = if matches!(case, Case::NativeDeath) {
+        let (controller, pin) = if matches!(case, Case::LargePrivateCorpse) {
+            crate::content::native_gameplay::test_support::activated_reward_boss_corpse_capacity_fixture(
+                deps.admitted.world_id, None, Some(64),
+            )
+        } else if matches!(case, Case::NativeDeath) {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 deps.admitted.world_id,
                 None,
@@ -228,7 +239,7 @@ fn scenario(case: Case) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
@@ -266,8 +277,13 @@ fn scenario(case: Case) -> TestResult {
             supported.as_slice(),
             "the physical reward fixture must negotiate every required capability"
         );
-        if matches!(case, Case::NativeDeath) {
-            native_death(&h, &owner, &mut admitted, fence).await?;
+        if matches!(case, Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse) {
+            let creature = if matches!(case, Case::ProductionNativeDeath) {
+                "oteryn:creature.grand_mother_foulscale"
+            } else {
+                "oteryn:creature.rat"
+            };
+            native_death(&h, &owner, &mut admitted, fence, creature).await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
             drop(authority);
@@ -284,7 +300,9 @@ fn scenario(case: Case) -> TestResult {
                 .ok_or("gold definition")?;
         let minted = match case {
             Case::Collection
+            | Case::LargePrivateCorpse
             | Case::NativeDeath
+            | Case::ProductionNativeDeath
             | Case::OfflineReward
             | Case::LivePrivacy
             | Case::ConcurrentCollection => now,
@@ -423,7 +441,7 @@ fn scenario(case: Case) -> TestResult {
             )
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
-            Case::NativeDeath => return Err("native scenario already returned".into()),
+            Case::NativeDeath | Case::ProductionNativeDeath | Case::LargePrivateCorpse => return Err("native scenario already returned".into()),
             Case::OfflineReward => {
                 assert_eq!(
                     sqlx::query_scalar::<_, i32>(

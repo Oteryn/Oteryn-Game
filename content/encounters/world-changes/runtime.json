@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "changes": [
+    {
+      "key": "fury_gates",
+      "schedule": {"kind": "native_daily", "change": "fury_gates"},
+      "sources": ["oteryn:production/crates/gameplay/world-change/src/daily.rs#fury_gates"]
+    },
+    {
+      "key": "grimvale",
+      "schedule": {"kind": "native_daily", "change": "grimvale"},
+      "sources": ["oteryn:production/crates/gameplay/world-change/src/daily.rs#grimvale_full_moon"]
+    },
+    {
+      "key": "their_masters_voice",
+      "schedule": {"kind": "native_daily", "change": "their_masters_voice"},
+      "sources": ["oteryn:production/crates/gameplay/world-change/src/daily.rs#their_masters_voice"]
+    }
+  ]
+}

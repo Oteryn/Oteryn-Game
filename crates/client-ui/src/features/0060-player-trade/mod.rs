@@ -3,7 +3,7 @@ use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
 /// Ctrl+T opens the direct-player-trade panel.
 pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
-    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 20 && modifiers.contains(Modifier::Control) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 23 && modifiers.contains(Modifier::Control) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,15 +19,19 @@ pub enum Intent {
 pub struct PlayerTradePanel {
     pub selected: bool,
     pub open: bool,
+    pub show_requested: bool,
     pub pending: bool,
     pub state: Option<player_trade::State>,
     pub feedback: Option<&'static str>,
     /// Exact live handles supplied by world interaction for the Offer action.
     pub offer: Option<(EntityRef, u64)>,
+    pub partner: Option<EntityRef>,
+    pub items: picker::TradeItems,
+    pub context_pointer: Option<(i32, i32)>,
 }
 
 pub fn request(panel: &mut PlayerTradePanel, intent: Intent) -> Option<PlayerTradeCommand> {
-    if !panel.selected || panel.pending {
+    if !panel.selected || panel.pending || panel.items.pending {
         return None;
     }
     let wire = match intent {
@@ -36,7 +40,7 @@ pub fn request(panel: &mut PlayerTradePanel, intent: Intent) -> Option<PlayerTra
         Intent::Accept | Intent::LookOwn | Intent::LookCounter => {
             let trade_id = panel.state.as_ref().and_then(|state| state.trade_id);
             let Some(trade_id) = trade_id else {
-                panel.feedback = Some("No active trade");
+                panel.feedback = Some(tr!("No active trade"));
                 return None;
             };
             match intent {
@@ -69,55 +73,11 @@ pub fn apply_result(panel: &mut PlayerTradePanel, response: &PlayerTradeResponse
         }
         _ => Some(response.result.message())
             .filter(|message| !message.is_empty())
-            .or(Some("Sorry, not possible.")),
+            .or(Some(tr!("Sorry, not possible."))),
     };
 }
 
-#[must_use]
-pub fn panel_text(panel: &PlayerTradePanel) -> String {
-    if !panel.selected {
-        return "Player trade unavailable in this session".into();
-    }
-    let Some(state) = &panel.state else {
-        return panel.feedback.unwrap_or("No active trade").into();
-    };
-    let offer = |name: &str, value: Option<player_trade::Offer>| {
-        value.map_or_else(
-            || format!("{name}: none"),
-            |value| {
-                format!(
-                    "{name}: item {} x{} (subtype {})",
-                    value.definition, value.count, value.sub_type
-                )
-            },
-        )
-    };
-    let phase = match state.phase {
-        1 => "offered",
-        2 => "ready",
-        3 => "transferring",
-        _ => "closed",
-    };
-    let mut lines = vec![
-        format!("Trade: {phase}"),
-        offer("Your offer", state.own),
-        offer("Their offer", state.counter),
-        format!(
-            "Accepted: you={} partner={}",
-            state.accepted[0], state.accepted[1]
-        ),
-    ];
-    if !state.message.is_empty() {
-        lines.push(state.message.clone());
-    }
-    if !state.look.is_empty() {
-        lines.push(state.look.clone());
-    }
-    if let Some(feedback) = panel.feedback {
-        lines.push(feedback.into());
-    }
-    lines.join("\r\n")
-}
+pub use view::{panel_text, status_text};
 
 #[cfg(test)]
 mod tests {
@@ -181,6 +141,8 @@ mod tests {
 }
 
 mod input;
+#[path = "state/picker.rs"]
+pub mod picker;
 mod protocol;
 mod state;
 mod view;

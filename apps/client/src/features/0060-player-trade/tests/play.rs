@@ -157,3 +157,176 @@ fn player_trade_controls_encode_requests_and_apply_real_wire_state() -> Result<(
         .join()
         .map_err(|_| "player trade UI test thread panicked")?
 }
+
+#[test]
+fn player_trade_inventory_push_reaches_visible_picker() -> Result<(), Error> {
+    use oteryn_session::{AppliedDelta, CharacterInventory, ItemEntry};
+    let (link, _commands, outbox) = play_channel();
+    outbox.player_trade_initialize(true, None);
+    outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+        server_sequence: 41,
+        base_revision: 1,
+        new_revision: 2,
+        value: CharacterInventory {
+            entries: vec![ItemEntry {
+                handle: 7.try_into()?,
+                item_definition_ref: 123.try_into()?,
+                count: 2.try_into()?,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        },
+    })]);
+    assert!(panel_text(&link.player_trade_panel()).contains("Backpack: item 123 x2"));
+    Ok(())
+}
+
+#[test]
+fn player_trade_world_context_only_targets_visible_players_on_this_floor() -> Result<(), Error> {
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, WorldSpatialEntity};
+    let player = WorldSpatialEntity {
+        display_name: None,
+        kind: EntityKind::Player,
+        entity: EntityRef {
+            identity: [4; 16],
+            generation: 2,
+        },
+        position: ActorPosition {
+            x: 1,
+            y: 0,
+            floor: 0,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    let view = crate::play::PlayView::new(TileCoord::new(0, 0), 0, &[])?.with_entities(vec![
+        player,
+        WorldSpatialEntity {
+            kind: EntityKind::Npc,
+            position: ActorPosition {
+                x: 2,
+                ..player.position
+            },
+            ..player
+        },
+        WorldSpatialEntity {
+            position: ActorPosition {
+                x: 3,
+                floor: 1,
+                ..player.position
+            },
+            ..player
+        },
+    ])?;
+    assert_eq!(
+        view.player_trade_context_target(TileCoord::new(1, 0)),
+        Some(player.entity)
+    );
+    for x in [0, 2, 3] {
+        assert_eq!(view.player_trade_context_target(TileCoord::new(x, 0)), None);
+    }
+    Ok(())
+}
+
+#[test]
+fn player_trade_unsolicited_incoming_and_terminal_updates_reach_panel_and_reset_selection() {
+    use oteryn_session::AppliedDelta;
+    let (link, _commands, outbox) = play_channel();
+    outbox.player_trade_initialize(true, None);
+    let partner = EntityRef {
+        identity: [4; 16],
+        generation: 2,
+    };
+    let state = player_trade::State {
+        partner: Some(partner),
+        phase: 1,
+        reason: 0,
+        message: "Player wants to trade with you.".into(),
+        ..Default::default()
+    };
+    outbox.push(vec![SessionEvent::PlayerTrade(AppliedDelta {
+        server_sequence: 41,
+        base_revision: 1,
+        new_revision: 2,
+        value: state,
+    })]);
+    assert_eq!(link.player_trade_panel().partner, Some(partner));
+    assert!(link.player_trade_panel().show_requested);
+    assert!(panel_text(&link.player_trade_panel()).contains("wants to trade"));
+    outbox.push(vec![SessionEvent::PlayerTrade(AppliedDelta {
+        server_sequence: 42,
+        base_revision: 2,
+        new_revision: 3,
+        value: player_trade::State {
+            message: "Trade cancelled.".into(),
+            ..Default::default()
+        },
+    })]);
+    assert!(link.player_trade_panel().partner.is_none());
+    assert!(panel_text(&link.player_trade_panel()).contains("Trade cancelled."));
+    outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+    assert!(!link.player_trade_panel().selected);
+}
+
+#[cfg(not(windows))]
+#[test]
+fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Result<(), Error> {
+    use oteryn_input_actions::{
+        ButtonState, Modifiers, MouseButton, NormalizedInputEvent as E, PointerCoordinate,
+        PointerDelta, PointerMotion, PointerPosition,
+    };
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, WorldSpatialEntity};
+    let partner = EntityRef {
+        identity: [4; 16],
+        generation: 2,
+    };
+    let view = crate::play::PlayView::new(TileCoord::new(0, 0), 0, &[])?.with_entities(vec![
+        WorldSpatialEntity {
+            display_name: None,
+            kind: EntityKind::Player,
+            entity: partner,
+            position: ActorPosition {
+                x: 1,
+                y: 0,
+                floor: 0,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+    ])?;
+    let [x, y] = view.scene().view().tile_to_screen(TileCoord::new(1, 0));
+    // Test coordinates are small exact integer tile origins.
+    #[allow(clippy::cast_possible_truncation)]
+    let moved = E::PointerMoved {
+        position: PointerPosition::new(
+            PointerCoordinate::new(x as i32 + 1)?,
+            PointerCoordinate::new(y as i32 + 1)?,
+        ),
+        motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+    };
+    let click = E::MouseButton {
+        button: MouseButton::SECONDARY,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+    };
+    let (link, _commands, outbox) = play_channel();
+    let clicks = link.player_trade_track_pointer(&[moved.clone(), click.clone()]);
+    assert!(!view.player_trade_context_input(&link, &clicks));
+    outbox.player_trade_initialize(true, None);
+    // Another feature consumes this batch, so the context handler never sees its move.
+    link.player_trade_track_pointer(&[moved]);
+    let clicks = link.player_trade_track_pointer(std::slice::from_ref(&click));
+    assert!(view.player_trade_context_input(&link, &clicks));
+    assert_eq!(link.player_trade_panel().partner, Some(partner));
+    let clicks = link.player_trade_track_pointer(&[E::FocusChanged { focused: false }, click]);
+    assert!(!view.player_trade_context_input(&link, &clicks));
+    Ok(())
+}

@@ -5,13 +5,75 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn client_bulletin(&self) -> Option<String> {
+        self.states.bulletin_source.as_ref()?.load().await
+    }
+    fn step_wait_receipts(&self) -> bool {
+        #[cfg(test)]
+        if let Some(enabled) = self.test_step_wait_receipts {
+            return enabled;
+        }
+        crate::gameplay_transport::world_spatial::step_wait_receipts_enabled()
+    }
+
+    async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
+        self.refresh_staff(admitted).await
+    }
+    #[cfg(test)]
+    fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
+        Some(self.root)
+    }
+
+    async fn observe_sounds(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        let mut runtime = self.runtime.lock().await;
+        if runtime.house_actor_state(actor, session).is_ok() {
+            let states = self.states.spell_states.try_lock().ok()?;
+            return states.sounds.observe(&runtime, actor, session, after, true);
+        }
+        runtime.player_control_facts(actor, session).ok()?;
+        let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
+            &mut runtime,
+            self.movement_cells(),
+            actor,
+        );
+        let minute = self.world_clock_utc_ms().and_then(|now| {
+            crate::world_clock::WorldClockSource::new(
+                crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+            )
+            .tibian_minute(now)
+        });
+        let mut states = self.states.spell_states.lock().await;
+        let actor_spell::ChannelSpellStates {
+            presentations,
+            sounds,
+            ..
+        } = &mut *states;
+        if let Some(owner) = presentations {
+            sounds.capture(owner, &runtime).ok()?;
+        }
+        if after == u64::MAX {
+            sounds.forget_ambient(session);
+        } else if let Some(minute) = minute {
+            sounds.ambient(&runtime, actor, session, zone, minute);
+        }
+        sounds.observe(&runtime, actor, session, after, true)
+    }
+
     fn observe_movement_effects(
         &self,
         after: u64,
     ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
         self.bundle_map()
             .map(|map| map.facts.movement_effects_since(after))
-            .unwrap_or_default()
+            .unwrap_or_else(|| self.source_volatile_effects(after))
     }
     async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
         self.resolve_runtime_view(admitted).await
@@ -76,6 +138,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<UseOutcome> {
         self.use_bundle_key(actor, command, key, &door).await
     }
+    async fn analyser_snapshot(&self, admitted: AdmittedSession) -> Option<bool> {
+        ComposedFreshAdmission::analyser_snapshot(self, admitted).await
+    }
+    async fn analyser_next(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {
+        ComposedFreshAdmission::analyser_next(self, admitted).await
+    }
     mechanic_composed_methods!();
     async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
         self.note_activity_input(admitted).await
@@ -88,38 +156,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
-        if let (Some(actor), Some(fence), Some(controller)) = (
-            admitted.runtime_actor,
-            admitted.item_fence,
-            admitted.controller,
-        ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
-            && actor.runtime_scope() == fence.runtime_scope
-        {
-            let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(admitted.game_session_id)
-                .await
-            else {
-                return false;
-            };
-            return item_fence_of(current) == Some(fence)
-                && current.session_state() == GameSessionState::Active
-                && current.current_transport() == Some(controller.transport);
-        }
-        if !admitted
-            .continuity
-            .selected_capabilities
-            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
-        {
-            return true;
-        }
-        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
-            return false;
-        };
-        self.root
-            .note_house_transfer_input(self.holder, fence, controller.transport)
-            .await
-            .is_ok()
+        self.note_house_input(admitted).await
     }
+    async fn observe_house_map(
+        &self,
+        admitted: AdmittedSession,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+        self.observe_house_item_map(admitted, view, items).await
+    }
+
     async fn house_scope_ack(
         &self,
         admitted: AdmittedSession,
@@ -146,6 +193,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: connection::AdmittedSession,
     ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
         self.observe_party_skull(admitted).await
+    }
+
+    async fn observe_pvp_status(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::party_skull::PvpStatus> {
+        self.observe_own_pvp(admitted).await
     }
 
     async fn party_command(
@@ -196,6 +250,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
         self.chat_open(session).await
+    }
+
+    async fn console_levels(
+        &self,
+        admitted: AdmittedSession,
+        names: Vec<String>,
+    ) -> Option<Vec<Option<u32>>> {
+        if !admitted.continuity.selected_capabilities.contains(7)
+            || !self.states.chat.knows(admitted.game_session_id)
+        {
+            return None;
+        }
+        let names = names
+            .iter()
+            .map(|name| crate::domain::character_name::CharacterName::parse(name))
+            .collect::<Result<Vec<_>, _>>()
+            .ok()?;
+        self.root
+            .read_console_levels(self.character, *self.world_id.as_bytes(), names)
+            .await
+            .ok()
     }
 
     async fn chat_intent(
@@ -306,6 +381,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         remaining: &mut usize,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.emit_mount_voice(admitted).await;
         self.guild_chat_next(admitted, remaining).await
     }
 
@@ -338,7 +414,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        let mut outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+        // Retained-work lookups use the same non-blocking holder as background passes.
+        // A busy lookup proves neither an absent original nor a terminal result. Retry the
+        // idempotent reconciliation under the existing command budget before closing.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let mut outcome = loop {
+            let outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+            if !outcome.unknown
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+            {
+                break outcome;
+            }
+        };
         if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
             && let Some(conversation) = &mut outcome.conversation
         {
@@ -385,6 +474,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn server_messages_left(&self, admitted: AdmittedSession) {
+        self.states.server_modals.leave((
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        ));
         self.states.server_messages.leave(
             admitted.game_session_id,
             admitted.continuity.connection_generation,
@@ -415,6 +508,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 admitted.continuity.connection_generation,
             )
             .await;
+    }
+
+    fn take_newhaven_inventory_changed(&self, session: GameSessionId) -> bool {
+        self.states
+            .tutorial_sessions
+            .take_inventory_changed(session)
     }
 
     fn take_tutorial_notice(
@@ -479,7 +578,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn observe_character_equipment(
         &self,
-        _actor: ExactActorRef,
+        actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<
         Vec<(
@@ -487,7 +586,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             item_view::ViewItem,
         )>,
     > {
-        equipment_move::observe_character_equipment(self, game_session_id).await
+        // Named-House custody retains the Channel carrier's ExactActorRef.
+        // Select the reader from the actual resident, not that carrier namespace.
+        let in_house = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, game_session_id)
+            .is_ok();
+        if in_house {
+            equipment_move::observe_house_character_equipment(self, actor, game_session_id).await
+        } else {
+            equipment_move::observe_character_equipment(self, game_session_id).await
+        }
     }
 
     async fn committed_equipment_move(
@@ -515,7 +626,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item: Option<item_view::ItemKey>,
         row_open: bool,
     ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
-        stash::execute(self, actor, command, intent, item, row_open).await
+        stash::execute(self, actor, command, intent, None, item, row_open).await
+    }
+
+    async fn stash_filtered(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        filter: Option<oteryn_protocol_oteryn::stash::StashFilter>,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, filter, item, row_open).await
     }
 
     async fn depot(
@@ -555,9 +678,50 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         loop_move::observe_container(self, actor, fence, target).await
     }
 
+    async fn move_loop_item_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: item_move::LoopMove,
+        house_capacity_v2: bool,
+    ) -> item_move::LoopMoveResult {
+        loop_move::move_loop_item_with_house_capacity(
+            self,
+            actor,
+            command,
+            request,
+            house_capacity_v2,
+        )
+        .await
+    }
+
+    async fn observe_container_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        target: item_view::ItemKey,
+        house_capacity_v2: bool,
+    ) -> Option<container_view::ContainerObservation> {
+        loop_move::observe_container_with_house_capacity(
+            self,
+            actor,
+            fence,
+            target,
+            house_capacity_v2,
+        )
+        .await
+    }
+
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
     /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
     /// read.
+    async fn observe_named_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<world_spatial::ChannelEntities> {
+        self.named_channel_entities(actor).await
+    }
+
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,
@@ -640,6 +804,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => MovementFacing::East,
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
+            // TURN keeps its existing cardinal-only contract.
+            _ => return false,
         };
         movement.commit_turn(expected, facing).is_ok()
     }
@@ -724,6 +890,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
     }
 
+    async fn use_map_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.use_ladder_handle(actor, command, item).await
+    }
+
     /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
     async fn use_item(
         &self,
@@ -744,6 +919,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         self.tame_mount_impl(actor, command, intent, source, item_target, visible)
+            .await
+    }
+
+    async fn observe_house_destroy(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: [u8; 16],
+        target: [u8; 16],
+    ) -> Option<house_destroy::Candidate> {
+        self.observe_house_destroy_impl(actor, command, source, target)
+            .await
+    }
+    async fn destroy_house_furniture(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        input: crate::durability::house_furniture_destroy::HouseDestroyCommand,
+    ) -> Option<UseOutcome> {
+        self.destroy_house_furniture_impl(actor, command, input)
             .await
     }
 
@@ -811,6 +1006,74 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .pending_hireling_lamps
                 .iter()
                 .any(|pending| pending.actor == actor && pending.session == session)
+            || states.pending_item_effects.iter().any(|pending| {
+                pending.actor == actor && pending.request.command.game_session_id() == session
+            })
+    }
+
+    async fn use_event_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible_target: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if matches!(
+            command.item_fence.map(|fence| fence.runtime_scope),
+            Some(crate::foundation::RuntimeScopeRefV1::Instance { .. })
+        ) {
+            // The House bed-kit bridge also accepts a map target. Other named
+            // Instances keep their existing map-item handlers and authority.
+            if intent.use_with_map_item.is_some()
+                && self
+                    .runtime
+                    .lock()
+                    .await
+                    .house_actor_state(actor, command.game_session_id)
+                    .is_err()
+            {
+                return Ok(None);
+            }
+            return self
+                .use_house_event_item(actor, command, &intent, source)
+                .await;
+        }
+        if let Some(outcome) = self
+            .use_bundle_dropdown(
+                actor,
+                command,
+                None,
+                source.filter(|_| {
+                    intent.use_with.is_none()
+                        && intent.use_with_map_item.is_none()
+                        && intent.use_with_position.is_none()
+                }),
+            )
+            .await
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_reward_bag_intent(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_carried_quest_item(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_cosmetic_item_impl(actor, command, intent.clone(), source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_event_item_impl(actor, command, intent, source, visible_target)
+            .await
     }
 
     async fn use_consume_transform(
@@ -877,6 +1140,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_dispenser_action(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_dispenser(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_craft(
         &self,
         actor: ExactActorRef,
@@ -914,10 +1189,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
     /// every other placement takes the unchanged door path.
     async fn quest_callback_unresolved(&self, session: GameSessionId) -> bool {
-        self.has_pending_quest_callback(session)
+        self.has_pending_quest_callback(session) || self.states.dawnport_departures.held(session)
     }
 
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        if let Some(actor) = admitted.runtime_actor
+            && !self
+                .resume_dawnport_departure(actor, admitted.game_session_id)
+                .await
+        {
+            return false;
+        }
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
             self.prepare_grizzly_npc_resume(admitted).await
                 && self
@@ -940,6 +1222,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             || admitted.continuity.next_command_id == 1
     }
 
+    async fn use_event_world_object(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_map_harvest_object(actor, command, &target).await
+    }
+
     async fn use_object(
         &self,
         actor: ExactActorRef,
@@ -947,6 +1238,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
         self.use_world_object(actor, command, target).await
+    }
+
+    async fn observe_spell_catalog(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Vec<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry>> {
+        self.actor_spell_catalog(actor, session).await
     }
 
     async fn observe_vitals(
@@ -995,7 +1294,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Option<AchievementNoticeObservation> {
-        self.observe_current_achievement_facts(admitted).await
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.observe_current_achievement_facts(admitted)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
     }
 
     async fn account_achievements(
@@ -1030,6 +1336,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.expire_house_furniture_on_tick(actor, game_session_id)
+            .await;
         self.tick_actor_vitals(actor, game_session_id).await
     }
 
@@ -1071,7 +1379,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
-        self.observe_expert_fight_modes(actor, session).await
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.observe_expert_fight_modes(actor, session)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
     }
 
     async fn observe_combat_state(
@@ -1206,6 +1521,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
         self.loop_training_activity(admitted, kind).await
+    }
+    async fn account_closure_check(&self, admitted: AdmittedSession) -> bool {
+        let Some(controller) = admitted.controller else {
+            return false;
+        };
+        if !self
+            .root
+            .account_closure_requested(self.character, controller.account_id)
+            .await
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        // In-fight/activity refusals close the transport and use normal durable
+        // loss reconciliation. They never count as offline proof for the job.
+        let _ = self.logout_activity_closure(admitted).await;
+        true
     }
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await

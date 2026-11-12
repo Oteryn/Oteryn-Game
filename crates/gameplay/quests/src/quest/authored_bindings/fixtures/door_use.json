@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.m01c_door_fixture",
+      "recipe_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "sources": [
+        "M01c engine fixture, no production qualification"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/m01c-door-fixture",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "door",
+          "completes": false,
+          "trigger": {
+            "kind": "door_use",
+            "usage": {
+              "key": "oteryn:quest-door-use/m01c-fixture",
+              "native_placement_key": 7,
+              "key_number": 3520,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/m01c-door-fixture",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "sources": [
+                "native key-door fixture"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

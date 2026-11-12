@@ -2,10 +2,14 @@
 //!
 //! The query reads a main backpack direct entry through the durable item owner and its
 //! slots and allowances from the qualified native item policy. Apply and clear run the
-//! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile; the
-//! Canary quest unlock is a declared difference) and Premium for tiers 2 and 3, and then the
+//! IMBUE-FORGE0 §3 item gates, then shrine access (an imbuing shrine within one tile),
+//! source-qualified quest knowledge or the Powerful branch unlocks, and Premium for
+//! tiers 2 and 3. The result is
 //! one fenced durable transaction that consumes the recipe materials, burns the gold and writes
 //! or removes the imbuement (PARITY-IMBUE-FORGE-WIRE-1, migration 0196).
+#[path = "imbuement/knowledge.rs"]
+mod knowledge;
+
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::{generation_item_facts, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
@@ -23,14 +27,16 @@ use crate::foundation::{CommandId, ExactActorRef};
 use crate::map::view;
 use oteryn_gameplay_items::imbuement::{
     BLANK_IMBUEMENT_SCROLL_ITEM_ID, IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD,
-    IMBUEMENT_ETCHER_ITEM_ID, IMBUEMENT_SCROLLS, IMBUEMENT_TIER_RULES, imbuement_recipe,
-    imbuement_scroll,
+    IMBUEMENT_ETCHER_ITEM_ID, IMBUEMENT_SCROLLS, IMBUEMENT_TIER_RULES, imbuement_category_group,
+    imbuement_recipe, imbuement_scroll,
 };
 use oteryn_protocol_oteryn::imbuement as wire;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
 use sha2::{Digest, Sha256};
 use wire::{ImbuementAction, ImbuementResult};
+#[path = "imbuement_unlocks.rs"]
+mod unlocks;
 
 /// The Canary imbuing shrines, sorted (`data/items/items.xml`, `script="imbuement_shrine"`).
 pub(super) const SHRINE_KEYS: [&str; 10] = [
@@ -87,6 +93,14 @@ pub(super) fn allowance(
             .collect(),
         _ => Vec::new(),
     };
+    families = families
+        .into_iter()
+        .flat_map(|family| match family {
+            2 => vec![21, 22, 23, 24, 25],
+            13 => vec![26],
+            other => vec![other],
+        })
+        .collect();
     families.sort_unstable();
     families.dedup();
     let offers = families
@@ -182,7 +196,9 @@ pub fn decide_imbuement_item_use(
         .offers
         .iter()
         .any(|offer| offer.family == scroll.family && offer.tier == scroll.tier)
-        || applied.iter().any(|row| row.category + 1 == scroll.family)
+        || applied.iter().any(|row| {
+            imbuement_category_group(row.category) == imbuement_category_group(scroll.family - 1)
+        })
     {
         return ImbuementItemDecision::Refused(ImbuementResult::NotAllowed);
     }
@@ -242,7 +258,9 @@ pub(super) fn decide(
                 Decision::Reply(reply(ImbuementResult::NotAllowed))
             } else if occupied(slot) {
                 Decision::Reply(reply(ImbuementResult::SlotOccupied))
-            } else if applied.iter().any(|row| row.category + 1 == offer.family) {
+            } else if applied.iter().any(|row| {
+                imbuement_category_group(row.category) == imbuement_category_group(offer.family - 1)
+            }) {
                 Decision::Reply(reply(ImbuementResult::NotAllowed))
             } else {
                 Decision::Apply {
@@ -485,6 +503,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Only a carried, unequipped instance can be a main backpack direct entry; the owner
         // read below decides that, so every other handle is the same NOT_ALLOWED.
+        let expanded = admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1);
         let (decision, instance, blank) = match views.resolve(request.item) {
             Some(key @ ItemKey::Instance(instance)) if views.equipped_slot(&key).is_none() => {
                 let target = match self
@@ -507,7 +529,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     target.definition.production_key
                         == format!("oteryn:item.tibia.i{BLANK_IMBUEMENT_SCROLL_ITEM_ID}")
                 });
-                let allowance = target.as_ref().and_then(|target| {
+                let mut allowance = target.as_ref().and_then(|target| {
                     if blank {
                         return Some(blank_scroll_allowance());
                     }
@@ -524,7 +546,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .then(|| allowance(&record.semantics.imbuement))
                         .flatten()
                 });
+                if !expanded && let Some(allowance) = &mut allowance {
+                    // Retain the original family/tier indices for pre-catalogue clients.
+                    if blank {
+                        allowance.offers.retain(|offer| offer.family <= 20);
+                    } else {
+                        for offer in &mut allowance.offers {
+                            offer.family = match offer.family {
+                                21..=25 => 2,
+                                26 => 13,
+                                other => other,
+                            };
+                        }
+                        allowance
+                            .offers
+                            .sort_by_key(|offer| (offer.family, offer.tier));
+                        allowance
+                            .offers
+                            .dedup_by_key(|offer| (offer.family, offer.tier));
+                    }
+                }
                 let applied = target.as_ref().map_or(&[][..], |t| t.applied.as_slice());
+                if !expanded && applied.iter().any(|row| row.category >= 20) {
+                    return encode(&reply(ImbuementResult::NotAllowed));
+                }
                 (
                     decide(request.action, allowance.as_ref(), applied),
                     instance,
@@ -533,7 +578,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return encode(&reply(ImbuementResult::NotAllowed)),
         };
-        let (write, premium) = match decision {
+        let (write, premium, learning) = match decision {
             Decision::Reply(reply) => return encode(&reply),
             Decision::Apply { slot, offer } => {
                 let Some(recipe) = imbuement_recipe(offer.family, offer.tier) else {
@@ -578,7 +623,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         materials,
                     }
                 };
-                (write, recipe.requires_premium)
+                (
+                    write,
+                    recipe.requires_premium,
+                    Some((offer.family, offer.tier)),
+                )
             }
             Decision::Clear { slot } => (
                 ImbuementWrite::Clear {
@@ -586,6 +635,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gold: IMBUEMENT_CLEAR_GOLD,
                 },
                 false,
+                None,
             ),
         };
         let Some(actor) = admitted.runtime_actor else {
@@ -596,7 +646,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(index) = pinned_index(&runtime, self.active_generation) else {
                 return ImbuementReply::Unavailable;
             };
-            let reach = super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+            let reach = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
                 .is_some_and(|at| shrine_in_reach(&at, index));
             if !reach {
                 return encode(&reply(ImbuementResult::RequirementNotMet));
@@ -619,6 +669,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if current.item_fence() != fence {
             return ImbuementReply::Rejected;
+        }
+        if let Some((family, tier)) = learning {
+            let requirement = match knowledge::requirement(family, tier) {
+                Ok(rule) => rule,
+                Err(_) => return ImbuementReply::Unavailable,
+            };
+            if tier == 3 || requirement.is_some() {
+                let Ok(copy) = self
+                    .root
+                    .read_character_quest_state(self.character, current.character_id)
+                    .await
+                else {
+                    return ImbuementReply::Unavailable;
+                };
+                // The following durable write checks the same Character revision. A
+                // concurrent quest write makes the command stale, never a free grant.
+                if copy.character_revision() != Some(current.expected_character_revision) {
+                    return ImbuementReply::Rejected;
+                }
+                if !quest_learning_permits(family, tier, requirement, &copy) {
+                    return encode(&reply(ImbuementResult::RequirementNotMet));
+                }
+            }
         }
         let Ok(Some(bag)) = self
             .root
@@ -679,6 +752,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+fn quest_learning_permits(
+    family: u8,
+    tier: u8,
+    requirement: Option<&knowledge::Rule>,
+    copy: &crate::durability::quest_state::QuestStateCopy,
+) -> bool {
+    let completed = requirement.map(|rule| {
+        rule.permits(|quest| {
+            copy.states()
+                .get(quest)
+                .is_some_and(|state| state.completed)
+        })
+    });
+    if tier == 3 {
+        // The canonical completed programme and the individual branch unlocks are
+        // alternative earned proofs. An absent completion rule grants no unlock.
+        unlocks::powerful(family, copy) || completed == Some(true)
+    } else {
+        completed != Some(false)
+    }
+}
+
 fn encode(reply: &wire::ImbuementReply) -> ImbuementReply {
     wire::encode_imbuement_reply(reply).map_or(ImbuementReply::Unavailable, ImbuementReply::Payload)
 }
@@ -719,3 +814,82 @@ pub(super) use composed_methods;
 #[cfg(test)]
 #[path = "imbuement_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod knowledge_gate_tests {
+    use super::*;
+    use crate::domain::{CharacterId, CharacterRevision};
+    use crate::durability::quest_state::{CommittedQuestTransition, QuestCause, QuestStateCopy};
+    use crate::foundation::{CommandRef, GameSessionId};
+    use oteryn_gameplay_quests::quest::QuestTrackChange;
+
+    fn earned(quest: &str, completes: bool, boss: Option<&str>) -> Result<QuestStateCopy, String> {
+        let id = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+        let mut copy = QuestStateCopy::default();
+        let receipt = CommittedQuestTransition {
+            character_id: CharacterId::from_bytes(id).map_err(|e| format!("{e:?}"))?,
+            cause: QuestCause::Command(CommandRef::new(
+                GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?,
+                CommandId::new(1).map_err(|e| format!("{e:?}"))?,
+            )),
+            transition_key: "oteryn:quest-callback/imbuement-learning".into(),
+            quest_key: quest.into(),
+            original_character_revision: CharacterRevision::new(1).map_err(|e| format!("{e:?}"))?,
+            committed_character_revision: CharacterRevision::new(2)
+                .map_err(|e| format!("{e:?}"))?,
+            pinned_content_revision: "content-1".into(),
+            definition_hash: [7; 32],
+            completes,
+            changes: boss
+                .map(|boss| QuestTrackChange {
+                    track: format!(
+                        "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/{boss}_killed"
+                    ),
+                    before: 0,
+                    after: 1,
+                })
+                .into_iter()
+                .collect(),
+            experience: None,
+        };
+        assert!(copy.apply(&receipt));
+        Ok(copy)
+    }
+
+    #[test]
+    fn powerful_learning_accepts_either_earned_route_and_requires_positive_proof()
+    -> Result<(), String> {
+        let forgotten = "oteryn:quest.forgotten_knowledge_quest";
+        let requirement = knowledge::requirement(3, 3)?;
+        assert!(requirement.is_some());
+        let boss_only = earned(forgotten, false, Some("lady_tenebris"))?;
+        assert!(quest_learning_permits(3, 3, requirement, &boss_only));
+        let completed_only = earned(forgotten, true, None)?;
+        assert!(quest_learning_permits(3, 3, requirement, &completed_only));
+        let neither = QuestStateCopy::default();
+        assert!(!quest_learning_permits(3, 3, requirement, &neither));
+        let wrong_boss = earned(forgotten, false, Some("lloyd"))?;
+        assert!(!quest_learning_permits(3, 3, requirement, &wrong_boss));
+        let heart = earned("oteryn:quest.heart_of_destruction_quest", true, None)?;
+        assert!(quest_learning_permits(
+            18,
+            3,
+            knowledge::requirement(18, 3)?,
+            &heart
+        ));
+        for family in 21..=26 {
+            let rule = knowledge::requirement(family, 3)?;
+            assert!(rule.is_none());
+            assert!(!quest_learning_permits(family, 3, rule, &neither));
+            assert!(!quest_learning_permits(family, 3, rule, &completed_only));
+        }
+        let dragon_king = earned(forgotten, false, Some("dragonking"))?;
+        assert!(quest_learning_permits(21, 3, None, &dragon_king));
+        for tier in [1, 2] {
+            let rule = knowledge::requirement(3, tier)?;
+            assert!(rule.is_none());
+            assert!(quest_learning_permits(3, tier, rule, &neither));
+        }
+        Ok(())
+    }
+}

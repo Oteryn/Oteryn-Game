@@ -9,6 +9,9 @@
 //! (`super::chat_relay`), which hands every line it receives to [`ChatRuntime::deliver`]. Without
 //! a configured, listening relay they answer `CHAT_UNAVAILABLE`. Nothing here is durable.
 
+mod cake_speech;
+mod item_actions;
+
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -46,7 +49,12 @@ const fn result(disposition: ChatDisposition) -> ChatIntentResult {
     }
 }
 
+#[path = "mount_voices.rs"]
+mod mount_voices;
+
 struct ChatSession {
+    last_mount_voice: Option<u64>,
+    mount_sounds: bool,
     name: String,
     /// The session's CharacterId, the key of the private lines it receives; `None` receives none.
     character: Option<[u8; 16]>,
@@ -182,6 +190,8 @@ impl ChatRuntime {
         self.private_world.forget(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
+                last_mount_voice: None,
+                mount_sounds: false,
                 name: name.to_owned(),
                 character,
                 limiter: ChatLimiter::new(now),
@@ -198,6 +208,7 @@ impl ChatRuntime {
                 public_rooms: public_channels::PublicRoomState::default(),
             });
             entry.name = name.to_owned();
+            entry.mount_sounds = false;
             entry.character = character;
             entry.egress.clear();
             entry.engaged = None;
@@ -447,6 +458,25 @@ impl ChatRuntime {
         ))
     }
 
+    /// Reconcile every customer after the NPC owner commits a relocation.
+    pub(super) fn close_relocated_npc(&self, runtime: &ChannelRuntimeV1, npc: ExactActorRef) {
+        let customers = self
+            .sessions
+            .lock()
+            .ok()
+            .map(|sessions| {
+                sessions
+                    .iter()
+                    .filter(|(_, entry)| entry.engaged == Some(npc))
+                    .map(|(session, _)| *session)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        for session in customers {
+            self.close_out_of_range(runtime, session);
+        }
+    }
+
     /// The range check after a committed move or relocation of the customer `session`
     /// (NPC-BEHAVIOUR-0 §7, `NPC0-RL-07`): a conversation whose NPC is gone, on another floor or
     /// more than [`TALK_RANGE_TILES`] tiles away closes, and the NPC's walk-away line waits for
@@ -507,7 +537,7 @@ impl ChatRuntime {
                 .and_then(|key| {
                     book.get(key).map(|entry| {
                         oteryn_gameplay_npc::quest_greetings::walkaway(key)
-                            .unwrap_or(entry.farewell())
+                            .unwrap_or(entry.walkaway())
                             .to_owned()
                     })
                 })
@@ -676,12 +706,13 @@ impl ChatRuntime {
     }
 }
 
-fn speech_mode(mode: ChatSpeechMode) -> SpeechMode {
-    match mode {
+fn speech_mode(mode: ChatSpeechMode) -> Option<SpeechMode> {
+    Some(match mode {
         ChatSpeechMode::Say => SpeechMode::Say,
         ChatSpeechMode::Whisper => SpeechMode::Whisper,
         ChatSpeechMode::Yell => SpeechMode::Yell,
-    }
+        ChatSpeechMode::MonsterSay => return None,
+    })
 }
 
 fn refusal(refusal: ChatRefusal) -> ChatIntentResult {
@@ -767,7 +798,9 @@ fn chat_with_quest_greetings(
     let Ok(text) = ChatText::parse(text) else {
         return result(ChatDisposition::Rejected);
     };
-    let mode = speech_mode(*mode);
+    let Some(mode) = speech_mode(*mode) else {
+        return result(ChatDisposition::Rejected);
+    };
     let visible = runtime.visible_entities();
     let Some(speaker) = visible.players.iter().find(|entry| entry.actor == actor) else {
         return result(ChatDisposition::Rejected);
@@ -978,18 +1011,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
+        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+        self.chat_speaker_name_with_budget(session, &retry).await
+    }
+
+    /// Named visibility shares one budget across its bounded interest set. Only
+    /// holder contention retries; absent names and invalid authority fail closed.
+    pub(super) async fn chat_speaker_name_with_budget(
+        &self,
+        session: GameSessionId,
+        retry: &super::AdmissionRetryBudget<'_>,
+    ) -> Option<(String, [u8; 16], u32)> {
+        use super::connection::AdmissionRefusal;
+        use crate::durability::DurabilityError;
+        use crate::durability::character_authority::CharacterAuthorityError;
+        use crate::durability::character_progression::CharacterProgressionError;
+
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.ok()?;
+        let (current, _) = retry
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(session)
+                    .await
+                    .map_err(|error| match error {
+                        DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
+            .await
+            .ok()?;
         let character = *current.commit().character_id().as_bytes();
         let character_id = domain::CharacterId::from_bytes(character).ok()?;
-        let name = self
-            .root
-            .read_character_chat_name(self.character, character_id)
+        let name = retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_character_chat_name(self.character, character_id)
+                    .await
+                    .map_err(|error| match error {
+                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
+                            AdmissionRefusal::Unavailable
+                        }
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
             .await
             .ok()??;
-        let level = self
-            .root
-            .read_character_progression(self.character, character_id)
+        let level = retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_character_progression(self.character, character_id)
+                    .await
+                    .map_err(|error| match error {
+                        CharacterProgressionError::Unavailable(
+                            DurabilityError::RootUnavailable,
+                        ) => AdmissionRefusal::Unavailable,
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
             .await
             .ok()?
             .map_or(1, |progression| progression.level);
@@ -1737,6 +1815,46 @@ mod tests {
         assert!(chat.muted_cast(session_of(0x7f), BASE).is_none());
         let later = SemanticTimeMicros::from_micros(BASE.get() + 600_000_000);
         assert!(chat.muted_cast(first.1, later).is_none());
+    }
+
+    #[test]
+    fn reaudit_mount_sounds() {
+        let (runtime, chat, first, second) = two_players(0);
+        chat.select_mount_sounds(first.1, true);
+        chat.select_mount_sounds(second.1, true);
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get(), 199);
+        assert!(matches!(
+            chat.peek_line(first.1),
+            Some(ChatLine::Local {
+                mode: ChatSpeechMode::MonsterSay,
+                ..
+            })
+        ));
+        assert_eq!(texts(chat.drain(first.1))[0].1, "Groar");
+        assert_eq!(texts(chat.drain(second.1))[0].1, "Groar");
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get(), 199);
+        assert!(chat.drain(first.1).is_empty());
+        chat.mount_voice(&runtime, first.0, first.1, 0, BASE.get() + 8_000_000, 199);
+        assert!(chat.drain(first.1).is_empty());
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get() + 16_000_000, 48);
+        assert!(chat.drain(first.1).is_empty());
+        chat.select_mount_sounds(second.1, false);
+        chat.mount_voice(
+            &runtime,
+            first.0,
+            first.1,
+            370,
+            BASE.get() + 24_000_000,
+            199,
+        );
+        assert_eq!(chat.drain(first.1).len(), 1);
+        assert!(chat.drain(second.1).is_empty());
+        let (runtime, chat, first, second) = two_players(9);
+        chat.select_mount_sounds(first.1, true);
+        chat.select_mount_sounds(second.1, true);
+        chat.mount_voice(&runtime, first.0, first.1, 370, BASE.get(), 199);
+        assert_eq!(chat.drain(first.1).len(), 1);
+        assert!(chat.drain(second.1).is_empty());
     }
 
     #[test]

@@ -1,18 +1,15 @@
 {
   "mechanic": "0042-party",
   "kind": "handlers",
-  "id": "0042-party-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0042-party-intent",
+  "status": "supported",
   "commands": [
-    45,
-    46
+    45
   ],
+  "direction": "client_to_server",
+  "capability": 42,
+  "entry": "protocol.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "Party membership and permissions are server-owned."
   }
 }

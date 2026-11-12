@@ -16,11 +16,17 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 mod cadence;
+mod content;
 mod entry;
 mod handoff;
+mod handoff_owner;
+mod owner_runtime;
+mod passages;
+mod rewards;
 pub mod runtime;
 pub use handoff::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
+    SoulpitSelection,
 };
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -219,7 +225,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<String>()
             );
             let native_room_placement_context = pin.frame_binding_digest().to_vec();
-            let Some(at) = super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+            let Some(at) = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };

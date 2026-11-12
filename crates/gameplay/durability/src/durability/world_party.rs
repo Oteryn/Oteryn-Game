@@ -271,7 +271,7 @@ async fn observe_world_party_batch(
     Ok(snapshots.into_values().collect())
 }
 
-async fn observe_world_party(
+pub(super) async fn observe_world_party(
     tx: &mut Transaction<'_, Postgres>,
     world: [u8; 16],
     character: [u8; 16],

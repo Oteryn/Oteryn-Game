@@ -467,6 +467,7 @@ fn resume_carries_the_counter_and_revisions_and_every_older_handle_is_stale() {
 fn spatial_objects_get_handles_and_lose_them_on_leaving() {
     use super::super::world_spatial::{EntityKind, EntityRef};
     let object = |n: u8| WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Corpse,
         entity: EntityRef {
             identity: [n; ENTITY_IDENTITY_BYTES],
@@ -910,6 +911,7 @@ mod connection {
         let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
         let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
         WorldSpatialEntity {
+            display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
                 identity: ExactActorRef::transport_fixture(world_id, channel_id)
@@ -993,15 +995,19 @@ mod connection {
             assert_eq!(ended(end)?.item_view, mirror.continuity());
             assert_eq!(mirror.continuity().handle_counter, 3);
 
-            // An unreadable backpack fails closed before anything is sent.
+            // An unreadable backpack fails closed before any snapshot: only
+            // SESSION_JOIN_UNAVAILABLE is sent.
             let authority = ViewAuthority::new(None);
-            let (end, frames) = serve(
-                &authority,
-                session(selected(ItemViewContinuity::default()))?,
-                &[],
-            )
-            .await?;
-            assert!(frames.is_empty());
+            let admitted = session(selected(ItemViewContinuity::default()))?;
+            let (end, frames) = serve(&authority, admitted, &[]).await?;
+            assert_eq!(
+                frames,
+                [oteryn_protocol_oteryn::encode_protocol_error(
+                    oteryn_protocol_oteryn::FoundationProtocolError::SessionJoinUnavailable,
+                    admitted.continuity.connection_generation,
+                )
+                .expect("error frame")]
+            );
             assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
             Ok(())
         })

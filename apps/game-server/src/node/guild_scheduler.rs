@@ -16,16 +16,21 @@ pub(super) async fn run(
 ) {
     let mut cursor = None;
     loop {
+        let mut span = super::scheduler_diagnostics::job("guild_world_pass");
         if let Some(result) = super::cancellation::first(
             super::guild_jobs::run_guild_world_pass(root, authority, node, world, &mut cursor),
             stop.cancelled(),
         )
         .await
         {
-            if let Err(error) = result {
-                eprintln!("event=guild_world_pass state=retry error={error}");
+            if result.is_err() {
+                span.set_outcome("retry");
+                span.set_code(super::scheduler_diagnostics::SchedulerErrorKind::JobFailed.code());
+            } else {
+                span.set_outcome("ok");
             }
         } else {
+            span.set_outcome("cancelled");
             return;
         }
         if super::cancellation::first(

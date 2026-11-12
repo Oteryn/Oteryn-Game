@@ -1,18 +1,16 @@
 {
   "mechanic": "0049-house",
   "kind": "handlers",
-  "id": "0049-house-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0049-house-command",
+  "status": "supported",
   "commands": [
-    56,
-    57
+    56
   ],
+  "direction": "client_to_server",
+  "capability": 49,
+  "entry": "protocol.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "No persistent house settings.",
+    "input": "W17 owns final mounting; typed actions are exposed by Panel."
   }
 }

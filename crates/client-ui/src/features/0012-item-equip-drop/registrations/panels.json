@@ -1,0 +1,7 @@
+{
+  "mechanic": "0012-item-equip-drop",
+  "kind": "panels",
+  "id": "0012-item-equip-drop-slots",
+  "status": "supported",
+  "entry": "state.rs::rows"
+}

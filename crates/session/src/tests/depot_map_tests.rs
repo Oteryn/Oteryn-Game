@@ -5,6 +5,16 @@ use oteryn_protocol_oteryn::world_map::*;
 
 #[test]
 fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Result<(), BoxError> {
+    depot_exchange(false)
+}
+
+#[test]
+fn depot_container_deposit_waits_for_container_delta_without_inventory_change()
+-> Result<(), BoxError> {
+    depot_exchange(true)
+}
+
+fn depot_exchange(container_only: bool) -> Result<(), BoxError> {
     block_on(async {
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let peer = tokio::spawn(async move {
@@ -20,7 +30,7 @@ fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Res
                         current_server_sequence: 0,
                         next_command_id: 7,
                         schema_revision: 1,
-                        selected_capabilities: &[4, 6, 18, 37],
+                        selected_capabilities: if container_only { &[4, 6, 12, 14, 18, 37] } else { &[4, 6, 18, 37] },
                     })?,
                 )
                 .await?;
@@ -39,13 +49,17 @@ fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Res
                 let spatial = item_snapshot(vec![])?.1;
                 let inv = item_view::encode_character_inventory(&CharacterInventory {
                     main_backpack: Some(entry(1, 4, 1)),
-                    entries: vec![entry(2, 5, 100)],
+                    entries: if container_only { vec![] } else { vec![entry(2, 5, 100)] },
                     equipment: vec![],
                 })
                 .map_err(|e| format!("{e:?}"))?;
                 let container = item_view::encode_open_container(&OpenContainer::default())
                     .map_err(|e| format!("{e:?}"))?;
-                let domains = [
+                let views = oteryn_protocol_oteryn::container_tree::encode_container_views(
+                    &oteryn_protocol_oteryn::container_tree::ContainerViews { views: if container_only {
+                        vec![oteryn_protocol_oteryn::container_tree::ContainerView { view_id: 0, container_handle: handle(1), parent_handle: None, capacity: 20, entries: vec![entry(2, 5, 100)], browse: None }]
+                    } else { vec![] } }).map_err(|e| format!("{e:?}"))?;
+                let mut domains = vec![
                     DomainSnapshot {
                         domain_id: 1,
                         revision: 5,
@@ -71,6 +85,7 @@ fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Res
                         payload: &map,
                     },
                 ];
+                if container_only { domains.push(DomainSnapshot { domain_id: 14, revision: 1, snapshot_type: 1, payload: &views }); }
                 for frame in encode_single_chunk_snapshot(1, 1, 40, &domains)? {
                     write_frame(&mut server, &frame).await?;
                 }
@@ -110,8 +125,11 @@ fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Res
                             equipment: vec![],
                         })
                         .map_err(|e| format!("{e:?}"))?;
-                        write_frame(&mut server, &encode_state_delta(1, 43, 9, 2, 3, 1, &inv)?)
-                            .await?;
+                        let delta = if container_only {
+                            let empty = oteryn_protocol_oteryn::container_tree::encode_container_views(&oteryn_protocol_oteryn::container_tree::ContainerViews::default()).map_err(|e| format!("{e:?}"))?;
+                            encode_state_delta(1, 43, 14, 1, 2, 1, &empty)?
+                        } else { encode_state_delta(1, 43, 9, 2, 3, 1, &inv)? };
+                        write_frame(&mut server, &delta).await?;
                         let delta = encode_world_map_delta(
                             &header,
                             &WorldMapViewDelta {
@@ -145,6 +163,10 @@ fn depot_client_admits_bundle_browses_and_waits_for_committed_inventory() -> Res
         admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
         let mut session = Session::admit(client, admission).await?;
         assert!(session.is_selected(18));
+        let map = session.world_map_snapshot().ok_or("join map")?;
+        assert_eq!(map.header.origin, at(0, 0));
+        assert_eq!(map.header.bundle_digest, [0x22; 32]);
+        assert!(map.tiles.is_empty());
         assert!(session.world_object_overlay().is_empty());
         let browse = DepotIntent {
             town: None,
@@ -220,3 +242,6 @@ fn depot_client_refuses_unselected_capability_without_sending() -> Result<(), Bo
         Ok(())
     })?
 }
+
+#[path = "depot_open_tests.rs"]
+mod open_tests;

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0278-battle-instinct-status",
+  "kind": "panels",
+  "id": "0278-battle-instinct-status-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

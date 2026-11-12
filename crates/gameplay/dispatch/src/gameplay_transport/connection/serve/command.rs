@@ -23,6 +23,7 @@ where
         frame,
         arrived_while_buffered,
         buffered_original,
+        received_at,
     } = input;
     let command = match decode_wire_envelope(&frame) {
         Err(error) => return Err(close(stream, session.admitted, error).await),
@@ -121,15 +122,32 @@ where
         .await;
     }
     // Read/coalesce only before the input permit and before any equipment writer starts.
-    let replaced = super::hotkey_equip::replaced(stream, authority, session, command).await?;
+    let replaced = super::hotkey_equip::replaced(
+        stream,
+        authority,
+        session,
+        command,
+        tokio::time::Instant::now().saturating_duration_since(received_at),
+    )
+    .await?;
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    if input_permit.is_some()
-        && (!authority.house_transfer_input(session.admitted).await
-            || !authority.activity_transfer_input(session.admitted).await)
-    {
-        return Err(ServeEnd::Disconnected);
+    if input_permit.is_some() {
+        let failed_guard = if !authority.house_transfer_input(session.admitted).await {
+            Some("house_transfer_input")
+        } else if !authority.activity_transfer_input(session.admitted).await {
+            Some("activity_transfer_input")
+        } else {
+            None
+        };
+        if let Some(guard) = failed_guard {
+            operator_event(&format!(
+                "event=command_guard_failed guard={guard} command_type={} command_id={}",
+                command.command_type, command.command_id,
+            ));
+            return Err(ServeEnd::Disconnected);
+        }
     }
 
     // Count a newly received action once, never its retained replay or delayed step.
@@ -220,7 +238,11 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
         && ((command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
-            && decode_step_intent(command.payload).is_ok())
+            && decode_step_intent_selected(
+                session.selected_capabilities.as_slice(),
+                command.payload,
+            )
+            .is_ok())
             || (command.command_type == 11 && decode_attack_target_intent(command.payload).is_ok())
             || (command.command_type == 23 && decode_logout_intent(command.payload).is_ok())
             || walk_target.is_some())

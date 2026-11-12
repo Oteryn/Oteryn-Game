@@ -9,10 +9,20 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.cyclopedia_character.pending = false;
-            mailbox.cyclopedia_character.feedback = Some("The session has ended");
+            mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn cyclopedia_character_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::cyclopedia_character::blessings_key(events) {
+            #[cfg(windows)]
+            super::view::blessings::open_window(self);
+            #[cfg(not(windows))]
+            {
+                lock(&self.mailbox).cyclopedia_character.blessings.open = true;
+                self.blessings_request();
+            }
+            return true;
+        }
         if !oteryn_client_ui::cyclopedia_character::open_key(events) {
             return false;
         }

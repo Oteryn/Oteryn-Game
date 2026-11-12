@@ -347,6 +347,7 @@
     "damageType": {
       "enum": [
         "physical",
+        "undefined",
         "energy",
         "earth",
         "fire",

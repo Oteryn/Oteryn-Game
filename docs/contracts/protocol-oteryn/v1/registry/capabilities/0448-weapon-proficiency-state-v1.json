@@ -1,0 +1,15 @@
+{
+  "id": 448,
+  "name": "WEAPON_PROFICIENCY_STATE_V1",
+  "owner_decision": "CLIENTGAP-SYSTEMS owner authorization 2026-11-08",
+  "owner": "Game weapon proficiency owner",
+  "requires": [
+    195
+  ],
+  "command_types": [
+    732
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; requires native proficiency owner."
+}

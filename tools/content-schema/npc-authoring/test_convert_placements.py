@@ -27,6 +27,18 @@ class ConvertPlacementsTest(unittest.TestCase):
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
 
+    def test_l1_reward_npcs_use_only_the_global_source_cells(self):
+        expected = {
+            'oteryn:npc.cael': {'x':33028,'y':31513,'floor':10},
+            'oteryn:npc.cranky_lizard_crone': {'x':33192,'y':31044,'floor':6},
+            'oteryn:npc.palimuth': {'x':32801,'y':31223,'floor':7},
+            'oteryn:npc.yalahari': {'x':32801,'y':31188,'floor':7},
+        }
+        actual=[r['declaration'] for r in self.records if r['declaration']['npc'] in expected]
+        self.assertEqual(len(actual),4)
+        self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
+        self.assertTrue(all(r['provenance'] for r in actual))
+
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
@@ -43,6 +55,13 @@ class ConvertPlacementsTest(unittest.TestCase):
         for key, cell in expected.items():
             self.assertEqual(actual[key]['cell'], cell)
             self.assertTrue(any(p['origin'] == 'crystal' for p in actual[key]['provenance']))
+
+    def test_viola_uses_the_newhaven_magic_shop_source_cell(self):
+        viola = next(r['declaration'] for r in self.records
+                     if r['declaration']['npc'] == 'oteryn:npc.viola')
+        self.assertEqual(viola['cell'], {'x': 32571, 'y': 32507, 'floor': 7})
+        self.assertEqual(viola['direction'], 'south')
+        self.assertTrue(any(row['origin'] == 'crystal' for row in viola['provenance']))
 
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]

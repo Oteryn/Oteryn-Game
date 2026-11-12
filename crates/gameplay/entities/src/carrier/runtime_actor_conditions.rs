@@ -27,7 +27,12 @@ pub(super) struct ActorConditionState {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PlayerRuntimeState {
+    pub(super) discovery_speed: u16,
     pub(super) control_loss: Option<ControlLossMark>,
+    pub(super) control_revision: u64,
+    pub(super) staff_ghost: bool,
+    pub(super) staff_invisible: bool,
+    pub(super) staff_visibility_revision: u64,
     pub(super) conditions: ActorConditionState,
 }
 
@@ -392,7 +397,32 @@ impl ChannelRuntimeV1 {
         if now.get() < current.at {
             return Err(ConditionOwnerError::TimeMismatch);
         }
-        Ok(current.store.active_speed_delta(now.get()))
+        let discovery = match &self.carrier.slots[index] {
+            Slot::Occupied { lifecycle, .. } => lifecycle.discovery_speed,
+            _ => 0,
+        };
+        Ok(current
+            .store
+            .active_speed_delta(now.get())
+            .saturating_add(i64::from(discovery)))
+    }
+
+    /// Replace the single discovery contribution, independently of timed haste/paralysis.
+    pub fn set_player_discovery_speed(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        bonus: u16,
+    ) -> Result<(), ConditionOwnerError> {
+        let index = self.condition_index(actor, Some(session))?;
+        let Slot::Occupied { lifecycle, .. } = &mut self.carrier.slots[index] else {
+            return Err(ConditionOwnerError::FactsMismatch);
+        };
+        if lifecycle.control_loss.is_some() {
+            return Err(ConditionOwnerError::FactsMismatch);
+        }
+        lifecycle.discovery_speed = bonus;
+        Ok(())
     }
 
     /// Prepare only non-ticking expiry under the same actor revision as other transitions.
@@ -921,5 +951,93 @@ impl ChannelRuntimeV1 {
             committed.conditions = next;
         }
         Ok(Some(receipt))
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// NX-1 owner-only flag installation after current signed staff authorization.
+    /// Retirement drops this occupied-slot state; no flag survives actor reuse.
+    pub fn set_staff_visibility(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        ghost: bool,
+        invisible: bool,
+    ) -> Result<(), CarrierError> {
+        self.player_control_facts(actor, session)?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let next_revision = match &self.carrier.slots[index] {
+            Slot::Occupied { lifecycle, .. } => {
+                if lifecycle.staff_ghost == ghost && lifecycle.staff_invisible == invisible {
+                    return Ok(());
+                }
+                lifecycle
+                    .staff_visibility_revision
+                    .checked_add(1)
+                    .ok_or(CarrierError::PositionRevisionExhausted)?
+            }
+            _ => return Err(CarrierError::StaleActorGeneration),
+        };
+        let expected = self.read_actor_position(actor)?;
+        // A mode change is a visible actor update even when the actor does not walk.
+        self.carrier.compare_commit_position(
+            &self.continuity,
+            expected.0,
+            expected.0.version.context,
+            expected.0.version.position,
+        )?;
+        let Slot::Occupied { lifecycle, .. } = &mut self.carrier.slots[index] else {
+            unreachable!("exclusive exact staff-player slot remained occupied");
+        };
+        lifecycle.staff_ghost = ghost;
+        lifecycle.staff_invisible = invisible;
+        lifecycle.staff_visibility_revision = next_revision;
+        Ok(())
+    }
+    /// Current owner facts, never a grant of staff permission to the caller.
+    pub fn actor_staff_visibility(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<(bool, bool, u64), CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        Ok(match &self.carrier.slots[index] {
+            Slot::Occupied { lifecycle, .. } => (
+                lifecycle.staff_ghost,
+                lifecycle.staff_invisible,
+                lifecycle.staff_visibility_revision,
+            ),
+            _ => (false, false, 0),
+        })
+    }
+}
+
+impl PlayerRuntimeState {
+    pub(super) fn clear_control_loss(&mut self) -> Result<(), CarrierError> {
+        if self.control_loss.is_some() {
+            self.control_revision = self
+                .control_revision
+                .checked_add(1)
+                .ok_or(CarrierError::ControlLossConflict)?;
+            self.control_loss = None;
+        }
+        Ok(())
+    }
+}
+impl ChannelRuntimeV1 {
+    /// Monotonic current-slot control transition stamp; restore never recreates an old stamp.
+    pub fn player_control_revision(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<u64, CarrierError> {
+        self.player_control_facts(actor, session)?;
+        let index = self
+            .carrier
+            .player_slot_index(&self.continuity, actor.0, session)?;
+        match &self.carrier.slots[index] {
+            Slot::Occupied { lifecycle, .. } => Ok(lifecycle.control_revision),
+            _ => Err(CarrierError::ControlLossConflict),
+        }
     }
 }

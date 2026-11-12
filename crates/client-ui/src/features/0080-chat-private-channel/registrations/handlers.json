@@ -1,15 +1,22 @@
 {
   "mechanic": "0080-chat-private-channel",
   "kind": "handlers",
-  "id": "0080-chat-private-channel-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0080-chat-private-channel-push",
+  "status": "supported",
   "commands": [],
+  "direction": "server_to_client",
+  "capability": 80,
+  "entry": "protocol.rs::replace_state",
+  "push_messages": [
+    "ChatChannelList",
+    "ChatLine"
+  ],
+  "reducer": "protocol.rs::replace_state",
+  "test": "tests/state.rs::private_channel_input_and_server_projection",
+  "shared_commands": [
+    13
+  ],
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "Private channel membership is server-owned."
   }
 }

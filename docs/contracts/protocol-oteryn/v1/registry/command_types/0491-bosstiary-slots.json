@@ -5,6 +5,6 @@
   "capability": 117,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/bosstiary-slots-v1.md",
   "result_schema": "docs/contracts/protocol-oteryn/v1/bosstiary-slots-v1.md",
-  "max_payload_bytes": 130,
-  "max_result_payload_bytes": 284
+  "max_payload_bytes": 131,
+  "max_result_payload_bytes": 440
 }

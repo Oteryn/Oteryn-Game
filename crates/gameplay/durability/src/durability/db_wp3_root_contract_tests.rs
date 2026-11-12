@@ -373,11 +373,49 @@ fn retained_config_is_reserved_against_same_root_i_for_its_full_lifetime()
 
     let root = DurabilityRoot::new(config)?;
     let other_owner = root.clone();
+    let foreground = root.foreground_demand()?;
     assert_eq!(ledger.used(), required);
     drop(root);
     assert_eq!(ledger.used(), required);
     drop(other_owner);
+    // A cancelled or retained foreground owner may outlive every ordinary root clone.
+    // Its arbitration allocation remains charged until that guard is released too.
+    assert_eq!(ledger.used(), required);
+    drop(foreground);
     assert_eq!(ledger.used(), 0);
+    Ok(())
+}
+
+#[test]
+fn foreground_preference_is_shared_only_by_clones_without_requesting_maintenance()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = DurabilityRoot::new(config()?)?;
+    let clone = root.clone();
+    let other = DurabilityRoot::new(config()?)?;
+    root.ready_demand.store(false, Ordering::Release);
+    let demand = root.foreground_demand()?;
+    let now = Instant::now();
+    assert_eq!(
+        clone.holder_priority.background(now, ROOT_RECOVERY_WINDOW, || Some(())),
+        None
+    );
+    assert_eq!(
+        other.holder_priority.background(now, ROOT_RECOVERY_WINDOW, || Some(())),
+        Some(())
+    );
+    assert!(matches!(
+        clone.try_issue_background_semantic_pass(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    assert!(!root.has_ready_demand());
+    assert_eq!(root.pool.size(), 0);
+    drop(demand);
+    assert!(matches!(
+        clone.try_issue_background_semantic_pass(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    assert!(root.has_ready_demand(), "a real ready miss must request recovery");
+    assert_eq!(root.pool.size(), 0, "neither admission creates a connection");
     Ok(())
 }
 
@@ -420,6 +458,26 @@ fn budgeted_pass_never_outlives_its_outer_budget() -> Result<(), Box<dyn std::er
         Err(DurabilityError::RootPassDeadlineExceeded)
     ));
     assert!(!root.ready_demand.load(Ordering::Acquire));
+    Ok(())
+}
+
+#[test]
+fn expired_commit_deadline_is_known_uncommitted_and_does_not_send_commit()
+-> Result<(), Box<dyn std::error::Error>> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let mut commit_sent = false;
+    let result = runtime.block_on(commit_semantic_transaction_by(Instant::now(), || {
+        commit_sent = true;
+        std::future::ready(Ok(()))
+    }));
+
+    assert!(matches!(
+        result,
+        Err(DurabilityError::RootPassDeadlineExceeded)
+    ));
+    assert!(!commit_sent);
     Ok(())
 }
 

@@ -14,7 +14,7 @@ pub struct OneItemCraftV1 {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn encode(
+pub(in crate::durability) fn encode(
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     recipe: &str,
@@ -26,7 +26,6 @@ pub(super) fn encode(
     occurred: i64,
     tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let proof = serde_json::to_vec(&json!({"recipe": recipe, "intent": request.intent,
         "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
         "station": request.station.as_ref().map(|s| json!({"family": s.family, "key": s.production_key, "revision": s.revision_ref})),
@@ -34,6 +33,26 @@ pub(super) fn encode(
         "content_digest": content_digest,
         "gathering": request.gathering.as_ref().map(|g| json!({"placement": g.mutation.placement,"before":g.mutation.before,"after":g.mutation.after,"expected_revision":g.mutation.expected_revision,"reset_epoch":g.scope.reset_epoch,"consume_bait":g.attempt.consumes_bait})),
         "lease_generation": fence.character_lease_generation})).map_err(|_| DurabilityError::InvalidStoredState)?;
+    encode_proof(fence, request.command, proof, transaction, event, occurred, tuple)
+}
+
+/// A map harvest is a craft consequence with a real map operand and no carried debit.
+/// It never invents an input ItemInstance to satisfy the item audit envelope.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::durability) fn encode_map_harvest(
+    fence: CurrentCharacterItemFence, command: CommandRef, proof: Value,
+    transaction: &str, event: &str, occurred: i64, tuple: Type2EventTuple,
+) -> Result<Vec<u8>, DurabilityError> {
+    let proof = serde_json::to_vec(&proof).map_err(|_| DurabilityError::InvalidStoredState)?;
+    encode_proof(fence, command, proof, transaction, event, occurred, tuple)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn encode_proof(
+    fence: CurrentCharacterItemFence, command: CommandRef, proof: Vec<u8>,
+    transaction: &str, event: &str, occurred: i64, tuple: Type2EventTuple,
+) -> Result<Vec<u8>, DurabilityError> {
+    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let payload = mint::encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
@@ -55,7 +74,7 @@ pub(super) fn encode(
         channel_id: Some(channel.as_bytes().to_vec()),
         game_session_id: Some(fence.game_session_id.as_bytes().to_vec()),
         connection_generation: Some(fence.connection_generation.get()),
-        command_id: Some(request.command.command_id().get()),
+        command_id: Some(command.command_id().get()),
         transaction_event: Some(TransactionEventRefV1 {
             transaction_id: super::super::item_mint::uuid_text(transaction)?.to_vec(),
             ordinal: 1,
@@ -64,7 +83,7 @@ pub(super) fn encode(
         causation: Some(CausationRefV1 {
             cause: Some(CausationV1::Command(EnvelopeCommandRefV1 {
                 game_session_id: fence.game_session_id.as_bytes().to_vec(),
-                command_id: request.command.command_id().get(),
+                command_id: command.command_id().get(),
             })),
         }),
         server_build_id: super::super::character_authority::SERVER_BUILD_ID.into(),

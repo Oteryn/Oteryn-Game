@@ -1,0 +1,10 @@
+{
+  "id": 660,
+  "name": "PROFICIENCY_CATALOGUE",
+  "owner_decision": "NX-8 P08",
+  "capability": 195,
+  "payload_schema": "weapon-proficiency-v1.md#catalogue",
+  "result_schema": "weapon-proficiency-v1.md#catalogue",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 65536
+}

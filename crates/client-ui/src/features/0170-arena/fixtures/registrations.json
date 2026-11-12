@@ -2,19 +2,47 @@
   {
     "mechanic": "0170-arena",
     "kind": "handlers",
-    "id": "0170-arena-unsupported",
-    "status": "unsupported",
-    "reason": "ARENA-1 is server-only; native client presentation is pending.",
+    "id": "0170-arena-240",
+    "status": "supported",
     "commands": [
-      240,
+      240
+    ],
+    "direction": "client_to_server",
+    "capability": 170,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Arena progress and rewards are server-owned."
+    }
+  },
+  {
+    "mechanic": "0170-arena",
+    "kind": "handlers",
+    "id": "0170-arena-436",
+    "status": "supported",
+    "commands": [
       436
     ],
+    "direction": "client_to_server",
+    "capability": 170,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Server-only slice.",
-      "protocol": "Server-only slice.",
-      "view": "Server-only slice.",
-      "input": "Server-only slice.",
-      "settings": "Server-only slice."
+      "settings": "Arena progress and rewards are server-owned."
     }
+  },
+  {
+    "mechanic": "0170-arena",
+    "kind": "keybindings",
+    "id": "0170-arena-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+Z",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0170-arena",
+    "kind": "panels",
+    "id": "0170-arena-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

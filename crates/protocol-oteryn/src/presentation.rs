@@ -28,6 +28,12 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `PRESENTATION_V1`: no command type, state domains 19 and 20, requires 6.
 pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
+/// B24: independently negotiated private ambience; capability 23 remains unchanged.
+pub const CAPABILITY_AMBIENT_SOUND_V1: u32 = 288;
+pub const STATE_DOMAIN_AMBIENT_SOUND: u32 = 101;
+/// NX-5 item-only visual effects, independently negotiated from S17 presentation.
+pub const CAPABILITY_ITEM_EFFECTS_V1: u32 = 350;
+pub const STATE_DOMAIN_ITEM_EFFECTS: u32 = 104;
 /// The capability `PRESENTATION_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, whose D85 identities
 /// the events name (§7).
 pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] = [
@@ -131,6 +137,8 @@ pub struct PresentationValue {
 /// The oneof of `PresentationEventV1`. Actor references carry a non-zero generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PresentationEventKind {
+    /// Replaces the private ambient loop. Zero stops it; ids use the ambient namespace.
+    AmbientSound { cue_id: u32 },
     MagicEffect {
         position: ActorPosition,
         effect_id: u32,
@@ -282,6 +290,13 @@ fn check_event(event: &PresentationEvent) -> WireResult<()> {
     check_range(event.decision_ordinal, u32::MAX)?;
     check_range(event.emission_ordinal, u32::MAX)?;
     match &event.kind {
+        PresentationEventKind::AmbientSound { cue_id } => {
+            if *cue_id <= MAX_CLIENT_ID {
+                Ok(())
+            } else {
+                malformed()
+            }
+        }
         PresentationEventKind::MagicEffect {
             position,
             effect_id,
@@ -356,6 +371,10 @@ fn encode_value(value: &PresentationValue) -> Vec<u8> {
 fn encode_kind(kind: &PresentationEventKind) -> (u64, Vec<u8>) {
     let mut output = Vec::with_capacity(112);
     let field = match kind {
+        PresentationEventKind::AmbientSound { cue_id } => {
+            push_varint_field(&mut output, 1, u64::from(*cue_id));
+            8
+        }
         PresentationEventKind::MagicEffect {
             position,
             effect_id,
@@ -591,6 +610,7 @@ fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
             (3, 2, 0) | (4, 3, 0) | (5, 3, 0) | (7, 2, 0) => {
                 set_once(&mut f.ids[0], read_uint32(input, cursor)?)
             }
+            (8, 1, 0) => set_once(&mut f.ids[0], read_uint32(input, cursor)?),
             (7, 4, 0) => set_once(&mut f.ids[1], read_uint32(input, cursor)?),
             (3, 3, 0) | (4, 4, 0) | (7, 3, 0) => {
                 set_once(&mut f.source, read_enum(input, cursor, source)?)
@@ -608,6 +628,7 @@ fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
     let id = f.ids[0].ok_or_else(missing);
     let source = f.source.ok_or_else(missing);
     Ok(match field {
+        8 => PresentationEventKind::AmbientSound { cue_id: id? },
         3 => PresentationEventKind::MagicEffect {
             position: position?,
             effect_id: id?,
@@ -647,7 +668,7 @@ fn decode_event(input: &[u8]) -> WireResult<PresentationEvent> {
     read_fields(input, |number, wire, input, cursor| match (number, wire) {
         (1, 0) => set_once(&mut decision, read_uint32(input, cursor)?),
         (2, 0) => set_once(&mut emission, read_uint32(input, cursor)?),
-        (3..=7, 2) => set_once(&mut kind, decode_kind(number, read_bytes(input, cursor)?)?),
+        (3..=8, 2) => set_once(&mut kind, decode_kind(number, read_bytes(input, cursor)?)?),
         _ => malformed(),
     })?;
     let event = PresentationEvent {
@@ -804,6 +825,28 @@ pub fn decode_actor_cooldowns(payload: &[u8]) -> WireResult<ActorCooldowns> {
     };
     check_cooldowns(&cooldowns)?;
     Ok(cooldowns)
+}
+
+/// Item-only subset of the bounded presentation codec. No casting or audio surface is enabled.
+pub fn encode_item_effect_batch(events: &[PresentationEvent]) -> WireResult<Vec<u8>> {
+    if events
+        .iter()
+        .any(|e| !matches!(e.kind, PresentationEventKind::MagicEffect { .. }))
+    {
+        return malformed();
+    }
+    encode_presentation_batch(events)
+}
+
+pub fn decode_item_effect_batch(payload: &[u8]) -> WireResult<Vec<PresentationEvent>> {
+    let events = decode_presentation_batch(payload)?;
+    if events
+        .iter()
+        .any(|e| !matches!(e.kind, PresentationEventKind::MagicEffect { .. }))
+    {
+        return malformed();
+    }
+    Ok(events)
 }
 
 #[cfg(test)]

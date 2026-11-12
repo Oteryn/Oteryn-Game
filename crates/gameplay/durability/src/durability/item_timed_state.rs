@@ -398,12 +398,15 @@ pub(super) async fn write_checkpoint(
                                AND e.character_id = encode($2,'hex')::uuid) \
                  OR EXISTS (SELECT 1 FROM game_item_container_entries e \
                              WHERE e.item_instance_id = i.item_instance_id \
-                               AND e.character_id = encode($2,'hex')::uuid)) AS held \
+                               AND e.character_id = encode($2,'hex')::uuid) \
+                 OR game_item_dispenser_checkpoint_held(i.item_instance_id, \
+                     encode($2,'hex')::uuid,encode($3,'hex')::uuid)) AS held \
            FROM game_item_instances i \
           WHERE i.item_instance_id = encode($1,'hex')::uuid FOR UPDATE OF i",
     )
     .bind(request.item_instance_id.as_slice())
     .bind(holder.as_bytes().as_slice())
+    .bind(request.transaction_id.as_slice())
     .fetch_optional(&mut *connection)
     .await?;
     let Some(item) = item else {

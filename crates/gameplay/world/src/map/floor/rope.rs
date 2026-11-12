@@ -17,6 +17,13 @@ const OFFSETS: &[(i32, i32)] = &[
     (1, -1),
 ];
 
+/// Exact map identity selected by USE; recreated projections have a new identity.
+#[derive(Clone, Copy)]
+pub enum LadderTarget {
+    Base { key: u64, revision: u64 },
+    Added { id: u64 },
+}
+
 struct RopeProof<'a> {
     cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
@@ -26,6 +33,7 @@ struct RopeProof<'a> {
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     destination: MovementLocalPosition,
+    ladder: Option<(&'a crate::map::boot::BundleMap, LadderTarget)>,
 }
 
 /// Qualify a resolved, in-reach rope spot and a free upstairs landing. This produces the same
@@ -53,6 +61,36 @@ pub fn prepare_bundle_rope<'a>(
         pz_blocked,
         closed,
         destination: expected.position(),
+        ladder: None,
+    };
+    proof.destination = proof.resolve(runtime)?;
+    Ok(proof)
+}
+
+/// Qualify an immovable ladder and the same native upstairs landing used by rope.
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_bundle_ladder<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    map: &'a crate::map::boot::BundleMap,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    spot: LogicalCell,
+    target: LadderTarget,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let mut proof = RopeProof {
+        cells,
+        actor,
+        session,
+        expected,
+        spot,
+        pz_blocked,
+        closed,
+        destination: expected.position(),
+        ladder: Some((map, target)),
     };
     proof.destination = proof.resolve(runtime)?;
     Ok(proof)
@@ -68,18 +106,86 @@ impl RopeProof<'_> {
         {
             return Err(MovementError::NotQualified);
         }
-        let tile = self
-            .cells
-            .spell_tiles()
-            .lookup(self.cells.scope(), self.spot)
-            .map_err(|_| MovementError::NotQualified)?;
-        if !tile.ground_present()
-            || !(tile
-                .ground_source_id()
-                .is_some_and(|id| ROPE_GROUND.contains(&id))
-                || tile.top_source_ids().contains(&12935))
-        {
-            return Err(MovementError::NotQualified);
+        if let Some((map, target)) = self.ladder {
+            use crate::map::view::MapFacts;
+            let NativeMovementCollisionIndex::Bundle(collision) = self.cells.index() else {
+                return Err(MovementError::NotQualified);
+            };
+            if !std::ptr::eq(collision.map(), map) {
+                return Err(MovementError::NotQualified);
+            }
+            let position = TilePos {
+                x: self
+                    .spot
+                    .x
+                    .try_into()
+                    .map_err(|_| MovementError::NotQualified)?,
+                y: self
+                    .spot
+                    .y
+                    .try_into()
+                    .map_err(|_| MovementError::NotQualified)?,
+                floor: (-self.spot.z)
+                    .try_into()
+                    .map_err(|_| MovementError::NotQualified)?,
+            };
+            let entry = match target {
+                LadderTarget::Base { key, revision } => {
+                    let (pos, ordinal) =
+                        crate::map::view::placement_of(key).ok_or(MovementError::NotQualified)?;
+                    if pos != position
+                        || map.facts.base_hidden(key)
+                        || map.facts.object_revision(key) != revision
+                    {
+                        return Err(MovementError::NotQualified);
+                    }
+                    map.overlay
+                        .base()
+                        .tile(pos.x, pos.y, pos.floor)
+                        .and_then(|tile| {
+                            tile.ids()
+                                .iter()
+                                .zip(tile.depths())
+                                .filter(|(_, d)| **d == 0)
+                                .nth(usize::from(ordinal))
+                        })
+                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+                }
+                LadderTarget::Added { id } => {
+                    let (pos, entry) = map
+                        .facts
+                        .movement_item(id)
+                        .ok_or(MovementError::NotQualified)?;
+                    if pos != position {
+                        return Err(MovementError::NotQualified);
+                    }
+                    map.facts
+                        .movement_items(pos)
+                        .into_iter()
+                        .find(|item| item.source == crate::map::view::EntrySource::Added(entry))
+                        .map(|item| item.facts)
+                }
+            }
+            .ok_or(MovementError::NotQualified)?;
+            if entry.pickupable
+                || !crate::map::ladder_catalogue::LADDERS.contains(&entry.appearance_id)
+            {
+                return Err(MovementError::NotQualified);
+            }
+        } else {
+            let tile = self
+                .cells
+                .spell_tiles()
+                .lookup(self.cells.scope(), self.spot)
+                .map_err(|_| MovementError::NotQualified)?;
+            if !tile.ground_present()
+                || !(tile
+                    .ground_source_id()
+                    .is_some_and(|id| ROPE_GROUND.contains(&id))
+                    || tile.top_source_ids().contains(&12935))
+            {
+                return Err(MovementError::NotQualified);
+            }
         }
         let floor = self
             .spot

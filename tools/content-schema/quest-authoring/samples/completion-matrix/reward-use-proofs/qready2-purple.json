@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_QUEST_REWARD_USE_PROOF/v1",
+  "runtime_path": "bundle_chest::use_bundle_chest -> reward_claim_mint",
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_purple_claims.rs",
+  "test_sha256": "da0e0ddd1af403969582f57f0b5dbb4c64f2b7beb25ccc4f4034587db18cef1f",
+  "cases": [
+    {
+      "wiki_title": "Purple Tome Quest",
+      "claim_key": "oteryn:reward-claim.kv.purpletome1",
+      "test": "qready2_purple_tome_quest_1",
+      "marker": "QREADY2_PURPLE_TOME_QUEST_1",
+      "duration_seconds": 32.233,
+      "claim_sha256": "bcc751f4507d6f3e4c171088afa6a7ddb92075c7c170511e5aa74e92bf99501c"
+    },
+    {
+      "wiki_title": "Purple Tome Quest",
+      "claim_key": "oteryn:reward-claim.kv.purpletome2",
+      "test": "qready2_purple_tome_quest_2",
+      "marker": "QREADY2_PURPLE_TOME_QUEST_2",
+      "duration_seconds": 32.485,
+      "claim_sha256": "8f7669d48ab376519949993f9544e12ef57946c12aed3366c8cf177b8e4757d8"
+    },
+    {
+      "wiki_title": "Purple Tome Quest",
+      "claim_key": "oteryn:reward-claim.kv.purpletome3",
+      "test": "qready2_purple_tome_quest_3",
+      "marker": "QREADY2_PURPLE_TOME_QUEST_3",
+      "duration_seconds": 29.443,
+      "claim_sha256": "03421e9ab29bd89aaa23581b9721836e07ad3dd2249ab9b2deb8c70b0bb1dbef"
+    }
+  ]
+}

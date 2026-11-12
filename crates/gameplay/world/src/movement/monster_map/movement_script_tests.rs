@@ -172,6 +172,16 @@ fn wolf_step(item: u16, key: &str, reward: u16, captures: bool) -> TestResult {
         return Err("bundle".into());
     };
     let bundle = collision.map();
+    assert_eq!(
+        bundle.facts.take_monster_steps(),
+        vec![crate::map::facts::MonsterStep {
+            actor: wolf,
+            from: before.position(),
+            to: at,
+        }],
+        "every committed monster step is recorded once for the trap owner"
+    );
+    assert!(bundle.facts.take_monster_steps().is_empty());
     let composed = view::compose_tile(
         &bundle.overlay,
         &bundle.facts,

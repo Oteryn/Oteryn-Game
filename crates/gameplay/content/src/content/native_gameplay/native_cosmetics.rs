@@ -7,6 +7,9 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+mod provisioning;
+pub(super) use provisioning::materialize;
+
 pub(super) const MAX_BYTES: usize = 16 * 1024 * 1024;
 const SCHEMA: &str = "OTERYN_NATIVE_COSMETICS/v1";
 const UNAVAILABLE: &[u8] =
@@ -224,6 +227,9 @@ fn promotion_paths(document: &Value) -> Result<BTreeSet<String>, ContentError> {
     .into_iter()
     .map(str::to_owned)
     .collect();
+    if document.get("item_acquisitions").is_some() {
+        paths.insert("/item_acquisitions".to_owned());
+    }
     if document.get("grant_mappings").is_some() {
         paths.insert("/grant_mappings".to_owned());
     }
@@ -307,7 +313,9 @@ pub(super) fn decode(bytes: &[u8]) -> Result<Option<super::NativeCosmeticsView>,
     let mut seen = BTreeSet::new();
     for promotion in authoring.promotions {
         let _ = (&promotion.state, &promotion.source_kind);
-        if !expected_paths.contains(&promotion.path)
+        if (promotion.path == "/item_acquisitions"
+            && !matches!(&promotion.source_kind, PromotionSource::OwnerDecision))
+            || !expected_paths.contains(&promotion.path)
             || !seen.insert(promotion.path.clone())
             || document.pointer(&promotion.path) != Some(&promotion.value.0)
             || !text(&promotion.decision, 1024)

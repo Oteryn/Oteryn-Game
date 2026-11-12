@@ -1,0 +1,136 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "krailos",
+    "frozen_stage1": {
+      "total": 2,
+      "auto": 1,
+      "manual": 1
+    },
+    "authored_callback_definitions": 1,
+    "runtime_catalogue_callback_definitions": 1,
+    "runtime_exclusions": [],
+    "npc_source_files": 0,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Jeden dokładny portal z przypiętego katalogu.",
+    "left_out_summary": "AID19049 nieobecny. Nie dopisano przebiegu, którego ten katalog donora nie zawiera."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 8,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315864"
+      ],
+      "disposition": {
+        "row_id": "R8A008",
+        "original_index": 8,
+        "quest": "krailos",
+        "step": "Wejście do depozytu",
+        "original_row": {
+          "quest": "krailos",
+          "step": "Wejście do depozytu",
+          "pattern": "P03",
+          "trigger": "StepIn AID19049",
+          "condition": "creature jest graczem; brak gate questowego",
+          "effect": "Teleport33657,31658,8",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:1"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Niegated player-only teleport został zachowany w callback input. AID19049 nie występuje w pełnym natywnym indeksie.",
+        "missing_function": "Źródłowo potwierdzony natywny selector AID19049, następnie zwykły ingress test; nie nadawać AID podobnemu obiektowi.",
+        "question_ids": [
+          "krailos-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315864"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/krailos/movements_access_depot.lua:1"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-krailos.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/krailos-depot-entrance",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 9,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129276"
+      ],
+      "disposition": {
+        "row_id": "R8A009",
+        "original_index": 9,
+        "quest": "krailos",
+        "step": "Pozostały przebieg Krailos",
+        "original_row": {
+          "quest": "krailos",
+          "step": "Pozostały przebieg Krailos",
+          "pattern": "P09",
+          "trigger": "NPC/misje NIEZNANE",
+          "condition": "Storage.Quest.U10_90.Krailos jest puste; katalog ma1skrypt",
+          "effect": "Nie wywodzić całego questa z jednego portalu",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2365"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SOURCE_GAP",
+        "reason": "Przypięty katalog ma jeden portal, a tabela Storage.Quest.U10_90.Krailos jest pusta. Pełnej historii zadań nie wolno wywnioskować z pojedynczego przejścia; Wiki API403 pozostawia C nieznane.",
+        "missing_function": "Źródłowa definicja dalszych misji/NPC/storages przed jakąkolwiek implementacją dodatkowego przebiegu.",
+        "question_ids": [
+          "global-api-capture"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129276"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          1,
+          2,
+          3
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2365"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

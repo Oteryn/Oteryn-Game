@@ -1,0 +1,50 @@
+{
+  "vectors": [
+    {
+      "name": "close",
+      "wire": "{\"contract_version\":2,\"command\":\"CloseAccount\",\"variant\":\"PLATFORM_ACCOUNT_CLOSE\",\"issuer_authority\":\"OTERYN_PLATFORM_CHARACTER_AUTHORITY\",\"issuer_decision_id\":\"0192a000-0000-7000-8000-0000000000aa\",\"source_revision\":\"30\",\"operation_id\":\"0192a000-0000-7000-8000-000000000030\",\"account_id\":\"0192a000-0000-7000-8000-000000000011\",\"termination_id\":\"0192a000-0000-7000-8000-000000000031\",\"lifecycle_generation\":\"8\",\"expected_recovery_generation\":\"3\",\"scheduled_for\":\"1790000000\",\"issued_at_source\":\"1790000000\",\"expires_at_source\":\"1790000300\",\"audience\":\"OTERYN_GAME_CHARACTER_AUTHORITY\"}",
+      "sha256": "61422a5bb5815f017fa4e848ece3dbc79f6555097b600fec334c462bd841819e",
+      "expect": "detach after offline proof; never finalize Platform directly"
+    },
+    {
+      "name": "closed_receipt",
+      "wire": "{\"contract_version\":2,\"operation\":\"PublishCharacterCommandReceiptV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"command\":\"CloseAccount\",\"operation_id\":\"0192a000-0000-7000-8000-000000000030\",\"outcome\":\"COMMITTED\",\"result_code\":\"CHAR_CMD_OK\",\"result_data\":{\"account_id\":\"0192a000-0000-7000-8000-000000000011\",\"termination_id\":\"0192a000-0000-7000-8000-000000000031\",\"lifecycle_generation\":\"8\",\"closure_state\":\"CLOSED_DETACHED\",\"detached_characters\":\"0\",\"manifest_sha256\":\"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\"projection_epoch\":\"3\",\"projection_revision\":\"12\",\"proof_sha256\":\"8754fc6a8225c0b2898c7293666e1a7d22a91ac4b9f0afee0c60661ce3407e16\"},\"recovery_generation\":\"3\",\"decided_at\":\"1790000002\"}",
+      "sha256": "fa2c88f6c7667899368a3964a46a63b711c74a81ac80aa2ef1e85ea0a35292b3",
+      "expect": "requires current lifecycle generation and empty LCFA pair before finalized_at"
+    },
+    {
+      "name": "closure_projection",
+      "wire": "{\"contract_version\":2,\"operation\":\"PublishAccountClosureV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"account_id\":\"0192a000-0000-7000-8000-000000000011\",\"projection_epoch\":\"3\",\"projection_revision\":\"1\",\"source_observed_at\":\"1790000002\",\"closures\":[{\"termination_id\":\"0192a000-0000-7000-8000-000000000031\",\"operation_id\":\"0192a000-0000-7000-8000-000000000030\",\"lifecycle_generation\":\"8\",\"closure_state\":\"CLOSED_DETACHED\",\"receipt_digest\":\"fa2c88f6c7667899368a3964a46a63b711c74a81ac80aa2ef1e85ea0a35292b3\",\"proof_sha256\":\"8754fc6a8225c0b2898c7293666e1a7d22a91ac4b9f0afee0c60661ce3407e16\"}]}",
+      "sha256": "0fe0de187e46416456f115c7991d854a565120d42f6fa7c7b11b98a7ee0f923e",
+      "expect": "requery matches receipt and proof hashes"
+    },
+    {
+      "name": "cancel_resolution",
+      "wire": "{\"contract_version\":2,\"command\":\"ResolveAccountClosure\",\"variant\":\"PLATFORM_ACCOUNT_CLOSE_RESOLUTION\",\"issuer_authority\":\"OTERYN_PLATFORM_CHARACTER_AUTHORITY\",\"issuer_decision_id\":\"0192a000-0000-7000-8000-0000000000aa\",\"source_revision\":\"31\",\"operation_id\":\"0192a000-0000-7000-8000-000000000032\",\"account_id\":\"0192a000-0000-7000-8000-000000000011\",\"termination_id\":\"0192a000-0000-7000-8000-000000000031\",\"lifecycle_generation\":\"9\",\"expected_recovery_generation\":\"3\",\"close_operation_id\":\"0192a000-0000-7000-8000-000000000030\",\"decision\":\"CANCEL\",\"scheduled_for\":\"1790000000\",\"issued_at_source\":\"1790000000\",\"expires_at_source\":\"1790000300\",\"audience\":\"OTERYN_GAME_CHARACTER_AUTHORITY\"}",
+      "sha256": "9039006a63cba2255b268ddbea198cbfe22f3bb342bfb0221d02df4028076300",
+      "expect": "restore quarantine after cancellation wins local account lock"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "cancel_before_close_arrives",
+      "expect": "store generation 9 cancellation tombstone; late Close generation 8 never detaches"
+    },
+    {
+      "name": "cancel_after_proof_before_finalized_at",
+      "expect": "invalidate generation 8 local proof and enqueue CANCEL atomically"
+    },
+    {
+      "name": "partial_detach_restart",
+      "expect": "resume one-character steps; no success proof until complete"
+    },
+    {
+      "name": "stale_recovery",
+      "expect": "CHAR_CMD_ACCOUNT_CLOSE_STALE_GENERATION; no effect"
+    },
+    {
+      "name": "missing_LCFA",
+      "expect": "Boundary error; finalized_at stays null"
+    }
+  ]
+}

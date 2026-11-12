@@ -40,6 +40,8 @@ fn sword() -> TypedDefinitionRef {
 
 fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
     NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: "oteryn:npc.tibia.sam".into(),
             catalogue_revision: 1,
@@ -97,10 +99,157 @@ fn priced(request: &NpcTradeRequest) -> Result<(u64, u32)> {
 }
 
 #[test]
-fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
-    assert!(validate(&request(NpcTradeSide::Sell, 1, 99), true)
+fn pick_exchange_fixed_recipe_and_audit_refuse_other_sources() {
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = "oteryn:npc.al_dee".into();
+    value.item = facts(TypedDefinitionRef {
+        family: "Item".into(), production_key: "oteryn:item.tibia.i3456".into(),
+        revision_ref: "definition-r1".into(),
+    }, ItemStackClass::NonStackable);
+    assert_eq!(priced(&value).unwrap(), (0, 1));
+    let entries = [entry(10, 1, pick_exchange::input().clone(), 1)];
+    let plan = pick_exchange::plan(&value, 1, &entries).unwrap();
+    assert_eq!(plan.lines.len(), 2);
+    assert_eq!(plan.lines[0].quantity_after, 0);
+    assert_eq!(plan.lines[1].quantity_after, 1);
+    let world = WorldId::decode(&id(1)).unwrap();
+    let channel = crate::foundation::ChannelId::decode(&id(2)).unwrap();
+    let fence = CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(3)).unwrap(),
+        game_session_id: GameSessionId::decode(&id(50)).unwrap(),
+        connection_generation: crate::foundation::ConnectionGeneration::new(1).unwrap(),
+        character_lease_generation: 1,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
+    };
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    assert_eq!(super::super::npc_trade_audit::check_npc_trade(&message), Ok(()));
+    let mut wrong_source = message.clone();
+    wrong_source.lines[0].before.as_mut().unwrap().definition.as_mut().unwrap().production_key = "oteryn:item.tibia.i3264".into();
+    assert_eq!(super::super::npc_trade_audit::check_npc_trade(&wrong_source), Err(AuditError::InvalidInput));
+    let mut duplicate_output = message;
+    duplicate_output.lines.push(duplicate_output.lines[1].clone());
+    assert_eq!(super::super::npc_trade_audit::check_npc_trade(&duplicate_output), Err(AuditError::InvalidInput));
+    value.cause.npc_key = "oteryn:npc.sam".into();
+    assert!(matches!(validate(&value, false), Err(NpcTradeError::InvalidInput)));
+    assert!(matches!(pick_exchange::plan(&value, 1, &[]), Err(NpcTradeError::ItemNotFound)));
+}
+
+#[test]
+fn present_exchange_exact_recipe_empty_container_and_closed_audit() {
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = present_exchange::NPC.into();
+    value.item = facts(
+        present_exchange::output().clone(),
+        ItemStackClass::NonStackable,
+    );
+    assert_eq!(priced(&value).unwrap(), (0, 1));
+    let mut entries = [entry(10, 1, present_exchange::input().clone(), 1)];
+    let plan =
+        pick_exchange::plan_with_input(&value, 1, &entries, present_exchange::input()).unwrap();
+    assert_eq!(plan.lines.len(), 2);
+    assert_eq!(plan.lines[0].quantity_after, 0);
+    assert_eq!(plan.lines[1].quantity_after, 1);
+    assert!(matches!(
+        pick_exchange::plan_with_input(&value, 0, &entries, present_exchange::input()),
+        Err(NpcTradeError::DoesNotFit)
+    ));
+    entries[0].not_default = true;
+    assert!(matches!(
+        pick_exchange::plan_with_input(&value, 1, &entries, present_exchange::input()),
+        Err(NpcTradeError::ItemNotFound)
+    ));
+    let world = WorldId::decode(&id(1)).unwrap();
+    let channel = crate::foundation::ChannelId::decode(&id(2)).unwrap();
+    let fence = CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(3)).unwrap(),
+        game_session_id: GameSessionId::decode(&id(50)).unwrap(),
+        connection_generation: crate::foundation::ConnectionGeneration::new(1).unwrap(),
+        character_lease_generation: 1,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
+    };
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    assert_eq!(
+        super::super::npc_trade_audit::check_npc_trade(&message),
+        Ok(())
+    );
+    let mut wrong_source = message.clone();
+    wrong_source.lines[0]
+        .before
+        .as_mut()
         .unwrap()
-        .is_none());
+        .definition
+        .as_mut()
+        .unwrap()
+        .production_key = "oteryn:item.tibia.i3462".into();
+    assert_eq!(
+        super::super::npc_trade_audit::check_npc_trade(&wrong_source),
+        Err(AuditError::InvalidInput)
+    );
+    let mut wrong_npc = message;
+    wrong_npc.cause.as_mut().unwrap().npc_key = "oteryn:npc.al_dee".into();
+    assert_eq!(
+        super::super::npc_trade_audit::check_npc_trade(&wrong_npc),
+        Err(AuditError::InvalidInput)
+    );
+    value.item.definition = pick_exchange::output().clone();
+    assert!(matches!(
+        validate(&value, false),
+        Err(NpcTradeError::InvalidInput)
+    ));
+    value.item.definition = present_exchange::output().clone();
+    value.quantity = 2;
+    assert!(matches!(
+        validate(&value, false),
+        Err(NpcTradeError::InvalidInput)
+    ));
+    value.quantity = 1;
+    assert!(matches!(
+        validate(&value, true),
+        Err(NpcTradeError::InvalidInput)
+    ));
+}
+
+#[test]
+fn obsidian_knife_two_inputs_partial_steel_and_closed_audit() {
+    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+    value.cause.npc_key = obsidian_knife::NPC.into();
+    value.item = facts(obsidian_knife::knife().clone(), ItemStackClass::NonStackable);
+    assert_eq!(priced(&value).unwrap(), (0, 1));
+    let entries = [entry(12, 3, obsidian_knife::lance().clone(), 1),
+        entry(11, 2, obsidian_knife::lance().clone(), 1),
+        entry(10, 1, obsidian_knife::steel().clone(), 2)];
+    let plan = obsidian_knife::plan(&value, 3, &entries).unwrap();
+    assert_eq!(plan.lines.len(), 3);
+    assert_eq!((plan.lines[0].item_instance_id, plan.lines[0].quantity_before, plan.lines[0].quantity_after), (id(10), 2, 1));
+    assert_eq!((plan.lines[1].item_instance_id, plan.lines[1].quantity_before, plan.lines[1].quantity_after), (id(12), 1, 0));
+    assert_eq!(plan.lines[2].quantity_after, 1);
+    assert!(matches!(obsidian_knife::plan(&value, 3, &entries[2..]), Err(NpcTradeError::ItemNotFound)));
+    let world = WorldId::decode(&id(1)).unwrap();
+    let channel = crate::foundation::ChannelId::decode(&id(2)).unwrap();
+    let fence = CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(3)).unwrap(),
+        game_session_id: GameSessionId::decode(&id(50)).unwrap(),
+        connection_generation: crate::foundation::ConnectionGeneration::new(1).unwrap(),
+        character_lease_generation: 1,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+        scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1).unwrap(),
+    };
+    let message = trade_message(&fence, world, channel, &id(4), &value, (1, 0, false), &plan);
+    assert_eq!(super::super::npc_trade_audit::check_npc_trade(&message), Ok(()));
+    let mut wrong_lance = message;
+    wrong_lance.lines[1].before.as_mut().unwrap().definition.as_mut().unwrap().production_key = "oteryn:item.tibia.i5889".into();
+    assert_eq!(super::super::npc_trade_audit::check_npc_trade(&wrong_lance), Err(AuditError::InvalidInput));
+}
+
+#[test]
+fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
+    assert!(
+        validate(&request(NpcTradeSide::Sell, 1, 99), true)
+            .unwrap()
+            .is_none()
+    );
     let mut count = request(NpcTradeSide::Sell, 1, 1);
     count.offer_count = 2;
     for (name, value) in [
@@ -109,7 +258,11 @@ fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
         ("a count of 2", count),
         (
             "a price above the SELL ceiling",
-            request(NpcTradeSide::Sell, 1, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1),
+            request(
+                NpcTradeSide::Sell,
+                1,
+                rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1,
+            ),
         ),
     ] {
         assert!(
@@ -270,8 +423,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
             value.offer_count = count;
             let (total, units) = priced(&value).unwrap();
             assert_eq!((total, units), (u64::from(quantity) * 3, expected_units));
-            let plan = match side {
-                NpcTradeSide::Buy => plan_buy(
+            let plan = if side == NpcTradeSide::Buy { plan_buy(
                     &value,
                     total,
                     units,
@@ -280,17 +432,24 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                     Type2EventTuple::V1,
                     false,
                 )
-                .unwrap(),
-                NpcTradeSide::Sell => plan_sell(
+                .unwrap() } else { plan_sell(
                     &value,
                     total,
                     units,
                     20,
                     &[entry(10, 1, sword(), expected_units)],
                 )
-                .unwrap(),
+                .unwrap()
             };
-            let message = trade_message(&fence, world, channel, &id(4), &value, (quantity, total, false), &plan);
+            let message = trade_message(
+                &fence,
+                world,
+                channel,
+                &id(4),
+                &value,
+                (quantity, total, false),
+                &plan,
+            );
             assert_eq!(
                 (
                     message.quantity,
@@ -299,8 +458,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                 ),
                 (quantity, 3, total)
             );
-            let moved_units = match side {
-                NpcTradeSide::Buy => {
+            let moved_units = if side == NpcTradeSide::Buy { {
                     message
                         .lines
                         .last()
@@ -309,12 +467,10 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                         .as_ref()
                         .unwrap()
                         .quantity
-                }
-                NpcTradeSide::Sell => {
+                } } else { {
                     let line = message.lines.first().unwrap();
                     line.before.as_ref().unwrap().quantity - line.after.as_ref().unwrap().quantity
-                }
-            };
+                } };
             assert_eq!(moved_units, expected_units);
             for tuple in [Type2EventTuple::V1, Type2EventTuple::V2] {
                 let wire = encode_npc_trade_event(
@@ -333,8 +489,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
             // Change only the item custody quantity, retaining valid price/conservation
             // and all other states: no integral positive offer count can explain it.
             let mut broken = message;
-            match side {
-                NpcTradeSide::Buy => {
+            if side == NpcTradeSide::Buy { {
                     broken
                         .lines
                         .last_mut()
@@ -343,8 +498,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                         .as_mut()
                         .unwrap()
                         .quantity = expected_units - 1
-                }
-                NpcTradeSide::Sell => {
+                } } else { {
                     broken
                         .lines
                         .first_mut()
@@ -353,8 +507,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                         .as_mut()
                         .unwrap()
                         .quantity = expected_units - 1
-                }
-            }
+                } }
             assert_eq!(check_npc_trade(&broken), Err(AuditError::InvalidInput));
         }
     }
@@ -408,4 +561,68 @@ fn only_albinius_exact_blank_scroll_offer_activates_the_durable_gate() {
     value.unit_price -= 1;
     value.cause.npc_key = "oteryn:npc.someone_else".into();
     assert!(!is_albinius_blank_scroll(&value));
+}
+
+#[test]
+fn srv9b_subtype_binding_and_native_single_item_shapes() {
+    use crate::foundation::{ChannelId, ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
+    let world=WorldId::decode(&id(1)).unwrap();
+    let fence=CurrentCharacterItemFence { character_id:CharacterId::from_bytes(id(3)).unwrap(),game_session_id:GameSessionId::decode(&id(50)).unwrap(),connection_generation:ConnectionGeneration::new(1).unwrap(),character_lease_generation:1,runtime_scope:RuntimeScopeRefV1::channel(world,ChannelId::decode(&id(2)).unwrap()),scope_ownership_generation:ScopeOwnershipGeneration::new(1).unwrap() };
+    let mut value=request(NpcTradeSide::Buy,1,2);
+    value.item=facts(definition("Item","oteryn:item.tibia.i2880"),ItemStackClass::NonStackable);
+    let ordinary=request_binding(&fence,world,&value,false);
+    value.fluid_subtype=Some(0);let empty=request_binding(&fence,world,&value,false);
+    value.fluid_subtype=Some(3);let beer=request_binding(&fence,world,&value,false);
+    assert_ne!(ordinary,empty);assert_ne!(empty,beer);assert!(validate(&value,false).is_ok());
+    value.quantity=2;assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+    value.quantity=1;value.offer_count=3;assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+    value.offer_count=1;value.fluid_subtype=Some(21);assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+    value.fluid_subtype=None;
+    value.item.definition=definition("Item","oteryn:item.tibia.i50293");
+    let plain_wrap=request_binding(&fence,world,&value,false);
+    value.full_charges=Some(500);let charged=request_binding(&fence,world,&value,false);
+    assert_ne!(plain_wrap,charged);
+    assert_ne!(ordinary,charged);assert!(validate(&value,false).is_ok());
+    value.full_charges=Some(0);assert!(matches!(validate(&value,false),Err(NpcTradeError::InvalidInput)));
+}
+
+#[test]
+fn worldchg_trader_selected_yasir_position_uses_committed_town_and_floor_convention() {
+    use oteryn_gameplay_world_change::daily::{DailyWorldChanges, OrientalTraderTown};
+    let mut day = DailyWorldChanges::roll(3, 1, 1, |_| u64::MAX);
+    assert!(!selected_yasir_position(&day, (33102, 32884, 6)));
+    for town in [
+        OrientalTraderTown::Ankrahmun,
+        OrientalTraderTown::Carlin,
+        OrientalTraderTown::LibertyBay,
+    ] {
+        day.oriental_trader = Some(town);
+        let (x, y, z) = town.yasir_position();
+        assert!(selected_yasir_position(&day, (x, y, z)));
+        assert!(
+            !selected_yasir_position(&day, (x, y, -z)),
+            "source z is positive, unlike NPC placement floor"
+        );
+        assert!(!selected_yasir_position(&day, (x + 1, y, z)));
+        assert!(!selected_yasir_position(&day, (x, y + 1, z)));
+    }
+}
+
+#[test]
+fn worldchg_trader_source_binding_preserves_legacy_and_separates_selected_ships() {
+    let legacy = vec![7; 32];
+    assert_eq!(bind_yasir_position(legacy.clone(), None), legacy);
+    let ankrahmun = bind_yasir_position(legacy.clone(), Some((33102, 32884, 6)));
+    assert_eq!(
+        ankrahmun,
+        bind_yasir_position(legacy.clone(), Some((33102, 32884, 6)))
+    );
+    assert_ne!(
+        ankrahmun,
+        bind_yasir_position(legacy.clone(), Some((32400, 31815, 6)))
+    );
+    assert_ne!(
+        ankrahmun,
+        bind_yasir_position(legacy, Some((33102, 32884, -6)))
+    );
 }

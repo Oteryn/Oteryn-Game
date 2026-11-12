@@ -1,0 +1,7 @@
+{
+  "mechanic": "0059-house-move-out",
+  "kind": "panels",
+  "id": "0059-house-move-out-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

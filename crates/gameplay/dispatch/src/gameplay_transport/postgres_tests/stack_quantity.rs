@@ -138,7 +138,7 @@ fn scenario(boss_item_fences: bool) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -267,7 +267,7 @@ fn scenario(boss_item_fences: bool) -> TestResult {
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let mut replay_admitted = admitted;
         replay_admitted.continuity.item_view.handle_counter = 1000;
@@ -441,6 +441,13 @@ async fn exchange_with_boss_fences(
                     .bind(revisions[3])
                     .execute(&harness.pool)
                     .await?;
+                if index == 3 {
+                    // Registered historical starters are compatible under SRX-2.
+                    // This refusal specifically exercises an unregistered token.
+                    let removed = sqlx::query("DELETE FROM game_world_registered_starter_revisions WHERE world_id=encode($1,'hex')::uuid AND starter_template_revision='starter-1'")
+                        .bind(owner.world_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+                    assert_eq!(removed.rows_affected(), 1);
+                }
                 let id = 2 + index as u64 * 2;
                 send(&mut client, id, COMMAND_TYPE_ITEM_MOVE_INTENT, &actual).await?;
                 let (_, payload) = command_result(&mut client, id).await?;

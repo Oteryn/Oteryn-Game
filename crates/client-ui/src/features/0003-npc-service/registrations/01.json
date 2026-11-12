@@ -1,0 +1,15 @@
+{
+  "mechanic": "0003-npc-service",
+  "kind": "handlers",
+  "id": "0003-npc-service-trade",
+  "status": "supported",
+  "commands": [
+    8
+  ],
+  "not_applicable": {
+    "settings": "The server owns NPC quotes and carried items."
+  },
+  "capability": 3,
+  "direction": "client_to_server",
+  "entry": "mod.rs::trade_request"
+}

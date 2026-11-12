@@ -24,6 +24,7 @@ fn world_reset_retired_holder_release_preserves_live_holders_and_original_grace(
 
 async fn retired_session(admin: String, lost: bool) -> TestResult {
     reset();
+    let pubproj_started = std::time::Instant::now();
     let harness =
         Harness::create_with_admission_seed(admin, "reset_retired_holder", true, false).await?;
     let (database, version): (String, String) =
@@ -32,6 +33,9 @@ async fn retired_session(admin: String, lost: bool) -> TestResult {
             .await?;
     eprintln!("WORLD-RESET-RETIRED-HOLDER-PG: {database} PostgreSQL={version} lost={lost}");
     prepare_current_session(&harness).await?;
+    let (statistics_id,statistics_start):(String,i64)=sqlx::query_as("SELECT statistics_id::text,started_ms FROM game_character_online_intervals WHERE character_id=encode($1,'hex')::uuid AND state=1")
+        .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+    assert_ne!(statistics_id, "32020304-0506-7008-800a-0b0c0d0e0f32");
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
         .root
@@ -111,6 +115,22 @@ async fn retired_session(admin: String, lost: bool) -> TestResult {
         let remaining = u64::try_from(deadline.saturating_sub(now))?;
         tokio::time::sleep(Duration::from_secs(remaining + 1)).await;
     }
+    if !lost {
+        let ended: Option<i64> = sqlx::query_scalar(
+            "SELECT ended_ms FROM game_character_online_intervals WHERE statistics_id=$1::uuid",
+        )
+        .bind(&statistics_id)
+        .fetch_one(&harness.pool)
+        .await?;
+        assert!(
+            ended.is_none(),
+            "crash silence/retired assignment does not invent an end"
+        );
+    }
+    let release_cut: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&harness.pool)
+            .await?;
     drop(owner);
     assert!(
         harness
@@ -121,6 +141,22 @@ async fn retired_session(admin: String, lost: bool) -> TestResult {
     );
     let terminal = store.current_session(session).await?;
     assert_eq!(terminal.session_state(), GameSessionState::Terminal);
+    let (statistics_state, statistics_end): (i16, i64) = sqlx::query_as(
+        "SELECT state,ended_ms FROM game_character_online_intervals WHERE statistics_id=$1::uuid",
+    )
+    .bind(&statistics_id)
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(statistics_state, 2);
+    assert!(statistics_end >= statistics_start);
+    if !lost {
+        assert!(
+            statistics_end >= release_cut,
+            "active crash closes only in authoritative release commit"
+        );
+    }
+    let statistics_revision:i64=sqlx::query_scalar("SELECT revision FROM game_public_v2_heads WHERE family='character_online_sessions' AND subject=$1")
+        .bind(&statistics_id).fetch_one(&harness.pool).await?;
     assert_eq!(
         terminal.current_control_loss_epoch(),
         before.current_control_loss_epoch()
@@ -141,6 +177,16 @@ async fn retired_session(admin: String, lost: bool) -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(receipts, replay_receipts);
+    let replay_revision:i64=sqlx::query_scalar("SELECT revision FROM game_public_v2_heads WHERE family='character_online_sessions' AND subject=$1")
+        .bind(&statistics_id).fetch_one(&harness.pool).await?;
+    assert_eq!(
+        statistics_revision, replay_revision,
+        "release replay cannot add duration or revisions"
+    );
+    eprintln!(
+        "PUBPROJ_ONLINE_CRASH_PG_EXECUTED lost={lost} elapsed_ms={}",
+        pubproj_started.elapsed().as_millis()
+    );
     drop(authority);
     drop(seal);
     harness.cleanup().await

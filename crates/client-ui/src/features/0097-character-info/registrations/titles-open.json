@@ -1,0 +1,9 @@
+{
+  "mechanic": "0097-character-info",
+  "kind": "keybindings",
+  "id": "0097-character-info-titles-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+Y",
+  "entry": "input.rs::titles_key"
+}

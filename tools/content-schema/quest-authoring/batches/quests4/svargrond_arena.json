@@ -1,0 +1,374 @@
+{
+  "schema": 1,
+  "quest_directory": "svargrond_arena",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "svargrond_arena",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [
+      {
+        "npc_source_name": "halvar",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/halvar.lua:1-124",
+        "source_blob_sha256": "10ac5f7b7e7c58e6406112bc8a3eaae9c0704dbcc25473fb567fc31aa99f51eb",
+        "full_source_lua": "local internalNpcName = \"Halvar\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 143,\n\tlookHead = 3,\n\tlookBody = 77,\n\tlookLegs = 78,\n\tlookFeet = 39,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nkeywordHandler:addKeyword({ \"rules\" }, StdModule.say, { npcHandler = npcHandler, text = \"What do you want to know? Something about the three different {difficulties}, the {general} rules or the {prices}? Maybe you also want to know what happens when you {die}?\" })\nkeywordHandler:addKeyword({ \"difficulties\" }, StdModule.say, { npcHandler = npcHandler, text = \"There are three difficulties: Greenhorn, Scrapper and Warlord. On each challenge you will be confronted with ten monsters increasing in strength.\" })\nkeywordHandler:addKeyword({ \"levels\" }, StdModule.say, { npcHandler = npcHandler, text = \"There are three difficulties: Greenhorn, Scrapper and Warlord. On each challenge you will be confronted with ten monsters increasing in strength.\" })\nkeywordHandler:addKeyword({ \"difficulty\" }, StdModule.say, { npcHandler = npcHandler, text = \"There are three difficulties: Greenhorn, Scrapper and Warlord. On each challenge you will be confronted with ten monsters increasing in strength.\" })\nkeywordHandler:addKeyword({ \"greenhorn\" }, StdModule.say, { npcHandler = npcHandler, text = \"That is the easiest way in our arena. The {fee} is 1000 gold. We were setting this up for of our children to challenge some easy monsters and train them for the future.\" })\nkeywordHandler:addKeyword({ \"scrapper\" }, StdModule.say, { npcHandler = npcHandler, text = \"The most common difficulty for us. The {fee} is 5000 gold. So if you are experienced in fighting middle class monsters this is your challenge!\" })\nkeywordHandler:addKeyword({ \"warlord\" }, StdModule.say, { npcHandler = npcHandler, text = \"Only the strongest among us will take this challenge. The {fee} is 10000 gold. If you pass that I promise you the respect of all citizens here. You will be a hero!\" })\nkeywordHandler:addKeyword({ \"fee\" }, StdModule.say, { npcHandler = npcHandler, text = \"The fee is either 1000, 5000 or 10000 gold for one try. Remember that if you {die}, it is YOUR problem and you won't be able to get back to your corpse and your backpack.\" })\nkeywordHandler:addKeyword({ \"die\" }, StdModule.say, { npcHandler = npcHandler, text = \"It would be better not to die! In every pit there is an emergency exit, the portal to the south. If you die in a pit... well... your corpse and backpack are gone, so you enter the arena at your own risk.\" })\nkeywordHandler:addKeyword({ \"general\" }, StdModule.say, { npcHandler = npcHandler, text = \"Basically you pay me a {fee}, and you are sent into an arena with 10 different stages. If you succeed you will be rewarded accordingly.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"My job is to explain about the rules and to get the fee from the competitors.\" })\nkeywordHandler:addKeyword({ \"mission\" }, StdModule.say, { npcHandler = npcHandler, text = \"Well I would rather call it an {Ultimate Challenge} than a mission.\" })\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal arenaId = player:getStorageValue(Storage.Quest.U8_0.BarbarianArena.Arena)\n\tif MsgContains(message, \"fight\") or MsgContains(message, \"pit\") or MsgContains(message, \"challenge\") or MsgContains(message, \"arena\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_0.BarbarianArena.PitDoor) == 1 then\n\t\t\tnpcHandler:say(\"You already paid the fee, go and fight!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif arenaId < 1 then\n\t\t\tarenaId = 1\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_0.BarbarianArena.Arena, arenaId)\n\t\tend\n\n\t\tif ARENA[arenaId] then\n\t\t\tnpcHandler:say(\"So you agree with the {rules} and want to participate in the {challenge}? The {fee} for one try in {\" .. ARENA[arenaId].name .. \"} is \" .. ARENA[arenaId].price .. \" gold pieces. Do you really want to participate and pay the {fee}?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telse\n\t\t\tnpcHandler:say(\"You've already completed the arena in all {difficulty levels}.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif npcHandler:getTopic(playerId) == 1 then\n\t\tif MsgContains(message, \"yes\") then\n\t\t\tif not ARENA[arenaId] then\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tif player:removeMoneyBank(ARENA[arenaId].price) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_0.BarbarianArena.PitDoor, 1)\n\t\t\t\tnpcHandler:say(\"As you wish! You can pass the door now and enter the teleporter to the pits.\", npc, creature)\n\n\t\t\t\tlocal cStorage = ARENA[arenaId].questLog\n\t\t\t\tif player:getStorageValue(cStorage) ~= 1 then\n\t\t\t\t\tplayer:setStorageValue(cStorage, 1)\n\t\t\t\tend\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have enough money.\", npc, creature)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say(\"Come back when you are ready then.\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hello competitor! Do you want to {fight} in the arena or shall I explain the {rules} first?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+        "runtime_admission": false,
+        "scope": "Complete source context retained; only the named quest branches are assigned to this batch."
+      }
+    ],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "Halvar: informacja i wybór",
+      "patterns": "P09",
+      "trigger": "fight/pit/challenge/arena",
+      "condition": "PitDoor!=1; Arena<1 normalizuje1",
+      "effect": "topic1 jeśli istnieje tier; pełne rules/difficulties/prices jako dialog",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/halvar.lua:74"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Opłata Greenhorn",
+      "patterns": "P10/P13",
+      "trigger": "Halvar: yes",
+      "condition": "topic1; istniejący tier; removeMoneyBank(price)",
+      "effect": "1000gold; PitDoor=1; questLog danego tier=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:127"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Opłata Scrapper",
+      "patterns": "P10/P13",
+      "trigger": "Halvar: yes",
+      "condition": "topic1; istniejący tier; removeMoneyBank(price)",
+      "effect": "5000gold; PitDoor=1; questLog danego tier=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:145"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Opłata Warlord",
+      "patterns": "P10/P13",
+      "trigger": "Halvar: yes",
+      "condition": "topic1; istniejący tier; removeMoneyBank(price)",
+      "effect": "10000gold; PitDoor=1; questLog danego tier=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:163"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Wejście do pierwszego/dozwolonego pit",
+      "patterns": "P06",
+      "trigger": "StepIn AID25100",
+      "condition": "PitDoor1..10; PITS[pit] iARENA[tier]; brak innego gracza w pit",
+      "effect": "resetPit;timer600s;spawnARENA[tier][pit];teleportcenter",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 1",
+      "patterns": "P06/P27",
+      "trigger": "PITS[1]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32210,31098,7); summon(32210,31100,7); pillar/tp(32204,31098,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:26"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 2",
+      "patterns": "P06/P27",
+      "trigger": "PITS[2]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32196,31098,7); summon(32196,31100,7); pillar/tp(32190,31098,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 3",
+      "patterns": "P06/P27",
+      "trigger": "PITS[3]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32182,31098,7); summon(32182,31100,7); pillar/tp(32176,31098,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 4",
+      "patterns": "P06/P27",
+      "trigger": "PITS[4]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32168,31098,7); summon(32168,31100,7); pillar/tp(32162,31098,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 5",
+      "patterns": "P06/P27",
+      "trigger": "PITS[5]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32175,31084,7); summon(32175,31086,7); pillar/tp(32169,31084,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 6",
+      "patterns": "P06/P27",
+      "trigger": "PITS[6]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32189,31084,7); summon(32189,31086,7); pillar/tp(32183,31084,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 7",
+      "patterns": "P06/P27",
+      "trigger": "PITS[7]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32203,31084,7); summon(32203,31086,7); pillar/tp(32197,31084,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 8",
+      "patterns": "P06/P27",
+      "trigger": "PITS[8]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32196,31070,7); summon(32196,31072,7); pillar/tp(32190,31070,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 9",
+      "patterns": "P06/P27",
+      "trigger": "PITS[9]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32182,31070,7); summon(32182,31072,7); pillar/tp(32176,31070,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komora 10",
+      "patterns": "P06/P27",
+      "trigger": "PITS[10]",
+      "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+      "effect": "center(32189,31057,7); summon(32189,31057,7); pillar/tp(32183,31057,7)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Rejestracja boss-death",
+      "patterns": "P07/P21",
+      "trigger": "GlobalEvent onStartup",
+      "condition": "Nazwy bossów każdejARENA istnieją jakoMonsterType",
+      "effect": "registerEventSvargrondArenaBossDeath",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:44"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Zaliczenie bossa",
+      "patterns": "P07/P21",
+      "trigger": "onDeath mostDamageKiller",
+      "condition": "Gracz; PitDoor1..10; Arena>=1; nazwa wARENA[tier].creatures",
+      "effect": "Usuwa pillar1841;tworzy5022 AID25200;PitDoor+=1; nie last-hit",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przejście do następnego pit",
+      "patterns": "P06/P27",
+      "trigger": "StepIn AID25200",
+      "condition": "PitDoor<=10; następny pit wolny",
+      "effect": "Cancel/reset/timer600s;spawn następny;teleport",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:52"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Wyjście tchórza",
+      "patterns": "P20/P25",
+      "trigger": "StepIn AID25300",
+      "condition": "Gracz",
+      "effect": "lookType111 przez120000ms;PitDoor=-1;kickPosition;cancel timer",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:14"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Finał tier1",
+      "patterns": "P11/P13/P25",
+      "trigger": "StepIn AID25200",
+      "condition": "PitDoor>10; Arena=1",
+      "effect": "teleport32222,31080,6;PitDoor=0;GreenhornDoor=1;Arena+=1;questLog=2;achievement tier;cancel",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:30"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Finał tier2",
+      "patterns": "P11/P13/P25",
+      "trigger": "StepIn AID25200",
+      "condition": "PitDoor>10; Arena=2",
+      "effect": "teleport32222,31080,6;PitDoor=0;ScrapperDoor=1;Arena+=1;questLog=2;achievement tier;cancel",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:34"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Finał tier3",
+      "patterns": "P11/P13/P25",
+      "trigger": "StepIn AID25200",
+      "condition": "PitDoor>10; Arena=3",
+      "effect": "teleport32222,31080,6;PitDoor=0;WarlordDoor=1;Arena+=1;questLog=2;achievement tier;cancel",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:38"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Trofeum UID3264",
+      "patterns": "P05/P14",
+      "trigger": "StepIn UID3264",
+      "condition": "TrophyStorage!=1",
+      "effect": "Tworzy5807na player.y-1;opis z nazwą gracza;TrophyStorage=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:182"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Trofeum UID3265",
+      "patterns": "P05/P14",
+      "trigger": "StepIn UID3265",
+      "condition": "TrophyStorage!=1",
+      "effect": "Tworzy5806na player.y-1;opis z nazwą gracza;TrophyStorage=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:187"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Trofeum UID3266",
+      "patterns": "P05/P14",
+      "trigger": "StepIn UID3266",
+      "condition": "TrophyStorage!=1",
+      "effect": "Tworzy5805na player.y-1;opis z nazwą gracza;TrophyStorage=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:192"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Śmierć gracza",
+      "patterns": "P25",
+      "trigger": "SvargrondArenaPlayerDeath",
+      "condition": "PitDoor>0",
+      "effect": "PitDoor=0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_player_death.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Timeout",
+      "patterns": "P16/P25",
+      "trigger": "timer600s",
+      "condition": "Gracz istnieje;PitDoor>0",
+      "effect": "kick32251,31098,6;PitDoor=0;cancel timer/effect",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:259"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reset komory",
+      "patterns": "P25",
+      "trigger": "resetPit przed wejściem",
+      "condition": "Prostokąt pit; movable poza whitelist",
+      "effect": "Usuwa potwory i wskazane ruchome przedmioty;resetuje teleport/pillar",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:210"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Skrzynie3tier",
+      "patterns": "P05",
+      "trigger": "UID z chest.lua2310–2423",
+      "condition": "OsobnePresent/BP/Weapons flags;3wybory broni dzieląflagę per tier",
+      "effect": "Nagrody z tabeli; nie sumować wykluczających wyborów",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2314"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

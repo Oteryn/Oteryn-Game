@@ -4,7 +4,8 @@
 //! The format v4 NPC frame is read from the same verified bundle bytes the boot checks, bound
 //! to the NPC catalogue the node loaded (`--npc-data-project`), and placed once, at Channel
 //! start, through [`ChannelRuntimeV1::place_npcs`], the same carrier seam the NPC actors have
-//! always used: one actor per placement in frame order, never removed, never respawned.
+//! always used: one actor per placement in frame order. The world-clock owner reconciles
+//! admitted day/night and weekday NPCs through the same fenced native placement APIs.
 //!
 //! §7 decides what an unloadable NPC does. In a production World the bundle is refused when no
 //! catalogue is loaded, when its `catalogue_sha256` is not the loaded catalogue's, or when an
@@ -22,6 +23,10 @@ use oteryn_world_bundle::{bundle, npc};
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
+
+mod seasonal;
+#[path = "bundle_npcs/weekday.rs"]
+mod weekday;
 
 /// W05c: NPCs that stand only by day or only by night. Donor
 /// `data-global/scripts/world_changes/spawns_npc_by_time.lua:3-130` (zimbadev/crystalserver
@@ -135,7 +140,7 @@ enum TimedPeriod {
     Night,
 }
 
-/// The day/night NPCs the loaded catalogue admits, kept on the map by the world clock.
+/// Admitted day/night and source-qualified weekday NPCs kept on the map by the world clock.
 ///
 /// Unlike the donor, which picks the startup set from the light level (`functions.lua:33-40`, so
 /// a start during dusk spawns the day set) and spawns 5 s after the period change
@@ -143,6 +148,8 @@ enum TimedPeriod {
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
+    weekday: Option<weekday::WeekdayNpcSpawns>,
+    seasonal: seasonal::SeasonalNpcSpawns,
 }
 
 impl TimedNpcSpawns {
@@ -153,18 +160,38 @@ impl TimedNpcSpawns {
                 admitted[index] = keys.contains(*key);
             }
         }
-        Self { admitted }
+        Self {
+            admitted,
+            weekday: weekday::WeekdayNpcSpawns::from_boot(boot),
+            seasonal: seasonal::SeasonalNpcSpawns::default(),
+        }
+    }
+
+    pub(super) fn with_seasonal(
+        mut self,
+        boot: Option<&NpcBoot>,
+        events: &[String],
+        enterable: impl Fn(crate::map::overlay::TilePos) -> bool,
+    ) -> Self {
+        self.seasonal = seasonal::SeasonalNpcSpawns::admit(boot, events, enterable);
+        self
+    }
+
+    pub(super) fn set_brutus_present(&mut self, present: bool) {
+        self.seasonal.set_brutus_present(present);
     }
 
     pub(super) fn is_empty(self) -> bool {
         !self.admitted.iter().any(|admitted| *admitted)
+            && self.weekday.is_none()
+            && self.seasonal.is_empty()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
     /// transport's light uses (`snapshot.rs`), not a second one. `None` when the clock is
     /// unreadable; otherwise whether every admitted NPC is where its period puts it.
     pub(super) fn tick(
-        self,
+        &mut self,
         runtime: &mut ChannelRuntimeV1,
         now_utc_ms: u64,
     ) -> Option<Result<(), NpcPlacementError>> {
@@ -172,7 +199,12 @@ impl TimedNpcSpawns {
             crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
         )
         .tibian_minute(now_utc_ms)?;
-        Some(self.reconcile(runtime, minute))
+        let unix_ms = i64::try_from(now_utc_ms).ok()?;
+        let daily = self.reconcile(runtime, minute);
+        let weekly = self
+            .weekday
+            .map_or(Ok(()), |weekday| weekday.tick(runtime, unix_ms));
+        Some(daily.and(weekly).and(self.seasonal.tick(runtime)))
     }
 
     /// Removes the NPCs out of period, then places those in period that are missing. Each NPC
@@ -334,6 +366,31 @@ impl LoadedNpcCatalogue {
             .ok_or(BootError::ContentActivation("NPC catalogue content root"))?;
         let catalogue_sha256 = npc::catalogue_sha256(content)
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
+        let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
+            .map_err(|_| BootError::ContentActivation("native NPC quest catalogue"))?;
+        let rewards = oteryn_gameplay_quests::quest::reward_callbacks::load()
+            .map_err(|_| BootError::ContentActivation("native NPC reward catalogue"))?;
+        let native_npcs = source
+            .programs()
+            .iter()
+            .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+            .chain(
+                rewards
+                    .iter()
+                    .filter(|reward| reward.carried_item.is_none())
+                    .map(|reward| reward.npc.as_str()),
+            )
+            .chain(std::iter::once("oteryn:npc.viola"))
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let mut talk = NpcTalkBook::from_model_with_native_quests(&model, &native_npcs);
+        talk.bind_source_voices(catalogue, &model, |text| {
+            crate::chat::ChatText::parse(text)
+                .ok()
+                .map(|text| text.as_str().to_owned())
+        })
+        .map_err(|_| BootError::ContentActivation("NPC source voices"))?;
         Ok(Self {
             admitted: model
                 .npcs()
@@ -341,7 +398,7 @@ impl LoadedNpcCatalogue {
                 .map(|reference| reference.key.clone())
                 .collect(),
             catalogue_sha256,
-            talk: Arc::new(NpcTalkBook::from_model(&model)),
+            talk: Arc::new(talk),
         })
     }
 }
@@ -541,6 +598,7 @@ mod tests {
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             }],
             draft_areas: Vec::new(),
@@ -687,6 +745,195 @@ mod tests {
         }
     }
 
+    #[test]
+    fn w05d_santa_placements_require_active_calendar_catalogue_and_real_tiles() {
+        let santa = "oteryn:npc.santa_claus";
+        let boot = timed_boot(&[santa]);
+        let mut runtime = channel_runtime_with(32);
+        assert!(seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true).is_empty());
+        assert!(
+            seasonal::SeasonalNpcSpawns::admit(None, &["christmas".into()], |_| true).is_empty()
+        );
+        assert!(
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], |_| false)
+                .is_empty()
+        );
+        let mut seasonal =
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["christmas".into()], |_| true);
+        seasonal.tick(&mut runtime).expect("source placements");
+        seasonal.tick(&mut runtime).expect("idempotent retry");
+        assert_eq!(runtime.visible_entities().npcs.len(), 15);
+        let evidence: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/reference/content-prep/season-20261107/seasonal-calendar-source.json"
+        )))
+        .expect("retained structured placement evidence");
+        let santa_source = evidence["records"]
+            .as_array()
+            .expect("source records")
+            .iter()
+            .find(|record| record["title"] == "Santa Claus")
+            .expect("pinned Santa source");
+        let expected: BTreeSet<_> = santa_source["placements"]
+            .as_array()
+            .expect("source placements")
+            .iter()
+            .map(|row| {
+                (
+                    i32::try_from(row["x"].as_i64().expect("source x")).expect("coordinate"),
+                    i32::try_from(row["y"].as_i64().expect("source y")).expect("coordinate"),
+                    i16::try_from(row["z"].as_i64().expect("source floor")).expect("floor"),
+                )
+            })
+            .collect();
+        let actual: BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+            .collect();
+        assert_eq!(
+            actual, expected,
+            "all native actors must use retained source coordinates"
+        );
+
+        // The normal NPC movement owner may move Santa off the source cell;
+        // reconciliation must retain the exact live actor rather than clone it.
+        let santa = runtime.visible_entities().npcs[0].actor;
+        let before = runtime
+            .borrow_movement_position()
+            .read(santa)
+            .expect("placed actor");
+        let mut moved = before.position();
+        moved.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, moved)
+            .expect("Santa wanders");
+        seasonal
+            .tick(&mut runtime)
+            .expect("retains wandering actor");
+        assert_eq!(runtime.visible_entities().npcs.len(), 15);
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .read(santa)
+                .expect("same actor")
+                .position(),
+            moved
+        );
+    }
+
+    #[test]
+    fn w05d_cake_bakers_use_all_five_source_positions_and_retry_without_duplicates() {
+        let keys = [
+            "oteryn:npc.benny_the_baker",
+            "oteryn:npc.biff_the_baker",
+            "oteryn:npc.brian_the_baker",
+            "oteryn:npc.balduin_the_baker",
+            "oteryn:npc.billy_the_baker",
+        ];
+        let boot = timed_boot(&keys);
+        let mut runtime = channel_runtime_with(16);
+        let mut seasonal =
+            seasonal::SeasonalNpcSpawns::admit(Some(&boot), &["piece_of_cake".into()], |_| true);
+        seasonal.tick(&mut runtime).expect("five source bakers");
+        seasonal
+            .tick(&mut runtime)
+            .expect("idempotent reconciliation");
+        let visible = runtime.visible_entities();
+        assert_eq!(visible.npcs.len(), 5);
+        for key in keys {
+            assert_eq!(
+                visible
+                    .npcs
+                    .iter()
+                    .filter(|npc| runtime.npc_key(npc.actor) == Some(key))
+                    .count(),
+                1
+            );
+        }
+    }
+
+    #[test]
+    fn w05d_brutus_follows_saved_projection_independently_of_calendar_and_actor_wandering() {
+        let key = "oteryn:npc.brutus_the_baker";
+        let boot = timed_boot(&[key]);
+        let mut runtime = channel_runtime_with(8);
+        let mut seasonal = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        assert!(
+            !seasonal.is_empty(),
+            "inactive eligible Brutus must keep projection refresh alive"
+        );
+        seasonal.tick(&mut runtime).expect("initially absent");
+        assert!(runtime.visible_entities().npcs.is_empty());
+        seasonal.set_brutus_present(true);
+        seasonal
+            .tick(&mut runtime)
+            .expect("committed next-save flag");
+        let visible = runtime.visible_entities();
+        let npc = &visible.npcs[0];
+        assert_eq!(
+            (npc.position.x, npc.position.y, npc.position.floor),
+            (33303, 32064, 7)
+        );
+        let before = runtime
+            .borrow_movement_position()
+            .read(npc.actor)
+            .expect("current Brutus");
+        let mut moved = before.position();
+        moved.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, moved)
+            .expect("native wandering");
+        seasonal.tick(&mut runtime).expect("retains exact actor");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        seasonal.set_brutus_present(false);
+        seasonal.tick(&mut runtime).expect("source cleanup");
+        assert!(runtime.visible_entities().npcs.is_empty());
+        seasonal.tick(&mut runtime).expect("idempotent cleanup");
+        // Reallocation may reuse its carrier slot: a historical actor reference
+        // must never remove the successor when an old cleanup retries.
+        seasonal.set_brutus_present(true);
+        seasonal.tick(&mut runtime).expect("new occurrence");
+        let successor = runtime.visible_entities().npcs[0].actor;
+        assert_ne!(npc.actor, successor);
+        runtime
+            .remove_dynamic_npc_actor(npc.actor)
+            .expect("stale no-op");
+        assert_eq!(runtime.npc_key(successor), Some(key));
+    }
+
+    #[test]
+    fn w05d_brutus_force_placement_retains_existing_actor_on_exact_source_tile() {
+        let boot = timed_boot(&["oteryn:npc.brutus_the_baker"]);
+        let mut runtime = channel_runtime_with(8);
+        let blocker = runtime
+            .place_dynamic_npc(
+                "oteryn:npc.obstruction",
+                NpcPlacement {
+                    x: 33303,
+                    y: 32064,
+                    floor: -7,
+                    direction: MovementFacing::South,
+                },
+            )
+            .expect("existing actor");
+        let mut seasonal = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        seasonal.set_brutus_present(true);
+        seasonal
+            .tick(&mut runtime)
+            .expect("source force flag permits overlap");
+        assert_eq!(runtime.visible_entities().npcs.len(), 2);
+        seasonal.set_brutus_present(false);
+        seasonal
+            .tick(&mut runtime)
+            .expect("remove exact Brutus only");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        assert_eq!(runtime.npc_key(blocker), Some("oteryn:npc.obstruction"));
+    }
+
     /// The UTC instant of world minute `minute` on the production world clock.
     fn at_minute(minute: u64) -> u64 {
         let now = minute * crate::world_clock::TIBIAN_MINUTE_MS;
@@ -710,7 +957,7 @@ mod tests {
     #[test]
     fn world_time_tick_swaps_day_and_night_npcs_at_sunrise_and_sunset() {
         let keys: Vec<&str> = TIMED_NPCS.iter().map(|(key, _, _)| *key).collect();
-        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&keys)));
+        let mut timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&keys)));
         let mut runtime = channel_runtime_with(32);
         let (day, night) = (
             period_keys(TimedPeriod::Day),
@@ -740,7 +987,7 @@ mod tests {
             .map(|npc| (npc.position.x, npc.position.y, npc.position.floor));
         assert_eq!(valindara, Some((33_504, 32_222, 7)));
         // The NPCs the catalogue does not admit are never placed.
-        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&["oteryn:npc.talila"])));
+        let mut timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&["oteryn:npc.talila"])));
         let mut runtime = channel_runtime_with(32);
         timed
             .tick(&mut runtime, at_minute(359))
@@ -752,7 +999,7 @@ mod tests {
 
     #[test]
     fn a_timed_npc_that_cannot_stand_yet_does_not_hold_back_the_others() {
-        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&[
+        let mut timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&[
             "oteryn:npc.valindara",
             "oteryn:npc.evrard_the_miller",
         ])));
@@ -865,5 +1112,199 @@ mod tests {
         let last = bytes.len() - 1;
         bytes[last] ^= 0xFF;
         assert!(matches!(read(&bytes), Err(BootError::WorldBundle(_))));
+    }
+    #[test]
+    fn questpc8_weekday_npc_ticks_preserve_actor_then_rotate_and_retry() {
+        use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};
+        const MONDAY: i64 = 4 * 86_400_000;
+        let placements = (0..7)
+            .map(|day| destination_at(MONDAY + day * 86_400_000).placement)
+            .collect();
+        let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+        if let NpcBoot::Place { table, .. } = &mut boot {
+            table.npcs.push(NpcPlacements {
+                key: RASHID_NPC_KEY.into(),
+                placements,
+            });
+        }
+        let mut scheduled = TimedNpcSpawns::from_boot(Some(&boot));
+        assert!(
+            !scheduled.is_empty(),
+            "the compiled weekday NPC must be reconciled by the live clock"
+        );
+        let mut runtime = channel_runtime_with(8);
+        let mut previous = None;
+        for day in 0..8 {
+            let now = MONDAY + day * 86_400_000;
+            scheduled
+                .tick(&mut runtime, u64::try_from(now).expect("timestamp"))
+                .expect("clock")
+                .expect("weekday NPC");
+            let actors = runtime.visible_entities().npcs;
+            assert_eq!(actors.len(), 1);
+            let actor = actors[0].actor;
+            let expected = destination_at(now).placement;
+            assert_eq!(
+                (
+                    actors[0].position.x,
+                    actors[0].position.y,
+                    actors[0].position.floor
+                ),
+                (
+                    i32::from(expected.x),
+                    i32::from(expected.y),
+                    -i16::from(expected.floor)
+                )
+            );
+            if let Some(old) = previous {
+                assert!(
+                    runtime.borrow_movement_position().read(old).is_err(),
+                    "the prior day's identity cannot survive rotation"
+                );
+            }
+            scheduled
+                .tick(&mut runtime, u64::try_from(now + 1000).expect("timestamp"))
+                .expect("clock")
+                .expect("same day");
+            assert_eq!(
+                runtime.visible_entities().npcs[0].actor,
+                actor,
+                "a repeated tick cannot duplicate or replace the actor"
+            );
+            previous = Some(actor);
+        }
+        let now = MONDAY + 8 * 86_400_000;
+        let target = destination_at(now).placement;
+        runtime
+            .place_dynamic_npc("oteryn:npc.blocker", target)
+            .expect("blocker");
+        assert_eq!(
+            scheduled
+                .tick(&mut runtime, u64::try_from(now).expect("timestamp"))
+                .expect("clock"),
+            Err(NpcPlacementError::CellOccupied)
+        );
+        assert_eq!(timed_keys(&runtime), ["oteryn:npc.blocker"]);
+        runtime
+            .remove_dynamic_npc("oteryn:npc.blocker")
+            .expect("free cell");
+        scheduled
+            .tick(&mut runtime, u64::try_from(now + 1000).expect("timestamp"))
+            .expect("clock")
+            .expect("retry");
+        assert_eq!(timed_keys(&runtime), [RASHID_NPC_KEY]);
+        // A catalogue key alone cannot manufacture a placement not admitted by the bundle.
+        assert!(TimedNpcSpawns::from_boot(Some(&timed_boot(&[RASHID_NPC_KEY]))).is_empty());
+    }
+    #[test]
+    fn questpc8_weekday_npc_wandering_keeps_identity_until_destination_changes() {
+        use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};
+        const MONDAY: i64 = 4 * 86_400_000;
+        let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+        if let NpcBoot::Place { table, .. } = &mut boot {
+            table.npcs.push(NpcPlacements {
+                key: RASHID_NPC_KEY.into(),
+                placements: (0..7)
+                    .map(|day| destination_at(MONDAY + day * 86_400_000).placement)
+                    .collect(),
+            });
+        }
+        let mut scheduled = TimedNpcSpawns::from_boot(Some(&boot));
+        let mut runtime = channel_runtime_with(8);
+        scheduled
+            .tick(&mut runtime, MONDAY as u64)
+            .expect("clock")
+            .expect("Monday");
+        let actor = runtime.visible_entities().npcs[0].actor;
+        let before = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("Rashid");
+        let mut wandered = before.position();
+        wandered.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, wandered)
+            .expect("native wander");
+        scheduled
+            .tick(&mut runtime, (MONDAY + 2500) as u64)
+            .expect("clock")
+            .expect("same day");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        assert_eq!(
+            runtime.visible_entities().npcs[0].actor,
+            actor,
+            "wandering must preserve conversation and shop references"
+        );
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .read(actor)
+                .expect("same actor")
+                .position(),
+            wandered
+        );
+        scheduled
+            .tick(&mut runtime, (MONDAY + 86_400_000) as u64)
+            .expect("clock")
+            .expect("Tuesday");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        assert_ne!(runtime.visible_entities().npcs[0].actor, actor);
+        assert!(runtime.borrow_movement_position().read(actor).is_err());
+        let expected = destination_at(MONDAY + 86_400_000).placement;
+        let position = runtime.visible_entities().npcs[0].position;
+        assert_eq!(
+            (position.x, position.y, position.floor),
+            (
+                i32::from(expected.x),
+                i32::from(expected.y),
+                -i16::from(expected.floor)
+            )
+        );
+    }
+
+    #[test]
+    fn questpc8_weekday_npc_missing_bundle_cell_or_admission_cannot_spawn() {
+        use oteryn_gameplay_entities::rashid_schedule::{RASHID_NPC_KEY, destination_at};
+        const MONDAY: i64 = 4 * 86_400_000;
+        let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+        if let NpcBoot::Place { table, .. } = &mut boot {
+            table.npcs.push(NpcPlacements {
+                key: RASHID_NPC_KEY.into(),
+                placements: (1..7)
+                    .map(|day| destination_at(MONDAY + day * 86_400_000).placement)
+                    .collect(),
+            });
+        }
+        let mut scheduled = TimedNpcSpawns::from_boot(Some(&boot));
+        let mut runtime = channel_runtime_with(8);
+        scheduled
+            .tick(&mut runtime, u64::try_from(MONDAY).expect("timestamp"))
+            .expect("clock")
+            .expect("missing cell");
+        assert!(runtime.visible_entities().npcs.is_empty());
+        scheduled
+            .tick(
+                &mut runtime,
+                u64::try_from(MONDAY + 86_400_000).expect("timestamp"),
+            )
+            .expect("clock")
+            .expect("admitted cell");
+        assert_eq!(timed_keys(&runtime), [RASHID_NPC_KEY]);
+        scheduled
+            .tick(
+                &mut runtime,
+                u64::try_from(MONDAY + 7 * 86_400_000).expect("timestamp"),
+            )
+            .expect("clock")
+            .expect("missing cell next week");
+        assert!(runtime.visible_entities().npcs.is_empty());
+        if let NpcBoot::Place { admitted, .. } = &mut boot {
+            admitted.clear();
+        }
+        assert!(
+            TimedNpcSpawns::from_boot(Some(&boot)).is_empty(),
+            "bundle coordinates cannot replace catalogue admission"
+        );
     }
 }

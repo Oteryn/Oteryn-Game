@@ -54,6 +54,9 @@ const BINDING_VERSION: u8 = 1;
 
 pub use oteryn_gameplay_progression::wheel::*;
 
+#[path = "character_wheel/presentation.rs"]
+mod presentation;
+pub use presentation::{WheelPointBudget, WheelPresentationRead};
 #[path = "character_wheel/capacity.rs"]
 mod capacity;
 #[path = "character_wheel/gift.rs"]
@@ -182,9 +185,12 @@ pub struct WheelChangeRequest {
     pub vessels: Option<WheelVessels>,
 }
 
-/// Runtime position fact; permanent promotion is read under the writer's own fence.
+/// Runtime removal permission; permanent promotion is read under the writer's own fence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WheelChangeFacts {
+    /// Compatibility name: true when logout's combat lock does not hold the actor,
+    /// including on a protection-zone tile. Oteryn owner decision (2026-11-05)
+    /// diverges from Crystal player_wheel.cpp:2151's temple requirement.
     pub at_temple: bool,
 }
 
@@ -429,28 +435,18 @@ impl DurabilityRoot {
                     {
                         return refuse(WheelRefusal::RulesetNotCurrent);
                     }
-                    let gem_points = atelier.as_ref().map_or(0, |state| {
-                        if state.grade_ruleset_revision.as_deref() == Some(ruleset.revision()) {
-                            state.grades.values().filter(|grade| **grade == 3).count() as u32
-                        } else {
-                            0
-                        }
-                    });
-                    let pilgrimage_complete: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=1)")
-                        .bind(fence.character_id.as_bytes().as_slice())
-                        .bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK)
-                        .fetch_one(&mut *tx).await?;
-                    let task_points = super::task_board::read_promotion_points_in_transaction(
-                        &mut tx, fence.character_id,
-                    ).await?;
-                    // Crystal getWheelPoints includes task promotion points alongside level
-                    // and pilgrimage points to unlock rings; Grade-IV gem bonuses are added after.
-                    let unlock_points = available_points(level)
-                        .checked_add(task_points)
-                        .and_then(|points| points.checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 }))
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    let available = unlock_points.checked_add(gem_points)
-                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let WheelPointBudget {
+                        available,
+                        unlock_points,
+                    } = presentation::read_budget(
+                        &mut tx,
+                        fence.character_id,
+                        level,
+                        atelier.as_ref(),
+                        ruleset.revision(),
+                        pilgrimage_points,
+                    )
+                    .await?;
                     if let Err(refusal) = ruleset.validate_with_unlock_points(
                         &before,
                         &request.slots,
@@ -489,7 +485,7 @@ impl DurabilityRoot {
     /// The admission Wheel reset (WHEEL0-RST-1): after the admission's own session fence and
     /// `character_root` FOR UPDATE, clear an allocation whose revision has a `RESET` revision
     /// after it up to the active one, with one `RULESET_RESET` receipt. Free; no eligibility,
-    /// points or temple rule applies. Runtime callers reach it only through a
+    /// points or combat-lock rule applies. Runtime callers reach it only through a
     /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
     pub async fn reset_character_wheel(
         &self,
@@ -518,6 +514,13 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    // No allocation means there is nothing to reset, including for a
+                    // bootstrap Character whose optional progression row does not exist yet.
+                    // The gameplay fence above still locks and validates the Character root.
+                    let Some(stored) = lock_wheel_state(&mut tx, fence.character_id).await? else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(WheelResetOutcome::Current));
+                    };
                     let state = match lock_progression_state(&mut tx, fence.character_id).await? {
                         Some(state) => state,
                         None => {
@@ -530,10 +533,6 @@ impl DurabilityRoot {
                     if !state_matches_root(&state, &root) {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
-                    let Some(stored) = lock_wheel_state(&mut tx, fence.character_id).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok(WheelResetOutcome::Current));
-                    };
                     let outcome =
                         match currency(&mut tx, &stored.wheel_ruleset_revision, &ruleset).await? {
                             Currency::Current => WheelResetOutcome::Current,

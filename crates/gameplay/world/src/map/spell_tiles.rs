@@ -17,17 +17,16 @@
 //! - **`block_solid`.** A non-walkable ground, or a tile the boot blocks: a `wall` Terrain, an
 //!   Item whose definition is solid or does not say (unless the Item key is routed to a `ground`
 //!   Terrain record, or to a `border` the terrain catalogue proves walkable), or a sealed door ([`super::facts::BundleFacts::push`]).
-//! - **`block_projectile`.** A `wall` Terrain, or a top-level Item whose served definition blocks
+//! - **`block_projectile`.** Exact known Terrain source fact (legacy unknown uses wall), or a top-level Item whose served definition blocks
 //!   projectiles; a definition that does not say blocks (`boot_bundle_items` in `node/serve.rs`).
 //! - **`floor_change`.** A top-level entry with a catalogue `floor_change` fact
 //!   ([`super::floor::palette_mask`], MAP-FLOOR-1). The rope spots (ground 386 and 21965) carry
 //!   no such fact: the genuine Canary capture (`canary-thalom-world.json`, item policy 386) records them
 //!   as walkable ground with `floor_change` false, and the rope spell matches them by ground id.
 //! - **`protection_zone`.** Tile flag bit 0 (format document, OTBM `PROTECTIONZONE`).
-//! - **`immovable_block_solid`, `immovable_block_item`, `immovable_nonfield_block_item`.** No
-//!   source: the bundle and the served definitions state neither `movable` nor `block_pathfind`.
-//!   They fail closed as `true`, so rope, levitate and house-kick relocation refuse every bundle
-//!   tile as a destination. Follow-up BUNDLE-TILES-IMMOVABLE-1 sources them.
+//! - **`immovable_block_solid`, `immovable_block_item`, `immovable_nonfield_block_item`.**
+//!   The hash-verified Canary appearances/XML loader catalogue, joined by source id, with
+//!   placement unique/action overrides; see [`immovable`]. Unknown source facts stay blocked.
 //! - **PvP zones.** Retained OTBM tile flags, using the pinned Canary loader's priority:
 //!   protection zone, then NoPvP (bit 2), then PvP (bit 4). ADMIT-CAP-2.
 //! - **Source step facts** (height, floor-change kinds) stay unknown
@@ -52,6 +51,8 @@ use crate::map::boot::BundleCollisionIndexExt;
 use oteryn_world_bundle::bundle::{Family, Manifest, Sector, TerrainKind};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
+
+mod immovable;
 
 pub use crate::content::bundle_spell_tiles::BundleSpellTiles;
 use crate::content::bundle_spell_tiles::UNKNOWN;
@@ -82,7 +83,6 @@ fn pvp_zones(flags: u32) -> (bool, bool) {
 #[derive(Debug, Clone, Copy)]
 struct PaletteSpell {
     source_id: Option<u32>,
-    wall: bool,
     blocks_projectile: bool,
     pickupable: bool,
 }
@@ -94,6 +94,7 @@ struct Shape {
     tops: Vec<u32>,
     block_solid: bool,
     block_projectile: bool,
+    immovable: [bool; 3],
     floor_change: bool,
     protection_zone: bool,
     pvp_zones: (bool, bool),
@@ -107,10 +108,9 @@ impl Shape {
             NativeSpellTileFlags {
                 block_solid: self.block_solid,
                 block_projectile: self.block_projectile,
-                // No source (BUNDLE-TILES-IMMOVABLE-1): the blocking value refuses relocation.
-                immovable_block_solid: true,
-                immovable_block_item: true,
-                immovable_nonfield_block_item: true,
+                immovable_block_solid: self.immovable[0],
+                immovable_block_item: self.immovable[1],
+                immovable_nonfield_block_item: self.immovable[2],
                 floor_change: self.floor_change,
                 protection_zone: self.protection_zone,
             },
@@ -167,11 +167,18 @@ impl SpellTilesBuilder {
                         .flatten();
                     PaletteSpell {
                         source_id: super::palette_appearance(&entry.key).map(u32::from),
-                        wall: entry
-                            .terrain
-                            .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
-                        blocks_projectile: definition
-                            .is_none_or(|definition| definition.blocks_projectile),
+                        // Crystal items.cpp:234: unsight sets blockProjectile;
+                        // movement solidity and wall classification are independent.
+                        blocks_projectile: entry.terrain.map_or_else(
+                            || definition.is_none_or(|definition| definition.blocks_projectile),
+                            |terrain| {
+                                terrain.blocks_projectile.unwrap_or(
+                                    terrain.kind == TerrainKind::Wall
+                                        || definition
+                                            .is_some_and(|definition| definition.blocks_projectile),
+                                )
+                            },
+                        ),
                         pickupable: definition.is_some_and(|definition| definition.pickupable),
                     }
                 })
@@ -197,6 +204,7 @@ impl SpellTilesBuilder {
             let mut tops = Vec::new();
             let mut known = true;
             let mut block_projectile = false;
+            let mut immovable = [false; 3];
             let mut floor_change = false;
             for (ordinal, entry) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 let Some(facts) = palette.get(entry.palette as usize) else {
@@ -211,7 +219,13 @@ impl SpellTilesBuilder {
                     known = false;
                     break;
                 }
-                block_projectile |= facts.wall || facts.blocks_projectile;
+                block_projectile |= facts.blocks_projectile;
+                for (tile_flag, entry_flag) in immovable
+                    .iter_mut()
+                    .zip(immovable::flags(source_id, &entry.attrs))
+                {
+                    *tile_flag |= entry_flag;
+                }
                 floor_change |= masks
                     .get(entry.palette as usize)
                     .is_some_and(|mask| *mask != 0);
@@ -229,6 +243,7 @@ impl SpellTilesBuilder {
                 tops,
                 block_solid: (ground.is_some() && !view.walkable()) || blocked.contains(&pos),
                 block_projectile,
+                immovable,
                 floor_change,
                 protection_zone: tile.flags & PROTECTION_ZONE != 0,
                 pvp_zones: pvp_zones(tile.flags),
@@ -292,6 +307,7 @@ pub mod tests {
     use std::num::NonZeroU32;
 
     pub mod movement_arena;
+    pub mod vertical_movement;
     mod admit_cap_2 {
         include!("admit_cap_2_bundle_zones_tests.rs");
     }
@@ -328,6 +344,23 @@ pub mod tests {
         custom: Option<Vec<oteryn_world_bundle::writer::Sector>>,
         extent: Option<oteryn_world_bundle::writer::Extent>,
     ) -> (Vec<u8>, BundlePins) {
+        bundle_with_ground(custom, extent, KEYS[0])
+    }
+
+    fn bundle_with_ground(
+        custom: Option<Vec<oteryn_world_bundle::writer::Sector>>,
+        extent: Option<oteryn_world_bundle::writer::Extent>,
+        ground_key: &str,
+    ) -> (Vec<u8>, BundlePins) {
+        bundle_with_projectiles(custom, extent, ground_key, None)
+    }
+
+    fn bundle_with_projectiles(
+        custom: Option<Vec<oteryn_world_bundle::writer::Sector>>,
+        extent: Option<oteryn_world_bundle::writer::Extent>,
+        ground_key: &str,
+        projectile: Option<[Option<bool>; 9]>,
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -338,6 +371,7 @@ pub mod tests {
                 kind,
                 walkable,
                 ground_speed: speed,
+                blocks_projectile: None,
             })
         };
         let terrains = [
@@ -376,10 +410,15 @@ pub mod tests {
                 .zip(terrains)
                 .enumerate()
                 .map(|(id, (key, terrain))| PaletteEntry {
-                    key: (*key).into(),
+                    key: if id == 0 { ground_key } else { key }.into(),
                     family: Family::Item,
                     id: id as u32,
-                    terrain,
+                    terrain: terrain.map(|mut terrain| {
+                        if let Some(projectile) = projectile {
+                            terrain.blocks_projectile = projectile[id];
+                        }
+                        terrain
+                    }),
                 })
                 .collect(),
             draft_areas: Vec::new(),
@@ -524,16 +563,85 @@ pub mod tests {
         block_projectile: bool,
         floor_change: bool,
         protection_zone: bool,
+        immovable: [bool; 3],
     ) -> NativeSpellTileFlags {
         NativeSpellTileFlags {
             block_solid,
             block_projectile,
-            immovable_block_solid: true,
-            immovable_block_item: true,
-            immovable_nonfield_block_item: true,
+            immovable_block_solid: immovable[0],
+            immovable_block_item: immovable[1],
+            immovable_nonfield_block_item: immovable[2],
             floor_change,
             protection_zone,
         }
+    }
+
+    #[test]
+    fn terrain_projectile_overrides_preserve_solidity_and_visible_lookthrough() {
+        use crate::map::view::{ComposedEntry, EntrySource, MapFacts, RoofFacts};
+        // Crystal src/items/items.cpp:234: unsight is blockProjectile,
+        // independently of unpass; these are Sugar source wall/ground cases.
+        let world = world_from_bundle(bundle_with_projectiles(
+            None,
+            None,
+            KEYS[0],
+            Some([
+                Some(false),
+                Some(true),
+                Some(false),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            ]),
+        ));
+        let (_, cells) = cells(&world);
+        let tiles = cells.spell_tiles();
+        let wall = tiles.lookup(cells.scope(), at(4)).unwrap();
+        assert!(wall.flags().block_solid);
+        assert!(!wall.flags().block_projectile);
+        assert!(
+            tiles
+                .lookup(cells.scope(), at(3))
+                .unwrap()
+                .flags()
+                .block_projectile
+        );
+        let wall_facts = world
+            .facts()
+            .pinned()
+            .base_entry(
+                TilePos {
+                    x: 4,
+                    y: 0,
+                    floor: -7,
+                },
+                1,
+                3,
+            )
+            .unwrap();
+        assert!(!wall_facts.blocks_projectile);
+        let stack = [ComposedEntry {
+            source: EntrySource::Base {
+                ordinal: 1,
+                placement_key: 0,
+                movable: false,
+            },
+            facts: wall_facts,
+        }];
+        assert!(RoofFacts::of_entries(&stack).look_through);
+        let legacy = self::world();
+        let (_, legacy_cells) = self::cells(&legacy);
+        assert!(
+            legacy_cells
+                .spell_tiles()
+                .lookup(legacy_cells.scope(), at(4))
+                .unwrap()
+                .flags()
+                .block_projectile
+        );
     }
 
     #[test]
@@ -549,7 +657,11 @@ pub mod tests {
         let grass = lookup(1).expect("grass");
         assert_eq!(
             grass,
-            &tile(Some((100, 150)), &[], flags(false, false, false, false))
+            &tile(
+                Some((100, 150)),
+                &[],
+                flags(false, false, false, false, [true, false, false])
+            )
         );
         assert!(grass.ground_present());
         assert_eq!(grass.ground_source_id(), Some(100));
@@ -563,22 +675,38 @@ pub mod tests {
         // A non-walkable ground blocks.
         assert_eq!(
             lookup(3).expect("water"),
-            &tile(Some((598, 0)), &[], flags(true, false, false, false))
+            &tile(
+                Some((598, 0)),
+                &[],
+                flags(true, false, false, false, [false; 3])
+            )
         );
         // A wall blocks movement and projectiles.
         assert_eq!(
             lookup(4).expect("wall"),
-            &tile(Some((100, 150)), &[1100], flags(true, true, false, false))
+            &tile(
+                Some((100, 150)),
+                &[1100],
+                flags(true, true, false, false, [true, false, false])
+            )
         );
         // A catalogue floor change.
         assert_eq!(
             lookup(5).expect("stair"),
-            &tile(Some((100, 150)), &[1950], flags(false, false, true, false))
+            &tile(
+                Some((100, 150)),
+                &[1950],
+                flags(false, false, true, false, [true; 3])
+            )
         );
         // An Item without a profile blocks movement and projectiles.
         assert_eq!(
             lookup(9).expect("unprofiled"),
-            &tile(Some((100, 150)), &[2000], flags(true, true, false, false))
+            &tile(
+                Some((100, 150)),
+                &[2000],
+                flags(true, true, false, false, [true, true, false])
+            )
         );
         // No ground item: absent ground, unknown speed.
         let groundless = lookup(10).expect("groundless");
@@ -589,7 +717,11 @@ pub mod tests {
         // A sealed (house) door is a static wall.
         assert_eq!(
             lookup(12).expect("sealed door"),
-            &tile(Some((100, 150)), &[1629], flags(true, true, false, false))
+            &tile(
+                Some((100, 150)),
+                &[1629],
+                flags(true, true, false, false, [true, false, false])
+            )
         );
     }
 
@@ -711,17 +843,37 @@ pub mod tests {
     }
 
     #[test]
-    fn bundle_tiles_fail_closed_on_immovable_facts() {
-        let world = world();
+    fn bundle_levitate_destination_qualifies_immovable_solid_from_source() {
+        let world = vertical_movement::world(
+            WorldId::decode(&id(1)).unwrap(),
+            ChannelId::decode(&id(2)).unwrap(),
+        );
         let (_, cells) = cells(&world);
         let grass = cells
             .spell_tiles()
-            .lookup(cells.scope(), at(1))
+            .lookup(cells.scope(), LogicalCell { x: 10, y: 9, z: 5 })
             .expect("grass")
             .flags();
-        assert!(grass.immovable_block_solid);
-        assert!(grass.immovable_block_item);
-        assert!(grass.immovable_nonfield_block_item);
+        assert!(!grass.immovable_block_solid);
+        let blocked = super::immovable::flags(100, &Default::default());
+        assert!(blocked[0]);
+    }
+
+    #[test]
+    fn bundle_magic_rope_destination_qualifies_all_immovable_flags_from_source() {
+        let world = vertical_movement::world(
+            WorldId::decode(&id(1)).unwrap(),
+            ChannelId::decode(&id(2)).unwrap(),
+        );
+        let (_, cells) = cells(&world);
+        let grass = cells
+            .spell_tiles()
+            .lookup(cells.scope(), LogicalCell { x: 10, y: 9, z: 7 })
+            .expect("rope landing")
+            .flags();
+        assert!(!grass.immovable_block_solid);
+        assert!(!grass.immovable_block_item);
+        assert!(!grass.immovable_nonfield_block_item);
     }
 
     fn store(cells: &NativeEntryMovementCells) -> Arc<BundleSpellTiles> {
@@ -807,8 +959,6 @@ pub mod tests {
     #[test]
     #[ignore = "needs the pinned artifact: OTERYN_PINNED_WORLD_BUNDLE=<pin-check .otwb>"]
     fn pinned_bundle_tiles_answer_every_base_tile() {
-        const ITEM_KEYS: &[u8] =
-            include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
         let path = std::env::var("OTERYN_PINNED_WORLD_BUNDLE").expect("OTERYN_PINNED_WORLD_BUNDLE");
         let data = std::fs::read(path).expect("the pinned artifact");
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -843,9 +993,31 @@ pub mod tests {
             map_revision: format!("sha256:{hex}"),
             start,
         };
-        let controller = crate::content::native_gameplay::test_support::activated_with_item_keys(
-            Some(ITEM_KEYS),
-        );
+        // The old key-only fixture supplied an empty Item-profile list and could not boot
+        // the real start tile. Use the same committed manifest and activation as node boot.
+        let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
+            &root.join("content/spells.manifest.json"),
+        )
+        .expect("production gameplay manifest");
+        let world_id = WorldId::decode(&id(1)).unwrap();
+        let room = crate::content::qualify_selected_native_gameplay_room(world_id, &input)
+            .expect("production room");
+        let issuance = crate::content::NativeEntryActivationIssuance {
+            world_id,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = crate::content::ContentActivationController::new();
+        let activated = crate::content::activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &crate::content::NodeBootQuiescence::before_channel_runtime(),
+            world_id,
+            &issuance,
+            &input,
+        )
+        .expect("production gameplay activation");
         let state = controller
             .active()
             .expect("active")
@@ -859,7 +1031,9 @@ pub mod tests {
                 generation_item(state),
             )
             .expect("the pinned artifact boots with the generation's Items");
-        let (_, cells) = cells(&world);
+        let cells = world
+            .movement_cells(activated.qualified_room().movement_cells())
+            .expect("production bundle cells");
         let tiles = cells.spell_tiles();
         let (mut known, mut unknown, mut zone, mut projectile, mut floor_change, mut rope) =
             (0usize, 0usize, 0usize, 0usize, 0usize, 0usize);
@@ -875,12 +1049,26 @@ pub mod tests {
                     zone += usize::from(tile.flags().protection_zone);
                     projectile += usize::from(tile.flags().block_projectile);
                     floor_change += usize::from(tile.flags().floor_change);
+                    assert_eq!(
+                        tile.flags().floor_change,
+                        world.floors().contains(TilePos { x, y, floor }),
+                        "spell and movement floor-change owners at {cell:?}"
+                    );
                     if tile
                         .ground_source_id()
                         .is_some_and(|ground| ROPE_SPOTS.contains(&ground))
                     {
                         rope += 1;
-                        assert!(!tile.flags().floor_change, "rope spot at {cell:?}");
+                        // Rope ground is not itself a floor change. A different entry on
+                        // the same shipped tile can be; its aggregate is checked above.
+                        assert_eq!(
+                            super::super::floor::palette_mask(
+                                Family::Item,
+                                &format!("oteryn:item.tibia.i{}", tile.ground_source_id().unwrap())
+                            ),
+                            0,
+                            "rope ground at {cell:?}"
+                        );
                     }
                 }
                 Err(SpellTileLookupError::Unknown) => unknown += 1,
@@ -907,5 +1095,8 @@ pub mod tests {
             )
             .expect("the start tile is known");
         assert!(start.ground_present() && !start.flags().block_solid);
+        assert!(!start.flags().immovable_block_solid);
+        assert!(!start.flags().immovable_block_item);
+        assert!(!start.flags().immovable_nonfield_block_item);
     }
 }

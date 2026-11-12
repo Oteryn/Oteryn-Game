@@ -57,8 +57,9 @@ of root `AGENTS.md`, *Review guidelines*:
 - A skipped, ignored, loosened or deleted test, or a hand-edited generated
   file, breaks a repository rule (root `AGENTS.md`, *Repository boundaries*)
   and blocks landing whatever its severity label.
-- `P2` and lower never block: fixed in the same push when cheap, otherwise
-  in the module's next batch.
+- `P2` and lower never block. P0/P1 are fixed at once; P2/P3 are not fixed
+  per PR: they are collected (PR, `file:line`, finding) and fixed together in
+  one grouped PR at the end (owner 2026-11-09).
 - Each finding: `file:line`, the defect class with every instance of it in
   the diff, the evidence it is real, and a concrete fix. Style points,
   praise and a retelling of the diff are left out.
@@ -67,27 +68,63 @@ of root `AGENTS.md`, *Review guidelines*:
 
 ## 5. Independent review by Codex
 
-Codex review spends owner-funded quota, so it runs only where
-`docs/agents/OWNER_FUNDED_AI_POLICY.md` covers it: a review the bound META
-policy or the task contract requires, and the owner's review trial
-(2026-10-29): one review of each wave's batch PR and of each frozen head that
-changes persistence or migrations, session fencing, the wire protocol,
-authority, durable value (gold, items) or a CI workflow, at most 5 a day. The
-trial starts on 2-3 PRs and ends if it finds no real defect. Any other second
-opinion is skipped, not turned into a question.
+Owner decision 2026-11-09 (replaces the 2026-10-29 trial and its "at most 5 a
+day" limit; `docs/agents/OWNER_FUNDED_AI_POLICY.md` authorizes it): every PR
+gets an independent Codex review before it merges. The review runs in parallel
+with CI and never blocks or delays it.
 
-When a review is covered: only the coordinator (the review-dispatch owner)
-starts it, once per frozen head, after the local checks pass, with `codex
-exec` in a read-only sandbox at reasoning effort medium (an `@codex review`
-PR comment has gone unanswered since 2026-10-20, so it is not used), with the diff, `CODEX-CHECKLIST.md` and
-the instruction to report findings only. Its output is findings to verify
-with step 3, not a verdict; a failed or empty run means "not reviewed".
+- When: once per PR, after its first push, over the whole diff against `main`.
+  A second review only when a substantial logic change (server code,
+  persistence, session fencing, protocol, durable value) lands after the first
+  one, and then only over the new diff. At most 2 reviews per PR. If the second
+  review still finds a P0/P1, the design of the change is wrong: stop and
+  report to the owner instead of a third round.
+- Who (owner decision 2026-11-11): whoever owns the branch or PR runs the
+  review, also when it works alone without the coordinator: a Claude session,
+  a child session or a PC lane named as owner in its packet. On the PC that is
+  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag>`. The owner puts
+  "Codex review <head SHA>: N findings, M fixed" in its report and, when it
+  opens the PR, in one PR comment; a head that already has that line is not
+  reviewed again. A session without Codex (no PC, no `codex` binary) reports
+  "not reviewed" and the coordinator runs it. A Codex lane never reviews its
+  own code.
+- How: the review owner starts it with `codex exec`
+  in a read-only sandbox, model gpt-6.1-sol, reasoning effort high (an
+  `@codex review` PR comment has gone unanswered since 2026-10-20, so it is not
+  used), as one round of parallel lens runs over the same head, each with the
+  diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
+  lines. Each run is told to report every finding, with no cap on lines or
+  count, and every other instance of the same class in the diff. Lenses,
+  chunking of big diffs, the prompt, the merge, verify and sweep steps and the
+  stop rule are in `references/batch-review.md`; read it before you start a
+  review or delegate one. Code Codex wrote is
+  reviewed by a new Codex run with a clean context, never as a continuation of
+  the run that wrote it.
+- Its output is findings to verify with step 3, not a verdict; a failed or
+  empty run means "not reviewed".
+- Fixing confirmed findings (owner decision 2026-11-11): the review run never
+  edits code. After you verify each finding (§6), write only the confirmed ones,
+  one per line as `P1|P2 path:line - problem - failure path`, to a file and hand
+  them, with every instance the pattern sweep found, to one code-writing
+  Codex run at reasoning effort `medium` (one run for the whole batch, never
+  one per finding): on the PC
+  `bash ~/oteryn-cache/codex-review.sh <worktree> <tag> --fix-confirmed <file>`
+  (it runs `codex-task.sh` as `fix-<tag>`); elsewhere a Codex Cloud packet with
+  the same list. Per finding it writes a red test first, reports `NOT
+  REPRODUCED` without a code change when the test cannot fail, then makes the
+  smallest fix and reruns the test green; it changes no existing assertion,
+  timeout or budget and nothing outside the listed findings. Nothing is
+  committed: you review that diff (§2-§3), then commit and push it.
+- Fixes made for a review do not get another review unless they meet the
+  second-review rule above.
+- Merge: CI green and no open P0/P1 finding from the review.
 
 ## 6. Receiving findings (Codex, Claude review, people)
 
 - Verify each finding against the code: trace a real caller or input to the failure.
-- Real and in proportion: fix it in the next push and reply in one line with
-  the fix. Not real or not worth its code: reply with the evidence (the path
+- Real and in proportion: a P0/P1 is fixed in the next push and answered in
+  one line with the fix; a P2/P3 is answered in one line and goes to the
+  grouped P2/P3 backlog (step 4). Not real or not worth its code: reply with the evidence (the path
   you traced, the test that covers it). A P1 is never left silent.
 - No performative agreement ("great catch"); actions and evidence only.
 - Collect all fixes of one review round into one push.

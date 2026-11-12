@@ -1,0 +1,25 @@
+{
+  "mechanic": "0446-house-container-capacity",
+  "kind": "handlers",
+  "id": "0446-house-container-capacity-views",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 446,
+  "entry": "protocol.rs::project",
+  "reducer": "protocol.rs::project",
+  "push_messages": [
+    "ContainerViews"
+  ],
+  "test": "tests/state.rs::negotiated_twenty_fifth_entry_is_visible_and_selectable",
+  "shared_commands": [
+    9,
+    21
+  ],
+  "not_applicable": {
+    "state": "Uses the existing native container panel and sequenced domain14 state.",
+    "view": "The existing scrolling container browser renders every decoded entry.",
+    "input": "Existing item selection, container open and item movement controls are reused.",
+    "settings": "Container capacity is authoritative session data."
+  }
+}

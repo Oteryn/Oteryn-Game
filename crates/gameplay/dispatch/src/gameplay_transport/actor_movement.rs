@@ -23,6 +23,87 @@ use std::time::Duration;
 /// A committed step and its SPEED-1 duration (CONDITIONS-0 §4.2), or why nothing moved.
 pub type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
 
+impl ChannelSpellStates {
+    /// Resolve Drome control before field/floor preflight. The common movement owner
+    /// repeats this pure decision with the same frozen time/position, so a prepared
+    /// destination cannot diverge after SQL and a command replay consumes no new RNG.
+    pub(in crate::gameplay_transport) fn drome_step_direction(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+        requested: CardinalStep,
+    ) -> Result<CardinalStep, MovementError> {
+        if !runtime.is_tibiadrome(actor) {
+            return Ok(requested);
+        }
+        let Some(state) = self
+            .get(runtime, actor, session)
+            .filter(|state| state.drome_practice)
+        else {
+            return Ok(requested);
+        };
+        // Crystal 201189f creature.cpp:286-291: ROOTED/FEARED refuse walking.
+        if !self.native_condition_movement_allowed(
+            runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(now_us),
+        ) {
+            return Err(MovementError::Blocked);
+        }
+        use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
+        if !state
+            .owned_conditions()
+            .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
+            .is_some_and(|instance| instance.definition().key() == "drome.drunk")
+        {
+            return Ok(requested);
+        }
+        use oteryn_simulation_determinism::{
+            DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+        };
+        use sha2::{Digest, Sha256};
+        let position = runtime
+            .read_actor_position(actor)
+            .map_err(MovementError::Actor)?;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:drome-drunk-step:v1")
+            .chain_update(actor.placement_identity())
+            .chain_update(session.as_bytes())
+            .chain_update(position.revision().to_be_bytes())
+            .chain_update(now_us.to_be_bytes())
+            .finalize();
+        let mut bytes = [0; 16];
+        bytes.copy_from_slice(&digest[..16]);
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let raw = deterministic_decision_u64(
+            &root,
+            DecisionOccurrenceId::from_bytes(bytes),
+            "movement.drome.drunk",
+            0,
+        )
+        .map_err(|_| MovementError::NotQualified)?;
+        let roll = oteryn_gameplay_spell_rules::native_actor_states::normal_draw(
+            1,
+            100,
+            &mut |low, high| crate::spell::uniform_draw(raw, low, high),
+        )
+        .map_err(|_| MovementError::NotQualified)?;
+        // Crystal 201189f creature.cpp:224-260,275-284: default subId 0 gives
+        // threshold (0 + 25) / 5. Tanked Up's stronger intensity is not sourced.
+        // The draw excludes requested direction, making repeated preflight idempotent.
+        Ok(match roll {
+            1..=5 => CardinalStep::North,
+            6..=10 => CardinalStep::West,
+            11..=15 => CardinalStep::South,
+            16..=20 => CardinalStep::East,
+            _ => requested,
+        })
+    }
+}
+
 /// The cell of a local position, for a ground speed lookup.
 fn cell(position: MovementLocalPosition) -> LogicalCell {
     LogicalCell {
@@ -38,9 +119,11 @@ fn duration_onto(
     source: &impl GroundSpeedSource,
     onto: MovementLocalPosition,
     speed: Option<u16>,
+    direction: CardinalStep,
 ) -> Result<Duration, MovementError> {
     speed
         .and_then(|speed| player_step_duration(source, cell(onto), speed))
+        .and_then(|duration| duration.checked_mul(direction.pacing_cost()))
         .ok_or(MovementError::NotQualified)
 }
 
@@ -144,6 +227,7 @@ pub fn step_in_channel_with_source_step(
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
     use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+    let direction = states.drome_step_direction(runtime, actor, session, now_us, direction)?;
     let expected = runtime
         .read_actor_position(actor)
         .map_err(MovementError::Actor)?;
@@ -239,7 +323,7 @@ fn step_in_channel_inner(
             if blocking.blocks(cell(position)) {
                 return failure(MovementError::Blocked);
             }
-            let duration = duration_onto(&proof, position, speed)?;
+            let duration = duration_onto(&proof, position, speed, direction)?;
             return runtime
                 .commit_source_step(proof)
                 .map(|snapshot| (snapshot, duration))
@@ -302,7 +386,7 @@ fn step_in_channel_inner(
         source_step.is_some(),
     );
     let pos = expected.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let Some(x) = pos.x.checked_add(dx) else {
         return failure(MovementError::CoordinateOverflow);
     };
@@ -318,8 +402,13 @@ fn step_in_channel_inner(
         return failure(MovementError::Blocked);
     }
     let duration = match &source_step {
-        Some(proof) => duration_onto(proof, actual_destination, speed)?,
-        None => duration_onto(&EngineeringGroundSpeed, actual_destination, speed)?,
+        Some(proof) => duration_onto(proof, actual_destination, speed, direction)?,
+        None => duration_onto(
+            &EngineeringGroundSpeed,
+            actual_destination,
+            speed,
+            direction,
+        )?,
     };
     let selection = MovementEngineeringSelection {
         owner_context: runtime.pinned_movement_context(),
@@ -375,7 +464,7 @@ fn bundle_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
     runtime
         .commit_source_step(proof)
         .map(|snapshot| (snapshot, duration))
@@ -416,14 +505,14 @@ fn baseline_step(
         if blocking.blocks(cell(p)) {
             return Err(MovementError::Blocked);
         }
-        let duration = duration_onto(&proof, p, speed)?;
+        let duration = duration_onto(&proof, p, speed, direction)?;
         return runtime
             .commit_source_step(proof)
             .map(|snapshot| (snapshot, duration))
             .map_err(MovementError::Actor);
     }
     let pos = expected.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     let x = pos
         .x
         .checked_add(dx)
@@ -440,7 +529,7 @@ fn baseline_step(
     if blocking.blocks(cell(onto)) {
         return Err(MovementError::Blocked);
     }
-    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed, direction)?;
     let selection = MovementEngineeringSelection {
         owner_context,
         content_scope: scope,
@@ -470,6 +559,34 @@ mod tests {
         crate::foundation::{ChannelId, NodeId, WorldId},
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
+    #[test]
+    fn diagonal_player_duration_uses_three_rounded_source_steps() {
+        let onto = MovementLocalPosition {
+            x: 32673,
+            y: 32085,
+            floor: 8,
+        };
+        let cardinal = duration_onto(
+            &EngineeringGroundSpeed,
+            onto,
+            Some(220),
+            CardinalStep::North,
+        )
+        .expect("source speed table");
+        let diagonal = duration_onto(
+            &EngineeringGroundSpeed,
+            onto,
+            Some(220),
+            CardinalStep::NorthEast,
+        )
+        .expect("source diagonal speed");
+        assert_eq!(Some(diagonal), cardinal.checked_mul(3));
+        assert_eq!(diagonal.as_millis() % 150, 0);
+        assert!(
+            duration_onto(&EngineeringGroundSpeed, onto, None, CardinalStep::NorthEast).is_err()
+        );
+    }
+
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }

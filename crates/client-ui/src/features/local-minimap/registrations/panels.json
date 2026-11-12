@@ -1,0 +1,13 @@
+{
+  "mechanic": "local-minimap",
+  "kind": "panels",
+  "id": "local-minimap-panel",
+  "status": "supported",
+  "entry": "view.rs::view",
+  "not_applicable": {
+    "state": "Observed world-map cells and local markers persist per admitted world and map revision.",
+    "protocol": "Uses existing world-map input and capability-64 target-move dispatch.",
+    "input": "The native overlay walks on the current floor; Ctrl+Alt+Shift+M opens the local map and marker editor.",
+    "settings": "Visibility uses the existing local reference preferences."
+  }
+}

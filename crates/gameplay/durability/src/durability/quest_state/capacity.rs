@@ -13,6 +13,14 @@ pub(in crate::durability) async fn new_state_fits(
     tx: &mut PgConnection,
     character: CharacterId,
 ) -> Result<bool, DurabilityError> {
+    states_fit(tx, character, 1).await
+}
+
+pub(in crate::durability) async fn states_fit(
+    tx: &mut PgConnection,
+    character: CharacterId,
+    additional: usize,
+) -> Result<bool, DurabilityError> {
     let states: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_states \
          WHERE character_id=encode($1,'hex')::uuid",
@@ -20,8 +28,10 @@ pub(in crate::durability) async fn new_state_fits(
     .bind(character.as_bytes().as_slice())
     .fetch_one(tx)
     .await?;
-    Ok(usize::try_from(states).unwrap_or(usize::MAX)
-        < QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
+    Ok(usize::try_from(states)
+        .unwrap_or(usize::MAX)
+        .saturating_add(additional)
+        <= QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
 }
 
 /// `keys` are distinct tracks this writer may insert; `existing` counts those

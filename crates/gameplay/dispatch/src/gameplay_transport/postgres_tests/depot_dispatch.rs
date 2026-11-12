@@ -450,7 +450,7 @@ fn scenario_with_premium(
             );
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let session = deps.admitted.game_session_id;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),

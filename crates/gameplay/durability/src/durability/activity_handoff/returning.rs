@@ -46,10 +46,12 @@ fn binding(r: &ActivityReturnRequest) -> [u8; 32] {
         hash_field(&mut hash, &occurrence);
     }
     match r.reason {
-        ActivityReturnReason::Abandoned { transport } => {
+        ActivityReturnReason::Abandoned { transport }
+        | ActivityReturnReason::StaffKick { transport } => {
             hash_field(&mut hash, &transport.to_bytes())
         }
-        ActivityReturnReason::CapabilityMismatch { epoch } => {
+        ActivityReturnReason::CapabilityMismatch { epoch }
+        | ActivityReturnReason::StaffKickLost { epoch } => {
             hash_field(&mut hash, &epoch.get().to_be_bytes())
         }
         _ => {}
@@ -68,6 +70,7 @@ pub(super) async fn return_in_transaction(
     r: &ActivityReturnRequest,
     recovering: bool,
 ) -> Result<ActivityReturnOutcome> {
+    super::super::soulpit::lock_shared_return(tx, &r.handoff_id).await?;
     let character = foundation_character(r.source)?;
     let row = sqlx::query("SELECT uuid_send(p.origin_channel_id) AS origin, p.account_id::text, g.content_revision,g.ownership_generation::text AS generation, \
         e.deadline,e.holder_node_id::text AS original_node,e.holder_registration_revision::text AS original_registration, \
@@ -194,6 +197,13 @@ pub(super) async fn return_in_transaction(
         ActivityReturnReason::Abandoned { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
             WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")
             .bind(r.source.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice()).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::StaffKick { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=2 AND s.current_transport_ref=$2 AND (EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=s.game_session_id) OR EXISTS(SELECT 1 FROM game_staff_bans b WHERE b.account_id=s.account_id AND b.lifted_at_ms IS NULL AND b.starts_at_ms<=$3 AND b.ends_at_ms>$3)))")
+            .bind(r.source.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice()).bind(now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::StaffKickLost { epoch } => {
+            let held:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=1 AND s.current_transport_ref IS NULL AND s.control_loss_epoch=$2::text::numeric AND EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=s.game_session_id))")
+                .bind(r.source.game_session_id.as_bytes().as_slice()).bind(epoch.get().to_string()).fetch_one(&mut **tx).await?;
+            held && super::super::fresh_admission::has_owning_loss_receipt(tx,r.source.game_session_id.as_bytes().as_slice(),epoch.get()).await?
+        },
         ActivityReturnReason::CapabilityMismatch { epoch } => {
             let held: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
                 WHERE game_session_id=encode($1,'hex')::uuid AND session_state=1 AND current_transport_ref IS NULL \
@@ -221,6 +231,8 @@ pub(super) async fn return_in_transaction(
         },
         ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2)")
             .bind(r.handoff_id.as_slice()).bind(now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::SoulpitTerminal => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_soulpit_encounters WHERE handoff_id=encode($1,'hex')::uuid AND terminal)")
+            .bind(r.handoff_id.as_slice()).fetch_one(&mut **tx).await?,
     };
     if !due {
         return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::NotDue));
@@ -309,6 +321,7 @@ pub(super) async fn return_in_transaction(
         ));
     }
     // This is the same issuance/transport/publisher operation as enter, in reverse.
+    super::super::soulpit::shared_returning(tx, r, recovering).await?;
     super::entry::issue_successor(
         tx,
         root,
@@ -333,8 +346,8 @@ pub(super) async fn return_in_transaction(
         .bind(match r.reason { ActivityReturnReason::Death { occurrence } => Some(occurrence.to_vec()), _ => None })
         .bind(exit.cell.x).bind(exit.cell.y).bind(exit.cell.floor).bind(exit.coordinate_frame_digest.as_slice())
         .bind(exit.map_revision_digest.as_slice()).bind(exit.server_artifact_digest.as_slice())
-        .bind(match r.reason { ActivityReturnReason::Abandoned { transport } => Some(transport.to_bytes().to_vec()), _ => None })
-        .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } => Some(epoch.get().to_string()), _ => None })
+        .bind(match r.reason { ActivityReturnReason::Abandoned { transport } | ActivityReturnReason::StaffKick { transport } => Some(transport.to_bytes().to_vec()), _ => None })
+        .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } | ActivityReturnReason::StaffKickLost { epoch } => Some(epoch.get().to_string()), _ => None })
         .execute(&mut **tx).await?;
     sqlx::query("UPDATE game_boss_room_participants SET returned_at=$3 WHERE admission=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND returned_at IS NULL")
         .bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;

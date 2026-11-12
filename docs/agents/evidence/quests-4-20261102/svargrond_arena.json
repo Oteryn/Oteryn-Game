@@ -1,0 +1,1491 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "svargrond_arena",
+    "frozen_stage1": {
+      "total": 29,
+      "auto": 0,
+      "manual": 29
+    },
+    "authored_callback_definitions": 0,
+    "runtime_catalogue_callback_definitions": 0,
+    "runtime_exclusions": [],
+    "npc_source_files": 1,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Pełne source tiers/pits/bosses oraz zachowane 9 rekordów nagród.",
+    "left_out_summary": "Cudzy owner The Ultimate Challenges, lifecycle areny i brak bindingu player-death; katalog nie stanowi dowodu walki."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 44,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A044",
+        "original_index": 44,
+        "quest": "svargrond_arena",
+        "step": "Halvar: informacja i wybór",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Halvar: informacja i wybór",
+          "pattern": "P09",
+          "trigger": "fight/pit/challenge/arena",
+          "condition": "PitDoor!=1; Arena<1 normalizuje1",
+          "effect": "topic1 jeśli istnieje tier; pełne rules/difficulties/prices jako dialog",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/halvar.lua:74"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_ADAPTER",
+        "reason": "Halvar i wszystkie source teksty/pozycja są znane. PitDoor należy do Barbarian Arena, ale Arena i tier questLog należą do The Ultimate Challenges poza tą partią; obecny arena_catalogue jest tylko read-only katalogiem.",
+        "missing_function": "Stateful Halvar caller i uzgodniona canonical współpraca właścicieli dla normalizacji Arena<1→1, topic1 i admission tier; bez drugiego writera obcego questa.",
+        "question_ids": [
+          "arena-cross-quest-ownership",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/halvar.lua:74",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/arena_catalogue.rs:1"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 45,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A045",
+        "original_index": 45,
+        "quest": "svargrond_arena",
+        "step": "Opłata Greenhorn",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Opłata Greenhorn",
+          "pattern": "P10/P13",
+          "trigger": "Halvar: yes",
+          "condition": "topic1; istniejący tier; removeMoneyBank(price)",
+          "effect": "1000gold; PitDoor=1; questLog danego tier=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:127"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_OWNER",
+        "reason": "Ceny1000/5000/10000 i skutki source są kompletne. Opłata z banku/inventory, PitDoor i obcy tier questLog muszą być atomowe; nie rozszerzamy NPC exchange0831/0832 ani obcego ownera.",
+        "missing_function": "Jedna fenced opłata tier wraz z PitDoor1 i właściwym questLog1 oraz odmową bez zmian przy braku środków.",
+        "question_ids": [
+          "arena-cross-quest-ownership",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:127"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 46,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A046",
+        "original_index": 46,
+        "quest": "svargrond_arena",
+        "step": "Opłata Scrapper",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Opłata Scrapper",
+          "pattern": "P10/P13",
+          "trigger": "Halvar: yes",
+          "condition": "topic1; istniejący tier; removeMoneyBank(price)",
+          "effect": "5000gold; PitDoor=1; questLog danego tier=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:145"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_OWNER",
+        "reason": "Ceny1000/5000/10000 i skutki source są kompletne. Opłata z banku/inventory, PitDoor i obcy tier questLog muszą być atomowe; nie rozszerzamy NPC exchange0831/0832 ani obcego ownera.",
+        "missing_function": "Jedna fenced opłata tier wraz z PitDoor1 i właściwym questLog1 oraz odmową bez zmian przy braku środków.",
+        "question_ids": [
+          "arena-cross-quest-ownership",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:145"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 47,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A047",
+        "original_index": 47,
+        "quest": "svargrond_arena",
+        "step": "Opłata Warlord",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Opłata Warlord",
+          "pattern": "P10/P13",
+          "trigger": "Halvar: yes",
+          "condition": "topic1; istniejący tier; removeMoneyBank(price)",
+          "effect": "10000gold; PitDoor=1; questLog danego tier=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:163"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_OWNER",
+        "reason": "Ceny1000/5000/10000 i skutki source są kompletne. Opłata z banku/inventory, PitDoor i obcy tier questLog muszą być atomowe; nie rozszerzamy NPC exchange0831/0832 ani obcego ownera.",
+        "missing_function": "Jedna fenced opłata tier wraz z PitDoor1 i właściwym questLog1 oraz odmową bez zmian przy braku środków.",
+        "question_ids": [
+          "arena-cross-quest-ownership",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:163"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 48,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A048",
+        "original_index": 48,
+        "quest": "svargrond_arena",
+        "step": "Wejście do pierwszego/dozwolonego pit",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Wejście do pierwszego/dozwolonego pit",
+          "pattern": "P06",
+          "trigger": "StepIn AID25100",
+          "condition": "PitDoor1..10; PITS[pit] iARENA[tier]; brak innego gracza w pit",
+          "effect": "resetPit;timer600s;spawnARENA[tier][pit];teleportcenter",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua:9"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_enter.lua:9"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 49,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A049",
+        "original_index": 49,
+        "quest": "svargrond_arena",
+        "step": "Komora 1",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 1",
+          "pattern": "P06/P27",
+          "trigger": "PITS[1]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32210,31098,7); summon(32210,31100,7); pillar/tp(32204,31098,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:26"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:26"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 50,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A050",
+        "original_index": 50,
+        "quest": "svargrond_arena",
+        "step": "Komora 2",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 2",
+          "pattern": "P06/P27",
+          "trigger": "PITS[2]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32196,31098,7); summon(32196,31100,7); pillar/tp(32190,31098,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 51,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A051",
+        "original_index": 51,
+        "quest": "svargrond_arena",
+        "step": "Komora 3",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 3",
+          "pattern": "P06/P27",
+          "trigger": "PITS[3]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32182,31098,7); summon(32182,31100,7); pillar/tp(32176,31098,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 52,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A052",
+        "original_index": 52,
+        "quest": "svargrond_arena",
+        "step": "Komora 4",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 4",
+          "pattern": "P06/P27",
+          "trigger": "PITS[4]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32168,31098,7); summon(32168,31100,7); pillar/tp(32162,31098,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 53,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A053",
+        "original_index": 53,
+        "quest": "svargrond_arena",
+        "step": "Komora 5",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 5",
+          "pattern": "P06/P27",
+          "trigger": "PITS[5]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32175,31084,7); summon(32175,31086,7); pillar/tp(32169,31084,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 54,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A054",
+        "original_index": 54,
+        "quest": "svargrond_arena",
+        "step": "Komora 6",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 6",
+          "pattern": "P06/P27",
+          "trigger": "PITS[6]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32189,31084,7); summon(32189,31086,7); pillar/tp(32183,31084,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 55,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A055",
+        "original_index": 55,
+        "quest": "svargrond_arena",
+        "step": "Komora 7",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 7",
+          "pattern": "P06/P27",
+          "trigger": "PITS[7]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32203,31084,7); summon(32203,31086,7); pillar/tp(32197,31084,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 56,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A056",
+        "original_index": 56,
+        "quest": "svargrond_arena",
+        "step": "Komora 8",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 8",
+          "pattern": "P06/P27",
+          "trigger": "PITS[8]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32196,31070,7); summon(32196,31072,7); pillar/tp(32190,31070,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 57,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A057",
+        "original_index": 57,
+        "quest": "svargrond_arena",
+        "step": "Komora 9",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 9",
+          "pattern": "P06/P27",
+          "trigger": "PITS[9]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32182,31070,7); summon(32182,31072,7); pillar/tp(32176,31070,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 58,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A058",
+        "original_index": 58,
+        "quest": "svargrond_arena",
+        "step": "Komora 10",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Komora 10",
+          "pattern": "P06/P27",
+          "trigger": "PITS[10]",
+          "condition": "Pozycje z pierwszej komory i przesunięcia; pit10 prostokąt używa y-42,center y-41",
+          "effect": "center(32189,31057,7); summon(32189,31057,7); pillar/tp(32183,31057,7)",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Wszystkie source PITS, centra, summon/pillar/teleport i rect są kompletne; pit10 zachowuje źródłową różnicę y-42 rect/y-41 center. Katalog komór nie jest działającym instance. Admission wymaga wyłączności komory, resetu, spawn i600s timeout.",
+        "missing_function": "Zamknięty istniejący activity/instance caller rezerwujący właściwy pit, sprawdzający brak innych graczy, resetujący świat, tworzący source bossa i przenoszący uczestnika z trwałym600s timeout; bez rozszerzenia Instance/W02.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 59,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A059",
+        "original_index": 59,
+        "quest": "svargrond_arena",
+        "step": "Rejestracja boss-death",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Rejestracja boss-death",
+          "pattern": "P07/P21",
+          "trigger": "GlobalEvent onStartup",
+          "condition": "Nazwy bossów każdejARENA istnieją jakoMonsterType",
+          "effect": "registerEventSvargrondArenaBossDeath",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:44"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_DEATH_AND_WORLD_OWNER",
+        "reason": "Donor ma rzeczywistą rejestrację SvargrondArenaBossDeath dla30 nazw w onStartup; nie jest to brak source event bindingu. Zaliczenie wykorzystuje mostDamageKiller i jawny tier/PitDoor, potem mutuje pillar/teleport i postęp.",
+        "missing_function": "Kwalifikowane source boss-death/mostDamage credit połączone z usunięciem1841, stworzeniem5022/AID25200 i PitDoor+1 przez istniejących ownerów śmierci/świata/questu.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:44"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 60,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A060",
+        "original_index": 60,
+        "quest": "svargrond_arena",
+        "step": "Zaliczenie bossa",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Zaliczenie bossa",
+          "pattern": "P07/P21",
+          "trigger": "onDeath mostDamageKiller",
+          "condition": "Gracz; PitDoor1..10; Arena>=1; nazwa wARENA[tier].creatures",
+          "effect": "Usuwa pillar1841;tworzy5022 AID25200;PitDoor+=1; nie last-hit",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:2"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_DEATH_AND_WORLD_OWNER",
+        "reason": "Donor ma rzeczywistą rejestrację SvargrondArenaBossDeath dla30 nazw w onStartup; nie jest to brak source event bindingu. Zaliczenie wykorzystuje mostDamageKiller i jawny tier/PitDoor, potem mutuje pillar/teleport i postęp.",
+        "missing_function": "Kwalifikowane source boss-death/mostDamage credit połączone z usunięciem1841, stworzeniem5022/AID25200 i PitDoor+1 przez istniejących ownerów śmierci/świata/questu.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_arena_kill.lua:2"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 61,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A061",
+        "original_index": 61,
+        "quest": "svargrond_arena",
+        "step": "Przejście do następnego pit",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Przejście do następnego pit",
+          "pattern": "P06/P27",
+          "trigger": "StepIn AID25200",
+          "condition": "PitDoor<=10; następny pit wolny",
+          "effect": "Cancel/reset/timer600s;spawn następny;teleport",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:52"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Source przejście, ucieczka, timeout i reset są kompletne. Mają wspólną tożsamość aktywnej komory i timer; samo teleport/SET nie zastępuje cancel/reset/spawn ani timed outfit przy wyjściu tchórza.",
+        "missing_function": "Trwały lifecycle konkretnej arena activity: cancel/replace600s timeout, source next-pit admission lub kick, scoped cleanup monsters/movable oraz120000ms outfit111 tylko na coward branch.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:52"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 62,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A062",
+        "original_index": 62,
+        "quest": "svargrond_arena",
+        "step": "Wyjście tchórza",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Wyjście tchórza",
+          "pattern": "P20/P25",
+          "trigger": "StepIn AID25300",
+          "condition": "Gracz",
+          "effect": "lookType111 przez120000ms;PitDoor=-1;kickPosition;cancel timer",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:14"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Source przejście, ucieczka, timeout i reset są kompletne. Mają wspólną tożsamość aktywnej komory i timer; samo teleport/SET nie zastępuje cancel/reset/spawn ani timed outfit przy wyjściu tchórza.",
+        "missing_function": "Trwały lifecycle konkretnej arena activity: cancel/replace600s timeout, source next-pit admission lub kick, scoped cleanup monsters/movable oraz120000ms outfit111 tylko na coward branch.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:14"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 63,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A063",
+        "original_index": 63,
+        "quest": "svargrond_arena",
+        "step": "Finał tier1",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Finał tier1",
+          "pattern": "P11/P13/P25",
+          "trigger": "StepIn AID25200",
+          "condition": "PitDoor>10; Arena=1",
+          "effect": "teleport32222,31080,6;PitDoor=0;GreenhornDoor=1;Arena+=1;questLog=2;achievement tier;cancel",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:30"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_OWNER",
+        "reason": "Finał tier ma jawne źródło i kilka efektów, w tym Arena/questLog obcego The Ultimate Challenges. Zapis drzwi, teleport i achievement nie uprawniają do samodzielnego dopisania obcych tracks.",
+        "missing_function": "Atomowy terminal tier z PitDoor0, właściwą door flag1, Arena+1, questLog2, source achievement, cancel timer i teleportem, z canonical ownership bez duplikacji.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:30"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 64,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A064",
+        "original_index": 64,
+        "quest": "svargrond_arena",
+        "step": "Finał tier2",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Finał tier2",
+          "pattern": "P11/P13/P25",
+          "trigger": "StepIn AID25200",
+          "condition": "PitDoor>10; Arena=2",
+          "effect": "teleport32222,31080,6;PitDoor=0;ScrapperDoor=1;Arena+=1;questLog=2;achievement tier;cancel",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:34"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_OWNER",
+        "reason": "Finał tier ma jawne źródło i kilka efektów, w tym Arena/questLog obcego The Ultimate Challenges. Zapis drzwi, teleport i achievement nie uprawniają do samodzielnego dopisania obcych tracks.",
+        "missing_function": "Atomowy terminal tier z PitDoor0, właściwą door flag1, Arena+1, questLog2, source achievement, cancel timer i teleportem, z canonical ownership bez duplikacji.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:34"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 65,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A065",
+        "original_index": 65,
+        "quest": "svargrond_arena",
+        "step": "Finał tier3",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Finał tier3",
+          "pattern": "P11/P13/P25",
+          "trigger": "StepIn AID25200",
+          "condition": "PitDoor>10; Arena=3",
+          "effect": "teleport32222,31080,6;PitDoor=0;WarlordDoor=1;Arena+=1;questLog=2;achievement tier;cancel",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:38"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_FOREIGN_OWNER_AND_SHARED_OWNER",
+        "reason": "Finał tier ma jawne źródło i kilka efektów, w tym Arena/questLog obcego The Ultimate Challenges. Zapis drzwi, teleport i achievement nie uprawniają do samodzielnego dopisania obcych tracks.",
+        "missing_function": "Atomowy terminal tier z PitDoor0, właściwą door flag1, Arena+1, questLog2, source achievement, cancel timer i teleportem, z canonical ownership bez duplikacji.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/movements_arena_pit.lua:38"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 66,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A066",
+        "original_index": 66,
+        "quest": "svargrond_arena",
+        "step": "Trofeum UID3264",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Trofeum UID3264",
+          "pattern": "P05/P14",
+          "trigger": "StepIn UID3264",
+          "condition": "TrophyStorage!=1",
+          "effect": "Tworzy5807na player.y-1;opis z nazwą gracza;TrophyStorage=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:182"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Source trophy IDs, UID3264/3265/3266 i opis z nazwą gracza są jawne. Native capture nie przenosi unique. Donor tworzy ground object; nie zamieniamy go na dowolną nową politykę dropu lub fake chest.",
+        "missing_function": "Kwalifikacja właściwego UID oraz istniejącego ownera dla jednorazowego trophy object na player.y-1 z source opisem i odpowiednią TrophyStorage1.",
+        "question_ids": [
+          "missing-unique-map-bindings",
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:182"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 67,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A067",
+        "original_index": 67,
+        "quest": "svargrond_arena",
+        "step": "Trofeum UID3265",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Trofeum UID3265",
+          "pattern": "P05/P14",
+          "trigger": "StepIn UID3265",
+          "condition": "TrophyStorage!=1",
+          "effect": "Tworzy5806na player.y-1;opis z nazwą gracza;TrophyStorage=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:187"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Source trophy IDs, UID3264/3265/3266 i opis z nazwą gracza są jawne. Native capture nie przenosi unique. Donor tworzy ground object; nie zamieniamy go na dowolną nową politykę dropu lub fake chest.",
+        "missing_function": "Kwalifikacja właściwego UID oraz istniejącego ownera dla jednorazowego trophy object na player.y-1 z source opisem i odpowiednią TrophyStorage1.",
+        "question_ids": [
+          "missing-unique-map-bindings",
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:187"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 68,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A068",
+        "original_index": 68,
+        "quest": "svargrond_arena",
+        "step": "Trofeum UID3266",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Trofeum UID3266",
+          "pattern": "P05/P14",
+          "trigger": "StepIn UID3266",
+          "condition": "TrophyStorage!=1",
+          "effect": "Tworzy5805na player.y-1;opis z nazwą gracza;TrophyStorage=1",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:192"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Source trophy IDs, UID3264/3265/3266 i opis z nazwą gracza są jawne. Native capture nie przenosi unique. Donor tworzy ground object; nie zamieniamy go na dowolną nową politykę dropu lub fake chest.",
+        "missing_function": "Kwalifikacja właściwego UID oraz istniejącego ownera dla jednorazowego trophy object na player.y-1 z source opisem i odpowiednią TrophyStorage1.",
+        "question_ids": [
+          "missing-unique-map-bindings",
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:192"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 69,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A069",
+        "original_index": 69,
+        "quest": "svargrond_arena",
+        "step": "Śmierć gracza",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Śmierć gracza",
+          "pattern": "P25",
+          "trigger": "SvargrondArenaPlayerDeath",
+          "condition": "PitDoor>0",
+          "effect": "PitDoor=0",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_player_death.lua:2"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SOURCE_BINDING_AND_SHARED_OWNER",
+        "reason": "Ciało player-death jest znane, lecz wyszukanie SvargrondArenaPlayerDeath w całych przypiętych data/data-global Lua/XML wykazało wyłącznie deklarację CreatureEvent. Nie potwierdzono source player registration.",
+        "missing_function": "Rzeczywisty binding do player death oraz scoped PitDoor>0→0 w istniejącym death/Quest ownerze bez tworzenia drugiego globalnego hooka.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/svargrond_arena/creaturescripts_player_death.lua:2"
+        ],
+        "evidence": [
+          "arena-event-closure.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 70,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A070",
+        "original_index": 70,
+        "quest": "svargrond_arena",
+        "step": "Timeout",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Timeout",
+          "pattern": "P16/P25",
+          "trigger": "timer600s",
+          "condition": "Gracz istnieje;PitDoor>0",
+          "effect": "kick32251,31098,6;PitDoor=0;cancel timer/effect",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:259"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Source przejście, ucieczka, timeout i reset są kompletne. Mają wspólną tożsamość aktywnej komory i timer; samo teleport/SET nie zastępuje cancel/reset/spawn ani timed outfit przy wyjściu tchórza.",
+        "missing_function": "Trwały lifecycle konkretnej arena activity: cancel/replace600s timeout, source next-pit admission lub kick, scoped cleanup monsters/movable oraz120000ms outfit111 tylko na coward branch.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:259"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 71,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A071",
+        "original_index": 71,
+        "quest": "svargrond_arena",
+        "step": "Reset komory",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Reset komory",
+          "pattern": "P25",
+          "trigger": "resetPit przed wejściem",
+          "condition": "Prostokąt pit; movable poza whitelist",
+          "effect": "Usuwa potwory i wskazane ruchome przedmioty;resetuje teleport/pillar",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:210"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ACTIVITY_OWNER",
+        "reason": "Source przejście, ucieczka, timeout i reset są kompletne. Mają wspólną tożsamość aktywnej komory i timer; samo teleport/SET nie zastępuje cancel/reset/spawn ani timed outfit przy wyjściu tchórza.",
+        "missing_function": "Trwały lifecycle konkretnej arena activity: cancel/replace600s timeout, source next-pit admission lub kick, scoped cleanup monsters/movable oraz120000ms outfit111 tylko na coward branch.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/svargrond_arena.lua:210"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 72,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+      ],
+      "disposition": {
+        "row_id": "R8A072",
+        "original_index": 72,
+        "quest": "svargrond_arena",
+        "step": "Skrzynie3tier",
+        "original_row": {
+          "quest": "svargrond_arena",
+          "step": "Skrzynie3tier",
+          "pattern": "P05",
+          "trigger": "UID z chest.lua2310–2423",
+          "condition": "OsobnePresent/BP/Weapons flags;3wybory broni dzieląflagę per tier",
+          "effect": "Nagrody z tabeli; nie sumować wykluczających wyborów",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2314"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "PRESERVED_EXISTING_REWARD_DATA_NOT_RUNTIME",
+        "reason": "Zachowano9 istniejących canonical claim records:6 container variants mają WAITING_IMPLEMENTATION,3 plain weapon claims readiness=ready i po3 source choices współdzielących flagę. Nie sumujemy wzajemnie wykluczających się broni i nie uznajemy katalogu za admission całej Areny.",
+        "missing_function": "Pełna arena activity i kwalifikacja chest ingress pozostają osobne; brakujące container warianty wymagają istniejącego reward ownera bez zmiany polityki placement. Gotowych danych plain claims nie osłabiamy.",
+        "question_ids": [
+          "arena-cross-quest-ownership"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130560"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2314"
+        ],
+        "evidence": [
+          "arena-existing-reward-records.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

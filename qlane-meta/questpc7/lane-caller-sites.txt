@@ -1,0 +1,6 @@
+crates/gameplay/monster-ai/src/monster_summon/physical_admission.rs:16:    pub(super) fn execute_bound(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:32:pub(super) fn cases() -> TestResult<Vec<CatalogueChest>> {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:1100:pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs:24:fn questpc7_story_rewards_use_replay_and_refusal() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs:45:fn questpc7_formorgar_books_use_replay_and_refusal() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs:53:fn questpc7_giant_smithhammer_rewards_use_replay_and_refusal() -> TestResult {

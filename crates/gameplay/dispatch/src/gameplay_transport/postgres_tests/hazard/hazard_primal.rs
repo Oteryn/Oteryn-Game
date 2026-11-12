@@ -48,7 +48,13 @@ fn scenario() -> TestResult {
             owner.offered_capabilities(), &[CAPABILITY_HAZARD_V1],
         ).ok_or("hazard capability not offered")?;
         assert_eq!(exchange(&owner, &mut admitted, 1, &[]).await?, (CommandStatus::Accepted, vec![1, 1]));
+        let completion_track = "oteryn:quest-progress/quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed";
+        let before_quest = h.root.read_character_quest_state(&authority, fixture::fence(1)?.character_id).await?;
+        assert_eq!(before_quest.tracks().get(completion_track), None);
         let first = settle(&h, &owner, &admitted, 1, true).await?;
+        let completed = h.root.read_character_quest_state(&authority, fixture::fence(1)?.character_id).await?;
+        assert_eq!(completed.tracks().get(completion_track), Some(&1),
+            "native Primal damage credit projects the source completion flag into Quest reads");
         assert_eq!(exchange(&owner, &mut admitted, 2, &[]).await?, (CommandStatus::Accepted, vec![2, 1]));
         let xp: i64 = sqlx::query_scalar("SELECT xp_awarded FROM game_party_kill_xp_members WHERE death_key=$1")
             .bind(first.as_slice()).fetch_one(&h.pool).await?;
@@ -66,6 +72,9 @@ fn scenario() -> TestResult {
         let after: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
             .bind(fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(before, after, "selected below own maximum records a no-op");
+        let unchanged_hazard = h.root.read_character_quest_state(&authority, fixture::fence(1)?.character_id).await?;
+        assert_eq!(unchanged_hazard.tracks().get(completion_track), Some(&1),
+            "completion is retained independently of Hazard advancement");
         assert_eq!(exchange(&owner, &mut admitted, 6, &[]).await?, (CommandStatus::Accepted, vec![3, 1]));
         for level in 3_u8..=12 {
             // The real session ingress requires the next contiguous CommandId.
@@ -130,7 +139,7 @@ async fn settle(
         death_key: death.to_vec(), principal: fence.character_id, creature: "oteryn:creature.the_primal_menace".into(),
         base_xp: 10, death_at_ms: serial, death_at_us: serial*1000,
         shared: false, party_id: None, party_revision: None,
-        members: vec![PartyKillXpMember {
+        members: vec![PartyKillXpMember { task_board_eligible: true,
             fence,
             request: ExperienceAwardRequest {
                 occurrence: ExperienceRewardOccurrence::from_bytes(fixture::id(u8::try_from(serial)?)).map_err(debug)?,

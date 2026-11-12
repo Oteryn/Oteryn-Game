@@ -143,7 +143,7 @@
         "completeness",
         "reported_source_readiness"
       ],
-      "properties": {
+      "properties": {"visibility":{"type":"string","enum":["public","hidden"],"default":"public"},
         "identity": {
           "type": "object",
           "additionalProperties": false,

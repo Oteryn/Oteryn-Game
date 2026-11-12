@@ -1,0 +1,955 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "OTERYN_QUEST_REWARD_CALLBACKS/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "callbacks"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "callbacks": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/callback"
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/trackDeclaration"
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "give": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "contents": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/giftItem"
+          }
+        },
+        "backpack_outputs": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        },
+        "key_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": [
+              "contents",
+              "backpack_outputs"
+            ],
+            "properties": {
+              "contents": {
+                "minItems": 1
+              },
+              "backpack_outputs": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "outfit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outfit",
+        "addons"
+      ],
+      "properties": {
+        "outfit": {
+          "type": "string",
+          "pattern": "^oteryn:outfit\\.[a-z0-9_]+$",
+          "maxLength": 160
+        },
+        "addons": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "sex": {
+          "enum": [
+            "female",
+            "male"
+          ]
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "minimum",
+        "maximum",
+        "set"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "set": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "preserve": {
+          "type": "boolean"
+        }
+      }
+    },
+    "callback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "quest",
+        "npc",
+        "keywords",
+        "topic",
+        "next_topic",
+        "storage",
+        "take",
+        "reply",
+        "sources"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:quest-reward/[a-z0-9_/-]+$"
+        },
+        "quest": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "npc": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^oteryn:npc\\.[a-z0-9_]+$"
+        },
+        "keywords": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "topic": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "next_topic": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "storage": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/storage"
+          }
+        },
+        "take": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/input"
+          }
+        },
+        "give": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/give"
+            }
+          ]
+        },
+        "outfit": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/outfit"
+            }
+          ]
+        },
+        "reply": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "achievement": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^oteryn:achievement/[a-z0-9_/-]+$"
+            }
+          ]
+        },
+        "present": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/input"
+          }
+        },
+        "requires": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/requirement"
+          }
+        },
+        "fee": {
+          "$ref": "#/$defs/monetaryFee"
+        },
+        "creation_sex": {
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "participants": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "quest",
+              "storage"
+            ],
+            "properties": {
+              "quest": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^oteryn:[a-z0-9._/:-]+$"
+              },
+              "storage": {
+                "type": "array",
+                "minItems": 0,
+                "maxItems": 8,
+                "items": {
+                  "$ref": "#/$defs/storage"
+                }
+              },
+              "state_ops": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "$ref": "#/$defs/stateOperation"
+                }
+              }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "storage": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "state_ops"
+                ],
+                "properties": {
+                  "state_ops": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "state_ops": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/stateOperation"
+          }
+        },
+        "requires_premium": {
+          "type": "boolean"
+        },
+        "requires_outfits": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+          }
+        },
+        "requires_actor_conditions": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "fire",
+              "drunk"
+            ]
+          }
+        },
+        "forbids_addons": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "outfit",
+              "addons"
+            ],
+            "properties": {
+              "outfit": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+              },
+              "addons": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "sex": {
+                "enum": [
+                  "female",
+                  "male"
+                ]
+              }
+            }
+          }
+        },
+        "outfits": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/outfit"
+          }
+        },
+        "exact_take": {
+          "type": "boolean"
+        },
+        "achievement_progress": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "target"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^oteryn:achievement/[a-z0-9_]+$",
+                "maxLength": 160
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              }
+            }
+          }
+        },
+        "carried_item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "forbids_outfits": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+          }
+        },
+        "minimum_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "requires_addons": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "outfit",
+              "addons"
+            ],
+            "properties": {
+              "outfit": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+              },
+              "addons": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "sex": {
+                "enum": [
+                  "female",
+                  "male"
+                ]
+              }
+            }
+          }
+        },
+        "experience": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        "completes": {
+          "type": "boolean",
+          "default": false
+        },
+        "required_receipts": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "transition",
+              "track",
+              "value"
+            ],
+            "properties": {
+              "transition": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^oteryn:[A-Za-z0-9._:/-]+$"
+              },
+              "track": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^oteryn:[A-Za-z0-9._:/-]+$"
+              },
+              "value": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "carried_exchange": {
+          "type": "boolean",
+          "default": false
+        },
+        "requires_completed_quests": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^oteryn:quest\\.[a-z0-9_]+(?:\\.[a-z0-9_]+)*$",
+            "maxLength": 128
+          }
+        },
+        "counter": {
+          "$ref": "#/$defs/rewardCounter"
+        },
+        "requirements": {
+          "$ref": "#/$defs/rewardRequirements"
+        },
+        "repeatable": {
+          "type": "boolean"
+        },
+        "required_claims": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 256,
+            "pattern": "^oteryn:reward-claim\\.[a-z0-9._/:-]+$"
+          }
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "minimum": {
+          "type": "integer"
+        },
+        "maximum": {
+          "type": "integer"
+        }
+      }
+    },
+    "trackDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "quest",
+        "initial",
+        "min",
+        "max",
+        "sources"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^oteryn:[a-z0-9._/:-]+$",
+          "maxLength": 128
+        },
+        "quest": {
+          "type": "string",
+          "pattern": "^oteryn:[a-z0-9._/:-]+$",
+          "maxLength": 128
+        },
+        "initial": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "min": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "max": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "writable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "monetaryFee": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gold",
+        "include_bank"
+      ],
+      "properties": {
+        "gold": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "include_bank": {
+          "type": "boolean"
+        }
+      }
+    },
+    "stateOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "from",
+        "effect"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "from": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "any"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "minimum",
+                "maximum"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "between"
+                },
+                "minimum": {
+                  "type": "integer"
+                },
+                "maximum": {
+                  "type": "integer"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "seconds"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "elapsed_at_least"
+                },
+                "seconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 31622400
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "seconds"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "elapsed_less_than"
+                },
+                "seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 31622400
+                }
+              }
+            }
+          ]
+        },
+        "effect": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "value"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "add"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "set_now"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "giftItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "fluid_subtype": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "fluid_subtype"
+            ]
+          },
+          "then": {
+            "properties": {
+              "count": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "carriedItemRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "map_source": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 281474976710655
+        }
+      }
+    },
+    "rewardCounter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "maximum"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "pattern": "^oteryn:quest-progress/[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        }
+      }
+    },
+    "rewardRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min_level",
+        "premium"
+      ],
+      "properties": {
+        "min_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "premium": {
+          "type": "boolean"
+        },
+        "completed_quests": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^oteryn:quest[.][a-z0-9._/:-]+$",
+            "maxLength": 128
+          }
+        },
+        "owned_cosmetics": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/outfit"
+          }
+        },
+        "owned_items": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/carriedItemRequirement"
+          }
+        }
+      }
+    }
+  }
+}

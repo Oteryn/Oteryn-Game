@@ -1,0 +1,11 @@
+{
+  "id": 288,
+  "name": "AMBIENT_SOUND_V1",
+  "owner_decision": "SRVGAP-B24 coordinator-authorised additive ambient channel",
+  "owner": "current ChannelRuntime sound-zone observer",
+  "requires": [6],
+  "command_types": [],
+  "state_domains": [101],
+  "offered": true,
+  "offer_gate": "Only selected clients receive domain 101. With CHAT_V1 also selected, this opts into nearby optional mount voices through local MonsterSay lines (mode 4), which remain invalid in player intents. Presentation capability 23 is unchanged."
+}

@@ -1,5 +1,7 @@
 //! Absolute ItemType decay on the existing durable Item owner. Schedules are
 //! minted in the original cast transaction, not inferred from current names.
+pub(crate) mod event_items;
+
 use super::spell_item_transaction::{
     SpellItemAuthority, SpellItemError, SpellItemScopeAuthority, check_scope_transaction,
     check_transaction,
@@ -16,6 +18,9 @@ pub async fn schedule_minted_item_in_transaction(
     ordinal: u32,
     occurred_at: i64,
 ) -> Result<(), SpellItemError> {
+    if !definition.decay_chain.is_empty() {
+        return schedule_field_chain_in_transaction(tx, authority, request, definition, item, ordinal, occurred_at).await;
+    }
     let Some(decay) = &definition.decay else {
         return Ok(());
     };
@@ -39,6 +44,34 @@ pub async fn schedule_minted_item_in_transaction(
         .bind(decay.target.as_ref().map(|t|t.family.as_str())).bind(decay.target.as_ref().map(|t|t.production_key.as_str()))
         .bind(decay.target.as_ref().map(|t|t.revision_ref.as_str())).bind(definition.content_generation_digest.as_slice())
         .execute(&mut **tx).await?;
+    Ok(())
+}
+
+/// The same absolute-deadline owner also accepts a source-authored action mint.
+/// Its schedule is bound by the existing deferred temporal proof to the exact
+/// same-XID consume/transform receipt and output, never to a fabricated cast.
+pub(super) async fn schedule_action_item_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    transaction: &str,
+    ordinal: u32,
+    output: &serde_json::Value,
+    content_digest: [u8; 32],
+    occurred_at: i64,
+) -> Result<(), super::DurabilityError> {
+    use super::DurabilityError;
+    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else { return Ok(()); };
+    let duration = decay.get("duration_millis").and_then(serde_json::Value::as_u64)
+        .filter(|value| (1..=u64::from(u32::MAX)).contains(value))
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let duration = i64::try_from(duration).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let expires = occurred_at.checked_add(duration).ok_or(DurabilityError::InvalidStoredState)?;
+    let target = decay.get("target").ok_or(DurabilityError::InvalidStoredState)?;
+    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1) || ordinal == 0 || content_digest == [0; 32] {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(($1->>'item')::uuid,$2::uuid,$3,$4,$5,'Item',$1->>'key',$1->>'revision',$6->>'family',$6->>'key',$6->>'revision',$7)")
+        .bind(output).bind(transaction).bind(i32::try_from(ordinal).map_err(|_| DurabilityError::InvalidStoredState)?)
+        .bind(duration).bind(expires).bind(target).bind(content_digest.as_slice()).execute(&mut **tx).await?;
     Ok(())
 }
 
@@ -69,8 +102,15 @@ pub async fn drain_due_items_in_transaction(
        game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id
       FROM game_spell_item_temporal_schedules p JOIN game_item_instances i USING(item_instance_id)
       LEFT JOIN game_item_ground_locations g USING(item_instance_id)
-      LEFT JOIN game_item_container_entries e USING(item_instance_id)
-      LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=e.parent_item_instance_id AND bag.character_id=e.character_id
+      LEFT JOIN LATERAL (
+       SELECT c.item_instance_id,c.world_id,c.character_id,c.parent_item_instance_id,c.placement_ordinal
+        FROM game_item_container_entries c WHERE c.item_instance_id=i.item_instance_id
+       UNION ALL
+       SELECT n.item_instance_id,n.world_id,owner.owner_character,n.parent_item_instance_id,n.placement_ordinal
+        FROM game_item_nested_entries n,LATERAL game_item_loop_owner(n.parent_item_instance_id) owner
+        WHERE n.item_instance_id=i.item_instance_id AND owner.owner_character IS NOT NULL AND owner.depth BETWEEN 0 AND 7
+      ) e ON TRUE
+      LEFT JOIN game_item_container_slots bag ON bag.character_id=e.character_id
       LEFT JOIN game_character_equipment_slots eq ON eq.item_instance_id=p.item_instance_id
       LEFT JOIN game_character_equipment_state es ON es.character_id=eq.character_id
       LEFT JOIN game_durability_admission_character_guards cg ON cg.character_id=COALESCE(e.character_id,eq.character_id)
@@ -79,9 +119,9 @@ pub async fn drain_due_items_in_transaction(
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id)
-       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND g.runtime_scope_ownership_generation=$3::text::numeric)
+       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND (g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
-          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state=2
+          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id LIMIT $4 FOR UPDATE OF i,p"#)
@@ -143,7 +183,11 @@ pub async fn drain_due_items_in_transaction(
                 .bind(&transaction).bind(&item).bind(&revision).execute(&mut **tx).await?.rows_affected();
             let removed=match kind {
                 1=>sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=$1::uuid AND stack_ordinal=$2").bind(&item).bind(stack).execute(&mut **tx).await?.rows_affected(),
-                2=>sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected(),
+                2=> {
+                    let main = sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected();
+                    let nested = sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected();
+                    main + nested
+                },
                 _=>sqlx::query("DELETE FROM game_character_equipment_slots WHERE item_instance_id=$1::uuid AND character_id=$2::uuid AND slot=$3").bind(&item).bind(&character).bind(slot).execute(&mut **tx).await?.rows_affected(),
             };
             if removed != 1 {
@@ -169,7 +213,8 @@ pub async fn drain_due_items_in_transaction(
             .bind(&event).bind(&transaction).bind(bytes).execute(&mut **tx).await?;
         changed += 1;
     }
-    Ok(changed)
+    let floor = super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
+    Ok(changed + floor)
 }
 
 /// Every stage is frozen by the complete original source Item policy in the
@@ -220,8 +265,15 @@ pub async fn drain_due_field_chains_in_transaction(
        game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id
       FROM game_spell_field_temporal_schedules p JOIN game_item_instances i USING(item_instance_id)
       LEFT JOIN game_item_ground_locations g USING(item_instance_id)
-      LEFT JOIN game_item_container_entries e USING(item_instance_id)
-      LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=e.parent_item_instance_id AND bag.character_id=e.character_id
+      LEFT JOIN LATERAL (
+       SELECT c.item_instance_id,c.world_id,c.character_id,c.parent_item_instance_id,c.placement_ordinal
+        FROM game_item_container_entries c WHERE c.item_instance_id=i.item_instance_id
+       UNION ALL
+       SELECT n.item_instance_id,n.world_id,owner.owner_character,n.parent_item_instance_id,n.placement_ordinal
+        FROM game_item_nested_entries n,LATERAL game_item_loop_owner(n.parent_item_instance_id) owner
+        WHERE n.item_instance_id=i.item_instance_id AND owner.owner_character IS NOT NULL AND owner.depth BETWEEN 0 AND 7
+      ) e ON TRUE
+      LEFT JOIN game_item_container_slots bag ON bag.character_id=e.character_id
       LEFT JOIN game_character_equipment_slots eq ON eq.item_instance_id=p.item_instance_id
       LEFT JOIN game_character_equipment_state es ON es.character_id=eq.character_id
       LEFT JOIN game_durability_admission_character_guards cg ON cg.character_id=COALESCE(e.character_id,eq.character_id)
@@ -230,9 +282,9 @@ pub async fn drain_due_field_chains_in_transaction(
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
-       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND (g.runtime_scope_ownership_generation=$3::text::numeric OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
+       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
-          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state=2
+          AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
@@ -297,7 +349,11 @@ pub async fn drain_due_field_chains_in_transaction(
                 .bind(&transaction).bind(&item).bind(&revision).execute(&mut **tx).await?.rows_affected();
                 let removed=match kind {
                 1=>sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=$1::uuid AND stack_ordinal=$2").bind(&item).bind(stack).execute(&mut **tx).await?.rows_affected(),
-                2=>sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected(),
+                2=> {
+                    let main = sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected();
+                    let nested = sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=$1::uuid AND parent_item_instance_id=$2::uuid AND placement_ordinal=$3::text::numeric").bind(&item).bind(&parent).bind(&ordinal).execute(&mut **tx).await?.rows_affected();
+                    main + nested
+                },
                 _=>sqlx::query("DELETE FROM game_character_equipment_slots WHERE item_instance_id=$1::uuid AND character_id=$2::uuid AND slot=$3").bind(&item).bind(&character).bind(slot).execute(&mut **tx).await?.rows_affected(),
             };
                 if removed != 1 {
@@ -370,7 +426,7 @@ async fn schedule_field_chain_rows_in_transaction(
     if definition.decay_chain.len() > 32
         || definition.stack_maximum != 1
         || definition.container_capacity.is_some()
-        || !definition.ground_destination
+        || (!definition.ground_destination && !definition.inventory_destination)
     {
         return Err(SpellItemError::Rejected("field source chain qualification"));
     }

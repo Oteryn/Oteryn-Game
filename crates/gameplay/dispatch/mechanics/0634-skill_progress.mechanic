@@ -1,0 +1,8 @@
+name=skill_progress
+commands=495
+transport=skill_progress
+composed=skill_progress
+authority=skill_progress
+offer=634,skill_progress::offered,skill_progress_available
+[route]
+routing::skill_progress::route(authority, &session.admitted, command).await

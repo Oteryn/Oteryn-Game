@@ -3,15 +3,19 @@
 include!("core_modules.rs");
 
 // Keep sorted by module name; insert in order, never append.
+pub mod arena_match;
+pub mod bazaar;
 pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_difficulty;
 pub mod boss_encounter;
+pub mod cake_event;
 pub mod character_condition_snapshot;
 pub mod character_hazard;
 pub mod character_home_town;
 pub mod character_known_spells;
 pub mod chat_public;
+pub mod coin_market;
 pub mod creature_source_items;
 pub mod daily_boost;
 pub mod daily_reward;
@@ -19,12 +23,15 @@ pub mod daily_reward_claim;
 pub mod daily_reward_delivery;
 mod daily_reward_effects;
 mod daily_reward_jokers;
+mod daily_reward_picked_items;
+pub mod dawnport_departure;
 pub mod endgame_terminal;
 pub mod exercise_training;
 pub mod field_removal;
 pub mod guild_chat;
 #[cfg(feature = "test-support")]
 pub mod guild_chat_fixture;
+pub mod house_base_decorations;
 pub mod house_management;
 pub mod house_transfer;
 pub mod hunting_stamina;
@@ -38,17 +45,23 @@ pub mod native_world_read;
 pub mod party_kill_xp;
 pub mod player_death_items;
 pub mod player_report;
+pub mod premium_overview;
 pub mod prey;
 pub mod private_channel;
 pub mod quest_monk_rewards;
+mod quest_unnatural_selection;
 pub mod quest_world_callback;
 pub mod raid_runner;
 pub mod raid_schedule;
 pub mod staff;
+pub mod support_intake;
 pub mod task_board;
 pub mod terrain_tool;
+pub mod tibiadrome;
+pub mod tutorial_viola;
 pub mod vip;
 pub mod vip_presence;
+pub mod weapon_proficiency_state;
 // End sorted module declarations.
 
 #[cfg(test)]

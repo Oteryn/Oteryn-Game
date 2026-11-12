@@ -125,6 +125,26 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
     #[test]
+    fn primal_region_bundle_is_bound_in_both_artifact_sections() {
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
+            0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ])
+        .unwrap();
+        let base = crate::content::qualify_native_entry_room(world).unwrap();
+        let source = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+            "channel": include_str!("../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"),
+            "primal": include_str!("../../../../../tools/content-schema/native-gameplay/crystal-primal-region.json"),
+        })).unwrap();
+        let pair = compile(base.compiled(), &source).unwrap();
+        let decoded = decode(&pair.server, &pair.client).unwrap();
+        assert_eq!(decoded.source_world, source);
+        let mut substituted_client = pair.client.clone();
+        let last = substituted_client.len() - 1;
+        substituted_client[last] ^= 1;
+        assert!(decode(&pair.server, &substituted_client).is_err());
+    }
+    #[test]
     fn actual_map_pair_has_independent_client_pin_and_strict_corruption_refusal() {
         let world = oteryn_protocol_oteryn::WorldId::decode(&[
             0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,

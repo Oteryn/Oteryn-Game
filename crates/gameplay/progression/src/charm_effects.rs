@@ -367,7 +367,14 @@ fn event_runs_effect(event: &CharmHookEvent, lethal: bool, effect: CharmEffect) 
         },
         CharmHookEvent::IncomingCreatureAttack => hook == CharmHook::IncomingCreatureAttack,
         CharmHookEvent::IncomingCreatureHit { .. } => hook == CharmHook::IncomingCreatureHit,
-        CharmHookEvent::IncomingManaDrain { .. } => hook == CharmHook::IncomingManaDrain,
+        CharmHookEvent::IncomingManaDrain { .. } => {
+            hook == CharmHook::IncomingManaDrain
+                || matches!(
+                    effect,
+                    CharmEffect::ParalyseCreatureAfterItsAttack { .. }
+                        | CharmEffect::HasteAfterHit { .. }
+                )
+        }
         CharmHookEvent::CreatureLoot => hook == CharmHook::CreatureLoot,
         CharmHookEvent::Skinning => hook == CharmHook::Skinning,
         CharmHookEvent::CharacterDeath => hook == CharmHook::CharacterDeath,

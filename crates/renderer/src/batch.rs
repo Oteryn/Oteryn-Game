@@ -4,8 +4,14 @@
 //! same space as window cursor positions. Everything here is plain data and integer or float math
 //! so batch shape, counts and tile/screen conversion are testable without a GPU.
 
+#[path = "ambient.rs"]
+mod ambient;
+pub use ambient::lit_atlas;
+#[path = "weather.rs"]
+mod weather;
 use oteryn_client_domain::TileCoord;
 use std::fmt::{self, Display, Formatter};
+pub use weather::weather_atlas;
 
 /// Upper bound of quads in one batch. Bounds both memory and the GPU instance buffer.
 pub const MAX_BATCH_QUADS: usize = 81_920;
@@ -346,116 +352,21 @@ impl TileBatch {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct SpriteBatch {
     instances: Vec<QuadInstance>,
+    pub lighting: crate::lighting::SceneLighting,
 }
 
-impl SpriteBatch {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            instances: Vec::new(),
-        }
-    }
-
-    /// Adds a sprite on a tile. Returns `Ok(false)` when the tile is outside the view and the
-    /// sprite was culled. An invalid cell or a full batch is an error.
-    pub fn push(
-        &mut self,
-        view: &TileView,
-        atlas: &AtlasImage,
-        tile: TileCoord,
-        cell: u16,
-    ) -> Result<bool, BatchError> {
-        let uv = atlas.uv_rect(cell)?;
-        if !view.contains(tile) {
-            return Ok(false);
-        }
-        if self.instances.len() >= MAX_BATCH_QUADS {
-            return Err(BatchError::CapacityExceeded {
-                max: MAX_BATCH_QUADS,
-            });
-        }
-        let tile_px = view.tile_px() as f32;
-        self.instances.push(QuadInstance {
-            position: view.tile_to_screen(tile),
-            size: [tile_px, tile_px],
-            uv,
-        });
-        Ok(true)
-    }
-
-    /// Adds a sprite cell shifted from a tile's top-left by `offset` source pixels, where a
-    /// tile is `source_px` source pixels wide; the shift scales with the view's tile size.
-    /// Returns `Ok(false)` when the quad lies wholly outside the view and was culled.
-    pub fn push_offset(
-        &mut self,
-        view: &TileView,
-        atlas: &AtlasImage,
-        tile: TileCoord,
-        cell: u16,
-        offset: [i32; 2],
-        source_px: u32,
-    ) -> Result<bool, BatchError> {
-        let uv = atlas.uv_rect(cell)?;
-        if source_px == 0 {
-            return Err(BatchError::InvalidView);
-        }
-        let tile_px = view.tile_px() as f32;
-        let scale = tile_px / source_px as f32;
-        let [x, y] = view.tile_to_screen(tile);
-        let position = [x + offset[0] as f32 * scale, y + offset[1] as f32 * scale];
-        let (width, height) = view.viewport_px();
-        if position[0] + tile_px <= 0.0
-            || position[1] + tile_px <= 0.0
-            || position[0] >= width as f32
-            || position[1] >= height as f32
-        {
-            return Ok(false);
-        }
-        if self.instances.len() >= MAX_BATCH_QUADS {
-            return Err(BatchError::CapacityExceeded {
-                max: MAX_BATCH_QUADS,
-            });
-        }
-        self.instances.push(QuadInstance {
-            position,
-            size: [tile_px, tile_px],
-            uv,
-        });
-        Ok(true)
-    }
-
-    pub fn clear(&mut self) {
-        self.instances.clear();
-    }
-
-    #[must_use]
-    pub fn instances(&self) -> &[QuadInstance] {
-        &self.instances
-    }
-
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.instances.len()
-    }
-
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.instances.is_empty()
-    }
-
-    /// Vertices the GPU draws for this batch.
-    #[must_use]
-    pub fn vertex_count(&self) -> u32 {
-        // Bounded by `MAX_BATCH_QUADS`, so the product fits in `u32`.
-        (self.instances.len() as u32) * VERTICES_PER_QUAD
-    }
-}
+#[path = "sprite_batch.rs"]
+mod sprite_batch;
 
 /// Edge of one sprite page cell in pixels.
 pub const PAGE_CELL_PX: u32 = 32;
 /// Cells along one edge of the sprite page.
 pub const PAGE_CELLS_PER_ROW: u32 = 64;
 /// Sprite cells one page holds: 2048 x 2048 pixels of 32 x 32 cells.
+/// Maximum new cell uploads per frame (16 MiB, 1/16 of the 256 MiB floor).
+pub const MAX_PAGE_UPLOAD_CELLS: usize = 4096;
+/// Maximum RGBA8 upload payload per frame.
+pub const MAX_PAGE_UPLOAD_BYTES: usize = 16 * 1024 * 1024;
 pub const PAGE_CELLS: usize = (PAGE_CELLS_PER_ROW * PAGE_CELLS_PER_ROW) as usize;
 
 /// One 32 x 32 sprite cell: the sprite and which cell of it.
@@ -486,6 +397,9 @@ struct PageSlot {
 /// still has somewhere to draw an overflow cell from.
 #[derive(Debug, Clone)]
 pub struct AtlasPage {
+    generation: Option<oteryn_foundation::ProcessGeneration>,
+    uploaded_cells: usize,
+    uploaded_bytes: usize,
     slots: Vec<Option<PageSlot>>,
     index: std::collections::HashMap<CellKey, u16>,
     frame_first_tick: u64,
@@ -503,11 +417,22 @@ impl AtlasPage {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            generation: None,
+            uploaded_cells: 0,
+            uploaded_bytes: 0,
             slots: vec![None; PAGE_CELLS],
             index: std::collections::HashMap::with_capacity(PAGE_CELLS),
             frame_first_tick: 1,
             tick: 0,
             placeholders: 0,
+        }
+    }
+
+    /// Releases every resident slot when the owning process generation changes.
+    pub fn set_generation(&mut self, generation: oteryn_foundation::ProcessGeneration) {
+        if self.generation != Some(generation) {
+            *self = Self::new();
+            self.generation = Some(generation);
         }
     }
 
@@ -522,6 +447,8 @@ impl AtlasPage {
 
     /// Starts a frame. Cells drawn in this frame are not evicted until the next one.
     pub fn begin_frame(&mut self) {
+        self.uploaded_cells = 0;
+        self.uploaded_bytes = 0;
         self.frame_first_tick = self.tick.saturating_add(1);
     }
 
@@ -556,6 +483,13 @@ impl AtlasPage {
                 upload: false,
             };
         }
+        let bytes = PAGE_CELL_PX as usize * PAGE_CELL_PX as usize * RGBA_BYTES_PER_PIXEL;
+        if self.uploaded_cells >= MAX_PAGE_UPLOAD_CELLS
+            || self.uploaded_bytes + bytes > MAX_PAGE_UPLOAD_BYTES
+        {
+            self.count_placeholder();
+            return CellSlot::Placeholder;
+        }
         let free = self.slots.iter().position(Option::is_none);
         let victim = free.or_else(|| {
             self.slots
@@ -580,6 +514,8 @@ impl AtlasPage {
             last_drawn: stamp,
         });
         self.index.insert(key, slot);
+        self.uploaded_cells += 1;
+        self.uploaded_bytes += bytes;
         CellSlot::Resident { slot, upload: true }
     }
 
@@ -1100,7 +1036,7 @@ mod tests {
     }
 
     #[test]
-    fn a_frame_of_4097_distinct_cells_draws_one_placeholder() {
+    fn atlas_page_max_and_max_plus_one_admission() {
         let mut page = AtlasPage::new();
         page.begin_frame();
         let mut placeholders = 0;
@@ -1179,4 +1115,38 @@ mod tests {
         assert_eq!(quad.size, [32.0 * scale; 2]);
         Ok(())
     }
+    #[test]
+    fn atlas_page_admits_at_most_n_uploads_per_frame_then_placeholders() {
+        let mut page = AtlasPage::new();
+        for id in 0..PAGE_CELLS as u32 {
+            assert!(matches!(
+                page.acquire(key(id)),
+                CellSlot::Resident { upload: true, .. }
+            ));
+        }
+        page.begin_frame();
+        for id in 0..PAGE_CELLS as u32 {
+            assert!(matches!(
+                page.acquire(key(id + 10_000)),
+                CellSlot::Resident { upload: true, .. }
+            ));
+        }
+        assert_eq!(page.acquire(key(99_999)), CellSlot::Placeholder);
+    }
+
+    #[test]
+    fn atlas_page_generation_change_releases_all_slots() {
+        let mut page = AtlasPage::new();
+        page.acquire(key(1));
+        page.set_generation(oteryn_foundation::ProcessGeneration::new(2));
+        assert_eq!(page.resident_cells(), 0);
+        assert!(page.slots.iter().all(Option::is_none));
+        assert!(matches!(
+            page.acquire(key(1)),
+            CellSlot::Resident { upload: true, .. }
+        ));
+    }
 }
+
+#[path = "name_text.rs"]
+pub mod name_text;

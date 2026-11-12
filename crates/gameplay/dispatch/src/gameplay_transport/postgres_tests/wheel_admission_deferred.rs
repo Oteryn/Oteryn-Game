@@ -4,7 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use std::sync::Arc;
 
 #[test]
-fn wheel_admission_missing_progression_defers_allocation() -> TestResult {
+fn wheel_admission_missing_progression_loads_empty_allocation() -> TestResult {
     scenario(false)
 }
 
@@ -56,26 +56,50 @@ fn scenario(initialized: bool) -> TestResult {
                     None
                 };
                 owner.admit_quest_session(&deps.admitted).await;
-                assert!(
-                    owner
+                if initialized {
+                    assert!(
+                        owner
+                            .states
+                            .wheel_sessions
+                            .lock()
+                            .map_err(debug)?
+                            .get(&session)
+                            .is_some_and(Option::is_none),
+                        "failed reset must defer Wheel instead of publishing an allocation",
+                    );
+                    assert!(
+                        owner
+                            .states
+                            .quest_sessions
+                            .lock()
+                            .map_err(debug)?
+                            .get(&session)
+                            .is_some_and(|entry| entry.retry_at.is_some()),
+                        "deferred Wheel admission must use the existing owner retry cadence"
+                    );
+                } else {
+                    let allocation = owner
                         .states
                         .wheel_sessions
                         .lock()
                         .map_err(debug)?
                         .get(&session)
-                        .is_some_and(Option::is_none),
-                    "failed reset must defer Wheel instead of publishing an allocation",
-                );
-                assert!(
-                    owner
-                        .states
-                        .quest_sessions
-                        .lock()
-                        .map_err(debug)?
-                        .get(&session)
-                        .is_some_and(|entry| entry.retry_at.is_some()),
-                    "deferred Wheel admission must use the existing owner retry cadence"
-                );
+                        .cloned()
+                        .flatten()
+                        .ok_or("empty Wheel allocation")?;
+                    assert!(allocation.current);
+                    assert_eq!(allocation.wheel_revision, 0);
+                    assert_eq!(allocation.wheel_ruleset_revision, None);
+                    assert_eq!(
+                        allocation.slots,
+                        crate::durability::character_wheel::WheelSlots::ZERO
+                    );
+                    let progression: i64 =
+                        sqlx::query_scalar("SELECT count(*) FROM game_character_progression_state")
+                            .fetch_one(&h.pool)
+                            .await?;
+                    assert_eq!(progression, 0, "admission must not invent progression");
+                }
                 if let Some(held) = held {
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
                     owner

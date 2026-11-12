@@ -1,4 +1,5 @@
 //! Fenced durable execution of a channel raid run and its acknowledged live effects.
+pub mod cake;
 mod effects;
 mod end;
 mod live_guard;
@@ -306,6 +307,7 @@ impl DurabilityRoot {
                     cleanup: definition.despawn_after_ms.is_some(),
                 },
             };
+            super::world_event_outcomes::capture_window(&mut tx,identity,&definition,firing.try_get("fired_at_ms")?).await?;
             effects::insert(&mut tx, identity, &owner, &action, now_ms).await?;
             let next = cursor.commit(&step).map_err(|_| DurabilityError::InvalidStoredState)?;
             sqlx::query("UPDATE game_world_raid_channel_runs SET committed_steps=$3,updated_at_ms=$4 WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
@@ -451,6 +453,7 @@ impl DurabilityRoot {
                     return Ok(None);
                 }
             }
+            super::world_event_outcomes::capture_raid(&mut tx, identity, "boss-dead", now_ms).await?;
             let action = CommittedRaidAction::Complete { cleanup: true };
             effects::insert(&mut tx, identity, &identity.generation.get().to_string(), &action, now_ms).await?;
             let next = identity.ordinal.checked_add(1).and_then(|n| i32::try_from(n).ok())

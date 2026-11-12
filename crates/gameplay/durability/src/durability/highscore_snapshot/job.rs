@@ -23,11 +23,7 @@ pub struct HighscoreWorldJob {
 }
 
 impl HighscoreWorldJob {
-    pub fn new(
-        root: Arc<DurabilityRoot>,
-        world: WorldId,
-        catalogues: SnapshotCatalogues,
-    ) -> Self {
+    pub fn new(root: Arc<DurabilityRoot>, world: WorldId, catalogues: SnapshotCatalogues) -> Self {
         Self {
             root,
             world,

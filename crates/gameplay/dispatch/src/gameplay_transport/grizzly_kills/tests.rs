@@ -29,7 +29,10 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         character: id(seed),
         lease_generation: 2,
         observed_revision: revision,
+        objective_keys: Vec::new(),
         active_tasks: active.to_vec(),
+        native_counters: vec![],
+        active_goals: Vec::new(),
     }
 }
 
@@ -176,6 +179,7 @@ fn grizzly_unknown_or_malformed_party_observation_never_invents_a_solo_award() {
 #[test]
 fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replayed_credit() {
     let mut cache = GrizzlyCaptureCache {
+        guardians: Vec::new(),
         sessions: vec![
             snapshot(1, &[], 10),
             snapshot(2, &[1], 11),
@@ -221,6 +225,7 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
 #[test]
 fn grizzly_death_preserves_original_run_revision_across_cancel_and_restart() {
     let mut cache = GrizzlyCaptureCache {
+        guardians: Vec::new(),
         sessions: vec![snapshot(1, &[1], 10)],
         deaths: Vec::new(),
     };

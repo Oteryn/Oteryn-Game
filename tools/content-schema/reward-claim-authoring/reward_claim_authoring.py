@@ -43,6 +43,7 @@ import sys
 from pathlib import Path
 
 import container_native
+import charge_native
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -301,6 +302,7 @@ def build_records(claims: list, manifest: dict, items: dict,
         )
     records, source_checks = [], []
     for claim in sorted(filter(plain_once, claims), key=lambda c: c["identity"]["key"]):
+        qualified_items = container_native.claim_items(claim['identity']['key'], items)
         marker = claim["identity"]["key"].split("reward-claim/", 1)[1].replace("/", ".")
         ready = True
         placements = []
@@ -311,9 +313,9 @@ def build_records(claims: list, manifest: dict, items: dict,
             rewards = []
             for reward in placement["reward"]["items"]:
                 key = a12(reward["item"])
-                quantity, charge_check = charged_source_reward(items.get(key),
+                quantity, charge_check = charged_source_reward(qualified_items.get(key),
                     claim["identity"]["key"], position, key, reward["count"], charge_evidence)
-                problem = charge_check["reason"] if charge_check else stack_problem(items.get(key), quantity)
+                problem = charge_check["reason"] if charge_check else stack_problem(qualified_items.get(key), quantity)
                 if problem and problem != "waiting":
                     source_checks.append(
                         {
@@ -355,6 +357,9 @@ def build_records(claims: list, manifest: dict, items: dict,
         }
         if claim.get("quest"):
             record["quest"] = claim["quest"]
+        native = charge_native.derive(record, items, stack_problem)
+        if native is not None:
+            record["native_contents"] = native
         records.append({"definition": record})
     source_checks.extend(legacy_uid_checks(records))
     return records, source_checks
@@ -505,14 +510,15 @@ def validate(records: list, items: dict, source_checks: list | None = None,
                     continue
                 raw_count = (originals[original_binding] if source_claims is not None else
                     proofs[0]["source_count_argument"] if proofs else reward["count"])
-                quantity, charge_check = charged_source_reward(items.get(item_key), pilot_key,
+                qualified_items = container_native.claim_items(pilot_key, items)
+                quantity, charge_check = charged_source_reward(qualified_items.get(item_key), pilot_key,
                     position, item_key, raw_count, charge_evidence)
                 if charge_check:
                     expected_charge_checks.append({"claim": key, "item": item_key,
                         "count": raw_count, **charge_check})
                     if quantity != reward["count"]:
                         errors.append(f"{key}: charged reward quantity disagrees with proved source normalization")
-                ready &= charge_check is None and stack_problem(items.get(item_key), reward["count"]) is None
+                ready &= charge_check is None and stack_problem(qualified_items.get(item_key), reward["count"]) is None
         # Only a false `ready` is unsafe. A stale `waiting_item_semantics` (ITEM-SEM has since
         # covered the Items) stays valid until the next rebuild, so other lanes' content/items
         # changes never break this family.

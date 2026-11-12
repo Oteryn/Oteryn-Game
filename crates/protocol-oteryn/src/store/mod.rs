@@ -1,12 +1,15 @@
 //! STORE_V1 bounded client codecs. Commercial authority and account identity stay on Platform.
 
 mod catalogue;
+mod coin_history;
+pub mod cosmetic_tokens;
 mod hireling_purchase;
 mod history;
 mod inbox_claim;
 mod purchase;
 
 pub use catalogue::*;
+pub use coin_history::*;
 pub use hireling_purchase::*;
 pub use history::*;
 pub use inbox_claim::*;
@@ -16,10 +19,12 @@ pub use crate::charm_wire::CyclopediaWireError as StoreWireError;
 use crate::charm_wire::{read_bytes, read_varint, set_once};
 
 pub const CAPABILITY_STORE_V1: u32 = 154;
+pub const CAPABILITY_STORE_PURCHASE_HISTORY_V1: u32 = 285;
 pub const COMMAND_TYPE_STORE_CATALOGUE_PAGE: u32 = 183;
 pub const COMMAND_TYPE_STORE_HISTORY_PAGE: u32 = 184;
 pub const COMMAND_TYPE_STORE_PURCHASE: u32 = 185;
 pub const COMMAND_TYPE_STORE_INBOX_CLAIM: u32 = 186;
+pub const COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE: u32 = 501;
 
 pub const MAX_STORE_KEY_BYTES: usize = 128;
 pub const MAX_STORE_TEXT_BYTES: usize = 256;
@@ -84,3 +89,5 @@ fn as_uuid(bytes: &[u8]) -> Result<[u8; 16], StoreWireError> {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+pub mod browse;

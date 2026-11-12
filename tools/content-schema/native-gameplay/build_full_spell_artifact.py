@@ -9,6 +9,7 @@ Original Lua, DAT, XML, OTBM and client assets are never copied into the output.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -24,7 +25,8 @@ FORMAL = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 VOCATIONS = ('druid', 'knight', 'monk', 'paladin', 'sorcerer')
 LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'creature_profiles': 8 * 1024**2, 'presentation_profiles': 8 * 1024**2,
-          'item_profiles': 8 * 1024**2, 'spell_appearances': 8 * 1024**2,
+          # Match existing production MAX_ITEM_PROFILES (native_gameplay.rs:73).
+          'item_profiles': 16 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
           'source_world': 8 * 1024**2, 'progression': 256 * 1024,
@@ -389,16 +391,149 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
                 stack = definition.get('semantics', {}).get('stack', {})
                 stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
-                if stackable.get('state') == 'KNOWN' and stackable['value'] is True:
-                    facts[definition['identity']['key']]['stackable'] = True
+                if stackable.get('state') == 'KNOWN' and type(stackable.get('value')) is bool:
+                    # Preserve the exact known false fact as well as true; the
+                    # serialized default must not hide a qualified predecessor.
+                    facts[definition['identity']['key']]['stackable'] = stackable['value']
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True
     return facts
 
 
+def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path) -> list[dict]:
+    """Current named drops and the owner-approved native30 corpse projection.
+
+    Crystal201189f8 the_corruptor.lua:68-77 supplies chance/count fields; current
+    Wiki names resolve its four stale Item IDs (QUESTPC newhaven proposal).
+    Reference tables and their source48 corpse admission remain unchanged.
+    """
+    key = 'oteryn:loot.creature.the_corruptor'
+    table = copy.deepcopy(tables[key])
+    expected = {3359, 8820, 3375, 3074, 3723, 3338, 7618, 7620, 3031}
+    if ({entry['item']['key'] for entry in table['entries']}
+            != {f'oteryn:item.tibia.i{item}' for item in expected}
+            or len(table['entries']) != len(expected)):
+        raise ValueError('Corruptor source loot changed; reconcile its native projection')
+    for entry in table['entries']:
+        item = {7618: 266, 7620: 268, 8820: 7991}.get(
+            int(entry['item']['key'].removeprefix('oteryn:item.tibia.i')))
+        if item is not None:
+            entry['item'] = facts[f'oteryn:item.tibia.i{item}']['item']
+    # The original importer omitted unresolved source44773. Its named refined
+    # bow is current51760; absent source min/max uses the established1..1 default.
+    table['entries'].append({'item': facts['oteryn:item.tibia.i51760']['item'],
+                             'min_count': 1, 'max_count': 1, 'probability_ppm': 47600})
+    tables[key] = table
+    _, profiles = read(item_definitions / 'spell-native-profiles.json')
+    # Include every guaranteed-vocation item and each durable decay stage, even
+    # when the ordinary table cannot roll that item.
+    selected = (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119, 3338,
+                52113, 52114, 52115, 52116)
+    for item in selected:
+        fact = facts[f'oteryn:item.tibia.i{item}']
+        ref = fact['item']
+        exact = {'family': ref['family'], 'production_key': ref['key'],
+                 'revision_ref': ref['revision']}
+        rows = [row for row in profiles['records'] if row['production_definition'] == exact]
+        if len(rows) != 1 or rows[0]['admission']['materializable'] is not True:
+            raise ValueError(f'Corruptor requires one admitted exact native Item: {item}')
+        container = rows[0]['semantics'].get('container', {})
+        capacity = container.get('value', {}).get('capacity', {}) if container.get('state') == 'KNOWN' else {}
+        fact['materializable'] = True
+        fact['container_capacity'] = capacity['value'] if capacity.get('state') == 'KNOWN' else None
+        if item in (52113, 52114, 52115) and fact['container_capacity'] != 30:
+            raise ValueError('Corruptor corpse requires the explicit native30 projection')
+        if item == 52116 and fact['container_capacity'] is not None:
+            raise ValueError('Corruptor final decay stage is not a container')
+    return [facts[f'oteryn:item.tibia.i{item}']['item'] for item in selected]
+
+
+def known_native(field):
+    return field.get('value') if isinstance(field, dict) and field.get('state') == 'KNOWN' else None
+
+
+def native_item_semantics(ref: dict, profile: dict, destinations: set[str]) -> dict | None:
+    """Read already-qualified exact native facts; never infer unknown physics."""
+    exact = {'family': ref['family'], 'production_key': ref['key'],
+             'revision_ref': ref['revision']}
+    binding = profile.get('production_binding', {})
+    admission = profile.get('admission', {})
+    if (ref['family'] != 'Item' or profile.get('production_definition') != exact
+            or binding.get('disposition') != 'EXACT' or binding.get('target') != ref
+            or admission.get('materializable') is not True
+            or not destinations <= set(admission.get('legal_destinations', []))):
+        return None
+    semantics = profile.get('semantics', {})
+    physical = known_native(semantics.get('physical', {}))
+    classification = known_native(semantics.get('classification', {}))
+    stack = known_native(semantics.get('stack', {}))
+    if not all(isinstance(value, dict) for value in (physical, classification, stack)):
+        return None
+    if (type(known_native(physical.get('movable', {}))) is not bool
+            or type(known_native(physical.get('pickupable', {}))) is not bool
+            or type(known_native(physical.get('weight', {}))) is not int
+            or not 0 <= known_native(physical['weight']) <= 0xffffffff
+            or classification.get('item_type', {}).get('state') not in ('KNOWN', 'NOT_APPLICABLE')
+            or type(known_native(stack.get('stackable', {}))) is not bool):
+        return None
+    stackable = known_native(stack['stackable'])
+    if admission.get('stack_class') != ('StackCapable' if stackable else 'NonStackable'):
+        return None
+    return semantics
+
+
+def native_corpse_capacity(ref: dict, profile: dict) -> int | None:
+    """Ground-container admission applies only to canonical corpse mint purposes."""
+    semantics = native_item_semantics(ref, profile, {'Ground'})
+    if semantics is None:
+        return None
+    classification = known_native(semantics['classification'])
+    container = known_native(semantics.get('container', {}))
+    stack = known_native(semantics['stack'])
+    if (known_native(classification['item_type']) != 'CONTAINER'
+            or known_native(stack['stackable']) is not False or not isinstance(container, dict)):
+        return None
+    capacity = known_native(container.get('capacity', {}))
+    # GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX, domain/loot_data.rs:6.
+    return capacity if type(capacity) is int and 1 <= capacity <= 30 else None
+
+
+def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
+    """Normal yields additionally require admitted carried custody and pickup physics."""
+    semantics = native_item_semantics(ref, profile, {'Ground', 'CharacterInventory'})
+    if semantics is None:
+        return None
+    physical = known_native(semantics['physical'])
+    if (known_native(physical['movable']) is not True
+            or known_native(physical['pickupable']) is not True):
+        return None
+    container = semantics.get('container', {})
+    capacity = None
+    if container.get('state') == 'KNOWN':
+        capacity = known_native(container.get('value', {}).get('capacity', {}))
+        if type(capacity) is not int or not 0 < capacity <= 0xffffffff:
+            return None
+    elif container.get('state') != 'NOT_APPLICABLE':
+        return None
+    charges = semantics.get('charges', {})
+    count = None
+    if charges.get('state') == 'KNOWN':
+        count = known_native(charges.get('value', {}).get('count', {}))
+        if type(count) is not int or not 0 <= count <= 0xffffffff:
+            return None
+    elif charges.get('state') != 'NOT_APPLICABLE':
+        return None
+    fact = {'item': ref, 'materializable': True, 'container_capacity': capacity,
+            'stackable': known_native(known_native(semantics['stack'])['stackable'])}
+    if count:
+        fact['charges'] = count
+    return fact
+
+
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
-                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
+                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS,
+                native_item_profiles: dict | None = None) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
@@ -418,13 +553,38 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
+    # Repository-authored Quest rules bind the complete canonical dataset.
+    if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
+            and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
+            and item_definitions.resolve() == ITEM_DEFINITIONS.resolve()):
+        migration_tools = str(ROOT / 'tools/content-migration')
+        if migration_tools not in sys.path:
+            sys.path.insert(0, migration_tools)
+        import quest_corpse_profiles
+        quest_corpse_profiles.apply_loot_facts(facts, ROOT, creatures)
+        import quest_loot_profiles
+        quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
     bindings, named, used = {}, {}, {}
+    corpse_refs, yield_keys, corpse_tables = {}, set(), {}
+    profile_path = item_definitions / 'spell-native-profiles.json'
+    if native_item_profiles is None:
+        _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+    else:
+        native_profiles = native_item_profiles
+    native_by_key = {}
+    for profile in native_profiles['records']:
+        native_by_key.setdefault(profile['production_definition']['production_key'], []).append(profile)
 
     def name(ref):
         fact = facts.get(ref['key'])
         if ref['family'] != 'Item' or fact is None or fact['item'] != ref:
             raise ValueError(f"Item named by the loot section is not an exact Item definition: {ref['key']}")
         named[ref['key']] = fact
+
+    if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
+           for record in creatures['records']):
+        for ref in corruptor_loot_projection(tables, facts, item_definitions):
+            name(ref)
 
     for record in creatures['records']:
         target = record['profile']['target']
@@ -438,25 +598,57 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             corpse = record['profile']['data']['profile']['details'].get('corpse_item')
             if corpse is not None:
                 name(corpse)
+                corpse_refs[corpse['key']] = corpse
             loot = definition['loot']
             if loot is not None:
                 table = tables.get(loot['key'])
                 if table is None or table['identity'] != loot:
                     raise ValueError(f"Creature loot reference has no exact loot table: {loot['key']}")
                 used[loot['key']] = table
+                if corpse is not None:
+                    corpse_tables.setdefault(loot['key'], set()).add(corpse['key'])
                 def name_entries(entries):
                     for entry in entries:
                         name(entry['item'])
+                        yield_keys.add(entry['item']['key'])
                         name_entries(entry.get('children', []))
                 name_entries(table['entries'])
         bindings[target['key']] = {'creature': target, 'loot': loot}
+    # Only canonical current CreatureProfile corpse references receive stronger native
+    # Ground admission. A reference also used as an ordinary loot yield retains its
+    # original static facts, so this producer cannot widen general yield admission.
+    qualified_corpses = set()
+    for key, ref in corpse_refs.items():
+        profiles = native_by_key.get(key, [])
+        if key in yield_keys or len(profiles) != 1:
+            continue
+        capacity = native_corpse_capacity(ref, profiles[0])
+        if capacity is not None:
+            facts[key]['materializable'] = True
+            facts[key]['container_capacity'] = capacity
+            qualified_corpses.add(key)
+    # Complete only these source-qualified corpse rows' existing loot closures.
+    # Ordinary yields retain the stronger Inventory + Ground + pickup admission;
+    # Ground-only corpse admission never authorizes a normal yield.
+    def admit_yields(entries):
+        for entry in entries:
+            key = entry['item']['key']
+            profiles = native_by_key.get(key, [])
+            if not facts[key]['materializable'] and len(profiles) == 1:
+                native = native_loot_yield_facts(entry['item'], profiles[0])
+                if native is not None:
+                    facts[key].update(native)
+            admit_yields(entry.get('children', []))
+    for key, corpses in corpse_tables.items():
+        if corpses & qualified_corpses:
+            admit_yields(used[key]['entries'])
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')
     if sliver is not None:
         # FORGECREATURE admits this resource through its native Item profile;
         # the legacy definition deliberately remains reference-only.
-        _, profiles = read(item_definitions / 'spell-native-profiles.json')
+        profiles = native_profiles
         ref = sliver['item']
         exact = {'family': ref['family'], 'production_key': ref['key'],
                  'revision_ref': ref['revision']}

@@ -37,7 +37,7 @@ unknown fields, and at most **192 bytes**.
 | 9 | Claim completed bounty | 0 | empty |
 | 10 | Change bounty difficulty | difficulty 0..3 | empty |
 | 11 | Reroll bounty offers | 0 | empty |
-| 12 | Claim daily reroll | 0 | empty |
+| 12 | Retired; rejected by the request codec | — | — |
 | 13 | Assign/clear preferred creature | slot 0..4 | canonical race or empty |
 | 14 | Assign/clear unwanted creature | slot 0..4 | canonical race or empty |
 | 15 | Unlock next preferred/unwanted list slot | 0 | empty |
@@ -66,8 +66,8 @@ booleans, unknown refusal codes, balances outside their owner ranges, kill/bount
 progress above its requirement and overlong/non-canonical race keys.
 
 The full response includes the week identity, all three balances, weekly
-progress and pending rewards, bounty offers/active progress, daily-reroll
-timestamp, preferred/unwanted lists, talisman levels/bonuses/next prices and
+progress and pending rewards, bounty offers/active progress, the historical
+`daily_reroll_at` field (always zero), preferred/unwanted lists, talisman levels/bonuses/next prices and
 shop offer data. Item identifiers in delivery/shop rows identify donor catalogue
 entries; the server resolves them against the active canonical Item catalogue
 before any custody write.
@@ -92,8 +92,8 @@ Refused commands do not spend currency or consume items.
 | 2 | Wrong board or bounty state |
 | 3 | Level below the selected difficulty's minimum |
 | 4 | Insufficient points, tokens, or other rule resources |
-| 5 | Free-reroll cooldown has not elapsed |
-| 6 | Progression, list, or daily-claim limit reached |
+| 5 | Retained legacy cooldown refusal; no new bounty reroll emits it |
+| 6 | Progression or list limit reached |
 | 7 | Permanent offer already owned |
 | 8 | Addon requires the base outfit |
 | 9 | Invalid server random draw |
@@ -114,8 +114,11 @@ existing balances and definition pins are preserved. A reward exceeding a bound
 records arithmetic-overflow refusal atomically and returns that refusal on replay.
 
 The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
-durable owner, through `i64::MAX`. Ten is only the daily-claim threshold; completed
-bounties may add tokens above ten. The maximum talisman level remains 355, following the accepted
+durable owner, through `i64::MAX`. The free daily token is granted only by Daily Reward; completed
+bounties retain their earned token reward. Every bounty offer reroll consumes exactly one
+token; a zero balance is refusal 4 (insufficient resources), regardless of elapsed time.
+The retired free-reroll deadline in saved board JSON is ignored when loading old boards.
+The maximum talisman level remains 355, following the accepted
 repository profile in `docs/reference/NEWS-HIST-TALISMAN-1.md:15–27` and the PR's
 coordinator decisions. No saved level is converted.
 
@@ -128,12 +131,75 @@ Kill credit uses the memoized death occurrence per eligible Character.
 The old five-task rule is retired; its command 1/2 operations are explicitly
 refused rather than maintaining a second gameplay state. Existing quest tracks
 remain the balance/talisman truth during migration. The full durable owner serves
-both codecs. Native-client feature registration remains explicitly unsupported;
-this change adds the complete server command contract and production consumers,
-not a native Task Board view.
+both codecs. The native Task Board uses the same authoritative state and command
+queue for weekly tasks, bounty offers, and the Elite checkbox. Original capability-72
+clients omit the capability-474 Elite fields and display Platinum as their highest
+supported Gold grade; the frozen reward amounts remain unchanged.
 
 ## Resource limits
 
 `TASKBOARD1-RL-01` to `TASKBOARD1-RL-03` own the expanded request/reply/task bounds.
 The legacy subcodec keeps its smaller limits. Boundary tests live in
 `crates/protocol-oteryn/src/task_board_full_tests.rs`.
+
+## Weekly results
+
+T184 uses capability **474**, `TASK_BOARD_WEEKLY_RESULTS_V1`, requiring 72,
+and command **6172**. Its request is the canonical full query (action 4,
+selection 0, empty race); other actions on 6172 are rejected. It shares the
+existing fenced Task Board owner, receipt binding and full reply bounds.
+Only clients selecting 474 receive optional full-reply field 10,
+`TaskBoardWeeklyResultsV1`. Original capability-72 clients keep the original
+reply shape. The completed board's period and already credited task points and
+Soulseals remain readable until a successful action 5 starts the next board.
+A query never pays those rewards twice. Failed difficulty choices preserve the
+results. Starting uses the existing four difficulty and level checks and replaces
+the old tasks atomically.
+
+The client queries on admission through the play queue, separately from opening
+the Task Board. After Monday's server save, a settled board opens the dedicated
+Weekly Results window. The player selects Beginner, Adept, Expert or Master and
+starts the next cycle. Dismissing the window does not spend or claim anything;
+it can appear again on the next admission until the next board is started.
+The server's committed reset period is the only calendar authority.
+
+Reference: TibiaData v4 news 8567, fetched 2026-11-09
+(`https://api.tibiadata.com/v4/news/id/8567`, `OTHER_STRUCTURED_TIBIA_DATA`),
+reports a special Monday reward window displaying rewards and choosing the next
+difficulty. News 8998 (same fetch date and source class) retires the daily-token
+claim from the Bounty Board; Daily Reward supplies it instead. The owner's T195
+request in PR #3091 (2026-11-10) also removes the timed free offer reroll.
+Earned completed-bounty tokens retain their existing rules.
+
+## Elite bounty tasks (T201)
+
+Owner decision 2026-11-09, news 9004: command **6174** belongs to capability
+474 and accepts full action 4 (query) or 19 (selection 0/1 disables/enables Elite).
+The checkbox affects newly generated offers; it never changes a selected task or
+already displayed offers. Each generated task freezes its Elite flag and reward.
+Elite task creatures deal twice the damage to their task owner and receive half
+that owner's damage. The generated bounty XP reward doubles. Silver, Gold and
+Platinum multiply the usual task rewards by 2, 4 and 8, respectively.
+
+The single bounded content table `content/combat/bounty_elite_v1.json` is
+`PARITY_PENDING`: its numeric values are owner-approved provisional values, not
+assertions of measured Global probabilities. Dust by difficulty is 1/2/3/4.
+Silver/Gold/Platinum base weights are 500/100/0 basis points, each unchosen offer
+adds 100/50/10, and caps are 2500/1000/200. A single 1..10000 draw partitions
+Platinum, Gold, Silver, then ordinary outcomes. Selecting an improved offer resets
+that race's history; selecting an ordinary task retains its history. Other offers
+advance once on selection, or all offers advance once when rerolled. Counters
+saturate when all content-defined caps have been reached. The existing Character
+board and immutable receipts retain at most 4096 race counters, bounded by 1 MiB
+JSON; migration 2724 widens the existing storage checks and records the completion
+dust selection key in the existing kill receipt. No probability is
+accepted from the client. The runtime parses the content table with no fallback.
+
+Elite dust is paid once on the completing kill, with the existing kill XP/dust
+transaction and its death receipt, only for a Premium recipient. A monotonic
+selection serial binds the dust ledger occurrence; a distinct death arriving
+before task credit drains cannot award dust again. Each kill receipt retains
+that key for replay even after another task is selected. Task reward XP
+and Bounty Points retain the existing claim owner. Dust uses the frozen difficulty
+and grade of the selected offer; account state is resolved by the existing Premium
+kill owner. Dust overflow keeps the existing dust limit/lost-amount ledger rules.

@@ -5,6 +5,7 @@ import unittest
 import subprocess
 import sys
 import tempfile
+from unittest.mock import patch
 from collections import Counter
 from pathlib import Path
 import jsonschema
@@ -20,6 +21,61 @@ def source_claim():
 
 
 class QuestTreeTests(unittest.TestCase):
+    def test_itemhold_receipt_refresh_rejects_a_changed_source_core(self):
+        import amend_itemhold_source_receipt as amendment
+        root = Path(__file__).resolve().parents[3]
+        build = tool.build_records
+        def changed(*args, **kwargs):
+            records = build(*args, **kwargs)
+            records[0]['definition']['requirements']['min_level'] += 1
+            return records
+        with patch.object(tool, 'build_records', side_effect=changed):
+            with self.assertRaisesRegex(ValueError, 'changes frozen SOURCE cores'):
+                amendment.verify_source_view(root)
+
+    def test_itemhold_receipt_refresh_preserves_all_other_approved_fields(self):
+        import amend_itemhold_source_receipt as amendment
+        root = Path(__file__).resolve().parents[3]
+        for path, text in amendment.outputs(root).items():
+            before, after = tool.read(root, path), json.loads(text)
+            for document in (before, after):
+                document['compiler_inputs'] = [d for d in document['compiler_inputs']
+                                               if d['path'] != amendment.COMPILER]
+                if path == amendment.guard.RECEIPT:
+                    document['approval'].pop('sha256')
+            self.assertEqual(before, after)
+
+    def test_itemhold_live_admissions_preserve_the_frozen_source_view(self):
+        root = Path(__file__).resolve().parents[3]
+        index = tool.read(root, tool.CLAIM_INDEX)
+        live = {r['definition']['identity']['key']: r['definition']
+                for path in index['shards'] for r in tool.read(root, path)['records']}
+        source = {d['identity']['key']: d for d in tool.claim_catalogue(root)}
+        expected = {
+            'oteryn:reward-claim.kv.draconia1': ['item'],
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            'oteryn:reward-claim.kv.triangletower': ['item'],
+        }
+        self.assertEqual({k for k, d in source.items() if '_source_hold_categories' in d}, set(expected))
+        for key, categories in expected.items():
+            self.assertEqual(live[key]['data_holds'], [])
+            if key.endswith('.triangletower'):
+                # Native container lowering retains its original SOURCE necklace hold.
+                self.assertEqual(source[key]['data_holds'], [{
+                    'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                    'item': 'oteryn:item.tibia.i3083', 'placement_index': 0,
+                    'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
+                }])
+            else:
+                self.assertEqual(source[key]['data_holds'], live[key]['data_holds'])
+            self.assertEqual(source[key].get('native_contents'), live[key].get('native_contents'))
+            self.assertEqual(source[key]['_source_hold_categories'], categories)
+            self.assertNotIn('_source_hold_categories', live[key])
+        key = 'oteryn:reward-claim.kv.powerring2'
+        self.assertEqual(live[key]['readiness'], 'ready')
+        self.assertEqual(source[key]['readiness'], 'waiting_item_semantics')
+
     def test_ready_keeps_source_aliases_and_existing_canonical_reference(self):
         record = tool.build_records([source_quest()], [source_claim()])[0]['definition']
         self.assertEqual(record['identity']['key'], 'oteryn:quest.example')

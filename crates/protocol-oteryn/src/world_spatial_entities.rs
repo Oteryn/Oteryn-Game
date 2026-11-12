@@ -61,6 +61,7 @@ pub type EntityLights = BTreeMap<[u8; ENTITY_IDENTITY_BYTES], EntityLight>;
 /// fields 11-12 under capability 19.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct EntityFields {
+    pub display_names: bool,
     pub item_handles: bool,
     pub light: bool,
     pub party_icons: bool,
@@ -69,6 +70,8 @@ pub struct EntityFields {
 impl EntityFields {
     pub fn selected(selected_capabilities: &[u32]) -> Self {
         Self {
+            display_names: selected_capabilities
+                .contains(&crate::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2),
             item_handles: selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
             light: selected_capabilities.contains(&CAPABILITY_WORLD_LIGHT_V1),
             party_icons: selected_capabilities
@@ -78,6 +81,7 @@ impl EntityFields {
 
     const fn handles(item_handles: bool) -> Self {
         Self {
+            display_names: false,
             item_handles,
             light: false,
             party_icons: false,
@@ -120,6 +124,8 @@ pub enum EntityDetail {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WorldSpatialEntity {
+    /// Present on live actors only when capability WORLD_SPATIAL_ENTITIES_V2 was selected.
+    pub display_name: Option<crate::entity_names::EntityDisplayName>,
     pub kind: EntityKind,
     pub entity: EntityRef,
     pub position: ActorPosition,
@@ -158,10 +164,20 @@ pub fn lit_kind(kind: EntityKind) -> bool {
 
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
     match entity.detail {
-        EntityDetail::Actor { health_percent, .. }
-            if actor_kind(entity.kind)
-                && health_percent <= MAX_HEALTH_PERCENT
-                && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
+        EntityDetail::Actor {
+            health_percent,
+            direction,
+            ..
+        } if actor_kind(entity.kind)
+            && matches!(
+                direction,
+                StepDirection::North
+                    | StepDirection::East
+                    | StepDirection::South
+                    | StepDirection::West
+            )
+            && health_percent <= MAX_HEALTH_PERCENT
+            && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
         {
             Ok(())
         }
@@ -254,10 +270,29 @@ fn encode_entity(
             }
         }
     }
-    if output.len() > MAX_ENTITY_ENTRY_BYTES {
+    if fields.display_names && actor_kind(entity.kind) {
+        let name = entity.display_name.ok_or(WorldSpatialError::Malformed)?;
+        push_message(&mut output, 13, name.as_str()?.as_bytes());
+    } else if fields.display_names && entity.display_name.is_some() {
+        return Err(WorldSpatialError::Malformed);
+    }
+    if output.len() > entry_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
     Ok(output)
+}
+
+fn entry_limit(fields: EntityFields) -> usize {
+    MAX_ENTITY_ENTRY_BYTES
+        + if fields.display_names {
+            crate::entity_names::MAX_ENTITY_DISPLAY_NAME_BYTES + 2
+        } else {
+            0
+        }
+}
+
+fn payload_limit(fields: EntityFields) -> usize {
+    MAX_SNAPSHOT_ENTITIES * entry_limit(fields) + 1024
 }
 
 fn once<T>(slot: &mut Option<T>, value: T) -> Result<(), WorldSpatialError> {
@@ -301,7 +336,7 @@ fn decode_entity(
     input: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntity, Option<EntityLight>), WorldSpatialError> {
-    if input.len() > MAX_ENTITY_ENTRY_BYTES {
+    if input.len() > entry_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let mut cursor = 0;
@@ -309,6 +344,7 @@ fn decode_entity(
     let (mut direction, mut appearance, mut health) = (None, None, None);
     let (mut item, mut quantity, mut handle) = (None, None, None);
     let (mut light_level, mut light_color) = (None, None);
+    let mut display_name = None;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => once(&mut kind, varint_u32(input, &mut cursor)?)?,
@@ -329,6 +365,17 @@ fn decode_entity(
             0x50 if fields.item_handles => once(&mut handle, read_varint(input, &mut cursor)?)?,
             0x58 if fields.light => once(&mut light_level, varint_u32(input, &mut cursor)?)?,
             0x60 if fields.light => once(&mut light_color, varint_u32(input, &mut cursor)?)?,
+            0x6a if fields.display_names => {
+                let bytes = read_bytes(input, &mut cursor)?;
+                if bytes.len() > crate::entity_names::MAX_ENTITY_DISPLAY_NAME_BYTES {
+                    return Err(WorldSpatialError::LimitExceeded);
+                }
+                let name = std::str::from_utf8(bytes).map_err(|_| WorldSpatialError::Malformed)?;
+                once(
+                    &mut display_name,
+                    crate::entity_names::EntityDisplayName::new(name)?,
+                )?;
+            }
             _ => return Err(WorldSpatialError::Malformed),
         }
     }
@@ -351,6 +398,9 @@ fn decode_entity(
         }),
         _ => return Err(WorldSpatialError::Malformed),
     };
+    if fields.display_names && actor_kind(kind) != display_name.is_some() {
+        return Err(WorldSpatialError::Malformed);
+    }
     let detail = if actor_kind(kind) {
         if item.is_some() || quantity.is_some() || handle.is_some() {
             return Err(WorldSpatialError::Malformed);
@@ -384,6 +434,7 @@ fn decode_entity(
         }
     };
     let entity = WorldSpatialEntity {
+        display_name,
         kind,
         entity: EntityRef {
             identity: identity.ok_or(WorldSpatialError::Malformed)?,
@@ -642,7 +693,7 @@ fn decode_snapshot(
     payload: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntitiesSnapshot, EntityLights), WorldSpatialError> {
-    if payload.len() > MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES {
+    if payload.len() > payload_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let (mut cursor, mut header, mut own) = (0, (None, None), None);
@@ -701,12 +752,29 @@ fn decode_delta(
     payload: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntitiesDelta, EntityLights), WorldSpatialError> {
-    if payload.len() > MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES {
+    decode_world_spatial_entities_delta_with_icons(payload, fields)
+        .map(|(delta, lights, _)| (delta, lights))
+}
+
+/// Decode negotiated spatial fields while retaining an icons-only replacement bundle.
+pub fn decode_world_spatial_entities_delta_with_icons(
+    payload: &[u8],
+    fields: EntityFields,
+) -> Result<
+    (
+        WorldSpatialEntitiesDelta,
+        EntityLights,
+        Option<Vec<crate::party_skull::PartyIcon>>,
+    ),
+    WorldSpatialError,
+> {
+    if payload.len() > payload_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let (mut cursor, mut header) = (0, (None, None));
     let (mut enter, mut update, mut leave) = (Vec::new(), Vec::new(), Vec::new());
     let (mut entries, mut lights) = (0_usize, EntityLights::new());
+    let mut party_icons = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         if decode_header_field(key, payload, &mut cursor, &mut header)? {
@@ -716,8 +784,10 @@ fn decode_delta(
             if entries != 0 || cursor == payload.len() {
                 return Err(WorldSpatialError::Malformed);
             }
-            crate::party_skull::decode_party_icons(read_bytes(payload, &mut cursor)?)
-                .map_err(|_| WorldSpatialError::Malformed)?;
+            party_icons = Some(
+                crate::party_skull::decode_party_icons(read_bytes(payload, &mut cursor)?)
+                    .map_err(|_| WorldSpatialError::Malformed)?,
+            );
             // An icons-only delta cannot mix spatial changes or repeated icon bundles.
             if cursor != payload.len() {
                 return Err(WorldSpatialError::Malformed);
@@ -754,7 +824,7 @@ fn decode_delta(
         leave,
     };
     validate_delta(&delta)?;
-    Ok((delta, lights))
+    Ok((delta, lights, party_icons))
 }
 
 /// What a client decoded from a domain-1 snapshot, by the revision its negotiation selected.
@@ -838,6 +908,8 @@ pub fn decode_world_spatial_delta_view_lit(
 mod tests {
     #[path = "capability_tests.rs"]
     mod capability_tests;
+    #[path = "entity_names_tests.rs"]
+    mod entity_names_tests;
 
     use super::*;
     use crate::world_spatial::{
@@ -876,8 +948,27 @@ mod tests {
         ActorPosition { x, y: 7, floor: 7 }
     }
 
+    #[test]
+    fn diagonal_intent_profile_never_widens_entity_facing() {
+        for direction in [
+            StepDirection::NorthEast,
+            StepDirection::SouthEast,
+            StepDirection::SouthWest,
+            StepDirection::NorthWest,
+        ] {
+            let mut entity = actor(EntityKind::Creature, 5);
+            entity.detail = EntityDetail::Actor {
+                direction,
+                appearance_ref: 1,
+                health_percent: 100,
+            };
+            assert!(encode_entity(&entity, false).is_err());
+        }
+    }
+
     fn actor(kind: EntityKind, n: u32) -> WorldSpatialEntity {
         WorldSpatialEntity {
+            display_name: None,
             kind,
             entity: EntityRef {
                 generation: u64::MAX,
@@ -894,6 +985,7 @@ mod tests {
 
     fn object(kind: EntityKind, n: u32) -> WorldSpatialEntity {
         WorldSpatialEntity {
+            display_name: None,
             kind,
             entity: id(n),
             position: at(n as i32),
@@ -1043,6 +1135,7 @@ mod tests {
         // WORLDINT0-RL-20: the 6 light bytes keep each entry within 128 B and the payload within
         // the decision 4.4 bound.
         let fields = EntityFields {
+            display_names: false,
             item_handles: true,
             light: true,
             party_icons: false,
@@ -1169,6 +1262,7 @@ mod tests {
         assert!(
             encode_entity(
                 &WorldSpatialEntity {
+                    display_name: None,
                     kind: EntityKind::Corpse,
                     ..actor(EntityKind::Player, 1)
                 },
@@ -1412,7 +1506,10 @@ mod tests {
             .iter()
             .find(|domain| domain["id"] == 1)
             .expect("domain 1");
-        let bound = MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES as u64;
+        let bound = payload_limit(EntityFields {
+            display_names: true,
+            ..EntityFields::default()
+        }) as u64;
         for (key, id, name) in [
             (
                 "delta_types",
@@ -1445,7 +1542,14 @@ mod tests {
                 s.starts_with("docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#")
             }));
         }
-        assert_eq!(bound, 256 * MAX_ENTITY_ENTRY_BYTES as u64 + 1024);
+        assert_eq!(
+            bound,
+            256 * entry_limit(EntityFields {
+                display_names: true,
+                ..EntityFields::default()
+            }) as u64
+                + 1024
+        );
 
         let resources: Value = serde_json::from_str(RESOURCE_REGISTRY).expect("resource registry");
         let entries = resources["entries"].as_array().expect("entries");
@@ -1461,6 +1565,7 @@ mod tests {
     }
 
     const LIT: EntityFields = EntityFields {
+        display_names: false,
         item_handles: false,
         light: true,
         party_icons: false,

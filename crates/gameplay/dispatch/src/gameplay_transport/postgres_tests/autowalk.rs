@@ -8,7 +8,7 @@ use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
     serve_admitted,
 };
-use crate::gameplay_transport::{AutoWalkTarget, ComposedFreshAdmission};
+use crate::gameplay_transport::{AdmissionRetryBudget, AutoWalkTarget, ComposedFreshAdmission};
 use crate::map::boot::{BootPins, boot};
 use crate::map::facts::ItemDefinition;
 use crate::map::overlay::TilePos;
@@ -75,6 +75,7 @@ pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::B
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -85,6 +86,7 @@ pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::B
                     kind: TerrainKind::Wall,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -240,9 +242,11 @@ fn snowbunny_transaction_scenario() -> TestResult {
             .await?;
         assert_eq!(steps, 0, "progress failure rolls the durable step back");
 
-        sqlx::query("DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress")
-            .execute(&h.pool)
-            .await?;
+        sqlx::query(
+            "DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress",
+        )
+        .execute(&h.pool)
+        .await?;
         let mut committed = h.pool.begin().await?;
         sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
             .bind(event.as_slice())
@@ -354,7 +358,7 @@ fn scenario(target_move: bool) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id)
@@ -458,7 +462,13 @@ fn scenario(target_move: bool) -> TestResult {
             result
         };
         let server_flow = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
-        let (end, result) = join_two(server_flow, client_flow).await;
+        // The wire owner and the independent pickup are different holder retry owners,
+        // even though this fixture polls both futures on one task.
+        let (end, result) = join_two(
+            crate::durability::DurabilityRoot::with_holder_owner(server_flow),
+            crate::durability::DurabilityRoot::with_holder_owner(client_flow),
+        )
+        .await;
         result?;
         assert!(
             matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
@@ -633,7 +643,11 @@ async fn seed_backpack(
     Ok(())
 }
 
-pub(super) fn object(digest: [u8; 32], pos: TilePos, revision: u64) -> TestResult<WorldObjectTarget> {
+pub(super) fn object(
+    digest: [u8; 32],
+    pos: TilePos,
+    revision: u64,
+) -> TestResult<WorldObjectTarget> {
     let mut placement = digest.to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(pos, 1)
@@ -655,6 +669,22 @@ fn next(
         D::East => at.x += 1,
         D::South => at.y += 1,
         D::West => at.x -= 1,
+        D::NorthEast => {
+            at.x += 1;
+            at.y -= 1;
+        }
+        D::SouthEast => {
+            at.x += 1;
+            at.y += 1;
+        }
+        D::SouthWest => {
+            at.x -= 1;
+            at.y += 1;
+        }
+        D::NorthWest => {
+            at.x -= 1;
+            at.y -= 1;
+        }
     }
     at
 }
@@ -936,6 +966,7 @@ async fn client_scenario(
         actor,
         admitted.game_session_id,
         crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 99,
             ))
@@ -1015,28 +1046,54 @@ async fn pick_origin(
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
     };
-    let mut candidate = owner
-        .root
-        .freeze_map_item_mint(owner.character, owner.holder, fence, request)
-        .await
-        .map_err(debug)?;
+    // The independent pickup shares the non-blocking durability holder with
+    // served movement. Serialize its reservation preflight under the same lane.
     let permit = owner.spell_lane_permit().await.ok_or("lane")?;
-    assert!(matches!(
-        owner
-            .root
-            .commit_map_item_mint(
-                &permit,
-                owner.character,
-                owner.holder,
-                fence,
-                &mut candidate
-            )
-            .await
-            .map_err(debug)?,
-        MapItemMintOutcome::Committed(_)
-    ));
+    // Movement's gating reads do not take the item lane. Retry their busy holder
+    // under one existing command budget, retaining the same request and candidate.
+    let retry = AdmissionRetryBudget::for_command(owner.root);
+    let mut candidate = retry
+        .retry_unavailable(async || {
+            owner
+                .root
+                .freeze_map_item_mint(owner.character, owner.holder, fence, request.clone())
+                .await
+                .map_err(pickup_refusal)
+        })
+        .await
+        .map_err(|error| format!("independent pickup freeze: {error:?}"))?;
+    let committed = retry
+        .retry_unavailable(async || {
+            owner
+                .root
+                .commit_map_item_mint(
+                    &permit,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    &mut candidate,
+                )
+                .await
+                .map_err(pickup_refusal)
+        })
+        .await
+        .map_err(|error| format!("independent pickup commit: {error:?}"))?;
+    assert!(matches!(committed, MapItemMintOutcome::Committed(_)));
     owner.states.loop_ground.invalidate();
     Ok(())
+}
+
+fn pickup_refusal(
+    error: crate::durability::map_item_mint::MapItemMintError,
+) -> crate::gameplay_transport::connection::AdmissionRefusal {
+    use crate::durability::{DurabilityError, map_item_mint::MapItemMintError};
+    use crate::gameplay_transport::connection::AdmissionRefusal;
+    match error {
+        MapItemMintError::Unavailable(DurabilityError::RootUnavailable) => {
+            AdmissionRefusal::Unavailable
+        }
+        _ => AdmissionRefusal::Rejected,
+    }
 }
 
 async fn result_at_rest(

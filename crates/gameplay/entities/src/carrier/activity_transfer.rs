@@ -406,7 +406,7 @@ impl ScopeRuntimeV1 {
                 *game_session_id = Some(member.member.destination_session);
                 *committed = true;
                 *position = destination_position;
-                lifecycle.control_loss = None;
+                lifecycle.clear_control_loss()?;
                 spell_combat.reset_for_scope_handoff();
             } else {
                 unreachable!("exclusive transfer preflight proved every source player slot");

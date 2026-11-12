@@ -1,0 +1,15 @@
+{
+  "mechanic": "0017-attack",
+  "kind": "handlers",
+  "id": "0017-battle-attack",
+  "status": "supported",
+  "commands": [
+    11
+  ],
+  "direction": "client_to_server",
+  "capability": 17,
+  "entry": "input.rs::request",
+  "not_applicable": {
+    "settings": "Battle targets and modes are connection state, not local preferences."
+  }
+}

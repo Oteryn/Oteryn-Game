@@ -1,0 +1,17 @@
+{
+  "mechanic": "0292-cast-consent",
+  "kind": "handlers",
+  "id": "0292-cast-consent-command",
+  "status": "supported",
+  "commands": [
+    503
+  ],
+  "direction": "client_to_server",
+  "capability": 292,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "state": "Shared confirmed character consent fields in cast_control::Panel.",
+    "input": "Read/allow/hide controls share the native Cast settings form.",
+    "settings": "Persisted only by the fenced Game character preference owner."
+  }
+}

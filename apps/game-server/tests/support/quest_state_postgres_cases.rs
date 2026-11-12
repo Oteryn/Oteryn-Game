@@ -57,6 +57,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
     use QuestComparison as From;
     use QuestEffectKind as Effect;
     let rats = |name: &str, effects: Vec<QuestEffect>, completes: bool| QuestTransition {
+        world_change: None,
         key: transition_key(name),
         quest: QUEST.into(),
         effects,
@@ -118,6 +119,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
                     false,
                 ),
                 QuestTransition {
+                    world_change: None,
                     key: transition_key("other"),
                     quest: OTHER.into(),
                     effects: vec![effect(FLAG, From::Eq(0), Effect::Set(1))],
@@ -1208,12 +1210,16 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         )
         .await?;
         for relation in [
-            // Include the FK-dependent offering evidence, Monk entitlements (0548)
-            // and Rotten Blood access fees (0710) and Grizzly obligations (0760-0761)
-            // so PostgreSQL reaches the receipt's no-truncate guard first.
+            // Include the FK-dependent offering evidence, Monk entitlements (0548),
+            // Rotten Blood fees (0710), Grizzly obligations (0760-0761) and the
+            // QENGINE2 source/fee/participant chain (0999-1001) and NPC program
+            // responses/input sources (1310/1312). The explicit FK
+            // closure lets PostgreSQL reach the receipt's 23514 no-truncate guard.
             "game_character_quest_receipts, game_quest_callback_consumptions, \
              game_character_monk_reward_entitlements, game_rotten_blood_access_fees, \
-             game_character_grizzly_reward_entitlements, game_character_grizzly_boss_entries",
+             game_character_grizzly_reward_entitlements, game_character_grizzly_boss_entries, \
+             game_quest_reward_sources, game_quest_reward_fees, game_quest_reward_participants, \
+             game_quest_npc_program_receipts, game_quest_npc_item_sources",
             "game_character_quest_tracks",
             "game_character_quest_states",
             "game_character_quest_obligations",
@@ -1235,7 +1241,7 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         )
         .await?;
         // A transition that only completes has no effect; one with none that does not
-        // complete, nine effects, a binding over RL-04 or a key over RL-06 is refused.
+        // complete, seventeen effects, a binding over RL-04 or a key over RL-06 is refused.
         let mut empty = Receipt::new(4, 4, &[]);
         empty.completes = true;
         expect_committed(pool, "completes only r5", &empty.continue_quest()).await?;
@@ -1243,14 +1249,14 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         let mut nothing = Receipt::new(5, 5, &[]);
         nothing.completes = false;
         expect_rejected(pool, "no effect", &nothing.continue_quest(), shape).await?;
-        let keys: Vec<String> = (0..9)
+        let keys: Vec<String> = (0..17)
             .map(|index| format!("oteryn:quest-progress/fixture.rats.k{index}"))
             .collect();
-        let nine: Vec<(&str, i64, i64)> = keys.iter().map(|key| (key.as_str(), 0, 1)).collect();
+        let over: Vec<(&str, i64, i64)> = keys.iter().map(|key| (key.as_str(), 0, 1)).collect();
         expect_rejected(
             pool,
             "RL-02",
-            &Receipt::new(5, 5, &nine).continue_quest(),
+            &Receipt::new(5, 5, &over).continue_quest(),
             shape,
         )
         .await?;
@@ -1573,7 +1579,19 @@ fn embedded_transitions(catalogue: &QuestStateCatalogue) -> TestResult<(String, 
     for quest in document["quests"].as_array().ok_or("quests")? {
         for transition in quest["transitions"].as_array().ok_or("transitions")? {
             let key = transition["key"].as_str().ok_or("key")?;
-            let loaded = catalogue.transition(key).ok_or("transition")?;
+            // The retained source packet includes Dawnport; the owner's served
+            // scope explicitly holds it out. Assert that boundary rather than
+            // treating the source inventory as the executable boot catalogue.
+            if quest["quest"].as_str() == Some("oteryn:quest.dawnport_quest") {
+                assert!(
+                    catalogue.transition(key).is_none(),
+                    "held Dawnport transition {key}"
+                );
+                continue;
+            }
+            let loaded = catalogue
+                .transition(key)
+                .ok_or_else(|| format!("missing boot transition {key}"))?;
             match catalogue.evaluate(loaded, &std::collections::BTreeMap::new(), 0) {
                 Ok(_)
                     if loaded.experience.is_none()

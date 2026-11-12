@@ -596,3 +596,53 @@ fn registries_bind_capability_14_and_its_limits() {
 #[cfg(test)]
 #[path = "container_tree_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[test]
+fn house_capacity_v2_supports_full_source_rack_without_widening_v1() {
+    let mut view = small_view(0, 25);
+    view.capacity = 25;
+    let views = ContainerViews { views: vec![view] };
+    assert!(encode_container_views_for(&views, false).is_err());
+    assert!(encode_container_views_for(&views, true).is_err());
+    let bytes = encode_container_views_with_house_capacity(&views, false, true)
+        .expect("valid supplementary House container codec");
+    assert!(decode_container_views_for(&bytes, false).is_err());
+    assert!(decode_container_views_for(&bytes, true).is_err());
+    assert_eq!(
+        decode_container_views_with_house_capacity(&bytes, false, true)
+            .expect("valid supplementary House container codec"),
+        views
+    );
+    assert!(decode_container_views_with_house_capacity(&bytes, false, false).is_err());
+    let mut excess = views;
+    excess.views[0].capacity = 26;
+    assert!(encode_container_views_with_house_capacity(&excess, false, true).is_err());
+}
+
+#[test]
+fn house_capacity_v2_measured_whole_payload_bound() {
+    let views = ContainerViews {
+        views: (0..MAX_CONTAINER_VIEWS as u8)
+            .map(|id| {
+                let mut view = worst_view(id);
+                let base = u64::from(id) * 100;
+                view.capacity = MAX_HOUSE_CONTAINER_VIEW_ENTRIES as u8;
+                view.entries = (0..MAX_HOUSE_CONTAINER_VIEW_ENTRIES as u64)
+                    .map(|n| worst_entry(base + n))
+                    .collect();
+                view
+            })
+            .collect(),
+    };
+    let bytes = encode_container_views_with_house_capacity(&views, false, true)
+        .expect("valid supplementary House container codec");
+    assert_eq!(bytes.len(), MAX_HOUSE_CONTAINER_VIEWS_BYTES);
+    assert_eq!(
+        decode_container_views_with_house_capacity(&bytes, false, true)
+            .expect("valid supplementary House container codec"),
+        views
+    );
+    let mut oversized = bytes;
+    oversized.push(0);
+    assert!(decode_container_views_with_house_capacity(&oversized, false, true).is_err());
+}

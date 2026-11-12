@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm",
+  "coordinate_sources": [
+    "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/feaster_of_souls/actions_rock_entrance.lua:2-3"
+  ],
+  "reader_source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/otbm_reader.py",
+  "reader_git_blob": "c1039346f8be4ef6564b4c7a9e0ffab72bd20e00",
+  "raw_sha256": "c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85",
+  "decompressed_sha256": "79b545b973e123cf7d49148d7039fbfce4daa4bf2b12f0184da5962dff78de5d",
+  "map_version_width_height": [
+    4,
+    35143,
+    34812
+  ],
+  "requested": [
+    [
+      33221,
+      31703,
+      7
+    ],
+    [
+      33876,
+      31883,
+      8
+    ]
+  ],
+  "tiles": [
+    {
+      "position": [
+        33221,
+        31703,
+        7
+      ],
+      "house_id": null,
+      "flags": null,
+      "zones": [],
+      "items_in_serialized_order": [
+        {
+          "server_id": 4405,
+          "container_depth": 0,
+          "attributes": {}
+        },
+        {
+          "server_id": 4541,
+          "container_depth": 0,
+          "attributes": {}
+        },
+        {
+          "server_id": 4463,
+          "container_depth": 0,
+          "attributes": {}
+        },
+        {
+          "server_id": 32571,
+          "container_depth": 0,
+          "attributes": {}
+        }
+      ]
+    },
+    {
+      "position": [
+        33876,
+        31883,
+        8
+      ],
+      "house_id": null,
+      "flags": null,
+      "zones": [],
+      "items_in_serialized_order": [
+        {
+          "server_id": 27487,
+          "container_depth": 0,
+          "attributes": {}
+        },
+        {
+          "server_id": 28907,
+          "container_depth": 0,
+          "attributes": {}
+        }
+      ]
+    }
+  ],
+  "unknown_item_attrs": {},
+  "unknown_tile_attrs": {},
+  "qualification": "Immutable donor binary witness only; does not prove Oteryn WorldBundle placement or runtime selector."
+}

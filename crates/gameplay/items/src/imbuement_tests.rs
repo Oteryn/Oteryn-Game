@@ -8,6 +8,7 @@ fn utility_categories_run_online_and_combat_categories_pause() {
     assert!(consumes_elapsed(0, true));
     assert!(!consumes_elapsed(0, false));
     assert!(!consumes_elapsed(19, false));
+    assert!(consumes_elapsed(25, false));
     for category in 0..20 {
         assert_eq!(
             consumes_elapsed(category, false),
@@ -60,7 +61,7 @@ fn imbuement_reference_parity() {
 #[test]
 fn imbuement_catalogue_matches_tier_rules_and_covers_every_single_family() {
     let mut expected = Vec::new();
-    for family in (1..=20).filter(|family| *family != 2) {
+    for family in (1..=26).filter(|family| !matches!(*family, 2 | 13)) {
         for tier in 1..=3 {
             expected.push((family, tier));
         }
@@ -105,7 +106,7 @@ fn filled_scroll_ids_round_trip_only_intricate_and_powerful_recipes() {
             Some(scroll)
         );
     }
-    assert_eq!(ids.len(), 36);
+    assert_eq!(ids.len(), 48);
     assert_eq!(imbuement_scroll(IMBUEMENT_ETCHER_ITEM_ID), None);
     assert_eq!(imbuement_scroll(51_443), None);
     assert_eq!(scroll_for_imbuement(1, 1), None);

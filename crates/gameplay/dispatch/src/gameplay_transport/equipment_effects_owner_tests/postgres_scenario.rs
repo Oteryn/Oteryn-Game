@@ -261,7 +261,7 @@ async fn equipment_dispatch_scenario(
     let owner = ComposedFreshAdmission {
         server_motd: "",
         runtime: (&runtime).into(),
-        movement_cells: room.movement_cells(),
+        movement_cells: room.movement_cells().into(),
         door: (&door).into(),
         chest: room.door(),
         active_generation: Some(active),

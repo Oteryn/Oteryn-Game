@@ -1,17 +1,19 @@
 {
   "mechanic": "0082-creature-push",
   "kind": "handlers",
-  "id": "0082-creature-push-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0082-creature-push-drag",
+  "status": "supported",
+  "direction": "client_to_server",
+  "capability": 82,
   "commands": [
     98
   ],
+  "entry": "mod.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "view": "The native world scene renders the actor and server push feedback.",
+    "input": "Primary-button dragging in apps/client/src/features/0082-creature-push/input.rs selects a live player or creature and a destination tile.",
+    "settings": "Dragging uses the existing primary-button binding.",
+    "state": "The native play mailbox owns the negotiated capability and transient drag state; no independent panel state.",
+    "protocol": "The request adapter reuses the existing session creature_push codec; no separate UI codec."
   }
 }

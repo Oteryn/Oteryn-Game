@@ -1,0 +1,7 @@
+{
+  "mechanic": "0003-npc-service",
+  "kind": "panels",
+  "id": "0003-npc-service-dialogue",
+  "status": "supported",
+  "entry": "mod.rs::panel_text"
+}

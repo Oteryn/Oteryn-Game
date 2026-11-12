@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v6`: the shared byte writer used by the compiler and test fixtures.
+//! `OTERYN_WORLD_BUNDLE/v8`: the shared byte writer used by the compiler and test fixtures.
 
 use sha2::{Digest, Sha256};
 
@@ -46,10 +46,22 @@ pub fn write_with_npcs(
     spawns: &spawn::Table,
     npcs: &npc::Table,
 ) -> Result<Vec<u8>, Error> {
+    write_with_layers(manifest, sectors, spawns, npcs, &[])
+}
+
+/// Write the same manifest envelope with compiler-admitted optional epoch layers.
+pub fn write_with_layers(
+    manifest: &Manifest,
+    sectors: &[Sector],
+    spawns: &spawn::Table,
+    npcs: &npc::Table,
+    layers: &[crate::layers::Layer],
+) -> Result<Vec<u8>, Error> {
     validate_manifest(manifest)?;
+    crate::layers::validate(manifest, layers)?;
     validate_spawns(manifest, spawns)?;
     validate_npcs(manifest, npcs)?;
-    let json = serde_json::to_vec(manifest).map_err(|e| Error::Format(e.to_string()))?;
+    let json = crate::manifest::encode(manifest, layers)?;
     limit(json.len() <= MAX_MANIFEST_BYTES, "manifest too large")?;
     limit(sectors.len() <= MAX_SECTORS, "too many sectors")?;
     check(

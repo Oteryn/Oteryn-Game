@@ -309,6 +309,7 @@ pub async fn prepare_chest_use(
     let backpack = resolve_item_definition_facts(content, &current.backpack.definition)
         .map_err(ChestUseError::Content)?;
     let mint_request = RewardClaimMintRequest {
+        backpack_outputs: false,
         command: request.command,
         claim: chest.claim,
         source_placement: request.chest.as_str().to_owned(),
@@ -316,6 +317,8 @@ pub async fn prepare_chest_use(
         quantity: chest.quantity,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
         backpack,
         content_revision: request.content_revision,
         ruleset_revision: request.ruleset_revision,

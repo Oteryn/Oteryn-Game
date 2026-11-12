@@ -234,9 +234,7 @@ Any material durable loot/value/item/resource gap is architecture escalation, no
 
 Current protected-main root `AGENTS.md` and the organization AI review policy it adopts by reference are the only current AI-review routing authority. Conflicting older `docs/agents/**` review-tier, standing-authorization or controller prose is historical/procedural only.
 
-- Default: no external AI review.
-- Ordinary code change with clear independent-review value: prefer Codex Spark when available.
-- Material high-risk/control-plane change: use one Codex deep review on a stable material candidate.
+- Default (owner 2026-11-09): every Game PR gets one Codex review, a second only after a substantial logic change, never a third (`OWNER_FUNDED_AI_POLICY.md`, *Owner review rule for every PR*).
 - External AI review is advisory and never a required GitHub status or merge authority; repository gates, protection and Merge Queue remain enforcement.
 - Re-review only when a material risk-bearing repair makes the previous review no longer representative.
 - Do not recreate local R0/R1/R2 tiers or standing review-controller authority.

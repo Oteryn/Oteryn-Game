@@ -11,12 +11,48 @@ const GOLDEN: &[u8] = include_bytes!(concat!(
 fn appearance_result_first_and_observation_first_converge_through_session_dispatch()
 -> Result<(), BoxError> {
     block_on(async {
-        for result_first in [true, false] {
-            let (snapshot, entity, spatial) = appearance_fixture::snapshot()?;
+        for (result_first, with_forge) in
+            [(true, false), (false, false), (true, true), (false, true)]
+        {
+            let (mut snapshot, entity, _) = appearance_fixture::snapshot()?;
+            snapshot.bindings[0].forge_stacks = Some(5);
+            // Forge markers describe creatures and require independent capability 104.
+            // Keep the own-player outfit ordering checks and exercise both projections.
+            let creature = WorldSpatialEntity {
+                kind: EntityKind::Creature,
+                entity: EntityRef {
+                    identity: [0xb0; 16],
+                    ..entity.entity
+                },
+                detail: EntityDetail::Actor {
+                    direction: StepDirection::South,
+                    appearance_ref: 2,
+                    health_percent: 100,
+                },
+                ..entity
+            };
+            let mut creature_binding = snapshot.bindings[0].clone();
+            creature_binding.entity = creature.entity;
+            creature_binding.appearance_ref = 2;
+            snapshot.bindings.push(creature_binding.clone());
+            snapshot.high_water = 2;
+            let spatial = (
+                SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                encode_world_spatial_entities_snapshot(&WorldSpatialEntitiesSnapshot {
+                    content_generation: CONTENT_GENERATION,
+                    actor_position: at(0, 0),
+                    own_identity: OWN,
+                    entities: vec![entity, creature],
+                })
+                .map_err(|e| format!("{e:?}"))?,
+            );
             let domain = (21, 1, 1, snapshot.encode().map_err(|e| format!("{e:?}"))?);
             let original = snapshot.bindings[0].look.clone();
             let mut binding = snapshot.bindings[0].clone();
             binding.root_revision = 2;
+            binding.forge_stacks = Some(15);
+            creature_binding.root_revision = 2;
+            creature_binding.forge_stacks = Some(15);
             binding.look = appearance::Look::Outfit {
                 look_type: 129,
                 colours: [2, 1, 0, 2],
@@ -25,7 +61,7 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
             let expected = binding.look.clone();
             let mapping = appearance::Mappings {
                 context: snapshot.catalogue.context,
-                upserts: vec![binding],
+                upserts: vec![binding, creature_binding],
                 forgets: Vec::new(),
             }
             .encode()
@@ -35,7 +71,7 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                 join_peer_with(
                     &mut server,
                     CLIENT_SUPPORTED_CAPABILITIES,
-                    &[6, 25],
+                    if with_forge { &[6, 25, 104] } else { &[6, 25] },
                     &[],
                     spatial,
                     &[domain],
@@ -70,6 +106,20 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                 Ok::<_, BoxError>(())
             });
             let mut session = Session::admit(client, entity_admission()?).await?;
+            assert_eq!(session.visible_appearances()[0].forge_stacks, None);
+            assert_eq!(
+                session
+                    .visible_appearances()
+                    .iter()
+                    .find(|entry| entry.entity.entity == creature.entity)
+                    .ok_or("missing visible creature")?
+                    .forge_stacks,
+                with_forge.then_some(5)
+            );
+            assert_eq!(
+                session.visible_appearances()[0].look.as_ref(),
+                Some(&original)
+            );
             let change = appearance::Change {
                 context: snapshot.catalogue.context,
                 expected_root_revision: 1,
@@ -101,6 +151,16 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                 );
             }
             session.service_liveness(Duration::from_millis(50)).await?;
+            assert_eq!(session.visible_appearances()[0].forge_stacks, None);
+            assert_eq!(
+                session
+                    .visible_appearances()
+                    .iter()
+                    .find(|entry| entry.entity.entity == creature.entity)
+                    .ok_or("missing visible creature")?
+                    .forge_stacks,
+                with_forge.then_some(15)
+            );
             assert_eq!(
                 *session
                     .appearance
@@ -109,6 +169,10 @@ fn appearance_result_first_and_observation_first_converge_through_session_dispat
                     .resolve(entity.entity, 1)
                     .ok_or("binding")?,
                 expected
+            );
+            assert_eq!(
+                session.visible_appearances()[0].look.as_ref(),
+                Some(&expected)
             );
             assert!(matches!(
                 session.take_events().as_slice(),

@@ -45,6 +45,23 @@ fn round_trip_line(line: &ChatLine) -> Vec<u8> {
 }
 
 #[test]
+fn server_owned_mount_voice_cannot_be_forged_as_player_intent() {
+    let mut line = local_line(4, 5);
+    if let ChatLine::Local { mode, .. } = &mut line {
+        *mode = ChatSpeechMode::MonsterSay;
+    }
+    round_trip_line(&line);
+    assert!(
+        encode_chat_intent(&ChatIntent::Say {
+            mode: ChatSpeechMode::MonsterSay,
+            text: "Groar".into(),
+        })
+        .is_err()
+    );
+    assert!(decode_chat_intent(&[0x0a, 5, 8, 4, 0x12, 1, b'x']).is_err());
+}
+
+#[test]
 fn intents_round_trip_and_the_private_message_is_the_byte_bound() {
     let say = ChatIntent::Say {
         mode: ChatSpeechMode::Say,
@@ -374,7 +391,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     assert_eq!(capability["offered"], true, "offered since CHAT-WIRE-1");
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_CHAT_INTENT])
+        serde_json::json!([COMMAND_TYPE_CHAT_INTENT, super::console::COMMAND])
     );
     assert_eq!(
         capability["state_domains"],

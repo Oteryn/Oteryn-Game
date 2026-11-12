@@ -46,6 +46,16 @@ impl ChannelSpellStates {
             distance,
             u64::try_from(snapshot.maximum_health).unwrap_or(0),
         );
+        let reflected = if self.elite_bounty(
+            runtime,
+            target,
+            session,
+            &snapshot.state.policy.definition_key,
+        ) {
+            reflected / 2
+        } else {
+            reflected
+        };
         if reflected == 0 {
             return true;
         }
@@ -67,6 +77,15 @@ impl ChannelSpellStates {
         ) else {
             return false;
         };
+        if result.applied {
+            self.analyser.impact_amount(
+                target,
+                session,
+                u64::try_from(result.health_before.saturating_sub(result.health_after))
+                    .unwrap_or(0),
+                Some(oteryn_protocol_oteryn::damage_element::DamageElement::Untyped),
+            );
+        }
         if result.applied && result.health_after == 0 {
             self.equipment_reflection_kills.push((
                 source,

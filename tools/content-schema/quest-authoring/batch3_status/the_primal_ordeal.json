@@ -1,0 +1,1325 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "the_primal_ordeal",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-c/status-after-answer.json",
+    "sha256": "af185f5bc16307ef92f85e3f9d76c1a71d11c543fc2bcdb3fddc55c0537000c7"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 36,
+  "import_counts": {
+    "RĘCZNIE": 21,
+    "AUTO": 15
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 1,
+    "world_callbacks_held": 15,
+    "death_rules_source_only": 2
+  },
+  "content_inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/world/the_primal_ordeal.json",
+      "sha256": "e530a62ea2ef8759a34bd49dac210caa6581162e42530145c983a0624e75f3bb",
+      "count": 1,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_primal_ordeal.json",
+      "sha256": "58800c5f98c1d1feb00a5b606c4228453a7307df92910d74de04d0d4edcae238",
+      "count": 15,
+      "category": "world_callbacks_held"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/the_primal_ordeal.json",
+      "sha256": "30a4f0c73d507e3854edc855c537f561a94b8cf87f5cb80eea329fa3e5abdf16",
+      "count": 2,
+      "category": "death_rules_source_only"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "6d9a845f1d9c07d4ea0872da14c3dc267e2c8d311b447166df22727273fbaa30",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Magma Bubble: outfit i flaga",
+        "pattern": "P07/P12/P21",
+        "trigger": "MagmaBubbleDeath",
+        "guard": "każdy bezpośredni Player(id) zdamageMap; brak obuoutfitów",
+        "effect": "grant1569 i1568 addon0; MagmaBubbleKilled47853<1 ->1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_kill_adapter",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Exact source state-only death rule is preserved with runtime_enabled:false. Parser, test-only qualifier and native adapter are excluded from publication under explicit R-KILL-ADAPTER B.",
+      "left_out": "Missing allowed functions: quest_batch3_c::capture and quest_batch3_c::settle, with source parser/loader and snapshot refresh. Existing Quest writer remains unchanged, but producing these ten events requires a new shared adapter; explicit B requires source-only Left out. Future adapter PR must not map permanent ProgressionContextMismatch to Retry, which can block the ordered kill queue (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134; existing witness character_progression_binding_tests.rs:160-198). Fire-Fighter grant and repeat when access flag is already 1 require a new appearance side effect in quest_state/writer.rs; withdrawn. The candidate state-only rule accepts flag <1. Decyzja R-KILL-ADAPTER: Dziesięć reguł śmierci pozostaje nieaktywnymi danymi. Brakuje utrwalenia właściwego rosteru/occurrence i rozliczenia przed zwolnieniem corpse-pin, z kwalifikacją graczy według damage map. Parser quest_batch3_c i sześć hooków zostały wycofane; cztery testy Tower nie dowodzą aktywnego runtime. Przyszły adapter musi też rozwiązać trwały ProgressionContextMismatch mapowany na Retry, który może blokować uporządkowaną kolejkę (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134). Fire-Fighter grant/repair pozostaje Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590527568",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589115457"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1081",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3-8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12-23",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4-18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua:26-55",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323-329"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589115457"
+        ]
+      }
+    },
+    {
+      "id": "77db05b98b07c9e51223e8995c5d1b38587ef065e3a3f327ce4efc5f39bb94ea",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Primal Menace: flaga i hazard",
+        "pattern": "P07/P21/P29",
+        "trigger": "ThePrimalMenaceDeath",
+        "guard": "hazard.gnomprona-gardens istnieje; damageMap",
+        "effect": "47855<1->1; jeśli playerMaxHazard==getHazardPlayerAndPoints(damageMap).points ->levelUp",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieje durable hazard consumer w party-kill transaction, bez dowodu tego storage/całej questline; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/durability/src/durability/character_hazard/primal.rs:32",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_kill_adapter",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Exact source state-only death rule is preserved with runtime_enabled:false. Parser, test-only qualifier and native adapter are excluded from publication under explicit R-KILL-ADAPTER B.",
+      "left_out": "Missing allowed functions: quest_batch3_c::capture and quest_batch3_c::settle, with source parser/loader and snapshot refresh. Existing Quest writer remains unchanged, but producing these ten events requires a new shared adapter; explicit B requires source-only Left out. Future adapter PR must not map permanent ProgressionContextMismatch to Retry, which can block the ordered kill queue (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134; existing witness character_progression_binding_tests.rs:160-198). The existing qualified Primal hazard owner is unchanged; source data does not activate an encounter or a first-kill producer. Decyzja R-KILL-ADAPTER: Dziesięć reguł śmierci pozostaje nieaktywnymi danymi. Brakuje utrwalenia właściwego rosteru/occurrence i rozliczenia przed zwolnieniem corpse-pin, z kwalifikacją graczy według damage map. Parser quest_batch3_c i sześć hooków zostały wycofane; cztery testy Tower nie dowodzą aktywnego runtime. Przyszły adapter musi też rozwiązać trwały ProgressionContextMismatch mapowany na Retry, który może blokować uporządkowaną kolejkę (character_progression_binding.rs:200-203; kill_reward.rs:2132-2134). Fire-Fighter grant/repair pozostaje Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590527568",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1075-1081",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3-8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12-23",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4-18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua:26-55",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323-329"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+        ]
+      }
+    },
+    {
+      "id": "e2ec649d620f606f8f68f7046dacedd6252cb6d3fc3917fa857c1b33084c58b7",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Primal Pack Beast",
+        "pattern": "P30",
+        "trigger": "RegisterPrimalPackBeast(template)",
+        "guard": "przekazany monster template",
+        "effect": "kopiuj; name(Name Primal);displayPrimal Pack Beast;xp0,loot{},maxHP*0.7,raceId/Bestiarynil,corpse0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_primal_ordeal.lua:1"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/the_primal_ordeal.lua:1"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "2dd6b2032331ea90526720973069638bee67b566aa4ca559169e147c28f00ad4",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Ustawienie hazardu",
+        "pattern": "P09/P29",
+        "trigger": "Gnomadness hazard -> liczba topic1",
+        "guard": "liczba>0; hazard:setPlayerCurrentLevel sukces",
+        "effect": "nowy bieżący hazard; inaczej odmowa bez nagrody",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomadness.lua:69"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Source Gnomadness hazard dialogue is preserved. Missing allowed caller: npc_command::gnomadness::apply -> DurabilityRoot::character_hazard. New adapter and PG test were checkpointed outside repo under ANSWER1. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomadness.lua:69",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "e853fb2e397103897081d6f8a367c8bc6da07be417754a7784478f7b2d9039fd",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Pierwsza nagroda hazard>=6",
+        "pattern": "P09/P11/P12/P29",
+        "trigger": "Gnomadness po poprawnymustawieniu level",
+        "guard": "desiredLevel>=6; KVprimal-ordeal/received-prize=false",
+        "effect": "mount202 +achievementRipp-Ripp Hooray! +PRIMAL_BAG; KVtrue (rozbieżnośćWiki)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomadness.lua:84"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Full quest dialogue is captured as source data, but activation requires a new conversation adapter; physical exchanges/rewards additionally require shared atomic item/appearance ownership. R-NPC-STATE allows only data through an unchanged existing adapter.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589115035"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomadness.lua:84"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "c3c70d4e6cea538af81ed93a17ed58424d99f7bd7a7aab78597de59e19944a52",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnominer: brak gałęzi nagrody",
+        "pattern": "P09",
+        "trigger": "greet",
+        "guard": "dowolnygracz",
+        "effect": "tylko greet; brak nadaniaoutfitu wtymNPC",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominer.lua:53"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_noop",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Source contains no corresponding implemented behavior; no invented callback or reward is added.",
+      "left_out": "Empty heartbeat (Cradle) or absence of Gnominer reward branch (Primal).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589115457"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominer.lua:53"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "57451f2ffd1301a1dfa51d6eb324ac8061c8245390dc9a59e57ec45a32ad20b9",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Przyjęcie Magma Bubble",
+        "pattern": "P06/P17",
+        "trigger": "lever(33669,32925,15),5stanowisk y32926..32930",
+        "guard": "level>=250;BossLever occupancy/cooldown",
+        "effect": "encounter MagmaBubble;teleport(33655,32917,15);exit(33659,32897,14);zone rozszerzona",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/magma_bubble.lua:1"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/magma_bubble.lua:1"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "0130314d34717be5edaabb6f6b2c38fef457ce683d433b407bfcd62e54838fc7",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Przyjęcie Primal Menace",
+        "pattern": "P06/P17",
+        "trigger": "lever(33547,32752,14),5stanowisk x33548..33552",
+        "guard": "level>=500;BossLever occupancy/cooldown",
+        "effect": "boss(33558,32759,15);teleport(33565,32758,15);exit(33520,32871,15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_primal_manace.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — natywny prerequisite level500/cooldown20h, dispatch jawnie ContentUnavailable; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs:96",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_primal_manace.lua:1"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "e5429dbe887b8b5bbffd9eda942d9914ee3de371319cc3e05a6fc5766f609793",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnomprona teleport 33660, 32895, 14",
+        "pattern": "P03",
+        "trigger": "StepIn(33660, 32895, 14)",
+        "guard": "gracz",
+        "effect": "teleport(33669, 32933, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_map_collision",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Complete source callback is retained in held-world/the_primal_ordeal.json with runtime_enabled:false; excluded from active aggregate.",
+      "left_out": "Source selector has canonical ground but WorldObject34111 lacks a native Item collision profile. boot_bundle_items supplies solid=None; BundleFacts::palette defaults these non-Terrain/non-floor-change Items to solid (serve.rs:2285-2306; facts.rs:661-713,745-752). CallbackTeleport::check requires destination Ground::Walkable and landable (floor/quest_callback.rs:43-49), so teleport does not bypass the blocked destination. Missing operation: qualification of those exact static collision profiles by the map/Item owner. Decyzja C-PRIMAL-COLLISION: Cztery przejścia Primal pozostają held: brak kwalifikowanego profilu kolizji statycznych itemów 34111, 6383 i 3919 przez boot_bundle_items->BundleFacts::palette; bez profilu domyślnie blokują ruch. Bez nowych profili, zmian mapy lub obejścia odmowy teleportu. Aktywny pozostaje wyłącznie kandydat (33558,32754,14)->(33714,32799,14).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:30-33"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "46e0bf5d413cc9dd5a1c17c872b8a2810d448774a8e01cd36df291f5009d6d4e",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnomprona teleport 33671, 32933, 15",
+        "pattern": "P03",
+        "trigger": "StepIn(33671, 32933, 15)",
+        "guard": "gracz",
+        "effect": "teleport(33660, 32897, 14)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_map_collision",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Complete source callback is retained in held-world/the_primal_ordeal.json with runtime_enabled:false; excluded from active aggregate.",
+      "left_out": "Source selector has canonical ground but WorldObject34111 lacks a native Item collision profile. boot_bundle_items supplies solid=None; BundleFacts::palette defaults these non-Terrain/non-floor-change Items to solid (serve.rs:2285-2306; facts.rs:661-713,745-752). CallbackTeleport::check requires destination Ground::Walkable and landable (floor/quest_callback.rs:43-49), so teleport does not bypass the blocked destination. Missing operation: qualification of those exact static collision profiles by the map/Item owner. Decyzja C-PRIMAL-COLLISION: Cztery przejścia Primal pozostają held: brak kwalifikowanego profilu kolizji statycznych itemów 34111, 6383 i 3919 przez boot_bundle_items->BundleFacts::palette; bez profilu domyślnie blokują ruch. Bez nowych profili, zmian mapy lub obejścia odmowy teleportu. Aktywny pozostaje wyłącznie kandydat (33558,32754,14)->(33714,32799,14).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:30-33"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "1d4c39cb6bd5532a4b88161e38a0eead2d5c970c763d4502c155afd459e64c54",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnomprona teleport 33658, 32919, 15",
+        "pattern": "P03",
+        "trigger": "StepIn(33658, 32919, 15)",
+        "guard": "gracz",
+        "effect": "teleport(33669, 32933, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:4"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_map_collision",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Complete source callback is retained in held-world/the_primal_ordeal.json with runtime_enabled:false; excluded from active aggregate.",
+      "left_out": "Source selector has canonical ground but WorldObject34111 lacks a native Item collision profile. boot_bundle_items supplies solid=None; BundleFacts::palette defaults these non-Terrain/non-floor-change Items to solid (serve.rs:2285-2306; facts.rs:661-713,745-752). CallbackTeleport::check requires destination Ground::Walkable and landable (floor/quest_callback.rs:43-49), so teleport does not bypass the blocked destination. Missing operation: qualification of those exact static collision profiles by the map/Item owner. Decyzja C-PRIMAL-COLLISION: Cztery przejścia Primal pozostają held: brak kwalifikowanego profilu kolizji statycznych itemów 34111, 6383 i 3919 przez boot_bundle_items->BundleFacts::palette; bez profilu domyślnie blokują ruch. Bez nowych profili, zmian mapy lub obejścia odmowy teleportu. Aktywny pozostaje wyłącznie kandydat (33558,32754,14)->(33714,32799,14).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:30-33"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "80d3c16e36224c9a8ffe42a4d1ec1788ce7104ddb01449387342ae369ff73aa3",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnomprona teleport 33714, 32797, 14",
+        "pattern": "P03",
+        "trigger": "StepIn(33714, 32797, 14)",
+        "guard": "47853>0; inaczej fromPosition",
+        "effect": "teleport(33556, 32754, 14)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:5"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_held_callback_contract",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Source Magma access gate retained with the ten source wagons in held-world/the_primal_ordeal.json; excluded from active aggregate.",
+      "left_out": "Missing fields: storage.read_only and per-guard failure_message. Crystal reads access >0 and does not write storage (gnomprona.lua:20-28). Baseline Storage emits SET: SET(0) consumes access; SET(1) introduces a write absent from the donor and cannot preserve any higher source value. The prohibited ADD(0) lowering is not replaced by SET. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "4424a996dd7801bc58dafd15255d3cf70b2ca5d8a054926ac616cbfed9f73e0c",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnomprona teleport 33558, 32754, 14",
+        "pattern": "P03",
+        "trigger": "StepIn(33558, 32754, 14)",
+        "guard": "gracz",
+        "effect": "teleport(33714, 32799, 14)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:6"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "callback_authored",
+      "classification": "DERIVED",
+      "delivery": "runtime_callback",
+      "new_runtime_callback": true,
+      "done": "Exact source JSON callback uses the unchanged native format. Selector33558/32754/z14 has canonical walkable Terrain12355 and existing nonblocking profile1949; destination33714/32799/z14 has canonical walkable Terrain4561. Neither side has a static blocker, native teleport, floor-change or house marker. Compiled-input source qualification is in compiled-portals.json; actual scoped PG validation is root-owned.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:6"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "778855cdff639ce7da0efc613590b9ff20c4ec9fd39315d842e191446ed04efc",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Gnomprona teleport 33567, 32758, 15",
+        "pattern": "P03",
+        "trigger": "StepIn(33567, 32758, 15)",
+        "guard": "gracz",
+        "effect": "teleport(33555, 32752, 14)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:7"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_map_collision",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Complete source callback is retained in held-world/the_primal_ordeal.json with runtime_enabled:false; excluded from active aggregate.",
+      "left_out": "Source selector1949 is nonblocking, but the exact destination33555/32752/z14 contains plain Items6383 and3919 with no native collision profile. boot_bundle_items supplies solid=None; BundleFacts::palette defaults these non-Terrain/non-floor-change Items to solid (serve.rs:2285-2306; facts.rs:661-713,745-752). CallbackTeleport::check requires destination Ground::Walkable and landable (floor/quest_callback.rs:43-49), so teleport does not bypass the blocked destination. Missing operation: qualification of those exact static collision profiles by the map/Item owner. Decyzja C-PRIMAL-COLLISION: Cztery przejścia Primal pozostają held: brak kwalifikowanego profilu kolizji statycznych itemów 34111, 6383 i 3919 przez boot_bundle_items->BundleFacts::palette; bez profilu domyślnie blokują ruch. Bez nowych profili, zmian mapy lub obejścia odmowy teleportu. Aktywny pozostaje wyłącznie kandydat (33558,32754,14)->(33714,32799,14).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:30-33"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "a7679433e80eadc991f09605e11a0eb39f7ae0545f7f574fcc5bcc23ced65a8e",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33543,32912,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33543,32912,15)",
+        "guard": "brak",
+        "effect": "teleport(33637, 32841, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:2"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:2"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "a86c252e3ec3f0f44ce1733772a2c20c1a4db1c634b9b24839cf085644df1736",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33637,32840,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33637,32840,15)",
+        "guard": "brak",
+        "effect": "teleport(33543, 32913, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:3"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "42c8f783576745b6d279be50d9783116de2952b2f0689ca80f521658b7b8e5b5",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33546,32911,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33546,32911,15)",
+        "guard": "brak",
+        "effect": "teleport(33765, 32909, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:4"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:4"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "5b3a524bf6ba67cb7f32f47588f04538523fec903a65ab727dc3043f6a8abce7",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33765,32908,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33765,32908,15)",
+        "guard": "brak",
+        "effect": "teleport(33546, 32912, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:5"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:5"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "dde6cc9205256e84aeede6dd5e88e78d19fc9fb622a4ef719a8fda1d5b910381",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33549,32912,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33549,32912,15)",
+        "guard": "brak",
+        "effect": "teleport(33563, 32862, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:6"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:6"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "c3551748af5d7996d4355323f08d7ef3c0e475859247eba44040dfc2075bfeb2",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33562,32862,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33562,32862,15)",
+        "guard": "brak",
+        "effect": "teleport(33549, 32913, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:7"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:7"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "3908d606e2a5054fab76362cebedfdcf3d87653246da5998775cb8eb6e08a141",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33571,32868,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33571,32868,15)",
+        "guard": "brak",
+        "effect": "teleport(33592, 32909, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:8"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:8"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "629bf10a3472e6fc626c1b318d395e49cb6435c32f91107409b2111a68e03ab4",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33591,32909,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33591,32909,15)",
+        "guard": "brak",
+        "effect": "teleport(33571, 32869, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:9"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:9"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "a45321db003d26ff69eb02325808c6384413d83b521bde11c050ccc1f2d1f098",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33597,32914,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33597,32914,15)",
+        "guard": "brak",
+        "effect": "teleport(33662, 32976, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:10"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:10"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "eda10242de7a708daf31804b3a167be8bc60f1522400e299c99ceed9e7bbb7b1",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Wózek 33661,32976,15 [zależność scope]",
+        "pattern": "P03",
+        "trigger": "Use(33661,32976,15)",
+        "guard": "brak",
+        "effect": "teleport(33597, 32913, 15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:11"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/ore_wagons_gnoproma.lua:11"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "ab6078d98aa2c67795aaedc5e24f697015fad2039c328cef510b1355e1ec13fc",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Magma: reset encounter [zależność scope]",
+        "pattern": "P25",
+        "trigger": "Encounter.onReset",
+        "guard": "dowolnyreset",
+        "effect": "usuńmonsters;po60szone.refresh iremovePlayers",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:35"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:35"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "7e7ec2ccdfa16f187f7f67a4acae280ec1cbcc3bb2a7711fce512fae29dc1271",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Magma: pierwszy etap [zależność scope]",
+        "pattern": "P27",
+        "trigger": "start,spawn2s;broadcast1s",
+        "guard": "encounterstage",
+        "effect": "3TheEndOfDays +3MagmaCrystal na3stałychpolach",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:44"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:44"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "456152351641b6d55657c7a66ecbc8f47cd42e3fe125c74091e3d28021cdbedf",
+      "quest_row": 27,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "The End of Days półHP [zależność scope]",
+        "pattern": "P30",
+        "trigger": "onHealthChange pierwszegoetapu",
+        "guard": "przewidywaneHP<=50%max",
+        "effect": "pełneHP;8LavaCreature;returnfalse",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:255"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:255"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "18ab831695f61064ee92904c4d472e050a4e3d7a8fb527a547f44d2c3866ccf8",
+      "quest_row": 28,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Magma Crystals i drugi etap [zależność scope]",
+        "pattern": "P07/P27",
+        "trigger": "MagmaCrystalDeath",
+        "guard": "countMonsters<=1 liczywciążumierającego",
+        "effect": "następnyetap:cleanup,3swarning,6TheEndOfDays",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:271"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:271"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "0c4ec5cbd5c2abc06ab30fcbff8991aa56d33f103739cd4f0c6320b1db236b6d",
+      "quest_row": 29,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Sześć End of Days [zależność scope]",
+        "pattern": "P07/P27",
+        "trigger": "TheEndOfDaysDeath",
+        "guard": "countMonsters<=1",
+        "effect": "następnyetap:cleanup,3swarning,MagmaBubble na(33654,32909,15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:283"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:283"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "49b2b42db972fd71493623d10457bbbddb276221d7cee050ca7d71abd1e36ce2",
+      "quest_row": 30,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Fale Unchained Fire [zależność scope]",
+        "pattern": "P16/P27",
+        "trigger": "10s poMagmaBubble; potem45s",
+        "guard": "5stages",
+        "effect": "każdyetap4UnchainedFire;ostatni bezautoadvance",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:78"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:78"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "f77f746d8d47872aefe73645fb58da9c9c37fa3d16f3e123214340e8b5b77bdc",
+      "quest_row": 31,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Cykl gorących kryształów [zależność scope]",
+        "pattern": "P15/P30",
+        "trigger": "co4000ms",
+        "guard": "wszystkie39168/39169 wbossZone",
+        "effect": "50%szansyflip jednegolosowego;następnieutrzymaj minimum2cooled39169",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:155"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:155"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "43d4ad21542bec6f7c7591d2a3220e712359501ac73aa1375cc53269f1aedfaa",
+      "quest_row": 32,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Charged Flame na kryształ [zależność scope]",
+        "pattern": "P02/P30",
+        "trigger": "item39230 onitem39169",
+        "guard": "celitem;losowywalkable sąsiadz8",
+        "effect": "cel->39168;spawnfield39232+decay;usuńchargedflame",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:206"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:206"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "d0b5661a73df74c42b1e5128204bf1ce69f99bb5597d6d580864fd0abad18fee",
+      "quest_row": 33,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Pole tarczy [zależność scope]",
+        "pattern": "P03/P30",
+        "trigger": "StepIn39232",
+        "guard": "graczwewnątrzencounter",
+        "effect": "usuńpole;GreenShield magma-bubble +=5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:238"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:238"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "81caf4da93c24f8b77824793a5a0f83fc7af23d871e7ba62f5506d5fcbc0d0d0",
+      "quest_row": 34,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Przegrzana strefa [zależność scope]",
+        "pattern": "P15/P30",
+        "trigger": "co1000ms w6prostokątach",
+        "guard": "żywygracz;tickShields dekrementujeprzedtestem",
+        "effect": "jeśli remaining>0 efektkoloru;inaczej60%maxHP agony; ostatnia1tarcza jużniechroni",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:123"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:123"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "25b9bfce2c3686672514bdd619d78194ea231f9efa78299d7a38dc5552776667",
+      "quest_row": 35,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Magma śmierć i zone hooks [zależność scope]",
+        "pattern": "P07/P25",
+        "trigger": "MagmaBubbleDeath;ZoneEventafterEnter/Leave",
+        "guard": "gracz",
+        "effect": "deathreset;entryshield0;exitremoveicon",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:293"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua:293"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "ae889a162e8194586eecc8ecd88a02f658a4090f6bb74d6b0325696fc2c0fc64",
+      "quest_row": 36,
+      "inventory": {
+        "quest": "the_primal_ordeal",
+        "step": "Duplikowany callback bossów [zależność scope]",
+        "pattern": "P07/P21",
+        "trigger": "ThePrimeOrdealBossDeath",
+        "guard": "MagmaBubble/PrimalMenace;Player(id) zdamageMap",
+        "effect": "odpowiedni47853/47855=1; trzeba potwierdzić rzeczywistą rejestrację na monsterach",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/bosses_killed.lua:6"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Primal sibling-scope encounter/pack beast/group entry or wagon path depends on qualified encounter entry. Ten source wagon callbacks are held to preserve existing requiredBosses/minHazard/content-availability guards.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589114545"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/primal_ordeal_quest/bosses_killed.lua:6"
+      ],
+      "evidence": {}
+    }
+  ]
+}

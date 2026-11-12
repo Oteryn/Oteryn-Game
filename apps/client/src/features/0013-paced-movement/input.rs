@@ -11,7 +11,7 @@ impl PlayView {
         self.queue(Input::Arrow(direction));
     }
 
-    /// The step to send now: an arrow key first, else the next step toward the click goal.
+    /// The arrow-key step to send now. Ground clicks use server target walking.
     pub fn next_step(&mut self) -> Option<StepDir> {
         if self.in_flight {
             return None;
@@ -34,7 +34,7 @@ impl PlayView {
             Some(_) => return None,
             None => {}
         }
-        self.walk.next_step(self.own)
+        None
     }
 
     /// [`Self::next_step`], redrawing at once when the player turns, so the new facing shows
@@ -43,7 +43,7 @@ impl PlayView {
         let before = self.facing;
         let direction = self.next_step();
         if self.facing != before {
-            self.scene.set_facing(self.facing)?;
+            self.rebuild()?;
         }
         Ok(direction)
     }

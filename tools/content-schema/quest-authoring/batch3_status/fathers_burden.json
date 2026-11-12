@@ -1,0 +1,1103 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "fathers_burden",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-a/implementation-status.json",
+    "sha256": "749700c6749aba9456736bde7c52fc9688d72fd91d7efad022d9c2a9725e64bd"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 25,
+  "import_counts": {
+    "RĘCZNIE": 12,
+    "AUTO": 13
+  },
+  "content_counts": {
+    "npc_rules_source_only": 55,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+      "sha256": "af1367a098447ed4db829695b9219a38047864fa79584df0e1d68ab8543f9078",
+      "count": 55,
+      "category": "npc_rules_source_only"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "b80b375c6f9c42ed95e43d93c02f4af6f36b30387434c2a128e89453d8b6a0a3",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Przyjęcie The Birthday Presents",
+        "pattern": "P09",
+        "trigger": "Tereban: mission → yes, topic 1",
+        "guard": "Status poza {1,2}; potwierdzenie topic 1",
+        "effect": "QuestLog=1, Progress=0, Status=1; osiem flag materiałów=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:132",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:173"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Zachowano wszystkie11 zapisów startu i initial=-1 materiałów; test planera odmawia całości ponad Quest8.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Start ma11 zapisów; nie dzielono atomowego kroku ani nie inicjalizowano materiałów do1 przed przyjęciem. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:132",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:173",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "cb3e6c8fed73561492b39de31df56388925c258d3426afd63557d0275f1fbe1d",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie strong sinew",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst strong sinew → yes, topic 2",
+        "guard": "Sinew != 2 przy wyborze; removeItem(11548,1) sukces",
+        "effect": "Zabiera 1×11548; Sinew=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "5563dce5352976c1d2544c81979479a2b2a7ae6b24c479164f606252ab879bf7",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie exquisite wood",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst exquisite wood → yes, topic 2",
+        "guard": "Wood != 2 przy wyborze; removeItem(11547,1) sukces",
+        "effect": "Zabiera 1×11547; Wood=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "10aedbbee5ba888772d9d67f6e7dd86b53531cc9f59d3c924348c335eb519454",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie spectral cloth",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst spectral cloth → yes, topic 2",
+        "guard": "Cloth != 2 przy wyborze; removeItem(11546,1) sukces",
+        "effect": "Zabiera 1×11546; Cloth=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "db808319ecacccfca94b1171901fa2e126a67e257e4625eb8c11f915f3c8882b",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie exquisite silk",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst exquisite silk → yes, topic 2",
+        "guard": "Silk != 2 przy wyborze; removeItem(11545,1) sukces",
+        "effect": "Zabiera 1×11545; Silk=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "7b72b4aa37bbed06279e17802ebe035e75af4969c3a33348b633cfdc801bb9a8",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie magic crystal",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst magic crystal → yes, topic 2",
+        "guard": "Crystal != 2 przy wyborze; removeItem(11552,1) sukces",
+        "effect": "Zabiera 1×11552; Crystal=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "6d1bed88c334f6783c7a56958fa9b555fe609efc4209cd14ac7ce5eaada3e000",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie mystic root",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst mystic root → yes, topic 2",
+        "guard": "Root != 2 przy wyborze; removeItem(11551,1) sukces",
+        "effect": "Zabiera 1×11551; Root=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "2ba7779f84a26ae79146d2f525ba8d6f3e5b1c824d7780c481a37eb6d8f2e1ba",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie old iron",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst old iron → yes, topic 2",
+        "guard": "Iron != 2 przy wyborze; removeItem(11549,1) sukces",
+        "effect": "Zabiera 1×11549; Iron=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "4ccfc059f7092477bbb37d6f997a9ad62ef4d54da879381ede7118d651ccab70",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Oddanie flexible dragon scale",
+        "pattern": "P10/P11",
+        "trigger": "Tereban: dokładny tekst flexible dragon scale → yes, topic 2",
+        "guard": "Scale != 2 przy wyborze; removeItem(11550,1) sukces",
+        "effect": "Zabiera 1×11550; Scale=2; Progress+=1; 2500 XP",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:161",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:185",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "938037a3b174b9671acd180ea25e1fad58273d3bb115313b7f3c14dfa79daad5",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Odbiór finału",
+        "pattern": "P11",
+        "trigger": "Tereban: mission, topic 0",
+        "guard": "Status=1 oraz Progress=8",
+        "effect": "Status=2; item11701×1; 8000 XP; brak addMoney mimo narracji o złocie",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:132"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-fathers_burden.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:132",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "d9d956a26f44cb25e64db3883a17caef48be8fb09128108fa03dd07a7a56047f",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Materiał z ciała glitterscale",
+        "pattern": "P05",
+        "trigger": "Use itemid=11589",
+        "guard": "Corpse.Scale !=1 (brak warunku rozpoczętej misji)",
+        "effect": "Daje 1×11550; Corpse.Scale=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:2",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:7",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/glitterscale.lua:24"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wydanie materiału z dynamicznego ciała bossa wymaga kwalifikowanego corpse/physical reward owner; nie zamieniono tego na statyczną skrzynię ani inny placement. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/glitterscale.lua:24",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "fe3572d95bab793237f7a2a59d3fffc1c0491b42d1de4b9a74ffcf866f82b043",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Materiał z ciała heoni",
+        "pattern": "P05",
+        "trigger": "Use itemid=11590",
+        "guard": "Corpse.Sinew !=1 (brak warunku rozpoczętej misji)",
+        "effect": "Daje 1×11548; Corpse.Sinew=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:3",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:7",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/heoni.lua:24"
+        ],
+        "oteryn": "CZĘŚCIOWO — SOURCE/chosen recipe w content/quests/definitions/quests-00100-00199.json:1; native_lowering=WAITING_IMPLEMENTATION, recipe.runtime_enabled=false",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wydanie materiału z dynamicznego ciała bossa wymaga kwalifikowanego corpse/physical reward owner; nie zamieniono tego na statyczną skrzynię ani inny placement. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/fathers_burden/actions_corpse.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/heoni.lua:24",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "9d9f048eacf0ce9727f381036ca0a617f2acb3931aa36f7a6e2254d89cd2960f",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Pojemnik z wood",
+        "pattern": "P05",
+        "trigger": "Use pojemnik 2469 @ 31987,31223,7",
+        "guard": "Wspólna obsługa container_quest; brak lokalnego guardu AFathersBurden w tym wpisie",
+        "effect": "Zawartość 1×11547",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:283"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131; wymaga kwalifikacji dokładnego placement/claim",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Rozpoznano sześć fizycznych współdzielonych pojemników, nie per-character reward claims.",
+      "left_out": "Brak autoryzowanego napełniania/mapowej hydratacji zawartości kontenerów WorldBundle. loadMapContainers tworzy lub wypełnia pusty pojemnik; nie zastępujemy tego nowym RewardClaimMint. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:283",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:335",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/globalevents/others/map_attributes_loader.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "4daeed6b181483a1159ebb0d09df4f9e443e8d5016beea0fdf6b18be4543f4be",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Pojemnik z root",
+        "pattern": "P05",
+        "trigger": "Use pojemnik 2469 @ 32815,32502,8",
+        "guard": "Wspólna obsługa container_quest; brak lokalnego guardu AFathersBurden w tym wpisie",
+        "effect": "Zawartość 1×11551",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:401"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131; wymaga kwalifikacji dokładnego placement/claim",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Rozpoznano sześć fizycznych współdzielonych pojemników, nie per-character reward claims.",
+      "left_out": "Brak autoryzowanego napełniania/mapowej hydratacji zawartości kontenerów WorldBundle. loadMapContainers tworzy lub wypełnia pusty pojemnik; nie zastępujemy tego nowym RewardClaimMint. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:401",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:335",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/globalevents/others/map_attributes_loader.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "a5d13700052314e21f4c9e0b4a42a1af7e6ffd7261ec23136bd3389c2cb9f65b",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Pojemnik z silk",
+        "pattern": "P05",
+        "trigger": "Use pojemnik 11591 @ 33215,31413,10",
+        "guard": "Wspólna obsługa container_quest; brak lokalnego guardu AFathersBurden w tym wpisie",
+        "effect": "Zawartość 1×11545",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:498"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131; wymaga kwalifikacji dokładnego placement/claim",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Rozpoznano sześć fizycznych współdzielonych pojemników, nie per-character reward claims.",
+      "left_out": "Brak autoryzowanego napełniania/mapowej hydratacji zawartości kontenerów WorldBundle. loadMapContainers tworzy lub wypełnia pusty pojemnik; nie zastępujemy tego nowym RewardClaimMint. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:498",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:335",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/globalevents/others/map_attributes_loader.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "3b9cc36da497585c39bfb014169f19617ff089f1e7e9161a5ca0b8735229f78b",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Pojemnik z crystal",
+        "pattern": "P05",
+        "trigger": "Use pojemnik 1994 @ 33235,32803,12",
+        "guard": "Wspólna obsługa container_quest; brak lokalnego guardu AFathersBurden w tym wpisie",
+        "effect": "Zawartość 1×11552",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:568"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131; wymaga kwalifikacji dokładnego placement/claim",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Rozpoznano sześć fizycznych współdzielonych pojemników, nie per-character reward claims.",
+      "left_out": "Brak autoryzowanego napełniania/mapowej hydratacji zawartości kontenerów WorldBundle. loadMapContainers tworzy lub wypełnia pusty pojemnik; nie zastępujemy tego nowym RewardClaimMint. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:568",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:335",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/globalevents/others/map_attributes_loader.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "6272fa653419f6ffd92b6be496bd79be03b612ba9b5d72de90a1da449396ca7f",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Pojemnik z cloth",
+        "pattern": "P05",
+        "trigger": "Use pojemnik 1983 @ 32122,31912,14",
+        "guard": "Wspólna obsługa container_quest; brak lokalnego guardu AFathersBurden w tym wpisie",
+        "effect": "Zawartość 1×11546",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:584"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131; wymaga kwalifikacji dokładnego placement/claim",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Rozpoznano sześć fizycznych współdzielonych pojemników, nie per-character reward claims.",
+      "left_out": "Brak autoryzowanego napełniania/mapowej hydratacji zawartości kontenerów WorldBundle. loadMapContainers tworzy lub wypełnia pusty pojemnik; nie zastępujemy tego nowym RewardClaimMint. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:584",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:335",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/globalevents/others/map_attributes_loader.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "7663325704e1ac2ee76a8c1a6931aa798fe8e140c5dd24e53f0f5fc7898b5903",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Pojemnik z iron",
+        "pattern": "P05",
+        "trigger": "Use pojemnik 2469 @ 32636,31985,14",
+        "guard": "Wspólna obsługa container_quest; brak lokalnego guardu AFathersBurden w tym wpisie",
+        "effect": "Zawartość 1×11549",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:600"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131; wymaga kwalifikacji dokładnego placement/claim",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Rozpoznano sześć fizycznych współdzielonych pojemników, nie per-character reward claims.",
+      "left_out": "Brak autoryzowanego napełniania/mapowej hydratacji zawartości kontenerów WorldBundle. loadMapContainers tworzy lub wypełnia pusty pojemnik; nie zastępujemy tego nowym RewardClaimMint. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:600",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/others/functions.lua:335",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/globalevents/others/map_attributes_loader.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "de9e29aafa91087d728a046bc8caf272cc584e304b97bcec78dc60c79f07821b",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 31989,31225,7",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 31989,31225,7",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:680"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:680"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "078a96355af717e24f14b737445ceddb0cbd12998fddc52314149dd31247ca33",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 32124,31914,14",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 32124,31914,14",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:681"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:681"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "1a968c6d772cb45de78f4ef140d948257e7b80081425506b729287ff4be67898",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 32638,31985,14",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 32638,31985,14",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:682"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:682"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "76f34e3b62f96e136615f4b6210a54295bbfe78e7ccbe87528966a37a6566f24",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 32815,32505,8",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 32815,32505,8",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:683"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:683"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "49e105ea756e453f08eac8df576afe826905a60dec4cc8c8a8912b0120582ce4",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 33216,31422,10",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 33216,31422,10",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:684"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:684"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "37bb0b659159191fb5af337fb8fea7ddee9e5232ae92b3065691cd061636f91f",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 33231,31756,5",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 33231,31756,5",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:685"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:685"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "3c6c63af23f7ba72ce77e1c9b95fac52059400bdfc3c42088e24de04a8c740d0",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "fathers_burden",
+        "step": "Drzwi do materiałów @ 33235,32808,12",
+        "pattern": "P04",
+        "trigger": "Use drzwi @ 33235,32808,12",
+        "guard": "AFathersBurden.QuestLog (definicja numeric42951 w storages.lua:1704)",
+        "effect": "Wspólny quest door; itemId=false oznacza wykorzystanie obiektu mapy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:686"
+        ],
+        "oteryn": "CZĘŚCIOWO — crates/gameplay/world/src/map/door.rs:299; potrzebne dokładne wiązanie placement i track",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący przypięty rekord quest-door binding i wspólny właściciel drzwi zachowane; nie dodano kopii ani nie obniżono wymagań.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json",
+        "crates/gameplay/world/src/map/door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:686"
+      ],
+      "evidence": {
+        "existing_sources": [
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1",
+          "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/door.rs:299"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "mechanic": "0152-item-forge",
+  "kind": "handlers",
+  "id": "0152-item-forge-current-dust",
+  "status": "supported",
+  "commands": [
+    668
+  ],
+  "direction": "client_to_server",
+  "capability": 152,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Server-owned state."
+  }
+}

@@ -120,6 +120,19 @@ mod tests;
 /// CP D1143 / ITEMLOOK1-RL-01, per GameSession, including resume and transfer.
 pub const ITEM_LOOK_COMMANDS_PER_SECOND: usize = 10;
 
+/// Crystal spellbook.lua:54.
+const SPELLBOOK_ITEM_IDS: [u16; 19] = [
+    3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 14769, 16107, 20088, 21400, 22755,
+    25699, 29431, 20089, 20090, 34153,
+];
+
+pub(super) fn is_spellbook(production_key: &str) -> bool {
+    production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse::<u16>().ok())
+        .is_some_and(|id| SPELLBOOK_ITEM_IDS.contains(&id))
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LookWindow([Option<Instant>; ITEM_LOOK_COMMANDS_PER_SECOND]);
 
@@ -443,7 +456,35 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
-    if definition.production_key == "oteryn:item.tibia.i6120" {
+    if definition.production_key == "oteryn:item.tibia.i9585"
+        && distance <= 4
+        && let ItemKey::Instance(instance) = key
+    {
+        drop(runtime);
+        let inscription = admission
+            .root
+            .read_marriage_inscription(
+                admission.character,
+                *admission.world_id.as_bytes(),
+                instance,
+            )
+            .await
+            .map_err(|_| unavailable)?;
+        if let Some(inscription) = inscription {
+            let (current, _, current_distance) =
+                observe_item(admission, actor, session, fence, views, target).await?;
+            if current != definition || current_distance > 4 {
+                return Err(unavailable);
+            }
+            if let ItemLookResult::Text(text) = ordinary {
+                return Ok(ItemLookResult::Text(bounded_text(format!(
+                    "{text}\n{inscription}"
+                ))));
+            }
+        }
+        return Ok(ordinary);
+    }
+    if is_spellbook(&definition.production_key) {
         // The runtime and spell-state locks preserve the Channel owner's established order. The
         // state lookup rechecks the exact actor/session binding, so reconnect cannot expose a
         // previous incarnation's vocation-filtered list.
@@ -456,9 +497,9 @@ async fn observe_look_item(
     Ok(ordinary)
 }
 
-/// Crystal `spellbook.lua`: instant spells for the current vocation, grouped by required level,
-/// sorted by that level, with percentage mana replacing the fixed mana field. Oteryn currently
-/// has no instant-spell magic-level requirement; rune magic levels are intentionally excluded.
+/// LOOK serves every donor spellbook id with Crystal `spellbook.lua` instant spells for the
+/// current vocation, grouped and sorted by required level, with percentage mana replacing the
+/// fixed mana field. Oteryn has no instant-spell magic-level requirement; runes are excluded.
 pub(super) fn spellbook_text(book: &SpellBook, vocation: Vocation) -> Option<String> {
     let mut spells: Vec<_> = book
         .spells
@@ -587,7 +628,8 @@ pub(super) async fn look_world_object(
     {
         return refused;
     }
-    let Some(position) = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)
+    let Some(position) =
+        super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
     else {
         return refused;
     };
@@ -683,7 +725,7 @@ async fn observe_map_look(
     let unavailable = ItemLookRefusal::NotAvailable;
     let (at, index, pin) = {
         let mut runtime = admission.runtime.lock().await;
-        let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)
+        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
             .ok_or(unavailable)?;
         let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
         (at, index, content_generation(&runtime))
@@ -697,7 +739,7 @@ async fn observe_map_look(
     {
         return Err(unavailable);
     }
-    let current = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)
+    let current = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)
         .ok_or(unavailable)?;
     let facts = at.map.facts.pinned();
     let (definition, count, distance) = match ground.as_deref() {

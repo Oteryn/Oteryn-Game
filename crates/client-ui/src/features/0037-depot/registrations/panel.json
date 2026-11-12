@@ -1,0 +1,7 @@
+{
+  "mechanic": "0037-depot",
+  "kind": "panels",
+  "id": "0037-depot-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

@@ -29,8 +29,9 @@ fn browse_and_withdraw_use_server_rows_and_render_refusals() -> Result<(), &'sta
     };
     let browse = request(&mut panel, Intent::Refresh).ok_or("browse command")?;
     assert_eq!(
-        stash::decode_stash_intent(&browse.payload)
+        stash::decode_stash_query(&browse.payload)
             .map_err(|_| "browse payload")?
+            .0
             .action,
         stash::StashAction::Browse
     );
@@ -38,8 +39,9 @@ fn browse_and_withdraw_use_server_rows_and_render_refusals() -> Result<(), &'sta
     let withdraw =
         request(&mut panel, Intent::Withdraw { row: 0, amount: 3 }).ok_or("withdraw command")?;
     assert_eq!(
-        stash::decode_stash_intent(&withdraw.payload)
+        stash::decode_stash_query(&withdraw.payload)
             .map_err(|_| "withdraw payload")?
+            .0
             .action,
         stash::StashAction::Withdraw {
             row: [1; 16],
@@ -50,4 +52,145 @@ fn browse_and_withdraw_use_server_rows_and_render_refusals() -> Result<(), &'sta
     assert!(panel_text(&panel).contains("not have enough"));
     assert!(panel_text(&panel).contains("item.apple"));
     Ok(())
+}
+
+#[test]
+fn stow_rejects_handles_not_in_the_visible_carried_picker() {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Stow(std::num::NonZeroU64::MIN)).is_none());
+    assert!(!panel.pending);
+}
+
+#[test]
+fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
+-> Result<(), &'static str> {
+    let item = oteryn_client_runtime::depot::ItemEntry {
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let mut panel = StashPanel {
+        selected: true,
+        carried: vec![item],
+        ..Default::default()
+    };
+    let handle = panel.carried[0].handle;
+    let command = request(&mut panel, Intent::Stow(handle)).ok_or("stow command")?;
+    assert_eq!(
+        stash::decode_stash_query(&command.payload)
+            .map_err(|_| "payload")?
+            .0
+            .action,
+        stash::StashAction::Stow(item.handle)
+    );
+    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    apply_result(&mut panel, &reply(stash::StashOutcome::Unsupported));
+    assert!(panel_text(&panel).contains("cannot be stowed"));
+    panel.carried.clear();
+    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    panel.selected = false;
+    panel.carried.push(item);
+    assert!(request(&mut panel, Intent::Stow(item.handle)).is_none());
+    Ok(())
+}
+
+#[test]
+fn carried_click_rejects_a_changed_projection_and_invalid_row() {
+    let item = oteryn_client_runtime::depot::ItemEntry {
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    let mut panel = StashPanel {
+        carried: vec![item],
+        ..Default::default()
+    };
+    assert_eq!(
+        carried_intent(&panel, &[item], 0),
+        Some(Intent::Stow(item.handle))
+    );
+    assert_eq!(carried_intent(&panel, &[item], 1), None);
+    panel.carried.clear();
+    assert_eq!(carried_intent(&panel, &[item], 0), None);
+}
+
+#[test]
+fn filtered_sorted_stash_withdraws_the_displayed_server_handle() -> Result<(), &'static str> {
+    let mut panel = StashPanel {
+        selected: true,
+        query: "APPLE".into(),
+        sort: Sort::Stock,
+        ..Default::default()
+    };
+    for (handle, key, quantity) in [
+        (1, "item.apple", 2),
+        (2, "item.pear", 90),
+        (3, "item.apple.green", 7),
+    ] {
+        panel.rows.push(stash::StashRow {
+            handle: [handle; 16],
+            definition_key: key.into(),
+            definition_revision: "r1".into(),
+            quantity,
+            migration_required: false,
+        });
+    }
+    assert_eq!(visible_rows(&panel), vec![2, 0]);
+    let intent = visible_withdraw(&panel, 0, 3).ok_or("visible selection")?;
+    let command = request(&mut panel, intent).ok_or("withdraw")?;
+    assert_eq!(
+        stash::decode_stash_query(&command.payload)
+            .map_err(|_| "wire")?
+            .0
+            .action,
+        stash::StashAction::Withdraw {
+            row: [3; 16],
+            amount: 3
+        }
+    );
+    panel.pending = false;
+    panel.query = "no match".into();
+    assert!(visible_withdraw(&panel, 0, 1).is_none());
+    assert!(panel_text(&panel).contains("No matching items"));
+    Ok(())
+}
+
+#[test]
+fn stash_search_and_sort_reach_the_server_before_pagination() -> Result<(), &'static str> {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let unfiltered = request(&mut panel, Intent::Refresh).ok_or("browse")?;
+    panel.pending = false;
+    panel.query = "apple".into();
+    panel.sort = Sort::Stock;
+    let filtered = request(&mut panel, Intent::Refresh).ok_or("filtered browse")?;
+    assert_ne!(
+        unfiltered.payload, filtered.payload,
+        "global filters must travel to the server, not only hide rows on a page"
+    );
+    Ok(())
+}
+
+#[test]
+fn invalid_stash_filter_is_reported_without_sending_a_command() {
+    let mut panel = StashPanel {
+        selected: true,
+        query: "x".repeat(129),
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Filter).is_none());
+    assert!(!panel.pending);
+    assert!(
+        panel
+            .feedback
+            .as_deref()
+            .is_some_and(|message| message.contains("128 UTF-8 bytes"))
+    );
 }

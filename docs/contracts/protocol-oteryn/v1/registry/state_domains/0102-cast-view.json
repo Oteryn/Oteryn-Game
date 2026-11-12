@@ -1,0 +1,17 @@
+{
+  "id": 102,
+  "name": "CAST_VIEW",
+  "owner_decision": "S17-A",
+  "owner": "Game off-tick cast owner",
+  "capability": 289,
+  "revision": "Cast epoch and strictly increasing sequence; replacement snapshots only.",
+  "delta_types": [],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "CAST_SCENE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Scene",
+      "max_payload_bytes": 16384
+    }
+  ]
+}

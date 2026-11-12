@@ -363,7 +363,9 @@
                 "profile": {
                   "enum": [
                     "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
-                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1",
+                    "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
                   ]
                 },
                 "client_version": {
@@ -623,7 +625,210 @@
               }
             },
             "source_item_id": {
-              "const": 44576
+              "enum": [
+                9290,
+                44576
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "appearance_only_boss_room"
+                }
+              }
+            },
+            "source_item_id": {
+              "enum": [
+                44805,
+                44814,
+                44815,
+                44816,
+                44817,
+                44818,
+                44819,
+                44820,
+                44821,
+                44822,
+                44823,
+                44824,
+                44825,
+                44826,
+                44835,
+                44836,
+                44837,
+                44838,
+                44839,
+                44840,
+                44841,
+                44842,
+                44843,
+                44844,
+                44845,
+                44846,
+                44963,
+                44964,
+                44986,
+                44991,
+                44994,
+                44997,
+                44998,
+                44999,
+                45010,
+                45011,
+                45012,
+                45015,
+                45031,
+                45135,
+                45141,
+                45145,
+                45146,
+                45148,
+                45149,
+                45150,
+                45164,
+                45166,
+                45167,
+                45168,
+                45170,
+                45171,
+                45173,
+                45174,
+                45175,
+                45176,
+                45177,
+                45178,
+                45179,
+                45180,
+                45181,
+                45182,
+                45183,
+                45196,
+                45250,
+                45566,
+                45567,
+                45568,
+                45569,
+                45573,
+                45863,
+                45870,
+                48121,
+                48228,
+                48229,
+                48230,
+                48231,
+                48232,
+                48233
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "soulpit_static_appearance"
+                }
+              }
+            },
+            "source_item_id": {
+              "enum": [
+                11075,
+                11077,
+                11079,
+                11102,
+                11103,
+                11104,
+                11105,
+                33017,
+                34943,
+                34946,
+                34951,
+                34953,
+                42880,
+                42887,
+                42892,
+                42893,
+                42894,
+                42895,
+                42896,
+                42897,
+                42898,
+                42899,
+                42900,
+                42901,
+                42902,
+                42909,
+                42910,
+                42914,
+                42916,
+                42917,
+                42918,
+                42923,
+                42929,
+                42930,
+                42933,
+                42936,
+                43516,
+                46629,
+                46630,
+                46631,
+                46632,
+                46633,
+                46634,
+                46635,
+                46636,
+                46637,
+                46638,
+                46639,
+                46640,
+                46641,
+                46643,
+                46644,
+                46645,
+                46646,
+                48236
+              ]
             }
           },
           "not": {
@@ -699,7 +904,20 @@
                       "const": "official_client"
                     },
                     "profile": {
-                      "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                      "enum": [
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                        "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_BOSS_ROOM/v1"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1"
                     }
                   }
                 }

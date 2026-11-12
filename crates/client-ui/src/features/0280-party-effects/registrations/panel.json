@@ -1,0 +1,7 @@
+{
+  "mechanic": "0280-party-effects",
+  "kind": "panels",
+  "id": "0280-party-effects-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

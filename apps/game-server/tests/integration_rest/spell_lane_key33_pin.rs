@@ -2,6 +2,8 @@
 //! and every production Rust writer of a key-33-triggered table is enumerated here, and
 //! each Rust writer holds a lane-derived proof. A new key-33 site fails this test until it
 //! is reviewed against the spell lane and added to the pinned inventory.
+//! Refresh Rust inventories with `python3 tools/architecture/refresh_spell_lane_key33_pin.py`;
+//! add `--reader path::function` only for a reviewed, non-writing lock site.
 
 #![allow(clippy::expect_used, clippy::panic)]
 
@@ -32,13 +34,22 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
 const RUST_KEY33_SITES: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/consume_transform.rs", "consume_count"),
+    ("crates/gameplay/durability/src/durability/consume_transform.rs", "persist_action"),
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "dispenser_row"),
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "read_ground_action_source"),
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "write"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
-    // a1069ea0d (W07): Soul Core ground delivery uses the craft caller's lane permit.
+    ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
+    ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/floor_assembly.rs", "commit_item_loop_floor_assembly"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/floor_transform.rs", "apply"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs", "commit_item_loop_seed_drop"),
     ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_corpse_loot_mint"),
     ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_mint_with_corpse_attribution"),
     ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
@@ -47,14 +58,12 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "adopt_current_ground"),
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "initialize_in_transaction"),
     ("crates/gameplay/durability/src/durability/player_death_items.rs", "write"),
-    ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "location_queries"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "apply_input"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_consumption_operation"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_physical_item_line"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "expire_due_spell_items_bounded"),
-    // The Channel/Instance key-33 SQL moved from the two authority minters into
-    // this private helper; it requires and checks their existing lane permit.
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "lock_runtime_items"),
 ];
 
@@ -64,6 +73,9 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
 const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "dispenser_row"),
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "read_ground_action_source"),
+    ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
 ];

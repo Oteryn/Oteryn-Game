@@ -1,5 +1,10 @@
 use super::*;
 
+/// Constructed only here after the listener and physical owner jobs have joined
+/// (or been dropped) and the shared input gate has drained. A disabled ready
+/// guard or a source-cycle cancellation alone cannot construct this proof.
+pub(super) struct QuiescedKillOwners(());
+
 /// The production gameplay seam: TCP + TLS 1.3 (ALPN `oteryn-game/1`),
 /// bounded FND-02 framing and fresh admission through the composed owners,
 /// served on `listener` until `shutdown`.
@@ -23,6 +28,20 @@ pub async fn serve_gameplay(
     .ok_or(GameplayServeError::InvalidLimits)?;
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
+    let casts = std::sync::OnceLock::new();
+    if let Some(config) = owners.cast {
+        let service = oteryn_gameplay_social::cast::service::CastService::spawn(
+            owners.root.clone(),
+            owners.holder.clone(),
+            config.node_capacity,
+            config.access.clone(),
+        )
+        .map_err(|_| GameplayServeError::InvalidLimits)?;
+        let _ = casts.set(cast::CastNode {
+            service,
+            access: config.access,
+        });
+    }
     let authority = ComposedFreshAdmission {
         server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
@@ -36,7 +55,7 @@ pub async fn serve_gameplay(
         premium_only: owners.premium_only,
         required_capabilities: owners.required_capabilities,
         runtime: owners.runtime.into(),
-        movement_cells: owners.movement_cells,
+        movement_cells: owners.movement_cells.into(),
         door: owners.door.into(),
         chest: owners.chest,
         spells: owners.spells,
@@ -47,8 +66,12 @@ pub async fn serve_gameplay(
         imported_charms: owners.imported_charms,
         proficiency_catalogue: weapon_proficiency::ProductionProficiencyCatalogue::embedded(),
         clock_origin: std::time::Instant::now(),
+        #[cfg(test)]
+        test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
+            casts,
+            bulletin_source: config.bulletin_source,
             gameplay_idle_policy: owners.gameplay_idle_policy,
             ..Default::default()
         }),
@@ -87,6 +110,12 @@ pub async fn serve_gameplay(
         authority
             .activity_runtimes
             .register_template(template)
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?;
+    }
+    if let Some(template) = owners.soulpit_template {
+        authority
+            .activity_runtimes
+            .register_soulpit_template(template)
             .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     }
     if let Some(book) = owners.npc_talk {
@@ -153,7 +182,7 @@ pub async fn serve_gameplay(
     let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
     let mut activities = pin!(authority.run_activity_owner_cycles(&cycles_stop));
     let mut activities_done = false;
-    let mut respawns = pin!(authority.run_world_respawns(shutdown));
+    let mut respawns = Box::pin(authority.run_world_respawns(shutdown));
     let mut respawns_done = false;
     let mut owner_failed = false;
     let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
@@ -224,9 +253,39 @@ pub async fn serve_gameplay(
         }
     })
     .await;
+    // The listener does not finish until all connections and control-loss
+    // lifecycles finish. Both source/activity producer job groups also joined
+    // above. Drop the remaining boxed respawn/raid/Soulpit future so none of
+    // its local child owners can be polled while the terminal SQL awaits.
+    drop(respawns);
+    if !owner_failed && serving_done && cycles_done && activities_done {
+        authority.states.input_gate.quiesce().await;
+        let quiesced = QuiescedKillOwners(());
+        authority.finish_daily_kill_statistics(&quiesced).await;
+        // Activity views share this same closed input gate. Their autonomous
+        // jobs have joined too; include each still-registered Instance queue.
+        if let Ok(owners) = authority.activity_runtimes.activity_owners() {
+            for owner in owners {
+                authority
+                    .runtime_view(&owner)
+                    .finish_daily_kill_statistics(&quiesced)
+                    .await;
+            }
+        }
+    }
+    if let Some(node) = authority.states.casts.get() {
+        let _ = node
+            .service
+            .apply(oteryn_gameplay_social::cast::service::Operation::Shutdown)
+            .await;
+    }
     if owner_failed {
         Err(GameplayServeError::OwnerUnavailable)
     } else {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "serving/kill_statistics_shutdown_tests.rs"]
+mod kill_statistics_shutdown_tests;

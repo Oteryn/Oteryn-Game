@@ -98,7 +98,12 @@ pub(super) fn leech_hit(
     }) else {
         return;
     };
-    states.commit(runtime, actor, session, next);
+    let gained = states.get(runtime, actor, session).map_or(0, |before| {
+        next.vitals().health.saturating_sub(before.vitals().health)
+    });
+    if states.commit(runtime, actor, session, next) {
+        states.analyser.impact(actor, session, gained, None);
+    }
 }
 
 /// Reuse target admission for each occupied flank tile; no generic radius or chain.

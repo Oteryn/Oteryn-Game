@@ -1,15 +1,20 @@
 {
   "mechanic": "0019-world-light",
   "kind": "handlers",
-  "id": "0019-world-light-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0019-world-light-push",
+  "status": "supported",
   "commands": [],
+  "direction": "server_to_client",
+  "capability": 19,
+  "entry": "protocol.rs::apply",
+  "push_messages": [
+    "WorldClock"
+  ],
+  "reducer": "protocol.rs::apply",
+  "test": "tests/state.rs::midnight_and_white_light",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "state": "The typed optional WorldClock is owned by the play view and mailbox.",
+    "input": "Server-owned ambient light and clock require no input.",
+    "settings": "No local settings or persistence."
   }
 }

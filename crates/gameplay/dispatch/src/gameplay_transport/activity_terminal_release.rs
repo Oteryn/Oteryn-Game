@@ -28,7 +28,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Preserve the existing release preflight before reserving a transfer.
         // Its native return repeats this gate under the actual combat locks.
-        while owner
+        while !matches!(
+            release,
+            TerminalRelease::StaffKick(_) | TerminalRelease::StaffKickLost(_)
+        ) && owner
             .hold_while_in_fight(actor, admitted.game_session_id)
             .await
         {}
@@ -48,6 +51,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let reason = match release {
                 TerminalRelease::Abandoned(transport) => {
                     ActivityReturnReason::Abandoned { transport }
+                }
+                TerminalRelease::StaffKickLost(epoch) => {
+                    ActivityReturnReason::StaffKickLost { epoch }
+                }
+                TerminalRelease::StaffKick(transport) => {
+                    ActivityReturnReason::StaffKick { transport }
                 }
                 TerminalRelease::CapabilityMismatch(epoch) => {
                     ActivityReturnReason::CapabilityMismatch { epoch }
@@ -87,7 +96,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // serve this ended socket, so release that exact candidate.
                 TerminalRelease::Abandoned(controller.transport)
             }
-            TerminalRelease::CapabilityMismatch(_) => {
+            TerminalRelease::StaffKick(_) => {
+                let Some(controller) = next.controller else {
+                    return GraceExpiryResult::Unknown;
+                };
+                TerminalRelease::StaffKick(controller.transport)
+            }
+            TerminalRelease::CapabilityMismatch(_) | TerminalRelease::StaffKickLost(_) => {
                 let (current, now) = match FreshAdmissionStore::from_root(self.root.clone())
                     .current_session_at(next.game_session_id)
                     .await
@@ -107,13 +122,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(epoch) = current.current_control_loss_epoch() else {
                     return GraceExpiryResult::Unknown;
                 };
-                if current
-                    .current_original_grace_deadline()
-                    .is_some_and(|deadline| deadline <= now)
+                if !matches!(release, TerminalRelease::StaffKickLost(_))
+                    && current
+                        .current_original_grace_deadline()
+                        .is_some_and(|deadline| deadline <= now)
                 {
                     return destination.expire_session_control_loss(next).await;
                 }
-                TerminalRelease::CapabilityMismatch(epoch)
+                if matches!(release, TerminalRelease::StaffKickLost(_)) {
+                    TerminalRelease::StaffKickLost(epoch)
+                } else {
+                    TerminalRelease::CapabilityMismatch(epoch)
+                }
             }
             TerminalRelease::Logout(_) => return GraceExpiryResult::Unknown,
         };

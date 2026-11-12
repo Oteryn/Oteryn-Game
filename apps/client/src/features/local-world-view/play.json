@@ -1,6 +1,10 @@
 {
   "concerns": [
+    "protocol",
     "view"
   ],
-  "events": {}
+  "events": {
+    "WorldMap": "world_map",
+    "WorldMapSnapshot": "world_map_snapshot"
+  }
 }

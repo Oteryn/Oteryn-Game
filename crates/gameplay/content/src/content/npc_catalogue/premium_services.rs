@@ -1,6 +1,14 @@
-//! Server-selected Premium services require the NPC's own admitted Service reference.
+//! Server-selected promotion and blessing services require the NPC's own admitted Service reference.
 use crate::content::ProjectV2DefinitionRef;
 use crate::content::{ProjectV2Declaration, ProjectV2Draft, ProjectV2Family, ProjectV2Identity};
+
+pub const PHOENIX_PREPARATION: &str = "oteryn:service.blessing.phoenix_prerequisite";
+pub const PHOENIX_SERVICE: &str = "oteryn:service.blessing.the_spark_of_the_phoenix";
+pub const PHOENIX_STORAGE: &str = "oteryn:blessing.the_spark_of_the_phoenix";
+
+pub fn nonpremium_binding(service: &str, npc: &str) -> bool {
+    super::s10_nonquest::nonpremium_binding(service, npc)
+}
 
 /// Materialize original Oteryn Service declarations on the existing source-bound NPCs.
 pub fn install(draft: &mut ProjectV2Draft) -> Result<(), &'static str> {
@@ -61,6 +69,7 @@ pub fn install(draft: &mut ProjectV2Draft) -> Result<(), &'static str> {
                 fields: vec![],
             });
     }
+    super::s10_nonquest::install(draft)?;
     draft.core.project_revision = "npc-premium-services-20261022-r1".into();
     Ok(())
 }
@@ -71,6 +80,7 @@ pub enum PremiumNpcService {
     Promotion { service: String },
     Blessing(Blessing),
     Henricus,
+    PhoenixPreparation,
 }
 
 pub fn resolve(npc: &str, services: &[ProjectV2DefinitionRef]) -> Vec<PremiumNpcService> {
@@ -89,11 +99,17 @@ pub fn resolve(npc: &str, services: &[ProjectV2DefinitionRef]) -> Vec<PremiumNpc
     {
         offered.push(PremiumNpcService::Henricus);
     }
+    if npc == "oteryn:npc.kawill"
+        && services
+            .iter()
+            .any(|reference| reference.key == PHOENIX_PREPARATION)
+    {
+        offered.push(PremiumNpcService::PhoenixPreparation);
+    }
     if let Ok(catalogue) = BlessingCatalogue::load() {
         for blessing in catalogue.blessings {
-            // This card activates only the three Premium blessing services.
-            if blessing.premium
-                && blessing.npcs.iter().any(|key| key == npc)
+            if ((blessing.premium && blessing.npcs.iter().any(|key| key == npc))
+                || (!blessing.premium && nonpremium_binding(&blessing.service, npc)))
                 && services
                     .iter()
                     .any(|reference| reference.key == blessing.service)

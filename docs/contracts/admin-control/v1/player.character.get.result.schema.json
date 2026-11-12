@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Character",
+  "type": "object",
+  "properties": {
+    "bank_balance": {
+      "type": "string"
+    },
+    "character_id": {
+      "type": "string"
+    },
+    "guild": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "house": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_logins": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "level": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "name": {
+      "type": "string"
+    },
+    "online": {
+      "type": "boolean"
+    },
+    "position": {
+      "$ref": "#/$defs/Position"
+    },
+    "premium": {
+      "type": "boolean"
+    },
+    "sanctions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Sanction"
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Skill"
+      }
+    },
+    "vocation": {
+      "type": "string"
+    },
+    "world_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "character_id",
+    "name",
+    "world_id",
+    "level",
+    "vocation",
+    "skills",
+    "position",
+    "online",
+    "premium",
+    "bank_balance",
+    "sanctions",
+    "last_logins"
+  ],
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "y": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "z": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ]
+    },
+    "Sanction": {
+      "type": "object",
+      "properties": {
+        "account_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "character_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "sanction_id": {
+          "type": "string"
+        },
+        "starts_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "sanction_id",
+        "kind",
+        "starts_at",
+        "active"
+      ]
+    },
+    "Skill": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string"
+        },
+        "progress": {
+          "type": "integer",
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "level",
+        "progress"
+      ]
+    }
+  }
+}

@@ -19,15 +19,15 @@ fn atlas_slots_deduplicate_and_read_in_sprite_order() -> Result<(), String> {
         Ok(vec![sprite as u8; (CELL_PX * CELL_PX * 4) as usize])
     })?;
     assert_eq!(reads, [(2, 0, 0), (9, 0, 0), (9, 1, 0)]);
-    assert_eq!(atlas.slot(&cells[0]), Some(5));
-    assert_eq!(atlas.slot(&cells[1]), Some(3));
-    assert_eq!(atlas.slot(&cells[2]), Some(4));
-    assert_eq!(atlas.slot(&cells[3]), Some(5));
+    assert_eq!(atlas.slot(&cells[0]), Some(6));
+    assert_eq!(atlas.slot(&cells[1]), Some(4));
+    assert_eq!(atlas.slot(&cells[2]), Some(5));
+    assert_eq!(atlas.slot(&cells[3]), Some(6));
     assert_eq!(atlas.slot(&cell(10, 0)), None);
     let image = atlas.into_image();
-    assert_eq!(image.cell_count(), 6);
+    assert_eq!(image.cell_count(), 7);
     // Each source cell is copied into its assigned horizontal slot, line by line.
-    for (slot, value) in [(3, 2), (4, 9), (5, 9)] {
+    for (slot, value) in [(4, 2), (5, 9), (6, 9)] {
         for y in 0..CELL_PX as usize {
             let start = (y * image.width() as usize + slot * CELL_PX as usize) * 4;
             assert!(
@@ -121,13 +121,13 @@ fn scene_batch_propagates_visitor_and_invalid_cell_errors() -> Result<(), BatchE
             emit(
                 (0, 0),
                 Draw {
-                    cell: 3,
+                    cell: 4,
                     offset: [0, 0],
                 },
             )
         },
         None,
     );
-    assert_eq!(result.err(), Some(BatchError::CellOutOfRange { cell: 3 }));
+    assert_eq!(result.err(), Some(BatchError::CellOutOfRange { cell: 4 }));
     Ok(())
 }

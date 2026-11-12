@@ -1,0 +1,18 @@
+{
+  "mechanic": "0370-skill-display",
+  "kind": "handlers",
+  "id": "0370-skill-display-query",
+  "status": "supported",
+  "commands": [
+    640
+  ],
+  "direction": "client_to_server",
+  "capability": 370,
+  "entry": "protocol.rs::decode",
+  "not_applicable": {
+    "state": "Stored by the existing skill progress panel.",
+    "view": "Extends the existing skill progress view.",
+    "input": "Uses the existing skills panel shortcut.",
+    "settings": "Read-only server-owned values."
+  }
+}

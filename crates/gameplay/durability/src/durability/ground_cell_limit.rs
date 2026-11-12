@@ -18,8 +18,14 @@ use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
 use sqlx::{Postgres, Row, Transaction};
 
 #[cfg(test)]
-#[path = "ground_cell_limit_tests.rs"]
-mod tests;
+mod tests {
+    include!("ground_cell_limit_tests.rs");
+
+    // These cases depend on durability-private owners and native Content fixtures.
+    mod gap_sv2_decay {
+        include!("gap_sv2_decay_tests.rs");
+    }
+}
 
 pub const GROUND_CELL_ROOT_LIMIT: usize = 64;
 

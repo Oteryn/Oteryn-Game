@@ -1,0 +1,15 @@
+{
+  "mechanic": "0117-boss-encounter",
+  "kind": "handlers",
+  "id": "0117-boss-encounter-command-169",
+  "status": "supported",
+  "commands": [
+    169
+  ],
+  "direction": "client_to_server",
+  "capability": 117,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Boss state and authority remain server-owned."
+  }
+}

@@ -163,6 +163,56 @@ impl CurrentOwnerMovementPosition<'_> {
             .read_movement_position(self.continuity, actor.0)
     }
 
+    /// One same-floor adjacent grid move. The existing cardinal API keeps its
+    /// four-neighbour contract; diagonals use the same exact-owner CAS for
+    /// player/creature slots and never acquire NPC relocation authority.
+    pub fn commit_grid_step(
+        &mut self,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let before = expected.position();
+        let (Some(dx), Some(dy)) = (next.x.checked_sub(before.x), next.y.checked_sub(before.y))
+        else {
+            return Err(CarrierError::MovementNonCardinal);
+        };
+        if next.floor != before.floor
+            || !(-1..=1).contains(&dx)
+            || !(-1..=1).contains(&dy)
+            || (dx == 0 && dy == 0)
+        {
+            return Err(CarrierError::MovementNonCardinal);
+        }
+        if dx == 0 || dy == 0 {
+            return self.commit_cardinal(expected, next);
+        }
+        let index = self
+            .carrier
+            .validate_ref(self.continuity, expected.0.actor_ref)?;
+        let mut committed = self.carrier.compare_commit_position(
+            self.continuity,
+            expected.0,
+            expected.0.version.context,
+            LocalPosition {
+                x: next.x,
+                y: next.y,
+                floor: next.floor,
+            },
+        )?;
+        committed.version.facing = Some(if dx > 0 {
+            MovementFacing::East
+        } else {
+            MovementFacing::West
+        });
+        match &mut self.carrier.slots[index] {
+            Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
+                *position = Some(committed.version)
+            }
+            _ => unreachable!("exact grid commit proved a player or creature slot"),
+        }
+        Ok(MovementPositionSnapshot(committed))
+    }
+
     pub fn commit_cardinal(
         &mut self,
         expected: MovementPositionSnapshot,
@@ -233,9 +283,15 @@ impl ChannelRuntimeV1 {
         destination: MovementLocalPosition,
     ) -> Result<bool, CarrierError> {
         let source_index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        if matches!(&self.carrier.slots[source_index], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+        {
+            return Ok(false);
+        }
         let context = self.pinned_position_context();
         for (index, slot) in self.carrier.slots.iter().enumerate() {
-            if index == source_index {
+            if index == source_index
+                || matches!(slot, Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+            {
                 continue;
             }
             let spell_combat = match slot {
@@ -316,12 +372,15 @@ impl ChannelRuntimeV1 {
                     game_session_id: Some(_),
                     committed: true,
                     position: Some(version),
+                    lifecycle,
                     ..
-                } if version.context == context => Some(MovementLocalPosition {
-                    x: version.position.x,
-                    y: version.position.y,
-                    floor: version.position.floor,
-                }),
+                } if version.context == context && !lifecycle.staff_ghost => {
+                    Some(MovementLocalPosition {
+                        x: version.position.x,
+                        y: version.position.y,
+                        floor: version.position.floor,
+                    })
+                }
                 _ => None,
             })
             .collect()
@@ -853,6 +912,19 @@ impl ChannelActorCarrier {
     ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
+        // W17: the physical arena boundary prevents carrying a Drome exemption into
+        // ordinary combat. Administrative return remains inside its original hall cell.
+        if let Slot::Occupied { spell_combat, .. } = &self.slots[index]
+            && let Some(origin) = spell_combat
+                .tibiadrome_origin
+                .filter(|_| spell_combat.tibiadrome)
+            && (next_position.floor != origin.floor
+                || next_position.x.abs_diff(origin.x) > 6
+                || next_position.y.abs_diff(origin.y) > 6)
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+
         if matches!(
             &self.slots[index],
             Slot::CreatureOccupied {
@@ -977,8 +1049,14 @@ impl ChannelRuntimeV1 {
         let Ok(excluded) = self.carrier.validate_ref(&self.continuity, except.0) else {
             return true;
         };
+        if matches!(&self.carrier.slots[excluded], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+        {
+            return false;
+        }
         self.carrier.slots.iter().enumerate().any(|(i, slot)| {
-            if i == excluded {
+            if i == excluded
+                || matches!(slot, Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+            {
                 return false;
             }
             let position = match slot {

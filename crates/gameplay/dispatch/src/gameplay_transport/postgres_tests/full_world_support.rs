@@ -457,7 +457,7 @@ macro_rules! world_scenario {
 
         let mut $owner = $deps.$owner(&$h, &$authority);
         $owner.active_generation = Some(active);
-        $owner.movement_cells = &$cells;
+        $owner.movement_cells = (&$cells).into();
         $owner.clock_origin = std::time::Instant::now()
             .checked_sub(Duration::from_secs(600))
             .ok_or("a monotonic clock older than ten minutes")?;

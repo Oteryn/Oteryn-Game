@@ -1,0 +1,9 @@
+{
+  "mechanic": "0149-raid-schedule",
+  "kind": "keybindings",
+  "id": "0149-raid-schedule-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+K",
+  "entry": "input.rs::open_key"
+}

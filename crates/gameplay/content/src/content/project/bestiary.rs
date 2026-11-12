@@ -31,14 +31,14 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01862.json",
+        "content/creatures/definitions/creatures-01500-01864.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01862.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01864.json"
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_863;
-const BESTIARY_COUNT: usize = 823;
+const CREATURE_COUNT: usize = 1_865;
+const BESTIARY_COUNT: usize = 824;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -351,7 +351,7 @@ mod tests {
     fn canonical_title_catalogue_retains_all_classes_and_boss_categories() -> TestResult {
         let catalogue = canonical_title_catalogue(limits())?;
         let rows = canonical_bestiary_rows(limits())?;
-        assert_eq!(catalogue.bestiary.len(), 823);
+        assert_eq!(catalogue.bestiary.len(), 824);
         for ((race, class), (existing, _)) in catalogue.bestiary.iter().zip(&rows) {
             assert_eq!(
                 race, existing,
@@ -407,7 +407,7 @@ mod tests {
     }
 
     #[test]
-    fn canonical_projection_retains_all_823_admitted_bestiary_blocks() -> TestResult {
+    fn canonical_projection_retains_all_824_admitted_bestiary_blocks() -> TestResult {
         let rows = canonical_bestiary_rows(limits())?;
         assert_eq!(rows.len(), BESTIARY_COUNT);
         assert!(
@@ -416,6 +416,9 @@ mod tests {
         );
         for (key, thresholds, points) in [
             ("oteryn:creature.rat", [10, 100, 250], 5),
+            // Crystal201189f cake_golem.lua:11-20 is an admitted Bestiary,
+            // not only a native combat-profile overlay.
+            ("oteryn:creature.cake_golem", [2, 3, 5], 30),
             ("oteryn:creature.draptor", [2, 3, 5], 50),
             ("oteryn:creature.bride_of_night", [2, 3, 5], 50),
             ("oteryn:creature.day_night_harpy", [100, 1000, 2500], 50),
@@ -435,6 +438,30 @@ mod tests {
                 .iter()
                 .any(|(race, _)| race.key() == "oteryn:creature.a_carved_stone_tile")
         );
+        Ok(())
+    }
+
+    #[test]
+    fn canonical_population_refuses_a_missing_admitted_bestiary_profile() -> TestResult {
+        let result = mutate_first_shard(|shard| {
+            let record = shard["records"]
+                .as_array_mut()
+                .ok_or("source records")?
+                .iter_mut()
+                .find(|record| record["authoring"]["profile"]["bestiary"].is_object())
+                .ok_or("admitted Bestiary source profile")?;
+            record["authoring"]["profile"]["bestiary"] = serde_json::Value::Null;
+            Ok(())
+        });
+        let Err(error) = result else {
+            return Err("missing admitted Bestiary profile was accepted".into());
+        };
+        assert!(matches!(
+            error.downcast_ref::<ProjectError>(),
+            Some(ProjectError::InvalidProject(
+                "canonical Bestiary population mismatch"
+            ))
+        ));
         Ok(())
     }
 
@@ -519,7 +546,7 @@ mod tests {
                 .iter()
                 .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
         );
-        assert_eq!(limits().max_reference_records, 1_863);
+        assert_eq!(limits().max_reference_records, 1_865);
     }
 
     #[test]

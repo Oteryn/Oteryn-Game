@@ -2,18 +2,48 @@
   {
     "mechanic": "0097-character-info",
     "kind": "handlers",
-    "id": "0097-character-info-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0097-character-info-command",
+    "status": "supported",
     "commands": [
       113
     ],
+    "direction": "client_to_server",
+    "capability": 97,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0097-character-info",
+    "kind": "keybindings",
+    "id": "0097-character-info-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+J",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0097-character-info",
+    "kind": "panels",
+    "id": "0097-character-info-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0097-character-info",
+    "kind": "keybindings",
+    "id": "0097-character-info-titles-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+Y",
+    "entry": "input.rs::titles_key"
+  },
+  {
+    "mechanic": "0097-character-info",
+    "kind": "panels",
+    "id": "0097-character-info-titles-panel",
+    "status": "supported",
+    "entry": "view.rs::title_rows"
   }
 ]

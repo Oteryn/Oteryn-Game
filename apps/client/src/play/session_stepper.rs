@@ -1,6 +1,6 @@
 //! The production `Stepper`: every session call the play task needs, served by `Session`.
 
-use super::Stepper;
+use super::{Outbox, Stepper};
 use crate::combat_input::{CombatCommand, CombatReport, run_combat};
 use crate::spell::SpellFeedback;
 use oteryn_session::{
@@ -10,258 +10,38 @@ use oteryn_session::{
 use std::future::Future;
 use std::time::Duration;
 
-impl<S: SessionStream + Send> Stepper for Session<S> {
-    fn player_typing_selected(&self) -> bool {
-        self.is_selected(oteryn_session::player_typing::CAPABILITY_PLAYER_TYPING_V1)
+/// Hands the shell what the session pushed, and the visible entities when they changed.
+pub(super) fn publish<T: Stepper>(
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<WorldSpatialEntity>,
+) {
+    outbox.hotkey_equip_items(session.hotkey_equip_items());
+    outbox.hotkey_own_actor(session.hotkey_own_actor());
+    outbox.chat_private_publish(session);
+    outbox.targeting_refresh(session);
+    outbox.achievement_notices_publish(session);
+    outbox.guild_chat_publish(session);
+    outbox.depot_publish(session);
+    outbox.item_forge_publish(session);
+    outbox.stash_publish(session);
+    if let Some(inventory) = session.inventory() {
+        outbox.browse_field_inventory(inventory);
     }
-    async fn player_typing(
-        &mut self,
-        command: &oteryn_client_runtime::player_typing::PlayerTypingCommand,
-    ) -> Result<oteryn_client_runtime::player_typing::PlayerTypingResponse, SessionError> {
-        oteryn_client_runtime::player_typing::send(self, command).await
+    outbox.vitals(session.actor_vitals());
+    outbox.appearances(session.visible_appearances());
+    if let Some(payload) = session.feature_snapshot(98) {
+        outbox.cyclopedia_tracker_push(payload);
     }
-    fn animus_selected(&self) -> bool {
-        self.is_selected(oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1)
+    if let Some(entities) = session.entities_changed(held) {
+        held.clone_from(&entities);
+        outbox.entities(entities);
     }
-    async fn animus(
-        &mut self,
-        payload: &[u8],
-    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
-        self.gated_command(
-            oteryn_session::animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
-            oteryn_session::animus_mastery::COMMAND_TYPE_ANIMUS_MASTERY_QUERY,
-            payload,
-        )
-        .await
-    }
-    fn wheel_selected(&self) -> bool {
-        self.is_selected(oteryn_session::wheel::CAPABILITY_WHEEL_ALLOCATION_V1)
-    }
-    async fn wheel(
-        &mut self,
-        request: &oteryn_client_runtime::wheel_allocation::WheelCommand,
-    ) -> Result<oteryn_client_runtime::wheel_allocation::WheelResponse, SessionError> {
-        oteryn_client_runtime::wheel_allocation::send(self, request).await
-    }
-    fn exiva_selected(&self) -> bool {
-        self.is_selected(147)
-    }
-    async fn exiva(
-        &mut self,
-        payload: &[u8],
-    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
-        self.gated_command(147, 170, payload).await
-    }
-    fn loyalty_skills_selected(&self) -> bool {
-        self.is_selected(oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1)
-    }
-    async fn loyalty_skills(
-        &mut self,
-        payload: &[u8],
-    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
-        self.gated_command(
-            oteryn_session::loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
-            oteryn_session::loyalty_skills::COMMAND_TYPE_LOYALTY_SKILLS_QUERY,
-            payload,
-        )
-        .await
-    }
-    fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
-        super::feature_0016_quest_log::protocol::initial(self)
-    }
-    async fn quest_log(
-        &mut self,
-        payload: &[u8],
-    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
-        super::feature_0016_quest_log::protocol::send(self, payload).await
-    }
-    fn step(
-        &mut self,
-        direction: StepDirection,
-    ) -> impl Future<Output = Result<StepOutcome, SessionError>> + Send {
-        self.step_retrying(direction)
-    }
-
-    fn serve(
-        &mut self,
-        duration: Duration,
-    ) -> impl Future<Output = Result<(), SessionError>> + Send {
-        self.service_liveness(duration)
-    }
-
-    fn drain(&mut self) -> Vec<SessionEvent> {
-        self.take_events()
-    }
-
-    async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
-        run_combat(self, &mut SpellFeedback::default(), command).await
-    }
-
-    async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
-        Ok(Session::logout(self).await?.result)
-    }
-
-    fn entities_changed(&self, held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
-        let entities = self.world_entities()?;
-        (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
-    }
-    fn task_board_selected(&self) -> bool {
-        self.is_selected(oteryn_session::task_board::CAPABILITY_TASK_BOARD_V1)
-    }
-    async fn task_board(
-        &mut self,
-        command: &oteryn_client_runtime::task_board::TaskBoardCommand,
-    ) -> Result<oteryn_client_runtime::task_board::TaskBoardResponse, SessionError> {
-        oteryn_client_runtime::task_board::send(self, command).await
-    }
-    fn stash_selected(&self) -> bool {
-        self.is_selected(oteryn_session::stash::CAPABILITY_STASH_V1)
-    }
-    async fn stash(
-        &mut self,
-        command: &oteryn_client_runtime::stash::StashCommand,
-    ) -> Result<oteryn_client_runtime::stash::StashResponse, SessionError> {
-        oteryn_client_runtime::stash::send(self, command).await
-    }
-    fn npc_shop_selected(&self) -> bool {
-        self.is_selected(oteryn_session::npc_shop::CAPABILITY_NPC_SHOP_V1)
-    }
-    async fn npc_shop(
-        &mut self,
-        command: &oteryn_client_runtime::npc_shop::NpcShopCommand,
-    ) -> Result<oteryn_client_runtime::npc_shop::NpcShopResponse, SessionError> {
-        oteryn_client_runtime::npc_shop::send(self, command).await
-    }
-    fn boss_rewards_selected(&self) -> bool {
-        self.is_selected(oteryn_session::boss_rewards::CAPABILITY_BOSS_REWARDS_V1)
-    }
-    async fn boss_rewards(
-        &mut self,
-        command: &oteryn_client_runtime::boss_rewards::BossRewardsCommand,
-    ) -> Result<oteryn_client_runtime::boss_rewards::BossRewardsResponse, SessionError> {
-        oteryn_client_runtime::boss_rewards::send(self, command).await
-    }
-    fn prey_selected(&self) -> bool {
-        self.is_selected(oteryn_session::prey::CAPABILITY_PREY_V1)
-    }
-    async fn prey(
-        &mut self,
-        command: &oteryn_client_runtime::prey::prey::Request,
-    ) -> Result<oteryn_client_runtime::prey::PreyResponse, SessionError> {
-        oteryn_client_runtime::prey::send(self, command).await
-    }
-    fn daily_reward_selected(&self) -> bool {
-        self.is_selected(
-            oteryn_client_runtime::daily_reward::daily_reward::CAPABILITY_DAILY_REWARD_V2,
-        )
-    }
-    async fn daily_reward(
-        &mut self,
-        command: &oteryn_client_runtime::daily_reward::DailyRewardCommand,
-    ) -> Result<oteryn_client_runtime::daily_reward::DailyRewardResponse, SessionError> {
-        oteryn_client_runtime::daily_reward::send(self, command).await
-    }
-    fn imbue_selected(&self) -> bool {
-        self.is_selected(oteryn_session::imbuement::CAPABILITY_IMBUE_V1)
-    }
-    async fn imbue(
-        &mut self,
-        command: &oteryn_client_runtime::imbue::ImbueCommand,
-    ) -> Result<oteryn_client_runtime::imbue::ImbueResponse, SessionError> {
-        oteryn_client_runtime::imbue::send(self, command).await
-    }
-    fn player_trade_selected(&self) -> bool {
-        self.is_selected(oteryn_session::player_trade::CAPABILITY_PLAYER_TRADE_V1)
-    }
-    fn player_trade_state(&self) -> Option<oteryn_session::player_trade::State> {
-        self.gated_snapshot(oteryn_session::player_trade::STATE_DOMAIN_PLAYER_TRADE)
-            .and_then(|snapshot| oteryn_session::player_trade::decode_state(&snapshot.payload).ok())
-    }
-    async fn player_trade(
-        &mut self,
-        request: &oteryn_client_runtime::player_trade::PlayerTradeCommand,
-    ) -> Result<oteryn_client_runtime::player_trade::PlayerTradeResponse, SessionError> {
-        oteryn_client_runtime::player_trade::send(self, request).await
-    }
-    fn vip_selected(&self) -> bool {
-        self.is_selected(oteryn_session::vip::CAPABILITY_VIP_V1)
-    }
-    async fn vip(
-        &mut self,
-        request: &oteryn_client_runtime::vip::VipCommand,
-    ) -> Result<oteryn_client_runtime::vip::VipResponse, SessionError> {
-        oteryn_client_runtime::vip::send(self, request).await
-    }
-    fn guild_selected(&self) -> bool {
-        self.is_selected(oteryn_session::guild::CAPABILITY_GUILD_V1)
-    }
-    async fn guild(
-        &mut self,
-        command: &oteryn_client_runtime::guild::GuildCommand,
-    ) -> Result<oteryn_client_runtime::guild::GuildReply, SessionError> {
-        oteryn_client_runtime::guild::send(self, command).await
-    }
-    fn party_selected(&self) -> bool {
-        self.is_selected(oteryn_client_runtime::party::party::CAPABILITY_PARTY_V1)
-    }
-    async fn party(
-        &mut self,
-        request: &oteryn_client_runtime::party::PartyCommand,
-    ) -> Result<oteryn_client_runtime::party::PartyResponse, SessionError> {
-        oteryn_client_runtime::party::send(self, request).await
-    }
-    fn hireling_selected(&self) -> bool {
-        self.is_selected(oteryn_client_runtime::hireling::hireling::CAPABILITY_HIRELING_V1)
-    }
-    async fn hireling(
-        &mut self,
-        request: &oteryn_client_runtime::hireling::HirelingCommand,
-    ) -> Result<oteryn_client_runtime::hireling::HirelingResponse, SessionError> {
-        oteryn_client_runtime::hireling::send(self, request).await
-    }
-    fn feature_selected(&self, capability: u32) -> bool {
-        self.is_selected(capability)
-    }
-    async fn feature(
-        &mut self,
-        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
-    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
-        oteryn_client_runtime::raw_feature::send(self, command).await
-    }
-    fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
-        self.gated_snapshot(domain)
-            .map(|snapshot| snapshot.payload.clone())
-    }
-    fn server_mechanic_selected(&self, capability: u32) -> bool {
-        self.is_selected(capability)
-    }
-    async fn server_mechanic(
-        &mut self,
-        request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
-    ) -> Result<oteryn_client_runtime::server_mechanic::ServerMechanicResponse, SessionError> {
-        self.gated_command(request.capability, request.command_type, &request.payload)
-            .await
-    }
-    fn market_selected(&self) -> bool {
-        self.is_selected(oteryn_client_runtime::market::market::CAPABILITY_MARKET_V1)
-    }
-    async fn market(
-        &mut self,
-        request: &oteryn_client_runtime::market::MarketCommand,
-    ) -> Result<oteryn_client_runtime::market::MarketResponse, SessionError> {
-        oteryn_client_runtime::market::send(self, request).await
-    }
-    fn chat_public_selected(&self) -> bool {
-        self.is_selected(259)
-    }
-    fn chat_state(&self) -> Option<(oteryn_session::ChatRoomSet, Vec<oteryn_session::ChatLine>)> {
-        self.chat_log()
-            .map(|log| (log.rooms(), log.lines().cloned().collect()))
-    }
-    async fn chat_public(
-        &mut self,
-        intent: &oteryn_session::ChatIntent,
-    ) -> Result<oteryn_session::ChatOutcome, SessionError> {
-        self.chat(intent).await
+    outbox.battle_publish(session.battle_state(), session.battle_floor(), held);
+    if let Some((rooms, lines)) = session.chat_state() {
+        outbox.chat_public_state(rooms, lines);
     }
 }
+
+#[path = "session_adapter.rs"]
+mod session_adapter;

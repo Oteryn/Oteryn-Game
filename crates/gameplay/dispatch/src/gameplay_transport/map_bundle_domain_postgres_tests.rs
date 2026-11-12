@@ -76,7 +76,7 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
             .movement_cells(dependencies.room.movement_cells())
             .map_err(debug)?;
         let mut owner = dependencies.owner(&harness, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.required_capabilities =
             crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
                 &[11, CAPABILITY_WORLD_MAP_VIEW_V1, 30],

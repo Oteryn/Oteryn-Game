@@ -1,0 +1,198 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "tinder_box_quest_chyllfroest",
+    "elements": 7,
+    "auto": 0,
+    "manual": 7,
+    "statuses": {
+      "LEFT_OUT": 7
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Sezonowe wejście",
+      "pattern": "P15",
+      "trigger": "StepIn aid50000",
+      "condition": "poza1IV..1Vwłącznie wedługos.date",
+      "effect": "teleport32063/31091/7;wsezonie brakzmiany",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime. Strefa kalendarza została rozstrzygnięta: UTC (ANSWER6589528748 pkt10); implementacja sezonowego ownera pozostaje poza zakresem.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Tinder box",
+      "pattern": "P05",
+      "trigger": "Useuid3263",
+      "condition": "sezon1IV..1V;Reward<now (równość odmawia)",
+      "effect": "20357×1;Reward=now+72000s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_reward.lua:3",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "actions_reward.lua:4–17 wymaga sezonu UTC1IV–1V włącznie oraz ścisłego Reward<now, wydaje20357 i ustawia now+72000. To nagroda powtarzalna; nie zastąpiono jej jednorazowym claimem ani nie rozszerzono wspólnego ownera.",
+      "missing_owner_function": "Sezonowy reward mint + cooldown timestamp",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Tworzenie pochodni",
+      "pattern": "P02",
+      "trigger": "20357 na20356",
+      "condition": "zgodne itemid",
+      "effect": "zabierz obydwa po1;daj20355×1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_tinder_box.lua:9",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "Rozbicie lodu",
+      "pattern": "P30",
+      "trigger": "20355 na20358/20359/20360",
+      "condition": "sezon;Obedience<=0;roll<=90",
+      "effect": "zużyj20355;target20361;po600s20361→20358 jeśli istnieje",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "Pierwsze topienie",
+      "pattern": "P02",
+      "trigger": "20355 na20358",
+      "condition": "sezon;Obedience<=0;roll>90",
+      "effect": "20358→20359;source niezużyty",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:42",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Drugie topienie",
+      "pattern": "P02",
+      "trigger": "20355 na20359",
+      "condition": "sezon;Obedience<=0;roll>90",
+      "effect": "20359→20360;source niezużyty",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:45",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Oswojenie",
+      "pattern": "P12",
+      "trigger": "20355 na20360",
+      "condition": "sezon;Obedience<=0;roll>90",
+      "effect": "20360→20361;zużyj20355;mount38;Obedience1;resetlodupo600s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:48",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}

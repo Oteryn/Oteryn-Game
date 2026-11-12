@@ -5,9 +5,9 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{Intent, apply_result, request};
-pub use state::StashPanel;
-pub use view::{panel_text, row_label};
+pub use protocol::{Intent, apply_result, carried_intent, request};
+pub use state::{Sort, StashPanel};
+pub use view::{panel_text, row_label, visible_rows, visible_withdraw};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;

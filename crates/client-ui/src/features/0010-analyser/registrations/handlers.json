@@ -1,15 +1,18 @@
 {
   "mechanic": "0010-analyser",
   "kind": "handlers",
-  "id": "0010-analyser-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0010-analyser-push",
+  "status": "supported",
   "commands": [],
+  "direction": "server_to_client",
+  "capability": 10,
+  "entry": "protocol.rs::apply",
+  "push_messages": [
+    "AnalyserFacts"
+  ],
+  "reducer": "protocol.rs::apply",
+  "test": "tests/state.rs::confirmed_state_is_visible",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "Connection-local view; no persisted settings."
   }
 }

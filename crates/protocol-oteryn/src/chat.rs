@@ -15,6 +15,7 @@
 
 use std::num::NonZeroU64;
 
+pub mod console;
 pub mod guild_room;
 pub mod party_room;
 pub mod private_channel;
@@ -66,6 +67,8 @@ pub enum ChatSpeechMode {
     Say = 1,
     Whisper = 2,
     Yell = 3,
+    /// Server-owned monster speech, negotiated through AMBIENT_SOUND_V1.
+    MonsterSay = 4,
 }
 
 impl ChatSpeechMode {
@@ -74,6 +77,7 @@ impl ChatSpeechMode {
             1 => Ok(Self::Say),
             2 => Ok(Self::Whisper),
             3 => Ok(Self::Yell),
+            4 => Ok(Self::MonsterSay),
             _ => Err(ChatWireError::Malformed),
         }
     }
@@ -307,6 +311,9 @@ pub fn encode_chat_intent(intent: &ChatIntent) -> WireResult<Vec<u8>> {
         ChatIntent::Party { text } => return party_room::encode_intent(text),
         ChatIntent::PrivateChannel(intent) => return private_channel::encode_intent(intent),
         ChatIntent::Say { mode, text } => {
+            if *mode == ChatSpeechMode::MonsterSay {
+                return Err(ChatWireError::Malformed);
+            }
             check_text(text, MAX_CHAT_TEXT_BYTES)?;
             push_varint_field(&mut inner, 1, *mode as u64);
             inner = encode_text_message(&inner, text);
@@ -384,10 +391,16 @@ fn decode_intent_variant(field: u64, inner: &[u8]) -> WireResult<ChatIntent> {
     };
     let text = || text.clone().ok_or(ChatWireError::Malformed);
     Ok(match field {
-        1 => ChatIntent::Say {
-            mode: ChatSpeechMode::from_wire(enum_value(first)?)?,
-            text: text()?,
-        },
+        1 => {
+            let mode = ChatSpeechMode::from_wire(enum_value(first)?)?;
+            if mode == ChatSpeechMode::MonsterSay {
+                return Err(ChatWireError::Malformed);
+            }
+            ChatIntent::Say {
+                mode,
+                text: text()?,
+            }
+        }
         2 => match first {
             Some(FirstField::Name(recipient_name)) => ChatIntent::Private {
                 recipient_name,

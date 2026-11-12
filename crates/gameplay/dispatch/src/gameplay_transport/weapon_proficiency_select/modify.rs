@@ -330,7 +330,7 @@ pub(in crate::gameplay_transport) async fn execute(
         }
         super::super::actor_spell::qualified_protection_zone(
             &mut runtime,
-            owner.movement_cells,
+            owner.movement_cells(),
             actor,
         ) == Some(true)
     };

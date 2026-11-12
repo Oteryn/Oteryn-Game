@@ -1,0 +1,18 @@
+{
+  "main": "b3864f14a",
+  "repair_commit": "0750ab21c3836c5863d8ee2d1748b554bcd60013",
+  "state": "COMPILE_CLIPPY_FMT_REGEN_PINS_PASS",
+  "checks": {
+    "regen": "REGEN_EXIT=0",
+    "check-early": "EARLY_CHECK_EXIT=0",
+    "check": "CHECK_EXIT=0",
+    "clippy": "CLIPPY_EXIT=0",
+    "audit": "AUDIT_EXIT=0",
+    "pins": "PINS_EXIT=0",
+    "fmt": "FMT_EXIT=0",
+    "migrations": "MIGRATIONS_EXIT=0"
+  },
+  "unit_tests": "Five inventory regressions green before main merge, including full quests308/308. Fresh post-merge crate runs pending under PREPUSH-2 budget exception.",
+  "postgres": "Historical PG18.6: Father70.173630946s PASS; Goblin68.007026843s PASS; Hot36.31s RED StageMismatch, engine request retained.",
+  "qualification_change": false
+}

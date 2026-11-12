@@ -3,6 +3,8 @@
 //! Target acquisition remains with the creature/condition owners. This owner validates the
 //! resulting chain geometry and produces room-scoped damage consequences atomically.
 
+pub mod area_icons;
+
 const GLOOM_INITIAL_RANGE_TILES: u16 = 3;
 const GLOOM_JUMP_RANGE_TILES: u16 = 6;
 const GLOOM_BASE_DAMAGE: u32 = 2_250;

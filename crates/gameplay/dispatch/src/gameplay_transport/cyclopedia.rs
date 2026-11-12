@@ -13,10 +13,18 @@ use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::cyclopedia as wire;
 use sha2::{Digest, Sha256};
 
+#[path = "cyclopedia/atlas.rs"]
+mod atlas;
 #[path = "cyclopedia/content.rs"]
 mod content;
+#[path = "cyclopedia/overview.rs"]
+mod overview;
 #[path = "cyclopedia/respawn.rs"]
 mod respawn;
+#[path = "cyclopedia/speed.rs"]
+mod speed;
+#[path = "cyclopedia/step.rs"]
+mod step;
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut offers: Vec<_> = base
@@ -63,6 +71,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY {
+            return self.cyclopedia_speed_wire(admitted, id, payload).await;
+        }
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&128) {
+            return self.cyclopedia_atlas_wire(admitted, id, payload).await;
+        }
+        self.cyclopedia_basic_wire(admitted, id, kind, payload)
+            .await
+    }
+    pub(super) async fn cyclopedia_basic_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> GuildReply {
         if !admitted
             .continuity
             .selected_capabilities
@@ -70,13 +94,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let (Some(actor), Some(fence), Some(area)) = (
-            admitted.runtime_actor,
-            admitted.item_fence,
-            self.cyclopedia_content(),
-        ) else {
+        let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return GuildReply::Rejected;
         };
+        if kind == wire::COMMAND_TYPE_CYCLOPEDIA_QUERY && payload.first() == Some(&255) {
+            if CommandId::new(id).is_err() {
+                return GuildReply::Rejected;
+            }
+            return atlas::dispatch(self, admitted, payload).await;
+        }
         let Ok(intent) = wire::decode_request(kind, payload) else {
             return GuildReply::Rejected;
         };
@@ -109,23 +135,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        // Settle delivery before borrowing the Character transaction. The in-transaction
-        // gate still rechecks the real root Account's current entitlement; no nested DB read.
-        let account = admitted.controller.map(|c| c.account_id).or_else(|| {
-            self.states
-                .premium_sessions
-                .lock()
-                .ok()
-                .and_then(|s| s.account_of(admitted.game_session_id))
-        });
-        let premium_ready = if matches!(intent.operation, 1 | 2) {
-            match (self.premium_coordinator, account) {
-                (Some(gate), Some(account)) => gate.premium_gate(account).await.premium_current(),
-                _ => false,
-            }
-        } else {
-            false
-        };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let mut runtime = self.runtime.lock().await;
         let binding = runtime.binding();
@@ -140,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let Some(position) = super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+        let Some(position) = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
         else {
             return GuildReply::Rejected;
         };
@@ -148,6 +157,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             x: position.at.x,
             y: position.at.y,
             floor: position.at.floor,
+        };
+        if intent.operation == 5 {
+            return self
+                .bundle_map()
+                .and_then(|map| atlas::page(&map.overlay.base().subareas, intent.amount))
+                .map(GuildReply::Payload)
+                .unwrap_or(GuildReply::Rejected);
+        }
+        // Membership is resolved from the server-owned position, never the legacy wire alias.
+        let Some(area) = content::admit_at(self, at) else {
+            return GuildReply::Rejected;
         };
         let action = match intent.operation {
             0 => MapAction::Query,
@@ -159,7 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let derive =
             |tag: &[u8]| super::npc_trade_command::derived(tag, admitted.game_session_id, id.get());
-        let fee = if matches!(action, MapAction::Donate(_)) {
+        let fee_definitions = if matches!(action, MapAction::Donate(_)) {
             let Some((gold, platinum, crystal)) =
                 super::npc_command::bank_coin_definitions(self, &runtime)
             else {
@@ -178,6 +198,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 production_key: "oteryn:item.tibia.i2854".into(),
                 revision_ref: revision.into(),
             };
+            Some((gold, platinum, crystal, fallback))
+        } else {
+            None
+        };
+        drop(runtime);
+        let fee = if let Some((gold, platinum, crystal, fallback)) = fee_definitions {
             let backpack = match self
                 .root
                 .read_character_backpack(self.character, fence.character_id)
@@ -223,6 +249,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             binding: hash.finalize().into(),
             occurrence: derive(b"cyclopedia:occurrence"),
             bundle: area.digest,
+            area: area.area,
+            legacy_area: area.legacy_area,
+            subarea: area.subarea,
+            subareas: area.subareas,
             epoch: self.reset_epoch,
             pool: area.pool,
             at,
@@ -231,6 +261,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             event: derive(b"cyclopedia:event"),
             now: super::npc_trade_command::unix_ms_now(),
         };
+        {
+            let mut runtime = self.runtime.lock().await;
+            let binding = runtime.binding();
+            if binding.runtime_scope() != fence.runtime_scope
+                || binding.scope_generation() != fence.scope_ownership_generation
+                || runtime.owner_fence().is_err()
+                || !runtime
+                    .player_control_facts(actor, admitted.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                || super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                    .is_none_or(|position| {
+                        position.at.x != at.x
+                            || position.at.y != at.y
+                            || position.at.floor != at.floor
+                    })
+            {
+                return GuildReply::Rejected;
+            }
+        }
+        let before_find = if action == MapAction::Find {
+            match slot.cursor(self.root, self.character).await {
+                Ok(revision) => Some(revision),
+                Err(_) => return GuildReply::Unavailable,
+            }
+        } else {
+            None
+        };
         match slot
             .cyclopedia(
                 self.root,
@@ -238,15 +295,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 current,
                 request,
-                &Premium(self.premium_coordinator.filter(|_| premium_ready)),
+                &Premium(self.premium_coordinator),
             )
             .await
         {
             Ok(bytes) if wire::decode_result(&bytes).is_ok() => {
-                drop(runtime);
+                if before_find.is_some_and(|before| {
+                    wire::decode_result(&bytes).is_ok_and(|result| {
+                        result.code == 0
+                            && result.discovered
+                            && result.found == 7
+                            && result.revision > before.get()
+                    })
+                }) {
+                    self.states.tutorial_sessions.notice(
+                        admitted.game_session_id,
+                        oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                            "Subarea discovered! All seven points of interest found.".into(),
+                        ),
+                    );
+                }
                 drop(slot);
                 // The donation is complete; respawn initialization acquires its own lane.
                 drop(trade_permit);
+                self.refresh_cyclopedia_speed(actor, admitted.game_session_id)
+                    .await;
                 if self.initialize_cyclopedia_respawn().await.is_err() {
                     return GuildReply::Unavailable;
                 }

@@ -39,6 +39,7 @@ fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
             kind: TerrainKind::Ground,
             walkable: Some(walkable),
             ground_speed: Some(speed),
+            blocks_projectile: None,
         })
     };
     let other = |kind| {
@@ -46,6 +47,7 @@ fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
             kind,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         })
     };
     Some(match key {
@@ -223,7 +225,7 @@ fn pins(compiled: &Compiled, production: bool) -> BundlePins {
 fn resealed(mut bytes: Vec<u8>) -> (Vec<u8>, [u8; 32]) {
     let body = bytes.len() - 32;
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v6\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v8\0")
         .chain_update(&bytes[..body])
         .finalize()
         .into();
@@ -920,6 +922,7 @@ impl Measurement {
                         kind,
                         walkable,
                         ground_speed,
+                        blocks_projectile: None,
                     },
                 );
             }

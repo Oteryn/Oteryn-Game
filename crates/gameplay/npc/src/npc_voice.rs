@@ -34,13 +34,13 @@ pub enum VoiceError {
     Draw,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VoiceLine {
     pub text: String,
     pub mode: ProjectV2SpeechMode,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VoiceProfile {
     pub name: String,
     pub interval_ms: u64,
@@ -278,6 +278,110 @@ pub fn profiles_from_catalogue(
 #[allow(clippy::expect_used, reason = "native NPC voice fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn srv9b_fluid_source_variants_reach_production() {
+        let catalogue = NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("repository catalogue");
+        let model = catalogue
+            .service_model_for_project()
+            .expect("service model");
+        let offers: Vec<_> = model
+            .services()
+            .values()
+            .flat_map(|service| &service.offers)
+            .filter(|offer| {
+                offer.item.key == "oteryn:item.tibia.i2874" && offer.sub_type == Some(3)
+            })
+            .collect();
+        assert!(
+            !offers.is_empty(),
+            "source beer offers must reach production"
+        );
+        assert!(
+            offers.iter().all(|offer| offer.count == Some(1)),
+            "fluid is never quantity"
+        );
+        let wraps: Vec<_> = model
+            .services()
+            .values()
+            .flat_map(|service| &service.offers)
+            .filter(|offer| {
+                matches!(
+                    offer.item.key.as_str(),
+                    "oteryn:item.tibia.i50293"
+                        | "oteryn:item.tibia.i50294"
+                        | "oteryn:item.tibia.i50295"
+                )
+            })
+            .collect();
+        assert_eq!(
+            wraps.len(),
+            57,
+            "all 19 pinned Crystal merchants carry all three wraps"
+        );
+        for offer in wraps {
+            assert_eq!(offer.count, Some(1));
+            assert!(matches!(
+                (offer.sub_type, offer.unit_price),
+                (Some(500), 347222) | (Some(1800), 1250000) | (Some(14400), 10000000)
+            ));
+        }
+        assert!(
+            model
+                .services()
+                .values()
+                .flat_map(|service| &service.offers)
+                .any(|offer| offer.item.key == "oteryn:item.tibia.i3057"
+                    && offer.count == Some(1)
+                    && offer.sub_type == Some(1)),
+            "an implicit source default must preserve the native amulet's full charge"
+        );
+    }
+
+    #[test]
+    fn s10_repository_ambient_profiles_reach_the_production_catalogue() {
+        let catalogue = NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("repository catalogue");
+        let model = catalogue
+            .service_model_for_project()
+            .expect("service model");
+        let profiles = profiles_from_catalogue(&catalogue, &model, qualify_text)
+            .expect("source-bound profiles");
+        // Crystal 201189f8 data-global/npc/<stem>.lua, npcConfig.voices;
+        // Maria is in data-crystal/npc/maria.lua. These are ambient lines only.
+        for (stem, first_line) in [
+            ("valindara", "I'm eager for a bath in the lake."),
+            ("tooth_fairy", "I have to ... No, I don't dare ..."),
+            ("tired_tree", "*yawn*"),
+            (
+                "rosemarie",
+                "Flowers are one of the most beautiful gifts that Crunor blessed us with.",
+            ),
+            ("gunther", "They have to believe me!"),
+            ("grumpy_stone", "That's annoying!"),
+            ("enpa_deia_pema", "Peace is the true path."),
+            (
+                "allen",
+                "Hey, need some furniture for your house? Come to the Plank and Treasurechest Market!",
+            ),
+            ("maria", "Any time's a good time to buy some furniture!"),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let profile = profiles.get(&key).expect(&key);
+            assert_eq!(profile.interval_ms, 15_000, "{key}");
+            assert_eq!(profile.chance_ppm, 500_000, "{key}");
+            assert_eq!(profile.lines[0].text, first_line, "{key}");
+        }
+    }
 
     fn qualify_text(text: &str) -> Option<String> {
         Some(text.to_owned())

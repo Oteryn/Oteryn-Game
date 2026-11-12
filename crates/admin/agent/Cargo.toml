@@ -1,0 +1,33 @@
+[package]
+name = "oteryn-admin-agent"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "admin-agent"
+release-role = "production"
+
+[dependencies]
+base64.workspace = true
+ed25519-dalek = { workspace = true, features = ["std"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+oteryn-admin-contracts = { version = "=0.1.0", path = "../contracts" }
+reqwest.workspace = true
+sqlx = { workspace = true, features = ["json"] }
+time = { version = "=0.3.55", features = ["parsing", "formatting"] }
+tokio = { workspace = true, features = ["macros", "test-util"] }
+toml.workspace = true
+uuid = { version = "=1.29.0", features = ["v7"] }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "oteryn-admin-agent"
+path = "src/main.rs"

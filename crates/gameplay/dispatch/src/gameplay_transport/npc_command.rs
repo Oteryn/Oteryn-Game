@@ -35,26 +35,48 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+#[path = "benevola.rs"]
+mod benevola;
+mod cake;
+mod catalogue;
+mod catalogue_track_mutation;
 mod classic_quests;
 mod coin_exchange;
+mod dark_trails;
 mod endgame;
+mod fire_feathered;
 mod grizzly;
 mod grizzly_shop;
+mod healing;
+mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod hive_shared;
+mod isle_of_evil;
 mod liquid_black;
+mod marriage;
 mod monk;
+mod npc_item_exchanges;
+mod planegazer_finale;
 mod premium_purchase;
+mod quest_dialogue;
+mod quest_shop;
+mod reward_callbacks;
+mod seasonal;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
+mod viola;
 mod wrath_sleeping_dragon;
+#[path = "yeo.rs"]
+mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
 struct SessionNpc {
     recent: RecentIntents,
+    healing_command: Option<u64>,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
@@ -62,18 +84,33 @@ struct SessionNpc {
     /// Display cache only; the NPC trade writer independently checks quest points.
     grizzly_shop_points: Option<i64>,
     grizzly_shop_items: std::collections::BTreeSet<String>,
+    quest_shop_offers: std::collections::BTreeSet<(
+        String,
+        String,
+        crate::content::ProjectV2ServiceOfferDirection,
+    )>,
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
     exchange: Option<coin_exchange::Pending>,
+    benevola: Option<benevola::Pending>,
+    yeo: Option<yeo::Pending>,
+    #[cfg(test)]
+    yeo_last_request: Option<crate::durability::npc_trade::NpcTradeRequest>,
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
+    marriage: Option<marriage::Pending>,
     monk: Option<monk::Pending>,
+    viola: Option<viola::Pending>,
+    seasonal: Option<seasonal::Pending>,
+    cake: Option<cake::Pending>,
+    quest_dialogue: quest_dialogue::State,
+    catalogue: Option<catalogue::Pending>,
+    delayed_end: Option<catalogue::DelayedEnd>,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,
-    dragon: wrath_sleeping_dragon::Conversation,
     hireling: Option<hireling_services::State>,
 }
 
@@ -91,6 +128,9 @@ pub struct PendingBank {
 #[derive(Default)]
 pub struct NpcConversations {
     sessions: Mutex<HashMap<GameSessionId, SessionNpc>>,
+    #[cfg(test)]
+    fixture_callback_rows:
+        std::sync::OnceLock<Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>>,
 }
 
 #[cfg(test)]
@@ -247,6 +287,7 @@ impl NpcConversations {
         session: GameSessionId,
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
+        catalogue::follow_end(self, chat, session);
         chat.close_out_of_range(runtime, session);
         let current = chat.engaged(session).and_then(|npc_ref| {
             if let Some((viewer, named)) = self.sessions.lock().ok().and_then(|sessions| {
@@ -310,7 +351,11 @@ impl NpcConversations {
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
-            && ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text)))
+            && ChatText::parse(&intent.text).is_ok_and(|text| {
+                service_context::live_npc(runtime, actor, session, intent.npc_actor).is_some_and(
+                    |npc| oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str()),
+                )
+            }))
         .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
         .flatten();
         outcome.window = match opened {
@@ -414,13 +459,11 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source)
-            || source.currency.is_some()
-            || source.sub_type.is_some()
-        {
+        if !entry.offers().contains(source) || source.currency.is_some() {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
+            sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,
             offer_index: intent.offer_index,
@@ -552,7 +595,7 @@ impl NpcConversations {
                 // follow tick sees nothing left to close (NPC-0 section 4.1).
                 conversation: end(chat, session, intent).map(|mut closed| {
                     let line = oteryn_gameplay_npc::quest_greetings::walkaway(&npc.key)
-                        .unwrap_or(entry.farewell());
+                        .unwrap_or(entry.walkaway());
                     if let Some(name) = chat.speaker_name(session) {
                         closed.lines.push(
                             oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name),
@@ -613,6 +656,18 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = marriage::replay(admission, command, Some(&intent)).await {
+        return outcome;
+    }
+    if let Some(outcome) = yeo::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
+    if let Some(outcome) = benevola::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
+    if let Some(outcome) = npc_item_exchanges::talk(admission, actor, command, &intent).await {
+        return outcome;
+    }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
@@ -668,6 +723,13 @@ pub(super) async fn npc_bank_talk(
         .states
         .npc_conversations
         .refresh_grizzly_shop_context(session, points, grizzly_shop::admitted_items(native));
+    admission
+        .states
+        .npc_conversations
+        .refresh_quest_shop_context(
+            session,
+            quest_shop::eligible_items(admission, session, native),
+        );
     let ordinary = admission.states.npc_conversations.talk_in(
         &admission.states.chat,
         &runtime,
@@ -680,6 +742,32 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if oteryn_gameplay_npc::greeting::words(&intent.text)
+        .iter()
+        .any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))
+        && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+    {
+        state.quest_dialogue.restart_topic();
+    }
+    // A live route quote owns its confirmation before any quest adapter runs.
+    // The paid owner repeats this exact scope/expiry check before departure.
+    if admission
+        .states
+        .npc_conversations
+        .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+        .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
+    {
+        return ordinary;
+    }
+    if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {
+        if matches!(step, marriage::Step::Ordinary) {
+            return ordinary;
+        }
+        drop(runtime);
+        drop(_trade_permit.take());
+        return marriage::apply(admission, actor, command, intent, step).await;
     }
     if let Some(context) = admission
         .states
@@ -702,6 +790,19 @@ pub(super) async fn npc_bank_talk(
         }
         runtime = admission.runtime.lock().await;
     }
+    if let Some(outcome) = healing::apply(admission, &mut runtime, actor, command, &intent) {
+        return outcome;
+    }
+    if let Some(step) = yeo::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return yeo::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = benevola::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return benevola::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return coin_exchange::apply(
@@ -714,6 +815,13 @@ pub(super) async fn npc_bank_talk(
         )
         .await;
     }
+    // Eligible reward callbacks own their exact keyword before dedicated NPC
+    // dialogue; ineligible stages remain with that dialogue's native owner.
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(context) = grizzly::context(admission, &runtime, actor, session, &intent) {
         if ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text))
             && ordinary.window.is_some()
@@ -723,6 +831,26 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = fire_feathered::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = hive_shared::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = isle_of_evil::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = endgame::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
@@ -736,9 +864,40 @@ pub(super) async fn npc_bank_talk(
         )
         .await;
     }
+    if let Some(step) = cake::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(context) = seasonal::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return seasonal::apply(admission, actor, command, intent, context).await;
+    }
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return viola::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
@@ -764,6 +923,11 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
     }
+    if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return planegazer_finale::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return premium_purchase::apply(admission, actor, command, intent, step).await;
@@ -774,6 +938,9 @@ pub(super) async fn npc_bank_talk(
         .current_bank(&admission.states.chat, &runtime, actor, session, &intent)
     else {
         admission.states.npc_conversations.cancel_bank(session);
+        if reward_callbacks::unhandled_confirmation(admission, actor, command, &intent, &runtime) {
+            return rejected();
+        }
         return ordinary;
     };
     let (Some(fence), Some(reference)) = (command.item_fence, reference) else {

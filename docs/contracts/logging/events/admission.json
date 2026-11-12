@@ -1,0 +1,87 @@
+{
+  "module": "admission",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "account_characters_projection",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "account_closure",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "admission_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "kind"
+      ],
+      "codes": [],
+      "note": "A closed-schema admission refusal without player identity."
+    },
+    {
+      "event": "bazaar",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "character_commands",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "public_projection_held",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "family",
+        "operation",
+        "alarms"
+      ],
+      "codes": [],
+      "note": "A definite public projection refusal held publication."
+    },
+    {
+      "event": "public_projections",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "world_event_outcome_publish",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "family",
+        "ms"
+      ],
+      "codes": [
+        "E5001",
+        "E5002",
+        "E5003",
+        "E5004",
+        "E5005",
+        "E5006",
+        "E5007"
+      ],
+      "note": "A world-event outcome publication attempt failed."
+    }
+  ]
+}

@@ -14,8 +14,17 @@ impl RevisionSlot {
         ruleset: Arc<WheelRuleset>,
         gate: &G,
     ) -> Result<AtelierOutcome, CharacterProgressionError> {
-        self.atelier_with_admission(root, authority, node, fence, request, ruleset, gate, &|| true)
-            .await
+        self.atelier_with_admission(
+            root,
+            authority,
+            node,
+            fence,
+            request,
+            ruleset,
+            gate,
+            &|| true,
+        )
+        .await
     }
 
     /// Reuses the caller's one fresh-admission decision if the Character cursor retries.

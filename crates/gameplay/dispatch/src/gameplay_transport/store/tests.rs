@@ -3,6 +3,46 @@
 use super::*;
 
 #[test]
+fn store_purchase_history_cursor_round_trips_and_rejects_malformed() {
+    let id = [
+        0x01, 0x8f, 0x2a, 0x10, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x09,
+    ];
+    let text = format_history_cursor(1_790_000_000_123, &id);
+    assert_eq!(text, "1790000000123.018f2a10000070008000000000000009");
+    assert_eq!(
+        parse_history_cursor(&text),
+        Some((1_790_000_000_123, id))
+    );
+    for bad in [
+        "",
+        "1.",
+        ".018f2a10000070008000000000000009",
+        "1.018f2a1000007000800000000000009",
+        "1.018F2A10000070008000000000000009",
+        "+1.018f2a10000070008000000000000009",
+        "18446744073709551616.018f2a10000070008000000000000009",
+        "1.018f2a10000070008000000000000009x",
+    ] {
+        assert_eq!(parse_history_cursor(bad), None, "{bad}");
+    }
+}
+
+#[test]
+fn store_purchase_history_capability_is_offered_only_with_store() {
+    const BASE: &[super::super::capabilities::OfferedCapability] = &[];
+    assert!(
+        !with_store_offer(BASE, false)
+            .iter()
+            .any(|capability| capability.id == wire::CAPABILITY_STORE_PURCHASE_HISTORY_V1)
+    );
+    let row = with_store_offer(BASE, true)
+        .iter()
+        .find(|capability| capability.id == wire::CAPABILITY_STORE_PURCHASE_HISTORY_V1)
+        .expect("285 offered");
+    assert_eq!(row.requires, &[wire::CAPABILITY_STORE_V1]);
+}
+
+#[test]
 fn store_catalogue_revision_is_canonical_sha256_and_changes_with_an_offer() {
     let bytes = include_bytes!("../../../../../../rulesets/economy/store/catalogue.json");
     let mut document: serde_json::Value = serde_json::from_slice(bytes).expect("catalogue JSON");

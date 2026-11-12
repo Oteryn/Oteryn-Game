@@ -22,6 +22,7 @@ macro_rules! authority_methods {
             _actor: $crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
             _request: oteryn_protocol_oteryn::hotkey_equip::Request,
+            _queued_for: std::time::Duration,
         ) -> impl std::future::Future<Output = Option<std::time::Duration>> {
             async { None }
         }
@@ -51,9 +52,12 @@ macro_rules! composed_methods {
             actor: $crate::foundation::ExactActorRef,
             command: $crate::gameplay_transport::connection::UseCommand,
             request: oteryn_protocol_oteryn::hotkey_equip::Request,
+            queued_for: std::time::Duration,
         ) -> Option<std::time::Duration> {
-            $crate::gameplay_transport::hotkey_equip::ordinary_delay(self, actor, command, request)
-                .await
+            $crate::gameplay_transport::hotkey_equip::ordinary_delay(
+                self, actor, command, request, queued_for,
+            )
+            .await
         }
         async fn hotkey_equip_carried(
             &self,
@@ -77,6 +81,22 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+fn action_now(owner: &ComposedFreshAdmission<'_, '_, '_>) -> std::time::Duration {
+    // Keep the owner cooldown aligned with a paused transport clock in database
+    // tests. Production retains the same monotonic clock and full precision.
+    #[cfg(test)]
+    {
+        let fixed = owner
+            .states
+            .test_owner_time
+            .load(std::sync::atomic::Ordering::Relaxed);
+        if fixed != 0 {
+            return std::time::Duration::from_micros(fixed - 1);
+        }
+    }
+    owner.clock_origin.elapsed()
+}
+
 /// This observation grants no custody or input authority. The normal executor rechecks
 /// session, conditions, timing and item custody after the transport's bounded wait.
 pub(super) async fn ordinary_delay(
@@ -84,6 +104,7 @@ pub(super) async fn ordinary_delay(
     actor: ExactActorRef,
     command: UseCommand,
     request: Request,
+    queued_for: std::time::Duration,
 ) -> Option<std::time::Duration> {
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
@@ -117,7 +138,7 @@ pub(super) async fn ordinary_delay(
                 .world_gate
                 .lock()
                 .ok()?
-                .equip_delay(actor, 6, owner.clock_origin.elapsed())
+                .equip_delay(actor, 6, action_now(owner).saturating_sub(queued_for))
                 .unwrap_or_default(),
         );
     }
@@ -135,7 +156,7 @@ pub(super) async fn ordinary_delay(
             .world_gate
             .lock()
             .ok()?
-            .equip_delay(actor, *slot, owner.clock_origin.elapsed())
+            .equip_delay(actor, *slot, action_now(owner).saturating_sub(queued_for))
             .unwrap_or_default(),
     )
 }
@@ -379,11 +400,12 @@ fn finish(
 ) -> Option<ItemMoveOutcome> {
     match outcome {
         EquipmentMoveResult::Committed => {
-            owner.states.world_gate.lock().ok()?.equip_committed(
-                actor,
-                slot,
-                owner.clock_origin.elapsed(),
-            );
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_committed(actor, slot, action_now(owner));
             Some(ItemMoveOutcome::Moved)
         }
         EquipmentMoveResult::Refused(refusal) => Some(super::item_move::equipment_outcome(refusal)),
@@ -440,11 +462,12 @@ async fn action_ready(
             {
                 return Some(false);
             }
-            owner.states.world_gate.lock().ok()?.equip_delay(
-                actor,
-                slot,
-                owner.clock_origin.elapsed(),
-            )
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_delay(actor, slot, action_now(owner))
         };
         if !wait_action(slot, delay).await {
             return Some(false);

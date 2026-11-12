@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::domain::forge_creature::ForgeCreature;
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, CommandStatus, GameSessionId, MessageType, MovementLocalPosition,
     NodeId, WorldId, decode_wire_envelope,
@@ -28,6 +29,8 @@ use crate::gameplay_transport::kill_reward::DrainOutcome;
 use crate::gameplay_transport::{ComposedFreshAdmission, character_gameplay_fence};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 
+#[path = "task_board/elite_case.rs"]
+mod elite_case;
 #[path = "task_board/scenarios.rs"]
 mod scenarios;
 use scenarios::*;
@@ -41,10 +44,10 @@ mod currency_case;
 mod depot_case;
 #[path = "task_board/progression_case.rs"]
 mod progression_case;
-#[path = "task_board/token_case.rs"]
-mod token_case;
 #[path = "task_board/rollback_cases.rs"]
 mod rollback_cases;
+#[path = "task_board/token_case.rs"]
+mod token_case;
 use rollback_cases::{RollbackFault, assert_unavailable};
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
@@ -96,13 +99,30 @@ async fn serve_attempt(
     first: u64,
     payloads: &[Vec<u8>],
 ) -> TestResult<(ConnectionEnd, CommandReplies)> {
+    serve_attempt_kind(
+        owner,
+        admitted,
+        first,
+        payloads,
+        wire::COMMAND_TYPE_TASK_BOARD,
+    )
+    .await
+}
+
+async fn serve_attempt_kind(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    first: u64,
+    payloads: &[Vec<u8>],
+    kind: u32,
+) -> TestResult<(ConnectionEnd, CommandReplies)> {
     let mut input = Vec::new();
     for (command_id, payload) in (first..).zip(payloads) {
         let bytes = oteryn_protocol_oteryn::encode_client_command(
             1,
             &oteryn_protocol_oteryn::ClientCommandValue {
                 command_id,
-                command_type: wire::COMMAND_TYPE_TASK_BOARD,
+                command_type: kind,
                 payload,
             },
         )
@@ -176,12 +196,25 @@ fn scenario() -> TestResult {
     scenario_with_fault(None)
 }
 
-#[allow(clippy::too_many_lines)]
 fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
+    scenario_with_mode(fault, false)
+}
+
+#[test]
+fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("task-board-elite", || {
+        scenario_with_mode(None, true)
+    })
+}
+
+#[allow(clippy::too_many_lines)]
+fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
-        let harness =
-            Harness::create_with_admission_seed(admin, tag, false, false).await?;
+        let harness = Harness::create_with_admission_seed(admin, tag, false, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -260,17 +293,20 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         runtime
             .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", OPEN_RAT)
             .map_err(debug)?;
-        let rat = {
+        let (rat, rat_actor) = {
             let creature = runtime
                 .visible_entities()
                 .creatures
                 .first()
                 .copied()
                 .expect("the rat is visible");
-            EntityRef {
-                identity: creature.actor.placement_identity(),
-                generation: creature.generation,
-            }
+            (
+                EntityRef {
+                    identity: creature.actor.placement_identity(),
+                    generation: creature.generation,
+                },
+                creature.actor,
+            )
         };
         let door_content =
             crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
@@ -430,10 +466,37 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         let first = admitted.continuity.next_command_id;
         let values = serve_from(&owner, &mut admitted, first, &[request(0, 0)]).await?;
         assert_ne!(values[0].1, CommandStatus::Accepted, "{values:?}");
-        // Expanded Task Board is intentionally offered only in bundle-world rollout.
+        // Original Task Board clients retain their reply shape and cannot use the new query.
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             BUNDLE_WORLD_OFFERED_CAPABILITIES,
             &[1, wire::CAPABILITY_TASK_BOARD_V1],
+        )
+        .ok_or("original selection")?;
+        let first = admitted.continuity.next_command_id;
+        let (_, unselected) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[full_request(4, 0, "")],
+            wire::full::COMMAND_WEEKLY_RESULTS,
+        )
+        .await?;
+        assert_eq!(unselected.len(), 1);
+        assert_eq!(unselected[0].1, CommandStatus::Rejected);
+        assert!(
+            full_board(&owner, &mut admitted, 4, 0, "")
+                .await?
+                .weekly_results
+                .is_none()
+        );
+        // Expanded Task Board is intentionally offered only in bundle-world rollout.
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[
+                1,
+                wire::CAPABILITY_TASK_BOARD_V1,
+                wire::full::CAPABILITY_WEEKLY_RESULTS_V1,
+            ],
         )
         .ok_or("selection")?;
 
@@ -452,8 +515,53 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         );
         // This Character entered the fixture at level one; accepted progression at
         // level eight is now fixture input. All task mutations below use real dispatch.
-        progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
-        capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
+        // Capacity admission must run before the accepted Elite preference toggles
+        // create the Task Board quest state and track. The Elite case reaches level
+        // eight through the real XP receipt chain instead of the fixture shortcut.
+        if !elite_case_enabled {
+            progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+            capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
+        }
+        let first = admitted.continuity.next_command_id;
+        let (_, elite) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[vec![8, 19, 16, 1, 26, 0]],
+            6174,
+        )
+        .await?;
+        assert_eq!(elite.len(), 1);
+        assert_eq!(elite[0].1, CommandStatus::Accepted);
+        let first = admitted.continuity.next_command_id;
+        let (_, normal) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[vec![8, 19, 16, 0, 26, 0]],
+            6174,
+        )
+        .await?;
+        assert_eq!(normal[0].1, CommandStatus::Accepted);
+        if elite_case_enabled {
+            // T201 keeps the real XP receipt chain intact before mutating bounty state.
+            let policy = progression_case::policy(&owner, &harness).await?;
+            let total = policy
+                .thresholds
+                .iter()
+                .find(|row| row.level == 8)
+                .ok_or("level eight threshold")?
+                .minimum_experience
+                .get();
+            progression_case::award_total(&owner, &harness, &admitted, total, 8, 64_998).await?;
+            elite_case::run_case(&owner, &harness, &mut admitted, actor, rat_actor).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
+
         let start_id = admitted.continuity.next_command_id;
         let started = full_board(&owner, &mut admitted, 5, 0, "").await?;
         assert_eq!(started.refusal, 0);
@@ -518,8 +626,26 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: weekly_start_and_exact_replay");
         let before_real_kill = experience(&harness).await?;
         // A real rat kill: auto-attack swings, then the durable kill settle credits the task.
-        {
+        let (rat_forge, expected_rat_xp) = {
             let runtime = owner.runtime.lock().await;
+            assert!(
+                runtime.daily_boost().is_none(),
+                "the native source-map fixture has no daily creature boost"
+            );
+            // Earlier wire exchanges can mark the rat; the manual attack/settlement
+            // loop below does not advance the Forge population.
+            let rat_forge = runtime.companion_snapshot(rat_actor).map_err(debug)?.forge;
+            let expected_rat_xp = match rat_forge {
+                None => RAT_XP_AT_LEVEL_8,
+                Some(ForgeCreature::Influenced(stacks)) => {
+                    assert!(
+                        (1..=5).contains(&stacks),
+                        "the pre-kill Forge tag has valid stacks: {rat_forge:?}"
+                    );
+                    RAT_XP_AT_LEVEL_8
+                }
+                Some(ForgeCreature::Fiendish) => 2 * RAT_XP_AT_LEVEL_8,
+            };
             let now = owner.owner_now();
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
@@ -533,7 +659,8 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
                 ),
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
-        }
+            (rat_forge, expected_rat_xp)
+        };
         let mut swings = 0;
         loop {
             owner.refresh_attack_weapon(actor, session).await;
@@ -562,7 +689,8 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
         }
         assert_eq!(
             experience(&harness).await?,
-            before_real_kill + RAT_XP_AT_LEVEL_8
+            before_real_kill + expected_rat_xp,
+            "the real kill's XP matches its pre-kill Forge tag: {rat_forge:?}"
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
@@ -717,15 +845,20 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
             harness.cleanup().await?;
             return Ok(());
         }
-        let daily = full_board(&owner, &mut admitted, 12, 0, "").await?;
-        assert_eq!((daily.refusal, daily.bounty.rerolls), (0, 2));
-        assert_eq!(
-            full_board(&owner, &mut admitted, 12, 0, "").await?.refusal,
-            5
+        let before_retired = full_board(&owner, &mut admitted, 4, 0, "").await?;
+        let first = admitted.continuity.next_command_id;
+        let retired =
+            serve_from(&owner, &mut admitted, first, &[vec![8, 12, 16, 0, 26, 0]]).await?;
+        assert_eq!(retired[0].1, CommandStatus::Rejected);
+        let after_retired = full_board(&owner, &mut admitted, 4, 0, "").await?;
+        assert_eq!(after_retired.bounty, before_retired.bounty);
+        println!(
+            "<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_daily_claim_rejected_without_token_or_timer_change"
         );
+        assert_eq!(after_retired.bounty.daily_reroll_at, 0);
         let reroll_id = admitted.continuity.next_command_id;
         let rerolled = full_board(&owner, &mut admitted, 11, 0, "").await?;
-        assert_eq!((rerolled.refusal, rerolled.bounty.rerolls), (0, 1));
+        assert_eq!((rerolled.refusal, rerolled.bounty.rerolls), (0, 0));
         let replay =
             serve_from(&owner, &mut admitted, reroll_id, &[full_request(11, 0, "")]).await?;
         assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
@@ -733,7 +866,14 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
             wire::full::decode_reply(&replay[0].2).map_err(debug)?,
             rerolled
         );
-        println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: daily_token_and_paid_reroll_ledger");
+        let before_refusal = token_case::value_snapshot(&harness).await?;
+        let refused = full_board(&owner, &mut admitted, 11, 0, "").await?;
+        assert_eq!((refused.refusal, refused.bounty.rerolls), (4, 0));
+        assert_eq!(refused.bounty, rerolled.bounty);
+        assert_eq!(token_case::value_snapshot(&harness).await?, before_refusal);
+        println!(
+            "<TASK_BOARD> POSTGRES_CASE_COMPLETED: retired_daily_claim_and_paid_reroll_ledger"
+        );
 
         let preferred = full_board(&owner, &mut admitted, 13, 0, &bounty.race).await?;
         assert_eq!(preferred.refusal, 0);
@@ -827,6 +967,71 @@ fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
             (again.points, again.soulseals),
             (reset.points, reset.soulseals)
         );
+        let results = reset.weekly_results.as_ref().ok_or("Monday results")?;
+        assert_eq!(results.period, before_reset.period);
+        assert_eq!(
+            u64::from(results.points),
+            before_reset.weekly.pending_points
+        );
+        assert_eq!(
+            u64::from(results.soulseals),
+            before_reset.weekly.pending_soulseals
+        );
+        let first = admitted.continuity.next_command_id;
+        let (_, queried) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[full_request(4, 0, "")],
+            wire::full::COMMAND_WEEKLY_RESULTS,
+        )
+        .await?;
+        assert_eq!(queried.len(), 1);
+        assert_eq!(queried[0].1, CommandStatus::Accepted);
+        assert_eq!(
+            wire::full::decode_reply(&queried[0].2)
+                .map_err(debug)?
+                .weekly_results,
+            reset.weekly_results
+        );
+        let (_, replay) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[full_request(4, 0, "")],
+            wire::full::COMMAND_WEEKLY_RESULTS,
+        )
+        .await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(replay[0].2, queried[0].2);
+        let first = admitted.continuity.next_command_id;
+        let (_, wrong_action) = serve_attempt_kind(
+            &owner,
+            &mut admitted,
+            first,
+            &[full_request(5, 1, "")],
+            wire::full::COMMAND_WEEKLY_RESULTS,
+        )
+        .await?;
+        assert_eq!(wrong_action[0].1, CommandStatus::Rejected);
+        let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+        assert!(
+            (30..300).contains(&level),
+            "earlier earned XP admits Adept but not Master: {level}"
+        );
+        let too_hard = full_board(&owner, &mut admitted, 5, 3, "").await?;
+        assert_eq!(too_hard.refusal, 3);
+        assert_eq!(too_hard.weekly_results, reset.weekly_results);
+        let next = full_board(&owner, &mut admitted, 5, 1, "").await?;
+        assert_eq!(next.refusal, 0);
+        assert_eq!(next.weekly.difficulty, 1);
+        assert!(next.weekly.started && next.weekly_results.is_none());
+        assert_eq!(
+            (next.points, next.soulseals),
+            (reset.points, reset.soulseals)
+        );
+        println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: monday_results_replay_and_next_difficulty");
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: committed_reset_settles_once");
 
         // Restore the existing refusal coverage before fixture funding upgrades.

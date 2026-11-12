@@ -135,7 +135,7 @@ pub(super) async fn use_lamp(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:Exact
         if map.facts.house_id(tile)!=Some(house_id)||map.facts.house_door(tile,house_id).is_some(){record_refusal(owner,command,input.binding(),Refusal::Conflict).await?;return Some(UseDisposition::Rejected)}
     }else{
         let cell=crate::content::LogicalCell{x:state.position.x,y:state.position.y,z:i32::from(state.position.floor)};
-        let placement=owner.movement_cells.house_tiles().house_at(owner.movement_cells.scope(),cell).ok()??;
+        let placement=owner.movement_cells().house_tiles().house_at(owner.movement_cells().scope(),cell).ok()??;
         if placement.house().key!=state.house||placement.door_at(cell).is_some(){record_refusal(owner,command,input.binding(),Refusal::Conflict).await?;return Some(UseDisposition::Rejected)}
     }
     let definition=lamp_definition(owner).await?;

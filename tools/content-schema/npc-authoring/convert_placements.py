@@ -5,8 +5,9 @@ Writes content/world/npc-placements/ (index.json, held.json and placements-*.jso
 NPC keys of npc_placement_scope.json, and only those that the NPC catalogue admits. A cell shared
 with another placement is held (SCHEDULE_VARIANT, SHARED_CELL) instead of written; one NPC listed
 twice at one cell and direction is one record. A wiki-origin placement has no direction in the
-source and is written as north. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
-normalized facts are written. Fails closed on an unadmitted key or an out-of-range position.
+source and is written as north. Optional placement_cells narrows a scoped NPC to a distinct subset of candidate cells; it never introduces coordinates or bypasses holds. The source is OTS_HYPOTHESIS_ONLY migration evidence: only
+normalized facts are written. Explicit pinned placement overrides preserve their own evidence
+and replace only a scoped candidate’s placement hypothesis. Fails closed on an unadmitted key or an out-of-range position.
 
     python convert_placements.py [--check]
 """
@@ -14,6 +15,8 @@ normalized facts are written. Fails closed on an unadmitted key or an out-of-ran
 from __future__ import annotations
 
 import argparse
+import copy
+import re
 import hashlib
 import json
 import sys
@@ -59,7 +62,92 @@ def cell_of(position: dict) -> tuple[int, int, int]:
     return x, y, z
 
 
+def apply_placement_overrides(candidates: dict, scope: dict) -> dict:
+    """Explicit pinned schedules supersede migration placement hypotheses, not definitions."""
+    result = copy.deepcopy(candidates)
+    for key, override in scope.get("placement_overrides", {}).items():
+        if key not in scope["npcs"] or key not in result:
+            raise ValueError("placement override requires a scoped candidate")
+        source, placements = override["source"], override["placements"]
+        if (source.get("origin") not in SOURCES
+                or not re.fullmatch(r"[0-9a-f]{40}", source.get("revision", ""))
+                or not re.fullmatch(r"[0-9a-f]{64}", source.get("sha256", ""))
+                or not isinstance(source.get("path"), str)
+                or source["path"].startswith("/") or ".." in source["path"].split("/")
+                or not source["path"].endswith((".lua", ".xml"))
+                or not override.get("basis") or not 1 <= len(placements) <= 16):
+            raise ValueError("placement override needs bounded positions and immutable source evidence")
+        cells = set()
+        for placement in placements:
+            position = placement["position"]
+            if (placement.get("direction") not in ("NORTH", "SOUTH", "EAST", "WEST")
+                    or any(type(position.get(k)) is not int for k in ("x", "y", "z"))
+                    or not 0 <= position["x"] <= 65535 or not 0 <= position["y"] <= 65535
+                    or not 0 <= position["z"] <= 15):
+                raise ValueError("invalid native placement override")
+            cell = cell_of(position)
+            if cell in cells:
+                raise ValueError("ambiguous native placement override")
+            cells.add(cell)
+        repository, _, source_key = SOURCES[source["origin"]]
+        result[key]["placements"] = copy.deepcopy(placements)
+        result[key]["placement_override_provenance"] = [{
+            "origin": source["origin"], "repository": repository,
+            "revision": source["revision"], "source_key": source_key,
+            "source_row": source["path"], "source_sha256": source["sha256"],
+            "url": f"https://github.com/{repository}/blob/{source['revision']}/{source['path']}",
+            "arbitration": [{"fact": "placements", "chosen": source["origin"],
+                             "rule": "EXPLICIT_PINNED_NATIVE_PLACEMENTS", "basis": override["basis"]}],
+        }]
+    return result
+
+
+def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str], root: Path = ROOT) -> dict:
+    """Add explicit recipe NPC cells without relabelling or replacing donor evidence."""
+    result = copy.deepcopy(candidates)
+    for key, row in scope.get("authored_placements", {}).items():
+        if key not in scope["npcs"] or key not in admitted or key in result:
+            raise ValueError("authored placement requires a new scoped admitted NPC")
+        path = Path(row["recipe_path"])
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("authored placement recipe path")
+        raw = (root / path).read_bytes()
+        if (row.get("basis") != "CHOSEN_OTERYN_APPROXIMATION"
+                or hashlib.sha256(raw).hexdigest() != row.get("recipe_sha256")):
+            raise ValueError("authored placement recipe pin")
+        recipes = [recipe for recipe in json.loads(raw).get("recipes", [record["recipe"] for record in json.loads(raw).get("records", [])])
+                   if recipe["wiki_title"] == row["recipe_title"]]
+        normalize = lambda value: re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+        if (len(recipes) != 1 or not any(
+                normalize(target) == local_name(key)
+                for stage in recipes[0]["stages"] if stage["kind"] == "talk"
+                for target in stage["targets"])):
+            raise ValueError("authored placement NPC is not a recipe talk target")
+        placements = row["placements"]
+        if not isinstance(placements, list) or not 1 <= len(placements) <= 8:
+            raise ValueError("authored placement count")
+        seen = set()
+        for placement in placements:
+            cell = cell_of(placement["position"])
+            if placement["direction"] not in {"NORTH", "EAST", "SOUTH", "WEST"} or cell in seen:
+                raise ValueError("authored placement direction or duplicate")
+            seen.add(cell)
+        result[key] = {
+            "identity": {"key": key}, "placements": copy.deepcopy(placements),
+            "placement_override_provenance": [{
+                "origin": "oteryn", "repository": "Oteryn/Oteryn-Game",
+                "basis": row["basis"], "source_row": str(path) + "#" + row["recipe_title"],
+                "definition_sha256": row["recipe_sha256"],
+                "direction_note": "Explicit chosen placement; no donor coordinate claim.",
+            }],
+        }
+    return result
+
+
+
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if "placement_override_provenance" in candidate:
+        return copy.deepcopy(candidate["placement_override_provenance"])
     # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
     arbitration = sorted(
         (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
@@ -104,13 +192,30 @@ def convert() -> dict[str, str]:
     report = json.loads(CANDIDATES.read_text())
     candidates = {c["identity"]["key"]: c for c in report["candidates"]}
     scope = json.loads(SCOPE.read_text())
+    candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
+    candidates = apply_authored_placements(candidates, scope, admitted)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
         sys.exit("the scope lists an NPC twice")
     unadmitted = [n for n in npcs if n not in admitted]
     if unadmitted:
         sys.exit(f"not an admitted NPC definition: {unadmitted}")
+
+    # A candidate can include both the Global world and an example map. Scope
+    # may select known cells, but never introduce a cell or bypass sharing rules.
+    selections = scope.get("placement_cells", {})
+    if not isinstance(selections, dict) or not set(selections) <= set(npcs):
+        sys.exit("placement_cells names an unscoped NPC")
+    selected_cells = {}
+    for npc, cells in selections.items():
+        if not isinstance(cells, list) or not cells:
+            sys.exit(f"{npc}: placement selection is empty")
+        selected = {cell_of(cell) for cell in cells}
+        available = {cell_of(p["position"]) for p in candidates.get(npc, {}).get("placements", [])}
+        if len(selected) != len(cells) or not selected <= available:
+            sys.exit(f"{npc}: placement selection is not a distinct subset of source cells")
+        selected_cells[npc] = selected
 
     # Every candidate placement counts for cell sharing, scoped or not.
     occupancy = defaultdict(list)
@@ -131,6 +236,8 @@ def convert() -> dict[str, str]:
             continue
         for placement in candidate["placements"]:
             cell = cell_of(placement["position"])
+            if npc in selected_cells and cell not in selected_cells[npc]:
+                continue
             direction = (placement["direction"] or "NORTH").lower()
             sharers = set(occupancy[cell])
             if len(sharers) > 1:

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0150-house-podium",
+  "kind": "keybindings",
+  "id": "0150-house-podium-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+P",
+  "entry": "input.rs::open_key"
+}

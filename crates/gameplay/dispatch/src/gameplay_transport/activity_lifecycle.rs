@@ -10,9 +10,19 @@ use crate::foundation::ScopeOwnershipGeneration;
 use std::collections::BTreeSet;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Every lifecycle step, the durable traversals included, as the tests drive it directly.
+    #[cfg(test)]
     pub(super) async fn activity_lifecycle_pass(&self) -> Result<(), ()> {
+        self.activity_lifecycle_pass_with(true).await
+    }
+
+    /// One lifecycle pass. `durable_scan` gates the two ownerless database traversals (departed
+    /// recovery and due boss rooms): each takes every admission relation in EXCLUSIVE mode, so the
+    /// autonomous cadence runs them on [`super::activity_cycles::ActivityDurableScan`] rather than
+    /// on every 50 ms heartbeat, which kept the single durability holder busy (NBHOG-1).
+    pub(super) async fn activity_lifecycle_pass_with(&self, durable_scan: bool) -> Result<(), ()> {
         // This must run even with an empty registry after a process restart.
-        let mut deferred = self.recover_departed_activity_pass().await.is_err();
+        let mut deferred = durable_scan && self.recover_departed_activity_pass().await.is_err();
         deferred |= self.drain_native_activity_attempts().await.is_err();
         deferred |= self.drain_native_return_attempts().await.is_err();
         let owners = self.activity_runtimes.activity_owners()?;
@@ -52,57 +62,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
         let handoffs = ActivityHandoffOwner::new(self.root.clone());
         let mut after = None;
-        loop {
-            let page = handoffs
-                .due_boss_rooms_after(self.character, self.holder, self.world_id, after)
-                .await
-                .map_err(|_| ())?;
-            after = page.next_after;
-            for room in page.rooms {
-                let key = ScopeKey::new(room.scope, room.generation.get());
-                if !drained.contains(&key) {
-                    continue;
-                }
-                let Some(owner) = self
-                    .activity_runtimes
-                    .get(room.scope, room.generation.get())
-                else {
-                    continue;
-                };
-                let sessions = match owner.runtime.lock().await.activity_participant_sessions() {
-                    Ok(sessions) => sessions,
-                    Err(_) => {
-                        deferred = true;
+        // A due room is acted on only for a drained registered owner: with none, the traversal
+        // cannot return a room this pass would use.
+        if durable_scan && !drained.is_empty() {
+            loop {
+                let page = handoffs
+                    .due_boss_rooms_after(self.character, self.holder, self.world_id, after)
+                    .await
+                    .map_err(|_| ())?;
+                after = page.next_after;
+                for room in page.rooms {
+                    let key = ScopeKey::new(room.scope, room.generation.get());
+                    if !drained.contains(&key) {
                         continue;
                     }
-                };
-                let view = self.runtime_view(&owner);
-                for session in sessions {
-                    let Some(admitted) = self.activity_runtimes.connection(session) else {
-                        deferred = true;
+                    let Some(owner) = self
+                        .activity_runtimes
+                        .get(room.scope, room.generation.get())
+                    else {
                         continue;
                     };
-                    let admitted = self.activity_runtimes.current_connection(admitted);
-                    if admitted.item_fence.is_none_or(|fence| {
-                        fence.runtime_scope != room.scope
-                            || fence.scope_ownership_generation != room.generation
-                    }) {
-                        deferred = true;
-                        continue;
-                    }
-                    match view.return_due_activity(admitted, room.reason).await {
-                        Ok(NativeActivityOutcome::Committed(commit)) => {
-                            self.publish_activity_commit(&commit)?
+                    let sessions = match owner.runtime.lock().await.activity_participant_sessions()
+                    {
+                        Ok(sessions) => sessions,
+                        Err(_) => {
+                            deferred = true;
+                            continue;
                         }
-                        // A captured defeat can have superseded a timeout page.
-                        // The transaction's typed refusal remains authoritative.
-                        Ok(NativeActivityOutcome::Refused(_)) => {}
-                        Err(()) => deferred = true,
+                    };
+                    let view = self.runtime_view(&owner);
+                    for session in sessions {
+                        let Some(admitted) = self.activity_runtimes.connection(session) else {
+                            deferred = true;
+                            continue;
+                        };
+                        let admitted = self.activity_runtimes.current_connection(admitted);
+                        if admitted.item_fence.is_none_or(|fence| {
+                            fence.runtime_scope != room.scope
+                                || fence.scope_ownership_generation != room.generation
+                        }) {
+                            deferred = true;
+                            continue;
+                        }
+                        match view.return_due_activity(admitted, room.reason).await {
+                            Ok(NativeActivityOutcome::Committed(commit)) => {
+                                self.publish_activity_commit(&commit)?
+                            }
+                            // A captured defeat can have superseded a timeout page.
+                            // The transaction's typed refusal remains authoritative.
+                            Ok(NativeActivityOutcome::Refused(_)) => {}
+                            Err(()) => deferred = true,
+                        }
                     }
                 }
-            }
-            if after.is_none() {
-                break;
+                if after.is_none() {
+                    break;
+                }
             }
         }
 
@@ -155,6 +170,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     deferred = true;
                     continue;
                 }
+            }
+            // The transition lock excludes entrants, native retirement-empty
+            // excludes all participants, and the durable witness seals return.
+            // Join this Instance only; other Instances and the Channel keep serving.
+            owner.states.kill_source_owner.stop_and_join().await;
+            if !self
+                .runtime_view(&owner)
+                .finish_activity_daily_kills()
+                .await
+            {
+                deferred = true;
+                continue;
             }
             match self
                 .root

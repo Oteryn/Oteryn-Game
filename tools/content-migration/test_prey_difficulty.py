@@ -86,17 +86,26 @@ class PreyDifficultyTests(unittest.TestCase):
                 prey.LOOT: prey.encoded({"tables": [], "creature_loot": [{"creature": {"key": key}, "loot": None}]}),
                 "crates/gameplay/domain/src/domain/currency.rs": b'Self::Gold => "gold", Self::Platinum => "platinum", Self::Crystal => "crystal",\nSelf::Gold => 1, Self::Platinum => 100, Self::Crystal => 10_000,',
             })
+            # The previous artifact has no binding for the fresh candidate.
+            prey.write_files(root, {prey.LOOT: prey.encoded({"tables": [], "creature_loot": []})})
             seen = []
 
             def registration(task_root, *, include_prey):
                 self.assertFalse(include_prey, "bootstrap must not recurse into its own result")
                 # Exercise the actual canonical balance bridge used by registration.
-                return binding.bind_definitions(task_root, {
+                generated = binding.bind_definitions(task_root, {
                     prey.PROFILES: original,
                     "content/spells.manifest.json": prey.encoded({"creature_profiles": {}}),
+                    prey.LOOT: prey.encoded({"tables": [], "items": [],
+                        "creature_loot": [{"creature": {"key": key}, "loot": None}]}),
                 })
+                # Keep the complete generated closure, including the item facts;
+                # the merged duplicate assignment dropped them before the model.
+                return generated
 
             def model(task_root, profiles):
+                self.assertEqual(prey.read(task_root, prey.LOOT)["items"], [],
+                                 "model input must observe the generated loot closure")
                 rows = prey.classify(profiles, prey.authoring(task_root))["records"]
                 return {"input_sha256": prey.digest(profiles), "tiers": {row["creature"]: row["tier"] for row in rows}}
 
@@ -106,6 +115,9 @@ class PreyDifficultyTests(unittest.TestCase):
                 native = json.loads(Path(command[command.index("--creature-profiles") + 1]).read_bytes())
                 data = json.loads(Path(command[command.index("--input") + 1]).read_bytes())
                 self.assertEqual(data["input_sha256"], prey.digest(native))
+                self.assertEqual(prey.read(root, prey.LOOT)["creature_loot"],
+                                 [{"creature": {"key": key}, "loot": None}],
+                                 "the runtime loader receives the fresh candidate's loot census")
                 seen.append(native["records"][0]["profile"]["data"]["profile"]["experience"])
                 # The test substitutes only the external Cargo process. Combat
                 # arithmetic itself is covered by the real Rust example tests.

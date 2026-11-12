@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v6`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v8`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
@@ -14,8 +14,8 @@ use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v6";
-pub const VERSION: u16 = 6;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v8";
+pub const VERSION: u16 = 8;
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
@@ -126,7 +126,8 @@ pub enum TerrainKind {
 pub const MAX_GROUND_SPEED: u16 = 1000;
 
 /// The terrain semantics of a Terrain-routed palette entry (format v2): `walkable` and
-/// `ground_speed` are set for `ground` and `null` for every other kind. A walkable ground has a
+/// `ground_speed` are set for `ground`; other layers may retain a known walkable flag, with
+/// `ground_speed=null`. Existing `walkable=null` retains its prior kind semantics. A walkable ground has a
 /// speed of at least 1; a non-walkable ground may have any speed in `0..=1000`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -136,6 +137,9 @@ pub struct Terrain {
     pub walkable: Option<bool>,
     #[serde(deserialize_with = "required")]
     pub ground_speed: Option<u16>,
+    /// Exact source projectile fact; absent preserves legacy wall interpretation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blocks_projectile: Option<bool>,
 }
 
 impl Terrain {
@@ -146,7 +150,7 @@ impl Terrain {
                 speed <= MAX_GROUND_SPEED && !(walkable && speed == 0)
             }
             (TerrainKind::Ground, ..) => false,
-            (_, walkable, speed) => walkable.is_none() && speed.is_none(),
+            (_, _, speed) => speed.is_none(),
         }
     }
 }
@@ -284,7 +288,8 @@ impl Manifest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Sector {
     pub floor: i8,
     pub sx: u16,
@@ -294,6 +299,7 @@ pub struct Sector {
 
 #[derive(Debug)]
 pub struct Bundle {
+    pub layers: Vec<crate::layers::Layer>,
     pub manifest: Manifest,
     pub sectors: Vec<Sector>,
     pub spawns: spawn::Table,
@@ -577,6 +583,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
         Ok(())
     })?;
     Ok(Bundle {
+        layers: read.layers,
         manifest: read.manifest,
         sectors,
         spawns: read.spawns,
@@ -588,6 +595,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
 /// What [`visit`] returns besides the sectors it handed to its visitor.
 #[derive(Debug)]
 pub struct Visited {
+    pub layers: Vec<crate::layers::Layer>,
     pub manifest: Manifest,
     pub spawns: spawn::Table,
     pub npcs: npc::Table,
@@ -629,7 +637,7 @@ pub fn visit_budgeted(
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v6",
+        "not an OTERYN_WORLD_BUNDLE/v8",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);
@@ -646,9 +654,9 @@ pub fn visit_budgeted(
         expected <= body.len(),
         "sector table runs past the payloads",
     )?;
-    let manifest: Manifest = serde_json::from_slice(&data[HEADER..table])
-        .map_err(|e| Error::Format(format!("manifest: {e}")))?;
+    let (manifest, layers) = decode_manifest(&data[HEADER..table])?;
     validate_manifest(&manifest)?;
+    crate::layers::validate(&manifest, &layers)?;
     let mut total_raw = 0usize;
     let mut previous: Option<(i8, u16, u16)> = None;
     // Which `dropped_teleports` keys a decoded top-level entry names (format document §9).
@@ -790,6 +798,7 @@ pub fn visit_budgeted(
         "dropped teleport key names no top-level entry",
     )?;
     Ok(Visited {
+        layers,
         manifest,
         spawns,
         npcs,
@@ -816,4 +825,9 @@ fn mark_dropped(dropped: &[u64], sector: &Sector, named: &mut [bool]) {
             named[at] = true;
         }
     }
+}
+
+/// Decode the strict wire envelope without changing the public Manifest literal API.
+pub fn decode_manifest(bytes: &[u8]) -> Result<(Manifest, Vec<crate::layers::Layer>), Error> {
+    crate::manifest::decode(bytes)
 }

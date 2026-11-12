@@ -92,8 +92,11 @@ pub struct SoulpitKernel<'a> {
 /// and WeaponProficiencyDispatch. No method here grants authority from a handoff UUID.
 pub trait ActivityHandoffOwnerRuntime: Send {
     fn binding(&self) -> SoulpitActivityBinding;
-    fn kernel(&mut self) -> Result<SoulpitKernel<'_>, SoulpitRuntimeError>;
-    fn survivors(&self) -> Vec<CurrentCharacterGameplayFence>;
+    fn with_kernel<T>(
+        &mut self,
+        operation: impl FnOnce(SoulpitKernel<'_>) -> Result<T, SoulpitRuntimeError>,
+    ) -> Result<T, SoulpitRuntimeError>;
+    fn survivors(&self) -> Result<Vec<CurrentCharacterGameplayFence>, SoulpitRuntimeError>;
     fn read_encounter(&mut self) -> ActivityFuture<'_, SoulpitStoredEncounter>;
     /// Calls DurabilityRoot::advance_soulpit with current reconciled authority/node and
     /// all survivor revision slots held. The writer independently proves the Instance.
@@ -113,7 +116,10 @@ pub trait ActivityHandoffOwnerRuntime: Send {
     fn settle_boss_rewards(&mut self, reward: SoulpitBossReward) -> ActivityFuture<'_, ()>;
     /// Calls the shared return/recovery owner for every remaining participant. Completion
     /// has already credited Animus in the lifecycle transaction; timeout/abort never does.
-    fn return_participants(&mut self, phase: EncounterPhase) -> ActivityFuture<'_, ()>;
+    fn return_participants(
+        &mut self,
+        phase: EncounterPhase,
+    ) -> impl Future<Output = Result<(), SoulpitRuntimeError>>;
 }
 
 #[derive(Debug, Clone)]
@@ -180,7 +186,7 @@ fn draw(
     ))
 }
 
-fn request(
+pub(super) fn request(
     binding: SoulpitActivityBinding,
     stored: &SoulpitStoredEncounter,
     now: u64,
@@ -213,8 +219,7 @@ async fn settle_lethal_bosses(
     owner: &mut impl ActivityHandoffOwnerRuntime,
     binding: SoulpitActivityBinding,
 ) -> Result<(), SoulpitRuntimeError> {
-    let rewards = {
-        let kernel = owner.kernel()?;
+    let rewards = owner.with_kernel(|kernel| {
         let mut rewards = Vec::new();
         for actor in kernel
             .carrier
@@ -240,8 +245,8 @@ async fn settle_lethal_bosses(
                 death,
             });
         }
-        rewards
-    };
+        Ok(rewards)
+    })?;
     for reward in rewards {
         owner.settle_boss_rewards(reward).await?;
     }
@@ -275,14 +280,14 @@ async fn drive(
     {
         return Err(SoulpitRuntimeError::InvalidScope);
     }
-    {
-        let kernel = owner.kernel()?;
+    owner.with_kernel(|kernel| {
         if kernel.carrier.encounter_scope() != (binding.scope, binding.generation)
             || kernel.native.policies().source_digest() != kernel.content.server_artifact_digest()
         {
             return Err(SoulpitRuntimeError::InvalidScope);
         }
-    }
+        Ok(())
+    })?;
     let mut stored = owner.read_encounter().await?;
     settle_lethal_bosses(owner, binding).await?;
     let mut effect = EncounterEffect::NoChange;
@@ -291,13 +296,14 @@ async fn drive(
         // the durable wave is still Preparing. Keep their deaths and summons intact until
         // the same spawn receipt is acknowledged; reconciliation requires Fighting.
         let mut actors = if stored.encounter.snapshot().phase == EncounterPhase::Fighting {
-            let kernel = owner.kernel()?;
-            kernel
-                .carrier
-                .cascade_soulpit_summon_deaths(kernel.continuity, binding.handoff_id)?;
-            kernel
-                .carrier
-                .soulpit_actors(kernel.continuity, binding.handoff_id)?
+            owner.with_kernel(|kernel| {
+                kernel
+                    .carrier
+                    .cascade_soulpit_summon_deaths(kernel.continuity, binding.handoff_id)?;
+                Ok(kernel
+                    .carrier
+                    .soulpit_actors(kernel.continuity, binding.handoff_id)?)
+            })?
         } else {
             Vec::new()
         };
@@ -317,7 +323,7 @@ async fn drive(
                     monster_id: actor.tag.monster_id,
                     stack: actor.tag.stack.get(),
                 };
-                let step = request(binding, &stored, now_micros, action, owner.survivors())?;
+                let step = request(binding, &stored, now_micros, action, owner.survivors()?)?;
                 let outcome = owner.commit_progress(step).await?;
                 update(&mut stored, &outcome);
                 effect = outcome.effect;
@@ -333,24 +339,26 @@ async fn drive(
             if actor.tag.wave < stored.encounter.snapshot().wave
                 || stored.encounter.monster(actor.tag.monster_id).is_none()
             {
-                let kernel = owner.kernel()?;
-                kernel
-                    .carrier
-                    .retire_soulpit_defeated(kernel.continuity, actor.actor)?;
+                owner.with_kernel(|kernel| {
+                    Ok(kernel
+                        .carrier
+                        .retire_soulpit_defeated(kernel.continuity, actor.actor)?)
+                })?;
                 continue;
             }
             let action = SoulpitAction::Defeated {
                 wave: actor.tag.wave,
                 monster_id: actor.tag.monster_id,
             };
-            let step = request(binding, &stored, now_micros, action, owner.survivors())?;
+            let step = request(binding, &stored, now_micros, action, owner.survivors()?)?;
             let outcome = owner.commit_progress(step).await?;
             update(&mut stored, &outcome);
             effect = outcome.effect;
-            let kernel = owner.kernel()?;
-            kernel
-                .carrier
-                .retire_soulpit_defeated(kernel.continuity, actor.actor)?;
+            owner.with_kernel(|kernel| {
+                Ok(kernel
+                    .carrier
+                    .retire_soulpit_defeated(kernel.continuity, actor.actor)?)
+            })?;
         }
         if !stored.encounter.snapshot().phase.is_terminal()
             && matches!(effect, EncounterEffect::NoChange)
@@ -360,7 +368,7 @@ async fn drive(
                 &stored,
                 now_micros,
                 SoulpitAction::Advance,
-                owner.survivors(),
+                owner.survivors()?,
             )?;
             let outcome = owner.commit_progress(step).await?;
             update(&mut stored, &outcome);
@@ -379,7 +387,7 @@ async fn drive(
                 &stored,
                 now_micros,
                 SoulpitAction::Advance,
-                owner.survivors(),
+                owner.survivors()?,
             )?;
             let outcome = owner.commit_progress(step).await?;
             update(&mut stored, &outcome);
@@ -390,8 +398,7 @@ async fn drive(
         if stacks != wave_stacks(wave).map_err(|_| SoulpitRuntimeError::InvalidState)? {
             return Err(SoulpitRuntimeError::InvalidState);
         }
-        let actors = {
-            let kernel = owner.kernel()?;
+        let actors = owner.with_kernel(|kernel| {
             let root = kernel.content.server_artifact_digest();
             let id = occurrence(binding, b"wave", u64::from(wave));
             let mut positions = [MovementLocalPosition {
@@ -417,7 +424,7 @@ async fn drive(
             let boss_ability =
                 BossAbility::from_roll(draw(root, id, "soulpit_boss_ability", 6, 1, 3)? as u8)
                     .map_err(|_| SoulpitRuntimeError::InvalidState)?;
-            kernel.carrier.spawn_soulpit_wave(
+            Ok(kernel.carrier.spawn_soulpit_wave(
                 kernel.continuity,
                 kernel.content,
                 kernel.native.policies(),
@@ -430,75 +437,75 @@ async fn drive(
                     now_micros,
                 },
                 |position| kernel.scene.permits_spawn(position),
-            )?
-        };
+            )?)
+        })?;
         owner.register_creatures(&actors.iter().flatten().copied().collect::<Vec<_>>())?;
         let action = SoulpitAction::Spawned {
             wave,
             monster_ids: actors.map(|actor| actor.map(|actor| actor.monster_id)),
         };
-        let step = request(binding, &stored, now_micros, action, owner.survivors())?;
+        let step = request(binding, &stored, now_micros, action, owner.survivors()?)?;
         let outcome = owner.commit_progress(step).await?;
         update(&mut stored, &outcome);
     }
     let phase = stored.encounter.snapshot().phase;
     if phase.is_terminal() {
-        {
-            let kernel = owner.kernel()?;
-            kernel
+        owner.with_kernel(|kernel| {
+            Ok(kernel
                 .carrier
-                .retire_soulpit(kernel.continuity, binding.handoff_id)?;
-        }
+                .retire_soulpit(kernel.continuity, binding.handoff_id)?)
+        })?;
         owner.return_participants(phase).await?;
         return Ok(None);
     }
     // Oppressor's own two-second cadence is in its actual actor tag. The source AI selects
     // its target; the shared map supplies current wall, life and combat legality.
-    let kernel = owner.kernel()?;
-    for actor in kernel
-        .carrier
-        .soulpit_actors(kernel.continuity, binding.handoff_id)?
-    {
-        let Some(boss) = actor
-            .tag
-            .boss
-            .filter(|boss| boss.ability == BossAbility::Oppressor)
-        else {
-            continue;
-        };
-        if actor.health <= 0 || now_micros < boss.next_oppressor_at_micros {
-            continue;
+    owner.with_kernel(|kernel| {
+        for actor in kernel
+            .carrier
+            .soulpit_actors(kernel.continuity, binding.handoff_id)?
+        {
+            let Some(boss) = actor
+                .tag
+                .boss
+                .filter(|boss| boss.ability == BossAbility::Oppressor)
+            else {
+                continue;
+            };
+            if actor.health <= 0 || now_micros < boss.next_oppressor_at_micros {
+                continue;
+            }
+            let root = kernel.content.server_artifact_digest();
+            let id = occurrence(binding, b"oppressor", boss.ordinal);
+            let mut draws = [0; 3];
+            for (ordinal, value) in draws.iter_mut().enumerate() {
+                *value = draw(root, id, "soulpit_oppressor", ordinal as u64, 1, 100)? as u8;
+            }
+            let cast = SoulpitOppressorCast {
+                source: actor.actor,
+                current_target: kernel.scene.attack_target(actor.actor),
+                now_micros,
+                draws,
+                decision_root: root,
+            };
+            kernel.carrier.drive_soulpit_oppressor(
+                kernel.continuity,
+                cast,
+                |target, _, from, to| {
+                    kernel
+                        .scene
+                        .permits_condition(actor.actor, target, from, to)
+                },
+                |target, session| {
+                    kernel
+                        .scene
+                        .player_attribute_damage_delta(target, session, now_micros)
+                        .ok_or(CarrierError::InvalidCommitBinding)
+                },
+            )?;
         }
-        let root = kernel.content.server_artifact_digest();
-        let id = occurrence(binding, b"oppressor", boss.ordinal);
-        let mut draws = [0; 3];
-        for (ordinal, value) in draws.iter_mut().enumerate() {
-            *value = draw(root, id, "soulpit_oppressor", ordinal as u64, 1, 100)? as u8;
-        }
-        let cast = SoulpitOppressorCast {
-            source: actor.actor,
-            current_target: kernel.scene.attack_target(actor.actor),
-            now_micros,
-            draws,
-            decision_root: root,
-        };
-        kernel.carrier.drive_soulpit_oppressor(
-            kernel.continuity,
-            cast,
-            |target, _, from, to| {
-                kernel
-                    .scene
-                    .permits_condition(actor.actor, target, from, to)
-            },
-            |target, session| {
-                kernel
-                    .scene
-                    .player_attribute_damage_delta(target, session, now_micros)
-                    .ok_or(CarrierError::InvalidCommitBinding)
-            },
-        )?;
-    }
-    next_soulpit_deadline(binding, &stored, &kernel)
+        next_soulpit_deadline(binding, &stored, &kernel)
+    })
 }
 
 /// A restart never recreates the source's process-local timers or monsters. The shared
@@ -512,23 +519,22 @@ pub async fn interrupt_soulpit_activity(
     {
         return Err(SoulpitRuntimeError::InvalidScope);
     }
-    {
-        let kernel = owner.kernel()?;
+    owner.with_kernel(|kernel| {
         if kernel.carrier.encounter_scope() != (binding.scope, binding.generation)
             || kernel.native.policies().source_digest() != kernel.content.server_artifact_digest()
         {
             return Err(SoulpitRuntimeError::InvalidScope);
         }
-    }
+        Ok(())
+    })?;
     let stored = owner.read_encounter().await?;
     settle_lethal_bosses(owner, binding).await?;
     if stored.encounter.snapshot().phase.is_terminal() {
-        {
-            let kernel = owner.kernel()?;
-            kernel
+        owner.with_kernel(|kernel| {
+            Ok(kernel
                 .carrier
-                .retire_soulpit(kernel.continuity, binding.handoff_id)?;
-        }
+                .retire_soulpit(kernel.continuity, binding.handoff_id)?)
+        })?;
         return owner
             .return_participants(stored.encounter.snapshot().phase)
             .await;
@@ -538,15 +544,14 @@ pub async fn interrupt_soulpit_activity(
         &stored,
         now_micros,
         SoulpitAction::Interrupt,
-        owner.survivors(),
+        owner.survivors()?,
     )?;
     let outcome = owner.commit_progress(step).await?;
-    {
-        let kernel = owner.kernel()?;
-        kernel
+    owner.with_kernel(|kernel| {
+        Ok(kernel
             .carrier
-            .retire_soulpit(kernel.continuity, binding.handoff_id)?;
-    }
+            .retire_soulpit(kernel.continuity, binding.handoff_id)?)
+    })?;
     owner
         .return_participants(outcome.encounter.snapshot().phase)
         .await

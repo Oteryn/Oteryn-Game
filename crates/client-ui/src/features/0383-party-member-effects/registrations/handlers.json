@@ -1,0 +1,23 @@
+{
+  "mechanic": "0383-party-member-effects",
+  "kind": "handlers",
+  "id": "0383-party-member-effects-result",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 383,
+  "entry": "protocol.rs::apply_result",
+  "push_messages": [
+    "PartyResult"
+  ],
+  "reducer": "protocol.rs::apply_result",
+  "test": "tests/state.rs::member_effects_replace_and_count_down",
+  "shared_commands": [
+    46
+  ],
+  "not_applicable": {
+    "settings": "Party effects belong to the server and are displayed in the existing party panel.",
+    "state": "Uses the existing 0042-party PartyPanel state; the negotiated fields replace its member entries.",
+    "input": "Opened and refreshed by the existing 0042-party controls; no separate input binding."
+  }
+}

@@ -65,6 +65,24 @@ def main() -> int:
         assert str(exc).startswith("CONFLICTS:"), exc
     else:
         raise AssertionError("conflict was not rejected")
+    market_snapshot = snapshot({"mercado": value("não")})
+    market_legacy = legacy({"trade_restrictions": {"state": "KNOWN", "value": {
+        "marketable": {"state": "KNOWN", "value": True}}}})
+    promotion = {"item_key": ALIASES[TARGET["key"]], "marketable": True,
+                 "supersedes": "WAVE1_WIKI_MARKETABLE_FALSE"}
+    accepted = stage.superseding_values({"promotions": []}, {"promotions": [promotion]})
+    replay = stage.stage(market_snapshot, CENSUS, market_legacy, ALIASES, accepted)
+    assert replay["items"][0]["facts"][0]["value"] is False, "historical observation was rewritten"
+    for changed in ({**promotion, "supersedes": "other"},
+                    {**promotion, "item_key": "oteryn:item.other"},
+                    {**promotion, "marketable": False}):
+        try:
+            stage.stage(market_snapshot, CENSUS, market_legacy, ALIASES,
+                        stage.superseding_values({"promotions": []}, {"promotions": [changed]}))
+        except stage.StageError as exc:
+            assert str(exc).startswith("CONFLICTS:"), exc
+        else:
+            raise AssertionError("unqualified market supersession accepted")
     print("PASS g4 item wave1 stage self-test")
     return 0
 

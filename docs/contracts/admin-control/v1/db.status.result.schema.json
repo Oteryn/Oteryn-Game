@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DatabaseStatus",
+  "type": "object",
+  "properties": {
+    "bloat_estimate_bytes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cache_hit_ratio": {
+      "type": "number",
+      "format": "double"
+    },
+    "connections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RoleConnections"
+      }
+    },
+    "locks_waiting": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "oldest_transaction_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint32",
+      "minimum": 0
+    },
+    "replication_lag_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "format": "double"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TableSize"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "tables",
+    "connections",
+    "locks_waiting",
+    "cache_hit_ratio"
+  ],
+  "$defs": {
+    "RoleConnections": {
+      "type": "object",
+      "properties": {
+        "connections": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "connections"
+      ]
+    },
+    "TableSize": {
+      "type": "object",
+      "properties": {
+        "bytes": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "table",
+        "bytes"
+      ]
+    }
+  }
+}

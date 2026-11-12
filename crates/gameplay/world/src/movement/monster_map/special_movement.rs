@@ -4,7 +4,7 @@ use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::map::{overlay::TilePos, view};
 
-pub(super) fn step_in(
+pub fn step_in(
     runtime: &mut ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
@@ -34,6 +34,16 @@ pub(super) fn step_in(
     let Ok(Some(stack)) = view::compose_tile(&map.overlay, &map.facts, pos) else {
         return;
     };
+    // Crystal movements_extraction_spot.lua:26-49 and startup/tables/tile.lua:
+    // 1111-1153: reserve the actual Cake step before any later AI movement.
+    crate::movement::cake_extraction::reserve_machine_step(
+        runtime,
+        actor,
+        stack
+            .entries
+            .iter()
+            .any(|entry| entry.facts.appearance_id == 8886),
+    );
     // Crystal thornfire_wolf.lua:3-12: removal plus a fresh, fully healthy Crystal Wolf.
     // This callback has neither the trap's protection-zone check nor its jaw-trap guard.
     const THORNFIRE_WOLF: &str = "oteryn:creature.thornfire_wolf";

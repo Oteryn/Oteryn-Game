@@ -1,0 +1,4618 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_shattered_isles_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:104",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:112"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/default_start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:81",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:85",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:121",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:132",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:95",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:133",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:58"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:134",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:138",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:140",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:72",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 17,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:72",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:96",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:123",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:140",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:141",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:143",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:144",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:147",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:152",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:153",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:158",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:167",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:150",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:153",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:66",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:66",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:138",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:141",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:164",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:160",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:162",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:164",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:184",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:187"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:84",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:128",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:84",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:84",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:96",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:100",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:100",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:57"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:119",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:123",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:61",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:63",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:64",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:69",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map1",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map2",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map3",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:76",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:75",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:76",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:149",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:156",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:160",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:163"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:202",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:204",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:215",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:226",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:265",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:267",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:269",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:272",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:275",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:278"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/dragahs_spellbook",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:262",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:286"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/yavern_door",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:57",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:66",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:89",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:94"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/ring-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "ring",
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "My ring was stolen by a parrot, directly from my dressing table near the window. It flew to the nearby mountains and I fear my ring will be lost forever. Whoever returns it to me will be rewarded generously. ...",
+        "I guess that evil parrot hid the ring somewhere on a high tree or a rock so that you might need a rake to get it."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/ring-found",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "ring",
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Oh, my beloved ring! Have you found it and want to return it to me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/errand-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "ring",
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I would need some help in another matter. It is only a small errand. Are you interested?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/errand-return",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "errand"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Great, thank you! As promised, here are your 5 gold pieces. Is there ... anything left that you might want to discuss with me?"
+      ],
+      "effects": [
+        {
+          "kind": "give_money",
+          "amount": 5,
+          "include_bank": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:77"
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/peg-leg",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "peg leg"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "You have returned my ring and proven yourself as trustworthy. There is something I have to discuss with you. Are you willing to listen?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:84"
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/raymond",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "raymond striker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "<blushes> Oh, he is so wonderful. A very special man with a special place in my heart."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:89"
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/mermaid",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "mermaid"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I can't thank you enough for freeing my beloved Ray from that evil spell. I am still shocked that a mermaid could steal his love that easily."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:94"
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/ring-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6093",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Oh, thank you so much! Take this gold as a reward. ... which reminds me, I would need some help in another matter. It is only a small errand. Are you interested?"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6093",
+          "count": 1
+        },
+        {
+          "kind": "give_money",
+          "amount": 150,
+          "include_bank": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:101"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker",
+        "mermaid"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/ring-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Ahh, now I understand... One of my suitors - a real chicken-heart - just brought back my ring. I was really surprised. Suddenly he shows brave attitude. But... It seems you lost it and he tries to take advantage. ...",
+        "Thanks a lot anyways and take this gold as a reward. By the way, I would need some help in another matter. It is only a small errand. Are you interested?"
+      ],
+      "effects": [
+        {
+          "kind": "give_money",
+          "amount": 150,
+          "include_bank": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:106"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker",
+        "mermaid"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/errand-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Thank you! It is not a difficult matter but a rather urgent one. I need to send some money to a person in town. Would you be willing to run this small errand for me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:115"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker",
+        "mermaid"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/errand-accept",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I was hoping that you'd agree. Please deliver these 200 gold pieces to the herbalist Charlotta in the south-western part of the town. If you return from this errand, I will grant you 5 gold pieces as reward for your efforts."
+      ],
+      "effects": [
+        {
+          "kind": "give_money",
+          "amount": 200,
+          "include_bank": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:118"
+      ],
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker",
+        "mermaid"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/meriana-access",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I am glad to hear that. So please listen: Due to circumstances too complicated to explain now, I met Captain Ray Striker. He is ... a freedom fighter and would not find my father's acceptance, but we fell in love ...",
+        "Even though he had to hide for a while, we have stayed in contact for a long time now. And our love grew even further against all odds ...",
+        "However, recently we lost contact. I don't know what has happened to him and fear the worst ...",
+        "We always have been aware that something terrible might happen to him due to his lifestyle. But perhaps there is a harmless explanation for the absence of messages <holds her tears back>. I have arranged a passage for you to Ray's hiding place ...",
+        "Contact Captain Waverider, the old fisherman, and tell him the secret word 'peg leg'. He will make sure that you arrive safely ...",
+        "Please look for Ray and find out what happened to him and why he was not able to answer. Return to me as soon as you have found something out. I wish you a good journey."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:123"
+      ],
+      "topics": [
+        4
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker",
+        "mermaid"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eleonore/decline",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eleonore",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then no."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:136"
+      ],
+      "topics": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "exclude_keywords": [
+        "ring",
+        "mission",
+        "errand",
+        "peg leg",
+        "raymond striker",
+        "mermaid",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/charlotta/errand",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.charlotta",
+      "trigger": "say",
+      "keywords": [
+        "errand",
+        "gold"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Oh, so you brought some gold from Eleonore to me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/charlotta/errand-paid",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.charlotta",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "money",
+          "amount": 200,
+          "include_bank": true
+        }
+      ],
+      "reply": [
+        "Hmm, it seems that Eleonore does trust you. Perhaps she is even right. However. Since we need some help right now I guess we can't be too picky. Return to Eleonore and tell her the secret password: 'peg leg'. She will tell you more about her problem."
+      ],
+      "effects": [
+        {
+          "kind": "take_money",
+          "amount": 200,
+          "include_bank": true
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_errand",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "errand",
+        "gold"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/charlotta/errand-no-money",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.charlotta",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have enough..."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:72"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "errand",
+        "gold"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/charlotta/decline",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.charlotta",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then no."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:76"
+      ],
+      "topics": [
+        1,
+        2
+      ],
+      "exclude_keywords": [
+        "errand",
+        "gold",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/captain_waverider/meriana-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.captain_waverider",
+      "trigger": "say",
+      "keywords": [
+        "peg leg"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Ohhhh. So... <lowers his voice> you know who sent you so I sail you to you know where. <wink> <wink> It will cost 50 gold to cover my expenses. Is it that what you wish?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:57"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/captain_waverider/meriana-no-access",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.captain_waverider",
+      "trigger": "say",
+      "keywords": [
+        "peg leg"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, my old ears can't hear you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/captain_waverider/meriana-sail",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.captain_waverider",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "money",
+          "amount": 50,
+          "include_bank": true
+        }
+      ],
+      "reply": [
+        "And there we go!"
+      ],
+      "effects": [
+        {
+          "kind": "take_money",
+          "amount": 50,
+          "include_bank": true
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32346,
+            "y": 32625,
+            "floor": -7
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:73"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "peg leg",
+        "passage",
+        "no"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/captain_waverider/meriana-no-money",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.captain_waverider",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have enough money."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:78"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "peg leg",
+        "passage",
+        "no"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/captain_waverider/meriana-decline",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.captain_waverider",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "I have to admit this leaves me a bit puzzled."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "peg leg",
+        "passage"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/eleonore",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "eleonore"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Eleonore ... Yes, I remember her... vaguely. She is a pretty girl ... but still only a girl and now I am in love with a beautiful and passionate woman. A true {mermaid} even."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/mission-before-poem",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Don't ask about silly missions. All I can think about is this lovely {mermaid}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:66"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/sabrehaven-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Ask around in the settlement where you can help out. If you have proven your worth I might have some missions for you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:70"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/fafnar-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 12
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Indeed, I could use some help. The evil pirates of Nargor have convinced an alchemist from Edron to supply them with a substance called Fafnar's Fire ...",
+        "It can burn even on water and is a threat to us all. I need you to travel to Edron and pretend to the alchemist Sandra that you are the one whom the other pirates sent to get the fire ...",
+        "When she asks for a payment, tell her 'Your continued existence is payment enough'. That should enrage any member of the Edron academy enough to refuse any further deals with the pirates."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:73"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/fafnar-report",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "I think that means 'mission accomplished'. Hehe. I guess that will put an end to their efforts to buy any alchemical substance from Edron."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 13
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:80"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/sabotage-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The mission on which I will send you is vital to our cause. It is a sabotage mission. Nargor is guarded by several heavy catapults. ...",
+        "I need you to sabotage the most dangerous of those catapults which can be found right in their harbour, aiming at ships passing by the entrance. ...",
+        "Get a fire bug - you can buy them in Liberty Bay - and set this catapult on fire. ...",
+        "Make sure to use the bug on the left part of the catapult where its lever is. That is where it's most vulnerable. ...",
+        "If you see a short explosion, you will know that it worked. I will tell Sebastian to bring you to Nargor, but beware. ...",
+        "Of course, he can't drop you off directly in the pirate's base. However, we have discovered a secret way into the Howling Grotto. ...",
+        "Try to make your way through the caves of Nargor to reach their harbour. This is where you will find the catapult in question."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:84"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/sabotage-report",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You did it! Excellent!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 15
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:96"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/maps-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "If you manage to accomplish this vital mission you will prove yourself to be a worthy member of our community. Imight even grant you your own ship and pirate clothing! ...",
+        "So listen to the first step of my plan. I want you to infiltrate their base. Try to enter their tavern, which meansthat you have to get past the guard. ...",
+        "You will probably have to deceive him somehow, so that he thinks you are one of them. ...",
+        "In the tavern, the pirates feel safe and plan their next strikes. Study ALL of their maps and plans lying around ...",
+        "Afterwards, return here and report to me about your mission."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:100"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/maps-report",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map1",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map2",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map3",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Well done, my friend. That will help us a lot. Of course there are other things to be done though. ...",
+        "I learned that Klaus, the owner of the tavern, wants me dead. He is offering any of those pirates a mission to kill me....",
+        "If we could convince him that you fulfilled that mission, the pirates will have the party of their lives. This would beour chance for a sneak attack to damage their boats and steal their plunder! ...",
+        "Obtain this mission from him and learn what he needs as a proof. Then return to me and report to me about yourmission so we can formulate an appropriate plan."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 16
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/pillow",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "My pillow?? They know me all too well... <sigh> I've owned it since my childhood. However. Here, take it and convincehim that I am dead."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i6105",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:119"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/final",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Incredible! You did what no other did even dare to think about! You are indeed a true hero to our cause ...",
+        "Sadly I have no ship that lacks a captain, else you would of course be our first choice. I am still true to my word asbest as I am able. ...",
+        "So take this as your very own ship. Oh, and remind me about the pirate outfit sometime."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i2994",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 17
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:123"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/mermaid-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mermaid"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The mermaid is the most beautiful creature I have ever met. She is so wonderful. It was some kind of magic as we first met. A look in her eyes and I suddenly knew there would be never again another woman in my life but her."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:133"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/raymond_striker/mermaid-thanks",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.raymond_striker",
+      "trigger": "say",
+      "keywords": [
+        "mermaid"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I am deeply ashamed that I lacked the willpower to resist her spell. Thank you for your help in that matter. Now my head is once more free to think about our {mission}."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:140"
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/marina/raymond",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.marina",
+      "trigger": "say",
+      "keywords": [
+        "raymond striker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "<giggles> I think he has a crush on me. Well, silly man, it is only for his own good. This way he can get accustomed to TRUE beauty. And I won't give him up anymore now that he is mine."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:69"
+      ],
+      "exclude_keywords": [
+        "silk",
+        "yarn",
+        "silk yarn",
+        "spool of yarn",
+        "honey",
+        "honeycomb",
+        "50 honeycombs"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/marina/date-first",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.marina",
+      "trigger": "say",
+      "keywords": [
+        "date"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Is that the best you can do? A true Djinn would have done something more poetic."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:75"
+      ],
+      "exclude_keywords": [
+        "silk",
+        "yarn",
+        "silk yarn",
+        "spool of yarn",
+        "honey",
+        "honeycomb",
+        "50 honeycombs",
+        "raymond striker"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/marina/date-poem",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.marina",
+      "trigger": "say",
+      "keywords": [
+        "date"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "This lovely, exotic Djinn is a true poet. And he is asking me for a date? Excellent. Now I can finaly dump this human pirate. He was growing to be boring more and more with each day ...",
+        "As a little reward for your efforts I allow you to ride my sea turtles. Just look around at the shores and you will find them."
+      ],
+      "effects": [
+        {
+          "kind": "achievement",
+          "name": "Matchmaker"
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:80"
+      ],
+      "exclude_keywords": [
+        "silk",
+        "yarn",
+        "silk yarn",
+        "spool of yarn",
+        "honey",
+        "honeycomb",
+        "50 honeycombs",
+        "raymond striker"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/eleonore",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "eleonore"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I heard the birds sing about her beauty. But how could a human rival the enchanting beauty of a {mermaid}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/mermaid-first",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "mermaid",
+        "marina"
+      ],
+      "guards": [],
+      "reply": [
+        "Oh yes, I noticed that lovely mermaid. From afar of course. I would not dare to step into the eyes of such a lovely creature. ...",
+        "... I guess I am quite shy. Oh my, if I were not blue, I would turn red now. If there would be someone to arrange a {date} with her."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:66"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/poem-request",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "mermaid",
+        "marina"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Oh my. Its not easy to impress a mermaid I guess. Please get me a {love poem}. I think elves are the greatest poets so their city seems like a good place to look for one."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:73"
+      ],
+      "exclude_keywords": [
+        "eleonore"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/date",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "date"
+      ],
+      "guards": [],
+      "reply": [
+        "Will you ask the mermaid Marina if she would date me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:77"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mermaid",
+        "marina"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/date-accepted",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Thank you. How ironic, a human granting a djinn a wish."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:83"
+      ],
+      "topics": [
+        3
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mermaid",
+        "marina",
+        "date"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/poem-handoff",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6119",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Excellent. Here, with this little spell I enable you to recite the poem like a true elven poet. Now go and ask her for a date again."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6119",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/apoem_for_the_mermaid",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:88"
+      ],
+      "topics": [
+        4
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mermaid",
+        "marina",
+        "date"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/poem-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have it..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:93"
+      ],
+      "topics": [
+        4
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mermaid",
+        "marina",
+        "date"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ocelus/poem-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ocelus",
+      "trigger": "say",
+      "keywords": [
+        "love poem"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/adjinn_in_love",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Did you get a love poem from Ab'Dendriel?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:98"
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mermaid",
+        "marina",
+        "date",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/elvith/poem-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.elvith",
+      "trigger": "say",
+      "keywords": [
+        "love poem"
+      ],
+      "guards": [],
+      "reply": [
+        "Do you want to buy a poem scroll for 200 gold?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:81"
+      ],
+      "exclude_keywords": [
+        "songs of the forest"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/elvith/poem-buy",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.elvith",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "money",
+          "amount": 200,
+          "include_bank": true
+        }
+      ],
+      "reply": [
+        "Here it is."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        },
+        {
+          "kind": "take_money",
+          "amount": 200,
+          "include_bank": true
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i6119",
+          "count": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:88"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "songs of the forest",
+        "love poem"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/elvith/poem-no-money",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.elvith",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have enough money."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:88"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "songs of the forest",
+        "love poem"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/bread-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You know, we have plenty of rum here but we lack some basic food. Especially food that easily becomes mouldy is a problem. Bring me 100 breads and you will help me a lot."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:140"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/bread-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Are you here to bring me the 100 pieces of bread that I requested?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/beer-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "The sailors always tell tales about the famous beer of Carlin. You must know, alcohol is forbidden in that city. ...",
+        "The beer is served in a secret whisper bar anyway. Bring me a sample of the whisper beer, NOT the usual beer but whisper beer. I hope you are listening."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:147"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/beer-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Did you get a sample of the whisper beer from Carlin?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:153"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/bread-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3600",
+          "count": 100
+        }
+      ],
+      "reply": [
+        "What a joy. At least for a few days adequate supply is ensured."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3600",
+          "count": 100
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:158"
+      ],
+      "topics": [
+        6
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/bread-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You don't have enough bread."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:158"
+      ],
+      "topics": [
+        6
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/beer-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6106",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Thank you very much. I will test this beauty in privacy."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6106",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:167"
+      ],
+      "topics": [
+        7
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/beer-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Whatever you got there is not whisper beer."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:167"
+      ],
+      "topics": [
+        7
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/ariella/beer-decline",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.ariella",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Hurry up then! I can't wait to taste it."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:177"
+      ],
+      "topics": [
+        7
+      ],
+      "exclude_keywords": [
+        "mission",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/morgan/letter-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.morgan",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Hm, if you are that eager to work I have an idea how you could help me out. A distant relative of mine, the old sage Eremo lives on the isle Cormaya, near Edron. ...",
+        "He has not heard from me since ages. He might assume that I am dead. Since I don't want him to get into trouble for receiving a letter from a pirate I ask you to deliver it personally. ...",
+        "Of course it's a long journey but you asked for it. You will have to prove us your worth. Are you up to that?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:72"
+      ],
+      "exclude_keywords": [
+        "firebird"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/morgan/letter-report",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.morgan",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Thank you for delivering my letter to Eremo. I have no more missions for you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:80"
+      ],
+      "exclude_keywords": [
+        "firebird"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/morgan/letter-accept",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.morgan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Alright, we will see. Here, take this letter and deliver it safely to old Eremo on Cormaya."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i6113",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:148"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "firebird",
+        "mission",
+        "warrior's sword",
+        "knight's sword",
+        "forge"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/eremo/letter",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.eremo",
+      "trigger": "say",
+      "keywords": [
+        "letter"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 6
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6113",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "A letter from that youngster Morgan? I believed him dead since years. These news are good news indeed. Thank you very much, my friend."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6113",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/atlas-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "I need a new quality atlas for our captains. Only one of the best will do it. I heard the explorers society sells the best, but only to members of a certain rank. You will have to get this rank or ask a high ranking member to buy it for you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/atlas-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Did you get an atlas of the explorers society as I requested?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/egg-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission2",
+          "op": "gt",
+          "value": 0
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "op": "lt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You did some impressive things. I think people here start considering you as one of us. But these are dire times and everyone of us is expected to give his best and even exceed himself. Do you think you can handle that?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/egg-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you rescue one of those poor soon-to-be baby tortoises from Nargor?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/atlas-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 9
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6108",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Indeed, what a fine work... the book I mean. Your work was acceptable all in all."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6108",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:137"
+      ],
+      "topics": [
+        6
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/atlas-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "You don't have it..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:143"
+      ],
+      "topics": [
+        6
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/egg-accept",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "op": "lt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "I am glad to hear this. Please listen. The pirates on Nargor are breeding tortoises. They think eating tortoises makes a hard man even harder. ...",
+        "However I am quite fond of tortoises and can't stand the thought of them being eaten. So I convinced Captain Striker that I can train them to help us. As a substitute for rafts and such ...",
+        "All I need is one tortoise egg from Nargor. This is the opportunity to save a tortoise from a gruesome fate! ...",
+        "I will ask Sebastian to bring you there. Travel to Nargor, find their tortoise eggs and bring me at least one of them."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:148"
+      ],
+      "topics": [
+        7
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/egg-handin-achievement",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6125",
+          "count": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "op": "ge",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "A real tortoise egg ... I guess you are more accustomed to rescue some noblewoman in distress but you did something goodtoday."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6125",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 14
+        },
+        {
+          "kind": "achievement",
+          "name": "Animal Activist"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:159"
+      ],
+      "topics": [
+        8
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/egg-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6125",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "A real tortoise egg ... I guess you are more accustomed to rescue some noblewoman in distress but you did something goodtoday."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6125",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 14
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:159"
+      ],
+      "topics": [
+        8
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/egg-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_door",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You don't have it..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:169"
+      ],
+      "topics": [
+        8
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/duncan/decline",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.duncan",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then no."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:175"
+      ],
+      "topics": [
+        6,
+        7,
+        8
+      ],
+      "exclude_keywords": [
+        "mission",
+        "task",
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/decline",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Maybe next time."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:140"
+      ],
+      "topics": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "continue_matching": true
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/voodoo-start",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "The evil cult has placed a curse on one of the captains here. I need at least five of their pirate voodoo dolls to lift that curse."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 11
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:159"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/voodoo-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "Did you bring five pirate voodoo dolls?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:164"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/voodoo-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 11
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i5810",
+          "count": 5
+        }
+      ],
+      "reply": [
+        "Finally I can put an end to that curse. I thank you so much."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i5810",
+          "count": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "value": 12
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:183"
+      ],
+      "topics": [
+        8
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/voodoo-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "You don't have it..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:189"
+      ],
+      "topics": [
+        8
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "This is really not advisable. Behind this barrier, strong forces are raging violently. Are you sure that you want to go there?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:194"
+      ],
+      "topics": [
+        9
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-accept",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I guess I cannot stop you then. Since you told me about my apprentice, it is my turn to help you. I will perform a ritual for you, but I need a few ingredients. ...",
+        "Bring me one fresh dead chicken, one fresh dead rat and one fresh dead black sheep, in that order."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:197"
+      ],
+      "topics": [
+        10
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/chicken-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4330",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Very good! <mumble> 'Your soul shall be protected!' Now, I need a fresh dead rat."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4330",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:204"
+      ],
+      "topics": [
+        11
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/chicken-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have the necessary items."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:204"
+      ],
+      "topics": [
+        11
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/rat-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3994",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Very good! <chants and dances> 'You shall face black magic without fear!' Now, I need a fresh dead black sheep."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3994",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:215"
+      ],
+      "topics": [
+        12
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/rat-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have the necessary items."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:215"
+      ],
+      "topics": [
+        12
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/sheep-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4095",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Very good! <stomps staff on ground> 'EVIL POWERS SHALL NOT KEEP YOU ANYMORE! SO BE IT!'"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4095",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:226"
+      ],
+      "topics": [
+        13
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/sheep-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have the necessary items."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:226"
+      ],
+      "topics": [
+        13
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-no-book",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "counterspell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/dragahs_spellbook",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "reply": [
+        "You should not talk about things you don't know anything about."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:261"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-first",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "counterspell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "op": "eq",
+          "value": -1
+        }
+      ],
+      "reply": [
+        "You mean, you are interested in a counterspell to cross the energy barrier on Goroma?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:265"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-stage-1",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "counterspell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you bring the fresh dead chicken?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:269"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-stage-2",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "counterspell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the fresh dead rat?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:272"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-stage-3",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "counterspell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Did you bring the fresh dead black sheep?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:275"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/counterspell-complete",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "counterspell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Hm. I don't think you need another one of my counterspells to cross the barrier on Goroma."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:278"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/spellbook",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "spellbook"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6120",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Ah, thank you very much! I'll honour his memory."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6120",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/dragahs_spellbook",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:282"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake",
+        "counterspell"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/spellbook-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "spellbook"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have the necessary items."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:288"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake",
+        "counterspell"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/chondur/energy-field",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.chondur",
+      "trigger": "say",
+      "keywords": [
+        "energy field"
+      ],
+      "guards": [],
+      "reply": [
+        "Ah, the energy barrier set up by the cult is maintained by lousy magic, but it's still effective. Without a proper counterspell, you won't be able to pass it."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:292"
+      ],
+      "exclude_keywords": [
+        "stampor",
+        "mount",
+        "mission",
+        "yes",
+        "stake",
+        "counterspell",
+        "spellbook"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/sandra/fafnar",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "fafnar"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Pssht, not that loud. So they have sent you to get... the stuff?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:79"
+      ],
+      "keyword_mode": "substring",
+      "exclude_keywords": [
+        "prize"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/sandra/fafnar-demand",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Finally. You have no idea how difficult it is to keep something secret here. And you brought me all the crystal coins I demanded?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:127"
+      ],
+      "topics": [
+        5
+      ],
+      "exclude_keywords": [
+        "prize",
+        "fafnar",
+        "your continued existence is payment enough"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/sandra/fafnar-threat",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.sandra",
+      "trigger": "say",
+      "keywords": [
+        "your continued existence is payment enough"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "What?? How dare you?! I am a sorcerer of the most reknown academy on the face of this world. Do you think some lousy pirates could scare me? Get lost! Now! I will have no further dealings with the likes of you!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission1",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:84"
+      ],
+      "topics": [
+        6
+      ],
+      "exclude_keywords": [
+        "prize",
+        "fafnar"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/sebastian/nargor-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.sebastian",
+      "trigger": "say",
+      "keywords": [
+        "nargor"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Do you want to sail Nargor for 50 gold coins?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:57"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/sebastian/nargor-deny",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.sebastian",
+      "trigger": "say",
+      "keywords": [
+        "nargor"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, but I can't take you there."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/sebastian/nargor-sail",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.sebastian",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "money",
+          "amount": 50,
+          "include_bank": true
+        }
+      ],
+      "reply": [
+        "Set the sails!"
+      ],
+      "effects": [
+        {
+          "kind": "take_money",
+          "amount": 50,
+          "include_bank": true
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32024,
+            "y": 32813,
+            "floor": -7
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:64"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "nargor"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/vulturenose/enter-disguised",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.vulturenose",
+      "trigger": "say",
+      "keywords": [
+        "enter"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/yavern_door",
+          "op": "lt",
+          "value": 0
+        },
+        {
+          "kind": "equipped",
+          "slot": "head",
+          "item": "oteryn:item.tibia.i6096"
+        },
+        {
+          "kind": "equipped",
+          "slot": "armor",
+          "item": "oteryn:item.tibia.i6095"
+        },
+        {
+          "kind": "equipped",
+          "slot": "legs",
+          "item": "oteryn:item.tibia.i5918"
+        },
+        {
+          "kind": "equipped",
+          "slot": "feet",
+          "item": "oteryn:item.tibia.i5461"
+        }
+      ],
+      "reply": [
+        "Hey, I rarely see a dashing pirate like you! Get in, matey!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/yavern_door",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/vulturenose/enter-denied",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.vulturenose",
+      "trigger": "say",
+      "keywords": [
+        "enter"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/yavern_door",
+          "op": "lt",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "YOU WILL NOT PASS! Erm ... I mean you don't look like a true pirate to me. You won't get in."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/klaus/pillow-request",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.klaus",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Hmm, you look like a seasoned seadog. Kill Captain Ray Striker, bring me his lucky pillow as a proof and you are our hero!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/klaus/pillow-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.klaus",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Do you have Striker's pillow?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/klaus/pillow-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.klaus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i6105",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "You DID it!!! Incredible! Boys, lets have a PAAAAAARTY!!!!"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i6105",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/klaus/pillow-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.klaus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission4",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Come back when you have his lucky pillow."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:75"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/wood-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "sail",
+        "passage",
+        "wreck",
+        "liberty bay",
+        "ship"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I'd love to bring you back to Liberty Bay, but as you can see, my ship is ruined. I also hurt my leg and can barely move. Can you help me?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:65"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/wood-confirm",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "sail",
+        "passage",
+        "wreck",
+        "liberty bay",
+        "ship"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Have you brought 30 pieces of wood so that I can repair the ship?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:70"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/return-offer",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "sail",
+        "passage",
+        "wreck",
+        "liberty bay",
+        "ship"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Do you want to travel back to Liberty Bay?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:74"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/wood-info",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Thank you. Luckily the damage my ship has taken looks more severe than it is, so I will only need a few wooden boards. ...",
+        "I saw some lousy trolls running away with some parts of the ship. It might be a good idea to follow them and check if they have some more wood. ...",
+        "We will need 30 pieces of wood, no more, no less. Did you understand everything?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:78"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/wood-accept",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Good! Please return once you have gathered 30 pieces of wood."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:86"
+      ],
+      "topics": [
+        2
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/wood-handin",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i5901",
+          "count": 30
+        }
+      ],
+      "reply": [
+        "Excellent! Now we can leave this godforsaken place. Thank you for your help. Should you ever want to return to this island, ask me for a passage to Goroma."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i5901",
+          "count": 30
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/shipwrecked",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:91"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/wood-missing",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have enough..."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:97"
+      ],
+      "topics": [
+        3
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_shattered_isles_quest/jack_fate_goroma/return-sail",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "npc": "oteryn:npc.jack_fate_goroma",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Set the sails!"
+      ],
+      "effects": [
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 32285,
+            "y": 32892,
+            "floor": -6
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:100"
+      ],
+      "topics": [
+        4
+      ]
+    }
+  ]
+}

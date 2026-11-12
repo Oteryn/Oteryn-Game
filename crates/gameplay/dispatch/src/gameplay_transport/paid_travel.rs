@@ -5,6 +5,9 @@ use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFa
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
 
+#[path = "paid_travel/quest_confirmation.rs"]
+mod quest_confirmation;
+
 #[derive(Clone)]
 pub(super) struct Prompt {
     npc: EntityRef,
@@ -136,12 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(prompt) = previous else {
                 return ordinary;
             };
-            if prompt.npc != intent.npc_actor
-                || prompt.context != context
-                || prompt.fence != fence
-                || now < prompt.opened
-                || now - prompt.opened >= 60_000_000
-            {
+            if !prompt.matches_confirmation(intent.npc_actor, &context, fence, now) {
                 return refusal(intent, TravelRefusal::StaleQuote);
             }
             prompt
@@ -330,8 +328,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             floor: destination.floor,
         };
         if !super::super::respawn_cell_admissible(
-            self.movement_cells.index(),
-            self.movement_cells.scope(),
+            self.movement_cells().index(),
+            self.movement_cells().scope(),
             self.world_id,
             runtime.content_pin().server_artifact_digest(),
             &std::collections::BTreeSet::new(),

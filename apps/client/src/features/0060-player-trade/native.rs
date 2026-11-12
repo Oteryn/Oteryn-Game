@@ -1,17 +1,20 @@
-//! Minimal native projection; exact partner and item handles are supplied by world interaction.
+//! Player context menu and live inventory picker for the existing trade adapter.
 #![allow(unsafe_code)]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::player_trade::{Intent, panel_text};
+use oteryn_client_ui::player_trade::{Intent, status_text};
 use std::{
     ptr::{null, null_mut},
     sync::Weak,
     time::Duration,
 };
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, WPARAM},
     UI::WindowsAndMessaging::*,
 };
 const OFFER: usize = 5;
+const OPEN_CONTAINER: usize = 6;
+const CLOSE: usize = 7;
 const ACCEPT: usize = 1;
 const CANCEL: usize = 2;
 const LOOK_OWN: usize = 3;
@@ -20,6 +23,13 @@ const LOOK_COUNTER: usize = 4;
 struct Actions(Vec<usize>);
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
+        if msg == WM_CLOSE {
+            let p = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
+            if !p.is_null() {
+                (*p).0.push(CLOSE);
+            }
+            return 0;
+        }
         if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
             let p = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             if !p.is_null() {
@@ -40,6 +50,7 @@ fn wide(value: &str) -> Vec<u16> {
 pub(in crate::play) fn open_window(link: &PlayLink) {
     {
         let mut m = lock(&link.mailbox);
+        m.player_trade.show_requested = false;
         if m.player_trade.open {
             return;
         }
@@ -64,12 +75,12 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Player trade").as_ptr(),
+            wide(tr!("Player trade")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             560,
-            420,
+            630,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -91,21 +102,37 @@ fn run(
             "LISTBOX",
             "",
             10,
-            [10, 10, 520, 220],
+            [10, 10, 520, 180],
             WS_BORDER | WS_VSCROLL,
+        );
+        let items = control(
+            hwnd,
+            "LISTBOX",
+            "",
+            11,
+            [10, 320, 520, 180],
+            WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
+        );
+        let open = control(
+            hwnd,
+            "BUTTON",
+            tr!("Open container"),
+            OPEN_CONTAINER,
+            [180, 510, 150, 30],
+            WS_TABSTOP,
         );
         let offer = control(
             hwnd,
             "BUTTON",
-            "Offer selected",
+            tr!("Offer selected"),
             OFFER,
-            [10, 275, 150, 30],
+            [10, 510, 150, 30],
             WS_TABSTOP,
         );
         let accept = control(
             hwnd,
             "BUTTON",
-            "Accept",
+            tr!("Accept"),
             ACCEPT,
             [10, 240, 120, 30],
             WS_TABSTOP,
@@ -113,7 +140,7 @@ fn run(
         let cancel = control(
             hwnd,
             "BUTTON",
-            "Cancel",
+            tr!("Cancel"),
             CANCEL,
             [140, 240, 120, 30],
             WS_TABSTOP,
@@ -121,7 +148,7 @@ fn run(
         let own = control(
             hwnd,
             "BUTTON",
-            "Look at yours",
+            tr!("Look at yours"),
             LOOK_OWN,
             [270, 240, 125, 30],
             WS_TABSTOP,
@@ -129,12 +156,12 @@ fn run(
         let counter = control(
             hwnd,
             "BUTTON",
-            "Look at theirs",
+            tr!("Look at theirs"),
             LOOK_COUNTER,
             [405, 240, 125, 30],
             WS_TABSTOP,
         );
-        if [list, offer, accept, cancel, own, counter]
+        if [list, items, open, offer, accept, cancel, own, counter]
             .iter()
             .any(|h| h.is_null())
         {
@@ -143,6 +170,8 @@ fn run(
             return;
         }
         let mut held = String::new();
+        let mut held_rows = Vec::new();
+        let mut close_requested = false;
         let mut message: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -156,31 +185,102 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
+            if !mailbox.player_trade.selected {
+                break;
+            }
+
             for action in std::mem::take(&mut actions.0) {
-                let intent = match action {
-                    OFFER => mailbox
-                        .player_trade
-                        .offer
-                        .map(|(partner, item)| Intent::Offer { partner, item })
-                        .or_else(|| {
-                            mailbox.player_trade.feedback =
-                                Some("Select a player and backpack item in the world view");
-                            None
-                        }),
-                    ACCEPT => Some(Intent::Accept),
-                    CANCEL => Some(Intent::Cancel),
-                    LOOK_OWN => Some(Intent::LookOwn),
-                    LOOK_COUNTER => Some(Intent::LookCounter),
-                    _ => None,
-                };
-                if let Some(intent) = intent
-                    && let Some(command) =
+                if action == OFFER || action == OPEN_CONTAINER {
+                    if oteryn_client_ui::player_trade::picker::rows(&mailbox.player_trade.items)
+                        != held_rows
+                    {
+                        mailbox.player_trade.feedback =
+                            Some(tr!("Inventory changed; choose the item again"));
+                        continue;
+                    }
+                    let row = SendMessageW(items, LB_GETCURSEL, 0, 0);
+                    if let Ok(row) = usize::try_from(row) {
+                        if action == OPEN_CONTAINER {
+                            super::super::input::open_container(
+                                &mut mailbox.player_trade,
+                                row,
+                                &commands,
+                            );
+                            continue;
+                        }
+                        oteryn_client_ui::player_trade::picker::select_item(
+                            &mut mailbox.player_trade,
+                            row,
+                        );
+                    } else {
+                        mailbox.player_trade.feedback =
+                            Some(tr!("Choose an item from the inventory list"));
+                        continue;
+                    }
+                }
+                if action == CLOSE {
+                    close_requested = true;
+                    continue;
+                }
+                let command = if action == OFFER {
+                    oteryn_client_ui::player_trade::picker::offer_selected(
+                        &mut mailbox.player_trade,
+                    )
+                } else {
+                    let intent = match action {
+                        ACCEPT => Some(Intent::Accept),
+                        CANCEL => Some(Intent::Cancel),
+                        LOOK_OWN => Some(Intent::LookOwn),
+                        LOOK_COUNTER => Some(Intent::LookCounter),
+                        _ => None,
+                    };
+                    intent.and_then(|intent| {
                         oteryn_client_ui::player_trade::request(&mut mailbox.player_trade, intent)
+                    })
+                };
+                if let Some(command) = command
+                    && commands
+                        .send(crate::combat_input::PlayCommand::PlayerTrade(command))
+                        .is_err()
                 {
-                    let _ = commands.send(crate::combat_input::PlayCommand::PlayerTrade(command));
+                    mailbox.player_trade.pending = false;
+                    mailbox.player_trade.feedback = Some(tr!("The session has ended"));
                 }
             }
-            let text = panel_text(&mailbox.player_trade);
+            let rows = oteryn_client_ui::player_trade::picker::rows(&mailbox.player_trade.items);
+            if rows != held_rows {
+                SendMessageW(items, LB_RESETCONTENT, 0, 0);
+                for (source, item) in &rows {
+                    let label = lfmt!(
+                        "{source}: item {} x{} (subtype {})",
+                        item.item_definition_ref,
+                        item.count,
+                        item.sub_type,
+                        source = source
+                    );
+                    SendMessageW(items, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                }
+                held_rows = rows;
+            }
+            let enabled = !mailbox.player_trade.pending && !mailbox.player_trade.items.pending;
+            EnableWindow(offer, i32::from(enabled));
+            EnableWindow(
+                open,
+                i32::from(enabled && mailbox.player_trade.items.can_open),
+            );
+            EnableWindow(
+                accept,
+                i32::from(
+                    enabled
+                        && mailbox
+                            .player_trade
+                            .state
+                            .as_ref()
+                            .is_some_and(|s| s.phase == 2 && !s.accepted[0]),
+                ),
+            );
+            EnableWindow(cancel, i32::from(enabled));
+            let text = status_text(&mailbox.player_trade);
             if text != held {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
                 for line in text.split("\r\n") {
@@ -189,6 +289,16 @@ fn run(
                 held = text;
             }
             drop(mailbox);
+            if close_requested && enabled {
+                let mut mailbox = lock(&shared);
+                if let Some(command) = oteryn_client_ui::player_trade::request(
+                    &mut mailbox.player_trade,
+                    Intent::Cancel,
+                ) {
+                    let _ = commands.send(crate::combat_input::PlayCommand::PlayerTrade(command));
+                }
+                break;
+            }
             std::thread::sleep(Duration::from_millis(30));
         }
         if IsWindow(hwnd) != 0 {
@@ -225,5 +335,38 @@ unsafe fn control(
             null_mut(),
             null(),
         )
+    }
+}
+
+pub(in crate::play) fn context_menu(link: &PlayLink, partner: oteryn_session::EntityRef) {
+    if !link.player_trade_panel().selected {
+        return;
+    }
+    unsafe {
+        let menu = CreatePopupMenu();
+        if menu.is_null() {
+            return;
+        }
+        AppendMenuW(
+            menu,
+            MF_STRING,
+            1,
+            wide(tr!("Trade with this player")).as_ptr(),
+        );
+        let mut point = std::mem::zeroed();
+        windows_sys::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut point);
+        let chosen = TrackPopupMenu(
+            menu,
+            TPM_RETURNCMD | TPM_NONOTIFY,
+            point.x,
+            point.y,
+            0,
+            GetForegroundWindow(),
+            null(),
+        );
+        DestroyMenu(menu);
+        if chosen == 1 && link.player_trade_choose_partner(partner) {
+            open_window(link);
+        }
     }
 }

@@ -5,7 +5,7 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::foundation::{CharacterLease, MovementLocalPosition};
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
-fn towns() -> oteryn_world_bundle::subarea::Table {
+pub(super) fn towns() -> oteryn_world_bundle::subarea::Table {
     use oteryn_world_bundle::subarea::{Area, Mask, Run, Table, Temple};
     let hash = "a".repeat(64);
     let area = |id, town, x| Area {
@@ -154,7 +154,7 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
         let (consumer, coordinator) = premium_reads(&h);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let actor = deps.actor;
         let session = deps.admitted.game_session_id;
         let mut admitted = deps.admitted;
@@ -209,6 +209,13 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
             "SELECT count(*) FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(receipts, 1, "one receipt for the actual town change");
+        // A legal citizenship receipt must also pass the full boot authority check.
+        drop(
+            h.root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?,
+        );
         if let Some(entry) = p20 {
             premium_ended(
                 &h,
@@ -287,7 +294,7 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
         drop(owner);
         let mut reconnected = deps.owner(&h, &authority);
         reconnected.active_generation = Some(active);
-        reconnected.movement_cells = &cells;
+        reconnected.movement_cells = (&cells).into();
         assert_eq!(reconnected.home_temple(session).await, Some(temple));
         let mut current = fence(3)?;
         current.character_lease_generation = 2;
@@ -502,7 +509,7 @@ async fn premium_ended<'a>(
         }
         let mut login = fresh.owner(h, owner.character);
         login.active_generation = owner.active_generation;
-        login.movement_cells = owner.movement_cells;
+        login.movement_cells = owner.movement_cells.clone();
         login.premium_coordinator = Some(coordinator);
         let (outcome, _, decided) = Box::pin(login.initialize_first_entry(
             request,
@@ -655,6 +662,7 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],

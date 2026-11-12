@@ -1,0 +1,48 @@
+{
+  "module": "runtime",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "task_end",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Supervised task terminal outcome."
+    },
+    {
+      "event": "task_panic",
+      "level": "error",
+      "span": false,
+      "fields": [],
+      "codes": [
+        "E4001"
+      ],
+      "note": "Panic caught at a supervised task boundary."
+    },
+    {
+      "event": "task_recovered",
+      "level": "warn",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Supervised task heartbeat recovered."
+    },
+    {
+      "event": "task_stalled",
+      "level": "warn",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Supervised task heartbeat stalled."
+    },
+    {
+      "event": "task_start",
+      "level": "debug",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Supervised task started."
+    }
+  ]
+}

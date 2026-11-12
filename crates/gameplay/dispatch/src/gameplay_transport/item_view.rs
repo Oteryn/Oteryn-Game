@@ -256,6 +256,8 @@ pub struct ItemHandleTable {
     container_tree: bool,
     /// Capability 230 extends only browse pages to 30 entries.
     browse_field: bool,
+    /// Supplementary capability446 permits25-entry House container views.
+    house_capacity_v2: bool,
     /// Capability 18 is selected: the bound adds `MAPW-RL-04`.
     map_view: bool,
     slots: Vec<Slot>,
@@ -273,6 +275,11 @@ impl ItemHandleTable {
         }
     }
 
+    pub const fn with_house_container_capacity(mut self) -> Self {
+        self.container_tree = true;
+        self.house_capacity_v2 = true;
+        self
+    }
     /// The table of a session that selected capability 14.
     pub const fn with_container_tree(mut self) -> Self {
         self.container_tree = true;
@@ -295,6 +302,8 @@ impl ItemHandleTable {
     pub const fn limit(&self) -> usize {
         let base = if self.browse_field {
             oteryn_protocol_oteryn::browse_field::MAX_LIVE_ITEM_HANDLES_BROWSE_FIELD
+        } else if self.house_capacity_v2 {
+            oteryn_protocol_oteryn::container_tree::MAX_LIVE_ITEM_HANDLES_HOUSE_CONTAINER_TREE
         } else if self.container_tree {
             MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
         } else {
@@ -584,6 +593,10 @@ impl SessionItemView {
         self
     }
 
+    pub fn with_house_container_capacity(mut self) -> Self {
+        self.table = self.table.with_house_container_capacity();
+        self
+    }
     pub fn with_browse_field(mut self) -> Self {
         self.table = self.table.with_browse_field();
         self

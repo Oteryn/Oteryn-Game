@@ -1,7 +1,7 @@
 {
   "id": 225,
   "name": "BOSS_DIFFICULTY_V1",
-  "owner_decision": "W21; PR #2769 ANSWER 6542714759 (sourced selection slice)",
+  "owner_decision": "W21; PR #2769 ANSWER 6542714759; owner decision 2026-11-09 (individual unlocks and native room admission)",
   "owner": "Admitted character, shared boss catalogue and session-fenced durability owner",
   "requires": [
     117
@@ -11,5 +11,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Command 431 opens a server-issued context, persists the draft selection, cancels, or returns a typed no-accepted-profile refusal for Start. No difficulty scaling or Phosphorus activation is offered."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Command 431 opens a server-issued context, previews or cancels. Opt-in action 4 carries individual highest/unlock state and Start uses the existing fenced room admission and victory owner. Legacy action 3 retains the draft-only refusal. No difficulty scaling, pity parameters or uncaptured Summer room layout is offered."
 }

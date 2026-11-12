@@ -1,7 +1,9 @@
 //! Capability-81 NPC shop commands sent through the admitted session.
+pub use oteryn_session::atelier::resources;
+pub use oteryn_session::container_tree;
 pub use oteryn_session::npc_service;
 pub use oteryn_session::npc_shop;
-pub use oteryn_session::{CommandStatus, EntityRef};
+pub use oteryn_session::{CharacterInventory, CommandStatus, EntityRef, ItemEntry};
 pub use oteryn_session::{NpcIntentDisposition, NpcTradeSide};
 use oteryn_session::{Session, SessionError, SessionStream};
 
@@ -54,11 +56,17 @@ pub async fn talk<S: SessionStream>(
             &payload,
         )
         .await?;
+    if !matches!(
+        result.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        return Ok(NpcIntentDisposition::Rejected);
+    }
     npc_service::decode_npc_intent_result(&result.payload)
         .map_err(|_| SessionError::SessionUnusable)
 }
 
-pub async fn buy<S: SessionStream>(
+pub async fn trade<S: SessionStream>(
     session: &mut Session<S>,
     intent: &npc_service::NpcTradeIntent,
 ) -> Result<NpcIntentDisposition, SessionError> {
@@ -71,6 +79,40 @@ pub async fn buy<S: SessionStream>(
             &payload,
         )
         .await?;
+    if !matches!(
+        result.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        return Ok(NpcIntentDisposition::Rejected);
+    }
     npc_service::decode_npc_intent_result(&result.payload)
+        .map_err(|_| SessionError::SessionUnusable)
+}
+
+/// Compatibility name for the existing NPC prerequisite adapter.
+pub use trade as buy;
+
+/// Live balances are queried independently of trade receipts.
+pub async fn balances<S: SessionStream>(
+    session: &mut Session<S>,
+) -> Result<Option<resources::ResourceBalances>, SessionError> {
+    if !session.is_selected(resources::CAPABILITY_ATELIER_RESOURCES_V1) {
+        return Ok(None);
+    }
+    let reply = session
+        .gated_command(
+            resources::CAPABILITY_ATELIER_RESOURCES_V1,
+            resources::COMMAND_TYPE_ATELIER_RESOURCES_QUERY,
+            &resources::encode_query(),
+        )
+        .await?;
+    if !matches!(
+        reply.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        return Ok(None);
+    }
+    resources::decode_reply(&reply.payload)
+        .map(Some)
         .map_err(|_| SessionError::SessionUnusable)
 }

@@ -1,6 +1,36 @@
 use super::*;
 
 impl DurabilityRoot {
+    /// Historical carried USE is answered only by the immutable consumed-instance
+    /// proof and its exact ingress; this never reacquires gameplay authority.
+    pub async fn reconcile_quest_carried_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        intent: Vec<u8>,
+    ) -> Result<Option<bool>> {
+        let recovery=authority.record_for(self).map_err(|_|CharacterProgressionError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            assert_recovery_fence(&mut tx,&recovery).await?;
+            let rows=sqlx::query("SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND s.plan ? 'carried_item' LIMIT 2")
+                .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
+            let answer=match rows.as_slice() {
+                []=>None,
+                [row]=>{
+                    let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let use_:super::super::reward_claim_mint::QuestCarriedUse=serde_json::from_value(proof["carried_use"].clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let source:sqlx::types::Uuid=row.try_get("item_instance_id")?;
+                    if use_.source!=*source.as_bytes() {return Err(DurabilityError::InvalidStoredState);}
+                    Some(use_.intent==intent)
+                },
+                _=>return Err(DurabilityError::InvalidStoredState),
+            };
+            commit_semantic_transaction(tx,deadline).await?;
+            Ok(Ok(answer))
+        })).await?
+    }
     /// Resolve an ambiguous quest commit by its receipt key. This proves only what committed and
     /// never reacquires gameplay authority.
     pub async fn reconcile_character_quest_transition(
@@ -10,6 +40,38 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
     ) -> Result<Option<CommittedQuestTransition>> {
         let binding = request_binding(character, &request);
+        self.reconcile_quest_binding(authority, character, request, binding)
+            .await
+    }
+
+    /// A retained native handover freezes its original source fingerprint. This reads
+    /// history under recovery authority; it never debits an Item or reauthorizes gameplay.
+    pub async fn reconcile_benevola_handover(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        handover: super::super::world_event::changes::counters::benevola::BenevolaHandover,
+    ) -> Result<Option<CommittedQuestTransition>> {
+        if !handover.valid() {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let request = QuestTransitionRequest {
+            transition_key: super::super::world_event::changes::counters::benevola::HANDOVER.into(),
+            cause: QuestCause::Command(handover.command),
+        };
+        let mut binding = request_binding(character, &request);
+        handover.bind(&mut binding)?;
+        self.reconcile_quest_binding(authority, character, request, binding)
+            .await
+    }
+
+    async fn reconcile_quest_binding(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        request: QuestTransitionRequest,
+        binding: [u8; 33],
+    ) -> Result<Option<CommittedQuestTransition>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -107,6 +169,15 @@ impl DurabilityRoot {
                     .bind(bound(QUESTGATE0_RL_10))
                     .fetch_all(&mut *tx)
                     .await?;
+                    // The native death owner retains every real Primal damager, including
+                    // capped/no-op Hazard results. Read its immutable proof under the same
+                    // root lock; no second completion writer or revision change is needed.
+                    let primal_completed: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_character_primal_hazard_receipts WHERE character_id=encode($1,'hex')::uuid)",
+                    )
+                    .bind(id)
+                    .fetch_one(&mut *tx)
+                    .await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
@@ -130,6 +201,12 @@ impl DurabilityRoot {
                             .insert(row.try_get("track_key")?, row.try_get("value")?);
                     }
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
+                    if primal_completed {
+                        copy.tracks
+                            .entry(super::super::character_hazard::PRIMAL_MENACE_KILLED_TRACK.into())
+                            .and_modify(|value| *value = (*value).max(1))
+                            .or_insert(1);
+                    }
                     if copy.tracks.len() > QUESTSTATE0_RL_08_TRACKS {
                         return Err(DurabilityError::InvalidStoredState);
                     }

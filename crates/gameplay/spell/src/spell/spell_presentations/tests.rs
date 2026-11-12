@@ -232,6 +232,24 @@ pub fn commit_fixture(
     owner.install_preflighted(prepared, &receipt);
 }
 
+/// Commit a sound through the same physical cast receipt as the production outbox.
+pub fn commit_sound_fixture(
+    owner: &mut SpellPresentationOwner,
+    runtime: &mut ChannelRuntimeV1,
+    caster: ExactActorRef,
+    session: GameSessionId,
+) {
+    let mut prepared = prepared(owner, runtime, caster, session, 1, 1);
+    prepared.events[0].cue = Cue::Sound(1080);
+    prepared.events[0].source_binding = "canary.sound:spell_berserk".into();
+    owner
+        .hold_prepared_before_sql(runtime, &prepared, &prepared.batch)
+        .unwrap();
+    let staged = runtime.stage_spell_batch(&prepared.batch).unwrap();
+    let receipt = runtime.commit_spell_batch(staged).unwrap();
+    owner.install_preflighted(prepared, &receipt);
+}
+
 /// Actual source activation/decoder and committed Channel owner; this fixture
 /// qualifies cue provenance and positioned actors, not party/cast eligibility.
 fn ordinary_passive_cue_fixture() -> (

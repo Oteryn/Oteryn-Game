@@ -27,13 +27,14 @@ fn sending_a_step_redraws_the_new_facing() -> Result<(), BatchError> {
 }
 
 #[test]
-fn step_outcome_moves_the_view_and_a_refusal_ends_the_walk() -> Result<(), BatchError> {
+fn arrow_step_outcome_moves_the_view_and_refusal_keeps_the_position() -> Result<(), BatchError> {
     let mut view = view()?;
-    view.click(TileCoord::new(98, 200))?;
+    view.arrow(StepDir::West);
     assert_eq!(view.next_step(), Some(StepDir::West));
     view.apply(&moved_to(99, 200, 0))?;
     assert_eq!(view.own(), TileCoord::new(99, 200));
     assert_eq!(view.scene().view().origin(), TileCoord::new(92, 195));
+    view.arrow(StepDir::West);
     assert_eq!(view.next_step(), Some(StepDir::West));
     let mut blocked = moved_to(99, 200, 0);
     blocked.disposition = StepDisposition::Blocked;

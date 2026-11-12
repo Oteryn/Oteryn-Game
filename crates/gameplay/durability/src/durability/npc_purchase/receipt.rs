@@ -27,7 +27,7 @@ pub(in crate::durability) async fn load_by_command(
     character: CharacterId,
     command: CommandRef,
 ) -> Result<Option<(Vec<u8>, PurchaseReceipt)>, DurabilityError> {
-    let row = sqlx::query("SELECT request_binding,original_character_revision::text,committed_character_revision::text,npc_identity,npc_generation::text,service_key,cause_kind,fee_gold_units FROM game_character_npc_purchase_receipts WHERE character_id=encode($1,'hex')::uuid AND command_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
+    let row = sqlx::query("SELECT request_binding,original_character_revision::text,committed_character_revision::text,npc_identity,npc_generation::text,service_key,cause_kind,fee_gold_units FROM game_character_npc_purchase_receipts WHERE character_id=encode($1,'hex')::uuid AND command_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric UNION ALL SELECT request_binding,original_character_revision::text,committed_character_revision::text,npc_identity,npc_generation::text,'oteryn:service.blessing.phoenix_prerequisite' AS service_key,3::smallint AS cause_kind,0::bigint AS fee_gold_units FROM game_character_npc_stage_receipts WHERE character_id=encode($1,'hex')::uuid AND command_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
         .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(connection).await?;
     row.map(|row| {
         let service = row.try_get("service_key")?;

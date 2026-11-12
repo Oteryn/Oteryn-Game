@@ -41,7 +41,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             premium_only: false,
             required_capabilities: self.required_capabilities,
             runtime: (self.runtime).into(),
-            movement_cells: self.room.movement_cells(),
+            movement_cells: self.room.movement_cells().into(),
             door: (self.door).into(),
             chest: self.room.door(),
             spells: self.spells,
@@ -52,6 +52,8 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             imported_charms: self.imported_charms,
             states: (ChannelSessionStates::default()).into(),
             clock_origin: std::time::Instant::now(),
+            #[cfg(test)]
+            test_step_wait_receipts: None,
             revision_sequencer:
                 (crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new())
                     .into(),

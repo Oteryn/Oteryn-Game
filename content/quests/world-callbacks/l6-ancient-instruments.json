@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-instrument-1",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33188,
+          "y": 32660,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3255
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:1-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:26-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-instrument-2",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33190,
+          "y": 32669,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3261
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:1-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:26-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-instrument-3",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33190,
+          "y": 32660,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3258
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:1-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:26-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-instrument-4",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33189,
+          "y": 32669,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3260
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:1-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:26-40"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-instrument-5",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33191,
+          "y": 32669,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3257
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamuns_door",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamuns_treasure",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:1-7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_ruins_instruments.lua:26-40"
+      ]
+    }
+  ]
+}

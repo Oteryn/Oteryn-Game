@@ -617,6 +617,34 @@ fn item_look_details_stay_within_the_wire_bound_on_a_utf8_boundary() {
 }
 
 #[test]
+fn every_crystal_spellbook_id_is_a_spellbook_look() {
+    for id in [
+        3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 14769, 16107, 20088, 21400, 22755,
+        25699, 29431, 20089, 20090, 34153,
+    ] {
+        assert!(is_spellbook(&format!("oteryn:item.tibia.i{id}")));
+    }
+    for production_key in [
+        "oteryn:item.tibia.i3060",
+        "oteryn:item.tibia.i61200",
+        "oteryn:item.tibia.i",
+        "oteryn:item.tibia.ix6120",
+        "oteryn:item.custom.i6120",
+        "",
+    ] {
+        assert!(!is_spellbook(production_key));
+    }
+}
+
+#[test]
+fn admitted_spellbooks_beyond_6120_are_spellbook_looks() {
+    // Admitted spellbooks pinned at item_use_crystal_parity_tests.rs:377.
+    for id in [3059, 8072, 8073, 8074, 8075, 25699] {
+        assert!(is_spellbook(&format!("oteryn:item.tibia.i{id}")));
+    }
+}
+
+#[test]
 fn spellbook_lists_only_current_vocation_in_level_order() -> Result<(), Box<dyn std::error::Error>>
 {
     let book = crate::spell::cast::v1_spell_book()?;

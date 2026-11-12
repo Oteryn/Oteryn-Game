@@ -37,6 +37,7 @@ fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
             kind,
             walkable: ground.then_some(true),
             ground_speed: ground.then_some(150),
+            blocks_projectile: None,
         })
     };
     Some(match key {
@@ -661,11 +662,27 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         &base, &admitted,
     )?;
     // The fixture map holds none of the real chests: every ready claim is a candidate that
-    // does not bind, and the 11 waiting plain records are left out. KEY-1 adds the 21 key
-    // variants with a `canary:door-key/` binding. W15b adds 67 native container/text/key recipes and one fully charged
-    // plain leaf through the same binder.
+    // does not bind. QUEST-FINISH admits all plain records through exact source
+    // charge/fluid projections and excludes both Dawnport records
+    // while preserving their source data. Falcon uses its separate cycle owner.
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
-    assert_eq!(candidates, 308);
+    assert_eq!(candidates, 328);
+    for key in [
+        "oteryn:reward-claim.kv.ornamentedshield",
+        "oteryn:reward-claim.kv.triangletower",
+        "oteryn:reward-claim.kv.powerring2",
+    ] {
+        assert_eq!(
+            report.unbound.iter().filter(|row| row.claim == key).count(),
+            1,
+            "{key}"
+        );
+        assert!(
+            !report.left_out.iter().any(|(left_out, _)| left_out == key),
+            "{key}"
+        );
+    }
+    assert!(report.served.is_empty());
     assert!(report.served.is_empty());
     assert_eq!(
         report
@@ -673,7 +690,22 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
             .iter()
             .filter(|(_, why)| *why == LeftOut::NotReady)
             .count(),
-        11
+        0
+    );
+    for (reason, expected) in [(LeftOut::OwnerExcluded, 2), (LeftOut::Variant, 6)] {
+        assert_eq!(
+            report
+                .left_out
+                .iter()
+                .filter(|(_, why)| *why == reason)
+                .count(),
+            expected
+        );
+    }
+    assert_eq!(
+        report.left_out.len(),
+        8,
+        "every remaining record has its exact owner"
     );
     Ok(())
 }

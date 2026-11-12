@@ -1,10 +1,11 @@
-//! Unallocated SPELL-PRESENT-0 publisher candidate. It consumes the actual Channel outbox,
+//! Production sound fan-out and retained SPELL-PRESENT-0 publisher candidate.
+//! It consumes the actual Channel outbox,
 //! canonical same-TX current-session source and the existing VIS-2 index/settings. It does
 //! not install a capability, emit a protocol envelope, query a second spatial index, or
 //! infer a frame conversion for native floors outside the existing VIS-2 0..15 contract.
 #![allow(
     dead_code,
-    reason = "spell import candidate; awaits its production owner caller"
+    reason = "candidate transport helpers retained alongside the production sound publisher"
 )]
 use super::spell_presentations::{
     CommittedPresentation, Cue, PresentationCause, SpellPresentationOwner,
@@ -545,9 +546,243 @@ impl CandidateSessionPublisher {
         self.pending.pop_front()
     }
 }
+#[path = "ambient_sounds.rs"]
+pub(super) mod ambient_sounds;
+
 #[cfg(test)]
 #[path = "spell_presentation_publisher_tests.rs"]
 mod tests;
 
 #[path = "spell_presentation_cooldowns.rs"]
 mod cooldowns;
+
+/// Bounded production fan-out journal. Connections keep independent cursors.
+#[derive(Debug, Default)]
+pub struct SoundPublisher {
+    revision: u64,
+    binding: Option<ScopeContext>,
+    sounds: VecDeque<SoundEntry>,
+    ambient: std::collections::BTreeMap<GameSessionId, (ExactActorRef, u8, u16, u64)>,
+}
+#[derive(Debug)]
+struct SoundEntry {
+    revision: u64,
+    actor: ExactActorRef,
+    position: MovementLocalPosition,
+    cue: u16,
+    secondary: u16,
+    creature: bool,
+    effect: bool,
+    private: bool,
+    house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
+}
+impl SoundPublisher {
+    /// Channel outbox ownership does not change when its caster enters a House
+    /// before the publisher drains the committed events.
+    pub fn record(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        cue: u16,
+        secondary: u16,
+    ) {
+        let Ok(binding) = context(runtime) else {
+            return;
+        };
+        if self.binding.as_ref() != Some(&binding) {
+            self.sounds.clear();
+            self.ambient.clear();
+            self.binding = Some(binding);
+        }
+        let (cue, secondary) = if cue == 0 {
+            (secondary, 0)
+        } else {
+            (cue, secondary)
+        };
+        if cue == 0 {
+            return;
+        }
+        let Some(revision) = self.revision.checked_add(1) else {
+            return;
+        };
+        self.revision = revision;
+        if self.sounds.len() == oteryn_protocol_oteryn::presentation::MAX_PRESENTATION_EVENTS {
+            self.sounds.pop_front();
+        }
+        self.sounds.push_back(SoundEntry {
+            revision,
+            actor,
+            position,
+            cue,
+            secondary,
+            creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
+            effect: false,
+            private: false,
+            house_scope: None,
+        });
+    }
+    pub(super) fn record_item_effect(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        cue: u16,
+        private: bool,
+    ) {
+        if cue == 0 {
+            return;
+        }
+        let before = self.revision;
+        self.record(runtime, actor, position, cue, 0);
+        if self.revision != before
+            && let Some(entry) = self.sounds.back_mut()
+        {
+            entry.effect = true;
+            entry.private = private;
+        }
+    }
+    /// Crystal 201189f `data-global/scripts/actions/other/fish_tank.lua:3-5` emits at
+    /// the item tile. The existing journal retains its actual named-House owner.
+    pub(super) fn record_house_item_effect(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: MovementLocalPosition,
+        cue: u16,
+    ) {
+        if !runtime
+            .house_player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return;
+        }
+        let Ok(house) = runtime.house_actor_state(actor, session) else {
+            return;
+        };
+        let before = self.revision;
+        self.record_item_effect(runtime, actor, position, cue, false);
+        if self.revision != before
+            && let Some(entry) = self.sounds.back_mut()
+        {
+            entry.house_scope = Some((house.scope, house.generation.get()));
+        }
+    }
+    pub fn capture(
+        &mut self,
+        owner: &mut SpellPresentationOwner,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<(), Error> {
+        for event in owner
+            .take_for_current_publisher(runtime)
+            .map_err(|_| Error::Stale)?
+        {
+            if let Cue::Sound(cue) = event.event.cue {
+                self.record(runtime, event.cause.actor(), event.event.position, cue, 0);
+            }
+        }
+        Ok(())
+    }
+    /// The two independently negotiated domains retain their own bounds: at most
+    /// MAX_PRESENTATION_EVENTS positional sounds plus one private ambient replacement.
+    pub fn observe(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+        selected: bool,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        use oteryn_protocol_oteryn::presentation::{
+            PresentationEvent, PresentationEventKind, PresentationSource,
+        };
+        if !selected {
+            return Some((after, Vec::new()));
+        }
+        if self
+            .binding
+            .as_ref()
+            .is_some_and(|binding| context(runtime).ok().as_ref() != Some(binding))
+        {
+            return Some((self.revision, Vec::new()));
+        }
+        runtime.owner_fence().ok()?;
+        let (position, house_scope) = if let Ok(house) = runtime.house_actor_state(actor, session) {
+            runtime.house_player_control_facts(actor, session).ok()?;
+            (
+                MovementLocalPosition {
+                    x: house.position.x,
+                    y: house.position.y,
+                    floor: house.position.floor,
+                },
+                Some((house.scope, house.generation.get())),
+            )
+        } else {
+            runtime.player_control_facts(actor, session).ok()?;
+            (runtime.read_actor_position(actor).ok()?.position(), None)
+        };
+        let observer = view(position).ok()?;
+        let mut events = Vec::new();
+        // The current private loop survives overflow of the transient journal.
+        if let Some((subject, _, cue, revision)) = self.ambient.get(&session)
+            && house_scope.is_none()
+            && *subject == actor
+            && *revision > after
+        {
+            events.push(PresentationEvent {
+                decision_ordinal: 1,
+                emission_ordinal: 1,
+                kind: PresentationEventKind::AmbientSound {
+                    cue_id: u32::from(*cue),
+                },
+            });
+        }
+        for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
+            if sound.house_scope != house_scope || (sound.private && sound.actor != actor) {
+                continue;
+            }
+            let Ok(target) = view(sound.position) else {
+                continue;
+            };
+            if !VisibilitySettings::REFERENCE.can_see(observer, target) {
+                continue;
+            }
+            let source = if sound.actor == actor {
+                PresentationSource::Own
+            } else if sound.creature {
+                PresentationSource::Creatures
+            } else {
+                PresentationSource::Others
+            };
+            events.push(PresentationEvent {
+                decision_ordinal: u32::try_from(events.len() + 1).ok()?,
+                emission_ordinal: 1,
+                kind: if sound.effect {
+                    PresentationEventKind::MagicEffect {
+                        position: ActorPosition {
+                            floor: tibia_floor(sound.position.floor)?,
+                            ..pos(sound.position)
+                        },
+                        effect_id: u32::from(sound.cue),
+                        source,
+                    }
+                } else {
+                    PresentationEventKind::Sound {
+                        position: ActorPosition {
+                            floor: tibia_floor(sound.position.floor)?,
+                            ..pos(sound.position)
+                        },
+                        cue_id: u32::from(sound.cue),
+                        source,
+                        secondary_cue_id: u32::from(sound.secondary),
+                    }
+                },
+            });
+        }
+        Some((self.revision, events))
+    }
+}

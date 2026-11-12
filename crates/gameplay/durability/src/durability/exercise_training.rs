@@ -23,6 +23,14 @@ use oteryn_gameplay_progression::loop_training::add_gain;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExerciseDummyKey {
+    pub world_id: crate::foundation::WorldId,
+    pub bundle_digest: [u8; 32],
+    pub placement_key: u64,
+    pub reset_epoch: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrainingWeapon {
     pub revision: u64,
@@ -50,6 +58,77 @@ fn unavailable<T>(_: T) -> DurabilityError {
 }
 
 impl DurabilityRoot {
+    /// Claim or renew the single durable trainer slot for one house dummy.
+    pub async fn reserve_exercise_dummy(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        key: ExerciseDummyKey,
+    ) -> Result<bool, DurabilityError> {
+        let recovery = authority.record_for(self).map_err(unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            assert_gameplay_fence(&mut tx, &fence, &node).await?.map_err(unavailable)?;
+            let claimed = sqlx::query_scalar::<_, i32>(
+                "INSERT INTO game_exercise_dummy_reservations AS r \
+                 (world_id,base_bundle_digest,placement_key,reset_epoch,character_id,game_session_id,lease_until_ms) \
+                 VALUES(encode($1,'hex')::uuid,$2,$3::text::numeric,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid, \
+                 floor(extract(epoch FROM clock_timestamp())*1000)::bigint+180000) \
+                 ON CONFLICT (world_id,base_bundle_digest,placement_key) DO UPDATE SET \
+                 character_id=EXCLUDED.character_id,game_session_id=EXCLUDED.game_session_id,reset_epoch=EXCLUDED.reset_epoch, \
+                 lease_until_ms=EXCLUDED.lease_until_ms WHERE r.lease_until_ms<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint \
+                 OR r.reset_epoch IS DISTINCT FROM EXCLUDED.reset_epoch OR r.game_session_id=EXCLUDED.game_session_id RETURNING 1",
+            )
+            .bind(key.world_id.as_bytes().as_slice())
+            .bind(key.bundle_digest.as_slice())
+            .bind(key.placement_key.to_string())
+            .bind(key.reset_epoch.to_string())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(fence.game_session_id.as_bytes().as_slice())
+            .fetch_optional(&mut *tx)
+            .await?
+            .is_some();
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(claimed)
+        })).await
+    }
+
+    /// Release only the caller's own reservation; stale sessions cannot delete a successor.
+    pub async fn release_exercise_dummy(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        key: ExerciseDummyKey,
+    ) -> Result<(), DurabilityError> {
+        let recovery = authority.record_for(self).map_err(unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            assert_gameplay_fence(&mut tx, &fence, &node).await?.map_err(unavailable)?;
+            sqlx::query(
+                "DELETE FROM game_exercise_dummy_reservations WHERE world_id=encode($1,'hex')::uuid \
+                 AND base_bundle_digest=$2 AND placement_key=$3::text::numeric \
+                 AND game_session_id=encode($4,'hex')::uuid AND character_id=encode($5,'hex')::uuid",
+            )
+            .bind(key.world_id.as_bytes().as_slice())
+            .bind(key.bundle_digest.as_slice())
+            .bind(key.placement_key.to_string())
+            .bind(fence.game_session_id.as_bytes().as_slice())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .execute(&mut *tx)
+            .await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(())
+        })).await
+    }
+
     /// Read a current held weapon through the same fences as its later checkpoint.
     pub async fn read_training_weapon(
         &self,

@@ -162,8 +162,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let temple = self.home_temple_in_world(session, &origin_view).await?;
         let doors = origin.door.lock().await;
         super::respawn_cell_admissible(
-            origin_view.movement_cells.index(),
-            origin_view.movement_cells.scope(),
+            origin_view.movement_cells().index(),
+            origin_view.movement_cells().scope(),
             placement.destination_scope.world_id(),
             pin.server_artifact_digest,
             doors.blocking_cells(),
@@ -331,6 +331,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => (1, 0),
             StepDirection::South => (0, 1),
             StepDirection::West => (-1, 0),
+            StepDirection::NorthEast => (1, -1),
+            StepDirection::SouthEast => (1, 1),
+            StepDirection::SouthWest => (-1, 1),
+            StepDirection::NorthWest => (-1, -1),
         };
         let (Ok(x), Ok(y), Ok(floor)) = (
             u16::try_from(p.x + dx),
@@ -389,19 +393,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         }
         let states = self.states.spell_states.lock().await;
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
-            self.movement_cells,
+            self.movement_cells(),
             actor,
             session,
             entered,
             target,
             blocked,
             &closed,
+            None,
         ) {
-            let _ = runtime.commit_source_step(proof);
+            // Crystal 201189f8 data-global/scripts/movements/teleport/citizen.lua:46-49:
+            // successful citizenship is confirmed after the temple teleport.
+            if runtime.commit_source_step(proof).is_ok()
+                && committed == Some(town)
+                && let Some(area) = map.overlay.base().subareas.town(town)
+            {
+                self.states.chat.push_quest_feedback(
+                    session,
+                    &format!("You are now a citizen of {}.", area.name),
+                );
+            }
         }
         runtime.read_actor_position(actor).unwrap_or(entered)
     }

@@ -49,6 +49,7 @@ struct BundleChannel {
     use_outcome: UseOutcome,
     doors: Option<(ChannelOverlay, crate::map::facts::BundleFacts)>,
     level: u32,
+    next_position: Cell<Option<TilePos>>,
 }
 
 impl BundleChannel {
@@ -69,6 +70,7 @@ impl BundleChannel {
             use_outcome: UseOutcome::rejected(),
             doors: None,
             level: u32::MAX,
+            next_position: Cell::new(None),
         }
     }
 
@@ -99,7 +101,8 @@ impl FreshAdmissionAuthority for BundleChannel {
     async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
         let mut position = self.position.get();
         position.y += 1;
-        self.position.set(position);
+        self.position
+            .set(self.next_position.take().unwrap_or(position));
         StepOutcome {
             disposition: StepDisposition::Moved,
             moved_to: Some(self.observation()),
@@ -904,4 +907,158 @@ fn key_door_predicates_preserve_bindings_reach_and_capabilities() -> TestResult 
         }
         Ok(())
     })
+}
+
+/// Drive the production connection and map producer through replacement and a further step.
+#[test]
+fn floor_change_replaces_map_and_keeps_serving_without_old_floor_tiles() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use oteryn_protocol_oteryn::{decode_snapshot_begin, decode_snapshot_id};
+
+                async fn read(client: &mut tokio::io::DuplexStream) -> Vec<u8> {
+                    let length = client.read_u32().await.expect("connected frame length");
+                    let mut frame = vec![0; length as usize];
+                    client
+                        .read_exact(&mut frame)
+                        .await
+                        .expect("connected frame");
+                    frame
+                }
+
+                let channel = BundleChannel::new();
+                let below = tp(20, 20, -10);
+                let far = tp(60, 20, -10);
+                *channel.fixture.borrow_mut() = Fixture::new(vec![
+                    (ACTOR, vec![item(GRASS)]),
+                    (below, vec![item(GRASS), item(COIN)]),
+                    (far, vec![item(GRASS), item(DOOR)]),
+                    (tp(60, 21, -10), vec![item(GRASS)]),
+                ]);
+                let (mut server, mut client) = tokio::io::duplex(1 << 22);
+                let authority = &channel;
+                let served = async move {
+                    let end =
+                        serve_admitted(&mut server, bundle_session(), authority, IDLE_LIVENESS)
+                            .await;
+                    drop(server);
+                    end
+                };
+                let client_run = async {
+                    let (mut sequence, mut snapshot_id, mut map_revision) = (0, 0, 0);
+                    let mut current = None;
+                    for (command_id, destination) in [(0, ACTOR), (1, below), (2, far)] {
+                        if command_id != 0 {
+                            channel.next_position.set(Some(destination));
+                            client.write_all(&step(1, command_id)).await.expect("step");
+                        }
+                        // Results and spatial changes precede the map publication barrier.
+                        let begin = loop {
+                            let frame = read(&mut client).await;
+                            let envelope = decode_wire_envelope(&frame).expect("envelope");
+                            assert_eq!(envelope.connection_generation(), 1);
+                            if envelope.message_type() == MessageType::SnapshotBegin {
+                                assert_eq!(envelope.server_sequence(), 0);
+                                break decode_snapshot_begin(envelope.payload()).expect("begin");
+                            }
+                            assert!(matches!(
+                                envelope.message_type(),
+                                MessageType::CommandResult | MessageType::StateDelta
+                            ));
+                            assert_eq!(envelope.server_sequence(), sequence + 1);
+                            sequence += 1;
+                        };
+                        assert!(begin.snapshot_id > snapshot_id);
+                        assert_eq!(begin.chunk_count, 1);
+                        assert_eq!(
+                            begin.target_server_sequence,
+                            if command_id == 0 { 0 } else { sequence + 1 }
+                        );
+                        snapshot_id = begin.snapshot_id;
+                        let frame = read(&mut client).await;
+                        let envelope = decode_wire_envelope(&frame).expect("chunk envelope");
+                        assert_eq!(envelope.message_type(), MessageType::SnapshotChunk);
+                        assert_eq!(envelope.connection_generation(), 1);
+                        assert_eq!(envelope.server_sequence(), 0);
+                        let (id, domains) =
+                            decode_snapshot_chunk(envelope.payload()).expect("chunk");
+                        assert_eq!(id, snapshot_id);
+                        if command_id != 0 {
+                            assert_eq!(domains.len(), 1);
+                        }
+                        let domain = domains
+                            .iter()
+                            .find(|d| d.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW)
+                            .expect("map domain");
+                        assert_eq!(domain.revision, map_revision + 1);
+                        map_revision = domain.revision;
+                        let replacement =
+                            decode_world_map_snapshot(domain.payload).expect("map snapshot");
+                        assert_eq!(replacement.header.origin, at(destination));
+                        assert!(
+                            replacement
+                                .tiles
+                                .iter()
+                                .any(|t| t.position == at(destination))
+                        );
+                        if command_id != 0 {
+                            assert!(replacement.tiles.iter().all(|t| t.position.floor == -10));
+                            assert!(!replacement.tiles.iter().any(|t| t.position == at(ACTOR)));
+                        }
+                        let frame = read(&mut client).await;
+                        let envelope = decode_wire_envelope(&frame).expect("commit envelope");
+                        assert_eq!(envelope.message_type(), MessageType::SnapshotCommit);
+                        assert_eq!(envelope.connection_generation(), 1);
+                        assert_eq!(envelope.server_sequence(), 0);
+                        assert_eq!(
+                            decode_snapshot_id(envelope.payload()).expect("commit"),
+                            snapshot_id
+                        );
+                        sequence = begin.target_server_sequence;
+                        current = Some(replacement);
+                    }
+                    // A further step must use the replacement revision and new floor.
+                    client.write_all(&step(1, 3)).await.expect("continued step");
+                    loop {
+                        let frame = read(&mut client).await;
+                        let envelope = decode_wire_envelope(&frame).expect("continued envelope");
+                        assert_eq!(envelope.connection_generation(), 1);
+                        assert_eq!(envelope.server_sequence(), sequence + 1);
+                        sequence += 1;
+                        if envelope.message_type() == MessageType::StateDelta {
+                            let delta = decode_state_delta(envelope.payload()).expect("delta");
+                            if delta.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW {
+                                assert_eq!(delta.base_revision, map_revision);
+                                assert_eq!(delta.new_revision, map_revision + 1);
+                                let map = decode_world_map_delta(
+                                    &current.as_ref().expect("current map").header,
+                                    delta.payload,
+                                )
+                                .expect("map delta");
+                                assert_eq!(map.header.origin, at(tp(60, 21, -10)));
+                                assert!(map.tiles.iter().all(|t| t.position.floor == -10));
+                                break;
+                            }
+                        }
+                    }
+                    client.shutdown().await.expect("client close");
+                    (sequence, map_revision + 1)
+                };
+                let (end, (sequence, map_revision)) =
+                    tokio::time::timeout(Duration::from_secs(10), join(served, client_run)).await?;
+                let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                    panic!("unexpected connection end {end:?}");
+                };
+                assert_eq!(ended.continuity.server_sequence, sequence);
+                assert_eq!(ended.continuity.world_map_revision, map_revision);
+                assert_eq!(ended.continuity.next_command_id, 4);
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "floor replacement test thread panicked")?
+        .map_err(Into::into)
 }

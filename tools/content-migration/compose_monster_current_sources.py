@@ -5,6 +5,7 @@ import json
 
 from bind_monster_source_definitions import CREATURES, bind_definitions
 from import_spell_families import canonical_bytes
+from cake_native_successor import admit as admit_cake_successor
 from monster_seven_spell_overlay import ALLOWED_PATHS, apply_overlay
 
 
@@ -63,4 +64,6 @@ def compose(root, baseline, current):
     for section in ("catalog", "source_selection"):
         manifest[section] = current_manifest[section]
     result[manifest_path] = canonical_bytes(manifest)
-    return bind_definitions(root, result)
+    # W05d: the immutable adopted overlay predates canonical Cake admission.
+    # Extend only that source-complete Creature through the normal union.
+    return bind_definitions(root, admit_cake_successor(root, result))

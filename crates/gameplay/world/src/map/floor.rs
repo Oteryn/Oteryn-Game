@@ -28,8 +28,13 @@
 //! because the bundle carries no height facts.
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
+mod door_displacement;
 mod house;
+pub use door_displacement::{prepare_quest_door_displacement, prepare_quest_door_opening};
+mod source_scene;
+pub use source_scene::{SceneEvacuation, SourceSceneRelocation, prepare_source_scene};
 mod quest_callback;
+mod quest_callback_scene;
 mod rope;
 use super::overlay::TilePos;
 use super::palette_appearance;
@@ -40,8 +45,9 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
-pub use quest_callback::prepare_quest_callback_teleport;
-pub use rope::prepare_bundle_rope;
+pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
+pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
+pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
 use {
     crate::foundation::{
@@ -50,6 +56,13 @@ use {
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
+
+/// Known immovable ladders selected from the authoritative object catalogue.
+pub fn is_ladder_appearance(appearance: u16) -> bool {
+    super::ladder_catalogue::LADDERS
+        .binary_search(&appearance)
+        .is_ok()
+}
 
 const DOWN: u8 = 1;
 const NORTH: u8 = 2;
@@ -90,9 +103,35 @@ pub fn palette_mask(family: Family, key: &str) -> u8 {
 pub struct FloorTable {
     tiles: BTreeMap<TilePos, u8>,
     teleports: BTreeMap<TilePos, TilePos>,
+    teleport_sources: BTreeMap<TilePos, (u8, u16)>,
 }
 
 impl FloorTable {
+    pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
+        let inside = |pos| super::activity_contains(bounds, pos);
+        Self {
+            tiles: self
+                .tiles
+                .iter()
+                .filter(|(pos, _)| inside(**pos))
+                .map(|(pos, mask)| (*pos, *mask))
+                .collect(),
+            teleports: self
+                .teleports
+                .iter()
+                .filter(|(from, to)| inside(**from) && inside(**to))
+                .map(|(from, to)| (*from, *to))
+                .collect(),
+            teleport_sources: self
+                .teleport_sources
+                .iter()
+                .filter(|(from, _)| {
+                    inside(**from) && self.teleports.get(*from).is_some_and(|to| inside(*to))
+                })
+                .map(|(from, source)| (*from, *source))
+                .collect(),
+        }
+    }
     pub fn add(&mut self, pos: TilePos, mask: u8) {
         if mask != 0 {
             *self.tiles.entry(pos).or_insert(0) |= mask;
@@ -108,6 +147,28 @@ impl FloorTable {
     /// The destination of the teleport at `pos`, if the tile teleports.
     pub fn teleport(&self, pos: TilePos) -> Option<TilePos> {
         self.teleports.get(&pos).copied()
+    }
+
+    /// Binds the static attribute to its exact original top-level source Item.
+    pub fn bind_teleport_source(&mut self, from: TilePos, ordinal: u8, appearance: u16) {
+        self.teleport_sources
+            .entry(from)
+            .or_insert((ordinal, appearance));
+    }
+
+    /// A transformed or hidden source no longer supplies its original teleport attribute.
+    /// Its current callback, if any, owns the replacement destination and prerequisite.
+    pub fn teleport_for_source(
+        &self,
+        pos: TilePos,
+        current: impl FnOnce(u8) -> Option<u16>,
+    ) -> Option<TilePos> {
+        if let Some(&(ordinal, appearance)) = self.teleport_sources.get(&pos)
+            && current(ordinal) != Some(appearance)
+        {
+            return None;
+        }
+        self.teleport(pos)
     }
 
     /// How many tiles teleport.
@@ -144,7 +205,14 @@ impl FloorTable {
         for tile in self.positions() {
             let cell = (i32::from(tile.x), i32::from(tile.y), -i32::from(tile.floor));
             if ground(cell) == Ground::Walkable
-                && follow(self, &ground, &|_| true, cell) == Err(Refusal::Chain)
+                && follow(
+                    &ground,
+                    &|_| true,
+                    &|pos| self.teleport(pos),
+                    cell,
+                    &|cell| self.mask(cell),
+                    &|_| false,
+                ) == Err(Refusal::Chain)
             {
                 return Err(tile);
             }
@@ -161,6 +229,11 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// An exact, unambiguous conditional callback owns this native portal's landing.
+    /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
+    fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
+        false
+    }
 }
 
 impl CellBlocker for BTreeSet<LogicalCell> {
@@ -171,11 +244,11 @@ impl CellBlocker for BTreeSet<LogicalCell> {
 
 /// The closed bundle doors, read live through the indexed door lookup. The native floor is the
 /// legacy `z` negated.
-pub struct BundleDoors<'a>(pub &'a super::door::DoorBook);
+pub struct BundleDoors<'a>(pub &'a dyn CellBlocker);
 
 impl CellBlocker for BundleDoors<'_> {
     fn blocks(&self, cell: LogicalCell) -> bool {
-        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks(tile))
+        self.0.blocks(cell)
     }
 }
 
@@ -230,7 +303,16 @@ pub fn resolve_landing(
     origin: Cell,
     direction: CardinalStep,
 ) -> Result<Cell, Refusal> {
-    resolve_landing_with_exhaust(table, ground, landable, origin, direction).map(|(cell, _)| cell)
+    resolve_landing_with_exhaust(
+        table,
+        ground,
+        landable,
+        origin,
+        direction,
+        &|cell| table.mask(cell),
+        &|_| false,
+    )
+    .map(|(cell, _)| cell)
 }
 
 fn resolve_landing_with_exhaust(
@@ -239,32 +321,64 @@ fn resolve_landing_with_exhaust(
     landable: impl Fn(Cell) -> bool,
     origin: Cell,
     direction: CardinalStep,
+    mask: &impl Fn(Cell) -> u8,
+    suppress_teleport: &impl Fn(Cell) -> bool,
+) -> Result<(Cell, bool), Refusal> {
+    resolve_landing_with_teleports(
+        ground,
+        landable,
+        origin,
+        direction,
+        mask,
+        |at| table.teleport(at),
+        suppress_teleport,
+    )
+}
+
+fn resolve_landing_with_teleports(
+    ground: impl Fn(Cell) -> Ground,
+    landable: impl Fn(Cell) -> bool,
+    origin: Cell,
+    direction: CardinalStep,
+    mask: &impl Fn(Cell) -> u8,
+    teleport: impl Fn(TilePos) -> Option<TilePos>,
+    suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = match direction {
         CardinalStep::North => (0, -1),
         CardinalStep::East => (1, 0),
         CardinalStep::South => (0, 1),
         CardinalStep::West => (-1, 0),
+        CardinalStep::NorthEast => (1, -1),
+        CardinalStep::SouthEast => (1, 1),
+        CardinalStep::SouthWest => (-1, 1),
+        CardinalStep::NorthWest => (-1, -1),
     };
     let next = (origin.0 + dx, origin.1 + dy, origin.2);
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(table, &ground, &landable, next),
+        Ground::Walkable => follow(&ground, &landable, &teleport, next, mask, suppress_teleport),
     }
 }
 
 /// `internalMoveCreature`'s successive `queryDestination`, from the entered tile `next`.
 fn follow(
-    table: &FloorTable,
     ground: &impl Fn(Cell) -> Ground,
     landable: &impl Fn(Cell) -> bool,
+    teleport: &impl Fn(TilePos) -> Option<TilePos>,
     mut next: Cell,
+    floor_mask: &impl Fn(Cell) -> u8,
+    suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
     let land = |cell: Cell, changed_floor: bool| match ground(cell) {
         Ground::Walkable => {
-            let target = teleported(table, ground, landable, cell);
+            let target = if suppress_teleport(cell) {
+                cell
+            } else {
+                teleported(ground, landable, teleport, cell)
+            };
             Ok((target, changed_floor || target != cell))
         }
         _ => Err(Refusal::Blocked),
@@ -273,19 +387,19 @@ fn follow(
         if ground(next) == Ground::Blocked {
             return Err(Refusal::Blocked);
         }
-        let mask = table.mask(next);
+        let mask = floor_mask(next);
         if mask == 0 {
             return land(next, changed_floor);
         }
         let target = if mask & DOWN != 0 {
             let below = (next.0, next.1, next.2 + 1);
             let shifted = |dx: i32, dy: i32| (below.0 + dx, below.1 + dy, below.2);
-            if table.mask(shifted(0, -1)) & SOUTHALT != 0 {
+            if floor_mask(shifted(0, -1)) & SOUTHALT != 0 {
                 shifted(0, -2)
-            } else if table.mask(shifted(-1, 0)) & EASTALT != 0 {
+            } else if floor_mask(shifted(-1, 0)) & EASTALT != 0 {
                 shifted(-2, 0)
             } else if ground(below) != Ground::Absent {
-                let below_mask = table.mask(below);
+                let below_mask = floor_mask(below);
                 let mut offset = (0, 0);
                 for (flag, dx, dy) in [
                     (NORTH, 0, 1),
@@ -331,12 +445,12 @@ fn follow(
 /// The tile a player landing on `cell` ends on: the destination of its teleport when the bundle
 /// has that tile, it can be entered and `landable` admits the actor there, otherwise `cell`.
 fn teleported(
-    table: &FloorTable,
     ground: &impl Fn(Cell) -> Ground,
     landable: &impl Fn(Cell) -> bool,
+    teleport: &impl Fn(TilePos) -> Option<TilePos>,
     cell: Cell,
 ) -> Cell {
-    let Some(to) = pos(cell.0, cell.1, cell.2).and_then(|from| table.teleport(from)) else {
+    let Some(to) = pos(cell.0, cell.1, cell.2).and_then(teleport) else {
         return cell;
     };
     let target = (i32::from(to.x), i32::from(to.y), -i32::from(to.floor));
@@ -355,12 +469,42 @@ pub fn table_of(cells: &NativeEntryMovementCells) -> Option<&FloorTable> {
     }
 }
 
+fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<TilePos> {
+    use crate::map::view::{MapFacts, placement_key};
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return None;
+    };
+    let bundle = index.map();
+    bundle.floors.teleport_for_source(at, |ordinal| {
+        let key = placement_key(at, ordinal)?;
+        if bundle.facts.base_hidden(key) {
+            return None;
+        }
+        let tile = bundle.overlay.base().tile(at.x, at.y, at.floor)?;
+        let (&id, _) = tile
+            .ids()
+            .iter()
+            .zip(tile.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))?;
+        bundle
+            .facts
+            .base_entry(at, ordinal, id)
+            .map(|facts| facts.appearance_id)
+    })
+}
+
 /// NEWHAVEN-TELEPORT-1 (WORLD-INTERACTION-0 §6.5): whether `cell` of the bundle `cells` run over
 /// teleports. Monsters never enter such a tile; a fixture or source World has no teleports.
 pub fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool {
-    table_of(cells)
-        .zip(pos(cell.x, cell.y, cell.z))
-        .is_some_and(|(table, at)| table.teleport(at).is_some())
+    let authored =
+        pos(cell.x, cell.y, cell.z).is_some_and(|at| current_teleport(cells, at).is_some());
+    authored
+        || match cells.index() {
+            NativeMovementCollisionIndex::Bundle(index) => pos(cell.x, cell.y, cell.z)
+                .is_some_and(|at| index.map().facts.quest_portal_destination(at, 0).is_some()),
+            _ => false,
+        }
 }
 
 /// The landing rule's PZ part (WORLD-INTERACTION-0 §3.3, §6.6) over the bundle `cells`: an actor
@@ -505,12 +649,25 @@ fn destination(
             ground(cell)
         }
     };
-    let ((x, y, z), starts_stairhop) = resolve_landing_with_exhaust(
-        table,
+    let ((x, y, z), starts_stairhop) = resolve_landing_with_teleports(
         ground,
         landable_of(cells, pz_blocked, closed),
         (origin.x, origin.y, floor),
         direction,
+        &|cell| {
+            if let NativeMovementCollisionIndex::Bundle(index) = cells.index()
+                && let Some(at) = pos(cell.0, cell.1, cell.2)
+                && let Some(mask) = index
+                    .map()
+                    .facts
+                    .quest_callback_floor_mask(index.map().overlay.base(), at)
+            {
+                return mask;
+            }
+            table.mask(cell)
+        },
+        |at| current_teleport(cells, at),
+        &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
     )
     .map_err(movement_error)?;
     Ok((
@@ -571,11 +728,21 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
     ) {
         let facing = match self.direction {
             CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
+            CardinalStep::East | CardinalStep::NorthEast | CardinalStep::SouthEast => {
+                MovementFacing::East
+            }
             CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
+            CardinalStep::West | CardinalStep::NorthWest | CardinalStep::SouthWest => {
+                MovementFacing::West
+            }
         };
         (self.actor, self.expected, self.destination, facing)
+    }
+}
+
+impl CellBlocker for crate::map::door::DoorBook {
+    fn blocks(&self, cell: LogicalCell) -> bool {
+        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.blocks(tile))
     }
 }
 
@@ -584,6 +751,99 @@ mod tests {
     #![allow(clippy::expect_used, clippy::panic)]
     use super::*;
     use std::collections::BTreeSet;
+
+    #[test]
+    fn activity_region_preserves_teleport_source_transform_fence() {
+        let from = TilePos {
+            x: 33430,
+            y: 31537,
+            floor: -11,
+        };
+        let to = TilePos {
+            x: 33457,
+            y: 31531,
+            floor: -11,
+        };
+        let outgoing = TilePos { x: 33431, ..from };
+        let outside = TilePos { x: 33470, ..to };
+        let orphan = TilePos { x: 33432, ..from };
+        let mut table = FloorTable::default();
+        table.add_teleport(from, to);
+        table.bind_teleport_source(from, 1, 1949);
+        table.add_teleport(outgoing, outside);
+        table.bind_teleport_source(outgoing, 2, 1949);
+        table.add_teleport(outside, to);
+        table.bind_teleport_source(outside, 3, 1949);
+        table.bind_teleport_source(orphan, 4, 1949);
+        let room = table.activity_region([33420, 31520, 33460, 31560, 11, 11]);
+        assert_eq!(room.teleport_count(), 1);
+        assert_eq!(room.teleport_sources.len(), 1);
+        assert_eq!(
+            room.teleport_for_source(from, |ordinal| {
+                assert_eq!(ordinal, 1);
+                Some(1949)
+            }),
+            Some(to)
+        );
+        assert_eq!(room.teleport_for_source(from, |_| Some(1950)), None);
+        assert_eq!(room.teleport_for_source(from, |_| None), None);
+        assert_eq!(room.teleport(outgoing), None);
+        assert_eq!(room.teleport(outside), None);
+        assert!(!room.teleport_sources.contains_key(&orphan));
+    }
+
+    #[test]
+    fn worldchg_native_teleport_tracks_exact_source_transform_and_restore() {
+        let from = TilePos {
+            x: 33430,
+            y: 31537,
+            floor: -11,
+        };
+        let to = TilePos {
+            x: 33457,
+            y: 31531,
+            floor: -11,
+        };
+        let mut table = FloorTable::default();
+        table.add_teleport(from, to);
+        table.bind_teleport_source(from, 1, 1949);
+        let resolve = |source| {
+            table.teleport_for_source(from, |ordinal| {
+                assert_eq!(
+                    ordinal, 1,
+                    "only the original native source may authorize teleport"
+                );
+                source
+            })
+        };
+        assert_eq!(
+            resolve(Some(1949)),
+            Some(to),
+            "ordinary closed-source travel survives"
+        );
+        assert_eq!(
+            resolve(Some(22761)),
+            None,
+            "open encounter delegates to current-world callback"
+        );
+        assert_eq!(
+            resolve(None),
+            None,
+            "hidden or removed native source grants no teleport"
+        );
+        assert_eq!(
+            resolve(Some(1949)),
+            Some(to),
+            "closing restores original destination"
+        );
+        let unbound = TilePos {
+            x: 1,
+            y: 1,
+            floor: -7,
+        };
+        table.add_teleport(unbound, to);
+        assert_eq!(table.teleport_for_source(unbound, |_| None), Some(to));
+    }
 
     /// A flat world of walkable cells `0..=9` square on `z` in `zs`, minus `blocked`.
     fn world(zs: &[i32], blocked: &[Cell]) -> impl Fn(Cell) -> Ground {

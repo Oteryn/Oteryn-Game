@@ -37,7 +37,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     Ok(ContainerPlan::Decided(outcome, delta)) => Ok((outcome, delta)),
                     Ok(ContainerPlan::Observe(pending)) => {
                         let observation = authority
-                            .observe_container(actor, admitted.item_fence, pending.key())
+                            .observe_container_with_house_capacity(actor, admitted.item_fence, pending.key(), admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2))
                             .await;
                         views.apply(view, pending, observation)
                     }

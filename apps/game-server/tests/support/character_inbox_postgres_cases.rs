@@ -753,6 +753,14 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
         assert_eq!(
             readers,
             [
+                // Account closure: SELECT/lock custody owners and hash their rows
+                // for quarantine/restoration. Neither function changes Inbox rows.
+                "game_account_closure_custody_guard",
+                "game_account_closure_custody_hash",
+                // Bazaar: read-only recovery and same-transaction final-custody
+                // proofs. Delivery still uses game_character_inbox_deliver.
+                "game_bazaar_escrows_invalid",
+                "game_bazaar_item_complete",
                 "game_character_inbox_deliver",
                 "game_character_inbox_placement_proven",
                 "game_character_inbox_reward_claim_mint_proven",
@@ -760,6 +768,8 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // neither function inserts, updates or deletes Inbox rows.
                 "game_daily_reward_bound_custody",
                 "game_daily_reward_line_guard",
+                // 1711: SELECT/RAISE proof of an atomic bound Inbox mint only.
+                "game_daily_reward_pick_guard",
                 // DEPOT-SEARCH E08: read-only custody owner, and the one narrow removal
                 // seam of a retrieved Inbox root; its BEFORE DELETE proof requires the
                 // current depot-search line.
@@ -771,8 +781,16 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // HIRELING: unlinks only a consumed lamp, proven by this transaction's
                 // native item-use receipt; the Inbox delete guard still rejects other rows.
                 "game_hireling_inbox_lamp_unlink",
+                // W18: SELECT the existing Inbox Gold Pouch custody for the
+                // registered coin-only destination; never creates an Inbox row.
+                "game_house_container_coin_pouch_destination",
                 "game_house_disposition_delivery_proven",
-                "game_house_disposition_native_removal_proven",
+                // 2602: the original 0178 SELECT-only custody proof is renamed
+                // and called by the wrapping-aware function, not duplicated.
+                "game_house_disposition_native_removal_proven_before_t135",
+                // W18: verify final Inbox custody before removing only private
+                // House reclaim metadata; no Inbox row or delivery changes.
+                "game_house_nested_reclaim_reconcile",
                 "game_item_location_exclusive",
                 // QUICKLOOT-1: read-only Gold Pouch custody proofs. The pouch stays
                 // in Inbox; only nested coin entries change, never Inbox rows.
@@ -795,9 +813,36 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_market_complete",
                 // TRADE-PLAYER-1: read-only final-custody proof, no Inbox mutation.
                 "game_player_trade_complete",
+                // 1712: SELECT/RAISE proof of the returner's atomic Inbox mint.
+                "game_returner_claim_guard",
                 "game_reward_claim_inbox_mint_is_complete",
             ]
         );
+        // Register the exact read-only custody users independently of the
+        // closed inventory above. A direct/dynamic Inbox DML path in any
+        // helper fails even if its name remains in the registered reader set.
+        for reader in [
+            "game_daily_reward_pick_guard",
+            "game_house_container_coin_pouch_destination",
+            "game_house_disposition_native_removal_proven",
+            "game_house_disposition_native_removal_proven_before_t135",
+            "game_house_nested_reclaim_reconcile",
+            "game_returner_claim_guard",
+        ] {
+            let no_inbox_dml: bool = sqlx::query_scalar(
+                r#"SELECT prosrc !~* '\m(insert[[:space:]]+into|update|delete[[:space:]]+from|truncate([[:space:]]+table)?)[[:space:]]+(only[[:space:]]+)?(("[^"]+"|[a-z_][a-z_0-9$]*)[.])?"?game_(item_character_inbox_locations|character_inbox_(deliveries|counters|cause_kinds))"?\M'
+                    AND prosrc !~* '\mexecute\M'
+                   FROM pg_proc WHERE proname=$1
+                    AND pronamespace=current_schema()::regnamespace"#,
+            )
+            .bind(reader)
+            .fetch_one(&mut *connection)
+            .await?;
+            assert!(
+                no_inbox_dml,
+                "registered custody reader acquired Inbox DML: {reader}"
+            );
+        }
         let kept = read_character_inbox(connection, &bytes(&character)?).await?;
         assert_eq!(kept.len(), 1);
         assert_eq!(kept[0].item_instance_id, bytes(item)?);

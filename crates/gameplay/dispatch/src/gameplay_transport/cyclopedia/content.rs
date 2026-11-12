@@ -1,14 +1,30 @@
-//! Oteryn default, not Reference-qualified: authored square around the bundle entry.
-//! Only its reachable served tiles are members. No source mask is treated as native geometry.
+//! W12: discovery membership and POI candidates come from admitted native subarea masks.
 use super::*;
-use std::collections::{BTreeSet, VecDeque};
+
 pub(in crate::gameplay_transport) struct AdmittedArea {
     pub digest: [u8; 32],
     pub pool: Vec<Point>,
-    pub tiles: BTreeSet<Point>,
+    pub area: u32,
+    pub legacy_area: u32,
+    pub subarea: Option<u32>,
+    pub subareas: Vec<(u32, u32)>,
 }
 pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<AdmittedArea> {
-    let area = BasicArea::embedded()?;
+    let map = owner.bundle_map()?;
+    admit_at(
+        owner,
+        Point {
+            x: i32::from(map.entry_start.x),
+            y: i32::from(map.entry_start.y),
+            floor: i16::from(map.entry_start.floor),
+        },
+    )
+}
+pub(super) fn admit_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    start: Point,
+) -> Option<AdmittedArea> {
+    let sampling = BasicArea::embedded()?;
     let native = owner.active_generation?.native_gameplay()?;
     let index = native.item_index()?;
     for key in [
@@ -19,24 +35,23 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
     ] {
         index.revision(key)?;
     }
-
     let map = owner.bundle_map()?;
+    let table = &map.overlay.base().subareas;
+    let (area, subarea) = table.resolve(
+        u16::try_from(start.x).ok()?,
+        u16::try_from(start.y).ok()?,
+        i8::try_from(start.floor).ok()?,
+    )?;
     let entry = map.entry_start;
-    let start = Point {
-        x: i32::from(entry.x),
-        y: i32::from(entry.y),
-        floor: i16::from(entry.floor),
-    };
-    let walkable = |p: Point| {
+    let legacy_area = table.resolve(entry.x, entry.y, entry.floor)?.0;
+    let walkable = |point: Point| {
         let (Ok(x), Ok(y), Ok(floor)) = (
-            u16::try_from(p.x),
-            u16::try_from(p.y),
-            i8::try_from(p.floor),
+            u16::try_from(point.x),
+            u16::try_from(point.y),
+            i8::try_from(point.floor),
         ) else {
             return false;
         };
-        // Oteryn default, not Reference-qualified: exclude door tiles in both states,
-        // so opening a door cannot reinterpret durable POI pools or area membership.
         if map
             .facts
             .doors()
@@ -44,57 +59,48 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
         {
             return false;
         }
-
-        let cell = LogicalCell {
-            x: p.x,
-            y: p.y,
-            z: i32::from(-p.floor),
-        };
-        owner
-            .movement_cells
-            .index()
-            .lookup(owner.movement_cells.scope(), cell)
-            == Ok(CollisionClass::Walkable)
+        owner.movement_cells().index().lookup(
+            owner.movement_cells().scope(),
+            LogicalCell {
+                x: point.x,
+                y: point.y,
+                z: i32::from(-point.floor),
+            },
+        ) == Ok(CollisionClass::Walkable)
     };
     if !walkable(start) {
         return None;
     }
-    let mut seen = BTreeSet::from([start]);
-    let mut queue = VecDeque::from([start]);
-    while let Some(point) = queue.pop_front() {
-        for (dx, dy) in [(-1, 0), (0, -1), (0, 1), (1, 0)] {
-            let next = Point {
-                x: point.x.checked_add(dx)?,
-                y: point.y.checked_add(dy)?,
-                floor: point.floor,
+    let subareas: Vec<_> = table
+        .areas
+        .iter()
+        .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
+        .collect();
+    let mut pool = Vec::new();
+    'candidates: for run in table.runs.iter().filter(|run| run.subarea == subarea) {
+        for x in run.begin..run.end {
+            if pool.len() == sampling.pool_limit {
+                break 'candidates;
+            }
+            let point = Point {
+                x: i32::from(x),
+                y: i32::from(run.y),
+                floor: i16::from(run.floor),
             };
-            if next.x.abs_diff(start.x) > area.radius as u32
-                || next.y.abs_diff(start.y) > area.radius as u32
-                || seen.contains(&next)
-                || !walkable(next)
-            {
-                continue;
+            if walkable(point) {
+                pool.push(point);
             }
-            if seen.len() >= 4225 {
-                return None;
-            }
-            seen.insert(next);
-            queue.push_back(next);
         }
     }
-    let pool: Vec<_> = seen
-        .iter()
-        .copied()
-        .filter(|p| !p.in_window(start))
-        .take(area.pool_limit)
-        .collect();
-    if pool.len() < area.generated_count {
+    if pool.len() < sampling.generated_count {
         return None;
     }
-    // Pin exactly the admitted bundle. A changed geometry fails closed when state exists.
     Some(AdmittedArea {
         digest: map.overlay.base().digest(),
         pool,
-        tiles: seen,
+        area,
+        legacy_area,
+        subarea: Some(subarea),
+        subareas,
     })
 }

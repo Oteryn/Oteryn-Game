@@ -1,0 +1,128 @@
+//! Native quest callbacks observe the existing World owner; no quest state is invented.
+use super::*;
+use crate::durability::character_progression::{
+    CurrentCharacterGameplayFence, assert_gameplay_fence,
+};
+use crate::durability::quest_world_callback::{QuestWorldContext, context_facts_are_current};
+use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use oteryn_gameplay_quests::quest::world_callbacks::world_change_requirement;
+
+/// Joins an already-fenced quest transaction, before consumption or rewards.
+/// A retained World snapshot never grants permission; load resolves the current save.
+pub async fn require(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+    callback: &str,
+) -> Result<bool, DurabilityError> {
+    let Some((key, stage)) = world_change_requirement(callback) else {
+        return Ok(true);
+    };
+    let Some(day) = super::load(tx, world, epoch).await? else {
+        return Ok(false);
+    };
+    if !oteryn_gameplay_world_change::owner::is_active(&day, key) {
+        return Ok(false);
+    }
+    Ok(match stage {
+        None => true,
+        Some(stage) => oteryn_gameplay_world_change::counter::CounterKind::from_key(key)
+            .is_some_and(|kind| day.world_counters && day.counter_stages[kind.index()] == stage),
+    })
+}
+
+impl DurabilityRoot {
+    /// Stateless entry callbacks use the same current Character/node/map/reset proof
+    /// as a value-bearing quest callback. Hive gates additionally observe the
+    /// QuestState-owned scent timestamp; this creates no quest receipt. The caller retains its permit and rechecks the local
+    /// actor/object CAS before applying the prepared movement.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the independent current fence and native map context remain explicit"
+    )]
+    pub async fn observe_world_callback_gate(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+        context: QuestWorldContext,
+        callback: String,
+    ) -> Result<bool, DurabilityError> {
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Ok(false);
+        };
+        permit.check_channel(world_id, channel_id)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if assert_gameplay_fence(&mut tx, &fence, &node)
+                        .await?
+                        .is_err()
+                        || !context_facts_are_current(&mut tx, fence, &context).await?
+                        || !require(&mut tx, world_id, context.reset_epoch, &callback).await?
+                        || !hive_gate_permitted(
+                            &mut tx,
+                            world_id,
+                            context.reset_epoch,
+                            fence.character_id,
+                            &callback,
+                        )
+                        .await?
+                    {
+                        return Ok(false);
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(true)
+                })
+            })
+            .await
+    }
+}
+
+/// The existing QuestState timestamp is a Character permit, never a World-stage counter.
+pub async fn hive_gate_permitted(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+    character: crate::domain::CharacterId,
+    callback: &str,
+) -> Result<bool, DurabilityError> {
+    use oteryn_gameplay_quests::quest::hive_access;
+    if hive_access::exit_gate(callback).is_some() {
+        // The enclosing observer still proves Character/node/map/content/reset.
+        // Loading the current World here also refuses a missing/retired epoch.
+        return Ok(super::load(tx, world, epoch).await?.is_some());
+    }
+    let Some(gate) = hive_access::gate(callback) else {
+        return Ok(true);
+    };
+    let Some(day) = super::load(tx, world, epoch).await? else {
+        return Ok(false);
+    };
+    if day.counter_stages[oteryn_gameplay_world_change::counter::CounterKind::HiveBorn.index()]
+        < gate.minimum_stage
+    {
+        return Ok(false);
+    }
+    let purchased:Option<i64>=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND quest_key=$3")
+        .bind(character.as_bytes().as_slice()).bind(hive_access::PURCHASED).bind(oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST)
+        .fetch_optional(&mut **tx).await?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    Ok(purchased.is_some_and(|purchased| hive_access::permit_valid(purchased, now)))
+}

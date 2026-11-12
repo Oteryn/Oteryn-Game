@@ -6,6 +6,15 @@
 //! and `Display`, never logged. This module decodes its own typed Gateway response, so it does not
 //! pass through the directory's forbidden-field filter; nothing else may.
 
+mod account_services;
+pub mod bazaar;
+mod challenge;
+pub mod coin_purchase;
+pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
+mod owner_characters;
+pub mod premium;
+pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
+
 use crate::{PlatformClientConfig, PlatformClientError};
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use reqwest::header::{CONTENT_TYPE, RETRY_AFTER};
@@ -16,7 +25,7 @@ use std::net::IpAddr;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-/// The only OAuth scope the native client requests (N4-P §2 step 1).
+/// The normal gameplay OAuth scope (N4-P §2 step 1); account services opt in separately.
 pub const NATIVE_LOGIN_SCOPE: &str = "game:ticket";
 /// The Gateway native branch version (N4-P §3.1).
 pub const GATEWAY_PROTOCOL_VERSION: u64 = 2;
@@ -385,16 +394,6 @@ impl NativeTicket {
     }
 }
 
-/// The Gateway login request's caller-chosen members (N4-P §3.1).
-#[derive(Debug, Clone)]
-pub struct GatewayLogin<'a> {
-    pub attempt_ref: &'a AttemptRef,
-    /// Canonical lowercase UUIDv7 (mode 33a: from configuration).
-    pub character_id: &'a str,
-    /// 1..64 visible ASCII; diagnostics only.
-    pub client_build: &'a str,
-}
-
 /// The routed endpoint of a successful login (N4-P §3.2). The client connects here and nowhere
 /// else, verifies `tls_server_name`, and requires ALPN [`GAME_ALPN`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -518,48 +517,16 @@ impl NativeLoginClient {
         redirect_uri: &str,
         cancellation: CancellationToken,
     ) -> Result<AccessToken, NativeLoginError> {
-        let endpoint = self
-            .platform
-            .join("oauth/token")
-            .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        let request = async {
-            let response = self
-                .client
-                .post(endpoint)
-                .form(&[
-                    ("grant_type", "authorization_code"),
-                    ("client_id", self.oauth_client_id.as_str()),
-                    ("redirect_uri", redirect_uri),
-                    ("code_verifier", code_verifier),
-                    ("code", code),
-                ])
-                .send()
-                .await
-                .map_err(|_error| PlatformClientError::Request)?;
-            if !response.status().is_success() {
-                return Err(NativeLoginError::TokenRefused);
-            }
-            let body = read_bounded(response, MAX_OAUTH_RESPONSE_BYTES).await?;
-            // OAuth token responses carry further members (refresh token, expiry); only these two
-            // are read, and the rest is dropped with the body.
-            #[derive(Deserialize)]
-            struct TokenResponse {
-                token_type: String,
-                access_token: String,
-            }
-            let token: TokenResponse = serde_json::from_slice(&body)
-                .map_err(|_error| PlatformClientError::InvalidPayload)?;
-            if !token.token_type.eq_ignore_ascii_case("bearer")
-                || !is_visible_ascii(&token.access_token, MAX_ACCESS_TOKEN_BYTES)
-            {
-                return Err(PlatformClientError::InvalidPayload.into());
-            }
-            Ok(AccessToken(SecretText(token.access_token)))
-        };
-        run(cancellation, request).await
+        match self
+            .exchange_code_challenged(code, code_verifier, redirect_uri, None, cancellation)
+            .await?
+        {
+            TokenExchange::Token(token) => Ok(token),
+            TokenExchange::Challenge(_) => Err(NativeLoginError::TokenRefused),
+        }
     }
 
-    /// `POST /v1/game-auth/tickets` with the bearer: one native ticket. The access token is
+    /// `POST /api/v1/game-auth/tickets` with the bearer: one native ticket. The access token is
     /// consumed; Platform revokes it.
     pub async fn issue_native_ticket(
         &self,
@@ -568,7 +535,7 @@ impl NativeLoginClient {
     ) -> Result<NativeTicket, NativeLoginError> {
         let endpoint = self
             .platform
-            .join("v1/game-auth/tickets")
+            .join("/api/v1/game-auth/tickets")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let request = async {
             let response = self
@@ -633,7 +600,11 @@ impl NativeLoginClient {
             .gateway
             .join("v1/login")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        if parse_uuid_v7(login.character_id).is_none() || !is_visible_ascii(login.client_build, 64)
+        if parse_uuid_v7(login.character_id).is_none()
+            || login
+                .channel_id
+                .is_some_and(|id| parse_uuid_v7(id).is_none())
+            || !is_visible_ascii(login.client_build, 64)
         {
             return Err(PlatformClientError::InvalidPayload.into());
         }
@@ -642,7 +613,7 @@ impl NativeLoginClient {
             "game_login_ticket": ticket.secret.expose(),
             "attempt_ref": login.attempt_ref.as_str(),
             "character_id": login.character_id,
-            "channel_id": null,
+            "channel_id": login.channel_id,
             "offer": {
                 "client_build": login.client_build,
                 "client_platform": "windows",
@@ -655,6 +626,16 @@ impl NativeLoginClient {
         if body.len() > MAX_LOGIN_REQUEST_BYTES {
             return Err(PlatformClientError::InvalidPayload.into());
         }
+        let mut span = oteryn_error_codes::Span::start(
+            oteryn_error_codes::Level::Info,
+            "platform",
+            "platform_call",
+            None,
+        )
+        .slow_after(crate::PLATFORM_SLOW_OPERATION);
+        span.field("endpoint", "gateway_login");
+        let started = Instant::now();
+        let mut attempts_made = 0_u64;
         let attempts = async {
             loop {
                 if Instant::now() >= ticket.usable_until {
@@ -664,6 +645,7 @@ impl NativeLoginClient {
                 if request_number > MAX_LOGIN_REQUESTS {
                     return Err(NativeLoginError::TicketSpent);
                 }
+                attempts_made = attempts_made.saturating_add(1);
                 let (error, retry_after) =
                     match self.login_once(&endpoint, &body, login.attempt_ref).await {
                         Ok(grant) => return Ok(grant),
@@ -689,7 +671,44 @@ impl NativeLoginClient {
                 tokio::time::sleep(backoff).await;
             }
         };
-        run(cancellation, attempts).await
+        let result = run(cancellation, attempts).await;
+        oteryn_error_codes::metrics::Registry::global()
+            .histogram("platform_call_ms", &[("endpoint", "gateway_login")])
+            .observe(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
+        span.field("attempts", attempts_made);
+        match result {
+            Ok(grant) => {
+                span.set_outcome("ok");
+                span.field("status", 200_u64);
+                Ok(grant)
+            }
+            Err(error) => {
+                span.set_outcome("failed");
+                let code = match error {
+                    NativeLoginError::Platform(platform_error) => {
+                        crate::platform_error_code(platform_error)
+                    }
+                    NativeLoginError::Gateway(code)
+                        if code.progression() != Progression::Retryable =>
+                    {
+                        oteryn_error_codes::ErrorCode::new(
+                            5006,
+                            "PLATFORM_RESPONSE_INVALID",
+                            oteryn_error_codes::Category::InternalUnavailable,
+                            oteryn_error_codes::Progression::Terminal,
+                        )
+                    }
+                    _ => oteryn_error_codes::ErrorCode::new(
+                        5007,
+                        "PLATFORM_UNAVAILABLE",
+                        oteryn_error_codes::Category::DependencyUnavailable,
+                        oteryn_error_codes::Progression::Retryable,
+                    ),
+                };
+                span.set_code(code);
+                Err(error)
+            }
+        }
     }
 
     /// One Gateway request. On failure, returns the error and the server's `Retry-After`.

@@ -48,6 +48,12 @@ pub const MAX_CONTAINER_VIEWS: usize = 16;
 pub const MAX_CONTAINER_VIEW_ID: u8 = (MAX_CONTAINER_VIEWS - 1) as u8;
 /// `GAMEITEM01-CONTAINER-ENTRIES-MAX`: a container's capacity, and so the entries of one view.
 pub const MAX_CONTAINER_VIEW_ENTRIES: usize = 20;
+/// SEASON: supplementary capability446, retaining the existing domain14 envelope.
+/// Crystal data/items/items.xml:26689-26699 gives the lizard racks25 slots.
+pub const CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2: u32 = 446;
+pub const MAX_HOUSE_CONTAINER_VIEW_ENTRIES: usize = 25;
+pub const MAX_LIVE_ITEM_HANDLES_HOUSE_CONTAINER_TREE: usize =
+    MAX_LIVE_ITEM_HANDLES + MAX_CONTAINER_VIEWS * (1 + MAX_HOUSE_CONTAINER_VIEW_ENTRIES);
 /// `ITEMV0-RL-03-CONTAINER-TREE`: live handles of a session that selected capability 14. The
 /// capability 4 views ([`MAX_LIVE_ITEM_HANDLES`]) plus, for each of the 16 views, its container
 /// (which may be visible nowhere else) and its 20 entries.
@@ -62,6 +68,14 @@ pub const MAX_CONTAINER_VIEW_BYTES: usize =
     2 + 2 * MAX_ITEM_TARGET_BYTES + 2 + MAX_CONTAINER_VIEW_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
 /// One `ContainerViewV1` as an element of a repeated field: its tag and a 2-byte length.
 const MAX_CONTAINER_VIEW_ELEMENT_BYTES: usize = 3 + MAX_CONTAINER_VIEW_BYTES;
+pub const MAX_HOUSE_CONTAINER_VIEW_BYTES: usize = 2
+    + 2 * MAX_ITEM_TARGET_BYTES
+    + 2
+    + MAX_HOUSE_CONTAINER_VIEW_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
+// A complete16-view set necessarily contains view0, whose zero-valued id
+// omits its two-byte protobuf field. Other view counts are strictly smaller.
+pub const MAX_HOUSE_CONTAINER_VIEWS_BYTES: usize =
+    MAX_CONTAINER_VIEWS * (3 + MAX_HOUSE_CONTAINER_VIEW_BYTES) - 2;
 /// Domain 14 snapshot and delta: 16 view elements.
 pub const MAX_CONTAINER_VIEWS_BYTES: usize = MAX_CONTAINER_VIEWS * MAX_CONTAINER_VIEW_ELEMENT_BYTES;
 /// `ContainerOpenV1`: the handle 1 + 10 and `replace_view` 1 + 1.
@@ -139,12 +153,18 @@ fn view_id(value: u32) -> WireResult<u8> {
         .ok_or(ItemViewWireError::LimitExceeded)
 }
 
-fn validate_view(view: &ContainerView, browse_field: bool) -> WireResult<()> {
+fn validate_view(
+    view: &ContainerView,
+    browse_field: bool,
+    house_capacity_v2: bool,
+) -> WireResult<()> {
     if view.browse.is_some() && !browse_field {
         return malformed();
     }
     let maximum = if view.browse.is_some() {
         MAX_BROWSE_FIELD_PAGE_ENTRIES
+    } else if house_capacity_v2 {
+        MAX_HOUSE_CONTAINER_VIEW_ENTRIES
     } else {
         MAX_CONTAINER_VIEW_ENTRIES
     };
@@ -185,13 +205,17 @@ fn validate_view(view: &ContainerView, browse_field: bool) -> WireResult<()> {
     Ok(())
 }
 
-fn validate_container_views(views: &ContainerViews, browse_field: bool) -> WireResult<()> {
+fn validate_container_views(
+    views: &ContainerViews,
+    browse_field: bool,
+    house_capacity_v2: bool,
+) -> WireResult<()> {
     if views.views.len() > MAX_CONTAINER_VIEWS {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let (mut containers, mut entries) = (BTreeMap::new(), BTreeMap::new());
     for (index, view) in views.views.iter().enumerate() {
-        validate_view(view, browse_field)?;
+        validate_view(view, browse_field, house_capacity_v2)?;
         if index > 0 && views.views[index - 1].view_id >= view.view_id {
             return malformed();
         }
@@ -233,14 +257,22 @@ fn encode_view(output: &mut Vec<u8>, view: &ContainerView) {
     push_message_field(output, 1, &body);
 }
 
-fn decode_view(input: &[u8], browse_field: bool) -> WireResult<ContainerView> {
+fn decode_view(
+    input: &[u8],
+    browse_field: bool,
+    house_capacity_v2: bool,
+) -> WireResult<ContainerView> {
     let maximum_bytes = if browse_field {
         MAX_BROWSE_FIELD_VIEW_BYTES
+    } else if house_capacity_v2 {
+        MAX_HOUSE_CONTAINER_VIEW_BYTES
     } else {
         MAX_CONTAINER_VIEW_BYTES
     };
     let maximum_entries = if browse_field {
         MAX_BROWSE_FIELD_PAGE_ENTRIES
+    } else if house_capacity_v2 {
+        MAX_HOUSE_CONTAINER_VIEW_ENTRIES
     } else {
         MAX_CONTAINER_VIEW_ENTRIES
     };
@@ -269,8 +301,14 @@ fn decode_view(input: &[u8], browse_field: bool) -> WireResult<ContainerView> {
             _ => return malformed(),
         }
     }
-    // Selection permits the extension, but an ordinary view keeps its original byte bound.
-    if browse.is_none() && input.len() > MAX_CONTAINER_VIEW_BYTES {
+    // Browse selection never widens ordinary containers. Only the authenticated
+    // supplementary House mode raises their ordinary bound from20 to25 entries.
+    let ordinary_bytes = if house_capacity_v2 {
+        MAX_HOUSE_CONTAINER_VIEW_BYTES
+    } else {
+        MAX_CONTAINER_VIEW_BYTES
+    };
+    if browse.is_none() && input.len() > ordinary_bytes {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let capacity = capacity.unwrap_or(0);
@@ -286,7 +324,7 @@ fn decode_view(input: &[u8], browse_field: bool) -> WireResult<ContainerView> {
         entries,
         browse,
     };
-    validate_view(&view, browse_field)?;
+    validate_view(&view, browse_field, house_capacity_v2)?;
     Ok(view)
 }
 
@@ -300,7 +338,16 @@ pub fn encode_container_views_for(
     views: &ContainerViews,
     browse_field: bool,
 ) -> WireResult<Vec<u8>> {
-    validate_container_views(views, browse_field)?;
+    encode_container_views_with_house_capacity(views, browse_field, false)
+}
+
+/// The larger ordinary-container bound requires supplementary capability446.
+pub fn encode_container_views_with_house_capacity(
+    views: &ContainerViews,
+    browse_field: bool,
+    house_capacity_v2: bool,
+) -> WireResult<Vec<u8>> {
+    validate_container_views(views, browse_field, house_capacity_v2)?;
     let mut output = Vec::new();
     for view in &views.views {
         encode_view(&mut output, view);
@@ -316,8 +363,19 @@ pub fn decode_container_views_for(
     payload: &[u8],
     browse_field: bool,
 ) -> WireResult<ContainerViews> {
+    decode_container_views_with_house_capacity(payload, browse_field, false)
+}
+
+/// Old callers retain the20-entry bound through decode_container_views_for.
+pub fn decode_container_views_with_house_capacity(
+    payload: &[u8],
+    browse_field: bool,
+    house_capacity_v2: bool,
+) -> WireResult<ContainerViews> {
     let maximum = if browse_field {
         MAX_BROWSE_FIELD_VIEWS_BYTES
+    } else if house_capacity_v2 {
+        MAX_HOUSE_CONTAINER_VIEWS_BYTES
     } else {
         MAX_CONTAINER_VIEWS_BYTES
     };
@@ -335,12 +393,13 @@ pub fn decode_container_views_for(
                 views.views.push(decode_view(
                     read_bytes(payload, &mut cursor)?,
                     browse_field,
+                    house_capacity_v2,
                 )?);
             }
             _ => return malformed(),
         }
     }
-    validate_container_views(&views, browse_field)?;
+    validate_container_views(&views, browse_field, house_capacity_v2)?;
     Ok(views)
 }
 

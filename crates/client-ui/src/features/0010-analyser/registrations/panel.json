@@ -1,0 +1,7 @@
+{
+  "mechanic": "0010-analyser",
+  "kind": "panels",
+  "id": "0010-analyser-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

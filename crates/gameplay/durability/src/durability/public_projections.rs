@@ -5,11 +5,20 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes. Each call is one semantic transaction.
 
+pub mod daily_kills;
+pub mod house_catalogue;
+mod online_sessions;
+mod v2;
+mod world_totals;
+
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::native_admission_source::public_projections::world_totals::{
+    TotalsFacts, TotalsSnapshot,
+};
 use crate::native_admission_source::public_projections::{
     FILTERS, HighscoreRow, HighscoresBatch, MAX_HIGHSCORE_ROWS, MAX_ONLINE, NAME_HANDOFF_HOLD,
     NameHandoff, OnlineCut, OnlineEntry, OnlineState, OnlineWorld, OutboxFacts, ProfileEntry,
@@ -45,7 +54,7 @@ const _: () =
 pub const PROFILE: &str = "\
 WITH head AS (SELECT o.character_id, min(o.created_at) AS oldest \
                 FROM game_public_character_profile_outbox o \
-               WHERE NOT (o.character_id::text = ANY($1::text[])) \
+               WHERE NOT (o.character_id::text = ANY($1::text[])) AND NOT EXISTS(SELECT 1 FROM game_account_closure_members qm JOIN game_account_closures qc ON qc.account_id=qm.account_id AND qc.close_operation_id=qm.close_operation_id WHERE qm.character_id=o.character_id AND qm.step=2 AND qc.state='CANCELLING') \
                  AND NOT EXISTS (SELECT 1 FROM game_character_roots n \
                                    JOIN game_public_character_profile_outbox v \
                                      ON v.vacated_name_key = n.name_key \
@@ -60,17 +69,24 @@ WITH head AS (SELECT o.character_id, min(o.created_at) AS oldest \
                                   WHERE n.character_id = o.character_id \
                                     AND x.vacated_at > floor(extract(epoch FROM \
                                         statement_timestamp()) * 1000)::bigint - $2) \
+                 AND NOT EXISTS (SELECT 1 FROM game_character_roots n \
+                     JOIN game_public_v2_name_handoffs x ON x.namespace_world = '' \
+                      AND x.name_key = n.name_key WHERE n.character_id = o.character_id \
+                      AND x.created_ms > floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint - $2) \
                GROUP BY o.character_id \
                ORDER BY oldest, o.character_id LIMIT $3) \
 SELECT h.character_id::text AS character_id, e.projection_epoch, p.projection_revision, \
        p.revised_at / 1000 AS observed_at, r.world_id::text AS world_id, r.name, r.lifecycle, \
-       coalesce(g.level, 1)::text AS level, coalesce(b.vocation, 'none') AS vocation \
+       coalesce(g.level, 1)::text AS level, coalesce(b.vocation, 'none') AS vocation, \
+       pg.guild_id::text AS public_guild_id, gm.rank_level AS public_guild_rank \
   FROM head h \
   JOIN game_public_character_profiles p USING (character_id) \
  CROSS JOIN game_public_projection_epoch e \
-  LEFT JOIN game_character_roots r ON r.character_id = h.character_id \
+  LEFT JOIN game_character_roots r ON r.character_id = h.character_id AND NOT game_account_closure_detached(r.character_id) \
   LEFT JOIN game_character_progression_state g ON g.character_id = h.character_id \
   LEFT JOIN game_character_build_state b ON b.character_id = h.character_id \
+  LEFT JOIN game_guild_members gm ON gm.character_id = h.character_id \
+  LEFT JOIN game_guilds pg ON pg.guild_id = gm.guild_id AND pg.world_id = r.world_id AND pg.state IN (1,2,3) \
  WHERE e.epoch_scope = 1 \
  ORDER BY h.oldest, h.character_id";
 
@@ -100,6 +116,7 @@ SELECT o.world_id::text AS world_id, o.category, e.projection_epoch, h.projectio
  CROSS JOIN game_public_projection_epoch e \
  WHERE e.epoch_scope = 1 \
    AND NOT ((o.world_id::text || ':' || o.category::text) = ANY($1::text[])) \
+   AND NOT EXISTS(SELECT 1 FROM game_account_closure_members qm JOIN game_account_closures qc ON qc.account_id=qm.account_id AND qc.close_operation_id=qm.close_operation_id JOIN game_character_roots qr ON qr.character_id=qm.character_id WHERE qr.world_id=o.world_id AND qm.step=2 AND qc.state='CANCELLING') \
  ORDER BY o.created_at, o.world_id, o.category LIMIT 1";
 
 // The HIGHSCORES-0 tables (RANK-1, HS-1). Read only once `SOURCE` holds, in
@@ -111,7 +128,7 @@ SELECT s.computed_at_ms, r.filter::int AS filter, r.rank::text AS rank, \
        r.level::text AS level, r.value_primary::text AS value \
   FROM game_world_highscore_heads h \
   JOIN game_world_highscore_snapshots s ON s.snapshot_id = h.current_snapshot_id \
-  LEFT JOIN game_world_highscore_rows r ON r.snapshot_id = s.snapshot_id \
+  LEFT JOIN game_world_highscore_rows r ON r.snapshot_id = s.snapshot_id AND NOT game_account_closure_detached(r.character_id) \
  WHERE h.world_id = $1::uuid AND h.category = $2 \
  ORDER BY r.filter, r.position LIMIT $3";
 
@@ -144,7 +161,7 @@ WITH cut AS (SELECT e.projection_epoch, \
                   LEFT JOIN game_character_progression_state g \
                     ON g.character_id = r.character_id \
                   LEFT JOIN game_character_build_state b ON b.character_id = r.character_id \
-                 WHERE r.lifecycle = 1 \
+                 WHERE r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id) \
                    AND EXISTS (SELECT 1 FROM game_durability_admission_character_guards a \
                                   JOIN game_durability_reconnect_sessions s \
                                     ON s.game_session_id = a.holder_game_session_id \
@@ -546,8 +563,18 @@ fn profile_snapshot(row: &sqlx::postgres::PgRow) -> Decoded<ProfileSnapshot> {
                     // Guild membership defaults to public (§4.2, the Tibia
                     // reference); no Game-side setting lowers it yet.
                     guild_visible: true,
-                    // No guild exists natively yet (§4.2): always `[]`.
-                    guild: None,
+                    guild: match (
+                        row.try_get::<Option<String>, _>("public_guild_id")?,
+                        row.try_get::<Option<i16>, _>("public_guild_rank")?,
+                    ) {
+                        (Some(guild_id), Some(rank)) if (1..=20).contains(&rank) => {
+                            Some(crate::native_admission_source::public_projections::ProfileGuild {
+                                guild_id,
+                                rank_level: u8::try_from(rank).map_err(|_| sqlx::Error::Protocol("invalid public guild rank".into()))?,
+                            })
+                        }
+                        _ => None,
+                    },
                 })
             }
             // Unclassifiable: published as absent, never held (§4.2).
@@ -731,6 +758,40 @@ pub struct PublicProjectionsStore<'r, 'a, 'f, 's> {
 }
 
 impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
+    async fn next_v2(&self, family:crate::native_admission_source::public_projections::v2::Family, held:&[String]) -> std::result::Result<Option<crate::native_admission_source::public_projections::v2::Snapshot>,()> {
+        self.root.next_public_v2(self.authority,family,held).await.map_err(|_|())
+    }
+    async fn ack_v2(&self, snapshot:&crate::native_admission_source::public_projections::v2::Snapshot) -> std::result::Result<(),()> {
+        self.root.ack_public_v2(self.authority,snapshot).await.map_err(|_|())
+    }
+    async fn v2_facts(&self,family:crate::native_admission_source::public_projections::v2::Family) -> std::result::Result<crate::native_admission_source::public_projections::v2::Facts,()> {
+        self.root.public_v2_facts(self.authority,family).await.map_err(|_|())
+    }
+
+    async fn sample_totals(&self, after: &str) -> std::result::Result<Option<String>, ()> {
+        self.root
+            .sample_public_world_totals(self.authority, after)
+            .await
+            .map_err(|_| ())
+    }
+    async fn next_totals(&self) -> std::result::Result<Vec<TotalsSnapshot>, ()> {
+        self.root
+            .next_public_world_totals(self.authority)
+            .await
+            .map_err(|_| ())
+    }
+    async fn ack_totals(&self, sample: &TotalsSnapshot) -> std::result::Result<(), ()> {
+        self.root
+            .ack_public_world_totals(self.authority, sample)
+            .await
+            .map_err(|_| ())
+    }
+    async fn totals_facts(&self) -> std::result::Result<Option<TotalsFacts>, ()> {
+        self.root
+            .public_world_totals_facts(self.authority)
+            .await
+            .map_err(|_| ())
+    }
     /// A failed checkout of the single holder (gameplay or the publisher
     /// itself) records a demand until maintenance serves it; the publisher
     /// yields meanwhile.

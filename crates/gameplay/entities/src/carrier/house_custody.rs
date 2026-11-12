@@ -47,6 +47,34 @@ pub struct HouseActorState {
 }
 
 impl ChannelRuntimeV1 {
+    /// Prove absence under the actual hosted Channel or House owner. No durable
+    /// session row can manufacture the local House ownership capability.
+    pub fn prove_player_session_absent_in(
+        &self,
+        session: GameSessionId,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<Option<RuntimeSessionAbsence>, CarrierError> {
+        if scope == self.binding.runtime_scope {
+            return self.prove_player_session_absent(session);
+        }
+        self.owner_fence()?;
+        if self.contains_player_session(session)? {
+            return Ok(None);
+        }
+        let Some(owner) = self
+            .house_owners
+            .values()
+            .find(|owner| owner.scope == scope)
+        else {
+            return Ok(None);
+        };
+        Ok(Some(RuntimeSessionAbsence {
+            session,
+            scope,
+            generation: owner.generation.get(),
+        }))
+    }
+
     /// Resolve the session from this live slot, then recheck its current House owner.
     /// A retained actor reference alone never establishes House custody.
     pub fn house_observer(
@@ -79,6 +107,27 @@ impl ChannelRuntimeV1 {
             placement_revision: actor.actor_local_generation(),
             control_loss: lifecycle.control_loss,
         })
+    }
+
+    /// Visibility flags under the current House owner; this grants no Channel write.
+    pub fn house_staff_visibility(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<(bool, bool, u64), CarrierError> {
+        self.house_player_control_facts(actor, session)?;
+        let index = usize::try_from(actor.actor_local_id())
+            .ok()
+            .and_then(|index| index.checked_sub(1))
+            .ok_or(CarrierError::InvalidActorIdentity)?;
+        let Slot::Occupied { lifecycle, .. } = &self.carrier.slots[index] else {
+            return Err(CarrierError::WrongScope);
+        };
+        Ok((
+            lifecycle.staff_ghost,
+            lifecycle.staff_invisible,
+            lifecycle.staff_visibility_revision,
+        ))
     }
 
     /// The current House actor of an authenticated session, for scoped chat and visibility.
@@ -416,7 +465,7 @@ impl ChannelRuntimeV1 {
                 } => {
                     *game_session_id = Some(destination);
                     *position = Some(restored);
-                    lifecycle.control_loss = None;
+                    lifecycle.clear_control_loss()?;
                 }
                 _ => return Err(CarrierError::WrongScope),
             }

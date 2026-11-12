@@ -83,7 +83,11 @@ pub(super) fn meaningful(
         target_move, task_board, timed_item, vip,
     };
     match command.command_type {
-        1 => oteryn_protocol_oteryn::world_spatial::decode_step_intent(command.payload).is_ok(),
+        1 => oteryn_protocol_oteryn::world_spatial::decode_step_intent_selected(
+            selected,
+            command.payload,
+        )
+        .is_ok(),
         2 => oteryn_protocol_oteryn::world_object::decode_use_intent_target(
             selected,
             command.payload,
@@ -118,8 +122,8 @@ pub(super) fn meaningful(
             .is_ok_and(|intent| intent != loop_training::ExerciseIntent::Status),
         76 => house_move_out::decode_house_move_out_request(command.payload)
             .is_ok_and(|request| request.action != 0),
-        79 => stash::decode_stash_intent(command.payload)
-            .is_ok_and(|intent| intent.action != stash::StashAction::Browse),
+        79 => stash::decode_stash_query(command.payload)
+            .is_ok_and(|(intent, _)| intent.action != stash::StashAction::Browse),
         80 => market::decode_request(command.payload).is_ok_and(|request| request.action >= 5),
         81 => target_move::decode_target_move_intent(command.payload).is_ok(),
         84 => charm_progression::decode_charm_progression_request(command.payload)

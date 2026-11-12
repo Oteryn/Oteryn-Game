@@ -118,7 +118,7 @@ and an addon with no available base do not qualify. Counts and completion
 state are derived from the existing owners inside the title transaction and
 are not copied to new persistence tables.
 
-The current `NOT_ADMITTED_TITLES` list retains 28 titles with no sourced rule
+The current `NOT_ADMITTED_TITLES` list retains 18 titles with no sourced rule
 or native owner. Reigning Drome Champion keeps stable ID 4; no rota result
 owner is fabricated. Tournament omissions remain out under Q1=A. The retained
 inventory records every original exclusion and the accepted deviations.
@@ -127,3 +127,22 @@ Coordinator [Q7=A](https://github.com/Oteryn/Oteryn-Game/pull/2782#issuecomment-
 retains the server and protocol boundary for this change. Native client UI for
 capabilities 97 and 199, and activation beyond the bundle world, remain a
 separate client migration. This contract adds no capability for that work.
+
+
+## SRV6 title sources (append-only IDs 85–94)
+
+Migration 0990 extends the existing stored title checks to 1–94. The command and
+payload formats remain unchanged; the existing `u8` title field admits these values.
+
+| IDs | Titles / source |
+| --- | --- |
+| 85–87 | Aspiring Huntsman, Competent Beastslayer, Feared Bountyhunter: existing Task Board points at 160000, 320000 and 430000 (explicit owner replacement of excluded hunting tasks). |
+| 88 | Chompmeister: all fifteen Jean Pierre dish counters at least once. |
+| 89 | Dedicated Entrepreneur: completed canonical main-area percentage at least 50; conditional. |
+| 90–91 | Hero of Bounac and Planegazer: their exact fenced final NPC reports. |
+| 92–93 | Time Traveller: compatible quest Formal Dress base grant; Proconsul of Iksupan: compatible full Ancient Aucar grant. Store facts never qualify. |
+| 94 | Robinson Crusoe: committed source action 15998 island ingress, level at least 999. |
+
+All appended titles except 89 are permanent. Source qualification, exact donor/retained-wiki
+citations, interface copy differences and cross-task producer boundaries are recorded in
+[SRV6 title sources](../../../reference/mechanics/SRV6-title-sources.md).

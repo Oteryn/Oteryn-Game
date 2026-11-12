@@ -201,6 +201,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(definition) = definition else {
             return refusal(TimedDisposition::Rejected);
         };
+        if intent.action == TimedAction::Use
+            && definition
+                .production_key
+                .strip_prefix("oteryn:item.tibia.i")
+                .and_then(|id| id.parse().ok())
+                .is_some_and(oteryn_gameplay_items::remaining_consumables::is_dispenser)
+        {
+            return refusal(TimedDisposition::Rejected);
+        }
         let (definition, target, operation) = if intent.action == TimedAction::Repair {
             if definition.production_key != "oteryn:item.tibia.i6530" {
                 return refusal(TimedDisposition::Rejected);

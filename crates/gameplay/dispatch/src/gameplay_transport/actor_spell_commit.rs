@@ -23,6 +23,13 @@ struct Replacement {
 #[derive(Debug)]
 pub struct PlayerBatchPreflight {
     batch: OwnerCombatBatch,
+    analyser_element: oteryn_protocol_oteryn::damage_element::DamageElement,
+    analyser_leech: u32,
+    analyser_parts: Option<(
+        u32,
+        oteryn_protocol_oteryn::damage_element::DamageElement,
+        oteryn_protocol_oteryn::damage_element::DamageElement,
+    )>,
     replacements: Vec<Replacement>,
     wheel_shielding: Vec<(ExactActorRef, u32)>,
     preprocessed_caster: Option<(ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -213,7 +220,9 @@ impl PlayerBatchPreflight {
             .iter_mut()
             .find(|r| r.actor == self.batch.caster)
             .ok_or(Error::InvalidBatch)?;
+        let health_before = caster.next.vitals().health;
         caster.next.apply_batch_leech(gains.0, gains.1);
+        self.analyser_leech = caster.next.vitals().health.saturating_sub(health_before);
         Ok(())
     }
 
@@ -271,7 +280,7 @@ impl PlayerBatchPreflight {
 
     // Only the compositor below calls this, after the unchanged exclusive owner borrow
     // has validated every index. No allocation, lookup, callback or fallible step follows.
-    fn install(self, states: &mut ChannelSpellStates) {
+    fn install(self, states: &mut ChannelSpellStates) -> OwnerCombatBatch {
         states.deaths.extend(self.deaths);
         states.pvp_locks.retain(|(actor, session, _)| {
             states
@@ -291,6 +300,7 @@ impl PlayerBatchPreflight {
         for replacement in self.replacements {
             states.actors[replacement.index].2 = replacement.next;
         }
+        self.batch
     }
 }
 
@@ -325,14 +335,18 @@ pub fn stage_player_batch_with_magnitude(
             })
             .map_err(|_| SpellCastDisposition::Rejected)?;
     }
-    stage_player_batch_inner(
+    let mut prepared = stage_player_batch_inner(
         runtime,
         states,
         batch,
         caster_successor,
         magnitude.is_some(),
         None,
-    )
+    )?;
+    if let Some(magnitude) = magnitude {
+        prepared.analyser_element = magnitude.analyser_element();
+    }
+    Ok(prepared)
 }
 
 pub fn stage_player_batch_with_attack(
@@ -346,7 +360,15 @@ pub fn stage_player_batch_with_attack(
     }) {
         return Err(SpellCastDisposition::Rejected);
     }
-    stage_player_batch_inner(runtime, states, batch, None, true, Some(attack))
+    let mut prepared = stage_player_batch_inner(runtime, states, batch, None, true, Some(attack))?;
+    prepared.analyser_parts = attack.analyser_parts().map(|(primary, a, b)| {
+        (
+            primary,
+            super::super::analyser::element(a),
+            super::super::analyser::element(b),
+        )
+    });
+    Ok(prepared)
 }
 
 /// A due Combat has no new resource payment, but consumes its current Focus window.
@@ -532,6 +554,13 @@ fn stage_player_batch_inner(
                         *actor,
                         *session,
                         super::PlayerDeath {
+                            public_cause: if runtime.companion_snapshot(batch.caster).is_ok() {
+                                super::native_public_death_cause(runtime,batch.caster)
+                            } else {
+                                states.get(runtime,batch.caster,batch.command.game_session_id()).map(|_| crate::durability::character_death::PublicDeathCause::PlayerSession {
+                                    game_session_id:*batch.command.game_session_id().as_bytes(),
+                                })
+                            },
                             occurrence: (states.mint_death)()
                                 .ok_or(SpellCastDisposition::Rejected)?,
                             cell: runtime
@@ -579,6 +608,9 @@ fn stage_player_batch_inner(
         }
     }
     let preflight = PlayerBatchPreflight {
+        analyser_element: oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+        analyser_parts: None,
+        analyser_leech: 0,
         batch: batch.clone(),
         replacements,
         wheel_shielding,
@@ -666,8 +698,16 @@ pub fn install_owner_batch(
         .expect("checked matching player preflight");
     let receipt = runtime.install_spell_batch(staged);
     if receipt.applied {
-        preflight.install(states);
+        let element = preflight.analyser_element;
+        let leech = preflight.analyser_leech;
+        let split = preflight.analyser_parts;
+        let batch = preflight.install(states);
         states.owner_wake.notify_one();
+        // Advisory allocation follows both owner installations.
+        states.analyser_batch(runtime, &batch, &receipt, element, split);
+        states
+            .analyser
+            .impact(batch.caster, batch.command.game_session_id(), leech, None);
     }
     receipt
 }

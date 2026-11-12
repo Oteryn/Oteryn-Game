@@ -1,0 +1,215 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.marlin_trophy_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_8/marlin_trophy",
+      "quest": "oteryn:quest.marlin_trophy_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua:62"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/marlin_trophy_quest/pemaret/offer",
+      "quest": "oteryn:quest.marlin_trophy_quest",
+      "npc": "oteryn:npc.pemaret",
+      "trigger": "say",
+      "keywords": [
+        "marlin"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/marlin_trophy",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i901",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "WOW! You have a marlin!! I could make a nice decoration for your wall from it. May I have it?"
+      ],
+      "continue_matching": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/marlin_trophy_quest/pemaret/offer-missing",
+      "quest": "oteryn:quest.marlin_trophy_quest",
+      "npc": "oteryn:npc.pemaret",
+      "trigger": "say",
+      "keywords": [
+        "marlin"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/marlin_trophy",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i901",
+          "count": 1,
+          "op": "lt"
+        }
+      ],
+      "effects": [],
+      "reply": [],
+      "continue_matching": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/marlin_trophy_quest/pemaret/deliver",
+      "quest": "oteryn:quest.marlin_trophy_quest",
+      "npc": "oteryn:npc.pemaret",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/marlin_trophy",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i901",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i901",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i902",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_8/marlin_trophy",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Yeah! Now let's see... <fumble fumble> There you go, I hope you like it!"
+      ],
+      "continue_matching": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "marlin"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/marlin_trophy_quest/pemaret/missing",
+      "quest": "oteryn:quest.marlin_trophy_quest",
+      "npc": "oteryn:npc.pemaret",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_8/marlin_trophy",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i901",
+          "count": 1,
+          "op": "lt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You don't have the fish."
+      ],
+      "continue_matching": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua:68"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "marlin"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/marlin_trophy_quest/pemaret/decline",
+      "quest": "oteryn:quest.marlin_trophy_quest",
+      "npc": "oteryn:npc.pemaret",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Then no."
+      ],
+      "continue_matching": false,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/pemaret.lua:78"
+      ],
+      "topics": [
+        1
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/pemaret.lua",
+      "sha256": "7860edb917cf36e43f2f675b9a2f9b8bbbc0821051ef20e4a9443cf04649489c",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    }
+  ]
+}

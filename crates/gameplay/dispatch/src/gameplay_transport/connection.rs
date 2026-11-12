@@ -29,14 +29,68 @@ use crate::durability::item_transfer::{
 use crate::foundation::{
     AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
     GameSessionId, MessageType, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
-    encode_protocol_error, encode_server_accepted, encode_server_resume_accepted,
+    encode_protocol_error, encode_protocol_error_with_trace, encode_server_accepted,
+    encode_server_accepted_with_trace, encode_server_resume_accepted,
 };
 mod item_use_view_refresh;
+pub(in crate::gameplay_transport) use item_use_view_refresh::refresh_newhaven_inventory;
 
 use appearance_change::SessionAppearance;
 use moved_step::moved_step_frames;
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
+
+struct ConnectionTraceContext {
+    trace: [u8; 16],
+    enabled: std::cell::Cell<bool>,
+}
+
+tokio::task_local! {
+    static CONNECTION_TRACE: ConnectionTraceContext;
+}
+
+pub(super) async fn with_connection_trace<F: Future>(trace: [u8; 16], future: F) -> F::Output {
+    with_connection_trace_state(trace, false, future).await
+}
+
+pub(super) async fn with_selected_connection_trace<F: Future>(
+    trace: [u8; 16],
+    future: F,
+) -> F::Output {
+    with_connection_trace_state(trace, true, future).await
+}
+
+async fn with_connection_trace_state<F: Future>(
+    trace: [u8; 16],
+    enabled: bool,
+    future: F,
+) -> F::Output {
+    CONNECTION_TRACE
+        .scope(
+            ConnectionTraceContext {
+                trace,
+                enabled: std::cell::Cell::new(enabled),
+            },
+            // LOGDBG-C: the durable passes this connection issues carry its trace.
+            crate::durability::with_holder_trace(trace, future),
+        )
+        .await
+}
+
+fn connection_trace() -> Option<[u8; 16]> {
+    CONNECTION_TRACE
+        .try_with(|context| context.enabled.get().then_some(context.trace))
+        .ok()
+        .flatten()
+}
+
+pub(super) fn diagnostic_connection_trace() -> Option<[u8; 16]> {
+    CONNECTION_TRACE.try_with(|context| context.trace).ok()
+}
+
+fn enable_connection_trace() {
+    let _ = CONNECTION_TRACE.try_with(|context| context.enabled.set(true));
+}
 
 use super::actor_spell::{
     ActorVitals, DELTA_TYPE_ACTOR_VITALS_V1, SNAPSHOT_TYPE_ACTOR_VITALS_V1,
@@ -73,7 +127,7 @@ use super::world_spatial::{
     ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, EntityLights, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility, StepDirection, StepDisposition,
     VisibilityUpdate, VisibleKind, WorldSpatialEntity, WorldSpatialError, WorldSpatialObservation,
-    decode_step_intent, encode_step_outcome, encode_visibility_delta_lit,
+    decode_step_intent_selected, encode_step_outcome, encode_visibility_delta_lit,
     encode_visibility_snapshot_lit, encode_world_spatial, moved_step_wait_ms,
     step_wait_receipts_enabled, too_early_step_wait_ms,
 };
@@ -114,6 +168,7 @@ use oteryn_protocol_oteryn::container_tree::{
     encode_container_view_result,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
+use oteryn_protocol_oteryn::encode_snapshot;
 use oteryn_protocol_oteryn::highscores::{HighscoresQuery, decode_highscores_query};
 use oteryn_protocol_oteryn::item_look::{
     ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
@@ -222,6 +277,8 @@ pub struct AdmittedSession {
 /// with, on a strictly newer connection generation (FND-04B §16).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SessionContinuity {
+    /// Domain 15 cumulative revision, including discards at recovery snapshots.
+    pub analyser_revision: u64,
     /// Domain 57 revision and once-per-login MOTD receipt; both survive reconnect/transfer.
     pub server_message_revision: u64,
     pub server_motd_sent: bool,
@@ -233,6 +290,8 @@ pub struct SessionContinuity {
     pub spatial_revision: u64,
     /// PLAYER_TRADE domain revision last delivered by this GameSession.
     pub player_trade_revision: u64,
+    /// Last presentation domain revision delivered, shared by movement effects and sounds.
+    pub presentation_revision: u64,
     /// The last `WORLD_OBJECT_OVERLAY` (domain 2) revision emitted to this connection, from
     /// either the join/resync snapshot or a committed-use delta (USE-WIRE-V1, #162 5868482467).
     /// Unlike `spatial_revision` (this actor's own per-actor counter), the door overlay is
@@ -291,6 +350,7 @@ impl SessionContinuity {
     /// baseline spatial revision 1, and no overlay observed yet (0, the door's own initial
     /// revision).
     pub const FRESH: Self = Self {
+        analyser_revision: 0,
         server_message_revision: 0,
         server_motd_sent: false,
         gameplay_idle: GameplayIdleState::FRESH,
@@ -299,6 +359,7 @@ impl SessionContinuity {
         server_sequence: 0,
         spatial_revision: 1,
         player_trade_revision: 0,
+        presentation_revision: 0,
         overlay_revision: 0,
         vitals_revision: 0,
         achievement_notice_revision: None,
@@ -381,6 +442,8 @@ pub enum FirstEntryOutcome {
     RefusedStaleAuthority,
     /// Current authority could not be read; nothing was written.
     RefusedUnavailable,
+    /// Positioned and otherwise initialized, but final spell repair must be retried on resume.
+    AwaitingSpellRepair,
     /// The Channel owner refused the write; nothing was written.
     RefusedByChannel,
 }
@@ -397,6 +460,8 @@ pub enum AdmissionRefusal {
     /// Refused with an N8 admission refusal code (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); nothing
     /// was admitted. The client receives the code in one `ProtocolError` before the close.
     Classified(FoundationProtocolError),
+    /// Authenticated capacity refusal with a bounded server-owned FIFO position.
+    Queued(oteryn_protocol_oteryn::admission_queue::AdmissionQueue),
     /// ADMIT0 §4: an authenticated recovery whose support lacks the Channel's required set.
     /// Sent as `RECOVERY_CAPABILITY_REQUIRED` (1118, CP D1187); no claim is released and no
     /// recovery grant is consumed.
@@ -408,6 +473,7 @@ const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::
 
 /// DEFLAKE-2: the closed-schema operator line of a silent fresh-admission or resume refusal.
 /// It names the refusal kind alone, never a session, account, character or transport.
+#[cfg(test)]
 pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'static str> {
     match refusal {
         AdmissionRefusal::Unavailable => Some("event=admission_refused kind=unavailable"),
@@ -419,10 +485,31 @@ pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'sta
     }
 }
 
-fn report_admission_refusal(refusal: AdmissionRefusal) {
-    if let Some(line) = admission_refused_event(refusal) {
-        super::operator_event(line);
+pub(super) fn report_admission_refusal(refusal: AdmissionRefusal) {
+    let (kind, reason) = match refusal {
+        AdmissionRefusal::PremiumRequired | AdmissionRefusal::Rejected => ("rejected", None),
+        AdmissionRefusal::Unavailable => ("unavailable", None),
+        AdmissionRefusal::Classified(error) => ("classified", Some(error)),
+        AdmissionRefusal::Queued(_) => ("queued", None),
+        AdmissionRefusal::RecoveryCapabilityRequired => ("recovery_capability", None),
+    };
+    let trace = diagnostic_connection_trace().map(super::format_connection_trace);
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Warn,
+        "admission",
+        "admission_refused",
+    )
+    .field("kind", oteryn_error_codes::FieldValue::Token(kind));
+    if let Some(error) = reason {
+        line = line.field(
+            "reason_code",
+            oteryn_error_codes::FieldValue::U64(u64::from(error.code())),
+        );
     }
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
 }
 
 /// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
@@ -716,27 +803,31 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let activity_scope = authority
-                .activity_scope_snapshot(resumed)
-                .await
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
-            let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
+            let Ok(activity_scope) = authority.activity_scope_snapshot(resumed).await else {
+                super::operator_event(&format!(
+                    "event=resume_bootstrap_failed phase=activity_scope code={}",
+                    FoundationProtocolError::SessionJoinUnavailable.code()
+                ));
+                return Err(join_unavailable(stream, resumed, 0).await);
+            };
+            let Ok(accepted) = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,
                 current_server_sequence: continuity.server_sequence,
                 next_command_id: continuity.next_command_id,
                 schema_revision: SERVER_SCHEMA_REVISION,
                 selected_capabilities: continuity.selected_capabilities.as_slice(),
-            })
-            .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            }) else {
+                return Err(join_unavailable(stream, resumed, 0).await);
+            };
             write_frame(stream, &accepted)
                 .await
                 .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
-            if let Some((command, payload)) = authority
-                .house_scope_ack(resumed)
-                .await
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?
-            {
+            let generation = continuity.connection_generation;
+            let Ok(house_ack) = authority.house_scope_ack(resumed).await else {
+                return Err(join_unavailable(stream, resumed, generation).await);
+            };
+            if let Some((command, payload)) = house_ack {
                 if command == 0 {
                     // The native owner admits zero only for an authenticated
                     // fresh House restoration. It is server provenance, not a
@@ -744,17 +835,17 @@ where
                     // existing domain-51 join/resync snapshot instead.
                     return Ok(resumed);
                 }
-                let ack = encode_command_result(
-                    continuity.connection_generation,
-                    continuity
-                        .server_sequence
-                        .checked_add(1)
-                        .ok_or(ConnectionEnd::AdmittedThenDisconnected(resumed))?,
-                    command,
-                    CommandStatus::Accepted,
-                    &payload,
-                )
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                let Some(Ok(ack)) = continuity.server_sequence.checked_add(1).map(|sequence| {
+                    encode_command_result(
+                        generation,
+                        sequence,
+                        command,
+                        CommandStatus::Accepted,
+                        &payload,
+                    )
+                }) else {
+                    return Err(join_unavailable(stream, resumed, generation).await);
+                };
                 write_frame(stream, &ack)
                     .await
                     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
@@ -796,6 +887,9 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    if selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1) {
+        enable_connection_trace();
+    }
     // ADMIT0 §4: no capability refusal precedes the owner's grant authentication; the owner
     // checks the Channel's required set itself and answers ADMISSION_CAPABILITY_REQUIRED.
     let attempt = FreshAdmissionAttempt {
@@ -818,6 +912,16 @@ where
                 )
                 .await;
             }
+            if let AdmissionRefusal::Queued(queue) = refusal
+                && let Ok(frame) =
+                    oteryn_protocol_oteryn::admission_queue::encode_queue_refusal(queue)
+            {
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    write_frame(stream, &frame),
+                )
+                .await;
+            }
             return Err(ConnectionEnd::AdmissionRefused(refusal));
         }
     };
@@ -826,7 +930,7 @@ where
     admitted.continuity.achievement_notice_revision = selected
         .contains(CAPABILITY_ACHIEVEMENT_NOTICES_V1)
         .then_some(0);
-    let accepted = encode_server_accepted(&crate::foundation::ServerAcceptedValue {
+    let accepted_value = crate::foundation::ServerAcceptedValue {
         game_session_id: admitted.game_session_id,
         world_id: admitted.world_id,
         channel_id: admitted.channel_id,
@@ -835,8 +939,21 @@ where
         next_command_id: 1,
         schema_revision: SERVER_SCHEMA_REVISION,
         selected_capabilities: selected.as_slice(),
-    })
-    .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
+    };
+    let Ok(accepted) = (match connection_trace().filter(|_| {
+        selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    }) {
+        Some(trace) => encode_server_accepted_with_trace(&accepted_value, &trace),
+        None => encode_server_accepted(&accepted_value),
+    }) else {
+        return Err(join_unavailable(stream, admitted, 0).await);
+    };
+    let accepted = if let Some(document) = authority.client_bulletin().await {
+        oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
+            .unwrap_or(accepted)
+    } else {
+        accepted
+    };
     write_frame(stream, &accepted)
         .await
         .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
@@ -864,8 +981,12 @@ pub async fn hold_admitted<S>(stream: &mut S, admitted: AdmittedSession) -> Conn
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    let Ok(frame) = read_frame(stream).await else {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    let frame = match read_frame(stream).await {
+        Ok(frame) => frame,
+        Err(error) if error.kind() == std::io::ErrorKind::InvalidData => {
+            return close_admitted(stream, admitted, FoundationProtocolError::MalformedFrame).await;
+        }
+        Err(_) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
     };
     let error = match decode_wire_envelope(&frame) {
         Err(error) => error,
@@ -881,8 +1002,8 @@ where
 }
 
 /// ARCH-PROGRESSION-SOURCE-0 §1.5: an admitted session that is not playable but holds a runtime
-/// actor is held at most `policy.interval * policy.missed_limit`; then the connection closes
-/// with no frame, so a silent client cannot keep its committed GameSession and slot. A frame
+/// actor is held at most `policy.interval * policy.missed_limit`; then the connection reports
+/// `NOT_SUPPORTED` before closing, so a silent client cannot keep its committed GameSession and slot. A frame
 /// before the bound ends it as `hold_admitted` does. A session with no actor is held unbounded.
 async fn hold_refused<S>(
     stream: &mut S,
@@ -898,10 +1019,7 @@ where
     let bound = policy.interval.saturating_mul(policy.missed_limit);
     match tokio::time::timeout(bound, hold_admitted(stream, admitted)).await {
         Ok(end) => end,
-        Err(_) => {
-            let _ = tokio::io::AsyncWriteExt::shutdown(stream).await;
-            ConnectionEnd::AdmittedThenDisconnected(admitted)
-        }
+        Err(_) => close_admitted(stream, admitted, FoundationProtocolError::NotSupported).await,
     }
 }
 
@@ -1045,7 +1163,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let end = serve_admitted_actor(stream, admitted, authority, policy).await;
+    #[cfg(test)]
+    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
+    let end = Box::pin(serve_admitted_actor(stream, admitted, authority, policy)).await;
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
         | ConnectionEnd::AdmittedThenDisconnected(current)
@@ -1065,6 +1185,8 @@ where
             .yield_chase_to_client(actor, session)
             .await;
     }
+    #[cfg(test)]
+    super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
     end
 }
 
@@ -1200,24 +1322,43 @@ async fn record_actor_step<A: FreshAdmissionAuthority>(
         .await;
 }
 
-/// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no
-/// tile in view changed, or `None` when the session must end: the map is unserved or does not
-/// encode, or it needs a snapshot (a jump or a delta over `MAPW-RL-03`), which a running
-/// connection does not send, so the client resumes and gets one.
-async fn world_map_delta<A: FreshAdmissionAuthority>(
+/// MAP-WIRE-2: the domain 17 update at the sequence after `sequence`, `Some(None)` when
+/// unchanged, or `None` when the map is unserved or cannot encode. A replacement uses the same
+/// snapshot producer as admission. Callers write all frames before any later sequenced output,
+/// preserving the FND-02 §16 publication barrier and the current connection generation.
+async fn world_map_frames<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     generation: u64,
     sequence: u64,
     view: &mut SessionMapView,
     items: &mut SessionItemView,
-) -> Option<Option<(u64, Vec<u8>)>> {
+) -> Option<Option<(u64, Vec<Vec<u8>>)>> {
     match authority.observe_world_map(actor, view, items).await? {
         Ok(None) => Some(None),
         Ok(Some(MapUpdate::Delta(delta))) => {
-            item_view_delta(generation, sequence, &delta).map(Some)
+            let (sequence, frame) = item_view_delta(generation, sequence, &delta)?;
+            Some(Some((sequence, vec![frame])))
         }
-        Ok(Some(MapUpdate::Snapshot(_))) | Err(_) => None,
+        Ok(Some(MapUpdate::Snapshot(snapshot))) => {
+            // Admission reserves snapshot ID 1. Sequence boundaries also identify the
+            // existing scope-barrier snapshots, so reserve at least boundary 2 here.
+            let target = sequence.checked_add(1)?.max(2);
+            let frames = encode_snapshot(
+                generation,
+                target,
+                target,
+                &[DomainSnapshot {
+                    domain_id: snapshot.domain_id,
+                    revision: snapshot.revision,
+                    snapshot_type: snapshot.snapshot_type,
+                    payload: &snapshot.payload,
+                }],
+            )
+            .ok()?;
+            Some(Some((target, frames)))
+        }
+        Err(_) => None,
     }
 }
 
@@ -1372,6 +1513,32 @@ async fn close_admitted<S: AsyncWrite + Unpin>(
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
 
+/// FND-04C §4.1 (owner 2026-11-10): an admitted or resumed session whose join could not be
+/// prepared or sent reports `SESSION_JOIN_UNAVAILABLE` once before the transport closes, at
+/// `generation` (0 before the client was told it was admitted). A slow or failed write changes
+/// nothing: the end stays the same.
+async fn send_join_unavailable<S: AsyncWrite + Unpin>(stream: &mut S, generation: u64) {
+    let _ = tokio::time::timeout(
+        ADMISSION_REFUSAL_WRITE_BOUND,
+        send_error(
+            stream,
+            FoundationProtocolError::SessionJoinUnavailable,
+            generation,
+        ),
+    )
+    .await;
+}
+
+/// `AdmittedThenDisconnected` after [`send_join_unavailable`].
+async fn join_unavailable<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    generation: u64,
+) -> ConnectionEnd {
+    send_join_unavailable(stream, generation).await;
+    ConnectionEnd::AdmittedThenDisconnected(admitted)
+}
+
 async fn reject<S: AsyncWrite + Unpin>(
     stream: &mut S,
     error: FoundationProtocolError,
@@ -1386,8 +1553,11 @@ async fn send_error<S: AsyncWrite + Unpin>(
     error: FoundationProtocolError,
     generation: u64,
 ) -> std::io::Result<()> {
-    let frame = encode_protocol_error(error, generation)
-        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
+    let frame = match connection_trace() {
+        Some(trace) => encode_protocol_error_with_trace(error, generation, &trace),
+        None => encode_protocol_error(error, generation),
+    }
+    .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
     write_frame(stream, &frame).await
 }
 

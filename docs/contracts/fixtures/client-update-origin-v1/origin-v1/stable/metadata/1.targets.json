@@ -1,0 +1,39 @@
+{
+  "signatures": [
+    {
+      "keyid": "20beacb58b2b5bd93662b8089adb41dbc27d2e8ece495d07d54eb07129480cd3",
+      "sig": "ff6b699eb53959f04c756a45195b7909c5046ea1f1af78fe7c3b55727d219ec2f0d57841535b4a7f9f414c362eb2c6cf8c18a21cec335b126409fc88014ff20d"
+    }
+  ],
+  "signed": {
+    "_type": "targets",
+    "delegations": {
+      "keys": {
+        "eb023a73e218ce466aed8989869b28299fd3350925ba43158a07e688c157d58f": {
+          "keytype": "ed25519",
+          "keyval": {
+            "public": "fd8b8d2988c67bd910195a11aad31a2781278e418bd347a7bac678ab8d6529e7"
+          },
+          "scheme": "ed25519"
+        }
+      },
+      "roles": [
+        {
+          "keyids": [
+            "eb023a73e218ce466aed8989869b28299fd3350925ba43158a07e688c157d58f"
+          ],
+          "name": "stable",
+          "paths": [
+            "channels/stable/*"
+          ],
+          "terminating": true,
+          "threshold": 1
+        }
+      ]
+    },
+    "expires": "2099-01-01T00:00:00Z",
+    "spec_version": "1.0.0",
+    "targets": {},
+    "version": 1
+  }
+}

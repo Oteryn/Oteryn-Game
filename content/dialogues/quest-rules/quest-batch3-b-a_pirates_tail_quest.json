@@ -1,0 +1,325 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.a_pirates_tail",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u12_60/apirates_tail/rascacoon_shortcut",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:56"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/greet-access",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/rascacoon_shortcut",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Hello my friend. What a delight to see you, even on a {busy} day. I see you already talked to my agent. I'm willing to lend you my boat if you want to take a {shortcut}. ..."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/greet-before-access",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/rascacoon_shortcut",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Hello my friend. What a delight to see you, even on a busy day. You can check your status or ask me about the location of ongoing raids."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:61"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/name",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "say",
+      "keywords": [
+        "name"
+      ],
+      "guards": [],
+      "reply": [
+        "I am Eustacio. At your service."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/time",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "say",
+      "keywords": [
+        "time"
+      ],
+      "guards": [],
+      "reply": [
+        "It's just the time to make a fortune."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:75"
+      ],
+      "exclude_keywords": [
+        "name"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/busy",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "say",
+      "keywords": [
+        "busy",
+        "job"
+      ],
+      "guards": [],
+      "reply": [
+        " I am an aspiring businessman, who thrives to climb the ladder of success in the Venorean society."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:77"
+      ],
+      "exclude_keywords": [
+        "name",
+        "time"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/shortcut",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "say",
+      "keywords": [
+        "shortcut"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/rascacoon_shortcut",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You are trustworthy enough to take my boat. My agent made sure it takes me to their island. Do you want to take it?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:79"
+      ],
+      "exclude_keywords": [
+        "name",
+        "time",
+        "busy",
+        "job"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/eustacio/sail",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.eustacio",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33774,
+            "y": 31347,
+            "floor": -7
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eustacio.lua:86"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "name",
+        "time",
+        "busy",
+        "job",
+        "shortcut"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/captain_jack_rat/greet-killed",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.captain_jack_rat",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Hail, pirat! Come on board to go home! Welcome on board of the ship Flying Bat. Should I set {sail}s?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:56"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/captain_jack_rat/greet-before-kill",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.captain_jack_rat",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+          "op": "ne",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "..."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/captain_jack_rat/sail",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.captain_jack_rat",
+      "trigger": "say",
+      "keywords": [
+        "sail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "There are two different routes. The dangerous one will be available once a day and it is likely that a seemonster will attack the ship once again. And a {safe} route that we can take directly there."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/captain_jack_rat/safe",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.captain_jack_rat",
+      "trigger": "say",
+      "keywords": [
+        "safe"
+      ],
+      "guards": [],
+      "reply": [
+        "Do you want to take the safe route?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:75"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_pirates_tail/captain_jack_rat/confirm-safe",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "npc": "oteryn:npc.captain_jack_rat",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33839,
+            "y": 31222,
+            "floor": -5
+          }
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_jack_rat.lua:78"
+      ],
+      "topics": [
+        2
+      ]
+    }
+  ]
+}

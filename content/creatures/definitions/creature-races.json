@@ -4,7 +4,7 @@
     "race": "blood",
     "source": "opentibiabr/canary src/creatures/monsters/monsters.hpp MonsterInfo::race = RACE_BLOOD"
   },
-  "record_count": 1863,
+  "record_count": 1865,
   "records": [
     {
       "creature": {
@@ -2692,6 +2692,21 @@
         "path": "data-otservbr-global/monster/vermins/butterfly.lua",
         "repository": "opentibiabr/canary",
         "sha256": "d5ab16b54f6c7192516e42dd75a6d9a6138ec057bda1a6e8e6c607ad92dcdfc2"
+      }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.cake_golem",
+        "revision": "definition-r1"
+      },
+      "disposition": "explicit",
+      "race": "venom",
+      "source": {
+        "path": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf"
       }
     },
     {
@@ -21925,6 +21940,16 @@
         "repository": "opentibiabr/canary",
         "sha256": "ae6ee49f72cd1b7027328da1b188d460155c0ea4e9f13b7ffafe98f6a727ddbc"
       }
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.thaian",
+        "revision": "definition-r1"
+      },
+      "disposition": "no_monster_file",
+      "race": "blood",
+      "source": null
     },
     {
       "creature": {

@@ -17,6 +17,7 @@ use oteryn_gameplay_combat_rules::resolution::player_defence::player_defence_bou
 use oteryn_gameplay_progression::hit_training::SkillFamily;
 
 pub(in crate::gameplay_transport) struct IncomingCharm<'a> {
+    pub source: ExactActorRef,
     pub catalogue: &'a dyn CharmCatalogueRead,
     pub root: GameplayDecisionRoot,
     pub occurrence: DecisionOccurrenceId,
@@ -161,6 +162,35 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 },
             );
             for outcome in &outcomes {
+                match charm_combat::effect(outcome) {
+                    Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
+                        charm_combat::paralyse_creature(
+                            runtime,
+                            target,
+                            session,
+                            source,
+                            duration_ms,
+                            &charm.root,
+                            charm.occurrence,
+                            now.get(),
+                        );
+                    }
+                    Some(
+                        effect @ (CharmEffectOutcome::Haste { .. }
+                        | CharmEffectOutcome::CleanseOneNegativeCondition),
+                    ) => {
+                        self.states.apply_player_charm_condition(
+                            runtime,
+                            target,
+                            session,
+                            effect,
+                            &charm.root,
+                            charm.occurrence,
+                            now.get(),
+                        );
+                    }
+                    _ => {}
+                }
                 let Some(CharmEffectOutcome::ReflectDamage { damage, amount }) =
                     charm_combat::effect(outcome)
                 else {
@@ -180,6 +210,17 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 else {
                     continue;
                 };
+                let amount = if self
+                    .states
+                    .elite_bounty(runtime, target, session, charm.race)
+                {
+                    amount / 2
+                } else {
+                    amount
+                };
+                if amount == 0 {
+                    continue;
+                }
                 let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
                     continue;
                 };
@@ -192,21 +233,29 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     amount,
                     now.get() / 1_000,
                 ) && result.applied
-                    && result.health_after == 0
                 {
-                    self.states.equipment_reflection_kills.push((
-                        source,
-                        crate::combat::CapturedRewardPrincipal {
-                            character: lease.character_id(),
-                            lease_generation: lease.generation(),
-                            actor: target,
-                            session,
-                        },
-                        now.get(),
-                    ));
-                    // Parry can kill the source. The admitted incoming hit still lands;
-                    // equipment reflection has no living source to damage after that kill.
-                    return true;
+                    self.states.analyser.impact_amount(
+                        target,
+                        session,
+                        u64::try_from(result.health_before.saturating_sub(result.health_after))
+                            .unwrap_or(0),
+                        Some(super::super::analyser::charm_element(damage.element)),
+                    );
+                    if result.health_after == 0 {
+                        self.states.equipment_reflection_kills.push((
+                            source,
+                            crate::combat::CapturedRewardPrincipal {
+                                character: lease.character_id(),
+                                lease_generation: lease.generation(),
+                                actor: target,
+                                session,
+                            },
+                            now.get(),
+                        ));
+                        // Parry can kill the source. The admitted incoming hit still lands;
+                        // equipment reflection has no living source to damage after that kill.
+                        return true;
+                    }
                 }
             }
         }
@@ -223,6 +272,7 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         magnitude: u32,
         now: OwnerTime,
     ) -> Option<CreatureHit> {
+        let was_dead = self.states.is_dead(target);
         // Zero/fully blocked/dodged primary hits do not attach melee conditions.
         // The admitted source's nonzero primary and secondary state commit together.
         if magnitude > 0
@@ -258,6 +308,18 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     &[],
                     source.stamp,
                 )?;
+            if !was_dead && let (Some(death), Some(charm)) = (receipt.death, &self.charm) {
+                self.attack.capture_death_charm(
+                    runtime,
+                    self.states,
+                    charm.catalogue,
+                    target,
+                    target_session,
+                    charm.source,
+                    death.occurrence_bytes(),
+                    &charm.root,
+                );
+            }
             return Some(CreatureHit {
                 damage: crate::ability::creature_bite::CreatureDamage {
                     applied: receipt.applied,
@@ -267,13 +329,51 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 death: receipt.death.map(|death| death.occurrence_bytes()),
             });
         }
+        let magnitude = if self.charm.as_ref().is_some_and(|c| {
+            self.states
+                .elite_bounty(runtime, target, target_session, c.race)
+        }) {
+            magnitude.saturating_mul(2)
+        } else {
+            magnitude
+        };
         let percent = self.charm.as_ref().map_or(0, |c| {
             self.states
                 .prey_percent(runtime, target, target_session, c.race, 2, now.get())
         });
         let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
-        self.states
-            .apply_creature_damage(runtime, target, target_session, magnitude, now)
+        let hit = self.states.apply_creature_damage_kind_from(
+            runtime,
+            target,
+            target_session,
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Physical,
+            now,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(
+                self.charm
+                    .as_ref()
+                    .and_then(|charm| super::super::analyser::race(charm.race)),
+            ),
+            self.charm.as_ref().and_then(|charm| {
+                crate::gameplay_transport::actor_spell::native_public_death_cause(
+                    runtime,
+                    charm.source,
+                )
+            }),
+        )?;
+        if !was_dead && let (Some(death), Some(charm)) = (hit.death, &self.charm) {
+            self.attack.capture_death_charm(
+                runtime,
+                self.states,
+                charm.catalogue,
+                target,
+                target_session,
+                charm.source,
+                death,
+                &charm.root,
+            );
+        }
+        Some(hit)
     }
 
     fn target_armor(

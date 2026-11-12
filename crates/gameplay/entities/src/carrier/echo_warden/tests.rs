@@ -2,6 +2,7 @@ use super::*;
 use crate::carrier::runtime_actor_companion::{
     CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
 };
+use oteryn_gameplay_domain::domain::echo_warden::EchoOutcome;
 
 type TestResult<T = ()> = Result<T, String>;
 fn debug(value: impl std::fmt::Debug) -> String {
@@ -196,6 +197,69 @@ fn activate(
     runtime
         .drive_echo_wardens(now + 30_000, |_| true)
         .map_err(debug)?;
+    Ok(())
+}
+
+#[test]
+fn current_portal_families_spawn_once_keep_base_health_and_expire() -> TestResult {
+    for influenced in [false, true] {
+        let (mut runtime, player, session) = fixture_with_forge_difficulty(24, Some(1))?;
+        let source = ordinary(&mut runtime, at(100, 100, 7))?;
+        let input = death(&mut runtime, source, 0)?;
+        runtime.record_echo_death(input).map_err(debug)?;
+        runtime.remove_encounter_actor(source).map_err(debug)?;
+        runtime
+            .drive_echo_wardens(30_000, |_| true)
+            .map_err(debug)?;
+        let plan = EchoRaidPlan::select(100, false, influenced, 7).map_err(debug)?;
+        assert_eq!(
+            plan.outcome(),
+            if influenced {
+                EchoOutcome::Influenced
+            } else {
+                EchoOutcome::Regular
+            }
+        );
+        assert!(
+            runtime
+                .activate_echo_portal_with_plan(player, session, input.occurrence, 30_000, plan)
+                .map_err(debug)?
+        );
+        assert!(
+            !runtime
+                .activate_echo_portal_with_plan(player, session, input.occurrence, 30_000, plan)
+                .map_err(debug)?
+        );
+        for step in 0..plan.spawn_count() {
+            runtime
+                .drive_echo_wardens(30_000 + u64::from(step) * SPAWN_STEP_MS, |_| true)
+                .map_err(debug)?;
+        }
+        assert_eq!(
+            runtime.echo_wardens.spawned.len(),
+            usize::from(plan.spawn_count())
+        );
+        for actor in runtime.echo_wardens.spawned.clone() {
+            let snapshot = runtime.companion_snapshot(actor).map_err(debug)?;
+            assert_eq!(runtime.echo_variant(actor), None);
+            assert_eq!(snapshot.forge.is_some(), influenced);
+            assert_eq!(runtime.echo_attack_percent(actor), 100);
+            let expected = snapshot.forge.map_or(101, |kind| {
+                (101 * i64::from(kind.health_percent()) + 99) / 100
+            });
+            assert_eq!(snapshot.maximum_health, expected);
+        }
+        let first = runtime.echo_wardens.spawned[0];
+        let input = death(&mut runtime, first, 35_000)?;
+        assert_eq!(
+            runtime.record_echo_death(input).map_err(debug)?,
+            EchoDeathEffect::None
+        );
+        runtime
+            .drive_echo_wardens(640_000, |_| true)
+            .map_err(debug)?;
+        assert!(runtime.echo_wardens.spawned.is_empty());
+    }
     Ok(())
 }
 
@@ -634,3 +698,5 @@ fn renamed_source_portal_refuses_missing_or_ambiguous_native_base_without_guessi
     }
     Ok(())
 }
+
+mod expiry_tests;

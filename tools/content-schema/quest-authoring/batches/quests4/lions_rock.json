@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "quest_directory": "lions_rock",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/lions-rock-inner-sanctum-entry",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33128,
+          "y": 32308,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33122,
+        "y": 32308,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 4,
+          "maximum": 2147483647,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You have to pass the Lion's Tests to enter the inner sanctum!",
+      "success_message": "You have passed the Lion's Tests and are now worthy to enter the inner sanctum!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:28-51"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/lions-rock-temple-message",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32274,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/message",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You enter a temple area which is gorgeously decorated and mysteriously unaffected by the course of time.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:128-144"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "lions_rock",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "Próba Strength",
+      "patterns": "P02/P16",
+      "trigger": "item9634 na33137,32291,8",
+      "condition": "LionsStrength<1; pagoda2074 w pozycji z konfiguracji",
+      "effect": "flag=1; Questline=max(old,1)+1 przyold<1, inaczej+1; zużywa9634;2074→2075, reset15s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:15"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Próba Beauty",
+      "patterns": "P02/P16",
+      "trigger": "item21389 na33138,32369,8",
+      "condition": "LionsBeauty<1; pagoda2074 w pozycji z konfiguracji",
+      "effect": "flag=1; Questline=max(old,1)+1 przyold<1, inaczej+1; zużywa21389;2074→2075, reset15s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:23"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Próba Tears",
+      "patterns": "P02/P16",
+      "trigger": "item21466 na33154,32279,8",
+      "condition": "LionsTears<1; pagoda2074 w pozycji z konfiguracji",
+      "effect": "flag=1; Questline=max(old,1)+1 przyold<1, inaczej+1; zużywa21466;2074→2075, reset15s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:31"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Zerwanie kwiatu",
+      "patterns": "P02/P16",
+      "trigger": "Use item21388",
+      "condition": "Brak gate gracza",
+      "effect": "daje21389; Questline=max(old,1); TibiaTales.DefaultStart=1;21388→21935→21388 po60s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:83"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Święta woda",
+      "patterns": "P02",
+      "trigger": "Use33137,32351,6",
+      "condition": "Brak gate gracza",
+      "effect": "daje21466; Questline=max(old,1); TibiaTales.DefaultStart=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:101"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Wejście do inner sanctum",
+      "patterns": "P03",
+      "trigger": "StepIn33128,32308,8",
+      "condition": "Questline>=4, zachować dokładną obecną wartość",
+      "effect": "Teleport33122,32308,8; w odmowie powrót fromPosition",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:31"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Rozbicie amfory",
+      "patterns": "P02/P16",
+      "trigger": "8pozycji otaczających33119,32247,9 (m:54-62)",
+      "condition": "Questline=4 i amphora21945",
+      "effect": "21945→21946; Questline=5; daje21467; reset15s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:66"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Inskrypcja Snake",
+      "patterns": "P18",
+      "trigger": "StepIn33095,32244,9",
+      "condition": "SnakeSign<1; ma21467; pozycja dokładna",
+      "effect": "SnakeSign=1; Questline+=1; dwa teksty źródłowe",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Inskrypcja Lizard",
+      "patterns": "P18",
+      "trigger": "StepIn33130,32300,9",
+      "condition": "LizardSign<1; ma21467; pozycja dokładna",
+      "effect": "LizardSign=1; Questline+=1; dwa teksty źródłowe",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:8"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Inskrypcja Scorpion",
+      "patterns": "P18",
+      "trigger": "StepIn33109,32329,9",
+      "condition": "ScorpionSign<1; ma21467; pozycja dokładna",
+      "effect": "ScorpionSign=1; Questline+=1; dwa teksty źródłowe",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:14"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Inskrypcja Hyena",
+      "patterns": "P18",
+      "trigger": "StepIn33127,32340,9",
+      "condition": "HyenaSign<1; ma21467; pozycja dokładna",
+      "effect": "HyenaSign=1; Questline+=1; dwa teksty źródłowe",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:20"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komunikat świątyni",
+      "patterns": "P03",
+      "trigger": "StepIn33080,32274,10",
+      "condition": "InnerSanctum.Message<1",
+      "effect": "Message=1; tekst źródłowy; bez teleportu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:131"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Fontanna: losowanie",
+      "patterns": "P05/P17",
+      "trigger": "Use33073,32300,9, item6389",
+      "condition": "Time<os.time(); przy mount40 pomijaj lion's heart",
+      "effect": "Jedna z7nagród;6389→1852; Time=now+86400; Questline=11; achievement Lion's Den Explorer",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:115"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Fontanna: odmowa w cooldown",
+      "patterns": "P17",
+      "trigger": "Ten sam obiekt",
+      "condition": "Time>=os.time()",
+      "effect": "Tylko komunikat, bez nagrody",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/actions_lions_rock.lua:138"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

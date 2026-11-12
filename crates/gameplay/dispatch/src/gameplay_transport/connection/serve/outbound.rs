@@ -65,7 +65,13 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
-    if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
+    if matches!(
+        dispatch,
+        Dispatch::Logout(LogoutResult::Accepted)
+            | Dispatch::ServerModal(
+                crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(_)
+            )
+    ) {
         // §1.6: the release committed before this result. No command is read any more and
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
@@ -113,7 +119,8 @@ where
         outcome.npc_relocation,
         outcome.training_logged_out,
     )
-    .await
+    .await?;
+    super::analyser::emit(stream, authority, session).await
 }
 
 async fn emit<S, A>(
@@ -274,13 +281,17 @@ where
             }
         }
         Dispatch::Reply(_, payload)
-            if command.command_type
+            if (command.command_type
                 == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
                 && oteryn_protocol_oteryn::depot_search::decode_reply(&payload).is_ok_and(
                     |reply| {
                         reply.outcome == oteryn_protocol_oteryn::depot_search::Outcome::Retrieved
                     },
-                ) =>
+                ))
+                || (command.command_type
+                    == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                    && payload.as_slice()
+                        == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]) =>
         {
             let Some(view) = session.item_view.as_mut() else {
                 return Err(ServeEnd::Disconnected);
@@ -431,6 +442,7 @@ where
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)
+        | Dispatch::ServerModal(_)
         | Dispatch::Vip(_)
         | Dispatch::Appearance(_)
         | Dispatch::Training(_)
@@ -438,6 +450,7 @@ where
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }
+    refresh::sounds(stream, authority, session).await?;
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     if let Some(observer) = committed_step
@@ -457,9 +470,18 @@ where
                 })
                 .collect();
             if !events.is_empty() {
+                if session.selected_capabilities.contains(290) {
+                    authority.cast_effects(session.admitted, &events).await;
+                }
                 let payload =
                     oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events)
                         .map_err(|_| ServeEnd::Disconnected)?;
+                let presentation_revision = session
+                    .admitted
+                    .continuity
+                    .presentation_revision
+                    .checked_add(1)
+                    .ok_or(ServeEnd::Disconnected)?;
                 let sequence = session
                     .sequence
                     .checked_add(1)
@@ -468,8 +490,8 @@ where
                     session.generation,
                     sequence,
                     oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION,
-                    session.movement_effect_revision,
-                    revision,
+                    session.admitted.continuity.presentation_revision,
+                    presentation_revision,
                     oteryn_protocol_oteryn::presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
                     &payload,
                 )
@@ -477,6 +499,7 @@ where
                 write_frame(stream, &frame)
                     .await
                     .map_err(|_| ServeEnd::Disconnected)?;
+                session.admitted.continuity.presentation_revision = presentation_revision;
                 session.sequence = sequence;
                 session.admitted.continuity.server_sequence = sequence;
             }

@@ -1,0 +1,1971 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "the_ice_islands_quest",
+    "elements": 69,
+    "auto": 0,
+    "manual": 69,
+    "statuses": {
+      "LEFT_OUT": 53,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 16
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 43,
+      "reply_paragraphs": 65,
+      "conversations": 5
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Mrówki: napełnienie",
+      "pattern": "P02",
+      "trigger": "7243 na1079",
+      "condition": "Questline6",
+      "effect": "Mission03=2;7243→7244",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_anthill.lua:3-11",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny item-on-target wymaga source item/target, przemiany lub konsumpcji i progresji/presentation. W przypadku łodzi donor usuwa7243 po przemianie na7244; nie wybieramy innego inputu bez jawnej kwalifikacji poprawki. Brak częściowego SET lub pustego consume; wspólny receipt owner poza pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Inventory transform / target proof / source presentation",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Mrówki: łódź",
+      "pattern": "P02",
+      "trigger": "7244 na4940 w(32360,31365,7)",
+      "condition": "Questline6",
+      "effect": "Questline7;Mission03=3;removeItem7243 (nie7244)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_anthill.lua:13-19",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny item-on-target wymaga source item/target, przemiany lub konsumpcji i progresji/presentation. W przypadku łodzi donor usuwa7243 po przemianie na7244; nie wybieramy innego inputu bez jawnej kwalifikacji poprawki. Brak częściowego SET lub pustego consume; wspólny receipt owner poza pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Inventory transform / target proof / source presentation",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Woda lecznicza",
+      "pattern": "P02",
+      "trigger": "7286 na7106",
+      "condition": "Questline≥21",
+      "effect": "7286→7246",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_cure.lua:3-10",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny item-on-target wymaga source item/target, przemiany lub konsumpcji i progresji/presentation. W przypadku łodzi donor usuwa7243 po przemianie na7244; nie wybieramy innego inputu bez jawnej kwalifikacji poprawki. Brak częściowego SET lub pustego consume; wspólny receipt owner poza pierwszego ANSWER pkt5.",
+      "missing_owner_function": "Inventory transform / target proof / source presentation",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "Malowanie fok",
+      "pattern": "P02/P16",
+      "trigger": "7253 na7178",
+      "condition": "Questline8",
+      "effect": "PaintSeal+=1;przy==2 Q9/M04=2/zużyj7253;7178→7252 na30s;opcjonalnyAnimalActivist",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_paint.lua:3-30",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Malowanie obejmuje czasową przemianę foki, inkrementację, warunkową konsumpcję i achievement. To nie jest stały pojedynczy target replacement; timer/world i receipt owner poza pierwszego ANSWER pkt5–6.",
+      "missing_owner_function": "World timed transform / quest counter / achievement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "Helheim",
+      "pattern": "P03",
+      "trigger": "StepIn uid1061",
+      "condition": "Questline30",
+      "effect": "Questline31;Mission07=3;efekty",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_helheim.lua:9-29",
+      "initial_import": "AUTO",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pierwotne AUTO wycofane: StepIn uid1061 ma oba SET, źródłową wypowiedź, centralny czerwony efekt,8sąsiednich MORTAREA oraz północny YALAHARIGHOST. Zamknięty callback nie reprezentuje tych efektów; nie aktywowano samego stanu. RĘCZNIE do kwalifikacji kompletnego route.",
+      "missing_owner_function": "World callback source speech / spatial VFX",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Husky: naliczanie",
+      "pattern": "P08/P21",
+      "trigger": "HuskyDeath;onDeathForDamagingPlayers",
+      "condition": "istniejący Player zdamage map",
+      "effect": "HuskyKill=(get or0)+1;donorowe -1 daje0 pierwszego zabicia",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/creaturescripts_husky_kill.lua:1-10",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "HuskyKill używa „get or0” i po donorowym braku(-1) pierwsze zabicie daje0; nie normalizujemy tego do1. Wymaga kwalifikowanego kill hooku i beneficjenta, a wspólny settlement owner nie jest rozszerzany (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Kill settlement / source default and beneficiary",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Yakchal: odpieczętowanie",
+      "pattern": "P02/P15/P16/P22/P30",
+      "trigger": "3249 na7362 w(32205,31002,14)",
+      "condition": "globalYakchal<now",
+      "effect": "global=now+86400;50%zużycia3249;spawnYakchal;4fale po0/10/20/30s,70losowań/fala",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_yakchal.lua:1-41",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Yakchal obejmuje globalny termin24h, losową konsumpcję, spawn oraz cztery opóźnione fale. Nie zastąpiono wspólnego world cooldown osobistym trackiem; pierwszego ANSWER pkt5.",
+      "missing_owner_function": "World cooldown / random encounter / timer owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "Tylaf: notatka",
+      "pattern": "P05/P14",
+      "trigger": "Use uid3112",
+      "condition": "Questline35",
+      "effect": "daj2820 zpodpisem;Questline36;Mission09=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:50-58",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Skrzynia/notatka wymaga źródłowego kompletu/tekstu, claimu i właściwej pojemności. Brak kwalifikacji fizycznego map binding i kompletnego istniejącego receipt; nie deklarujemy missing item/map bez dowodu. Rozbudowa placementu poza pierwszego ANSWER pkt5.",
+      "missing_owner_function": "RewardClaimMint / text / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Psie zaprzęgi1",
+      "pattern": "P03/P10",
+      "trigger": "StepIn(32367, 31058, 7)",
+      "condition": "Mission06 dokładnie8;3582×1",
+      "effect": "zabierz3582;teleport(32407, 31067, 7);inaczej bounce",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-52",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każde przejście psiego zaprzęgu musi atomowo pobrać3582, sprawdzić source quest i wykonać określony teleport/bounce. Nie aktywowano darmowej podróży bez konsumpcji; wymagany wspólny item/movement receipt flow (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Inventory consumption with teleport",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-56",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "Psie zaprzęgi2",
+      "pattern": "P03/P10",
+      "trigger": "StepIn(32409, 31066, 7)",
+      "condition": "Mission06 dokładnie8;3582×1",
+      "effect": "zabierz3582;teleport(32365, 31059, 7);inaczej bounce",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-52",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każde przejście psiego zaprzęgu musi atomowo pobrać3582, sprawdzić source quest i wykonać określony teleport/bounce. Nie aktywowano darmowej podróży bez konsumpcji; wymagany wspólny item/movement receipt flow (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Inventory consumption with teleport",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-56",
+      "source_implementation": []
+    },
+    {
+      "row": 11,
+      "step": "Psie zaprzęgi3",
+      "pattern": "P03/P10",
+      "trigger": "StepIn(32303, 31081, 7)",
+      "condition": "Mission03 dokładnie3;3582×1",
+      "effect": "zabierz3582;teleport(32329, 31045, 7);inaczej bounce",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-52",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każde przejście psiego zaprzęgu musi atomowo pobrać3582, sprawdzić source quest i wykonać określony teleport/bounce. Nie aktywowano darmowej podróży bez konsumpcji; wymagany wspólny item/movement receipt flow (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Inventory consumption with teleport",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-56",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Psie zaprzęgi4",
+      "pattern": "P03/P10",
+      "trigger": "StepIn(32327, 31045, 7)",
+      "condition": "Mission03 dokładnie3;3582×1",
+      "effect": "zabierz3582;teleport(32301, 31080, 7);inaczej bounce",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-52",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Każde przejście psiego zaprzęgu musi atomowo pobrać3582, sprawdzić source quest i wykonać określony teleport/bounce. Nie aktywowano darmowej podróży bez konsumpcji; wymagany wspólny item/movement receipt flow (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Inventory consumption with teleport",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/movements_nibelor_dog_led.lua:1-56",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "Obelisk1",
+      "pattern": "P02",
+      "trigger": "7289 na1841 w(32138, 31113, 14)",
+      "condition": "Questline39;Obelisk01<5",
+      "effect": "Obelisk01=5;Mission12+=1;bezzużycia7289",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_charm.lua:3-47",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Użycie7289 na konkretnym obelisku ustawia osobny obelisk=5 i inkrementuje Mission12; przedmiot pozostaje. Closed callback StorageEffect ma stałySET, więc nie zastępuje źródłowego ADD i target proof. Wymaga kwalifikowanego world item route.",
+      "missing_owner_function": "Item-use guard / ADD+SET / spatial target",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "Obelisk2",
+      "pattern": "P02",
+      "trigger": "7289 na1841 w(32119, 30992, 14)",
+      "condition": "Questline39;Obelisk02<5",
+      "effect": "Obelisk02=5;Mission12+=1;bezzużycia7289",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_charm.lua:3-47",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Użycie7289 na konkretnym obelisku ustawia osobny obelisk=5 i inkrementuje Mission12; przedmiot pozostaje. Closed callback StorageEffect ma stałySET, więc nie zastępuje źródłowego ADD i target proof. Wymaga kwalifikowanego world item route.",
+      "missing_owner_function": "Item-use guard / ADD+SET / spatial target",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "Obelisk3",
+      "pattern": "P02",
+      "trigger": "7289 na1841 w(32180, 31069, 14)",
+      "condition": "Questline39;Obelisk03<5",
+      "effect": "Obelisk03=5;Mission12+=1;bezzużycia7289",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_charm.lua:3-47",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Użycie7289 na konkretnym obelisku ustawia osobny obelisk=5 i inkrementuje Mission12; przedmiot pozostaje. Closed callback StorageEffect ma stałySET, więc nie zastępuje źródłowego ADD i target proof. Wymaga kwalifikowanego world item route.",
+      "missing_owner_function": "Item-use guard / ADD+SET / spatial target",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "Obelisk4",
+      "pattern": "P02",
+      "trigger": "7289 na1841 w(32210, 31027, 14)",
+      "condition": "Questline39;Obelisk04<5",
+      "effect": "Obelisk04=5;Mission12+=1;bezzużycia7289",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ice_islands_quest/actions_charm.lua:3-47",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Użycie7289 na konkretnym obelisku ustawia osobny obelisk=5 i inkrementuje Mission12; przedmiot pozostaje. Closed callback StorageEffect ma stałySET, więc nie zastępuje źródłowego ADD i target proof. Wymaga kwalifikowanego world item route.",
+      "missing_owner_function": "Item-use guard / ADD+SET / spatial target",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "Formorgar chest6213",
+      "pattern": "P05",
+      "trigger": "chest table id6213",
+      "condition": "storage FormorgarGlacierSkeleton/Chest nieodebrane",
+      "effect": "dajcontainer2853:3450×20,3349,7443,3031×100,7290;zapiszclaim",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2251-2257",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Skrzynia/notatka wymaga źródłowego kompletu/tekstu, claimu i właściwej pojemności. Brak kwalifikacji fizycznego map binding i kompletnego istniejącego receipt; nie deklarujemy missing item/map bez dowodu. Rozbudowa placementu poza pierwszego ANSWER pkt5.",
+      "missing_owner_function": "RewardClaimMint / text / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Formorgar chest6214",
+      "pattern": "P05",
+      "trigger": "chest table id6214",
+      "condition": "storage FormorgarGlacierSkeleton/Chest nieodebrane",
+      "effect": "daj2820;zapiszclaim",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2259-2265",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Skrzynia/notatka wymaga źródłowego kompletu/tekstu, claimu i właściwej pojemności. Brak kwalifikacji fizycznego map binding i kompletnego istniejącego receipt; nie deklarujemy missing item/map bez dowodu. Rozbudowa placementu poza pierwszego ANSWER pkt5.",
+      "missing_owner_function": "RewardClaimMint / text / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 19,
+      "step": "sven: Opłata za husky",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "sven: yes",
+      "condition": "HuskyKillStatus1;BarbarianQuestline8",
+      "effect": "zabierzHuskyKill×1500gold;HuskyKillStatus0;HuskyKill0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:118",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała rozmowa kary wraz z computed greeting wymaga HuskyKill×1500 i atomowego rozliczenia albo pełnego resetu przez source confirmation. Root pozostawia ją w całości Left out; nie uruchamia się samej odmowy/resetu bez osiągalnego powitania (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Sven computed penalty conversation / atomic payment",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 20,
+      "step": "sven: Odmowa rekompensaty",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "sven: no→no",
+      "condition": "HuskyKillStatus1;topic0→10",
+      "effect": "BarbarianQuestline iMission01..03=-1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:154",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała rozmowa kary wraz z computed greeting wymaga HuskyKill×1500 i atomowego rozliczenia albo pełnego resetu przez source confirmation. Root pozostawia ją w całości Left out; nie uruchamia się samej odmowy/resetu bez osiągalnego powitania (pierwszego ANSWER pkt5).",
+      "missing_owner_function": "Sven computed penalty conversation / atomic payment",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 21,
+      "step": "sven: Inicjalizacja lodowych wysp",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "sven: yes wBarbarian acceptance",
+      "condition": "topic3",
+      "effect": "IceQuestline1 wraz zBarbarian start;własność wspólnej gałęzi root",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:135",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/barbarian_test.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Wspólna gałąź Sven/Barbarian jest authored wyłącznie przez root; canonical owner Ice Islands, questline max44, bez odrębnego właściciela questa.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "../lead/barbarian_test.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 22,
+      "step": "iskan: Karmienie psów: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "iskan: mission→yes",
+      "condition": "BarbarianQ≥8;IceQ1;topic1",
+      "effect": "Q1;M01=1;tekst o mięsie bez addItem",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:111",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Reguły find-sniffler/accept-sniffler/sniffler-returned są napisane w DATA, lecz zwykłe powitanie Barbarian>=8 i HuskyKill<1 zależy od obcego achievementu Warlord of Svargrond (iskan.lua:58-61). Ta część osiągalności pozostaje Left out według pierwszego ANSWER pkt6; nie wybieramy fikcyjnego negatywnego achievementu.",
+      "missing_owner_function": "Iskan conditional greeting / foreign achievement dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 23,
+      "step": "a_starving_dog: Karmienie Snifflera",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "a_starving_dog: sniffler→meat",
+      "condition": "3577×1;M01=1 dla postępu",
+      "effect": "zabierz3577;Q2;M01=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_starving_dog.lua:56",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 24,
+      "step": "iskan: Karmienie psów: raport",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "iskan: mission",
+      "condition": "Q2",
+      "effect": "Q3;M01=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:90",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Reguły find-sniffler/accept-sniffler/sniffler-returned są napisane w DATA, lecz zwykłe powitanie Barbarian>=8 i HuskyKill<1 zależy od obcego achievementu Warlord of Svargrond (iskan.lua:58-61). Ta część osiągalności pozostaje Left out według pierwszego ANSWER pkt6; nie wybieramy fikcyjnego negatywnego achievementu.",
+      "missing_owner_function": "Iskan conditional greeting / foreign achievement dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 25,
+      "step": "iskan: Przejazd",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "iskan: passage→yes",
+      "condition": "Q≥3;topic2",
+      "effect": "teleport(32325,31049,7)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:119",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródłowa rozmowa wykonuje teleport; DATA adapter nie generuje nowej capability ani nie udaje podróży samą wypowiedzią. Potrzebne kwalifikowane istniejące powiązanie travel/movement ownera.",
+      "missing_owner_function": "NPC travel / movement owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 26,
+      "step": "iskan: Odszkodowanie",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "iskan: yes",
+      "condition": "HuskyKill≥1",
+      "effect": "zabierz500gold przezbank;HuskyKillStatus0;HuskyKill0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:103",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 27,
+      "step": "iskan: Odmowa odszkodowania",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "iskan: no",
+      "condition": "HuskyKill≥1",
+      "effect": "HuskyKillStatus1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:130",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 28,
+      "step": "hjaern: Nibelor: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: mission",
+      "condition": "Q3;M02<1",
+      "effect": "M02=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:62",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 29,
+      "step": "hjaern: Nibelor: raport",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: mission",
+      "condition": "Q4",
+      "effect": "Q5;M02=5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:73",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 30,
+      "step": "siflind: Mrówki: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "siflind: mission→yes",
+      "condition": "Q5;topic1",
+      "effect": "Q6;M03=1;daj7243",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:120",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 31,
+      "step": "siflind: Dzban zastępczy",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "siflind: jug→yes",
+      "condition": "topic2;1000gold",
+      "effect": "zabierz1000gold;daj7243",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:130",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 32,
+      "step": "siflind: Foki: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "siflind: mission→yes→yes",
+      "condition": "Q7;topics3→4",
+      "effect": "daj7253;Q8;M04=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:137",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 33,
+      "step": "siflind: Foki: raport",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "siflind: mission",
+      "condition": "Q9",
+      "effect": "Q10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:68",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 34,
+      "step": "siflind: Pióra: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "siflind: mission",
+      "condition": "Q10",
+      "effect": "Q11;M05=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:72",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 35,
+      "step": "nilsor: Lek: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "nilsor: mission→yes",
+      "condition": "Q20;topic1",
+      "effect": "Q21;M06=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:137",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 36,
+      "step": "nilsor: Bukłak",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "nilsor: waterskin→yes",
+      "condition": "topic2;25gold",
+      "effect": "zabierz25gold;daj7286",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:146",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 37,
+      "step": "nilsor: Lek: raport",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "nilsor: mission",
+      "condition": "Q28",
+      "effect": "Q29;M07=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:80",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 38,
+      "step": "nilsor: Powrót",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "nilsor: svargrond/passage→yes",
+      "condition": "topic10",
+      "effect": "teleport(32312,31074,7)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródłowa rozmowa wykonuje teleport; DATA adapter nie generuje nowej capability ani nie udaje podróży samą wypowiedzią. Potrzebne kwalifikowane istniejące powiązanie travel/movement ownera.",
+      "missing_owner_function": "NPC travel / movement owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 39,
+      "step": "hjaern: Helheim: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: mission→yes",
+      "condition": "Q29;topic1",
+      "effect": "Q30;M07=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:174",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 40,
+      "step": "hjaern: Helheim: raport",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: mission→yes",
+      "condition": "Q31;topic2",
+      "effect": "Q32;M08=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:179",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 41,
+      "step": "lurik: Kontakt: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "lurik: mission→yes",
+      "condition": "Q32;topic2",
+      "effect": "Q33;M08=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:135",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wcześniejsze gałęzie tego samego keyword zależą od Explorer Society; zwykłe Ice-only fallback naruszałoby pierwszeństwo źródła. Bez odczytu cudzych tracków zgodnie pierwszego ANSWER pkt6 gałąź pozostaje Left out; timer/contact też wymaga pełnego exchange flow.",
+      "missing_owner_function": "Lurik foreign mission branch / timed follow-up",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 42,
+      "step": "nor: Memory crystal",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "nor: crystal",
+      "condition": "M08=2",
+      "effect": "daj7281;M08=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nor.lua:61",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 43,
+      "step": "lurik: Memory crystal: oddanie",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "lurik: mission→yes",
+      "condition": "Q33;topic3;7281",
+      "effect": "zabierz7281;Q34;M08=4;MemoryCrystal=now+300s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:140",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 44,
+      "step": "lurik: Kontakt: odczekanie",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "lurik: mission",
+      "condition": "Q34;MemoryCrystal<now",
+      "effect": "Q35;M09=1;MinesDoor1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:108",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wcześniejsze gałęzie tego samego keyword zależą od Explorer Society; zwykłe Ice-only fallback naruszałoby pierwszeństwo źródła. Bez odczytu cudzych tracków zgodnie pierwszego ANSWER pkt6 gałąź pozostaje Left out; timer/contact też wymaga pełnego exchange flow.",
+      "missing_owner_function": "Lurik foreign mission branch / timed follow-up",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 45,
+      "step": "hjaern: Tylaf: zlecenie",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: tylaf",
+      "condition": "Q36",
+      "effect": "Q37;M10=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:158",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 46,
+      "step": "a_restless_soul: Historia",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "a_restless_soul: story",
+      "condition": "Q37",
+      "effect": "Q38;M10=2;M11=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_restless_soul.lua:69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 47,
+      "step": "hjaern: Cztery obeliski: start",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: mission",
+      "condition": "Q38",
+      "effect": "Q39;M11=2;M12=1;daj7289",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:94",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 48,
+      "step": "hjaern: Cztery obeliski: raport",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: mission",
+      "condition": "Q39;4Obelisks=5;7289",
+      "effect": "zabierz7289;Q40;YakchalDoor1;M12=6;Outfit1;look251/252",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:107",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny grant lookTypes251/252 i addonów musi commitować właściwe entitlement oraz quest state; nie nadajemy samego Outfit/Questline bez wyglądu ani nie rozszerzamy wspólnego appearance ownera bez kwalifikacji. pierwszego ANSWER pkt5–6; materiały są osobnymi held atomic branches.",
+      "missing_owner_function": "Quest outfit/addon grant with state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 49,
+      "step": "hjaern: Pierwszy addon: materiały",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: shard→yes",
+      "condition": "Q40;topic3;7290×5",
+      "effect": "zabierz5shards;Q41",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:188",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 50,
+      "step": "hjaern: Pierwszy addon: nagroda",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: reward",
+      "condition": "Q41",
+      "effect": "addon1look251/252;Q42;Outfit2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:140",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny grant lookTypes251/252 i addonów musi commitować właściwe entitlement oraz quest state; nie nadajemy samego Outfit/Questline bez wyglądu ani nie rozszerzamy wspólnego appearance ownera bez kwalifikacji. pierwszego ANSWER pkt5–6; materiały są osobnymi held atomic branches.",
+      "missing_owner_function": "Quest outfit/addon grant with state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 51,
+      "step": "hjaern: Drugi addon: materiały",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: shard→yes",
+      "condition": "Q42;topic4;7290×10",
+      "effect": "zabierz10shards;Q43",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:194",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 52,
+      "step": "hjaern: Drugi addon: nagroda",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: reward",
+      "condition": "Q43",
+      "effect": "addon2look251/252;Q44;Outfit3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:149",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny grant lookTypes251/252 i addonów musi commitować właściwe entitlement oraz quest state; nie nadajemy samego Outfit/Questline bez wyglądu ani nie rozszerzamy wspólnego appearance ownera bez kwalifikacji. pierwszego ANSWER pkt5–6; materiały są osobnymi held atomic branches.",
+      "missing_owner_function": "Quest outfit/addon grant with state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 53,
+      "step": "hjaern: Skup shardów",
+      "pattern": "P09/P10/P11/P12/P13/P17",
+      "trigger": "hjaern: shard→yes",
+      "condition": "Q44;topic5",
+      "effect": "zabierzwszystkie7290;2000gold/szt",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:200",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 54,
+      "step": "Siflind: materiał5894",
+      "pattern": "P09/P10",
+      "trigger": "mission→yes",
+      "condition": "Q11;5894×5",
+      "effect": "zabierzmateriał;Q12",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:146",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 55,
+      "step": "Siflind: materiał5896",
+      "pattern": "P09/P10",
+      "trigger": "mission→yes",
+      "condition": "Q13;5896×4",
+      "effect": "zabierzmateriał;Q14",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:155",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 56,
+      "step": "Siflind: materiał5898",
+      "pattern": "P09/P10",
+      "trigger": "mission→yes",
+      "condition": "Q15;5898×3",
+      "effect": "zabierzmateriał;Q16",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:164",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 57,
+      "step": "Siflind: materiał5895",
+      "pattern": "P09/P10",
+      "trigger": "mission→yes",
+      "condition": "Q17;5895×2",
+      "effect": "zabierzmateriał;Q18",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:173",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 58,
+      "step": "Siflind: materiał5920",
+      "pattern": "P09/P10",
+      "trigger": "mission→yes",
+      "condition": "Q19;5920×1",
+      "effect": "zabierzmateriał;Q20;M05=6",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:182",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 59,
+      "step": "Siflind: kolejny materiał2",
+      "pattern": "P09",
+      "trigger": "mission",
+      "condition": "Q12",
+      "effect": "Q13;M05=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:80",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 60,
+      "step": "Siflind: kolejny materiał3",
+      "pattern": "P09",
+      "trigger": "mission",
+      "condition": "Q14",
+      "effect": "Q15;M05=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:88",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 61,
+      "step": "Siflind: kolejny materiał4",
+      "pattern": "P09",
+      "trigger": "mission",
+      "condition": "Q16",
+      "effect": "Q17;M05=4",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:96",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 62,
+      "step": "Siflind: kolejny materiał5",
+      "pattern": "P09",
+      "trigger": "mission",
+      "condition": "Q18",
+      "effect": "Q19;M05=5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:104",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_ice_islands_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_ice_islands_quest.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 63,
+      "step": "Nilsor: składnik7245",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q21;topic3;7245×1",
+      "effect": "zabierz7245;Q22;M06=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:155",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 64,
+      "step": "Nilsor: składnik7246",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q22;topic4;7246×1",
+      "effect": "zabierz7246;Q23;M06=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:164",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 65,
+      "step": "Nilsor: składnik7247",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q23;topic5;7247×1",
+      "effect": "zabierz7247;Q24;M06=4",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:173",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 66,
+      "step": "Nilsor: składnik7248",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q24;topic6;7248×1",
+      "effect": "zabierz7248;Q25;M06=5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:182",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 67,
+      "step": "Nilsor: składnik7249",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q25;topic7;7249×1",
+      "effect": "zabierz7249;Q26;M06=6",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:191",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 68,
+      "step": "Nilsor: składnik7250",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q26;topic8;7250×1",
+      "effect": "zabierz7250;Q27;M06=7",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:200",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 69,
+      "step": "Nilsor: składnik7251",
+      "pattern": "P09/P10",
+      "trigger": "keyword składnika→yes",
+      "condition": "Q27;topic9;7251×1",
+      "effect": "zabierz7251;Q28;M06=8",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:209",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełna gałąź konsumpcji/minta/płatności/terminu ma wspólny receipt z postępem. Nie rozszerzamy kontraktu wymian0831/0832 ani nie wykonujemy części SET osobno (pierwszego ANSWER pkt4–5).",
+      "missing_owner_function": "NPC atomic item/money/state/time exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    }
+  ]
+}

@@ -41,9 +41,22 @@ pub(super) enum MonkSave {
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// The owner time of the Channel runtime (spell cast §2): process-local and monotonic.
     pub(super) fn owner_now(&self) -> SemanticTimeMicros {
-        SemanticTimeMicros::from_micros(
-            u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX),
-        )
+        #[cfg(test)]
+        {
+            let fixed = self
+                .states
+                .test_owner_time
+                .load(std::sync::atomic::Ordering::Relaxed);
+            if fixed != 0 {
+                return SemanticTimeMicros::from_micros(fixed - 1);
+            }
+        }
+        let elapsed = self.clock_origin.elapsed();
+        #[cfg(feature = "qualification-clock")]
+        let elapsed = elapsed.saturating_add(std::time::Duration::from_millis(
+            crate::world_clock::qualification_offset_ms(),
+        ));
+        SemanticTimeMicros::from_micros(u64::try_from(elapsed.as_micros()).unwrap_or(u64::MAX))
     }
 
     /// The durable monk values a new runtime actor of `character_id` loads (§8.2). `None` when
@@ -207,3 +220,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "monk_save_postgres_tests.rs"]
 pub(super) mod postgres_tests;
+
+/// A scoped simulation clock, shared by cloned owners but isolated by Channel
+/// state. Real I/O, SQL deadlines and movement pacing retain their real clocks.
+#[cfg(test)]
+pub(super) struct TestOwnerClock {
+    states: std::sync::Arc<super::channel_states::ChannelSessionStates>,
+    previous: u64,
+}
+#[cfg(test)]
+impl Drop for TestOwnerClock {
+    fn drop(&mut self) {
+        self.states
+            .test_owner_time
+            .store(self.previous, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+#[cfg(test)]
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn freeze_owner_clock_for_test(&self) -> TestOwnerClock {
+        let value = self.owner_now().get().saturating_add(1);
+        let previous = self
+            .states
+            .test_owner_time
+            .swap(value, std::sync::atomic::Ordering::Relaxed);
+        TestOwnerClock {
+            states: self.states.clone(),
+            previous,
+        }
+    }
+}

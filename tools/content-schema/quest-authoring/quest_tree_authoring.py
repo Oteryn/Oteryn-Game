@@ -45,14 +45,54 @@ def digest(root, relative):
 def claim_catalogue(root):
     index = read(root, CLAIM_INDEX)
     claims = [row['definition'] for shard in index['shards'] for row in read(root, shard)['records']]
+    # completion242 is a pinned SOURCE qualification, not the live MINT
+    # admission. QUEST-FINISH promotes these exact full-charge Item identities
+    # through the existing timed owner; retain their historical SOURCE holds,
+    # as for UID6082 below, without changing the production claim definitions.
+    full_charge_items = {f'oteryn:item.tibia.i{number}'
+                         for number in (2874, 2881, 2882, 3048, 3054, 3056, 3082, 3083, 3084, 3085, 3284)}
+    charge_source = read(root, 'tools/content-schema/reward-claim-authoring/source_charge_evidence.json')
+    charge_leaves = {row['pilot_key'] for row in charge_source['rewards']
+                     if row['source_count_argument'] == row['source_default_charges']}
     for claim in claims:
-        if claim['identity']['key'] == 'oteryn:reward-claim.kv.madmageroom3':
+        if (claim['provenance']['pilot_key'] in charge_leaves and claim['readiness'] == 'ready'):
+            claim['readiness'] = 'waiting_item_semantics'
+        claim['_source_baseline_item_hold'] = any(
+            binding.get('canonical_item', {}).get('key') in full_charge_items
+            for binding in claim.get('source_variant', {}).get('item_bindings', [])
+            if binding.get('canonical_item'))
+        key = claim['identity']['key']
+        if key in {
+                'oteryn:reward-claim.kv.madmageroom3',
+                'oteryn:reward-claim.kv.powerring2',
+                'oteryn:reward-claim.kv.timering3',
+                'oteryn:reward-claim.kv.trollcave1',
+                'oteryn:reward-claim.kv.weddingring1'}:
             # W15b lowers the already normalized full-charge amulet through the
             # live RewardClaim owner. Keep completion242's historical SOURCE
             # witness independent of that native admission, just as the variant
             # claims retain their SOURCE holds beside native_contents.
             if claim['readiness'] == 'ready':
                 claim['readiness'] = 'waiting_item_semantics'
+        if key in {'oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower'} and not claim['data_holds']:
+            # The new native bag projection does not rewrite the frozen SOURCE
+            # witness that its necklace originally lacked Item qualification.
+            item = 3084 if key.endswith('.desert2') else 3083
+            claim['data_holds'] = [{'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                'item': f'oteryn:item.tibia.i{item}', 'placement_index': 0, 'reason': 'waiting',
+                'reward_field': 'items', 'reward_index': 0}]
+        # completion242 records the historical SOURCE frame, independently of
+        # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
+        # contents intact; only the SOURCE compiler consumes this private view.
+        historical = {
+            # Shared encounter Item admissions do not erase Draconia's frozen SOURCE hold.
+            'oteryn:reward-claim.kv.draconia1': ['item'],
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            'oteryn:reward-claim.kv.triangletower': ['item'],
+        }.get(claim['identity']['key'])
+        if historical is not None:
+            claim['_source_hold_categories'] = historical
     return claims
 
 
@@ -112,7 +152,11 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
             if claim.get('definition_profile') == 'authored_variant_v1':
                 issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
-                for category in sorted({hold['category'] for hold in claim['data_holds']}):
+                categories = {hold['category'] for hold in claim['data_holds']}
+                categories.update(claim.get('_source_hold_categories', []))
+                if claim.get('_source_baseline_item_hold'):
+                    categories.add('item')
+                for category in sorted(categories):
                     code = {'source': 'claim_source_data_missing', 'item': 'claim_item_semantics_missing'}[category]
                     issues.append({'code': code, 'source_key': ref['key']})
             elif claim['readiness'] != 'ready':
@@ -154,7 +198,8 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
 
 def monk_native_lowering(root):
     callbacks = [c for c in read(root, 'content/quests/world-callbacks.json')['callbacks']
-                 if c['quest'] == 'oteryn:quest.the_way_of_the_monk_quest']
+                 if c['quest'] == 'oteryn:quest.the_way_of_the_monk_quest'
+                 and c['key'].startswith('oteryn:quest-callback/monk-')]
     names = ('guidance', 'tranquility', 'respect', 'legacy', 'empathy', 'harmony',
              'power', 'knowledge', 'serenity', 'eternity')
     if {c['key'] for c in callbacks} != {'oteryn:quest-callback/monk-' + n for n in names}:
@@ -223,7 +268,8 @@ def registered(project, manifest, lock, count, paths):
         project['migrated_families'].append('Quest')
     project['next_population_families'] = [f for f in project['next_population_families'] if f != 'Quest']
     manifest['families']['Quest'] = {'records': count, 'index': DIRECTORY + 'index.json'}
-    managed = {entry['path'] for entry in manifest['managed_files']}
+    managed = {entry['path'] for entry in manifest['managed_files']
+               if entry['path'] != 'content/quests/item-key-resolution.json'}
     managed = {path for path in managed if not path.startswith(DIRECTORY)} | set(paths)
     manifest['managed_files'] = [{'path': path} for path in sorted(managed)]
     lock['family_counts']['Quest'] = count
@@ -270,12 +316,16 @@ def tree_validator():
     here = Path(__file__).parent
     registry = Registry()
     from quest_donor_attachment import derived_completion_schema
+    from quest_item_keys import extend_completion_schema
     completion = json.loads((here / 'quest_completion.schema.json').read_text(encoding='utf-8'))
+    completion = extend_completion_schema(here, completion)
     for schema in (derived_completion_schema(completion),
                    json.loads((here / 'quest_donor_attachment.schema.json').read_text(encoding='utf-8'))):
         registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
     for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle', 'quest_authored', 'quest_completion'):
         schema = json.loads((here / (name + '.schema.json')).read_text(encoding='utf-8'))
+        if name == 'quest_completion':
+            schema = extend_completion_schema(here, schema)
         registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
     schema = json.loads((here / 'quest_tree.schema.json').read_text(encoding='utf-8'))
     return jsonschema.Draft202012Validator(schema, registry=registry)
@@ -321,7 +371,30 @@ def expected_files(root, include_registration=False):
     records = attach_donor_data(root, records)
     from quest_soul_war_followup import apply as apply_soul_war_followup
     records, _ = apply_soul_war_followup(root, records)
-    files, shards = {}, []
+    from quest_item_keys import catalogue, enrich, item_definitions, validate_references
+    items = item_definitions(root)
+    recipes = [row['definition'].get('recipe') or
+               row['definition'].get('oteryn_recipe', {}).get('payload', {}).get('recipe')
+               for row in records]
+    recipes = [recipe for recipe in recipes if recipe is not None]
+    index = catalogue(items)
+    enrich(recipes, index)
+    # Candidate-only terminal normalization turns some completion stages into
+    # item actions. Include those extra projections in the same diagnostic.
+    from quest_terminal_stage_refinements import load_packet, normalize_payload
+    normalized_keys = set(load_packet(root)['canonical_keys'])
+    extra_stages = []
+    for row in records:
+        payload = row['definition'].get('oteryn_recipe', {}).get('payload')
+        if payload and payload['identity']['key'] in normalized_keys:
+            normalized, _ = normalize_payload(root, payload)
+            original = {stage['key']: stage for stage in payload['recipe']['stages']}
+            extra_stages.extend(stage for stage in normalized['recipe']['stages']
+                                if 'target_items' in stage and
+                                'target_items' not in original.get(stage['key'], {}))
+    resolution = enrich([*recipes, {'stages': extra_stages}], index)
+    validate_references(records, items)
+    files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
         end = start + len(chunk) - 1
@@ -347,6 +420,8 @@ def expected_files(root, include_registration=False):
         'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, PROGRESS, INTERACTIONS, BUNDLE,
             'tools/content-schema/quest-authoring/ots_readiness.py',
             'tools/content-schema/quest-authoring/quest_tree_authoring.py',
+            'tools/content-schema/quest-authoring/quest_item_keys.py',
+            'tools/content-schema/quest-authoring/quest_item_keys.schema.json',
             'content/quests/world-callbacks.json',
             'tools/content-schema/quest-authoring/quest_donor_attachment.py',
             'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
@@ -421,7 +496,7 @@ def expected_files(root, include_registration=False):
         'contract': 'docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md',
     })
     if include_registration:
-        values = registered(read(root, 'content/project.json'), read(root, 'content/manifest.json'), read(root, 'content/content.lock.json'), len(records), list(files))
+        values = registered(read(root, 'content/project.json'), read(root, 'content/manifest.json'), read(root, 'content/content.lock.json'), len(records), [path for path in files if path.startswith(DIRECTORY)])
         for path, value in zip(('content/project.json', 'content/manifest.json', 'content/content.lock.json'), values):
             files[path] = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + '\n'
     validator = tree_validator()
@@ -525,7 +600,7 @@ def main():
         else:
             args.source_packet.parent.mkdir(parents=True, exist_ok=True)
             args.source_packet.write_bytes(packet.encode('utf-8'))
-    print(f'Quest tree: {len(files)-4} shards; check={args.check}; family registries regenerated')
+    print(f'Quest tree: {len(files)-5} shards; check={args.check}; family registries regenerated')
 
 
 if __name__ == '__main__':

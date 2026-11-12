@@ -1,0 +1,13 @@
+{
+  "id": 279,
+  "name": "SKILL_PROGRESS_V1",
+  "owner_decision": "GAP-SV7 C14",
+  "owner": "Game Character build",
+  "requires": [],
+  "command_types": [
+    495
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, filtered without the native training formula. Reads trained counters and skill percentages through the existing session-fenced Character build owner."
+}

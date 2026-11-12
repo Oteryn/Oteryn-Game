@@ -9,6 +9,7 @@ use crate::durability::item_craft::soulpit::burn_entry_core;
 use crate::durability::item_mint::uuid_text;
 
 pub(super) async fn write(
+    root: &DurabilityRoot,
     tx: &mut Type2Transaction<'_>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -38,7 +39,7 @@ pub(super) async fn write(
     if let Some(row) = previous {
         if row.try_get::<Vec<u8>, _>("intent")? != request.intent
             || row.try_get::<Vec<u8>, _>("character")? != fence.character_id.as_bytes()
-            || row.try_get::<Vec<u8>, _>("source")? != request.source
+            || row.try_get::<Vec<u8>, _>("source")? != match &request.funding {SoulpitFunding::Core {source,..}=>*source,_=>return Err(SoulpitWriteError::ConflictingOccurrence)}
             || row.try_get::<Option<Vec<u8>>, _>("handoff")?.as_deref()
                 != Some(request.handoff_id.as_slice())
         {
@@ -54,6 +55,7 @@ pub(super) async fn write(
             replayed: true,
         });
     }
+    if let Some(previous)=super::seal_entry::replay(tx,fence,request).await? {return Ok(previous);}
     match assert_current_equipment_in_transaction(
         tx,
         recovery,
@@ -101,8 +103,15 @@ pub(super) async fn write(
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
             y: u16::try_from(participant.try_get::<i32, _>("entry_y")?)
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
-            floor: i8::try_from(participant.try_get::<i16, _>("entry_floor")?)
-                .map_err(|_| SoulpitError::NotOnEntryTile)?,
+            // Runtime/LastPosition floors retain source z; map TilePos uses
+            // -source_z (ADR-0021), as bundle_map_position does at USE ingress.
+            floor: i8::try_from(
+                participant
+                    .try_get::<i16, _>("entry_floor")?
+                    .checked_neg()
+                    .ok_or(SoulpitError::NotOnEntryTile)?,
+            )
+            .map_err(|_| SoulpitError::NotOnEntryTile)?,
         };
         let slot = entry_slot(position).ok_or(SoulpitError::NotOnEntryTile)?;
         let level = u32::try_from(participant.try_get::<i64, _>("level")?)
@@ -110,7 +119,13 @@ pub(super) async fn write(
         entry_facts.push(EntryParticipant {
             slot,
             level,
-            game_master: facts[0].game_master,
+            // Crystal 201189f soulpit_fight.lua:54-61 exempts current GMs. Resolve
+            // the trusted projection in this transaction; a captured hint cannot
+            // grant an exemption or survive roster/activation revocation.
+            game_master: root
+                .staff_group_in_transaction(tx, facts[0].character)
+                .await?
+                >= 4,
         });
         if character == *fence.character_id.as_bytes() {
             if uuid_text(participant.try_get("source_game_session_id")?)?
@@ -134,11 +149,18 @@ pub(super) async fn write(
         request.started_at_micros,
         &entry_facts.iter().map(|fact| fact.slot).collect::<Vec<_>>(),
     )?;
-    let debit = burn_entry_core(tx, fence, request, native).await?;
-    sqlx::query("INSERT INTO game_soulpit_encounters(handoff_id,species_key,source_transaction_id,started_at_micros,revision,checkpoint,terminal) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4,0,$5,false)")
+    let seal_payment=matches!(&request.funding,SoulpitFunding::Soulseals {..});
+    let debit=match &request.funding {
+        SoulpitFunding::Core {..}=>burn_entry_core(tx,fence,request,native).await?,
+        SoulpitFunding::Soulseals {species}=>{
+            if request.participants.len()!=1 || actor_slot!=Some(0) {return Err(SoulpitWriteError::AuthorityRejected);}
+            super::seal_entry::debit(tx,fence,request,native,species).await?
+        }
+    };
+    sqlx::query("INSERT INTO game_soulpit_encounters(handoff_id,species_key,source_transaction_id,seal_transaction_id,started_at_micros,revision,checkpoint,terminal) VALUES(encode($1,'hex')::uuid,$2,CASE WHEN $6 THEN NULL ELSE encode($3,'hex')::uuid END,CASE WHEN $6 THEN encode($3,'hex')::uuid ELSE NULL END,$4,0,$5,false)")
         .bind(request.handoff_id.as_slice()).bind(&debit.species).bind(debit.transaction_id.as_slice())
         .bind(i64::try_from(request.started_at_micros).map_err(|_| SoulpitError::InvalidClock)?)
-        .bind(checkpoint(&encounter)?).execute(&mut ***tx).await?;
+        .bind(checkpoint(&encounter)?).bind(seal_payment).execute(&mut ***tx).await?;
     for (character, slot) in members {
         sqlx::query("INSERT INTO game_soulpit_participants(handoff_id,character_id,staging_slot) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3)")
             .bind(request.handoff_id.as_slice()).bind(character.as_slice()).bind(i16::from(slot)).execute(&mut ***tx).await?;

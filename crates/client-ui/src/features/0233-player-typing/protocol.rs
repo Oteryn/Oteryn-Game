@@ -3,16 +3,19 @@ use oteryn_client_runtime::{CommandStatus, TypingUpdate, WorldSpatialEntity};
 
 pub fn request(panel: &mut PlayerTypingPanel, typing: bool) -> Option<PlayerTypingCommand> {
     if !panel.selected {
-        panel.feedback = Some("Player typing is unavailable in this session");
+        panel.feedback = Some(tr!("Player typing is unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     panel.pending = true;
     panel.feedback = None;
-    Some(PlayerTypingCommand { typing })
+    Some(PlayerTypingCommand {
+        typing,
+        origin: PlayerTypingOrigin::Manual,
+    })
 }
 
 pub fn apply_result(
@@ -20,15 +23,25 @@ pub fn apply_result(
     command: PlayerTypingCommand,
     response: PlayerTypingResponse,
 ) {
-    panel.pending = false;
-    if matches!(
+    let accepted = matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
-        panel.own_typing = command.typing;
-        panel.feedback = None;
-    } else {
-        panel.feedback = Some("The server refused the typing state");
+    );
+    match command.origin {
+        PlayerTypingOrigin::Composer => {
+            if accepted {
+                panel.own_typing = command.typing;
+            }
+        }
+        PlayerTypingOrigin::Manual => {
+            panel.pending = false;
+            if accepted {
+                panel.own_typing = command.typing;
+                panel.feedback = None;
+            } else {
+                panel.feedback = Some(tr!("The server refused the typing state"));
+            }
+        }
     }
 }
 

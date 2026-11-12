@@ -11,6 +11,16 @@ use sha2::{Digest, Sha256};
 pub(super) const POPULATION_TICK_MICROS: u64 = 10_000_000;
 
 impl ChannelRuntimeV1 {
+    /// Echo's influenced family uses the existing Forge stack draw and modifier owner.
+    pub(super) fn apply_echo_influenced(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        let stacks = 1 + (self.forge_roll(actor) % 5) as u8;
+        let kind = ForgeCreature::new_influenced(stacks).ok_or(CarrierError::InvalidDamage)?;
+        self.apply_forge_classification(actor, kind)
+    }
+
     fn forge_roll(&self, actor: ExactActorRef) -> u64 {
         let mut hash = Sha256::new();
         hash.update(b"FORGECREATURE/spawn/v1");

@@ -13,7 +13,9 @@ permissions: {}
 # candidate job widens the qualified range back to the last main SHA whose gate succeeded.
 concurrency:
   group: game-merge-group-${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.event.merge_group.head_sha }}
-  cancel-in-progress: true
+  # A post-merge push run is never cancelled by the next merge: it finishes and
+  # qualifies its commit, while only the newest later push waits in the queue.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   candidate:
@@ -360,12 +362,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: ${{ matrix.language }}
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: /language:${{ matrix.language }}-merge-queue
 
@@ -575,11 +577,19 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
-            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/nextest-bin"
-          tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
+            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          else
+            # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
+            # same pinned version from crates.io with its locked dependency set instead.
+            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
+            rustup toolchain install 1.99.1 --profile minimal --no-self-update
+            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
+          fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
       # The two library legs split every library test by name: `test(content::)` runs the tests
@@ -682,11 +692,19 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
-            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/nextest-bin"
-          tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
+            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          else
+            # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
+            # same pinned version from crates.io with its locked dependency set instead.
+            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
+            rustup toolchain install 1.99.1 --profile minimal --no-self-update
+            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
+          fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
       # Every registered target present at the candidate is archived exactly once; any target removed
@@ -834,12 +852,12 @@ jobs:
     permissions:
       contents: read
     # Each partition runs a disjoint planned share of both archives built once by durability_postgres_build;
-    # together the twelve run every registered E2E target and PostgreSQL-backed library test exactly once.
+    # together the twenty-four run every registered E2E target and PostgreSQL-backed library test exactly once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: true
       matrix:
-        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
     services:
       postgres:
         image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
@@ -877,7 +895,7 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
             "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
           echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/nextest-bin"
@@ -1070,7 +1088,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $download = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
           $directory = Join-Path $env:RUNNER_TEMP 'innosetup'
-          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download
+          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download -MaximumRetryCount 40 -RetryIntervalSec 15
           $actual = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $env:INNO_SETUP_SHA256) {
             throw "Inno Setup download SHA-256 mismatch: $actual"
@@ -1131,11 +1149,22 @@ jobs:
           persist-credentials: false
 
       - name: Check advisories licenses bans and sources
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
-        with:
-          rust-version: '1.99.1'
-          command: check
-          arguments: --all-features
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.99.1 --profile minimal --no-self-update
+          archive="$RUNNER_TEMP/cargo-deny.tar.gz"
+          deny_root="$RUNNER_TEMP/deny-root"
+          mkdir -p "$deny_root/bin"
+          if curl --fail --location --retry 5 --retry-all-errors \
+              https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz \
+              --output "$archive" && \
+              echo "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f  $archive" | sha256sum --check; then
+            tar -xzf "$archive" --strip-components=1 -C "$deny_root/bin" \
+              cargo-deny-0.20.2-x86_64-unknown-linux-musl/cargo-deny
+          else
+            cargo +1.99.1 install --locked --quiet cargo-deny --version "=0.20.2" --root "$deny_root"
+          fi
+          "$deny_root/bin/cargo-deny" --all-features check
 
   node_boot:
     name: Merge Queue / Node boot against the real Platform
@@ -1143,7 +1172,9 @@ jobs:
     # Fails closed: only an explicit protected-base `false` skips the physical qualification.
     if: needs.candidate.outputs.server_qualification != 'false'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # W20a's natural day and W20b's light decay run serially for almost two hours.
+    # Include build, the basic seam, World setup and the remaining journeys.
+    timeout-minutes: 240
     permissions:
       contents: read
     steps:
@@ -1195,9 +1226,35 @@ jobs:
         run: |
           set -euo pipefail
           bash -n tools/qualification/node_boot/run.sh
-          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
-          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          python3 tools/qualification/node_boot/test_diagnostics.py
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs"
+          evidence="$logs/qualification-client.log"
+          NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
           grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+
+      - name: Redact failed node boot logs
+        if: failure()
+        run: |
+          set -euo pipefail
+          source="$RUNNER_TEMP/node-boot-failure-logs"
+          artifact="$RUNNER_TEMP/node-boot-failure-artifact"
+          mkdir -p "$source" "$artifact"
+          for log in node.log qualification-client.log; do
+            if [[ ! -f "$source/$log" ]]; then
+              printf 'Log unavailable; failure occurred before %s was created.\n' "$log" > "$source/$log"
+            fi
+            python3 tools/redact_ci_log.py "$source/$log" "$artifact/$log"
+          done
+
+      - name: Upload failed node boot logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: node-boot-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/node-boot-failure-artifact
+          if-no-files-found: error
+          retention-days: 7
 
   server_seam:
     name: Merge Queue / Server Seam over TCP+TLS

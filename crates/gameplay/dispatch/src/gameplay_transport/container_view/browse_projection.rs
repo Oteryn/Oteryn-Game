@@ -54,6 +54,8 @@ pub(in crate::gameplay_transport) fn project(
             }
             EntrySource::Added(id) => (false, ItemKey::MapAdded(id.get())),
             EntrySource::Ground(id) => (false, ItemKey::Instance(id)),
+            // Named-House custody is projected by its own current owner, never a Channel browse.
+            EntrySource::House(_) => return None,
         };
         if unique {
             continue;

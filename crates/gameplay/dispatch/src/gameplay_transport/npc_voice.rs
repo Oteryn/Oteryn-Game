@@ -1,32 +1,224 @@
 //! NPC-BEHAVIOUR0 §6: source-bound voice preparation in the current Channel owner.
 //!
-//! This consumes the existing typed catalogue; it does not admit new content or publish chat.
-//! NPC-CONTENT-2 supplies the exact typed presence fields on NPC definitions. The CP integration
-//! must run this only on the budgeted NPC think, select CHAT_V1 listeners in the same Channel and enqueue
-//! through the chat owner. The native chat value carries the NPC's original text for both
+//! NPC-CONTENT-2 supplies the exact typed presence fields on NPC definitions. The listener's
+//! Channel cadence consumes the catalogue/bundle-bound talk book, selects current CHAT_V1
+//! listeners and enqueues through the chat owner. The native chat value carries original text for both
 //! say and yell, exempt from the player's yell transformation and ingress spam control.
-//! There is no native source-catalogue-to-active-runtime-pin binding port here: matching the
-//! catalogue and model does not establish that their voices belong to the running bundle.
+//! The cycle retains the boot runtime's exact movement context; a replacement pin or owner
+//! cannot reuse it. Late timer ticks coalesce rather than accumulating missed speeches.
 
-#![allow(
-    dead_code,
-    reason = "NPC voice consumer awaits content admission and CP owner wiring"
-)]
-
+use super::npc_actor::{NpcWalkBook, NpcWalkState, WalkThink};
 use crate::ai_think::profile_schedule::decision_occurrence;
 use crate::ai_think::targeting::sees;
 use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, ThinkOccurrence};
+#[cfg(test)]
 use crate::chat::ChatText;
+#[cfg(test)]
 use crate::content::{NpcDataCatalogue, NpcServiceModel};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementPositionContext};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 use std::collections::BTreeMap;
+
+/// One cycle belongs to one listener's Channel, independently of its connection count.
+pub(super) struct NpcVoiceCycle {
+    book: NpcVoiceBook,
+    walks: Option<NpcWalkBook>,
+    context: MovementPositionContext,
+    states: BTreeMap<[u8; 16], ScheduledVoice>,
+    window: Option<u64>,
+    started: usize,
+}
+
+struct ScheduledVoice {
+    state: Option<NpcVoiceState>,
+    walk: Option<NpcWalkState>,
+    actor: ExactActorRef,
+    sequence: u64,
+    move_due_us: u64,
+    due_us: Option<u64>,
+}
+
+impl NpcVoiceCycle {
+    pub(super) fn new(runtime: &ChannelRuntimeV1, talk: &super::npc_talk::NpcTalkBook) -> Self {
+        Self {
+            book: NpcVoiceBook {
+                profiles: talk.source_voices().clone(),
+            },
+            walks: talk.source_walks().cloned(),
+            context: runtime.pinned_movement_context(),
+            states: BTreeMap::new(),
+            window: None,
+            started: 0,
+        }
+    }
+
+    pub(super) fn next_due_us(&self) -> Option<u64> {
+        self.states.values().filter_map(|state| state.due_us).min()
+    }
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn emit_npc_voices(&self, cycle: &mut NpcVoiceCycle, now_us: u64) {
+        {
+            let mut runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_err() || runtime.pinned_movement_context() != cycle.context
+            {
+                return;
+            }
+            // Source schedule ownership belongs to this Channel cadence, including quiet NPCs.
+            // An occupied arrival cell retries on the next pass without moving any occupant.
+            let rotated =
+                runtime.rotate_rashid_at(super::npc_trade_command::unix_ms_now()) == Ok(true);
+            let visible = runtime.visible_entities();
+            if rotated
+                && let Some(npc) = visible.npcs.iter().find(|npc| {
+                    runtime.npc_key(npc.actor)
+                        == Some(oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY)
+                })
+            {
+                self.states.chat.close_relocated_npc(&runtime, npc.actor);
+            }
+            let live = visible
+                .npcs
+                .iter()
+                .map(|npc| npc.actor.placement_identity())
+                .collect::<std::collections::BTreeSet<_>>();
+            cycle.states.retain(|identity, _| live.contains(identity));
+            for npc in &visible.npcs {
+                let identity = npc.actor.placement_identity();
+                if rotated
+                    && runtime.npc_key(npc.actor)
+                        == Some(oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY)
+                    && let Some(state) = cycle.states.get_mut(&identity)
+                {
+                    state.walk = cycle.walks.as_ref().and_then(|book| {
+                        NpcWalkState::after_schedule(&mut runtime, npc.actor, book)
+                            .ok()
+                            .flatten()
+                    });
+                }
+                if let std::collections::btree_map::Entry::Vacant(entry) =
+                    cycle.states.entry(identity)
+                {
+                    let voice = NpcVoiceState::new(&runtime, npc.actor, &cycle.book)
+                        .ok()
+                        .flatten();
+                    let walk = cycle.walks.as_ref().and_then(|book| {
+                        NpcWalkState::new(&mut runtime, npc.actor, book)
+                            .or_else(|_| {
+                                NpcWalkState::after_schedule(&mut runtime, npc.actor, book)
+                            })
+                            .ok()
+                            .flatten()
+                    });
+                    if voice.is_some() || walk.is_some() {
+                        entry.insert(ScheduledVoice {
+                            state: voice,
+                            walk,
+                            actor: npc.actor,
+                            sequence: 0,
+                            move_due_us: 0,
+                            due_us: None,
+                        });
+                    }
+                }
+                if let Some(state) = cycle.states.get_mut(&npc.actor.placement_identity()) {
+                    if visible
+                        .players
+                        .iter()
+                        .any(|player| sees(player.position, npc.position))
+                    {
+                        state.due_us.get_or_insert(now_us);
+                    } else {
+                        state.due_us = None;
+                    }
+                }
+            }
+        }
+        let window = now_us / crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+        if cycle.window != Some(window) {
+            cycle.window = Some(window);
+            cycle.started = 0;
+        }
+        // NPCBEH0-RL-02: 256 NPC thinks per creature-think window, oldest deadline first.
+        // Actors share one scope/context; its local id and generation define ExactActorRef order.
+        let mut due = cycle
+            .states
+            .iter()
+            .filter_map(|(identity, state)| {
+                let due = state.due_us?;
+                (due <= now_us).then_some((
+                    due,
+                    state.actor.actor_local_id(),
+                    state.actor.actor_local_generation(),
+                    *identity,
+                ))
+            })
+            .collect::<Vec<_>>();
+        due.sort_unstable();
+        due.truncate(256_usize.saturating_sub(cycle.started));
+        cycle.started += due.len();
+        // Bound each owner critical section; movement may run between chunks.
+        for chunk in due.chunks(64) {
+            let mut proposals = Vec::new();
+            {
+                let mut runtime = self.runtime.lock().await;
+                if runtime.owner_fence().is_err()
+                    || runtime.pinned_movement_context() != cycle.context
+                {
+                    return;
+                }
+                let root = GameplayDecisionRoot::from_bytes(
+                    runtime.content_pin().server_artifact_digest(),
+                );
+                for &(_, _, _, identity) in chunk {
+                    if let Some(state) = cycle.states.get_mut(&identity) {
+                        let occurrence = ThinkOccurrence {
+                            actor: state.actor,
+                            sequence: state.sequence,
+                        };
+                        let Some(next_sequence) = state.sequence.checked_add(1) else {
+                            state.due_us = None;
+                            continue;
+                        };
+                        state.sequence = next_sequence;
+                        if let Some(voice) = state.state.as_mut()
+                            && let Ok(VoiceThink::Speak(proposal)) =
+                                voice.think(&runtime, occurrence, &root)
+                        {
+                            self.states.chat.publish_npc_voice(&runtime, &proposal);
+                        }
+                        if let Some(walk) = state.walk.as_mut()
+                            && let Ok(WalkThink::Propose(proposal)) =
+                                walk.prepare(&mut runtime, &self.states.chat, occurrence, &root)
+                            && now_us >= state.move_due_us
+                        {
+                            proposals.push((identity, *proposal));
+                        }
+                        state.due_us = now_us.checked_add(CREATURE_THINK_INTERVAL_MILLIS * 1_000);
+                    }
+                }
+            }
+            if let Some(book) = cycle.walks.as_ref() {
+                for (identity, proposal) in proposals {
+                    if let Some(duration) = self.commit_npc_walk(proposal, book).await
+                        && let Some(state) = cycle.states.get_mut(&identity)
+                    {
+                        state.move_due_us = now_us.saturating_add(duration);
+                    }
+                }
+            }
+            tokio::task::yield_now().await;
+        }
+    }
+}
 
 #[allow(unused_imports, reason = "preserve the former NPC module path")]
 pub use oteryn_gameplay_npc::npc_voice::{
     NpcVoiceProposal, VoiceError, VoiceLine, VoiceProfile, VoiceThink,
 };
 
+#[cfg(test)]
 fn qualify_text(text: &str) -> Option<String> {
     ChatText::parse(text)
         .ok()
@@ -40,6 +232,7 @@ pub struct NpcVoiceBook {
 }
 
 impl NpcVoiceBook {
+    #[cfg(test)]
     pub fn from_catalogue(
         catalogue: &NpcDataCatalogue,
         model: &NpcServiceModel,
@@ -287,6 +480,7 @@ mod tests {
             state: ProjectV2State {
                 declarations: vec![
                     ProjectV2Declaration::Npc {
+                        visibility: Default::default(),
                         identity: identity("oteryn:npc.alice"),
                         presentation: None,
                         behavior: None,
@@ -307,6 +501,7 @@ mod tests {
                         },
                     },
                     ProjectV2Declaration::Npc {
+                        visibility: Default::default(),
                         identity: identity("oteryn:npc.mute"),
                         presentation: None,
                         behavior: None,

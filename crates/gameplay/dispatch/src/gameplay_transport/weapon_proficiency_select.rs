@@ -36,6 +36,14 @@ use oteryn_protocol_oteryn::weapon_proficiency::{
 
 macro_rules! authority_methods {
     () => {
+        fn weapon_proficiency_catalogue(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _offset: u32,
+        ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage>> {
+            async { None }
+        }
         fn weapon_proficiency_select(
             &self,
             _actor: $crate::foundation::ExactActorRef,
@@ -87,6 +95,49 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn weapon_proficiency_catalogue(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            offset: u32,
+        ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage> {
+            let fence = command.item_fence?;
+            if fence.game_session_id != command.game_session_id
+                || self
+                    .current_quest_fence(command.game_session_id)
+                    .await
+                    .ok()??
+                    .item_fence()
+                    != fence
+            {
+                return None;
+            }
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().ok()?;
+            let binding = runtime.binding();
+            let lease = runtime
+                .bound_attacker_lease(actor, command.game_session_id)
+                .ok()?;
+            if fence.runtime_scope != binding.runtime_scope()
+                || fence.scope_ownership_generation != binding.scope_generation()
+                || fence.character_id.as_bytes() != lease.character_id().as_bytes()
+                || fence.character_lease_generation != lease.generation()
+                || runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .ok()?
+                    .control_loss
+                    .is_some()
+            {
+                return None;
+            }
+            let index = $crate::gameplay_transport::item_ref_admission::pinned_index(
+                &runtime,
+                self.active_generation,
+            )?;
+            let catalogue = self.proficiency_catalogue.as_ref()?;
+            let tracks = self.states.proficiencies.lock().ok()?;
+            catalogue.catalogue_page(index, tracks.get(&command.game_session_id), offset)
+        }
         async fn weapon_proficiency_select(
             &self,
             actor: $crate::foundation::ExactActorRef,
@@ -263,7 +314,7 @@ pub(super) async fn execute(
         {
             return None;
         }
-        super::actor_spell::qualified_protection_zone(&mut runtime, owner.movement_cells, actor)
+        super::actor_spell::qualified_protection_zone(&mut runtime, owner.movement_cells(), actor)
             == Some(true)
     };
     let plan = plan_proficiency_selection(

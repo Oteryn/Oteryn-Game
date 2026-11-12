@@ -209,7 +209,10 @@ impl CreatureAiState {
         }
         // §2.1 item 6: flee while hurt and no override holds; the strategy draw picks whom
         // to flee from when the target cannot be attacked from here.
-        let fleeing = !self.is_summon && !override_holds && facts.health <= flee_health;
+        let fleeing = !self.is_summon
+            && !override_holds
+            && facts.now_us >= self.fatal_hold_until
+            && facts.health <= flee_health;
         if fleeing
             && target.is_none_or(|actor| !in_range(actor))
             && let Some(found) = strategy_search(4)?
@@ -452,11 +455,15 @@ impl CreatureAiTable {
                 );
             }
             let route = self.retained_summon_route(runtime, actor);
-            let Some(players) =
+            let Some(mut players) =
                 targeting::with_current_damage(runtime, actor, position.position(), &players)
             else {
                 continue;
             };
+            for player in &mut players {
+                player.eligible &=
+                    runtime.is_tibiadrome(actor) == runtime.is_tibiadrome(player.actor);
+            }
             let Some(entry) = self.entry_mut(actor) else {
                 continue;
             };
@@ -482,6 +489,7 @@ impl CreatureAiTable {
                     .then_some(now_us.saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1000));
                 self.record_native_attack_positions(actor, runtime);
                 consume(runtime, self, actor, &report, reader);
+                self.run_think_hook(actor, position.position(), now_us, &report);
                 reports.push((actor, report));
             }
         }

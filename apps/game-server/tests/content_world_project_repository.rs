@@ -17,28 +17,28 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        427,
-        "3873d0698b98aa2280046cf75d4900863124cf1d6aae6f7c100b1be195260531",
+        418,
+        "a3d2c2a737c27f30442913b8e9b0333120b920ad57b15a5447d2070d807ab723",
     ),
     (
         "definitions/declarations.json",
-        27_600_259,
-        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
+        27_791_527,
+        "a5c68fbe5da865be4c6c4468fc40358e299c351a68c7de5c27da060d8145182e",
     ),
     (
         "definitions/reference.json",
-        27_389_422,
-        "accdef2f0cb626996f77b69f6209d3bb7f1c290ed19672959eec4f4c4fc99571",
+        27_393_337,
+        "1d1b38e4222dfeb2ed7d96693826163259563c1b3b73d34765f56195b994699a",
     ),
     (
         "editor/author.json",
-        120557,
+        120_557,
         "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
-        1960,
-        "13f7bb45ba2dd0f08c4903f1a6b3d50e5d94cc85b9ac206b57e80aed92fad1d4",
+        1957,
+        "a42131006a41a930dbb6b0058a17183103e9092435c31f6ecc922198ccecc949",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        411,
-        "bbedaf68b426c503359199872eaa7cba22bde95b4a5391096567f1ccca05b6c1",
+        408,
+        "ff82b8725a910d8c9971360ad933b03a46934e2fbec9bf8f306ac30573b353ea",
     ),
     (
         "provenance/imports.json",
-        6_773_322,
-        "ba6e6ac791b4799e695d7eaab9a54c974c56b798d1d43bd40809af5ed75eba8d",
+        6_774_564,
+        "7508a9a8e95446cdd6681f8f1163e18c15c6118ff95347e16013e0b8f84c4583",
     ),
     (
         "provenance/sources.json",
-        1666853,
-        "6414fc9da96985e0529bf986fd2e021a75a145ba6cb899af5ad992e4699147c6",
+        1_668_021,
+        "58d8ce37b1c537184c990fd091c16908bd7c69dd5435ef3da0c553466019feab",
     ),
     (
         "worlds/world.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ce41135b19867a03e20d3ecf98e2e88d076db66101949876fd6e130cd9fbba20";
+const TREE_SHA256: &str = "74ff1708c9f85dbe20997265430fff5e5b157fa7c47dbfc4e28cff209bfe8b13";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -150,14 +150,15 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_863;
-const CREATURE_RECORDS: usize = 26_194;
-const CREATURE_PROFILES: usize = 25_052;
+const CREATURES: usize = 1_865;
+const CREATURE_RECORDS: usize = 26_211;
+const CREATURE_PROFILES: usize = 25_068;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
-const NPC_RECORDS: usize = 2564;
+const NPC_RECORDS: usize = 2_564;
 // Includes BANK-3's Henricus blessing Service.
-const NPC_DECLARATIONS: usize = 2507;
+// S10 adds one bank, three promotion and six blessing Service declarations.
+const NPC_DECLARATIONS: usize = 2517;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -184,7 +185,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 29,
+        max_import_records: 31,
         max_reimport_states: 404,
     }
 }
@@ -393,10 +394,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "e06-market-crystal-parity-20261031-r1"
+        "seasonal-cake-creature-20261107-r1"
     );
-    // E06 adds the client market mint batch ahead of the Crystal parity batch.
-    assert_eq!(project.imports().len(), 35);
+    // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
+    assert_eq!(project.imports().len(), 37);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -408,6 +409,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-drown-protection-5460-13995"
                 && b.batch_id != "item-market-crystal-parity-201189f"
                 && b.batch_id != "item-client-market-mint-2dfa943b"
+                && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
+                && b.batch_id != "questpc7-thaian-wiki-chosen-r1"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -438,6 +441,37 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .find(|i| i.batch_id == batch)
             .expect("exact import batch")
     };
+    let thaian = import_for("questpc7-thaian-wiki-chosen-r1");
+    assert_eq!(thaian.source_repository, "tibiawiki.com.br");
+    assert_eq!(
+        thaian.source_revision,
+        "questpc7-thaian-wiki-445240-chosen-r1"
+    );
+    assert_eq!(thaian.importer, "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1");
+    assert_eq!(thaian.mapper, "OTERYN_CREATURE_ADMISSION_STAGE/v1");
+    assert_eq!(thaian.mapper_revision, "creature-admission-r1");
+    for (actual, source) in [
+        (
+            &thaian.source_artifact_sha256,
+            include_bytes!(
+                "../../../tools/content-schema/quest-authoring/questpc7-thaian-authoring.json"
+            )
+            .as_slice(),
+        ),
+        (
+            &thaian.mapper_sha256,
+            include_bytes!("../../../tools/content-migration/creature_admission_stage.py")
+                .as_slice(),
+        ),
+    ] {
+        let expected = Sha256::digest(source)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(actual, &expected);
+    }
+    assert!(thaian.candidates.is_empty());
+    assert!(thaian.reimport_states.is_empty());
     let provenance = import_for("cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -717,8 +751,58 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ProjectV2Declaration::Service { bank: true, .. }
             ))
             .count(),
-        1
+        2
     );
+
+    let standard_bank = ProjectV2Declaration::Service {
+        identity: ProjectV2Identity {
+            key: "oteryn:service.bank.standard".into(),
+            revision: "definition-r1".into(),
+        },
+        bank: true,
+        fields: vec![],
+        offers: vec![],
+        recipes: vec![],
+        routes: vec![],
+    };
+    let standard_reference = ProjectV2DefinitionRef {
+        family: ProjectV2Family::Service,
+        key: "oteryn:service.bank.standard".into(),
+        revision: "definition-r1".into(),
+    };
+    let s10: serde_json::Value =
+        serde_json::from_slice(include_bytes!("../../../content/npcs/s10-nonquest.json"))
+            .expect("pinned S10 source bindings");
+    let expected_bankers = s10["bankers"]
+        .as_array()
+        .expect("source bankers")
+        .iter()
+        .map(|row| row["key"].as_str().expect("source NPC key"))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(expected_bankers.len(), 25);
+    assert!(!expected_bankers.contains("oteryn:npc.plunderpurse"));
+    let actual_bankers = v2
+        .declarations
+        .iter()
+        .filter_map(|declaration| {
+            let ProjectV2Declaration::Npc {
+                identity, services, ..
+            } = declaration
+            else {
+                return None;
+            };
+            let count = services
+                .iter()
+                .filter(|reference| *reference == &standard_reference)
+                .count();
+            if count == 0 {
+                return None;
+            }
+            assert_eq!(count, 1, "duplicate standard Bank reference");
+            Some(identity.key.as_str())
+        })
+        .collect::<BTreeSet<_>>();
+    assert_eq!(actual_bankers, expected_bankers);
 
     assert!(v2.declarations.iter().all(|declaration| {
         match declaration {
@@ -771,8 +855,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ..
             } => {
                 if *bank {
-                    // This one authored Bank row pins its exact callback provenance and fields.
-                    serde_json::to_value(declaration).ok().as_ref() == bank_packet.get("service")
+                    // Preserve Paulie's exact closed packet; the new standard row is also exact.
+                    declaration == &standard_bank
+                        || serde_json::to_value(declaration).ok().as_ref()
+                            == bank_packet.get("service")
                 } else {
                     recipes.is_empty()
                         && fields
@@ -1121,7 +1207,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 29);
+    assert_eq!(v2.sources.len(), 31);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -1389,6 +1475,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         wiki_creature_source.evidence,
         ProjectV2EvidenceClass::Derived
     );
+    let thaian_source = source_for(&thaian.batch_id);
+    assert_eq!(thaian_source.key, "oteryn:source.tibiawiki");
+    assert_eq!(thaian_source.import_batch_id, thaian.batch_id);
+    assert_eq!(thaian_source.revision, thaian.source_revision);
+    assert_eq!(thaian_source.sha256, thaian.source_artifact_sha256);
+    assert_eq!(thaian_source.evidence, ProjectV2EvidenceClass::Derived);
     let summer_import = import_for("g4-npc-summer-definition-overlay-fandom-r13");
     assert_eq!(
         summer_import.batch_id,
@@ -1478,7 +1570,41 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let mut outfit_ids = BTreeSet::new();
     let mut mount_ids = BTreeSet::new();
     let mut item_ids = BTreeSet::new();
+    // Crystal201189f cake_golem.lua:1-108 closure is a separate, source-qualified
+    // successor. Historical Crystal1530 bindings retain their original revision.
+    let cake_bytes = include_bytes!(
+        "../../../tools/content-schema/native-gameplay/cake-creature-admission.json"
+    );
+    let cake_packet: serde_json::Value =
+        serde_json::from_slice(cake_bytes).expect("Cake source capture");
+    let cake_bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(cake_packet["staged"]["source_identity_bindings"].clone())
+            .expect("Cake typed binding");
+    assert_eq!(cake_bindings.len(), 1);
+    assert_eq!(
+        cake_packet["staged"]["records"]
+            .as_array()
+            .expect("Cake records")
+            .len(),
+        14
+    );
+    assert_eq!(
+        cake_packet["staged"]["authoring_profiles"]
+            .as_array()
+            .expect("Cake profiles")
+            .len(),
+        13
+    );
+    let cake_source = source_for("seasonal-cake-creature-crystal-201189f-r1");
+    assert_eq!(cake_source.key, "oteryn:source.crystalserver");
+    assert_eq!(
+        cake_source.revision,
+        "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
+    );
+    assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
     let mut creature_files = BTreeSet::new();
+    let mut d44_wiki_bindings = 0;
+    let mut thaian_wiki_bindings = 0;
     let mut npc_bindings = 0;
     let mut crystal_creatures = 0;
     let mut encounter_bindings = 0;
@@ -1512,11 +1638,35 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             binding.disposition,
             ProjectV2SourceIdentityDisposition::Exact
         );
+        if binding.source_key == thaian_source.key
+            && binding.source_revision == thaian_source.revision
+        {
+            assert_eq!(binding.source_key, "oteryn:source.tibiawiki");
+            assert_eq!(binding.source_revision, thaian.source_revision);
+            assert_eq!(binding.identity_namespace, "mediawiki/page_id");
+            assert_eq!(binding.external_id, "48123");
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.key, "oteryn:creature.thaian");
+            assert_eq!(binding.target.revision, "definition-r1");
+            assert_eq!(
+                binding.disposition,
+                ProjectV2SourceIdentityDisposition::Exact
+            );
+            thaian_wiki_bindings += 1;
+            continue;
+        }
+        if cake_bindings.contains(binding) {
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
+            assert!(creature_files.insert(&binding.external_id));
+            continue;
+        }
         if binding.target.family == ProjectV2Family::Creature {
             if binding.source_key == "oteryn:source.tibiawiki" {
                 // D44 wiki-authored creature, checked above.
                 assert_eq!(binding.source_revision, wiki_creature_source.revision);
                 assert!(binding.target.key.starts_with("oteryn:creature."));
+                d44_wiki_bindings += 1;
                 continue;
             }
             if binding.source_key == "oteryn:source.crystalserver" {
@@ -1651,7 +1801,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             _ => panic!("only Item, Outfit, Mount and Creature source bindings are populated"),
         }
     }
-    assert_eq!(creature_files.len(), CREATURES - 1);
+    assert_eq!(d44_wiki_bindings, 1);
+    assert_eq!(thaian_wiki_bindings, 1);
+    assert_eq!(
+        creature_files.len(),
+        CREATURES - d44_wiki_bindings - thaian_wiki_bindings
+    );
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
     assert_eq!(crystal_encounter_count, 4);

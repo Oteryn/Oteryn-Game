@@ -20,7 +20,7 @@ class HeavyGateTests(unittest.TestCase):
         self.text = WORKFLOW.read_text()
         self.job = indented_yaml_mapping_block(self.text, "heavy_gate", 2)
 
-    def run_gate(self, *, heavy="true", real="true", build="success", pg="success", pages=None, api_exit=0,
+    def run_gate(self, *, heavy="true", real="true", build="success", pg="success", node_boot="success", pages=None, api_exit=0,
                  eligible="true", labels=(), labels_exit=0, forbid_api=False):
         self.assertIsNotNone(self.job)
         script = textwrap.dedent(self.job.split("        run: |\n", 1)[1])
@@ -42,7 +42,7 @@ class HeavyGateTests(unittest.TestCase):
             result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env={
                 **os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
                 "IS_ELIGIBLE": eligible, "IS_HEAVY": heavy, "IS_REAL_RUN": real,
-                "BUILD_RESULT": build, "POSTGRES_RESULT": pg,
+                "BUILD_RESULT": build, "POSTGRES_RESULT": pg, "NODE_BOOT_RESULT": node_boot,
                 "REPOSITORY": "Oteryn/Oteryn-Game", "HEAD_SHA": "head",
                 "CHECK_PAGES": json.dumps(pages or [{"check_runs": []}]),
                 "API_EXIT": str(api_exit), "PR_NUMBER": "123",
@@ -53,15 +53,17 @@ class HeavyGateTests(unittest.TestCase):
                 self.assertFalse(api_calls.exists(), "Non-eligible PR called the API")
             return result
 
-    def test_real_run_requires_both_jobs_successful(self):
+    def test_real_run_requires_build_and_postgres_node_boot_is_informational(self):
         for build in ("success", "failure", "cancelled", "skipped"):
             for pg in ("success", "failure", "cancelled", "skipped"):
-                with self.subTest(build=build, pg=pg):
-                    result = self.run_gate(build=build, pg=pg)
-                    self.assertEqual(result.returncode == 0, build == pg == "success", result.stderr)
-                    if result.returncode:
-                        self.assertIn(build, result.stdout)
-                        self.assertIn(pg, result.stdout)
+                for node_boot in ("success", "failure", "cancelled", "skipped"):
+                    with self.subTest(build=build, pg=pg, node_boot=node_boot):
+                        result = self.run_gate(build=build, pg=pg, node_boot=node_boot)
+                        self.assertEqual(result.returncode == 0, build == pg == "success", result.stderr)
+                        if result.returncode:
+                            self.assertIn(build, result.stdout)
+                            self.assertIn(pg, result.stdout)
+                            self.assertIn(node_boot, result.stdout)
 
     def test_non_eligible_succeeds_without_api_or_harness(self):
         for reason in ("draft", "dependabot"):
@@ -110,7 +112,7 @@ class HeavyGateTests(unittest.TestCase):
 
     def test_job_contract_and_event_classification(self):
         self.assertIsNotNone(self.job)
-        for fragment in ("    name: heavy-gate\n", "    needs: [build, durability_postgres]\n",
+        for fragment in ("    name: heavy-gate\n", "    needs: [build, durability_postgres, node_boot]\n",
                          "    if: always()\n", "    runs-on: ubuntu-24.04\n", "    timeout-minutes: 10\n",
                          "      checks: read\n", "      pull-requests: read\n",
                          "          PR_NUMBER: ${{ github.event.pull_request.number }}\n", "          GH_TOKEN: ${{ github.token }}\n"):
@@ -134,12 +136,60 @@ class HeavyGateTests(unittest.TestCase):
                 actual = subprocess.check_output(["node", "-e", script, json.dumps(context)], text=True)
                 self.assertEqual(json.loads(actual), expected)
 
+    def test_node_boot_matches_protected_main_steps_and_build_guard(self):
+        node_boot = indented_yaml_mapping_block(self.text, "node_boot", 2)
+        build = indented_yaml_mapping_block(self.text, "build", 2)
+        protected = indented_yaml_mapping_block(
+            (ROOT / ".github/workflows/merge-group-gate.yml").read_text(), "node_boot", 2)
+        self.assertIsNotNone(node_boot)
+        self.assertEqual(node_boot.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0],
+                         build.split("    if: >-\n", 1)[1].split("    runs-on:", 1)[0])
+        self.assertNotIn("    needs:", node_boot)
+        for fragment in ("    runs-on: ubuntu-24.04\n", "    timeout-minutes: 240\n",
+                         "    permissions:\n      contents: read\n",
+                         "    name: PR heavy / Node boot against the real Platform\n"):
+            self.assertIn(fragment, node_boot)
+        expected_steps = protected.split("    steps:\n", 1)[1].replace(
+            "exact merge-group candidate", "exact PR head").replace(
+            "exact merge-group SHA", "exact PR head SHA").replace(
+            "github.event.merge_group.head_sha || github.sha", "github.event.pull_request.head.sha").replace(
+            "${{ github.sha }}", "${{ github.event.pull_request.head.sha }}")
+        # Protected-main may add failure-only diagnostics after the qualification
+        # without making those artifacts part of the pull-request heavy lane. Keep
+        # the complete qualification step in the parity comparison.
+        actual_steps = node_boot.split("    steps:\n", 1)[1].split("\n  #", 1)[0]
+        protected_core = expected_steps.split("      - name: Redact failed node boot logs\n", 1)[0]
+        self.assertEqual(actual_steps.rstrip(), protected_core.rstrip())
+        self.assertIn("          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}\n", self.job)
+
+    def test_node_boot_job_outlives_serial_natural_clock_and_light_observations(self):
+        source = (ROOT / "apps/game-server/src/qualification/client_phases/full_e2ef7.rs").read_text()
+        observation_seconds = 0
+        for journey in ("clock_journey", "light_journey"):
+            deadline = re.search(r"qualification_deadline\(([0-9_]+)\),\s*" + journey + r"\(", source)
+            self.assertIsNotNone(deadline, journey)
+            observation_seconds += int(deadline[1].replace("_", ""))
+        budgets = []
+        for filename, job_name in (("pr-postgres-harness.yml", "node_boot"),
+                                   ("merge-group-gate.yml", "node_boot"),
+                                   ("node-boot-qualification.yml", "node-boot")):
+            with self.subTest(workflow=filename):
+                job = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), job_name, 2)
+                self.assertIsNotNone(job)
+                timeout = re.search(r"^    timeout-minutes: ([0-9]+)$", job, re.MULTILINE)
+                self.assertIsNotNone(timeout)
+                seconds = int(timeout[1]) * 60
+                budgets.append(seconds)
+                self.assertGreater(seconds, observation_seconds,
+                                   "Node boot job expires before its serial natural observations finish")
+        self.assertEqual(len(set(budgets)), 1, "Every Node boot entry point needs the same job budget")
+
     def test_runner_and_service_have_identical_routing(self):
         job = indented_yaml_mapping_block(self.text, "durability_postgres", 2)
         runner = re.search(r"^    runs-on: \$\{\{ (.*?) \}\}$", job, re.MULTILINE)[1]
         image = re.search(r"^        image: \$\{\{ (.*?) \}\}$", job, re.MULTILINE)[1]
         script = (
-            "const [vars,github,matrix]=JSON.parse(process.argv[1]);const fromJSON=JSON.parse;"
+            "const [needs,github,matrix]=JSON.parse(process.argv[1]);const fromJSON=JSON.parse;"
             "process.stdout.write(JSON.stringify([" + runner + "," + image + "]));"
         )
         for mode in ("on", "split", "off", ""):
@@ -147,7 +197,7 @@ class HeavyGateTests(unittest.TestCase):
                 for fork, bot in ((False, False), (True, False), (False, True)):
                     github = {"repository": "repo", "actor": "dependabot[bot]" if bot else "owner",
                               "event": {"pull_request": {"head": {"repo": {"full_name": "fork" if fork else "repo"}}}}}
-                    context = [{"OTERYN_SELF_HOSTED_PG": mode}, github, {"partition": partition}]
+                    context = [{"build": {"outputs": {"pg_runner_mode": mode}}}, github, {"partition": partition}]
                     output = subprocess.check_output(["node", "-e", script, json.dumps(context)], text=True)
                     actual_runner, actual_image = json.loads(output)
                     native = not fork and not bot and (mode == "on" or mode == "split" and partition <= 4)

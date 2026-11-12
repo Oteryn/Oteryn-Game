@@ -1,0 +1,27 @@
+[
+  {
+    "mechanic": "0289-cast-view",
+    "kind": "handlers",
+    "id": "0289-cast-view-observer",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 289,
+    "entry": "protocol.rs::apply",
+    "push_messages": [
+      "CastObserverFrame"
+    ],
+    "reducer": "protocol.rs::apply",
+    "test": "tests/state.rs::s17b_public_picture_commits_atomically_and_slate_clears_private_free_view",
+    "not_applicable": {
+      "settings": "Platform issues an ephemeral account-only viewer grant; no character settings."
+    }
+  },
+  {
+    "mechanic": "0289-cast-view",
+    "kind": "panels",
+    "id": "0289-cast-view-picture",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

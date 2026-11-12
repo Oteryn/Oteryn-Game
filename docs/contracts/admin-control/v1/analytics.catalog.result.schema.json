@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnalyticsCatalog",
+  "type": "object",
+  "properties": {
+    "metrics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AnalyticsMetric"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "metrics"
+  ],
+  "$defs": {
+    "AnalyticsMetric": {
+      "type": "object",
+      "properties": {
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "type": "string"
+        },
+        "watermark": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "metric_revision"
+      ]
+    }
+  }
+}

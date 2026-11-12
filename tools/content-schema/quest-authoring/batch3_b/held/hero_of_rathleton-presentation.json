@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.hero_of_rathleton_quest",
+  "runtime_enabled": false,
+  "presentations": [
+    {
+      "callback": "oteryn:quest-callback/hero-rathleton-exit",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "text": "Slurp!",
+      "speech_type": "TALKTYPE_MONSTER_SAY",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:11"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "reason": "Existing SpeechMode cannot project TALKTYPE_MONSTER_SAY; no substitute normal Say."
+    }
+  ]
+}

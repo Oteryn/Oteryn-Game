@@ -43,6 +43,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let encoded =
             oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        if let Some(same) = self.bundle_map().and_then(|map| {
+            map.facts.naginata_pick_replay(
+                *command.game_session_id.as_bytes(),
+                command.command_id,
+                &encoded,
+            )
+        }) {
+            return Ok(Some(outcome(if same {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            })));
+        }
         let permit = self.spell_lane_permit().await.ok_or(())?;
         if let Some(result) = self
             .root
@@ -59,6 +72,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            // A replay may acknowledge an already-committed gobbler XP award.
+            if result == UseDisposition::Committed {
+                self.states.level_refresh.mark([fence.character_id]);
+                // A recovered receipt also repairs the Channel's physical projection.
+                // Release the item lane before the existing snapshot owner reacquires it.
+                drop(permit);
+                self.refresh_terrain_tools().await;
+            }
             return Ok(Some(outcome(result)));
         }
         let native = self
@@ -125,7 +146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mutation = {
             let mut runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             if runtime.binding().world_id() != self.world_id
                 || runtime.binding().channel_id() != Some(self.channel_id)
                 || pinned_index(&runtime, self.active_generation).is_none()
@@ -138,7 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
             let Some(at) =
-                super::super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+                super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
@@ -203,9 +224,95 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
+            // The daily projector creates slime only on these dungeon ground entries.
+            // Carrying the tool never authorizes unrelated map appearances or positions.
+            if definition.production_key == "oteryn:item.tibia.i12077"
+                && (!(33306..=33369).contains(&pos.x)
+                    || !(31847..=31919).contains(&pos.y)
+                    || pos.floor != -9
+                    || before.terrain_kind
+                        != Some(oteryn_world_bundle::bundle::TerrainKind::Ground)
+                    || view::placement_of(key).is_none_or(|(_, ordinal)| ordinal != 0))
+            {
+                return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            }
             let Some(action) = at.map.facts.terrain_tool_action(key) else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
+            if state == 1791
+                && action == Some(40031)
+                && pos
+                    == (crate::map::overlay::TilePos {
+                        x: 32356,
+                        y: 32074,
+                        floor: -10,
+                    })
+                && definition.production_key == "oteryn:item.tibia.i3456"
+            {
+                // The source's shared six-hit counter belongs to this Channel map,
+                // not to a Character's durable quest tracks. Command replay lives
+                // beside the map projection so it cannot deal physical damage twice.
+                let digest = Sha256::new()
+                    .chain_update(b"oteryn:naginata-pick:v1")
+                    .chain_update(command.game_session_id.as_bytes())
+                    .chain_update(command.command_id.to_be_bytes())
+                    .finalize();
+                let mut occurrence = [0; 16];
+                occurrence.copy_from_slice(&digest[..16]);
+                let draw = deterministic_decision_u64(
+                    &GameplayDecisionRoot::from_bytes(
+                        runtime.content_pin().server_artifact_digest(),
+                    ),
+                    DecisionOccurrenceId::from_bytes(occurrence),
+                    "quest.naginata.pick_damage",
+                    0,
+                )
+                .map_err(|_| ())?;
+                let rolled = crate::spell::uniform_draw(draw, 31, 39);
+                let damage = states
+                    .get(&runtime, actor, command.game_session_id)
+                    .and_then(|state| {
+                        state.equipped_element_protection(
+                            crate::content::ReferenceResistanceKind::Physical,
+                        )
+                    })
+                    .and_then(|protection| {
+                        oteryn_gameplay_items::equipment_effects::apply_protection(
+                            rolled, protection,
+                        )
+                    })
+                    .unwrap_or(rolled);
+                let damage = u32::try_from(damage).map_err(|_| ())?;
+                let committed = at.map.facts.apply_naginata_pick(
+                    key,
+                    facts.object_revision(key),
+                    before,
+                    *command.game_session_id.as_bytes(),
+                    command.command_id,
+                    &encoded,
+                    || {
+                        states
+                            .apply_creature_damage_native(
+                                &runtime,
+                                actor,
+                                command.game_session_id,
+                                damage,
+                                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                                    self.owner_now().get(),
+                                ),
+                            )
+                            .is_some()
+                    },
+                );
+                if committed {
+                    at.map.facts.emit_movement_effect(pos, 3);
+                }
+                return Ok(Some(outcome(if committed {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                })));
+            }
             let catalogue = terrain_tools::crystal_core_bindings();
             let Some(plan) =
                 terrain_tools::dispatch(&catalogue, &definition.production_key, state, action, 0)
@@ -289,21 +396,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mutation = mutation.0;
         // The lane remains held until durable acknowledgement. The next clock/read recovers an
         // ambiguous commit from the same rows, so no speculative runtime mutation occurs.
-        let result = self
-            .root
-            .apply_terrain_tool(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                command_ref,
-                encoded,
-                scope,
-                Some(mutation),
-            )
-            .await
-            .map_err(|_| ())?
-            .ok_or(())?;
+        let result = if mutation.tool_key == "oteryn:item.tibia.i12077" {
+            use crate::durability::character_progression::ExperienceAwardRequest;
+            use crate::durability::terrain_tool::{TerrainExperience, voice_experience_occurrence};
+            let Some(binding) = self.progression_binding(command.game_session_id) else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            let Some(mut xp_fence) = self.current_quest_fence(command.game_session_id).await?
+            else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            xp_fence.expected_character_revision = slot
+                .cursor(self.root, self.character)
+                .await
+                .map_err(|_| ())?;
+            let experience = Box::new(TerrainExperience {
+                fence: xp_fence,
+                request: ExperienceAwardRequest {
+                    occurrence: voice_experience_occurrence(command_ref).map_err(|_| ())?,
+                    amount: oteryn_simulation_determinism::ExactI64::new(20),
+                    context: binding.context.clone(),
+                    policy_revision: binding.policy_revision.clone(),
+                    reward_revision: binding.reward_revision.clone(),
+                    policy: binding.policy.clone(),
+                },
+            });
+            let durable = self
+                .root
+                .apply_terrain_tool_with_experience(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    command_ref,
+                    encoded,
+                    scope,
+                    Some(mutation),
+                    Some(experience),
+                )
+                .await;
+            // Reload after success or an unknown outcome: an ambiguous commit may
+            // already have advanced CharacterRevision with the terrain receipt.
+            slot.observe_endgame_progression();
+            let result = durable.map_err(|_| ())?.ok_or(())?;
+            if result == UseDisposition::Committed {
+                self.states.level_refresh.mark([fence.character_id]);
+            }
+            result
+        } else {
+            self.root
+                .apply_terrain_tool(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    command_ref,
+                    encoded,
+                    scope,
+                    Some(mutation),
+                )
+                .await
+                .map_err(|_| ())?
+                .ok_or(())?
+        };
         drop(permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
@@ -312,6 +468,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn refresh_terrain_tools(&self) {
+        if !self.refresh_cake_world_map().await {
+            return;
+        }
         let Some(scope) = self.terrain_scope() else {
             return;
         };
@@ -367,6 +526,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             let key = u64::from_be_bytes(bytes);
+            if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
+                let (Ok(revision), Ok(appearance)) =
+                    (u64::try_from(row.revision), u16::try_from(row.item))
+                else {
+                    return;
+                };
+                if map
+                    .facts
+                    .install_world_change_harvest_state(key, revision, appearance)
+                    != Some(true)
+                {
+                    return;
+                }
+                continue;
+            }
             let Some((pos, _)) = view::placement_of(key) else {
                 return;
             };
@@ -384,6 +558,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return;
             };
+            // Map-authored plants may be Terrain; the pinned palette owns each successor.
+            if matches!(
+                row.item,
+                306 | 324 | 330 | 13842 | 13843 | 14029 | 14031 | 14032 | 3699 | 3700
+            ) {
+                let Some(after) = u16::try_from(row.item)
+                    .ok()
+                    .and_then(|appearance| map.facts.quest_callback_replacement(key, appearance))
+                else {
+                    return;
+                };
+                let Ok(revision) = u64::try_from(row.revision) else {
+                    return;
+                };
+                if !map
+                    .facts
+                    .install_gathering_state(key, revision, entry.facts, Some(after))
+                {
+                    return;
+                }
+                continue;
+            }
             let MapDefinition::Item(reference) = entry.facts.definition else {
                 return;
             };
@@ -415,6 +611,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let after = view::EntryFacts {
                 definition: MapDefinition::Item(reference),
                 appearance_id: u16::try_from(row.item).unwrap_or(0),
+                blocks_projectile: native
+                    .item_policy_for_source_id(row.item)
+                    .and_then(|policy| policy.record().attributes.blocks_projectile)
+                    .unwrap_or(entry.facts.blocks_projectile),
                 ..entry.facts
             };
             let gathering = matches!(

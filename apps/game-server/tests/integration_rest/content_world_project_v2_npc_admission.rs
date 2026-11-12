@@ -362,6 +362,7 @@ fn draft() -> ProjectV2Draft {
         state: ProjectV2State {
             declarations: vec![
                 ProjectV2Declaration::Npc {
+                    visibility: Default::default(),
                     identity: identity(NPC),
                     presentation: Some(reference(ProjectV2Family::Presentation, PRESENTATION)),
                     behavior: Some(reference(ProjectV2Family::Behavior, BEHAVIOR)),

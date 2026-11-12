@@ -14,6 +14,36 @@ pub enum TargetMoveIntent {
     Follow(EntityRef),
 }
 
+/// Canonical client encoding of the existing movement oneof.
+pub fn encode_target_move_intent(intent: TargetMoveIntent) -> Result<Vec<u8>, WorldSpatialError> {
+    let (tag, field) = match intent {
+        TargetMoveIntent::Stop => return Ok(vec![0x10, 1]),
+        TargetMoveIntent::Walk(position) => {
+            (0x0a, crate::world_spatial::encode_position(&position))
+        }
+        TargetMoveIntent::Turn(direction) => {
+            if direction.is_diagonal() {
+                return Err(WorldSpatialError::Malformed);
+            }
+            (0x1a, crate::world_spatial::encode_step_intent(direction))
+        }
+        TargetMoveIntent::Follow(target) => (
+            0x22,
+            crate::attack::encode_attack_target_intent(Some(&target))
+                .map_err(|_| WorldSpatialError::Malformed)?,
+        ),
+    };
+    let mut output = vec![
+        tag,
+        u8::try_from(field.len()).map_err(|_| WorldSpatialError::LimitExceeded)?,
+    ];
+    output.extend_from_slice(&field);
+    if output.len() > MAX_TARGET_MOVE_BYTES {
+        return Err(WorldSpatialError::LimitExceeded);
+    }
+    Ok(output)
+}
+
 /// Exactly one protobuf oneof: cell (1), stop=true (2), step direction (3), entity (4).
 pub fn decode_target_move_intent(payload: &[u8]) -> Result<TargetMoveIntent, WorldSpatialError> {
     use crate::charm_wire::{read_bytes, read_varint};
@@ -72,5 +102,40 @@ mod tests {
         ] {
             assert!(decode_target_move_intent(&bytes).is_err(), "{bytes:?}");
         }
+    }
+}
+
+#[cfg(test)]
+mod client_encoding_tests {
+    use super::*;
+    #[test]
+    fn canonical_client_intents_round_trip() -> Result<(), WorldSpatialError> {
+        for intent in [
+            TargetMoveIntent::Stop,
+            TargetMoveIntent::Turn(StepDirection::North),
+            TargetMoveIntent::Turn(StepDirection::West),
+            TargetMoveIntent::Walk(ActorPosition {
+                x: i32::MIN,
+                y: i32::MAX,
+                floor: 15,
+            }),
+            TargetMoveIntent::Follow(EntityRef {
+                identity: [1; 16],
+                generation: u64::MAX,
+            }),
+        ] {
+            assert_eq!(
+                decode_target_move_intent(&encode_target_move_intent(intent)?),
+                Ok(intent)
+            );
+        }
+        assert!(
+            encode_target_move_intent(TargetMoveIntent::Follow(EntityRef {
+                identity: [1; 16],
+                generation: 0
+            }))
+            .is_err()
+        );
+        Ok(())
     }
 }

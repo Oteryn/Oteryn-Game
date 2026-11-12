@@ -1,5 +1,5 @@
 name=item_forge
-commands=181
+commands=181,668
 transport=item_forge
 composed=item_forge
 authority=item_forge

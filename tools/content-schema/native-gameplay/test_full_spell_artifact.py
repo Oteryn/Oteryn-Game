@@ -124,6 +124,44 @@ class SourceCompositionTests(unittest.TestCase):
 
 
 
+class NativeItemProviderBoundaryTests(unittest.TestCase):
+    def test_actual_build_preserves_item_provider_bytes_through_production_bound(self):
+        # The real pinned Familiar export is checked in; this case never skips
+        # for a machine-local source checkout and does not read the active Item provider.
+        familiars = full.ROOT / 'docs/reference/spells/r21-local-candidate/familiar-profiles'
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            catalog = {'bundles': [{'identity': 'test'}], 'revision': 'r1'}
+            cat_raw = full.encoded(catalog)
+            (base / 'catalog.json').write_bytes(cat_raw)
+            (base / 'selection.json').write_bytes(full.encoded({
+                'revision': 'r1', 'catalog_sha256': full.digest(cat_raw), 'selections': []}))
+            args = argparse.Namespace(
+                out=base/'out', catalog=base/'catalog.json', selection=base/'selection.json',
+                expected_spells=1, familiars=familiars, items=base/'items.json',
+                build_revision='build-content-r1', appearances=full.NATIVE/'spell_appearances.json',
+                training=full.NATIVE/'build-training.json', familiar_config=full.NATIVE/'familiar-config.json',
+                familiar_defenses=full.NATIVE/'familiar-defenses.json', wheel=full.NATIVE/'wheel-profile.json',
+                source_world=None, native_map_profile='accepted-entry-r1')
+            item_json = b'{ "schema":"OTERYN_NATIVE_ITEM_PROFILES/v1", "records":[{"proof":"source bytes"}] }\n'
+            # JSON permits this UTF-8 whitespace. Exercise actual build/hash/output
+            # admission above the old8MiB limit and at the existing16MiB native limit.
+            for size in (8 * 1024**2 + 1, 16 * 1024**2):
+                with self.subTest(accepted_bytes=size):
+                    raw = item_json + b' ' * (size - len(item_json))
+                    args.items.write_bytes(raw)
+                    proof = full.build(args)
+                    self.assertEqual((args.out/'item-profiles.json').read_bytes(), raw)
+                    manifest_bytes = (args.out/'manifest.json').read_bytes()
+                    manifest = json.loads(manifest_bytes)
+                    self.assertEqual(manifest['item_profiles']['sha256'], full.digest(raw))
+                    self.assertEqual(proof['manifest_sha256'], full.digest(manifest_bytes))
+            raw = item_json + b' ' * (16 * 1024**2 + 1 - len(item_json))
+            args.items.write_bytes(raw)
+            with self.assertRaisesRegex(ValueError, 'Native input exceeds bounded provider size: item_profiles'):
+                full.build(args)
+
+
 class ItemKeySetTests(unittest.TestCase):
     """MAP-ITEM-REF-1: the pinned Item key set is generated from the Item definitions."""
 
@@ -152,6 +190,42 @@ class ItemKeySetTests(unittest.TestCase):
 
 class LootTablesTests(unittest.TestCase):
     """ARCH-KILL-REWARD-LOGOUT-1 §1.1: the loot section is generated from the Content definitions."""
+
+    def test_corruptor_projects_current_items_and_native_corpse_without_changing_source(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        table = next(row for row in document['tables']
+                     if row['identity']['key'] == 'oteryn:loot.creature.the_corruptor')
+        entries = {row['item']['key']: row for row in table['entries']}
+        expected = {3031: (13, 46, 1000000), 266: (1, 3, 238100),
+                    268: (1, 3, 238100), 3338: (1, 1, 142900),
+                    3359: (1, 1, 47600), 7991: (1, 1, 47600),
+                    3375: (1, 1, 47600), 3074: (1, 1, 47600),
+                    3723: (1, 2, 47600), 51760: (1, 1, 47600)}
+        self.assertEqual({f'oteryn:item.tibia.i{item}' for item in expected}, set(entries))
+        for item, counts in expected.items():
+            row = entries[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(counts, (row['min_count'], row['max_count'], row['probability_ppm']))
+        items = {row['item']['key']: row for row in document['items']}
+        for item in expected:
+            self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'], item)
+        for item in (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119):
+            self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'])
+        for item in (52113, 52114, 52115):
+            self.assertTrue(items[f'oteryn:item.tibia.i{item}']['materializable'])
+            self.assertEqual(30, items[f'oteryn:item.tibia.i{item}']['container_capacity'])
+        self.assertIsNone(items['oteryn:item.tibia.i52116']['container_capacity'])
+        # Reference shards retain their identities and source admission. Only
+        # the native projection supplies these production reward facts.
+        source = full.item_facts()
+        self.assertFalse(source['oteryn:item.tibia.i52113']['materializable'])
+        for path in full.LOOT_DEFINITIONS.glob('loot-*.json'):
+            _, shard = full.read(path)
+            for row in shard['records']:
+                if row['definition']['identity'] == table['identity']:
+                    self.assertEqual(9, len(row['definition']['entries']))
+                    self.assertIn('oteryn:item.tibia.i8820',
+                                  {entry['item']['key'] for entry in row['definition']['entries']})
 
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
         _, creatures = full.read(full.CREATURE_PROFILES)

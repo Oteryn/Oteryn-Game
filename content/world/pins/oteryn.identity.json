@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "e06-market-crystal-parity-20261031-r1",
-  "content_lock_digest": "3873d0698b98aa2280046cf75d4900863124cf1d6aae6f7c100b1be195260531",
+  "content_revision": "seasonal-cake-creature-20261107-r1",
+  "content_lock_digest": "a3d2c2a737c27f30442913b8e9b0333120b920ad57b15a5447d2070d807ab723",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:e06-market-crystal-parity-20261031-r1/ba0a45a183c47ef50f862ff7f81334047e29871ae9926a0377c96ff2349b47c1"
+  "provenance_summary": "lock:seasonal-cake-creature-20261107-r1/ad69b3a0ceee9b0c9ce81646ae3adf82b56766e9ff6260c2a00640897f4fc928"
 }

@@ -3,6 +3,7 @@
 
 mod encounter;
 mod items;
+mod passages;
 mod source_bestiary;
 
 pub use encounter::{
@@ -10,6 +11,7 @@ pub use encounter::{
     SoulpitMonster,
 };
 pub use items::*;
+pub use passages::{PassageTrigger, SoulpitPassage, soulpit_passage};
 pub use source_bestiary::{
     SOURCE_BESTIARY_ROSTER_SHA256, SourceMonsterFacts, source_bestiary_candidates, source_monster,
 };
@@ -361,3 +363,12 @@ impl OppressorSpell {
 
 #[cfg(test)]
 mod tests;
+
+/// Canary 47dfd51 taskboard/soulpit.lua:110-119; never accept a client-selected price.
+pub fn soulseal_cost(stars: u8) -> Result<u16, SoulpitError> {
+    if stars > 5 {
+        return Err(SoulpitError::InvalidMonster);
+    }
+    Ok((u16::from(stars) + 1) * 10)
+}
+pub const SOULSEAL_AUTH_MICROS: u64 = 10_000_000;

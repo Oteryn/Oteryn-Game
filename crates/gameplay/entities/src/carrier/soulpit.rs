@@ -744,6 +744,9 @@ impl ChannelRuntimeV1 {
         raw: u64,
         critical_roll: u8,
     ) -> Result<(u64, bool), CarrierError> {
+        if let Some(damage) = self.tibiadrome_damage(actor, raw)? {
+            return Ok((damage, false));
+        }
         if let Some(tag) = self.soulpit_variant(actor) {
             return tag.outgoing_damage(raw, critical_roll);
         }
@@ -752,5 +755,29 @@ impl ChannelRuntimeV1 {
             u64::try_from(scaled).map_err(|_| CarrierError::DamageOverflow)?,
             false,
         ))
+    }
+}
+
+/// A scoped borrow from the existing assigned owner; no carrier or continuity can be
+/// cloned out to manufacture a second Instance owner.
+pub struct SoulpitOwnerKernel<'a> {
+    pub carrier: &'a mut ChannelActorCarrier,
+    pub continuity: &'a NamespaceContinuityGuard,
+    pub content: &'a ChannelContentPin,
+}
+
+impl ScopeRuntimeV1 {
+    pub fn actor_capacity(&self) -> usize {
+        self.carrier.slots.len()
+    }
+
+    pub fn borrow_soulpit_kernel(&mut self) -> Result<SoulpitOwnerKernel<'_>, CarrierError> {
+        self.owner_fence()?;
+        self.carrier.require_soulpit_instance(&self.continuity)?;
+        Ok(SoulpitOwnerKernel {
+            carrier: &mut self.carrier,
+            continuity: &self.continuity,
+            content: &self.content,
+        })
     }
 }

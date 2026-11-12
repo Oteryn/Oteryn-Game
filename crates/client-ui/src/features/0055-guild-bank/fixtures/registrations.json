@@ -2,19 +2,47 @@
   {
     "mechanic": "0055-guild-bank",
     "kind": "handlers",
-    "id": "0055-guild-bank-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0055-guild-bank-command-68",
+    "status": "supported",
     "commands": [
-      68,
+      68
+    ],
+    "direction": "client_to_server",
+    "capability": 55,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0055-guild-bank",
+    "kind": "handlers",
+    "id": "0055-guild-bank-command-69",
+    "status": "supported",
+    "commands": [
       69
     ],
+    "direction": "client_to_server",
+    "capability": 55,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0055-guild-bank",
+    "kind": "keybindings",
+    "id": "0055-guild-bank-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+B",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0055-guild-bank",
+    "kind": "panels",
+    "id": "0055-guild-bank-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

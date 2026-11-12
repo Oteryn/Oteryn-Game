@@ -1,0 +1,36 @@
+[
+  {
+    "mechanic": "0287-actor-spell-catalog",
+    "kind": "keybindings",
+    "id": "0287-actor-spell-catalog-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+U",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0287-actor-spell-catalog",
+    "kind": "panels",
+    "id": "0287-actor-spell-catalog-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0287-actor-spell-catalog",
+    "kind": "handlers",
+    "id": "0287-actor-spell-catalog-push",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 287,
+    "entry": "protocol.rs::apply",
+    "push_messages": [
+      "GatedSnapshotReplaced"
+    ],
+    "reducer": "protocol.rs::apply",
+    "test": "tests/state.rs::confirmed_state_is_visible",
+    "not_applicable": {
+      "settings": "Connection-local view; no persisted settings."
+    }
+  }
+]

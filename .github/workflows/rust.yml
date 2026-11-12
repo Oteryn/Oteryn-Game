@@ -201,6 +201,22 @@ jobs:
       - name: Build workspace
         run: cargo +1.99.1 build --locked --workspace --all-targets
 
+      - name: Produce public Game catalogue
+        run: python3 tools/game-platform-catalog/build.py "$RUNNER_TEMP/game-platform-catalog.json"
+
+      - name: Verify public Game catalogue
+        run: python3 tools/game-platform-catalog/producer.py verify "$RUNNER_TEMP/game-platform-catalog.json"
+
+      - name: Upload public Game catalogue
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: game-platform-catalog
+          path: |
+            ${{ runner.temp }}/game-platform-catalog.json
+            ${{ runner.temp }}/game-platform-catalog.json.sha256
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Strict Clippy
         run: cargo +1.99.1 clippy --locked --workspace --all-targets -- -D warnings
 

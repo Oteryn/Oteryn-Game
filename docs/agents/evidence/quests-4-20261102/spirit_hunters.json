@@ -1,0 +1,1100 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "spirit_hunters",
+    "frozen_stage1": {
+      "total": 20,
+      "auto": 0,
+      "manual": 20
+    },
+    "authored_callback_definitions": 0,
+    "runtime_catalogue_callback_definitions": 0,
+    "runtime_exclusions": [],
+    "npc_source_files": 2,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Pełne źródła rozmów i mechanik urządzenia.",
+    "left_out_summary": "4049/4050 bez dopuszczonej semantyki; foreign Jack Future, niejasny guard i niepodłączone corpse/grant/NPC paths."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 24,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A024",
+        "original_index": 24,
+        "quest": "spirit_hunters",
+        "step": "Wejście research",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Wejście research",
+          "pattern": "P09",
+          "trigger": "Spectulus: research",
+          "condition": "JackFuture.QuestLine=11; Mission01=-1",
+          "effect": "topic12 lub18 gdytopic17",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:84"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_CANONICAL_STATE_OR_FOREIGN_OWNER",
+        "reason": "Wejście Spectulus zależy od obcego JackFuture.QuestLine11 i dokładnego Mission01=-1, podczas gdy istniejący canonical track zaczyna się od0. Nie dopisujemy cudzej misji ani reinterpretacji zapisanych zer.",
+        "missing_function": "Uzgodniony foreign-track admission oraz źródłowo zgodna reprezentacja unset, następnie context-bound rozmowa research/collective apparitions; shared NPC router jest dodatkowo Left out.",
+        "question_ids": [
+          "canonical-unset-tracks",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          6,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:84"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 25,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A025",
+        "original_index": 25,
+        "quest": "spirit_hunters",
+        "step": "Wywiad topic12",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Wywiad topic12",
+          "pattern": "P09",
+          "trigger": "Spectulus: yes",
+          "condition": "topic=12",
+          "effect": "topic=13; pełny tekst donora",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:252"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:252"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 26,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A026",
+        "original_index": 26,
+        "quest": "spirit_hunters",
+        "step": "Wywiad topic13",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Wywiad topic13",
+          "pattern": "P09",
+          "trigger": "Spectulus: yes",
+          "condition": "topic=13",
+          "effect": "topic=14; pełny tekst donora",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:255"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:255"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 27,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A027",
+        "original_index": 27,
+        "quest": "spirit_hunters",
+        "step": "Wywiad topic14",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Wywiad topic14",
+          "pattern": "P09",
+          "trigger": "Spectulus: yes",
+          "condition": "topic=14",
+          "effect": "topic=15; pełny tekst donora",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:258"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:258"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 28,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A028",
+        "original_index": 28,
+        "quest": "spirit_hunters",
+        "step": "Wywiad topic16",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Wywiad topic16",
+          "pattern": "P09",
+          "trigger": "Spectulus: yes",
+          "condition": "topic=16",
+          "effect": "topic=17; pełny tekst donora",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:264"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:264"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 29,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A029",
+        "original_index": 29,
+        "quest": "spirit_hunters",
+        "step": "Collective apparitions",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Collective apparitions",
+          "pattern": "P09",
+          "trigger": "Spectulus: collective apparitions",
+          "condition": "Mission01=-1; topic15",
+          "effect": "topic16",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:353"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_CANONICAL_STATE_OR_FOREIGN_OWNER",
+        "reason": "Wejście Spectulus zależy od obcego JackFuture.QuestLine11 i dokładnego Mission01=-1, podczas gdy istniejący canonical track zaczyna się od0. Nie dopisujemy cudzej misji ani reinterpretacji zapisanych zer.",
+        "missing_function": "Uzgodniony foreign-track admission oraz źródłowo zgodna reprezentacja unset, następnie context-bound rozmowa research/collective apparitions; shared NPC router jest dodatkowo Left out.",
+        "question_ids": [
+          "canonical-unset-tracks",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          6,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:353"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 30,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A030",
+        "original_index": 30,
+        "quest": "spirit_hunters",
+        "step": "Wydanie miernika",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Wydanie miernika",
+          "pattern": "P09/P11",
+          "trigger": "Spectulus: yes",
+          "condition": "topic18",
+          "effect": "Mission01=1; daje4049",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:271"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Item4049/4050 ma źródłowe dane, lecz canonical native profile jest materializable=false/stackKindUnknown i nie ma kwalifikowanego profilu. Nie wnioskujemy admission z raw stackable=false. Dodatkowo nowy grant+Quest/NPC caller jest poza granicą shared adaptera.",
+        "missing_function": "Kwalifikacja istniejącego Item ownera dla właściwego urządzenia i atomowy source grant wraz z Mission01=1 lub3; nie zmieniać holdów ani placement policy.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:271"
+        ],
+        "evidence": [
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 31,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A031",
+        "original_index": 31,
+        "quest": "spirit_hunters",
+        "step": "Pomiar nagrobka",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Pomiar nagrobka",
+          "pattern": "P02/P07",
+          "trigger": "4049 na1979",
+          "condition": "Źródło wywołuje getStorageValue(Mission01 == 1), a nie getStorageValue(Mission01)==1; TombUse<3",
+          "effect": "TombUse+=1; spawn SquidgySlime na player.x+1; item nie zużyty",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Guard ma jawny donor bug: porównanie Mission01==1 jest przekazane jako klucz do getStorageValue. Docelowe porównanie1 jest jawne i kwalifikuje oznaczoną naprawę, lecz naprawa nie została wdrożona.4049 nie ma native admission; spawn SquidgySlime i TombUse nadal wymagają ownera.",
+        "missing_function": "Oznaczona donor bug fix z QUESTION i testem, następnie use-target1979 z TombUse<3, inkrementacją i spawnem na player.x+1 bez konsumpcji4049, przez istniejących ownerów.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4"
+        ],
+        "evidence": [
+          "item-admissions.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 32,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A032",
+        "original_index": 32,
+        "quest": "spirit_hunters",
+        "step": "Raport pomiarów",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Raport pomiarów",
+          "pattern": "P09/P11",
+          "trigger": "Spectulus: research→yes",
+          "condition": "JackFuture=11; Mission01=1; TombUse>=2; topic19",
+          "effect": "500XP+5×3035; Mission01=2",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:102"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Guardy, XP/gold i etapy są jawne w donorze. Końcowy kod wymaga>=4 każdego gatunku mimo tekstu mówiącego5; zachowujemy kod, nie własną korektę. Każdy report zależy od wcześniejszego kwalifikowanego device/quest etapu; NPC adapter i kompozycja nagrody są Left out.",
+        "missing_function": "Atomowy source NPC report przez Quest/Experience/Inventory owners z dokładnym etapem/topic i odpowiednią nagrodą, bez odrębnego niepowiązanego SET stanu zakończenia.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:102"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 33,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A033",
+        "original_index": 33,
+        "quest": "spirit_hunters",
+        "step": "Sinclair: wyjaśnienie klatki",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Sinclair: wyjaśnienie klatki",
+          "pattern": "P09",
+          "trigger": "mission→yes",
+          "condition": "Mission01=2; topic1",
+          "effect": "topic2; tekst o urządzeniu",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:75"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:75"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 34,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A034",
+        "original_index": 34,
+        "quest": "spirit_hunters",
+        "step": "Sinclair: klatka",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Sinclair: klatka",
+          "pattern": "P09/P11",
+          "trigger": "yes",
+          "condition": "topic2",
+          "effect": "Mission01=3; daje4050",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:93"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Item4049/4050 ma źródłowe dane, lecz canonical native profile jest materializable=false/stackKindUnknown i nie ma kwalifikowanego profilu. Nie wnioskujemy admission z raw stackable=false. Dodatkowo nowy grant+Quest/NPC caller jest poza granicą shared adaptera.",
+        "missing_function": "Kwalifikacja istniejącego Item ownera dla właściwego urządzenia i atomowy source grant wraz z Mission01=1 lub3; nie zmieniać holdów ani placement policy.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:93"
+        ],
+        "evidence": [
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 35,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A035",
+        "original_index": 35,
+        "quest": "spirit_hunters",
+        "step": "Pierwszy ghost",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Pierwszy ghost",
+          "pattern": "P02",
+          "trigger": "4050 na5993",
+          "condition": "CharmUse<1",
+          "effect": "CharmUse=1; transform celu do decayID; brak konsumpcji urządzenia",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:18"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Source corpse IDs i efekty są znane;4050 pozostaje nieadmitted. Transformacja rzeczywistego corpse do jego decayID i increment konkretnego licznika wymagają kwalifikowanego ownera, bez przypinania fake corpse lub dopisywania niesource guardu misji/gatunku.",
+        "missing_function": "Use-target prawdziwego corpse5993/11675/11676/9001/9002, read-only device4050, właściwy licznik i atomowy decay target w istniejącym corpse/Item/Quest ownerze.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:18"
+        ],
+        "evidence": [
+          "item-admissions.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 36,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A036",
+        "original_index": 36,
+        "quest": "spirit_hunters",
+        "step": "Następny ghost",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Następny ghost",
+          "pattern": "P02/P08",
+          "trigger": "4050 na5993",
+          "condition": "CharmUse>=1",
+          "effect": "GhostUse+=1; transform celu do decayID",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:23"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Source corpse IDs i efekty są znane;4050 pozostaje nieadmitted. Transformacja rzeczywistego corpse do jego decayID i increment konkretnego licznika wymagają kwalifikowanego ownera, bez przypinania fake corpse lub dopisywania niesource guardu misji/gatunku.",
+        "missing_function": "Use-target prawdziwego corpse5993/11675/11676/9001/9002, read-only device4050, właściwy licznik i atomowy decay target w istniejącym corpse/Item/Quest ownerze.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:23"
+        ],
+        "evidence": [
+          "item-admissions.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 37,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A037",
+        "original_index": 37,
+        "quest": "spirit_hunters",
+        "step": "Souleater",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Souleater",
+          "pattern": "P02/P08",
+          "trigger": "4050 na11675/11676",
+          "condition": "Brak gate misji/poziomu poprzedniego gatunku w źródle",
+          "effect": "SouleaterUse+=1; transform celu do decayID",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:28"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Source corpse IDs i efekty są znane;4050 pozostaje nieadmitted. Transformacja rzeczywistego corpse do jego decayID i increment konkretnego licznika wymagają kwalifikowanego ownera, bez przypinania fake corpse lub dopisywania niesource guardu misji/gatunku.",
+        "missing_function": "Use-target prawdziwego corpse5993/11675/11676/9001/9002, read-only device4050, właściwy licznik i atomowy decay target w istniejącym corpse/Item/Quest ownerze.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:28"
+        ],
+        "evidence": [
+          "item-admissions.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 38,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A038",
+        "original_index": 38,
+        "quest": "spirit_hunters",
+        "step": "Nightstalker",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Nightstalker",
+          "pattern": "P02/P08",
+          "trigger": "4050 na9001/9002",
+          "condition": "Brak gate misji/gatunku w źródle",
+          "effect": "NightstalkerUse+=1; transform celu do decayID",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:33"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_ITEM_ADMISSION_AND_SHARED_OWNER",
+        "reason": "Source corpse IDs i efekty są znane;4050 pozostaje nieadmitted. Transformacja rzeczywistego corpse do jego decayID i increment konkretnego licznika wymagają kwalifikowanego ownera, bez przypinania fake corpse lub dopisywania niesource guardu misji/gatunku.",
+        "missing_function": "Use-target prawdziwego corpse5993/11675/11676/9001/9002, read-only device4050, właściwy licznik i atomowy decay target w istniejącym corpse/Item/Quest ownerze.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          8
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:33"
+        ],
+        "evidence": [
+          "item-admissions.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 39,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A039",
+        "original_index": 39,
+        "quest": "spirit_hunters",
+        "step": "Oddanie pierwszego ducha",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Oddanie pierwszego ducha",
+          "pattern": "P09/P11",
+          "trigger": "Sinclair: mission→yes",
+          "condition": "Mission01=3; CharmUse=1; topic3",
+          "effect": "Mission01=4;500XP; nie zabiera4050",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:72"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Guardy, XP/gold i etapy są jawne w donorze. Końcowy kod wymaga>=4 każdego gatunku mimo tekstu mówiącego5; zachowujemy kod, nie własną korektę. Każdy report zależy od wcześniejszego kwalifikowanego device/quest etapu; NPC adapter i kompozycja nagrody są Left out.",
+        "missing_function": "Atomowy source NPC report przez Quest/Experience/Inventory owners z dokładnym etapem/topic i odpowiednią nagrodą, bez odrębnego niepowiązanego SET stanu zakończenia.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:72"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 40,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A040",
+        "original_index": 40,
+        "quest": "spirit_hunters",
+        "step": "Research: dalsze polowanie",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Research: dalsze polowanie",
+          "pattern": "P09",
+          "trigger": "Sinclair: research→yes",
+          "condition": "Mission01=4; topic4",
+          "effect": "Mission01=5; tekst mówi5każdego i kolejność gatunków",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:114"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Guardy, XP/gold i etapy są jawne w donorze. Końcowy kod wymaga>=4 każdego gatunku mimo tekstu mówiącego5; zachowujemy kod, nie własną korektę. Każdy report zależy od wcześniejszego kwalifikowanego device/quest etapu; NPC adapter i kompozycja nagrody są Left out.",
+        "missing_function": "Atomowy source NPC report przez Quest/Experience/Inventory owners z dokładnym etapem/topic i odpowiednią nagrodą, bez odrębnego niepowiązanego SET stanu zakończenia.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:114"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 41,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A041",
+        "original_index": 41,
+        "quest": "spirit_hunters",
+        "step": "Potwierdzenie końca polowania",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Potwierdzenie końca polowania",
+          "pattern": "P09",
+          "trigger": "Sinclair: research→yes",
+          "condition": "Mission01=5; topic5",
+          "effect": "topic6",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:124"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:124"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 42,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A042",
+        "original_index": 42,
+        "quest": "spirit_hunters",
+        "step": "Rozliczenie polowania",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Rozliczenie polowania",
+          "pattern": "P09/P11",
+          "trigger": "Sinclair: yes",
+          "condition": "topic6; NightstalkerUse>=4 AND SouleaterUse>=4 AND GhostUse>=4",
+          "effect": "Mission01=6;10000XP+60×3035",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:127"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_OWNER",
+        "reason": "Guardy, XP/gold i etapy są jawne w donorze. Końcowy kod wymaga>=4 każdego gatunku mimo tekstu mówiącego5; zachowujemy kod, nie własną korektę. Każdy report zależy od wcześniejszego kwalifikowanego device/quest etapu; NPC adapter i kompozycja nagrody są Left out.",
+        "missing_function": "Atomowy source NPC report przez Quest/Experience/Inventory owners z dokładnym etapem/topic i odpowiednią nagrodą, bez odrębnego niepowiązanego SET stanu zakończenia.",
+        "question_ids": [
+          "spirit-device-guard",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589130155",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          4,
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:127"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 43,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A043",
+        "original_index": 43,
+        "quest": "spirit_hunters",
+        "step": "Odmowy i informacje",
+        "original_row": {
+          "quest": "spirit_hunters",
+          "step": "Odmowy i informacje",
+          "pattern": "P09",
+          "trigger": "Sinclair mission/research; Spectulus research",
+          "condition": "Etapy przed/po wymaganym stanie, brak pomiarów/ducha",
+          "effect": "Teksty bez zmiany misji; nie kopiować gałęzi SeaOfLight/JackFuture do tej partii",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:78"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Pełne teksty, kolejność topic i odpowiednie source guards są zachowane. Wspólny NPC book/router nie montuje nowej stateful rozmowy; brak adaptera nie oznacza braku tekstów ani pozycji NPC. Wejście pozostaje zależne od source etapów.",
+        "missing_function": "Context-bound Spectulus/Sinclair topic transitions, refusal i information branches wyłącznie Spirit Hunters, z zachowaniem source etapów i retained command custody.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sinclair.lua:78"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

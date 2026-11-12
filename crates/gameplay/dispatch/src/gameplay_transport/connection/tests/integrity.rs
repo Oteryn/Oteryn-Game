@@ -155,3 +155,138 @@ fn sec1_flood_preserves_use_and_cast_refusal_payloads() -> Result<(), Box<dyn Er
         Ok(())
     })
 }
+
+fn run_detector_test<F: std::future::Future<Output = Result<(), Box<dyn Error>>>>(
+    test: impl FnOnce() -> F + Send + 'static,
+) -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || run(test()).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "detector test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn sec1_detect_cadence_burst_flags_without_changing_outcomes() -> Result<(), Box<dyn Error>> {
+    run_detector_test(|| async {
+        tokio::time::pause();
+        for dispatch in [
+            Dispatch::Step(StepOutcome::too_early(), 0),
+            Dispatch::Use(UseOutcome {
+                disposition: UseDisposition::Exhausted,
+                ..UseOutcome::rejected()
+            }),
+            Dispatch::Spell(SpellCastOutcome {
+                disposition: SpellCastDisposition::CoolingDown,
+                vitals: None,
+            }),
+            Dispatch::Use(UseOutcome {
+                disposition: UseDisposition::TooFar,
+                ..UseOutcome::rejected()
+            }),
+        ]
+        .iter()
+        {
+            let mut probe = Dispatch::sec1_detect_probe();
+            for _ in 0..7 {
+                assert_eq!(probe(dispatch).0, [false; 3]);
+            }
+            let (flags, _) = probe(dispatch);
+            assert!(flags.into_iter().any(|flag| flag));
+        }
+        // Use and spell refusals share the exhaust detector, but connections do not.
+        let mut mixed = Dispatch::sec1_detect_probe();
+        for _ in 0..4 {
+            assert_eq!(
+                mixed(&Dispatch::Use(UseOutcome {
+                    disposition: UseDisposition::Exhausted,
+                    ..UseOutcome::rejected()
+                }))
+                .0,
+                [false; 3]
+            );
+        }
+        for _ in 0..4 {
+            mixed(&Dispatch::Spell(SpellCastOutcome {
+                disposition: SpellCastDisposition::CoolingDown,
+                vitals: None,
+            }));
+        }
+        assert!(mixed(&Dispatch::Unregistered).0[1]);
+        assert_eq!(
+            Dispatch::sec1_detect_probe()(&Dispatch::Unregistered).0,
+            [false; 3]
+        );
+        let authority = PacedAuthority {
+            steps: RefCell::new(Vec::new()),
+            turn: std::time::Duration::ZERO,
+            receipts: false,
+        };
+        let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+        let commands: Vec<_> = (1..=10)
+            .map(|id| command(1, id, step, StepDirection::East))
+            .collect();
+        let (end, frames) = drive_open(&authority, paced_session(&[13])?, &commands, 12).await?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        assert_eq!(authority.steps.borrow().len(), 2);
+        let mut accepted = 0;
+        let mut refused = 0;
+        for frame in frames {
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                if result.status == CommandStatus::Accepted {
+                    accepted += 1;
+                    assert_eq!(result.payload, encode_step_result(StepDisposition::Moved));
+                } else {
+                    refused += 1;
+                    assert_eq!(result.status, CommandStatus::Rejected);
+                    assert_eq!(result.payload, vec![0x08, 0x04]);
+                }
+            }
+        }
+        assert_eq!((accepted, refused), (2, 8));
+        Ok(())
+    })
+}
+
+#[test]
+fn sec1_detect_state_is_bounded_under_flood() -> Result<(), Box<dyn Error>> {
+    run_detector_test(|| async {
+        tokio::time::pause();
+        let mut probe = Dispatch::sec1_detect_probe();
+        let refusal = Dispatch::Step(StepOutcome::too_early(), 0);
+        let (_, size) = probe(&refusal);
+        assert!(size <= 4096);
+        for _ in 0..100_000 {
+            assert_eq!(probe(&refusal).1, size);
+        }
+        assert!(probe(&refusal).0[0]);
+        Ok(())
+    })
+}
+
+#[test]
+fn sec1_detect_no_flag_for_paced_play() -> Result<(), Box<dyn Error>> {
+    run_detector_test(|| async {
+        tokio::time::pause();
+        let mut probe = Dispatch::sec1_detect_probe();
+        for _ in 0..32 {
+            assert_eq!(
+                probe(&Dispatch::Step(StepOutcome::too_early(), 0)).0,
+                [false; 3]
+            );
+            assert_eq!(
+                probe(&Dispatch::Spell(SpellCastOutcome {
+                    disposition: SpellCastDisposition::Cast,
+                    vitals: None
+                }))
+                .0,
+                [false; 3]
+            );
+            tokio::time::advance(std::time::Duration::from_secs(1)).await;
+        }
+        Ok(())
+    })
+}

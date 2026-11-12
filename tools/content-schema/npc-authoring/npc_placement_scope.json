@@ -1,39 +1,282 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing.",
   "npcs": [
     "oteryn:npc.a_seagull",
+    "oteryn:npc.a_sleeping_dragon",
     "oteryn:npc.al_dee",
     "oteryn:npc.aldo",
     "oteryn:npc.ambassador_manop",
     "oteryn:npc.amber",
     "oteryn:npc.anna",
+    "oteryn:npc.ariella",
     "oteryn:npc.asralius",
+    "oteryn:npc.avar_tar",
     "oteryn:npc.billy",
     "oteryn:npc.blind_orc",
+    "oteryn:npc.briasol",
+    "oteryn:npc.broken_servant_sentry",
+    "oteryn:npc.cael",
+    "oteryn:npc.captain_waverider",
+    "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
+    "oteryn:npc.charles",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
+    "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.dallheim",
+    "oteryn:npc.dedoras",
     "oteryn:npc.dixi",
+    "oteryn:npc.duncan",
     "oteryn:npc.emael",
     "oteryn:npc.enpa_deia_pema",
+    "oteryn:npc.ezebeth",
+    "oteryn:npc.frank_the_plank",
+    "oteryn:npc.gail",
+    "oteryn:npc.grizzly_adams",
+    "oteryn:npc.habdel",
+    "oteryn:npc.hjaern",
     "oteryn:npc.hyacinth",
+    "oteryn:npc.irmana",
+    "oteryn:npc.ishina",
     "oteryn:npc.kepar",
+    "oteryn:npc.lai",
     "oteryn:npc.lily",
     "oteryn:npc.mayor_pocaro",
+    "oteryn:npc.miraia",
+    "oteryn:npc.morgan",
+    "oteryn:npc.muriel",
     "oteryn:npc.norma",
+    "oteryn:npc.norman_the_foreman",
     "oteryn:npc.obi",
+    "oteryn:npc.palimuth",
     "oteryn:npc.paulie",
+    "oteryn:npc.percybald",
+    "oteryn:npc.rashid",
+    "oteryn:npc.raymond_striker",
+    "oteryn:npc.razan",
     "oteryn:npc.santiago",
+    "oteryn:npc.scott_the_scout",
     "oteryn:npc.seymour",
+    "oteryn:npc.snake_eye",
+    "oteryn:npc.spectulus",
+    "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_oracle",
     "oteryn:npc.tom",
+    "oteryn:npc.uzgod",
     "oteryn:npc.vascalir",
+    "oteryn:npc.viola",
     "oteryn:npc.wayland_smythers",
+    "oteryn:npc.willard",
     "oteryn:npc.willie",
+    "oteryn:npc.yalahari",
+    "oteryn:npc.zalamon",
     "oteryn:npc.zethra",
-    "oteryn:npc.zirella"
+    "oteryn:npc.zirella",
+    "oteryn:npc.zlak",
+    "oteryn:npc.a_strange_chalice",
+    "oteryn:npc.a_sweaty_cyclops",
+    "oteryn:npc.amanda",
+    "oteryn:npc.brewster",
+    "oteryn:npc.domizian",
+    "oteryn:npc.elane",
+    "oteryn:npc.gamon",
+    "oteryn:npc.henricus",
+    "oteryn:npc.isimov",
+    "oteryn:npc.ivalisse",
+    "oteryn:npc.jorge",
+    "oteryn:npc.kasmir",
+    "oteryn:npc.king_tibianus",
+    "oteryn:npc.maealil",
+    "oteryn:npc.marina",
+    "oteryn:npc.para_norbert",
+    "oteryn:npc.quentin",
+    "oteryn:npc.rahkem",
+    "oteryn:npc.rhargu",
+    "oteryn:npc.the_forgemaster",
+    "oteryn:npc.tibra",
+    "oteryn:npc.tyrias",
+    "oteryn:npc.yana",
+    "oteryn:npc.yberius",
+    "oteryn:npc.rafzan",
+    "oteryn:npc.dermot"
   ],
-  "position_conflicts": []
+  "position_conflicts": [],
+  "placement_cells": {
+    "oteryn:npc.palimuth": [
+      {
+        "x": 32801,
+        "y": 31223,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.yalahari": [
+      {
+        "x": 32801,
+        "y": 31188,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.dermot": [
+      {
+        "x": 32165,
+        "y": 32437,
+        "z": 7
+      }
+    ]
+  },
+  "authored_placements": {
+    "oteryn:npc.lai": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "placements": [
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32571,
+            "y": 32506,
+            "z": 7
+          }
+        }
+      ],
+      "recipe_path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+      "recipe_sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+      "recipe_title": "Mystery of the Valley Quest"
+    },
+    "oteryn:npc.rhargu": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_title": "Grimvale Quest",
+      "placements": [
+        {
+          "position": {
+            "x": 33138,
+            "y": 32353,
+            "z": 5
+          },
+          "direction": "SOUTH"
+        }
+      ]
+    },
+    "oteryn:npc.domizian": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_title": "Grimvale Quest",
+      "placements": [
+        {
+          "position": {
+            "x": 33140,
+            "y": 32353,
+            "z": 5
+          },
+          "direction": "SOUTH"
+        }
+      ]
+    },
+    "oteryn:npc.para_norbert": {
+      "basis": "CHOSEN_OTERYN_APPROXIMATION",
+      "recipe_path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+      "recipe_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+      "recipe_title": "Feaster of Souls Quest",
+      "placements": [
+        {
+          "position": {
+            "x": 32628,
+            "y": 32076,
+            "z": 7
+          },
+          "direction": "SOUTH"
+        }
+      ]
+    }
+  },
+  "placement_overrides": {
+    "oteryn:npc.rashid": {
+      "basis": "Pinned Canary startup/weekday schedule; the existing native UTC weekday filter requires these exact seven cells instead of the wiki-arbitrated migration cell.",
+      "placements": [
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32328,
+            "y": 31782,
+            "z": 6
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32207,
+            "y": 31155,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32300,
+            "y": 32837,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 32577,
+            "y": 32753,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 33066,
+            "y": 32879,
+            "z": 6
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 33235,
+            "y": 32483,
+            "z": 7
+          }
+        },
+        {
+          "direction": "SOUTH",
+          "position": {
+            "x": 33166,
+            "y": 31810,
+            "z": 6
+          }
+        }
+      ],
+      "source": {
+        "origin": "canary",
+        "path": "data-otservbr-global/scripts/globalevents/spawn/rashid.lua",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "77c696b75f7027c3f4120e5392874ce0809495c3c425ba4a005bff3521a546b8"
+      }
+    },
+    "oteryn:npc.a_sleeping_dragon": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Exact source NPC XML center33243,31213,z10 plus offsetx=-1,y=0. Source XML has no facing; select NPC engine default NORTH, not a recovered source direction. Preserve actual source identity and replace the older Wiki placement hypothesis.",
+      "placements": [
+        {
+          "position": {
+            "x": 33242,
+            "y": 31213,
+            "z": 10
+          },
+          "direction": "NORTH"
+        }
+      ]
+    }
+  }
 }

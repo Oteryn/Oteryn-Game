@@ -119,7 +119,10 @@ impl CompiledCreaturePolicies {
         }
         let mut policies = Vec::new();
         for record in records {
-            if record.definition_key.is_empty()
+            // PUBPROJ owner2026-11-07: ADMINAN reserves these aggregate
+            // killer classes. No actual creature may collide with either class.
+            if matches!(record.definition_key.as_str(), "player" | "unknown")
+                || record.definition_key.is_empty()
                 || record.definition_revision.is_empty()
                 || record.display_name.trim().is_empty()
                 || record.maximum_health <= 0
@@ -181,4 +184,59 @@ pub struct FamiliarSelfHealDefense {
     pub heal_min: i64,
     pub heal_max: i64,
     pub effect: String,
+}
+
+#[cfg(test)]
+mod statistics_identity_tests {
+    use super::*;
+    fn policy(key: &str) -> CompiledCreaturePolicy {
+        CompiledCreaturePolicy {
+            definition_key: key.into(),
+            definition_revision: "r1".into(),
+            display_name: "Rat".into(),
+            maximum_health: 20,
+            forge_difficulty: None,
+            base_speed: 100,
+            outfit_look_type: 21,
+            object_look_type: None,
+            summonable: false,
+            convinceable: false,
+            mana_cost: None,
+            is_familiar: false,
+            condition_immunities: Vec::new(),
+            defense: None,
+            armor: None,
+            mitigation: None,
+            resistances: Vec::new(),
+            damage_immunities: Vec::new(),
+            healing_from_damage: Vec::new(),
+            flags: CreatureFlags {
+                attackable: true,
+                illusionable: true,
+                health_hidden: false,
+            },
+            preferred_distance: None,
+            reward_boss: Some(false),
+            blocked_by_nearby_players: true,
+        }
+    }
+    #[test]
+    fn native_creature_loader_rejects_admin_analytics_reserved_killer_keys() {
+        for key in ["player", "unknown"] {
+            assert!(
+                matches!(
+                    CompiledCreaturePolicies::from_active_artifact([1; 32], vec![policy(key)]),
+                    Err(CarrierError::InvalidCreatureTarget)
+                ),
+                "reserved creature key {key}"
+            );
+        }
+        assert!(
+            CompiledCreaturePolicies::from_active_artifact(
+                [1; 32],
+                vec![policy("oteryn:creature.rat")]
+            )
+            .is_ok()
+        );
+    }
 }

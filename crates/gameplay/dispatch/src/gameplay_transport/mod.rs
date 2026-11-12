@@ -16,6 +16,8 @@ mod activity_recovery_admission;
 pub mod activity_runtime;
 mod activity_terminal_release;
 pub mod actor_spell;
+mod admission_queue;
+mod analyser;
 pub mod atelier;
 mod attack;
 mod automatic_spell_progression;
@@ -24,11 +26,15 @@ mod bed_regen;
 mod bed_sleep;
 mod bed_sleep_production;
 mod boss_activity;
+pub mod bulletin;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
+mod bundle_ladder;
 mod bundle_map_position;
+mod cake_event;
 mod capabilities;
+mod cast_observer;
 mod channel_states;
 mod character_gameplay_fence;
 mod character_home_town;
@@ -51,7 +57,9 @@ mod container_view;
 mod control_loss;
 mod control_loss_reconciliation;
 mod corpse_decay;
+mod cosmetic_item_use;
 mod creature_field;
+mod dawnport_departure;
 mod dawnport_trial;
 /// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
@@ -62,8 +70,10 @@ mod death_ml_loss_postgres;
 mod depot;
 mod echo_warden;
 mod endgame_entry;
+mod entity_names;
 mod equipment_move;
 mod equipment_reflection;
+mod falcon_chests;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
@@ -77,7 +87,11 @@ mod guild_bank;
 mod guild_chat;
 mod guild_war;
 mod highscores;
+mod hive_shared_kills;
+mod house_base_decorations;
+mod house_destroy;
 mod house_furnishing;
+mod house_item_use;
 mod house_query;
 mod house_transfer;
 mod hunting_stamina;
@@ -102,6 +116,7 @@ mod loop_move;
 mod loop_training;
 pub mod mail;
 mod map_door;
+mod map_ladder;
 mod mining;
 mod monk_save;
 mod monster_ai_cycle;
@@ -117,6 +132,7 @@ mod native_activity;
 mod native_activity_return;
 mod newhaven_arrival;
 mod newhaven_travel;
+mod novelty_item_use;
 mod npc_actor;
 mod npc_command;
 mod npc_talk;
@@ -132,16 +148,25 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod premium_overview;
+mod primal_menace;
+mod primal_pods;
 mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
+mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
+mod quest_death_loot;
+mod quest_disguise;
+mod quest_kill_objectives;
+mod quest_kills;
 mod quest_log_source;
+mod quest_timer_cycle;
 mod raid_live;
 mod raid_live_world;
 mod raid_notices;
@@ -163,8 +188,10 @@ pub use soulpit::{
 };
 mod source_item_cycle;
 mod source_pvp_expiry;
+mod source_volatile_items;
 pub mod spectate_session;
 mod spell_access_facts;
+mod spell_catalog;
 mod spell_character_facts;
 mod spell_magnitude_facts;
 mod spell_parameter_cast;
@@ -175,6 +202,7 @@ mod tcp_tls;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
+mod tibiadrome;
 mod timed_item;
 mod timed_item_clock;
 mod timed_item_content;
@@ -183,6 +211,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod viola_book;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
@@ -199,6 +228,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
+pub use coin_market::reconcile_coin_market;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
@@ -343,9 +373,12 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    pub cast: Option<cast::CastRuntimeConfig>,
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
         &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],
+    pub soulpit_template:
+        Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>,
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     pub store_purchases: StorePurchaseMode,
     pub store: Option<crate::native_admission_source::store::StoreClient>,
@@ -401,6 +434,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
+    pub bulletin_source: Option<std::sync::Arc<bulletin::BulletinSource>>,
     pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
     pub private_key: rustls::pki_types::PrivateKeyDer<'static>,
@@ -551,7 +585,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub runtime: activity_runtime::SharedOwner<'a, Mutex<ChannelRuntimeV1>>,
-    pub movement_cells: &'a NativeEntryMovementCells,
+    pub movement_cells: activity_runtime::SharedOwner<'a, NativeEntryMovementCells>,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.
@@ -572,6 +606,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
+    /// Explicit receipt rollout configuration for isolated composed-owner fixtures.
+    #[cfg(test)]
+    pub test_step_wait_receipts: Option<bool>,
     pub states: std::sync::Arc<channel_states::ChannelSessionStates>,
     /// Exact native owners retained for committed activity entry, return and recovery.
     pub activity_runtimes: std::sync::Arc<activity_runtime::ActivityRuntimeRegistry<'a>>,
@@ -595,6 +632,15 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
     pub store: Option<store::StorePlatform>,
     pub store_purchases: StorePurchaseMode,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
+        &self.movement_cells
+    }
+    pub(super) fn rooms(&self) -> &SeamRooms<'_> {
+        &self.rooms
+    }
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -940,6 +986,10 @@ enum TerminalRelease {
     /// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): the session's own `LOGOUT_INTENT`, on its
     /// exact current transport, with or without a control-loss epoch.
     Logout(AuthenticatedTransportRefV1),
+    /// A signed staff disconnect releases this exact controller after actor-end saves.
+    /// It is not a client logout and deliberately bypasses combat/NOLOGOUT waiting.
+    StaffKick(AuthenticatedTransportRefV1),
+    StaffKickLost(ControlLossEpochRefV1),
 }
 
 impl TerminalRelease {
@@ -950,10 +1000,12 @@ impl TerminalRelease {
     /// session has no loss mark, so its release mints a transition id; so does a logout.
     fn fence(self, runtime: &mut ChannelRuntimeV1) -> Result<TransitionFence, CarrierError> {
         match self {
-            Self::Abandoned(_) | Self::Logout(_) => runtime
+            Self::Abandoned(_) | Self::Logout(_) | Self::StaffKick(_) => runtime
                 .mint_transition_fence()
                 .map(TransitionFence::Transition),
-            Self::CapabilityMismatch(epoch) => Ok(TransitionFence::GraceExpiry(epoch.get())),
+            Self::CapabilityMismatch(epoch) | Self::StaffKickLost(epoch) => {
+                Ok(TransitionFence::GraceExpiry(epoch.get()))
+            }
         }
     }
 }
@@ -1239,7 +1291,57 @@ fn earned_notice(
 /// One structured stderr event line for the operator, as the node's own events are written
 /// (OPS-NODE-BOOT-01 D6).
 fn operator_event(line: &str) {
-    eprintln!("oteryn-game-server {line}");
+    operator_event_with_trace(line, connection::diagnostic_connection_trace());
+}
+
+fn format_connection_trace(trace: [u8; 16]) -> String {
+    format!(
+        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        trace[0],
+        trace[1],
+        trace[2],
+        trace[3],
+        trace[4],
+        trace[5],
+        trace[6],
+        trace[7],
+        trace[8],
+        trace[9],
+        trace[10],
+        trace[11],
+        trace[12],
+        trace[13],
+        trace[14],
+        trace[15],
+    )
+}
+
+fn operator_event_with_trace(line: &str, trace: Option<[u8; 16]>) {
+    let mut parts = line.split_whitespace();
+    let Some(event) = parts.next().and_then(|part| part.strip_prefix("event=")) else {
+        oteryn_error_codes::emit(
+            "oteryn-game-server",
+            &oteryn_error_codes::Line::new(
+                oteryn_error_codes::Level::Warn,
+                "gameplay_transport",
+                "transport_diagnostic",
+            )
+            .detail(line),
+        );
+        return;
+    };
+    let trace = trace.map(format_connection_trace);
+    let mut diagnostic =
+        oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "gameplay_transport", event);
+    if let Some(trace) = trace.as_deref() {
+        diagnostic = diagnostic.trace(trace);
+    }
+    for part in parts {
+        if let Some((key, value)) = part.split_once('=') {
+            diagnostic = diagnostic.field(key, oteryn_error_codes::FieldValue::Token(value));
+        }
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &diagnostic);
 }
 
 /// Same-session grace from the authoritative `ControlLossEpoch` boundary: registry row
@@ -1285,6 +1387,12 @@ struct AdmissionRetryBudget<'r> {
     /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
     /// whole backoff.
     root: Option<&'r DurabilityRoot>,
+    // Opt-in foreground owners retain preference across every read and wait of
+    // this fixed budget, including cancellation of the enclosing future.
+    _foreground: Option<crate::durability::ForegroundDemand>,
+    /// This owner's place in the holder queue from its first retried refusal on: a returned
+    /// holder goes to it before owners refused later.
+    waiter: std::sync::OnceLock<Option<crate::durability::HolderWaiter>>,
 }
 
 /// The earliest retry after a step that found the holder busy, measured from the failure
@@ -1303,6 +1411,8 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
             root: None,
+            _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1315,6 +1425,8 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
+            _foreground: None,
+            waiter: std::sync::OnceLock::new(),
         }
     }
 
@@ -1327,21 +1439,65 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// The existing command read budget, with preference retained until every
+    /// read completes or its owner is cancelled. Later reads never renew it.
+    fn for_foreground_command(
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_command(root);
+        Ok(Self {
+            _foreground: Some(root.foreground_demand()?),
+            ..budget
+        })
+    }
+
+    /// The existing root recovery budget for one foreground lifecycle operation.
+    fn for_foreground_root(
+        game_session_id: &GameSessionId,
+        root: &'r DurabilityRoot,
+    ) -> Result<Self, crate::durability::DurabilityError> {
+        let budget = Self::for_root(game_session_id, root);
+        Ok(Self {
+            _foreground: Some(root.foreground_demand()?),
+            ..budget
+        })
+    }
+
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
     /// as a busy durability holder) is transient: it waits at most one backoff, unless the
-    /// retry would start past the window, which fails closed at once. With a root, the retry
-    /// starts as soon as the busy holder is returned (not before [`HOLDER_RETRY_FLOOR`]), so
-    /// the attempt takes the holder ahead of the background passes that poll it on their own
-    /// cadence; a sleeping attempt lost it to them at node start (NODEBOOT-1).
+    /// retry would start past the window, which fails closed at once. With a root, the attempt
+    /// queues for the holder from its first retry on: a returned holder is its turn once every
+    /// owner refused before it is served, and it then retries at once, ahead of later owners and
+    /// of the background passes that poll the holder on their own cadence. A retrier woken
+    /// with the others at each return lost it to faster ones until its window ran out
+    /// (NODEBOOT-1). Any other retry after a return starts no earlier than
+    /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
         let now = tokio::time::Instant::now();
         if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
+            // A given-up owner holds no later owner back.
+            if let Some(Some(waiter)) = self.waiter.get() {
+                waiter.stop_waiting();
+            }
             return false;
         }
         match self.root {
             Some(root) => {
-                root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + self.backoff)
-                    .await;
+                let _ = self.waiter.get_or_init(|| root.holder_waiter());
+                let earliest = now + HOLDER_RETRY_FLOOR;
+                let latest = now + self.backoff;
+                if !root.wait_holder_turn(earliest, latest).await {
+                    // A retired holder cannot emit a return notification. Service
+                    // real readiness within this same retry window, then retry on
+                    // its observed return; neither deadline nor refusal changes.
+                    let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
+                    let retry_at = if matches!(ready, Ok(Ok(()))) {
+                        earliest.min(latest)
+                    } else {
+                        latest
+                    };
+                    tokio::time::sleep_until(retry_at).await;
+                }
             }
             None => tokio::time::sleep(self.backoff).await,
         }
@@ -1577,6 +1733,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        public_cause: death.public_cause,
         pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),
@@ -1725,7 +1882,7 @@ fn canonical_uuid(value: &[u8; 16]) -> String {
 pub use actor_spell::ChannelSpellStates;
 #[cfg(test)]
 pub use party_spell_owner::read_source_party_world_in_transaction;
-#[cfg(any(test, feature = "test-support"))]
+/// Used by the opted-in node-boot qualification fixture in shipping builds of the game server.
 pub use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 #[cfg(test)]
 pub use spell_presentation_publisher::{

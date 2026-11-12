@@ -6,6 +6,7 @@ use crate::gameplay_transport::operator_event;
 
 mod achievement_notices;
 mod activity_transfer;
+mod analyser;
 mod autowalk;
 mod command;
 mod creature_push;
@@ -24,6 +25,7 @@ mod pvp_expert;
 mod refresh;
 mod setup;
 mod snapshot;
+mod spell_catalog;
 mod target_move;
 use command::CommandOutcome;
 mod effects;
@@ -35,14 +37,18 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    cast_chat_revision: u64,
+    spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
     target_move_window: crate::gameplay_transport::attack::IntentWindow,
     push_window: crate::gameplay_transport::attack::IntentWindow,
     push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
+    input_after_refresh: bool,
+    next_periodic_refresh: u8,
     chase_due: Option<tokio::time::Instant>,
-    held: std::collections::VecDeque<(Vec<u8>, bool)>,
+    held: std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: Option<BufferedStep>,
     step_wait_receipts: bool,
     step_holder: std::sync::Arc<()>,
@@ -57,10 +63,14 @@ struct ServeState {
     cadence: tokio::time::Interval,
     liveness: Liveness,
     frames: FrameReader,
+    activity_ack: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeAck>,
     reconcile_original_bank: bool,
     commands: crate::gameplay_transport::session_ingress::SessionCommandStream,
     sequence: u64,
     movement_effect_revision: u64,
+    sound_cursor: u64,
+    ambient_revision: u64,
+    item_effects_revision: u64,
     weather_sent: Option<WorldWeather>,
     world_clock_pacer: WorldClockDeltaPacer,
     world_clock: WorldClockSource,
@@ -89,10 +99,22 @@ struct ServeState {
     policy: LivenessPolicy,
 }
 
+impl Drop for ServeState {
+    fn drop(&mut self) {
+        if let Some(buffered) = &self.buffered {
+            // Only a frame still waiting here is proven not to have entered its
+            // movement owner. An in-flight STEP has already taken this buffer.
+            let _ =
+                self.commands
+                    .cancel_buffered_step(&buffered.frame, self.generation, self.sequence);
+        }
+    }
+}
+
 enum ServeEnd {
     Transferred(Box<AdmittedSession>),
     Disconnected,
-    ControlLost,
+    ControlLost(&'static str),
     LoggedOut,
     Closed(FoundationProtocolError),
 }
@@ -100,15 +122,29 @@ enum ServeEnd {
 impl ServeEnd {
     #[track_caller]
     fn finish(self, admitted: AdmittedSession) -> ConnectionEnd {
+        self.finish_with_phase(admitted, None)
+    }
+
+    #[track_caller]
+    fn finish_with_phase(
+        self,
+        admitted: AdmittedSession,
+        phase: Option<&'static str>,
+    ) -> ConnectionEnd {
         let reason = match &self {
             Self::Transferred(_) => "transferred",
             Self::Disconnected => "disconnected",
-            Self::ControlLost => "control_lost",
+            Self::ControlLost(_) => "control_lost",
             Self::LoggedOut => "logged_out",
             Self::Closed(_) => "protocol_error",
         };
+        let path = match &self {
+            Self::ControlLost(path) => format!(" path={path}"),
+            _ => String::new(),
+        };
+        let phase = phase.map_or_else(String::new, |phase| format!(" phase={phase}"));
         operator_event(&format!(
-            "event=serve_end reason={reason} source={} next_command_id={} server_sequence={}",
+            "event=serve_end reason={reason}{path}{phase} source={} next_command_id={} server_sequence={}",
             std::panic::Location::caller(),
             admitted.continuity.next_command_id,
             admitted.continuity.server_sequence,
@@ -116,7 +152,7 @@ impl ServeEnd {
         match self {
             Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
             Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
-            Self::ControlLost => ConnectionEnd::AdmittedThenControlLost(admitted),
+            Self::ControlLost(_) => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
             Self::Closed(error) => ConnectionEnd::AdmittedThenClosed(admitted, error),
         }
@@ -142,12 +178,16 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    // Staff visibility shares the view cadence; input/timer ticks must not turn
+    // best-effort reads into continuous contention for the gameplay DB holder.
+    let mut next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
     let mut integrity = integrity::Integrity::default();
     let root_authority = authority;
     // Keep one guard across owner changes. It must also drop the transferred
     // recipient if a handoff write is cancelled before destination setup.
     let mut server_messages = None;
     let mut scoped_authority: Option<A> = None;
+    let mut activity_input = None;
     loop {
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         match authority.resolve_native_scope(admitted).await {
@@ -156,6 +196,11 @@ where
             Err(()) => return ServeEnd::Disconnected.finish(admitted),
         }
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
+        // Resolve the admitted scope before checking its actor, including a
+        // reconnect whose actor already belongs to an activity Instance.
+        if !authority.staff_refresh(admitted).await {
+            return ServeEnd::Disconnected.finish(admitted);
+        }
         if !authority.remember_activity_connection(admitted) {
             return ServeEnd::Disconnected.finish(admitted);
         }
@@ -211,6 +256,15 @@ where
             Ok(session) => session,
             Err(end) => return end.finish(admitted),
         };
+        if let Some((frames, expected)) = activity_input.take() {
+            session.frames = frames;
+            if let Some(expected) = expected
+                && let Err(end) =
+                    activity_transfer::acknowledge(stream, authority, &mut session, expected).await
+            {
+                return end.finish(session.admitted);
+            }
+        }
         if server_messages.is_none() {
             server_messages =
                 crate::gameplay_transport::raid_notices::ServerMessageConnection::join(
@@ -227,12 +281,28 @@ where
             }
             match activity_transfer::pending(stream, authority, &mut session).await {
                 Ok(Some(next)) => {
+                    activity_input = Some((
+                        std::mem::take(&mut session.frames),
+                        session.activity_ack.take(),
+                    ));
                     admitted = next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;
                 }
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
+            }
+            // A committed handoff has retired the source actor. Cross its
+            // barrier before refreshing staff facts through the new owner.
+            if tokio::time::Instant::now() >= next_staff_refresh {
+                if !authority.staff_refresh(session.admitted).await {
+                    return ServeEnd::Disconnected.finish(session.admitted);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
+            }
+            if let Err(end) = analyser::emit(stream, authority, &mut session).await {
+                authority.player_trade_disconnected(session.admitted.game_session_id);
+                return end.finish(authority.current_activity_connection(session.admitted));
             }
             let next = poll::next(stream, authority, &mut session).await;
             // A member who did not issue the lever may have changed owner while
@@ -240,6 +310,10 @@ where
             // destination's fresh command stream.
             match activity_transfer::pending(stream, authority, &mut session).await {
                 Ok(Some(next)) => {
+                    activity_input = Some((
+                        std::mem::take(&mut session.frames),
+                        session.activity_ack.take(),
+                    ));
                     admitted = next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;
@@ -247,16 +321,30 @@ where
                 Ok(None) => {}
                 Err(end) => return end.finish(session.admitted),
             }
+            if tokio::time::Instant::now() >= next_staff_refresh {
+                if !authority.staff_refresh(session.admitted).await {
+                    return ServeEnd::Disconnected.finish(session.admitted);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
+            }
+            let inbound_phase = next.phase();
             let input = match inbound::receive(stream, authority, &mut session, next).await {
                 Ok(Some(input)) => input,
                 Ok(None) => continue,
                 Err(end) => {
                     authority.player_trade_disconnected(session.admitted.game_session_id);
-                    return end.finish(authority.current_activity_connection(session.admitted));
+                    return end.finish_with_phase(
+                        authority.current_activity_connection(session.admitted),
+                        Some(inbound_phase),
+                    );
                 }
             };
             if let Err(end) = command::execute(stream, authority, &mut session, input).await {
                 if let ServeEnd::Transferred(next) = end {
+                    activity_input = Some((
+                        std::mem::take(&mut session.frames),
+                        session.activity_ack.take(),
+                    ));
                     admitted = *next;
                     integrity = std::mem::take(&mut session.integrity);
                     break;

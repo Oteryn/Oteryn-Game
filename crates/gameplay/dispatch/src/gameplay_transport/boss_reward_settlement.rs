@@ -45,7 +45,9 @@ impl std::fmt::Display for PlanError {
 
 /// A scope-owned death has one identity shared by all its recipients. XP occurrences are
 /// per-principal and must not be substituted for this sealed actor-generation identity.
-fn personal_death_id(death: CreatureDeathOccurrenceKey) -> [u8; 16] {
+pub(in crate::gameplay_transport) fn personal_death_id(
+    death: CreatureDeathOccurrenceKey,
+) -> [u8; 16] {
     scoped_death_id(
         death.runtime_scope(),
         death.scope_ownership_generation().get(),

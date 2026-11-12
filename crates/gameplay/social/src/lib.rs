@@ -1,6 +1,7 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-social`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
 pub mod achievement_catalogue;
+pub mod cast;
 pub mod chat;
 
 pub mod party;

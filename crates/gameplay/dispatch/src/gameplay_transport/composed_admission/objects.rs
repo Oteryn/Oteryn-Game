@@ -3,6 +3,8 @@ use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 
+mod dropdown;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_bundle_key(
         &self,
@@ -327,7 +329,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry> {
         if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
             || self.bundle_map().is_some()
@@ -355,15 +357,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_cake_world_object(actor, command, &target).await {
+            return outcome;
+        }
+        if let Some(outcome) = self
+            .use_house_base_decoration(actor, command, &target)
+            .await
+        {
+            return outcome;
+        }
         if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
+            if let Some(outcome) = self
+                .use_dawnport_departure(actor, command, map, &target)
+                .await
+            {
+                return outcome;
+            }
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
+                return outcome;
+            }
+            if let Some(outcome) = self
+                .use_bundle_dropdown(actor, command, Some(&target), None)
+                .await
+            {
+                return outcome;
+            }
+            if let Some(outcome) = self.use_bundle_ladder(actor, command, map, &target).await {
+                return outcome;
+            }
+            if let Some(outcome) = self
+                .use_native_bundle_ladder(actor, command, map, &target)
+                .await
+            {
                 return outcome;
             }
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {

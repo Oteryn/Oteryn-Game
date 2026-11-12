@@ -35,7 +35,7 @@ pub(super) async fn observe(
         if runtime.player_control_facts(actor, fence.game_session_id).is_err() {
             return Some(ContainerObservation::Gone);
         }
-        let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+        let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
         let here = WorldTilePosition { x: at.at.x, y: at.at.y, floor: at.at.floor };
         match browse_rules::reach(here, position) {
             browse_rules::Reach::Adjacent => {},

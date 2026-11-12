@@ -58,7 +58,16 @@ pub(super) fn run_scenario() -> TestResult {
             SpellPremiumCoordinator::new(consumer, Some(clock), None, Some(h.root.clone()));
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = Some(&coordinator);
-        let target_owner = target_deps.owner(&h, &authority);
+        // Each live fixture owner needs its own holder: periodic work on one session
+        // must not turn the other session's VIP command into a busy-root refusal.
+        let target_root = h.independent_root()?;
+        assert!(target_root.maintain_ready_once().await?);
+        let target_authority = target_root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut target_owner = target_deps.owner(&h, &target_authority);
+        target_owner.root = &target_root;
         deps.initialize(&owner).await;
         target_deps.initialize(&target_owner).await;
         owner
@@ -253,7 +262,15 @@ pub(super) fn run_scenario() -> TestResult {
             }
             let (exhausted_id, exhausted_bytes) = exhausted.ok_or("VIP bucket did not exhaust")?;
             assert!((1..=3).contains(&wait(&exhausted_bytes)?));
-            let replayed = owner
+            // The serving owner concurrently performs periodic presence work.
+            // Use another current holder for this durable replay assertion; do
+            // not replace the immutable result with that holder's busy outcome.
+            let replay_root = h.independent_root()?;
+            assert!(replay_root.maintain_ready_once().await?);
+            let replay_authority = replay_root.open_character_authority(&seal).await.map_err(debug)?;
+            let mut replay_owner = deps.owner(&h, &replay_authority);
+            replay_owner.root = &replay_root;
+            let replayed = replay_owner
                 .vip_command(admitted, exhausted_id, 48, &named(1, "Unknown Friend"))
                 .await
                 .ok_or("rate replay")?;

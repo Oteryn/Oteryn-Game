@@ -43,6 +43,7 @@ pub(super) enum Case {
     ForgeIdle,
     ForgeAllFree,
     ForgeNoShared,
+    EliteNoShared,
     ForgeStale,
     ForgeRollback,
     ForgeFar,
@@ -54,6 +55,16 @@ pub(super) enum Case {
     TaskBoardPrechange,
     TaskBoardOrdered,
     SoulWarTerminal,
+    CharmCarnage,
+    CharmIncoming,
+    CharmNumb,
+    CharmCleanse,
+    CharmCripple,
+    CharmFatalHold,
+    CharmMana,
+    CharmBless,
+    CharmParry,
+    T94,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -64,6 +75,7 @@ impl Case {
                 | Self::ForgeIdle
                 | Self::ForgeAllFree
                 | Self::ForgeNoShared
+                | Self::EliteNoShared
                 | Self::ForgeStale
                 | Self::ForgeRollback
                 | Self::ForgeFar
@@ -188,10 +200,21 @@ pub(super) fn run(case: Case) -> TestResult {
                     // One tag per case: the tag names the database and the retained
                     // recovery directory, which concurrent cases must not share.
                     let tag = format!("party_xp_{}", case as u8);
+                    let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+                    let (controller, pin) = if matches!(case, Case::Eqmod2) {
+                        super::equipment_mods::activate(world)?
+                    } else {
+                        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                            world,
+                            Some(include_bytes!(
+                                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                            )),
+                        )
+                    };
                     let h = Harness::create(admin, &tag, false).await?;
                     eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED case={tag}");
                     let started = std::time::Instant::now();
-                    let result = scenario(&h, case).await;
+                    let result = scenario(&h, case, &controller, &pin).await;
                     h.cleanup().await?;
                     eprintln!(
                         "PARTY-XP-1 POSTGRES_CASE_COMPLETED case={tag} elapsed_seconds={:.2}",
@@ -205,15 +228,31 @@ pub(super) fn run(case: Case) -> TestResult {
         .map_err(|_| "party XP PG thread panicked")?
         .map_err(Into::into)
 }
-async fn scenario(h: &Harness, case: Case) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    case: Case,
+    controller: &crate::content::ContentActivationController,
+    pin: &crate::content::NativeEntryContentPin,
+) -> TestResult {
     let task_board_case = case;
+    let t94_case = matches!(case, Case::T94);
     let case = match case {
-        Case::TaskBoardParty
+        Case::T94 => Case::Shared,
+        Case::CharmCarnage
+        | Case::TaskBoardParty
         | Case::TaskBoardUnbound
         | Case::TaskBoardPrechange
         | Case::TaskBoardOrdered => Case::OneHit,
         Case::TaskBoardForeign => Case::Foreign,
-        Case::TaskBoardTalisman => Case::Offence,
+        Case::TaskBoardTalisman
+        | Case::CharmIncoming
+        | Case::CharmNumb
+        | Case::CharmCleanse
+        | Case::CharmCripple
+        | Case::CharmFatalHold
+        | Case::CharmMana
+        | Case::CharmBless
+        | Case::CharmParry => Case::Offence,
         other => other,
     };
     let now: i64 =
@@ -242,16 +281,6 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
-    let (controller, pin) = if matches!(case, Case::Eqmod2) {
-        super::equipment_mods::activate(world)?
-    } else {
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(
-            world,
-            Some(include_bytes!(
-                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-            )),
-        )
-    };
     let active = controller.active().expect("active");
     let native = active.native_gameplay().expect("native");
     let room = pin.qualified_room().clone();
@@ -554,6 +583,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     ) {
         task_board::install_boards(&mut owner, h, &players, &pin).await?;
     }
+    if matches!(case, Case::EliteNoShared) {
+        task_board::install_boards(&mut owner, h, &players, &pin).await?;
+        task_board::install_elite_last_kill(&owner, h, &players).await?;
+    }
     if matches!(task_board_case, Case::TaskBoardPrechange) {
         task_board::prepare_selection(&owner, h, players[1].1).await?;
     }
@@ -568,6 +601,40 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::Eqmod2) {
         return super::equipment_mods::qualify(&mut owner, h, &players).await;
+    }
+    if matches!(task_board_case, Case::CharmBless) {
+        return super::srx2_charm_consumers::bless(&mut owner, h, &players).await;
+    }
+    if matches!(task_board_case, Case::CharmMana) {
+        return super::srx2_charm_consumers::mana(&mut owner, &players).await;
+    }
+    if matches!(task_board_case, Case::CharmCripple | Case::CharmFatalHold) {
+        return super::srx2_charm_consumers::control(
+            &mut owner,
+            &players,
+            if matches!(task_board_case, Case::CharmCripple) {
+                "cripple"
+            } else {
+                "fatal_hold"
+            },
+        )
+        .await;
+    }
+    if matches!(task_board_case, Case::CharmParry) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "parry").await;
+    }
+    if matches!(task_board_case, Case::CharmNumb) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "numb").await;
+    }
+    if matches!(task_board_case, Case::CharmCleanse) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "cleanse").await;
+    }
+    if matches!(task_board_case, Case::CharmIncoming) {
+        return super::srx2_charm_consumers::incoming(&mut owner, &players, "adrenaline_burst")
+            .await;
+    }
+    if matches!(task_board_case, Case::CharmCarnage) {
+        return super::srx2_charm_consumers::carnage(&mut owner, h, &players).await;
     }
     if matches!(case, Case::Offence) {
         return super::equipped_offence::qualify(&mut owner, h, &players).await;
@@ -671,6 +738,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
+    if t94_case {
+        t94::prepare(h, &recovery, world, first_id, second_id).await?;
+    }
     if matches!(case, Case::Modifiers) {
         for (index, kind) in [(0, 1_u8), (1, 3_u8)] {
             let (actor, session) = players[index];
@@ -1017,7 +1087,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
             || (index == 1
                 && (case.staged_ally()
-                    || matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle)))
+                    || matches!(
+                        case,
+                        Case::Inactive | Case::OneHit | Case::ForgeIdle | Case::EliteNoShared
+                    )))
         {
             continue;
         }
@@ -1404,6 +1477,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             );
         }
     }
+    if t94_case {
+        t94::verify(h, &recovery).await?;
+    }
     if let Some(entry) = task_board_entry {
         task_board::assert_replay(
             &mut owner,
@@ -1427,6 +1503,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         );
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: party_credit_without_progression_binding");
         return Ok(());
+    }
+    if matches!(case, Case::EliteNoShared) {
+        return task_board::assert_elite_last_kill(&owner, h, &players).await;
     }
     if case.forge() {
         if let Some(entry) = forge_replay {
@@ -1555,7 +1634,23 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
 
 #[path = "party_xp/support.rs"]
 mod support;
-use support::{initialize_build, join_two};
+pub(super) use support::initialize_build;
+use support::join_two;
 
 #[path = "party_xp/task_board.rs"]
 mod task_board;
+
+#[path = "party_xp/t94.rs"]
+mod t94;
+#[test]
+fn t94_guild_season_real_kill_dispatch_membership_cut() -> TestResult {
+    let started = std::time::Instant::now();
+    run(Case::T94)?;
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some() {
+        eprintln!(
+            "T94_GUILD_DISPATCH_PG_EXECUTED membership/dedup/ranking elapsed_ms={}",
+            started.elapsed().as_millis()
+        );
+    }
+    Ok(())
+}

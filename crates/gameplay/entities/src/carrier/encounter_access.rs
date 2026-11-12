@@ -1,5 +1,6 @@
 //! Generic owner operations used by encounter rules in the runtime layer.
 use super::*;
+use crate::SourceStepCommitProof;
 
 pub type EncounterHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
 
@@ -151,6 +152,97 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
+    /// One source lever publishes all relocations, native monsters and its map
+    /// projection together. Failed admission or projection restores the carrier.
+    pub fn commit_quest_encounter_entry<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if monsters.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.commit_source_group(players, monsters, project)
+    }
+
+    /// The same bounded carrier transaction for a source party rite that has
+    /// no summoned monsters. Encounter admission keeps its nonempty-monster gate.
+    pub fn commit_source_steps_and_project<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.commit_source_group(players, &[], project)
+    }
+
+    fn commit_source_group<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if players.is_empty() || players.len() > 8 || monsters.len() > 8 {
+            return Err(CarrierError::PlanConflict);
+        }
+        for proof in &players {
+            proof.validate_current(self)?;
+        }
+        let mut snapshots = Vec::new();
+        snapshots
+            .try_reserve(players.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        // Only the carrier changes below; policy registry/content/owner binding stay borrowed.
+        // The exclusive runtime owner prevents an observer from seeing these staged slots.
+        let before = self.carrier.clone();
+        let result = (|| {
+            for (key, health, at) in monsters {
+                let actor = self.admit_encounter_actor(key, *health, *at)?;
+                self.install_creature_policy(actor, key)?;
+            }
+            for proof in players {
+                snapshots.push(self.commit_source_step(proof)?);
+            }
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(snapshots)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
+    /// A source switch may spawn native creatures without moving any player.
+    /// All admission/policy changes roll back together if any slot cannot commit.
+    /// This does not relax the player proofs required by party encounter entry.
+    pub fn commit_quest_creature_spawn(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        if monsters.is_empty() || monsters.len() > 8 {
+            return Err(CarrierError::PlanConflict);
+        }
+        let mut actors = Vec::new();
+        actors
+            .try_reserve(monsters.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let before = self.carrier.clone();
+        let result = (|| {
+            for (key, health, at) in monsters {
+                let actor = self.admit_encounter_actor(key, *health, *at)?;
+                self.install_creature_policy(actor, key)?;
+                actors.push(actor);
+            }
+            Ok(actors)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,

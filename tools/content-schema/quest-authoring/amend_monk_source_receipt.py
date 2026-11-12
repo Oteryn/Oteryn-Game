@@ -19,6 +19,35 @@ COMPILERS = (
     'quest_tree_authoring.py', 'quest_tree.schema.json', 'test_monk_native_lowering.py',
     'test_quest_completion_authoring.py',
 )
+BUNDLE = HERE + 'samples/source_migration/bundle.json'
+
+
+def verify_visibility_bundle(root, descriptor):
+    """Allow only G-2's optional Quest visibility schema hash in the frozen bundle.
+
+    Owner-approved G-2: docs/reference/CATALOG-CONTRACT-NOTES.md; preserve the
+    byte-bound SOURCE proof enforced by source_fix_guard.py:46-50, not just counts.
+    """
+    from bundle_authoring import encoded
+    schema_path = HERE + 'quest_content.schema.json'
+    schema = (root / schema_path).read_text()
+    addition = '"properties": {"visibility":{"type":"string","enum":["public","hidden"],"default":"public"},'
+    if schema.count(addition) != 1:
+        raise ValueError('expected exact optional G-2 visibility schema addition')
+    visibility = json.loads(schema).get('$defs', {}).get('quest', {}).get('properties', {}).get('visibility')
+    if visibility != {'type': 'string', 'enum': ['public', 'hidden'], 'default': 'public'}:
+        raise ValueError('G-2 visibility must belong to the Quest definition')
+    legacy_schema = schema.replace(addition, '"properties": {', 1).encode()
+    bundle = guard.read_json(root / BUNDLE)
+    current = hashlib.sha256((root / BUNDLE).read_bytes()).hexdigest()
+    legacy = copy.deepcopy(bundle)
+    matches = [row for row in legacy['schema_provenance'] if row['path'] == schema_path]
+    if len(matches) != 1 or matches[0]['sha256'] != hashlib.sha256(schema.encode()).hexdigest():
+        raise ValueError('bundle does not bind the current visibility schema')
+    matches[0]['sha256'] = hashlib.sha256(legacy_schema).hexdigest()
+    previous = hashlib.sha256(encoded(legacy).encode()).hexdigest()
+    if descriptor['path'] != BUNDLE or descriptor['sha256'] not in (previous, current):
+        raise ValueError('bundle differs beyond optional G-2 schema provenance')
 
 
 def outputs(root):
@@ -27,11 +56,13 @@ def outputs(root):
     # No unrelated compiler or evidence refresh is permitted by this amendment.
     mutable = {HERE + name for name in COMPILERS}
     mutable_proofs = {EVIDENCE, 'content/quests/world-callbacks.json',
-                      'content/quests/monk-pilgrimage.json'}
+                      'content/quests/monk-pilgrimage.json', BUNDLE}
     for category in ('immutable_inputs', 'compiler_inputs', 'proof_inputs'):
         if approval[category] != receipt[category]:
             raise ValueError('existing approved inputs differ from receipt')
         for descriptor in approval[category]:
+            if descriptor['path'] == BUNDLE:
+                verify_visibility_bundle(root, descriptor)
             if descriptor['path'] not in mutable | mutable_proofs:
                 guard.verify_file(root, descriptor)
     current = {}

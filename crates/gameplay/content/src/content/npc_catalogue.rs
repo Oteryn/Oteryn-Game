@@ -9,16 +9,21 @@ pub const DAWNPORT_CHOICE_NPC: &str = "oteryn:npc.oressa";
 pub const BASE_VOCATIONS: [&str; 4] = ["knight", "paladin", "druid", "sorcerer"];
 
 use super::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, ProjectError, ProjectEvidenceLimits, ProjectFilesystemError,
-    ProjectFilesystemLimits, ProjectV2AuthoringProfile, ProjectV2Declaration,
-    ProjectV2DefinitionRef, ProjectV2Family, ProjectV2Source, ProjectV2SourceIdentityBinding,
-    WorldProject, capture_world_project,
+    ProjectError, ProjectEvidenceLimits, ProjectFilesystemError, ProjectFilesystemLimits,
+    ProjectV2AuthoringProfile, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family,
+    ProjectV2Source, ProjectV2SourceIdentityBinding, WorldProject, capture_world_project,
 };
 pub mod grizzly_shop;
+pub mod healing;
 pub mod premium_services;
+pub mod quest_access;
+pub mod quest_shops;
 pub mod replies;
+mod s10_nonquest;
 pub mod service;
+pub mod subtype_trades;
 pub mod travel;
+pub mod walk_terrain;
 #[allow(
     unused_imports,
     reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
@@ -50,12 +55,10 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
-            // #1807 monster source mechanics and reconciled catalogue add 1_011 reference records,
-            // measured: 62_801 on the merged repository source. E06 mints 68 client-only Crystal
-            // market Items: 62_869, measured.
-            max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 21_069 + 2_564 + 1_011 + 68,
-            // #1807 adds 4 monster-full-mechanics import batches: 29 v2 sources, measured.
-            max_import_records: 25 + 4,
+            // Generated source-cohort bounds: regenerate_content.py measures the
+            // already admitted normal World package; limit+1 remains rejected.
+            max_reference_records: 62_886,
+            max_import_records: 31,
             // #1807 adds 4 reimport states to g4-creature-crystal-1530-r1: 404, measured.
             max_reimport_states: 104 + 296 + 4,
         },

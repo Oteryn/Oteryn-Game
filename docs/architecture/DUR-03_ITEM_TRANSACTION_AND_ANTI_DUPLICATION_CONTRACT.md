@@ -195,6 +195,19 @@ HOUSE-CUSTODY-0 item-level exclusivity guard.
 
 ChannelRuntime/InstanceRuntime may own immediate ground/corpse/transient-item simulation under FND-03. DUR-03 preserves that owner while requiring durable value safety.
 
+Physical creature-death MINT retains the native death's tagged runtime scope.
+An Instance death carries its `InstanceId` and no `ChannelId`; its origin Channel
+is not a custody or mutation authority. Reservation and receipt equality includes
+the scope namespace, World, local scope ID, ownership generation, actor ID and
+actor generation, followed by the existing loot definition, purpose and draw.
+The current assignment and node incarnation are independently proved before a
+fresh commit. Historical receipts retain their existing replay semantics.
+Ground custody, corpse attribution, reservation and durable audit must commit
+through the existing MINT owner and proof chain. The audit death reference adds
+optional field 6 (`instance_id`); Channel deaths omit it and retain their existing
+semantic binding and encoding. Both the envelope and Ground destination repeat
+the exact death scope. A same-byte Channel/Instance substitution is refused.
+
 Binding separation:
 
 ```text
@@ -1147,8 +1160,15 @@ the structurally non-reused key means none can. Receipt schema and retention
 duration remain owner and registry gates.
 
 **Actual native Ground context.** MINT establishes the item in the actual typed
-Ground for the same `WorldId` and `ChannelId` that own the native runtime
-placement. The binding includes the accepted map and content revisions, native
+Ground for the same `WorldId` and closed `RuntimeScopeRefV1` that own the
+native runtime placement: either Channel or Activity Instance. An Instance
+never substitutes its origin Channel. The complete creature-death cause includes
+the scope discriminator and actual scope identity; its reservation, receipt,
+current assignment fence, corpse-parent equality and capacity lock use that same
+namespace. Channel cause keys and protobuf bytes retain their prior encoding;
+Instance death provenance omits Channel and carries the optional Instance UUID.
+The event envelope and Ground destination repeat that exact namespace. The
+binding includes the accepted map and content revisions, native
 room/placement context, and typed spatial position under their owning Content,
 FND and runtime contracts. Corpse association is provenance/projection only,
 never a competing item location. A fixture coordinate, caller-selected room,
@@ -1202,6 +1222,24 @@ the reward chest amendment above. For this shape:
   and the committed grant row, all from one physical transaction;
 - mint into an existing stack stays excluded (§39.1).
 Every other §39 obligation is unchanged.
+
+**SRX-2 Newhaven profession-kit amendment (owner task, 2026-11-05).** New Characters bound to
+`newhaven-starter-r1` receive the original plain main-backpack component, then the source Newhaven
+profession kit; they never also execute the historical `send_first_items` loadout. Each new kit
+member is a fresh MINT into exactly one owned equipment slot, main-backpack entry or nested
+quiver entry, proved against its exact same-transaction receipt, quantity and definition. The
+complete kit commits atomically and is granted once per Character across vocation changes.
+Its envelope binds the immutable creation starter revision separately from the kit revision.
+Historical Characters retain their recorded revision, receipts and items and receive no new
+Newhaven kit. A historical starter token may remain valid only through World-scoped trusted
+registration; profile/ruleset/content and every session/authority fence remain current, as
+[accepted in SRX-2](../reference/SRX-2.md). This does not authorize runtime registration.
+
+The kit quantities and slots follow CrystalServer `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+`data-global/lib/others/newhaven.lua:3-145`; portal timing is at
+`data-global/scripts/quests/newhaven/movement_select_vocation.lua:3-34`. The task explicitly
+admits first-entry provisioning in addition to that portal event. No Dawnport kit is selected
+for a new Newhaven root; no level cap is invented. Existing historical loadout proof arms remain.
 
 **Corpse container amendment (D3).** `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` (owner decisions
 D111-D113, `reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` §4)

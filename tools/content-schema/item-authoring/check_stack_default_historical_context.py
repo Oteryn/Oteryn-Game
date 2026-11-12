@@ -8,6 +8,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
 
+import historical_world_owner_context as world_context
 import lower_wiki_stack_default_packet as base
 import lower_wiki_stack_historical_packet as historical
 from engine_items import load_appearance_objects
@@ -80,17 +81,18 @@ def read_context(root=ROOT):
 
 @contextmanager
 def qualification_context(root=ROOT):
-    """Only explicit historical Item definitions differ; builds read symlinked inputs."""
+    """Reconstruct historical Item definitions and hash-verified owner receipts."""
     context = read_context(root)
     with tempfile.TemporaryDirectory(prefix="oteryn-historical-default-") as directory:
         path = Path(directory)
         for name in ("tools", "docs", "imports"):
             (path / name).symlink_to((root / name).resolve(), target_is_directory=True)
         (path / "content/items").mkdir(parents=True)
-        for name in ("assets", "world"):
+        for name in ("assets",):
             (path / "content" / name).symlink_to(
                 (root / "content" / name).resolve(), target_is_directory=True
             )
+        world_context.link_world(root, path / "content/world")
         shard = "content/items/historical-qualification-definitions.json"
         (path / shard).write_bytes(
             canonical(

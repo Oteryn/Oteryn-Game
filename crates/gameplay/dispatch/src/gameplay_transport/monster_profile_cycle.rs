@@ -26,7 +26,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
-        let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
+        // The coalesced monster scheduler must not retake the returned holder
+        // ahead of a waiting foreground owner (notably logout during world boot).
+        let pass = self
+            .root
+            .try_issue_background_semantic_pass()
+            .map_err(|_| ())?;
         let (next_due, proposals, native_actors) = {
             let mut context = (
                 self,
@@ -205,11 +210,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
-                drop(reader);
+                let mut map = reader.map;
                 let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 owner
-                    .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now)
+                    .tick_creature_fields(&mut map, runtime, states, native, now)
                     .await?;
+                if !map.validate_transaction(runtime).await {
+                    return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                drop(map);
                 let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
                     matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
                         if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
@@ -222,7 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 physical_spell::execute(
-                    runtime, states, attack, room, native, &mut map, &proposals, &parties, now,
+                    runtime, states, attack, room, native, &mut map, &proposals, &parties, now, owner.imported_charms,
                 )
                 .await;
                 drop(map);

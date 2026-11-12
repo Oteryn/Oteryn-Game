@@ -1,4 +1,220 @@
 use super::*;
+#[path = "performance.rs"]
+mod performance_tests;
+
+#[path = "action_key_interfaces.rs"]
+mod action_key_interfaces;
+
+#[path = "bar_hotkeys.rs"]
+mod bar_hotkeys;
+
+#[path = "contexts.rs"]
+mod contexts;
+#[path = "hud_options.rs"]
+mod hud_options;
+#[path = "interface.rs"]
+mod interface;
+#[path = "options.rs"]
+mod options;
+
+#[path = "status_order.rs"]
+mod status_order;
+
+#[test]
+fn named_hotkey_profiles_keep_chat_maps_and_secondary_bindings_separate()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceInput, PreferenceStore, ReferencePreferences};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let id = "0009-highscores-open";
+    let mut preferences = ReferencePreferences::default();
+    preferences.rebind(id, "ALT+H")?;
+    preferences.rebind_secondary(id, "SUPER+SHIFT+H")?;
+    preferences.select_hotkey_context(true)?;
+    preferences.rebind(id, "SUPER+SHIFT+J")?;
+    preferences.add_hotkey_profile("Hunt")?;
+    preferences.rebind(id, "SUPER+SHIFT+K")?;
+    preferences.select_hotkey_profile("Default")?;
+    let press = |code, modifiers| -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(code)?,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat: false,
+        })
+    };
+    let alt_h = press(11, Modifiers::one(Modifier::Alt))?;
+    let super_shift = Modifiers::one(Modifier::Super).with(Modifier::Shift);
+    let secondary = press(11, super_shift)?;
+    let chat_on = press(13, super_shift)?;
+    let mut input = PreferenceInput::default();
+    assert!(oteryn_client_ui::highscores::open_key(&input.route_chat(
+        &preferences,
+        std::slice::from_ref(&alt_h),
+        false
+    )?));
+    input.route(&preferences, &[NormalizedInputEvent::DeviceLost])?;
+    assert!(oteryn_client_ui::highscores::open_key(&input.route_chat(
+        &preferences,
+        &[secondary],
+        false
+    )?));
+    input.route(&preferences, &[NormalizedInputEvent::DeviceLost])?;
+    assert!(!oteryn_client_ui::highscores::open_key(&input.route_chat(
+        &preferences,
+        &[alt_h],
+        true
+    )?));
+    input.route(&preferences, &[NormalizedInputEvent::DeviceLost])?;
+    assert!(oteryn_client_ui::highscores::open_key(&input.route_chat(
+        &preferences,
+        &[chat_on],
+        true
+    )?));
+    let unchanged = preferences.clone();
+    assert!(
+        preferences
+            .rebind_secondary("local-spell-action-bar-spell-1", "SUPER+SHIFT+J")
+            .is_err()
+    );
+    assert_eq!(preferences, unchanged);
+    let path = std::env::temp_dir().join(format!("clientgap-profiles-{}.json", std::process::id()));
+    let mut store = PreferenceStore::defaults(path.clone());
+    store.apply(preferences.clone())?;
+    assert_eq!(
+        PreferenceStore::load(path.clone())?.preferences(),
+        &preferences
+    );
+    let (link, _, _) = crate::play::play_channel();
+    let mut settings = crate::play::SettingsState::new(None);
+    settings.apply(preferences.clone());
+    crate::play::mailbox::lock(&link.mailbox).chat.open = true;
+    assert!(oteryn_client_ui::highscores::open_key(
+        &settings
+            .input_from_play(&[press(13, super_shift)?], &link)
+            .0
+    ));
+    settings.input_from_play(&[NormalizedInputEvent::DeviceLost], &link);
+    crate::play::mailbox::lock(&link.mailbox).chat.open = false;
+    assert!(oteryn_client_ui::highscores::open_key(
+        &settings
+            .input_from_play(&[press(11, Modifiers::one(Modifier::Alt))?], &link)
+            .0
+    ));
+    preferences.rename_hotkey_profile("Hunt", "Dungeon")?;
+    preferences.select_hotkey_profile("Dungeon")?;
+    preferences.remove_hotkey_profile("Default")?;
+    assert!(preferences.remove_hotkey_profile("Dungeon").is_err());
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn admitted_character_preferences_are_isolated_and_reloaded()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    let root = std::env::temp_dir().join(format!("clientgap-scope-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let path = root.join("preferences.json");
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let global = settings.preferences.clone();
+    let mut play = view()?;
+    play.set_preference_character([1; 16]);
+    settings.select_character(play.preference_character());
+    assert_eq!(settings.scope_label(), "Character settings");
+    let mut changed = settings.preferences.clone();
+    changed.ui_scale = 120;
+    changed.battle_lists[0].name = "Character one".into();
+    settings.apply(changed.clone());
+    play.set_preference_character([2; 16]);
+    settings.select_character(play.preference_character());
+    assert_eq!(settings.preferences, global);
+    settings.preferences.ui_scale = 130;
+    settings.apply(settings.preferences.clone());
+    settings.select_character(Some([1; 16]));
+    assert_eq!(settings.preferences, changed);
+    let mut restarted = SettingsState::new(Some(path));
+    restarted.select_character(Some([1; 16]));
+    assert_eq!(restarted.preferences, changed);
+    restarted.select_character(Some([2; 16]));
+    assert_eq!(restarted.preferences.ui_scale, 130);
+    restarted.select_character(None);
+    assert_eq!(restarted.scope_label(), "Local defaults for new characters");
+    assert_eq!(restarted.preferences, global);
+    let blocked = root.join("blocked.json");
+    std::fs::create_dir(&blocked)?;
+    let mut recovered = SettingsState::new(Some(blocked.clone()));
+    recovered.apply(changed.clone());
+    assert!(recovered.feedback.contains("could not save"));
+    std::fs::remove_dir(&blocked)?;
+    recovered.reset_defaults()?;
+    recovered.restore_backup()?;
+    assert_eq!(recovered.preferences, changed);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+#[path = "custom_hotkeys.rs"]
+mod custom_hotkeys;
+
+#[path = "presentation_options.rs"]
+mod presentation_options;
+
+#[path = "gameplay.rs"]
+mod gameplay;
+
+#[path = "help.rs"]
+mod help;
+
+#[path = "localization.rs"]
+mod localization;
+
+#[path = "graphics.rs"]
+mod graphics;
+
+#[path = "screenshots.rs"]
+mod screenshots;
+
+#[test]
+fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::{PreferenceStore, ReferencePreferences, SettingsState};
+    let root = std::env::temp_dir().join(format!("clientgap-transfer-{}", std::process::id()));
+    std::fs::create_dir_all(&root)?;
+    let path = root.join("settings.json");
+    let export = root.join("export.json");
+    let mut state = SettingsState::new(Some(path.clone()));
+    let mut changed = state.preferences.clone();
+    changed.ui_scale = 125;
+    changed.audio.master_volume = 37;
+    state.apply(changed.clone());
+    state.export_to(&export)?;
+    assert!(state.export_to(&export).is_err()); // Never overwrite an existing export.
+    state.reset_defaults()?;
+    assert_eq!(state.preferences, ReferencePreferences::default());
+    assert_eq!(
+        PreferenceStore::load(path.clone())?.preferences(),
+        &state.preferences
+    );
+    state.restore_backup()?;
+    assert_eq!(state.preferences, changed);
+    state.reset_defaults()?;
+    state.import_from(&export)?;
+    assert_eq!(SettingsState::new(Some(path.clone())).preferences, changed);
+    std::fs::write(root.join("bad.json"), br#"{"ui_scale":181}"#)?;
+    let before = std::fs::read(&path)?;
+    assert!(state.import_from(&root.join("bad.json")).is_err());
+    assert_eq!(state.preferences, changed);
+    assert_eq!(std::fs::read(&path)?, before);
+    std::fs::write(root.join("huge.json"), vec![b' '; (1 << 20) + 1])?;
+    assert!(state.import_from(&root.join("huge.json")).is_err());
+    // Backup failure must prevent a destructive replacement.
+    std::fs::remove_file(path.with_extension("backup.json"))?;
+    std::fs::create_dir(path.with_extension("backup.json"))?;
+    assert!(state.reset_defaults().is_err());
+    assert_eq!(state.preferences, changed);
+    assert_eq!(std::fs::read(&path)?, before);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
 
 #[test]
 fn reference_preferences_are_local_and_reject_unknown_panel_ids()
@@ -19,3 +235,139 @@ fn reference_preferences_are_local_and_reject_unknown_panel_ids()
     assert!(play.set_preferences(invalid).is_err());
     Ok(())
 }
+
+#[test]
+fn preferences_are_restored_when_scene_rebuild_fails() -> Result<(), BatchError> {
+    let mut play = view()?;
+    let old = play.preferences().clone();
+    let mut changed = old.clone();
+    changed.ui_scale = 125;
+    play.local.set_world(Arc::new(World::builtin_with([(
+        (100, 200),
+        crate::map::MapTile {
+            under: vec![crate::map::Draw {
+                cell: u16::MAX,
+                offset: [0, 0],
+            }],
+            ..crate::map::MapTile::default()
+        },
+    )])?));
+    play.map_floor = Some(play.floor);
+    assert!(play.set_preferences(changed).is_err());
+    assert_eq!(play.preferences(), &old);
+    Ok(())
+}
+
+#[test]
+fn settings_rebind_conflicts_routes_and_survives_restart() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::{PreferenceStore, preference_bindings};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let path = std::env::temp_dir().join(format!("oteryn-c25-{}.json", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    let mut store = PreferenceStore::load(path.clone())?;
+    let bindings = preference_bindings()?;
+    let highscores = "0009-highscores-open";
+    assert!(bindings.iter().any(|binding| binding.id == highscores));
+    let mut changed = store.preferences().clone();
+    assert!(changed.rebind(highscores, "Ctrl+L").is_err());
+    assert!(changed.rebind(highscores, "F10").is_err());
+    changed.rebind(highscores, "Alt+H")?;
+    changed.ui_scale = 125;
+    store.apply(changed)?;
+    let restored = PreferenceStore::load(path.clone())?;
+    assert_eq!(restored.preferences(), store.preferences());
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(11)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    let routed = restored.preferences().route_input(&[event])?;
+    assert!(oteryn_client_ui::highscores::open_key(&routed));
+    let old = NormalizedInputEvent::Key {
+        code: KeyCode::new(11)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(oteryn_input_actions::Modifier::Control),
+        repeat: false,
+    };
+    assert!(restored.preferences().route_input(&[old])?.is_empty());
+    let mut play = view()?;
+    play.set_preferences(restored.preferences().clone())?;
+    assert_eq!(play.scene().view().tile_px(), 49);
+    play.set_world_viewport([600, 330])?;
+    assert_eq!(play.scene().view().tile_px(), 30);
+    assert_eq!(play.preferences().ui_scale, 125);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn every_registered_binding_conflicts_and_invalid_saves_leave_preferences_unchanged()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, ReferencePreferences, preference_bindings};
+    let original = ReferencePreferences::default();
+    for binding in preference_bindings()? {
+        if binding.id == "0009-highscores-open" {
+            continue;
+        }
+        let mut preferences = original.clone();
+        assert!(
+            preferences
+                .rebind("0009-highscores-open", binding.default_chord)
+                .is_err(),
+            "{}",
+            binding.id
+        );
+        assert_eq!(preferences, original);
+    }
+    let mut preferences = original.clone();
+    assert!(preferences.rebind("unknown", "ALT+H").is_err());
+    assert!(
+        preferences
+            .rebind("0009-highscores-open", "CTRL+CTRL+H")
+            .is_err()
+    );
+    let path = std::env::temp_dir().join(format!("oteryn-c25-invalid-{}", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    let mut store = PreferenceStore::load(path.clone())?;
+    preferences.ui_scale = 181;
+    assert!(store.apply(preferences).is_err());
+    assert_eq!(store.preferences(), &original);
+    assert!(!path.exists());
+    std::fs::write(&path, b"invalid-json")?;
+    assert!(PreferenceStore::load(path.clone()).is_err());
+    assert_eq!(std::fs::read(&path)?, b"invalid-json");
+    std::fs::remove_file(&path)?;
+    std::fs::create_dir(&path)?;
+    let mut blocked = PreferenceStore::defaults(path.clone());
+    let mut changed = original.clone();
+    changed.audio.master_volume = 35;
+    assert!(blocked.apply(changed).is_err());
+    assert_eq!(blocked.preferences(), &original);
+    assert!(!path.with_extension("json.tmp").exists());
+    std::fs::remove_dir(path)?;
+    Ok(())
+}
+
+#[path = "options_lane.rs"]
+mod options_lane;
+#[path = "presentation.rs"]
+mod presentation;
+
+include!("health_circle.rs");
+
+include!("window_buttons.rs");
+
+include!("overhead_icons.rs");
+
+include!("resource_hud.rs");
+
+include!("monk_hud.rs");
+
+include!("hud_layout.rs");
+#[path = "shortcuts.rs"]
+mod shortcuts;
+
+#[path = "reserved.rs"]
+mod reserved;

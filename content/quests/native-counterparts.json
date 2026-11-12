@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "counterparts": [
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-1",
+      "native": {
+        "position": {
+          "x": 33163,
+          "y": 32691,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-2",
+      "native": {
+        "position": {
+          "x": 33166,
+          "y": 32691,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-3",
+      "native": {
+        "position": {
+          "x": 33168,
+          "y": 32691,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-4",
+      "native": {
+        "position": {
+          "x": 33163,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 423
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-5",
+      "native": {
+        "position": {
+          "x": 33165,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-6",
+      "native": {
+        "position": {
+          "x": 33167,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 423
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-7",
+      "native": {
+        "position": {
+          "x": 33169,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-seven-flame-gate",
+      "native": {
+        "position": {
+          "x": 33163,
+          "y": 32695,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "teleport_effect": 11
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-1",
+      "native": {
+        "position": {
+          "x": 33031,
+          "y": 32532,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-2",
+      "native": {
+        "position": {
+          "x": 33033,
+          "y": 32536,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-3",
+      "native": {
+        "position": {
+          "x": 33044,
+          "y": 32549,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-4",
+      "native": {
+        "position": {
+          "x": 33044,
+          "y": 32554,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-5",
+      "native": {
+        "position": {
+          "x": 33078,
+          "y": 32566,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-6",
+      "native": {
+        "position": {
+          "x": 33086,
+          "y": 32566,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-7",
+      "native": {
+        "position": {
+          "x": 33078,
+          "y": 32572,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-diprath-sign-8",
+      "native": {
+        "position": {
+          "x": 33086,
+          "y": 32572,
+          "floor": -13
+        },
+        "ordinal": 1,
+        "appearance": 2190
+      }
+    }
+  ]
+}

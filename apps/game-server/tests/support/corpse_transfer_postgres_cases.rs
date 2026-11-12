@@ -296,14 +296,14 @@ fn forge_loot_entry(
     vec![
         format!(
             "INSERT INTO game_item_mint_reservations \
-               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+               (death_scope_kind,death_scope_key,death_world_id, death_channel_id, death_scope_ownership_generation, \
                 death_actor_local_id, death_actor_local_generation, loot_table_family, \
                 loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
                 draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
                 occurred_at, envelope, fence_scope_ownership_generation, fence_holder_node_id, \
                 fence_holder_registration_revision, work_units_used, reserved_at) \
              VALUES \
-               ('{world}', '{channel}', {GENERATION}, {actor}, 1, \
+               (1,game_item_death_scope_key('{world}'::uuid,1::smallint,'{channel}'::uuid,NULL),'{world}', '{channel}', {GENERATION}, {actor}, 1, \
                 'LootTable', 'fixture:loot.alpha', 'loot-r1', 'fixture:purpose.drop', {ordinal}, \
                 decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
                 decode(repeat('ab',16),'hex'), {GENERATION}, '{node}', 0, 0, 900)"
@@ -316,14 +316,14 @@ fn forge_loot_entry(
         ),
         format!(
             "INSERT INTO game_item_mint_receipts \
-               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+               (death_scope_kind,death_scope_key,death_world_id, death_channel_id, death_scope_ownership_generation, \
                 death_actor_local_id, death_actor_local_generation, loot_table_family, \
                 loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
                 draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
                 occurred_at, envelope_sha256, committed_at, destination_parent_item_instance_id, \
                 destination_ordinal) \
              VALUES \
-               ('{world}', '{channel}', {GENERATION}, {actor}, 1, \
+               (1,game_item_death_scope_key('{world}'::uuid,1::smallint,'{channel}'::uuid,NULL),'{world}', '{channel}', {GENERATION}, {actor}, 1, \
                 'LootTable', 'fixture:loot.alpha', 'loot-r1', 'fixture:purpose.drop', {ordinal}, \
                 decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
                 sha256(decode(repeat('ab',16),'hex')), 1000, '{corpse}', {ordinal})"

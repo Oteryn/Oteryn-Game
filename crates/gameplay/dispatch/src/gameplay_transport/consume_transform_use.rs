@@ -125,7 +125,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .entries
             .iter()
             .find(|entry| entry.item.item_instance_id == id);
-        if carried.is_some_and(|entry| entry.item.definition.production_key != LOTTERY_TICKET) {
+        if carried.is_some_and(|entry| {
+            !matches!(
+                entry.item.definition.production_key.as_str(),
+                LOTTERY_TICKET | "oteryn:item.tibia.i6558"
+            )
+        }) {
             return None;
         }
         let outcome = |disposition| {
@@ -179,19 +184,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         match self
             .root
-            .consume_transform(
+            .consume_transform_detailed(
                 &permit,
                 self.character,
                 self.holder,
                 fence,
-                request,
+                request.clone(),
                 native,
                 &content,
                 false,
             )
             .await
         {
-            Ok(Some(result)) => outcome(result),
+            Ok(Some(result)) => {
+                if result.fresh
+                    && result.recipe.as_deref() == Some("oteryn:potion.demonic-blood.v1")
+                {
+                    let runtime = self.runtime.lock().await;
+                    let mut states = self.states.spell_states.lock().await;
+                    if let Ok(Some((positioned, current))) =
+                        runtime.positioned_player_for_session(command.game_session_id)
+                        && positioned == actor
+                    {
+                        states.sounds.record_item_effect(
+                            &runtime,
+                            actor,
+                            current.position(),
+                            1,
+                            false,
+                        );
+                    }
+                }
+                outcome(result.disposition)
+            }
             _ => Some(None),
         }
     }

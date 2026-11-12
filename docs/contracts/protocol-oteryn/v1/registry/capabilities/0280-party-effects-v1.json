@@ -1,0 +1,13 @@
+{
+  "id": 280,
+  "name": "PARTY_EFFECTS_V1",
+  "owner_decision": "GAP-SV7 S13c",
+  "owner": "Game party effects projection",
+  "requires": [],
+  "command_types": [
+    496
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Own actor party state read through the existing strong party owner; no authority grant and no dependency on the separate party-skull client display."
+}

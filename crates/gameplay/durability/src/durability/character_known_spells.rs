@@ -28,7 +28,50 @@ pub(super) async fn grant_quest_spell(
     Ok(())
 }
 
+/// Bound both owner reads and corrupt/unexpected durable growth. No rows are changed.
+pub const MAX_KNOWN_SPELLS: usize = 4096;
+
+pub(crate) async fn read_known_spells_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+) -> Result<BTreeSet<String>, DurabilityError> {
+    let keys: Vec<String> = sqlx::query_scalar(
+        "SELECT spell_key FROM game_character_known_spells \
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY spell_key LIMIT 4097",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    if keys.len() > MAX_KNOWN_SPELLS {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(keys.into_iter().collect())
+}
+
 impl DurabilityRoot {
+    /// Existing durable knowledge under the same recovered Character authority as admission.
+    /// The caller rechecks its exact actor/session after this data read.
+    pub async fn read_character_known_spells(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: crate::domain::CharacterId,
+    ) -> Result<BTreeSet<String>, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let keys = read_known_spells_in_transaction(&mut tx, character).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(keys)
+                })
+            })
+            .await
+    }
+
     /// Add dispatch-qualified keys under the current session and catalogue snapshot revision.
     pub async fn acquire_automatic_spells(
         &self,

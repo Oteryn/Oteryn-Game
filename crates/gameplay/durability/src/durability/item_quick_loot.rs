@@ -293,6 +293,7 @@ async fn attempt_move<C: ItemLoopContent>(
                 None,
                 Some(context),
                 None,
+                None,
             )
             .await?;
             // Each child proves its exact before/after state before a later child may top it up.

@@ -1,6 +1,6 @@
 //! Native appearance commands. Retained intents never rebase at a newer Character root.
 #[path = "appearance_change/catalogue.rs"]
-mod catalogue;
+pub(super) mod catalogue;
 #[path = "appearance_change/command_replay.rs"]
 mod command_replay;
 #[path = "appearance_change/observation.rs"]
@@ -50,6 +50,38 @@ impl AppearanceCommands {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn current_mount(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<u32> {
+        // oteryn-choice: the validated selected mount is the native riding fact; this
+        // runtime has no independent mount-toggle state to infer or persist.
+        let (_, content) = self.appearance_context()?;
+        let fence = super::character_gameplay_fence::current(self, session, false).await?;
+        let state = self
+            .root
+            .read_current_character_appearance_state(
+                self.character,
+                self.holder,
+                fence,
+                content.earned_grant_keys(),
+            )
+            .await
+            .ok()?;
+        let runtime = self.runtime.lock().await;
+        if !current_runtime(&runtime, actor, session, &fence, &content) {
+            return None;
+        }
+        let (base, _) = catalogue::base(&content, &state);
+        Some(
+            base.mount_key
+                .as_deref()
+                .and_then(|key| content.mount_metadata(key))
+                .map_or(0, |m| m.0),
+        )
+    }
+
     pub(super) fn appearance_context(&self) -> Option<(wire::Context, NativeCosmeticsView)> {
         let generation = self.active_generation?;
         let native = generation.native_gameplay()?;
@@ -274,6 +306,7 @@ macro_rules! authority_methods {
         fn appearance_available(&self) -> bool { false }
         fn appearance_observation(&self, _actor: crate::foundation::ExactActorRef, _session: crate::foundation::GameSessionId, _entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { async { None } }
         fn appearance_observation_projected(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, _empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Option<$crate::gameplay_transport::appearance_change::observation::Observation>> { self.appearance_observation(actor, session, entities) }
+        fn appearance_observation_projected_result(&self, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, empty_outfit: bool, entities: Vec<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>) -> impl std::future::Future<Output=Result<$crate::gameplay_transport::appearance_change::observation::Observation, $crate::gameplay_transport::appearance_change::observation::ObservationError>> { async move { self.appearance_observation_projected(actor, session, empty_outfit, entities).await.ok_or($crate::gameplay_transport::appearance_change::observation::ObservationError::Unavailable) } }
         fn appearance_change(&self, _actor: crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _change: oteryn_protocol_oteryn::appearance::Change) -> impl std::future::Future<Output=Option<oteryn_protocol_oteryn::appearance::ChangeResult>> { async { Some(oteryn_protocol_oteryn::appearance::ChangeResult::Rejected) } }
     };
 }
@@ -299,6 +332,15 @@ macro_rules! composed_methods {
             entities: Vec<EntityRef>,
         ) -> Option<appearance_change::observation::Observation> {
             appearance_change::observation::observe(self, actor, session, empty_outfit, entities).await
+        }
+        async fn appearance_observation_projected_result(
+            &self,
+            actor: ExactActorRef,
+            session: GameSessionId,
+            empty_outfit: bool,
+            entities: Vec<EntityRef>,
+        ) -> Result<appearance_change::observation::Observation, appearance_change::observation::ObservationError> {
+            appearance_change::observation::observe_result(self, actor, session, empty_outfit, entities).await
         }
         async fn appearance_change(
             &self,

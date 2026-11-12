@@ -1,0 +1,1693 @@
+{
+  "schema": "OTERYN_WORLD_CREDIT_COUNTERS/v1",
+  "parameters": {
+    "deepling_points": 200,
+    "deer_kills": 1000,
+    "wolf_recovery": 100
+  },
+  "native_authoring": {
+    "deepling_points": "Native binding:200 World points; retained reference does not specify the stage-one threshold.",
+    "deer_kills": "Native binding:1000 deer kills per save; source explicitly leaves numeric threshold unknown.",
+    "wolf_recovery": "Native binding:100 weighted recovery credits per save;1 trapped-wolf return equals10 kills, as sourced.",
+    "geometry": "Explicit native bounded eligibility regions. Seacrest Grounds uses retained discovery_geometry.lua:1307. Demon and Mage bounds cover the retained native populations with eight-cell margins. Goroma volcano footprint and Overhunting hunting region are native-authored bindings rather than claimed donor polygons.",
+    "spawn_composition": "Native phase composition over bounded existing source points: Demon faction strength replaces the same points by prince/lord/base/lord/prince; Seacrest Grounds aquatic population becomes Seacrest Serpents then Renegade Quara; Hive stage-two admits Kollos/Spidris and stage-three admits Elite. These point-to-phase assignments are explicit native authoring, not a claim that donor inventory encoded stage membership. Existing source delays/caps remain owned by Spawn.",
+    "deepling_stage_two_composition": "CHOSEN_NATIVE: completing either shared coral path or stair path marks stage-two completion for the next save. Retained donors establish personal Crystal 9-13, not the shared OR/AND predicate; no donor composition is claimed."
+  },
+  "definitions": [
+    {
+      "key": "deeplings",
+      "kind": "deeplings",
+      "sources": [],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 56899,
+          "revid": 845058,
+          "content_sha256": "1a6b11b8baea5180b05db355d8219c2e74a562e331c7fd02b3e752853283111e",
+          "url": "https://tibia.fandom.com/index.php?curid=56899&oldid=845058",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 56900,
+          "revid": 501316,
+          "content_sha256": "4d57a247a604e765f0c4088501a0de414718de15488492043857bafde204c4f0",
+          "url": "https://tibia.fandom.com/index.php?curid=56900&oldid=501316",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": []
+    },
+    {
+      "key": "demon_wars",
+      "kind": "demon_wars",
+      "sources": [
+        {
+          "creature": "oteryn:creature.askarak_demon",
+          "lane": 0,
+          "area": [
+            33218,
+            33307,
+            31911,
+            31959,
+            12,
+            14
+          ]
+        },
+        {
+          "creature": "oteryn:creature.askarak_lord",
+          "lane": 0,
+          "area": [
+            33218,
+            33307,
+            31911,
+            31959,
+            12,
+            14
+          ]
+        },
+        {
+          "creature": "oteryn:creature.askarak_prince",
+          "lane": 0,
+          "area": [
+            33218,
+            33307,
+            31911,
+            31959,
+            12,
+            14
+          ]
+        },
+        {
+          "creature": "oteryn:creature.shaburak_demon",
+          "lane": 1,
+          "area": [
+            33218,
+            33307,
+            31911,
+            31959,
+            12,
+            14
+          ]
+        },
+        {
+          "creature": "oteryn:creature.shaburak_lord",
+          "lane": 1,
+          "area": [
+            33218,
+            33307,
+            31911,
+            31959,
+            12,
+            14
+          ]
+        },
+        {
+          "creature": "oteryn:creature.shaburak_prince",
+          "lane": 1,
+          "area": [
+            33218,
+            33307,
+            31911,
+            31959,
+            12,
+            14
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 54562,
+          "revid": 1090693,
+          "content_sha256": "f6d24deda0769371b6269d3ee0e6da9a8fa5664bd91a0ad7882c31130f553f13",
+          "url": "https://tibia.fandom.com/index.php?curid=54562&oldid=1090693",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 54700,
+          "revid": 880733,
+          "content_sha256": "dfac84b50374be9381843504f618ec0789539e3caa07026cd6d4b4627a67a124",
+          "url": "https://tibia.fandom.com/index.php?curid=54700&oldid=880733",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": [
+        {
+          "kind": "curated_source_fact",
+          "scope": "world_faction_state",
+          "facts": {
+            "documented_states": 5,
+            "kill_difference_next_stage_minimum": 100,
+            "stalemate_direct_prince_threshold": 400,
+            "direct_prince_comparison": "STRICTLY_GREATER_THAN",
+            "evaluation": "SERVER_SAVE",
+            "per_character_kill_requirement": "UNKNOWN"
+          },
+          "evidence": [
+            {
+              "line": 9,
+              "line_sha256": "2c9ac6b1855684489f43957eef7927487d1bfe6ed429c935c865e1e2faef0ec4",
+              "byte_offset": 664,
+              "byte_length": 85,
+              "span_sha256": "2c9ac6b1855684489f43957eef7927487d1bfe6ed429c935c865e1e2faef0ec4"
+            },
+            {
+              "line": 10,
+              "line_sha256": "dea693b13aee30849a6d91bd9bb319b397277ea2e9ce7da030643bc02c4c040c",
+              "byte_offset": 750,
+              "byte_length": 126,
+              "span_sha256": "dea693b13aee30849a6d91bd9bb319b397277ea2e9ce7da030643bc02c4c040c"
+            },
+            {
+              "line": 11,
+              "line_sha256": "d91263ea821ddb7b92a77b79563757c5e55e2daa19befff95d13da29e641fb11",
+              "byte_offset": 877,
+              "byte_length": 170,
+              "span_sha256": "d91263ea821ddb7b92a77b79563757c5e55e2daa19befff95d13da29e641fb11"
+            },
+            {
+              "line": 12,
+              "line_sha256": "1a0ce2369d311f0adc5303d2696b90d49d6cdd898089a2eda3a54174c8b08949",
+              "byte_offset": 1048,
+              "byte_length": 124,
+              "span_sha256": "1a0ce2369d311f0adc5303d2696b90d49d6cdd898089a2eda3a54174c8b08949"
+            },
+            {
+              "line": 13,
+              "line_sha256": "8f1c420b31db1e0e01b71cd83facd41e5a1aa6a88e726096721d303e43972e4c",
+              "byte_offset": 1173,
+              "byte_length": 167,
+              "span_sha256": "8f1c420b31db1e0e01b71cd83facd41e5a1aa6a88e726096721d303e43972e4c"
+            },
+            {
+              "line": 15,
+              "line_sha256": "d509ae08cce0dbc602c4c2715cc5a0f0adeaf3c34ef31beb78008c474e0c6555",
+              "byte_offset": 1342,
+              "byte_length": 359,
+              "span_sha256": "d509ae08cce0dbc602c4c2715cc5a0f0adeaf3c34ef31beb78008c474e0c6555"
+            }
+          ],
+          "classification": "DERIVED",
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "source_order": 9
+        }
+      ]
+    },
+    {
+      "key": "fire_from_the_earth",
+      "kind": "fire_earth",
+      "sources": [
+        {
+          "creature": "oteryn:creature.stone_golem",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.fire_elemental",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.fire_devil",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.demon",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.diabolic_imp",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.dragon",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.dragon_hatchling",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.dragon_lord",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.dragon_lord_hatchling",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.dragonling",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        },
+        {
+          "creature": "oteryn:creature.hellfire_fighter",
+          "lane": 0,
+          "area": [
+            32030,
+            32090,
+            32585,
+            32680,
+            0,
+            12
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 76220,
+          "revid": 845085,
+          "content_sha256": "306bf03580c82142bff8aced58d510cf0dced38bcc67e5eba881f4d72681ef30",
+          "url": "https://tibia.fandom.com/index.php?curid=76220&oldid=845085",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 76221,
+          "revid": 887143,
+          "content_sha256": "86c8bc596ec60a94a2784b26e06b6ce6dfd5d6cd86caf5be97743d1d31163a76",
+          "url": "https://tibia.fandom.com/index.php?curid=76221&oldid=887143",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": [
+        {
+          "kind": "curated_source_fact",
+          "scope": "achievement_vs_taming",
+          "facts": {
+            "fiery_creature_kills": 50,
+            "kill_scope": "ON_OR_INSIDE_VOLCANO",
+            "achievement_entity": "Fire from the Earth",
+            "mount_entity": "Dragonling",
+            "mount_grant": "UNKNOWN",
+            "mount_activity": "TAMING_OPPORTUNITY"
+          },
+          "evidence": [
+            {
+              "line": 8,
+              "line_sha256": "2b9ecf59e6eca9572dce6a5f6f5f0a2cf5d87f2fbe3ff5b3a8ed27986cf8d22f",
+              "byte_offset": 457,
+              "byte_length": 384,
+              "span_sha256": "2b9ecf59e6eca9572dce6a5f6f5f0a2cf5d87f2fbe3ff5b3a8ed27986cf8d22f"
+            },
+            {
+              "line": 10,
+              "line_sha256": "14fff65a1ef08db738b5e1b79ad5be2671c94dfc1882ba976a043303278bf455",
+              "byte_offset": 843,
+              "byte_length": 125,
+              "span_sha256": "14fff65a1ef08db738b5e1b79ad5be2671c94dfc1882ba976a043303278bf455"
+            }
+          ],
+          "classification": "DERIVED",
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "source_order": 8
+        }
+      ]
+    },
+    {
+      "key": "hive_born",
+      "kind": "hive_born",
+      "sources": [],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 56901,
+          "revid": 845113,
+          "content_sha256": "b445cf7355c61fe781a5ce149f0da32484bb6805ff9be1b6c7e364d3be913ba6",
+          "url": "https://tibia.fandom.com/index.php?curid=56901&oldid=845113",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 56902,
+          "revid": 930222,
+          "content_sha256": "c8dd90a99df4f596c9db4b3231b19e9d3c1ad70b306d37f9e4b37d90fb207d0b",
+          "url": "https://tibia.fandom.com/index.php?curid=56902&oldid=930222",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": [
+        {
+          "kind": "curated_source_fact",
+          "field": "event_state",
+          "value": {
+            "states": 3,
+            "change_at": "server_save",
+            "world_scoped": true
+          },
+          "source_order": 3,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "evidence": {
+            "line": 3,
+            "end_line": 3,
+            "line_sha256": "de9edb69dc36a3bfdefaf8029c5aa20ca862ccddc5d999013f692979c995ed92",
+            "byte_offset": 41,
+            "byte_length": 343,
+            "span_sha256": "3f13b037973065a6b71a400f6d55ac9dab00037622cecc0cd0bd1e97bde901e0"
+          }
+        },
+        {
+          "kind": "curated_source_fact",
+          "field": "world_progress",
+          "value": {
+            "task_kinds": 4,
+            "points_per_task": 1,
+            "required_daily_points": 200
+          },
+          "source_order": 7,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "evidence": {
+            "line": 7,
+            "end_line": 7,
+            "line_sha256": "a12b05af6dcfb697d2fa7c65c98ad94ff78f629fcc68ec9b199da5f14585a76a",
+            "byte_offset": 400,
+            "byte_length": 302,
+            "span_sha256": "13326cea0f51fb86f320dc4b6e59da71d31847cfc683f4524fd8d68c7097183d"
+          }
+        },
+        {
+          "kind": "curated_source_fact",
+          "field": "stage_2",
+          "value": {
+            "task_kinds": 2,
+            "points_per_task": 2,
+            "required_actions": 200,
+            "fallback_after_days": 3
+          },
+          "source_order": 18,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "evidence": {
+            "line": 18,
+            "end_line": 18,
+            "line_sha256": "8cf570f3a520a61f97d032c2d7b7ccb62c5ec50832da62d32ed0d1b3e8968026",
+            "byte_offset": 1071,
+            "byte_length": 419,
+            "span_sha256": "46df60d59cfc7fa81b4ab5e6b8f1b611e4d5b6ec9249cf0ca2d9f1f321671923"
+          }
+        },
+        {
+          "kind": "curated_source_fact",
+          "field": "access_cost",
+          "value": {
+            "npc": "Orockle",
+            "cost": 50,
+            "unit": "Favour Points",
+            "access_days": 7
+          },
+          "source_order": 20,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "evidence": {
+            "line": 20,
+            "end_line": 20,
+            "line_sha256": "3b5c8fc7eed552a1f5972a0e5ca75e6e0470ef6bcff3cb44fc3f79e27d528dfc",
+            "byte_offset": 1491,
+            "byte_length": 405,
+            "span_sha256": "081ce66b6252e802cd456cf5af81866ca378282a702dd6f0f9d3bc6fb5107e57"
+          }
+        },
+        {
+          "kind": "curated_source_fact",
+          "field": "stage_3",
+          "value": {
+            "duration_days": 5,
+            "default_next_stage": 1,
+            "next_stage_if_final_day_actions_at_least_200": 2
+          },
+          "source_order": 37,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "evidence": {
+            "line": 37,
+            "end_line": 37,
+            "line_sha256": "23018248fd1738024cb2412ed6ea88d784879f6ec8bf97f195adc8ba92eb3b25",
+            "byte_offset": 3089,
+            "byte_length": 170,
+            "span_sha256": "03c93b67125c04ea237fd085b88a2386616ccc4064e5a3cfdbe244558171b537"
+          }
+        }
+      ]
+    },
+    {
+      "key": "overhunting",
+      "kind": "overhunting",
+      "sources": [
+        {
+          "creature": "oteryn:creature.deer",
+          "lane": 0,
+          "area": [
+            32440,
+            32770,
+            31670,
+            31950,
+            7,
+            7
+          ]
+        },
+        {
+          "creature": "oteryn:creature.white_deer",
+          "lane": 0,
+          "area": [
+            32440,
+            32770,
+            31670,
+            31950,
+            7,
+            7
+          ]
+        },
+        {
+          "creature": "oteryn:creature.starving_wolf",
+          "lane": 1,
+          "area": [
+            32440,
+            32770,
+            31670,
+            31950,
+            7,
+            7
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 54569,
+          "revid": 844823,
+          "content_sha256": "7ad2d3e9dfac68dacc1809b59fb63749ee469f3e29cd4d3c8ba4b6f6fca0e33c",
+          "url": "https://tibia.fandom.com/index.php?curid=54569&oldid=844823",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 54864,
+          "revid": 1084984,
+          "content_sha256": "238b00d78e9dc5dfb6760b32f8de6252d358520a370db0509c03a847835899b8",
+          "url": "https://tibia.fandom.com/index.php?curid=54864&oldid=1084984",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": [
+        {
+          "kind": "curated_source_fact",
+          "field": "world_population_condition",
+          "value": {
+            "deer_kill_threshold": null,
+            "effect_at": "next_server_save",
+            "taming_item": "Golden Fir Cone",
+            "taming_item_quantity": null,
+            "wolf_trapping_effect_relative_to_killing": 10,
+            "effectiveness_is_reward_quantity": false
+          },
+          "source_order": 5,
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN",
+          "evidence": {
+            "line": 5,
+            "end_line": 9,
+            "line_sha256": "cf4fefeb13fe916163ff54b9a4c42dffa62f64d51dfea97e1629df8112656157",
+            "byte_offset": 393,
+            "byte_length": 1277,
+            "span_sha256": "add2b588bddc3b0d15291fe0967795e21be17ac572ee3f69cca2082893c290f8"
+          }
+        }
+      ]
+    },
+    {
+      "key": "the_fire_feathered_serpent",
+      "kind": "fire_feathered",
+      "sources": [
+        {
+          "creature": "oteryn:creature.seacrest_serpent",
+          "lane": 0,
+          "area": [
+            33502,
+            33592,
+            31587,
+            31677,
+            13,
+            15
+          ]
+        },
+        {
+          "creature": "oteryn:creature.renegade_quara_constrictor",
+          "lane": 1,
+          "area": [
+            33502,
+            33592,
+            31587,
+            31677,
+            13,
+            15
+          ]
+        },
+        {
+          "creature": "oteryn:creature.renegade_quara_hydromancer",
+          "lane": 1,
+          "area": [
+            33502,
+            33592,
+            31587,
+            31677,
+            13,
+            15
+          ]
+        },
+        {
+          "creature": "oteryn:creature.renegade_quara_mantassin",
+          "lane": 1,
+          "area": [
+            33502,
+            33592,
+            31587,
+            31677,
+            13,
+            15
+          ]
+        },
+        {
+          "creature": "oteryn:creature.renegade_quara_pincher",
+          "lane": 1,
+          "area": [
+            33502,
+            33592,
+            31587,
+            31677,
+            13,
+            15
+          ]
+        },
+        {
+          "creature": "oteryn:creature.renegade_quara_predator",
+          "lane": 1,
+          "area": [
+            33502,
+            33592,
+            31587,
+            31677,
+            13,
+            15
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 85784,
+          "revid": 891479,
+          "content_sha256": "d018020a4288d02d6fc652ab96f8efd1d0b7f95d442edca081c31f5c07343d67",
+          "url": "https://tibia.fandom.com/index.php?curid=85784&oldid=891479",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 85785,
+          "revid": 1078002,
+          "content_sha256": "0b520f5c19efdf5a949b9253b780ad661f5913b1a069c9309c28d467ad82148a",
+          "url": "https://tibia.fandom.com/index.php?curid=85785&oldid=1078002",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": [
+        {
+          "kind": "curated_source_fact",
+          "scope": "world_change_timing",
+          "facts": {
+            "fact": "immediate_state_changes",
+            "timing": "immediate_after_trigger",
+            "server_save_required": false,
+            "linked_quest": "Twenty Miles Beneath the Sea Quest"
+          },
+          "evidence": [
+            {
+              "line": 2,
+              "line_sha256": "c0fb8a1bb0802e86a676235a786334dcafef68327abfd30a9e834c61debaeff1",
+              "byte_offset": 57,
+              "byte_length": 253,
+              "span_sha256": "c0fb8a1bb0802e86a676235a786334dcafef68327abfd30a9e834c61debaeff1"
+            }
+          ],
+          "source_order": 2,
+          "classification": "DERIVED",
+          "binding_status": "UNKNOWN",
+          "execution_semantics": "UNKNOWN"
+        },
+        {
+          "kind": "curated_source_fact",
+          "scope": "world_collective_objective",
+          "facts": {
+            "fact": "intermediate_kill_threshold",
+            "creature": "Seacrest Serpent",
+            "total_kills": 1000,
+            "world_change_activated": false
+          },
+          "evidence": [
+            {
+              "line": 13,
+              "line_sha256": "e13f523388b2dc8548f5d44b68f1ad85e809dca8fff5639b4d86ce12d550a0ef",
+              "byte_offset": 753,
+              "byte_length": 199,
+              "span_sha256": "e13f523388b2dc8548f5d44b68f1ad85e809dca8fff5639b4d86ce12d550a0ef"
+            }
+          ],
+          "source_order": 13,
+          "classification": "DERIVED",
+          "binding_status": "UNKNOWN",
+          "execution_semantics": "UNKNOWN"
+        },
+        {
+          "kind": "curated_source_fact",
+          "scope": "world_collective_objective",
+          "facts": {
+            "fact": "activation_kill_threshold",
+            "creature": "Seacrest Serpent",
+            "additional_kills": 1000,
+            "total_kills": 2000,
+            "replacement_creature_reference": "Quara#Quara_Renegades"
+          },
+          "evidence": [
+            {
+              "line": 24,
+              "line_sha256": "25cebf0801fba76551e75a64f74fb9356823701da8c2e966b7f837bed2064d68",
+              "byte_offset": 1396,
+              "byte_length": 350,
+              "span_sha256": "25cebf0801fba76551e75a64f74fb9356823701da8c2e966b7f837bed2064d68"
+            }
+          ],
+          "source_order": 24,
+          "classification": "DERIVED",
+          "binding_status": "UNKNOWN",
+          "execution_semantics": "UNKNOWN"
+        },
+        {
+          "kind": "curated_source_fact",
+          "scope": "mission_scoped_availability",
+          "facts": {
+            "fact": "linked_mission_access",
+            "quest": "Twenty Miles Beneath the Sea Quest",
+            "mission": "The Fire-Feathered Sea Serpent",
+            "state_required": "awake"
+          },
+          "evidence": [
+            {
+              "line": 33,
+              "line_sha256": "e19fd3e355f203c8429e263328053e8bcbe5eb39560b2fc432bb3b1b7af0fc27",
+              "byte_offset": 2011,
+              "byte_length": 316,
+              "span_sha256": "e19fd3e355f203c8429e263328053e8bcbe5eb39560b2fc432bb3b1b7af0fc27"
+            }
+          ],
+          "source_order": 33,
+          "classification": "DERIVED",
+          "binding_status": "UNKNOWN",
+          "execution_semantics": "UNKNOWN"
+        },
+        {
+          "kind": "curated_source_fact",
+          "scope": "world_collective_reset",
+          "facts": {
+            "fact": "source_compound_reset_condition",
+            "mission_done": true,
+            "creature_reference": "Quara#Quaras_Renegade",
+            "kills": 2000,
+            "resulting_state": "asleep"
+          },
+          "evidence": [
+            {
+              "line": 35,
+              "line_sha256": "e2780d66de6f99bbbab097ad64fce63afc7e79dcec851d3c1ca671430f093165",
+              "byte_offset": 2329,
+              "byte_length": 198,
+              "span_sha256": "e2780d66de6f99bbbab097ad64fce63afc7e79dcec851d3c1ca671430f093165"
+            }
+          ],
+          "source_order": 35,
+          "classification": "DERIVED",
+          "binding_status": "UNKNOWN",
+          "execution_semantics": "UNKNOWN"
+        }
+      ]
+    },
+    {
+      "key": "the_mage_s_tower",
+      "kind": "mages_tower",
+      "sources": [
+        {
+          "creature": "oteryn:creature.yielothax",
+          "lane": 0,
+          "area": [
+            32896,
+            32982,
+            31557,
+            31665,
+            8,
+            9
+          ]
+        },
+        {
+          "creature": "oteryn:creature.energized_raging_mage",
+          "lane": 1,
+          "area": [
+            33135,
+            33151,
+            31519,
+            31538,
+            2,
+            2
+          ]
+        },
+        {
+          "creature": "oteryn:creature.raging_mage",
+          "lane": 2,
+          "area": [
+            33135,
+            33151,
+            31519,
+            31538,
+            2,
+            2
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 54564,
+          "revid": 844897,
+          "content_sha256": "36aeb30467281f51d01763edd84315fa221dce4805a057c5a7c5d4ad3e28bbcc",
+          "url": "https://tibia.fandom.com/index.php?curid=54564&oldid=844897",
+          "relation": "base"
+        },
+        {
+          "provider": "tibia_fandom",
+          "pageid": 55046,
+          "revid": 1095409,
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "url": "https://tibia.fandom.com/index.php?curid=55046&oldid=1095409",
+          "relation": "spoiler"
+        }
+      ],
+      "curated_facts": [
+        {
+          "kind": "curated_source_fact",
+          "scope": "world_and_character_kill_counters",
+          "facts": {
+            "access_prerequisite": {
+              "quest": "The New Frontier Quest",
+              "mission": 2
+            },
+            "world_Yielothax_kills": 2000,
+            "character_Yielothax_kills_minimum": 250,
+            "character_counter_reset_trigger": "HIT_RAGING_MAGE",
+            "counter_retained_if_no_hit": true,
+            "historical_pre9_2_world_threshold": 300,
+            "historical_threshold_is_current": false,
+            "Uniwheel": "TAMING_OPPORTUNITY_NOT_MOUNT_GRANT"
+          },
+          "evidence": [
+            {
+              "line": 8,
+              "line_sha256": "2563abfb4ff8675b9e11698c7ea808fee56113ffb6219d0854aaefeae7a575f9",
+              "byte_offset": 914,
+              "byte_length": 97,
+              "span_sha256": "2563abfb4ff8675b9e11698c7ea808fee56113ffb6219d0854aaefeae7a575f9"
+            },
+            {
+              "line": 16,
+              "line_sha256": "eeee082427b01c86995d0632a591d606f5c3b23992483e1d3e35a1ecc405d851",
+              "byte_offset": 1550,
+              "byte_length": 728,
+              "span_sha256": "eeee082427b01c86995d0632a591d606f5c3b23992483e1d3e35a1ecc405d851"
+            },
+            {
+              "line": 19,
+              "line_sha256": "a2b9b4dc8c94263920d93c221df0b4fb95f88bfb283d6a167e5254c9329dc6ea",
+              "byte_offset": 2294,
+              "byte_length": 110,
+              "span_sha256": "a2b9b4dc8c94263920d93c221df0b4fb95f88bfb283d6a167e5254c9329dc6ea"
+            },
+            {
+              "line": 23,
+              "line_sha256": "0a9237429f08149c19e648b7ecaf70a4e2137939461ecc569754b3f2b9e9c184",
+              "byte_offset": 3057,
+              "byte_length": 272,
+              "span_sha256": "0a9237429f08149c19e648b7ecaf70a4e2137939461ecc569754b3f2b9e9c184"
+            },
+            {
+              "line": 26,
+              "line_sha256": "e0ec3d12b8f21e396d7d5e0fcc9412627c3889d2866f18932b688e4939587ca2",
+              "byte_offset": 3345,
+              "byte_length": 82,
+              "span_sha256": "e0ec3d12b8f21e396d7d5e0fcc9412627c3889d2866f18932b688e4939587ca2"
+            }
+          ],
+          "source_order": 8,
+          "classification": "DERIVED",
+          "execution_semantics": "UNKNOWN",
+          "binding_status": "UNKNOWN"
+        }
+      ]
+    },
+    {
+      "key": "their_masters_voice",
+      "kind": "their_masters_voice",
+      "sources": []
+    }
+  ],
+  "spawn_rules": [
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.fire_elemental",
+      "area": [
+        32073,
+        32073,
+        32603,
+        32603,
+        2,
+        2
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragonling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.askarak_demon",
+      "area": [
+        33240,
+        33240,
+        31920,
+        31920,
+        12,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_prince",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_prince"
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.shaburak_demon",
+      "area": [
+        33240,
+        33240,
+        31920,
+        31920,
+        12,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_prince",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_prince"
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.askarak_demon",
+      "area": [
+        33218,
+        33307,
+        31911,
+        31959,
+        12,
+        14
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_lord",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_lord"
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.shaburak_demon",
+      "area": [
+        33218,
+        33307,
+        31911,
+        31959,
+        12,
+        14
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_lord",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_lord"
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.young_sea_serpent",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.sea_serpent",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.blood_crab",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.shark",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.blood_beast",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_hydromancer",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_hydromancer",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_pincher",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_pincher",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_mantassin",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_mantassin",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_predator",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_predator",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "mages_tower",
+      "creature": "oteryn:creature.energized_raging_mage",
+      "area": [
+        33144,
+        33144,
+        31529,
+        31529,
+        2,
+        2
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.energized_raging_mage",
+        "oteryn:creature.raging_mage",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "deeplings",
+      "creature": "oteryn:creature.tanjis",
+      "area": [
+        33645,
+        33645,
+        31239,
+        31239,
+        11,
+        11
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.tanjis",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "deeplings",
+      "creature": "oteryn:creature.obujos",
+      "area": [
+        33437,
+        33437,
+        31265,
+        31265,
+        11,
+        11
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.obujos",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "deeplings",
+      "creature": "oteryn:creature.jaul",
+      "area": [
+        33545,
+        33545,
+        31274,
+        31274,
+        11,
+        11
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.jaul",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "hive_born",
+      "creature": "oteryn:creature.kollos",
+      "area": [
+        33001,
+        33700,
+        30900,
+        31400,
+        0,
+        15
+      ],
+      "stages": [
+        null,
+        null,
+        "oteryn:creature.kollos",
+        "oteryn:creature.kollos",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "hive_born",
+      "creature": "oteryn:creature.spidris",
+      "area": [
+        33001,
+        33700,
+        30900,
+        31400,
+        0,
+        15
+      ],
+      "stages": [
+        null,
+        null,
+        "oteryn:creature.spidris",
+        "oteryn:creature.spidris",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "hive_born",
+      "creature": "oteryn:creature.spidris_elite",
+      "area": [
+        33001,
+        33700,
+        30900,
+        31400,
+        0,
+        15
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.spidris_elite",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "overhunting",
+      "creature": "oteryn:creature.deer",
+      "area": [
+        32440,
+        32770,
+        31670,
+        31950,
+        7,
+        7
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.deer",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "overhunting",
+      "creature": "oteryn:creature.starving_wolf",
+      "area": [
+        32440,
+        32770,
+        31670,
+        31950,
+        7,
+        7
+      ],
+      "stages": [
+        null,
+        null,
+        "oteryn:creature.starving_wolf",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.stone_golem",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.stone_golem",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.fire_elemental",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.fire_elemental",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.fire_devil",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.fire_devil",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.demon",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.demon",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.diabolic_imp",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.diabolic_imp",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon_hatchling",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon_hatchling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon_lord",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon_lord",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon_lord_hatchling",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon_lord_hatchling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragonling",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragonling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.hellfire_fighter",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.hellfire_fighter",
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ],
+  "spawn_sources": [
+    {
+      "kind": "mages_tower",
+      "source": "oteryn:spawn.x33141_y31531_z2",
+      "point": {
+        "cell": {
+          "floor": 2,
+          "x": 33144,
+          "y": 31529
+        },
+        "creature": "oteryn:creature.energized_raging_mage",
+        "direction": "north",
+        "respawn_ms": 90000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    },
+    {
+      "kind": "deeplings",
+      "source": "oteryn:spawn.x33645_y31240_z11",
+      "point": {
+        "cell": {
+          "floor": 11,
+          "x": 33645,
+          "y": 31239
+        },
+        "creature": "oteryn:creature.tanjis",
+        "direction": "north",
+        "respawn_ms": 1800000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    },
+    {
+      "kind": "deeplings",
+      "source": "oteryn:spawn.x33437_y31266_z11",
+      "point": {
+        "cell": {
+          "floor": 11,
+          "x": 33437,
+          "y": 31265
+        },
+        "creature": "oteryn:creature.obujos",
+        "direction": "north",
+        "respawn_ms": 1800000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    },
+    {
+      "kind": "deeplings",
+      "source": "oteryn:spawn.x33545_y31275_z11",
+      "point": {
+        "cell": {
+          "floor": 11,
+          "x": 33545,
+          "y": 31274
+        },
+        "creature": "oteryn:creature.jaul",
+        "direction": "north",
+        "respawn_ms": 1800000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    }
+  ],
+  "native_choices": [
+    {
+      "kind": "fire_earth",
+      "binding": "one sourced volcano Fire Elemental home (32073,32603,2) supplies the active Dragonling opportunity; chosen Oteryn population composition, not a retained donor spawn rule",
+      "evidence": "content/world/spawns exact retained Fire Elemental placement; canonical Dragonling native profile; wiki Fire from Earth opportunity"
+    }
+  ]
+}

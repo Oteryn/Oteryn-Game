@@ -1,0 +1,3099 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:193",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:202",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/crawlers_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:165",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:144",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:134",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:181",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:121",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:2590",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/barrel_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/fifth_barrel",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 0,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/first_barrel",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 0,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/fourth_barrel",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 0,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/gnomish_chest",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:100",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:127",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/second_barrel",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 0,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/third_barrel",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 0,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/time_task_diremaws",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:67",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/time_task_growth",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:113",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/lore-help",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "help"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "If you're willing to help us, we could need an escort for arriving {ordnance}, help with {charting} the cave system and someone needs to get some heat {measurements} fast."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:311",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/lore-worthy",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "worthy"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You're already known amongst the gnomes, member of the Bigfoot Brigade. I will make sure that the alliance learns of your deeds but you'll still need to help the dwarves and gnomes of this outpost to show your worth. ...",
+        "We also found {suspicious devices} carried by all kinds of creatures down here. Down here, they are of extreme worth to us since they could contain the key to what's happening all around us. ...",
+        "If you can aquire any, return them to me and I make sure to tell the others of your generosity. Return to me afterwards to check on your current {status}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:315",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/lore-base",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "base"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Gnomish supplies and ingenuity have helped to establish and fortify this outpost. ...",
+        "Our knowledge of the enemy and it's tactics would be of more use if the dwarves would listen to us somewhat more. But gnomes have learned to live with the imperfection of the other races."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:321",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/lore-efforts",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "efforts"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Our surveys of the area showed us some spikes in heat and seismic activity at very specific places. ...",
+        "We conclude this is no coincidence and the enemy is using devices to pump up the lava to flood the area. We have seen it before and had to retreat each time. ...",
+        "This time though we might have a counter prepared - given me manage to pierce their defences."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:327",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/lore-name",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "name"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "My name is Gnomus."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:332",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/lore-job",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I'm the main gnomish contact for this base. I coordinate our efforts with those of the dwarves to ensure everything is running smoothly."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:333",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/lore-work",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "work"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Here's the situation: a tide of hazardous bugs, the gnomes named them {diremaws}, threatens our base. Then there is some kind of {growth} which seems connected to them somehow. We need to get rid of both."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:240",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/lore-worth",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "worth"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You're already known amongst the gnomes, member of the Bigfoot Brigade. I will make sure that the alliance learns of your deeds but you'll still need to help the dwarves and gnomes of this outpost to show your worth. ...",
+        "We also found suspicious devices carried by all kinds of creatures down here. Down here, they are of extreme worth to us since they could contain the key to what's happening all around us. ... ",
+        "If you can aquire any, return them to me and I make sure to tell the others of your generosity. Return to me afterwards to check on your current {status}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:244",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/lore-job",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Leading the charge! It's a war down here. I maintain the outer defences and supplies which are organised back in Kazordoon and also by the gnomes. ...",
+        "I have sealed some of the areas far too dangerous for anyone to enter. If you can prove you're capable, you'll get an oportunity to help destroying the weird machines, pumping lava into the caves leading to the most dangerous enemies.",
+        "But even if we knew nothing more about them, the fact alone that they employ the help of those mockeries of all things dwarfish, marks them as an enemy of the dwarves and it's our obligation to annihilate them."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:252",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/lore-name",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "name"
+      ],
+      "match_mode": "keyword_handler_substring",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Bashsmite. That's all you need to know."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:257",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "KeywordHandler",
+        "input_transform": "Lua string.lower",
+        "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+        "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+        "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+        "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/measurements-offer-initial",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "measurements"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The heat down here is not the only problem we have but one of our greatest concerns. Not only is it almost unbearable for us, it also seems to be rising. ...",
+        "We need to find out if this is true and what that means for this place - and for us gnomes. You can help us do this by grabbing one of our trignometres and collecting as much as data from the heat in this area as possible. ...",
+        "We'd need at least 5 measurements. Are you willing to do this?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:78"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/measurements-offer-repeat",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "measurements"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "comparison": "le",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The heat down here is not the only problem we have but one of our greatest concerns. Not only is it almost unbearable for us, it also seems to be rising. ...",
+        "We need to find out if this is true and what that means for this place - and for us gnomes. You can help us do this by grabbing one of our trignometres and collecting as much as data from the heat in this area as possible. ...",
+        "We'd need at least 5 measurements. Are you willing to do this?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:70-77"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/measurements-cooldown",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "measurements"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "comparison": "gt",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:66-68"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/measurements-busy",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "measurements"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "comparison": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+          "comparison": "lt",
+          "value": 5
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:86"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-offer-initial",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "ordnance"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 22,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I am constantly waiting for ordnance to arrive. A lot of gnomes intend to travel out here to help us but the main access path to our base is not safe anymore. ...",
+        "Tragically we lost several gnomes after an outbreak of what I can only describe as a force from below. We were completely surprised by their onslaught and retreated to this outpost. ...",
+        "All our reinforcements arrive at the crystal teleporter to the east of the cave system. We need someone to navigate the new arrivals through the hazards of the dangerous caves. ...",
+        "Hideous creatures and hot lava makes travelling extremely dangerous. And on top of that there is also the constant danger from falling rocks in the area. ...",
+        "Are you willing to help?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:134"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-offer-repeat",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "ordnance"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 22,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "comparison": "eq",
+          "value": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
+          "comparison": "le",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I am constantly waiting for ordnance to arrive. A lot of gnomes intend to travel out here to help us but the main access path to our base is not safe anymore. ...",
+        "Tragically we lost several gnomes after an outbreak of what I can only describe as a force from below. We were completely surprised by their onslaught and retreated to this outpost. ...",
+        "All our reinforcements arrive at the crystal teleporter to the east of the cave system. We need someone to navigate the new arrivals through the hazards of the dangerous caves. ...",
+        "Hideous creatures and hot lava makes travelling extremely dangerous. And on top of that there is also the constant danger from falling rocks in the area. ...",
+        "Are you willing to help?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:124-133"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-cooldown",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "ordnance"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "comparison": "eq",
+          "value": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_ordnance",
+          "comparison": "gt",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:120-122"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-busy",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "ordnance"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:144"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-busy_extra",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "ordnance"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+          "comparison": "lt",
+          "value": 5
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:144"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-accept-new-log",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        },
+        {
+          "keywords": [
+            "ordnance"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 22,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/crawlers_count",
+          "value": 0
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Excellent, just follow the path to east until you reach a dead end, there is a hole that leads to a small cave underneath which will bring you right to the old trail. ...",
+        "Help whoever you can and return them to the save cave exit - oh, and while you're at it... some of them will have pack animals. If you can rescue those as well, I'll hand you a bonus. Good luck!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:165"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/ordnance-accept-existing-log",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        },
+        {
+          "keywords": [
+            "ordnance"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 22,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "comparison": "ge",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/ordnance",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnomes_count",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/crawlers_count",
+          "value": 0
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Excellent, just follow the path to east until you reach a dead end, there is a hole that leads to a small cave underneath which will bring you right to the old trail. ...",
+        "Help whoever you can and return them to the save cave exit - oh, and while you're at it... some of them will have pack animals. If you can rescue those as well, I'll hand you a bonus. Good luck!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:165"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/charting-offer-initial",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "charting"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 33,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "While exploring these caves to find places to collect spores and grow mushrooms, we found several strange structures. I am convinced that this system was once home to intelligent beings. ...",
+        "However, the creatures from below are now disturbing our research as well as some particularly pesky dwarves who just would not leave us alone. ...",
+        "As we have our hands full with a lot of things right now, we could need someone to chart the unknown parts of this underground labyrinth ...",
+        "I am especially interested in the scattered dark structures around these parts. Would you do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:193"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/charting-offer-repeat",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "charting"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 33,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+          "comparison": "le",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "While exploring these caves to find places to collect spores and grow mushrooms, we found several strange structures. I am convinced that this system was once home to intelligent beings. ...",
+        "However, the creatures from below are now disturbing our research as well as some particularly pesky dwarves who just would not leave us alone. ...",
+        "As we have our hands full with a lot of things right now, we could need someone to chart the unknown parts of this underground labyrinth ...",
+        "I am especially interested in the scattered dark structures around these parts. Would you do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:184-192"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/charting-cooldown",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "charting"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+          "comparison": "gt",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:180-182"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/charting-busy",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "charting"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "comparison": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+          "comparison": "lt",
+          "value": 3
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:202"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/diremaws-offer-initial",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "diremaws"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The gnomes say that these creatures seem to thrive on mushroom sponges. But not only that, apparently they also lay eggs in their own cadavers to breed even faster. ...",
+        "Yes, disgusting. I guess it provides everything their offspring needs... well, we probably shouldn't go into that much further. Instead we should focus on preventing that from happening. ... ",
+        "If I understood that correctly, the gnomes 'grew' a device to completely neutralise diremaw corpses. Acting as a very effective counter measure. ... ",
+        "A lot of corpses are lying around wherever these creatures are being hunted. Now all we need are, you guessed it, volunteers to clean up as many of those remains as possible ... ",
+        "Are you willing to help? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:80"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/diremaws-offer-repeat",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "diremaws"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/time_task_diremaws",
+          "comparison": "le",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The gnomes say that these creatures seem to thrive on mushroom sponges. But not only that, apparently they also lay eggs in their own cadavers to breed even faster. ...",
+        "Yes, disgusting. I guess it provides everything their offspring needs... well, we probably shouldn't go into that much further. Instead we should focus on preventing that from happening. ... ",
+        "If I understood that correctly, the gnomes 'grew' a device to completely neutralise diremaw corpses. Acting as a very effective counter measure. ... ",
+        "A lot of corpses are lying around wherever these creatures are being hunted. Now all we need are, you guessed it, volunteers to clean up as many of those remains as possible ... ",
+        "Are you willing to help? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:70-79"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/diremaws-cooldown",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "diremaws"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/time_task_diremaws",
+          "comparison": "gt",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:66-68"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/diremaws-busy",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "diremaws"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+          "comparison": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+          "comparison": "lt",
+          "value": 20
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:90"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/diremaws-accept-new-log",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        },
+        {
+          "keywords": [
+            "diremaws"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/gnomish_chest",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+          "value": 0
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Noted. Get one of the gnomish devices from the container next to me and 'use' it on any diremaw corpses to effectively neutralise them. At least the gnomes told me this will work - good luck!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:100"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/diremaws-accept-existing-log",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        },
+        {
+          "keywords": [
+            "diremaws"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "comparison": "ge",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaw",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/gnomish_chest",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/diremaws_count",
+          "value": 0
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Noted. Get one of the gnomish devices from the container next to me and 'use' it on any diremaw corpses to effectively neutralise them. At least the gnomes told me this will work - good luck!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:100"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/growth-offer-initial",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "growth"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 22,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I can't explain that stuff, even the gnomes don't know what grows in those caves. All we know is that this stuff brought about all the diremaws we are now facing. ...",
+        "This vermin is somehow attracted to this sponge, my guess is they use it as a nourishment, too. We need to get rid of the stuff regularly to reduce their numbers to a manageable level. ...",
+        "We hauled our explosives down there - and I mean ALL our explosives. Dangerous? Indeed, so we positioned someone down there to actually watch this depot. ...",
+        "We built an iron fence around it and added a mechanism to quickly get barrel if need be. Then an... accident happened to our guard down there and ...",
+        "Well, to make a long story short, the barrels are unguarded right now and the diremaws are now too numerous and we are in desperate need of volunteers. ... ",
+        "We need someone to take those barrels to the source of the ever growing sponge and burn it down. All of it. There should be at least five locations. Are you up for that? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:127"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/growth-offer-repeat",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "growth"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 22,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/time_task_growth",
+          "comparison": "le",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I can't explain that stuff, even the gnomes don't know what grows in those caves. All we know is that this stuff brought about all the diremaws we are now facing. ...",
+        "This vermin is somehow attracted to this sponge, my guess is they use it as a nourishment, too. We need to get rid of the stuff regularly to reduce their numbers to a manageable level. ...",
+        "We hauled our explosives down there - and I mean ALL our explosives. Dangerous? Indeed, so we positioned someone down there to actually watch this depot. ...",
+        "We built an iron fence around it and added a mechanism to quickly get barrel if need be. Then an... accident happened to our guard down there and ...",
+        "Well, to make a long story short, the barrels are unguarded right now and the diremaws are now too numerous and we are in desperate need of volunteers. ... ",
+        "We need someone to take those barrels to the source of the ever growing sponge and burn it down. All of it. There should be at least five locations. Are you up for that? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:116-126"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/growth-cooldown",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "growth"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+          "comparison": "eq",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/time_task_growth",
+          "comparison": "gt",
+          "value": 0
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:112-114"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/growth-accept-new-log",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        },
+        {
+          "keywords": [
+            "growth"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 22,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/barrel_count",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/first_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/second_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/third_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/fourth_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/fifth_barrel",
+          "value": 0
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Noted. Now, get down there and rain some fire on them."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/growth-accept-existing-log",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        },
+        {
+          "keywords": [
+            "growth"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 22,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "comparison": "ge",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/barrel_count",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/first_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/second_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/third_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/fourth_barrel",
+          "value": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/scouts/fifth_barrel",
+          "value": 0
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Noted. Now, get down there and rain some fire on them."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:151"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/devices-offer",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "suspicious devices",
+        "suspicious device"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 55,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "If you bring me any suspicious devices on creatures you slay down here, I'll make it worth your while by telling the others of your generosity. How many do you want to offer? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:241"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/devices-offer",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "suspicious devices",
+        "suspicious device"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 55,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "If you bring me any suspicious devices on creatures you slay down here, I'll make it worth your while by telling the others of your generosity. How many do you want to offer? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:170"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/gnomus/status-offer",
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "status"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "help",
+            "worthy",
+            "base",
+            "efforts",
+            "name",
+            "job"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "So you want to know what we all think about your deeds? What leader's opinion are you interested in, the {gnomes} (Gnomus), the {dwarves} (Klom Stonecutter) or the {scouts} (Lardoc Bashsmite)?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:297"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depth/lardoc_bashsmite/status-offer",
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "keywords": [
+        "status"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "work",
+            "worth",
+            "job",
+            "name"
+          ],
+          "match_mode": "keyword_handler_substring",
+          "source_matcher": {
+            "handler": "KeywordHandler",
+            "input_transform": "Lua string.lower",
+            "predicate": "Lua string.find for every keyword, in nondecreasing match-start order",
+            "sibling_selection": "first successfully processed child encountered by pairs(node.children)",
+            "sibling_order": "NIEZNANE: no deterministic sibling order is qualified by this draft",
+            "precedence": "KeywordHandler executes before CALLBACK_MESSAGE_DEFAULT",
+            "sources": [
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+              "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456"
+            ]
+          }
+        }
+      ],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "So you want to know what we all think about your deeds? What leader's opinion are you interested in, the {gnomes} (Gnomus), the {dwarves} (Klom Stonecutter) or the {scouts} (Lardoc Bashsmite)?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:226"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "handler": "CALLBACK_MESSAGE_DEFAULT",
+        "predicate": "MsgContains",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": {
+        "keyword_handler_preemption": "Before this callback, source static nodes use KeywordHandler string.find, not MsgContains.",
+        "independent_if_chains": "Multiple independent Lua if chains can process one compound message sequentially; the draft does not qualify one-rule selection for such messages.",
+        "compound_message_status": "held pending shared source-aware dispatch qualification",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:65-235"
+        ]
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.gnomus",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Greetings, member of the Bigfoot Brigade. We could really use some {help} from you right now. You should prove {worthy} to our alliance.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:335"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:335",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "held",
+      "source_matcher": {
+        "handler": "FocusModule.messageMatcher",
+        "input_transform": "Lua string.lower in KeywordHandler.processNodeMessage",
+        "predicate": "string.find(message, word), rejecting [%w+] immediately before or after the word",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:281-300",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:379-388",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-182"
+        ]
+      }
+    },
+    {
+      "npc": "oteryn:npc.lardoc_bashsmite",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Since you are obviously not one of my relatives who pays me a long overdue visit, we should get {work} right away. We'll see if you can prove your {worth} to our alliance.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:259"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lardoc_bashsmite.lua:259",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "held",
+      "source_matcher": {
+        "handler": "FocusModule.messageMatcher",
+        "input_transform": "Lua string.lower in KeywordHandler.processNodeMessage",
+        "predicate": "string.find(message, word), rejecting [%w+] immediately before or after the word",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:281-300",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:379-388",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-182"
+        ]
+      }
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "dangerous_depth.npc.json",
+      "authoring_readiness": {
+        "literal_text": "source-reviewed; paragraphs remain separate",
+        "runtime_schema": "draft source descriptors; not accepted by the current runtime",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "limitations": [
+          "NpcTalkBook opt-in and shared routing are held by the coordinator.",
+          "Multiple KeywordHandler matches require source pairs-order qualification; no deterministic order is invented.",
+          "Independent Lua if chains can both execute for one message; one-rule selection does not represent that composition."
+        ],
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:41-73",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-195",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-456",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-306"
+        ]
+      },
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    }
+  ]
+}

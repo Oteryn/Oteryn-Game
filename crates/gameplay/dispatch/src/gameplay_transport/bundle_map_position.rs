@@ -105,7 +105,7 @@ pub(super) async fn observe(
         let mut runtime = admission.runtime.lock().await;
         let index = item_ref_admission::pinned_index(&runtime, admission.active_generation);
         (
-            bundle_map_position(&mut runtime, admission.movement_cells, actor)?,
+            bundle_map_position(&mut runtime, admission.movement_cells(), actor)?,
             index,
         )
     };

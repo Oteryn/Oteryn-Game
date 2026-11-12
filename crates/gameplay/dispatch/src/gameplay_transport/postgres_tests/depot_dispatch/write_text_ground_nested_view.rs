@@ -287,7 +287,6 @@ pub(super) async fn dispatch_ground(
 ) -> TestResult {
     use tokio::io::AsyncWriteExt;
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    let session = admitted.game_session_id;
     let character = admitted.item_fence.ok_or("item fence")?.character_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = crate::gameplay_transport::connection::serve_admitted(
@@ -426,8 +425,15 @@ pub(super) async fn dispatch_ground(
             // custody read is blocked. Give the existing view-command window
             // time to expire before exercising the next commands.
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            revalidate_session_after_lock(session, &mut client, pool, root, selected_handle)
-                .await?;
+            revalidate_session_after_lock(
+                owner,
+                admitted,
+                &mut client,
+                pool,
+                root,
+                selected_handle,
+            )
+            .await?;
             client.write_all(&open(12, selected_handle)?).await?;
             let restored = read_views(&mut client, 12, 2).await?;
             let child = restored
@@ -533,13 +539,16 @@ async fn revalidate_after_lock(
 /// A privileged fixture advances the session only after the real command is
 /// waiting on the root row. The old session must not publish a refreshed view.
 async fn revalidate_session_after_lock(
-    session: crate::foundation::GameSessionId,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
     client: &mut tokio::io::DuplexStream,
     pool: &sqlx::PgPool,
     root: [u8; 16],
     handle: ItemHandle,
 ) -> TestResult {
+    use std::{future::Future, task::Poll};
     use tokio::io::AsyncWriteExt;
+    let session = admitted.game_session_id;
     let mut blocker = pool.begin().await?;
     let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
         .fetch_one(&mut *blocker)
@@ -548,12 +557,33 @@ async fn revalidate_session_after_lock(
         .bind(root.as_slice()).execute(&mut *blocker).await?;
     client.write_all(&open(11, handle)?).await?;
     wait_for_blocker(pool, pid).await?;
+    // Queue behind the real read while it still owns the gameplay lane. FIFO
+    // admission then fences periodic refresh until the temporary fixture session
+    // displacement is restored, without suppressing any production refresh check.
+    let mut restoring_lane = std::pin::pin!(owner.spell_lane.acquire());
+    std::future::poll_fn(|cx| {
+        assert!(restoring_lane.as_mut().poll(cx).is_pending());
+        Poll::Ready(())
+    })
+    .await;
     fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
     blocker.commit().await?;
+    let restoring_lane = restoring_lane
+        .await
+        .map_err(|_| "fixture lane unresolved")?;
     read_outcome(client, 11, ContainerViewOutcome::Stale).await?;
+    // Prove a real refresh also waits for the fixture restoration barrier.
+    let mut refresh = std::pin::pin!(owner.staff_refresh(admitted));
+    std::future::poll_fn(|cx| {
+        assert!(refresh.as_mut().poll(cx).is_pending());
+        Poll::Ready(())
+    })
+    .await;
     // Restore only fixture data so the same advertised handle can demonstrate
     // that the refused read did not manufacture a new view or lose its parent.
     fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation-1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
+    drop(restoring_lane);
+    assert!(refresh.await, "restored session must pass the real refresh");
     Ok(())
 }
 
@@ -607,9 +637,21 @@ async fn revalidate_carried_after_lock(
         "unchanged carried entries return after fixture restoration"
     );
 
-    // Pause the next real open after custody admission but before its entry
-    // SELECT completes. A competing carried-tree writer must still be fenced
-    // by the reader's root lock, rather than race the remaining statements.
+    // Admit the real open into its transaction before blocking the entries
+    // table: an unrelated inventory read must not take the sole holder first.
+    let mut root_blocker = pool.begin().await?;
+    let root_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *root_blocker)
+        .await?;
+    sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR NO KEY UPDATE")
+        .bind(character.as_bytes().as_slice()).execute(&mut *root_blocker).await?;
+    client.write_all(&open(15, handle)?).await?;
+    let reader = wait_for_blocked_query(
+        pool,
+        root_pid,
+        "SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR SHARE",
+    )
+    .await?;
     let mut entries = pool.begin().await?;
     sqlx::query("LOCK TABLE game_item_container_entries IN ACCESS EXCLUSIVE MODE")
         .execute(&mut *entries)
@@ -617,24 +659,114 @@ async fn revalidate_carried_after_lock(
     let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
         .fetch_one(&mut *entries)
         .await?;
-    client.write_all(&open(15, handle)?).await?;
-    wait_for_blocker(pool, pid).await?;
-    let mut writer = pool.begin().await?;
-    let error = sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR NO KEY UPDATE NOWAIT")
-        .bind(character.as_bytes().as_slice()).execute(&mut *writer).await
-        .expect_err("carried entry read must retain the Character root lock");
-    assert_eq!(
-        error
-            .as_database_error()
-            .and_then(|error| error.code())
-            .as_deref(),
-        Some("55P03")
-    );
-    writer.rollback().await?;
-    entries.commit().await?;
+    let mut decoy = pool.begin().await?;
+    let decoy_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *decoy)
+        .await?;
+    const DECOY_QUERY: &str = "SELECT item_instance_id FROM game_item_container_entries LIMIT 1";
+    let decoy_read = async {
+        let result = sqlx::query(DECOY_QUERY).execute(&mut *decoy).await;
+        decoy.rollback().await?;
+        result.map(|_| ())
+    };
+    let qualification = async {
+        let result = async {
+            // This reader really waits on entries while the command still
+            // waits on the root. The old any-backend barrier accepts it.
+            let blocked = wait_for_blocked_query(pool, pid, DECOY_QUERY).await?;
+            assert_eq!(blocked.0, decoy_pid, "the fixture decoy must be waiting");
+            wait_for_blocker(pool, pid).await?;
+            assert!(
+                !carried_entry_reader_blocked(pool, pid, &reader).await?,
+                "an unrelated entries reader must not stand in for the command"
+            );
+            root_blocker.commit().await?;
+            tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                loop {
+                    if carried_entry_reader_blocked(pool, pid, &reader).await? {
+                        return Ok::<(), sqlx::Error>(());
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                }
+            })
+            .await
+            .map_err(|_| format!("carried reader {reader:?} missed entries blocker {pid}"))??;
+            // The same transaction is now past custody admission and waiting
+            // on its entry SELECT. Independently prove root-lock retention.
+            let mut writer = pool.begin().await?;
+            let error = sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR NO KEY UPDATE NOWAIT")
+                .bind(character.as_bytes().as_slice()).execute(&mut *writer).await
+                .expect_err("carried entry read must retain the Character root lock");
+            assert_eq!(
+                error
+                    .as_database_error()
+                    .and_then(|error| error.code())
+                    .as_deref(),
+                Some("55P03")
+            );
+            writer.rollback().await?;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }
+        .await;
+        // Unlock even when qualification returns an error, so the joined
+        // decoy can complete and roll back without leaving a detached query.
+        entries.commit().await?;
+        result
+    };
+    let (qualified, decoy_finished) =
+        super::super::fixture::join_two(qualification, decoy_read).await;
+    qualified?;
+    decoy_finished?;
     let unchanged = read_views(client, 15, 3).await?;
     assert_eq!(unchanged, restored);
     Ok(())
+}
+
+async fn wait_for_blocked_query(
+    pool: &sqlx::PgPool,
+    blocker_pid: i32,
+    query: &str,
+) -> TestResult<(i32, String)> {
+    let reader = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let reader = sqlx::query_as::<_, (i32, String)>(
+                "SELECT pid,xact_start::text FROM pg_stat_activity \
+                  WHERE datname=current_database() AND state='active' AND xact_start IS NOT NULL \
+                    AND $1=ANY(pg_blocking_pids(pid)) AND query=$2 LIMIT 1",
+            )
+            .bind(blocker_pid)
+            .bind(query)
+            .fetch_optional(pool)
+            .await?;
+            if let Some(reader) = reader {
+                return Ok::<_, sqlx::Error>(reader);
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .map_err(|_| format!("expected query did not wait on backend {blocker_pid}: {query}"))??;
+    Ok(reader)
+}
+
+async fn carried_entry_reader_blocked(
+    pool: &sqlx::PgPool,
+    blocker_pid: i32,
+    reader: &(i32, String),
+) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM pg_stat_activity \
+          WHERE datname=current_database() AND state='active' AND pid=$2 AND xact_start::text=$3 \
+            AND $1=ANY(pg_blocking_pids(pid)) \
+            AND strpos(query,'COALESCE(n.parent_item_instance_id,')>0 \
+            AND strpos(query,'LEFT JOIN game_item_nested_entries n')>0 \
+            AND strpos(query,'LEFT JOIN game_item_container_entries e')>0)",
+    )
+    .bind(blocker_pid)
+    .bind(reader.0)
+    .bind(&reader.1)
+    .fetch_one(pool)
+    .await
 }
 
 async fn wait_for_blocker(pool: &sqlx::PgPool, pid: i32) -> TestResult {

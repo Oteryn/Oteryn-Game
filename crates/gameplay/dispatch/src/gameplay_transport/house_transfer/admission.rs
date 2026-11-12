@@ -25,6 +25,69 @@ struct RestoreCheck<'a, 'r, 'c, 's> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn note_house_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> bool {
+        let classify = |error| match error {
+            crate::durability::DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+            _ => AdmissionRefusal::Rejected,
+        };
+        if let (Some(actor), Some(fence), Some(controller)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            admitted.controller,
+        ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+            && actor.runtime_scope() == fence.runtime_scope
+        {
+            let Ok(budget) =
+                crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
+            else {
+                return false;
+            };
+            let Ok((current, _)) = budget
+                .retry_unavailable(async || {
+                    FreshAdmissionStore::from_root(self.root.clone())
+                        .current_session_at(admitted.game_session_id)
+                        .await
+                        .map_err(classify)
+                })
+                .await
+            else {
+                return false;
+            };
+            return crate::gameplay_transport::item_fence_of(current) == Some(fence)
+                && current.session_state() == GameSessionState::Active
+                && current.current_transport() == Some(controller.transport);
+        }
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
+        {
+            return true;
+        }
+        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
+            return false;
+        };
+        // Background projections share this holder with mandatory pre-dispatch input.
+        // Re-prove the same fences/transport on each idempotent attempt; all non-busy
+        // failures and budget exhaustion still refuse before any command effect.
+        let Ok(budget) =
+            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
+        else {
+            return false;
+        };
+        budget
+            .retry_unavailable(async || {
+                self.root
+                    .note_house_transfer_input(self.holder, fence, controller.transport)
+                    .await
+                    .map_err(classify)
+            })
+            .await
+            .is_ok()
+    }
     /// Called after genuine fresh COMMIT and before its Channel first-entry
     /// participants can publish or overwrite a recorded House position.
     pub(in crate::gameplay_transport) async fn restore_fresh_house(
@@ -36,10 +99,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<Option<AdmittedSession>, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (source, _) = store
-            .current_session_at(attempt.game_session_id)
-            .await
-            .map_err(|_| Unavailable)?;
+        let retry =
+            super::super::AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        // These are current reads after a committed admission, including for
+        // ordinary Characters with no saved House. A busy or retired holder
+        // must not turn absence of a House into loss of the committed identity.
+        let (source, _) = retry
+            .retry_unavailable(async || {
+                self.root.await_ready().await.map_err(|_| Unavailable)?;
+                store
+                    .current_session_at(attempt.game_session_id)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
+            .await?;
         let fence = crate::gameplay_transport::item_fence_of(source).ok_or(Unavailable)?;
         if source.session_state() != GameSessionState::Active
             || source.current_transport() != Some(attempt.transport)
@@ -48,11 +121,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(Rejected);
         }
-        let character = self
-            .root
-            .read_current_character(self.character, fence.character_id)
-            .await
-            .map_err(|_| Unavailable)?;
+        let character = retry
+            .retry_unavailable(async || {
+                self.root.await_ready().await.map_err(|_| Unavailable)?;
+                self.root
+                    .read_current_character(self.character, fence.character_id)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
+            .await?;
         let gameplay = CurrentCharacterGameplayFence {
             character_id: fence.character_id,
             game_session_id: fence.game_session_id,
@@ -62,11 +139,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope_ownership_generation: fence.scope_ownership_generation,
             expected_character_revision: character.revision,
         };
-        let Some(saved) = self
-            .root
-            .read_scoped_character_last_position(self.character, self.holder, gameplay)
-            .await
-            .map_err(|_| Unavailable)?
+        let Some(saved) = retry
+            .retry_unavailable(async || {
+                self.root.await_ready().await.map_err(|_| Unavailable)?;
+                self.root
+                    .read_scoped_character_last_position(self.character, self.holder, gameplay)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
+            .await?
         else {
             return Ok(None);
         };
@@ -297,8 +378,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         account: [u8; 16],
     ) -> Option<AdmittedSession> {
-        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(attempt.game_session_id)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let retry =
+            super::super::AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        let (current, _) = retry
+            .retry_unavailable(async || {
+                self.root
+                    .await_ready()
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)?;
+                store
+                    .current_session_at(attempt.game_session_id)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
             .await
             .ok()?;
         let fence = crate::gameplay_transport::item_fence_of(current)?;

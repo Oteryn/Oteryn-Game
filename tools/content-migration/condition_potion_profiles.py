@@ -1,4 +1,4 @@
-"""Admit the four Crystal condition potions without inventing HP/MP restores.
+"""Admit Crystal condition and dispel potions without inventing HP/MP restores.
 
 Crystal 201189f potions.lua:1-31,52-54,63,125-129 owns their runtime
 conditions. The existing exact identity binding and physical Item importer
@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+from native_profile_composition import encode_native_profile
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
@@ -24,11 +26,12 @@ CRYSTAL_INPUTS = {
     'data/items/appearances.dat': '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1',
     'data/scripts/actions/items/potions.lua': '6eb180d90f8bfa8d14480b5703cf0b59dccc142caf1cbf5789219b61698d0527',
 }
-IDS = (7439, 7440, 7443, 49271)
-DONOR_RULE = 'crystal/data/scripts/actions/items/potions.lua:1-31,52-54,63,125-129'
+IDS = (7439, 7440, 7443, 49271, 7644, 35563)
+DONOR_RULE = 'crystal/data/scripts/actions/items/potions.lua:1-42,52-54,57,62-63,78-110,115-147'
 RUNTIME_OWNER = 'crates/gameplay/dispatch/src/gameplay_transport/condition_potions.rs'
-# Crystal potions.lua:52-54,63. No level or magic-level restriction.
-VOCATIONS = {7439: ['KNIGHT'], 7440: ['DRUID', 'SORCERER'], 7443: ['PALADIN'], 49271: None}
+# Crystal potions.lua:52-54,57,62-63. Only magic shield has a level restriction.
+VOCATIONS = {7439: ['KNIGHT'], 7440: ['DRUID', 'SORCERER'], 7443: ['PALADIN'], 49271: None,
+             7644: None, 35563: ['DRUID', 'SORCERER']}
 
 
 def digest(raw):
@@ -37,7 +40,7 @@ def digest(raw):
 
 def requirements(item):
     return source.K({
-        'min_level': dict(source.NA),
+        'min_level': source.K(14) if item == 35563 else dict(source.NA),
         'min_magic_level': dict(source.NA),
         'vocations': source.K(VOCATIONS[item]) if VOCATIONS[item] else dict(source.NA),
         'enforcement_mode': 'ON_USE',
@@ -158,7 +161,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if existing.intersection(keys):
         raise ValueError('CONDITION_POTION_PROFILE_DUPLICATE')
     document['records'] = sorted(document['records'] + records, key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = digest(raw)
     manifest_raw = canonical(manifest)

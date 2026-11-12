@@ -22,7 +22,9 @@ pub(in super::super) async fn refresh<A: FreshAdmissionAuthority>(
         if !seen.insert(key) {
             continue;
         }
-        let observation = authority.observe_container(actor, fence, key).await;
+        let observation = authority
+            .observe_container_with_house_capacity(actor, fence, key, views.house_capacity_v2())
+            .await;
         observed.push((key, observation));
     }
     views.refresh(view, &observed)

@@ -3,16 +3,20 @@ use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 #[path = "loop_monster/fixture.rs"]
-mod fixture;
+pub(super) mod fixture;
 use fixture::{cell, dependencies, next_pass, run_case};
 #[path = "loop_monster/item_scope.rs"]
 mod item_scope;
+#[path = "loop_monster/pass_cost.rs"]
+mod pass_cost;
 #[path = "loop_monster/shared_budget.rs"]
 mod shared_budget;
 #[path = "loop_monster/sql_cancellation.rs"]
 mod sql_cancellation;
 #[path = "loop_monster/summon_transaction.rs"]
 mod summon_transaction;
+#[path = "loop_monster/unknown_bundle_field.rs"]
+mod unknown_bundle_field;
 
 #[test]
 fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestResult {
@@ -31,7 +35,7 @@ fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestR
         let (deps, rat) = dependencies(active, &pin)?;
         let mut owner = deps.owner(harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = deps.room.movement_cells();
+        owner.movement_cells = (deps.room.movement_cells()).into();
         owner.clock_origin -= std::time::Duration::from_secs(10);
         // No PlayerSpellState is installed: the actual think has no eligible target.
         owner.drain_monster_melee().await;

@@ -11,6 +11,7 @@ use oteryn_game_server::content::{
     qualify_native_entry_room, qualify_native_entry_room_from_gameplay_manifest,
 };
 use oteryn_game_server::durability::DurabilityRoot;
+use oteryn_game_server::durability::character_authority::CharacterAuthorityError;
 use oteryn_game_server::durability::content_activation::ContentActivationRequest;
 use oteryn_game_server::durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance,
@@ -21,6 +22,9 @@ use oteryn_game_server::durability::runtime_scope_assignment::{
     OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
+use oteryn_game_server::native_admission_source::restore_notice::{
+    self, Ack as RestoreAck, RestoreNotice, RestoreNoticeConfig, RestoreNoticeDescriptor,
+};
 use oteryn_game_server::native_admission_source::scope_assignment::{
     self, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
     ScopeAssignmentDescriptor,
@@ -28,9 +32,9 @@ use oteryn_game_server::native_admission_source::scope_assignment::{
 use oteryn_game_server::node::config::{DatabaseConfig, NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
-    AssignmentRequestFile, CharacterRecoveryRequestFile, ContentActivationRequestFile,
-    LaunchAuthorizationFile, MAX_OPERATOR_FILE_BYTES, S2AuthorizationFile, hex, hex_bytes,
-    random_bytes, uuid_v7,
+    AssignmentRequestFile, CharacterRecoveryRequestFile, CharacterRestoreRequestFile,
+    ContentActivationRequestFile, LaunchAuthorizationFile, MAX_OPERATOR_FILE_BYTES,
+    S2AuthorizationFile, hex, hex_bytes, random_bytes, uuid_v7,
 };
 use oteryn_game_server::node::secure_file::{self, FileClass};
 use oteryn_game_server::node::{StartupError, connect_root, read_file, uuid_bytes, uuid_text};
@@ -547,6 +551,123 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 ))),
             }
         }
+        Some("restore") => {
+            let name = arguments.take("request")?;
+            let restore_point = arguments
+                .take("restore-point")?
+                .parse::<u64>()
+                .map_err(|_| Failure::Input("--restore-point".into()))?;
+            let backup_label = arguments.take("backup-label")?;
+            let notice_config = arguments.take("notice-config")?;
+            arguments.finish()?;
+            let fence = &operator.config.character;
+            let store = CharacterRecoveryStore::open_owned_by(
+                &fence.fence_directory,
+                fence.authority_scope_id.clone(),
+                fence.issuer_identity.clone(),
+                operator.config.operator.service_uid,
+            )
+            .map_err(|error| Failure::Input(format!("character.fence_directory: {error:?}")))?;
+            let request = match operator.read_state_optional(&name)? {
+                Some(bytes) => {
+                    let request = CharacterRestoreRequestFile::decode(&bytes)
+                        .map_err(|_| Failure::Input("restore request".into()))?;
+                    if request.restore_point != restore_point
+                        || request.backup_label != backup_label
+                    {
+                        return Err(Failure::Input(
+                            "restore request inputs differ from retained request".into(),
+                        ));
+                    }
+                    request
+                }
+                None => {
+                    let expected_predecessor = {
+                        let seal = store.seal_current().map_err(|error| {
+                            Failure::Rejected(format!("restore fence: {error:?}"))
+                        })?;
+                        seal.record().recovery_generation
+                    };
+                    let request = CharacterRestoreRequestFile {
+                        version: FILE_VERSION,
+                        recovery_event_id: hex(
+                            &uuid_v7().map_err(|_| Failure::Unavailable("randomness".into()))?
+                        ),
+                        issued_at: u64::try_from(now_seconds()?)
+                            .map_err(|_| Failure::Unavailable("clock".into()))?,
+                        expected_predecessor,
+                        restore_point,
+                        backup_label,
+                    };
+                    let bytes = request
+                        .encode()
+                        .map_err(|_| Failure::Input("restore request".into()))?;
+                    operator.create_state(&name, None, &bytes)?;
+                    request
+                }
+            };
+            let event_id = hex_bytes::<16>(&request.recovery_event_id)
+                .map_err(|_| Failure::Input("restore request".into()))?;
+            let transition = store
+                .begin_recovery(request.expected_predecessor, event_id, request.issued_at)
+                .map_err(|error| Failure::Rejected(format!("restore fence: {error:?}")))?;
+            match operator
+                .root
+                .reconcile_character_recovery(&transition)
+                .await
+            {
+                Ok(()) => {}
+                Err(CharacterAuthorityError::Conflict) => {
+                    return Err(Failure::Rejected(
+                        "restored store generation is not the register's predecessor; a restore below the latest generation needs the chained procedure".into(),
+                    ));
+                }
+                Err(error) => {
+                    return Err(Failure::Ambiguous(format!(
+                        "restore admission: {error:?}; re-run with the same request"
+                    )));
+                }
+            }
+            let record = transition.record();
+            let notice = RestoreNotice {
+                source_authority: String::new(),
+                restore_event_id: record.recovery_event_id,
+                restored_generation: record.predecessor_generation,
+                new_recovery_generation: record.recovery_generation,
+                restore_point: request.restore_point,
+                backup_label: request.backup_label,
+            };
+            let generation = notice.new_recovery_generation;
+            drop(transition);
+            let (config, descriptor) = restore_notice_descriptor(&notice_config)?;
+            let mut notice = notice;
+            notice.source_authority = config.source_authority;
+            let report = restore_notice::publish_until_acknowledged(
+                &descriptor,
+                &notice,
+                restore_notice::RetryPolicy::default(),
+            )
+            .await;
+            match report.result {
+                Ok(RestoreAck::Acknowledged { reopened }) => {
+                    event(&format!(
+                        "character_restore=acknowledged generation={generation} reopened={reopened}"
+                    ));
+                    Ok(())
+                }
+                Ok(RestoreAck::Reconciling { .. }) => Err(Failure::Unavailable(
+                    "restore notice remains reconciling; re-run with the same request".into(),
+                )),
+                Err(error) if error.definite() => Err(Failure::Rejected(format!(
+                    "restore notice: {}",
+                    error.class()
+                ))),
+                Err(error) => Err(Failure::Unavailable(format!(
+                    "restore notice: {}; re-run with the same request",
+                    error.class()
+                ))),
+            }
+        }
         Some("interpretation") => {
             let profile = arguments.take("profile")?;
             let ruleset = arguments.take("ruleset")?;
@@ -587,9 +708,57 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
             }
         }
         _ => Err(Failure::Usage(
-            "character fresh-store|interpretation|bootstrap",
+            "character fresh-store|restore|interpretation|bootstrap; keep every node stopped until restore reports acknowledged",
         )),
     }
+}
+
+fn restore_notice_descriptor(
+    path: &str,
+) -> Result<(RestoreNoticeConfig, RestoreNoticeDescriptor), Failure> {
+    let invalid = |key: &str| Failure::Input(format!("--notice-config {key}"));
+    let document = read_file(
+        "--notice-config",
+        std::path::Path::new(path),
+        FileClass::Trusted,
+        0,
+        restore_notice::CONFIG_BYTES,
+    )?;
+    let config = RestoreNoticeConfig::parse(&document).map_err(|_| invalid("document"))?;
+    let roots = certificates(&read_file(
+        "trust_roots_file",
+        &config.trust_roots_file,
+        FileClass::Trusted,
+        0,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| invalid("trust_roots_file"))?;
+    let chain = certificates(&read_file(
+        "client_certificate_file",
+        &config.client_certificate_file,
+        FileClass::Trusted,
+        0,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| invalid("client_certificate_file"))?;
+    let key = PrivateKeyDer::from_pem_slice(&read_file(
+        "client_key_file",
+        &config.client_key_file,
+        FileClass::Secret,
+        0,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| invalid("client_key_file"))?;
+    let descriptor = RestoreNoticeDescriptor::new(
+        (config.endpoint.ip().to_string(), config.endpoint.port()),
+        config.peer_name.clone(),
+        roots,
+        chain,
+        key,
+        &[],
+    )
+    .map_err(|_| invalid("identity"))?;
+    Ok((config, descriptor))
 }
 
 /// One bounded request over the node's local control socket.
@@ -1373,7 +1542,7 @@ async fn projection(
 }
 
 const PUBLIC_PROJECTION_USAGE: &str = "public-projection resync --family \
-all|highscores|character_profile|world_online --raise-epoch true|false: re-enqueue the current \
+all|highscores|character_profile|world_online|world_totals|character_deaths|guild|house|character_online_sessions|world_daily_kills --raise-epoch true|false: re-enqueue the current \
 public snapshots of the family for the Platform public read model and print the public projection \
 epoch. `true` (only with `--family all`) raises the epoch above the public epoch fence and then \
 persists the fence; it uses the [public_projection] operator credential of the ops config. After a \
@@ -1394,7 +1563,20 @@ async fn public_projection(
         return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE));
     }
     let family = arguments.take("family")?;
-    if !["all", "highscores", "character_profile", "world_online"].contains(&family.as_str()) {
+    if ![
+        "all",
+        "highscores",
+        "character_profile",
+        "world_online",
+        "world_totals",
+        "character_deaths",
+        "character_online_sessions",
+        "world_daily_kills",
+        "guild",
+        "house",
+    ]
+    .contains(&family.as_str())
+    {
         return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE));
     }
     let raise = match arguments.take("raise-epoch")?.as_str() {
@@ -1513,16 +1695,51 @@ fn main() -> ExitCode {
         println!("{PROCESS} {}", oteryn_error_codes::build_id(version));
         return ExitCode::SUCCESS;
     }
+    let mut startup = oteryn_error_codes::Span::start(
+        oteryn_error_codes::Level::Info,
+        "node",
+        "startup_stage",
+        None,
+    );
+    startup.field("stage", "ops_runtime");
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
     {
-        Ok(runtime) => runtime,
-        Err(_) => return ExitCode::from(5),
+        Ok(runtime) => {
+            startup.set_outcome("ok");
+            runtime
+        }
+        Err(_) => {
+            startup.set_outcome("failed");
+            startup.set_code(FailureKind::Unavailable.code());
+            return ExitCode::from(5);
+        }
     };
+    drop(startup);
+    let command = raw
+        .iter()
+        .find_map(|word| match word.as_str() {
+            "authorization" | "registration" | "s2" | "character" | "assignment" | "content"
+            | "projection" | "public-projection" => Some(word.as_str()),
+            _ => None,
+        })
+        .unwrap_or("unknown");
+    let mut span = oteryn_error_codes::Span::start(
+        oteryn_error_codes::Level::Info,
+        "ops",
+        "ops_command",
+        None,
+    );
+    span.field("command", command);
     match runtime.block_on(run(raw)) {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(()) => {
+            span.set_outcome("ok");
+            ExitCode::SUCCESS
+        }
         Err(failure) => {
+            span.set_outcome("failed");
+            span.set_code(failure.kind().code());
             let detail = failure.to_string();
             let line =
                 oteryn_error_codes::Line::new(oteryn_error_codes::Level::Error, "ops", "failed")
@@ -1671,7 +1888,18 @@ mod tests {
         let words = |words: &[&str]| {
             Arguments::parse(words.iter().map(|word| (*word).to_owned()).collect()).unwrap()
         };
-        for family in ["all", "highscores", "character_profile", "world_online"] {
+        for family in [
+            "all",
+            "highscores",
+            "character_profile",
+            "world_online",
+            "world_totals",
+            "character_deaths",
+            "character_online_sessions",
+            "world_daily_kills",
+            "guild",
+            "house",
+        ] {
             connected.borrow_mut().clear();
             let resync = words(&[
                 "public-projection",
@@ -1712,7 +1940,7 @@ mod tests {
                 "public-projection",
                 "resync",
                 "--family",
-                "guild",
+                "unknown_family",
                 "--raise-epoch",
                 "false",
             ][..],

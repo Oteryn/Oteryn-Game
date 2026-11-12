@@ -34,6 +34,24 @@ SOURCES = {
 }
 DEFAULT = 'blood'
 RACE = re.compile(r'^\s*monster\.race\s*=\s*"([a-z]+)"\s*$', re.M)
+CAKE_REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
+CAKE_PATH = 'data-global/monster/quests/a_piece_of_cake/cake_golem.lua'
+
+
+def binding_revision(binding, identity, revision):
+    # Crystal201189f cake_golem.lua:25 explicitly sets venom. This exact
+    # admitted successor does not broaden the frozen original Creature cohort.
+    if (identity['key'] == 'oteryn:creature.cake_golem'
+            and identity.get('family') == 'Creature'
+            and identity.get('revision') == 'definition-r1'
+            and binding['identity_namespace'] == 'crystalserver/monster-file'
+            and binding.get('target') == identity
+            and binding['external_id'] == CAKE_PATH
+            and binding['source_revision'] == 'crystalserver-creature-1530:' + CAKE_REVISION):
+        return CAKE_REVISION
+    if not binding['source_revision'].endswith(revision):
+        raise ValueError('unpinned source revision for ' + identity['key'])
+    return revision
 
 
 def without_lua_comments(text):
@@ -69,14 +87,14 @@ def build(checkouts):
         binding = bindings[0]
         repository, revision, path_of = SOURCES[binding['identity_namespace']]
         path = path_of(binding['external_id'])
-        if not binding['source_revision'].endswith(revision):
-            raise ValueError('unpinned source revision for ' + identity['key'])
+        revision = binding_revision(binding, identity, revision)
         blob = subprocess.check_output(['git', '-C', str(checkouts[repository]), 'show',
                                         revision + ':' + path])
         race, disposition = source_race(blob.decode())
         records.append({'creature': identity, 'race': race, 'disposition': disposition,
                         'source': {'repository': repository, 'path': path,
-                                   'sha256': hashlib.sha256(blob).hexdigest()}})
+                                   'sha256': hashlib.sha256(blob).hexdigest(),
+                                   **({'revision': revision} if revision == CAKE_REVISION else {})}})
     records.sort(key=lambda r: r['creature']['key'])
     return {
         'schema': 'OTERYN_CREATURE_RACES/v1',

@@ -21,7 +21,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Clone, Copy)]
 pub(in super::super) enum Case {
+    Preview,
     Conversions,
+    CurrentDust,
     DustLimit,
     DustCap,
     Refusals,
@@ -91,6 +93,17 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
                 .current_session_at(deps.admitted.game_session_id)
                 .await?
                 .0;
+        if matches!(case, Case::Preview) {
+            deps.runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    current.current_character_lease(),
+                )
+                .map_err(debug)?;
+        }
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -99,7 +112,11 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             .bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
         item_look::seed_main_backpack(&h, &[]).await?;
         let (dust, limit) = match case {
-            Case::Items(_) | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
+            Case::Preview
+            | Case::Items(_)
+            | Case::Integrity
+            | Case::CoreRefusal
+            | Case::MixedFee => (1000, 1000),
             Case::Refusals => (59, 100),
             Case::DustCap => {
                 let max = crate::domain::forge_dust::DustLimit::from_upgrade_count(
@@ -120,9 +137,30 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             &[4, 6, 12, 14, 152],
         )
         .ok_or("forge capabilities")?;
+        if matches!(case, Case::Preview) {
+            assert!(
+                admitted.continuity.selected_capabilities.contains(152),
+                "Preview fixture must negotiate152"
+            );
+            let runtime = deps.runtime.lock().await;
+            assert!(
+                crate::gameplay_transport::battle_instinct_status::actor_is_current(
+                    &runtime, admitted
+                ),
+                "Preview fixture requires its real current actor/lease"
+            );
+            assert!(
+                crate::gameplay_transport::item_ref_admission::pinned_index(
+                    &runtime,
+                    owner.active_generation
+                )
+                .is_some(),
+                "Preview fixture requires its active pinned item index"
+            );
+        }
         if matches!(
             case,
-            Case::RevisionChanged | Case::DustStageChanged | Case::LegacyBudget
+            Case::Preview | Case::RevisionChanged | Case::DustStageChanged | Case::LegacyBudget
         ) {
             let gameplay = owner
                 .current_quest_fence(admitted.game_session_id)
@@ -137,6 +175,12 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             ));
         }
         match case {
+            Case::Preview => {
+                super::super::forge_preview::exercise(&h, &owner, &mut admitted).await?
+            }
+            Case::CurrentDust => {
+                super::super::nx8_forge_projection::exercise(&h, &owner, &mut admitted).await?
+            }
             Case::Conversions => super::conversions(&h, &owner, &mut admitted).await?,
             Case::DustLimit => super::dust_limit(&h, &owner, &mut admitted).await?,
             Case::DustCap => super::dust_cap(&h, &owner, &mut admitted).await?,
@@ -322,6 +366,21 @@ pub(in super::super) async fn exchange_raw(
     admitted: &mut AdmittedSession,
     payload: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
+    exchange_typed(
+        owner,
+        admitted,
+        protocol::item_forge::COMMAND_TYPE_ITEM_FORGE,
+        payload,
+    )
+    .await
+}
+
+pub(in super::super) async fn exchange_typed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command_type: u32,
+    payload: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let current = *admitted;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
@@ -330,10 +389,11 @@ pub(in super::super) async fn exchange_raw(
         end
     };
     let exercise = async {
-        let result = send(
+        let result = send_command(
             &mut client,
             current.continuity.connection_generation,
             current.continuity.next_command_id,
+            command_type,
             payload,
         )
         .await?;
@@ -390,22 +450,6 @@ pub(in super::super) fn server_end_summary(end: &ConnectionEnd) -> String {
     } else {
         kind
     }
-}
-
-async fn send(
-    client: &mut tokio::io::DuplexStream,
-    generation: u64,
-    id: u64,
-    payload: &[u8],
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    send_command(
-        client,
-        generation,
-        id,
-        protocol::item_forge::COMMAND_TYPE_ITEM_FORGE,
-        payload,
-    )
-    .await
 }
 
 pub(in super::super) async fn send_command(

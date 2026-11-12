@@ -12,6 +12,7 @@ pub enum Intent {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcShopPanel {
+    pub live: LiveShop,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -39,38 +40,39 @@ pub fn request(panel: &mut NpcShopPanel, intent: Intent) -> Option<NpcShopComman
 pub fn apply_result(panel: &mut NpcShopPanel, response: &NpcShopResponse) {
     panel.pending = false;
     let Some(result) = response.result.clone() else {
-        panel.feedback = Some("NPC shop request refused by the command gate");
+        panel.feedback = Some(tr!("NPC shop request refused by the command gate"));
         return;
     };
     panel.feedback = match result.disposition {
         NpcIntentDisposition::Ok => None,
-        NpcIntentDisposition::NotInRange => Some("NPC shop refused: not in range"),
-        NpcIntentDisposition::NoConversation => Some("NPC shop refused: no open conversation"),
-        NpcIntentDisposition::RateLimited => Some("NPC shop refused: rate limited"),
-        NpcIntentDisposition::Stale => Some("NPC shop refused: stale catalogue or price"),
-        NpcIntentDisposition::Rejected => Some("NPC shop request rejected"),
+        NpcIntentDisposition::NotInRange => Some(tr!("NPC shop refused: not in range")),
+        NpcIntentDisposition::NoConversation => Some(tr!("NPC shop refused: no open conversation")),
+        NpcIntentDisposition::RateLimited => Some(tr!("NPC shop refused: rate limited")),
+        NpcIntentDisposition::Stale => Some(tr!("NPC shop refused: stale catalogue or price")),
+        NpcIntentDisposition::Rejected => Some(tr!("NPC shop request rejected")),
     };
     panel.result = Some(result);
 }
 
 pub fn panel_text(panel: &NpcShopPanel) -> String {
     if !panel.selected {
-        return "NPC shop is unavailable in this session".into();
+        return tr!("NPC shop is unavailable in this session").into();
     }
     if panel.pending {
-        return "NPC shop request pending".into();
+        return tr!("NPC shop request pending").into();
     }
     if let Some(feedback) = panel.feedback {
         return feedback.into();
     }
     match panel.result.as_ref() {
         Some(result) if !result.look_text.is_empty() => result.look_text.clone(),
-        Some(result) if result.sold_units != 0 => format!(
+        Some(result) if result.sold_units != 0 => lfmt!(
             "Sold {} units for {} gold",
-            result.sold_units, result.total_gold_units
+            result.sold_units,
+            result.total_gold_units
         ),
-        Some(_) => "NPC shop ready".into(),
-        None => "Choose Look or Sell all for the selected NPC trade offer".into(),
+        Some(_) => tr!("NPC shop ready").into(),
+        None => tr!("Select a live NPC trade offer").into(),
     }
 }
 
@@ -122,3 +124,13 @@ pub fn buy_request(
         expected_unit_price: offer.unit_price,
     })
 }
+
+#[cfg(test)]
+#[path = "tests/live.rs"]
+mod live_tests;
+
+mod state;
+pub use state::{LiveShop, Quote, ShopOptions};
+
+mod input;
+pub use input::parse_amount;

@@ -52,6 +52,7 @@ pub mod drome_cube;
 pub mod gourmet;
 pub mod condition_potions;
 pub mod fluid;
+mod tibiadrome;
 pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
@@ -451,6 +452,9 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    if let Some(outcome)=tibiadrome::replay(&mut tx,&fence,&request).await.map_err(|_|DurabilityError::InvalidStoredState)? {
+                        tx.commit(deadline).await?;return Ok(Ok(outcome));
+                    }
                     match replay(&mut tx, &fence, &request).await {
                         Ok(Some(outcome)) => {
                             tx.commit(deadline).await?;
@@ -497,6 +501,9 @@ impl DurabilityRoot {
                         }
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected.into())),
+                    }
+                    if let Some(outcome)=tibiadrome::preserve(&mut tx,&fence,&request).await.map_err(|_|DurabilityError::InvalidStoredState)? {
+                        tx.commit(deadline).await?;return Ok(Ok(outcome));
                     }
                     let tuple = tx.tuple();
                     if let ItemUseKind::PickRefine { .. } = request.kind {
@@ -915,8 +922,8 @@ pub(super) async fn write(
            encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
            $14::text::numeric(20,0), $15, encode($16,'hex')::uuid, $17, $18, $19, \
            encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23, \
-           encode($24,'hex')::uuid, $25, $26, $27, $28::text::numeric(20,0), $29, $30, $31, \
-           sha256($32), $33)",
+           encode($24,'hex')::uuid, $25, $26, $27, $28::text::numeric(20,0), ($29::bigint[])[1], ($29::bigint[])[2], $30, \
+           sha256($31), $32)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -954,19 +961,21 @@ pub(super) async fn write(
     .bind(flask_definition(request).map(|definition| &definition.production_key))
     .bind(flask_definition(request).map(|definition| &definition.revision_ref))
     .bind(flask_entry.map(|ordinal| ordinal.to_string()))
-    .bind(match &request.flask {
-        ItemUseFlaskPlan::Stack {
-            quantity_before, ..
-        } => Some(i64::from(*quantity_before)),
-        _ => None,
-    })
-    .bind(match &request.flask {
-        ItemUseFlaskPlan::Stack {
-            quantity_before, ..
-        } => Some(i64::from(*quantity_before) + 1),
-        ItemUseFlaskPlan::New { .. } => Some(1_i64),
-        _ => None,
-    })
+    .bind(vec![
+        match &request.flask {
+            ItemUseFlaskPlan::Stack {
+                quantity_before, ..
+            } => Some(i64::from(*quantity_before)),
+            _ => None,
+        },
+        match &request.flask {
+            ItemUseFlaskPlan::Stack {
+                quantity_before, ..
+            } => Some(i64::from(*quantity_before) + 1),
+            ItemUseFlaskPlan::New { .. } => Some(1_i64),
+            _ => None,
+        },
+    ])
     .bind(request.occurred_at_unix_ms)
     .bind(envelope.as_slice())
     .bind(source_house)

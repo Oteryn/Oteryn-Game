@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "sources": [
+    {
+      "path": "data-global/startup/tables/tile.lua",
+      "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+    },
+    {
+      "path": "data-global/startup/tables/teleport.lua",
+      "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e"
+    },
+    {
+      "path": "data-global/startup/tables/door_level.lua",
+      "sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
+    },
+    {
+      "path": "data-global/startup/tables/lever.lua",
+      "sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e"
+    },
+    {
+      "path": "data/libs/tables/doors.lua",
+      "sha256": "6b22b5c4c213ef5a3f18fab43ea61acca7be227c06eb99bbc25d1a8d3e75112c"
+    }
+  ],
+  "bindings": [
+    {
+      "position": [
+        32573,
+        32121,
+        7
+      ],
+      "item": 2772,
+      "attribute": "unique",
+      "action": 30034,
+      "source": "data-global/startup/tables/lever.lua",
+      "line": 1022
+    },
+    {
+      "position": [
+        32966,
+        32626,
+        5
+      ],
+      "item": 4634,
+      "attribute": "action",
+      "action": 50022,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1204
+    },
+    {
+      "position": [
+        32967,
+        32630,
+        8
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "action": 50022,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 247
+    },
+    {
+      "position": [
+        32968,
+        32629,
+        7
+      ],
+      "item": 1949,
+      "attribute": "action",
+      "action": 50022,
+      "source": "data-global/startup/tables/teleport.lua",
+      "line": 247
+    },
+    {
+      "position": [
+        32968,
+        32630,
+        7
+      ],
+      "item": 1720,
+      "attribute": "action",
+      "action": 50022,
+      "source": "data-global/startup/tables/tile.lua",
+      "line": 1204
+    },
+    {
+      "position": [
+        33190,
+        31684,
+        14
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "action": 1070,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 152
+    },
+    {
+      "position": [
+        33195,
+        31684,
+        14
+      ],
+      "item": 5102,
+      "attribute": "action",
+      "action": 1070,
+      "source": "data-global/startup/tables/door_level.lua",
+      "line": 152
+    }
+  ]
+}

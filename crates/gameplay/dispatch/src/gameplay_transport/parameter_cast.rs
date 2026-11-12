@@ -942,7 +942,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = active.native_gameplay() else {
             return rejected();
         };
-        if self.rooms.gate_parameter_cast(key).is_none() {
+        if self.rooms().gate_parameter_cast(key).is_none() {
             return rejected();
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -1109,7 +1109,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.intent.spell).ok_or(DurabilityError::Unavailable)?;
-            let room=owner.rooms.gate_parameter_cast(native_key(spell)).ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms().gate_parameter_cast(native_key(spell)).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
                 runtime_scope:fence.runtime_scope,scope_ownership_generation:fence.scope_ownership_generation};

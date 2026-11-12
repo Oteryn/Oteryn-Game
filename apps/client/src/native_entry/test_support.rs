@@ -17,40 +17,9 @@ const WORLD: &str = "01890a5d-ac96-774b-bcce-b302099a8059";
 const CHANNEL: &str = "01890a5d-ac96-774b-bcce-b302099a805a";
 const JWS: &str = "eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
 
-/// Minimal FND-02 accepted + core join snapshot fixture. Like the refusal fixture below,
-/// this is test-only wire data; the client still decodes it through the production session.
-pub(super) fn admitted_frames() -> Vec<Vec<u8>> {
-    fn bytes(tag: u8, value: &[u8]) -> Vec<u8> {
-        let mut out = vec![tag, value.len() as u8];
-        out.extend_from_slice(value);
-        out
-    }
-    let id = [
-        1, 147, 79, 16, 124, 0, 112, 1, 128, 91, 59, 17, 34, 51, 68, 1,
-    ];
-    let mut accepted = bytes(10, &id);
-    accepted.extend(bytes(18, &id));
-    accepted.extend(bytes(26, &id));
-    accepted.extend([32, 1, 40, 0, 48, 1, 56, 1, 64, 1, 72, 1]);
-    let mut accepted_frame = vec![8, 2];
-    accepted_frame.extend(bytes(34, &accepted));
-    let mut spatial = bytes(10, &[17; 32]);
-    spatial.extend(bytes(18, &[8, 0, 16, 0, 24, 0]));
-    let mut domain = vec![8, 1, 16, 1, 24, 1];
-    domain.extend(bytes(34, &spatial));
-    let mut body = bytes(10, &domain);
-    body.extend(bytes(10, &[8, 2, 16, 1, 24, 1, 34, 0]));
-    let begin = vec![8, 1, 16, 1, 24, body.len() as u8, 32, 0];
-    let mut chunk = vec![8, 1];
-    chunk.extend(bytes(26, &body));
-    let mut frames = vec![accepted_frame];
-    for (kind, payload) in [(11, begin), (12, chunk), (13, vec![8, 1])] {
-        let mut frame = vec![8, kind, 16, 1];
-        frame.extend(bytes(34, &payload));
-        frames.push(frame);
-    }
-    frames
-}
+#[path = "test_support/admitted.rs"]
+mod admitted;
+pub(super) use admitted::admitted_frames;
 
 /// A local Platform + Gateway (one response per connection) and a TLS game endpoint
 /// that answers with scripted refusals or joins and drops each admitted stream.
@@ -71,6 +40,32 @@ impl Stack {
     pub(super) fn start_with_frames(
         refusals: Vec<u32>,
         admitted_frames: Vec<Vec<u8>>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_with_account(refusals, admitted_frames, false)
+    }
+
+    pub(super) fn start_with_account(
+        refusals: Vec<u32>,
+        admitted_frames: Vec<Vec<u8>>,
+        empty: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(refusals, admitted_frames, empty, false, false)
+    }
+
+    pub(super) fn start_with_challenge() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(Vec::new(), admitted_frames(), false, true, false)
+    }
+
+    pub(super) fn start_training() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(Vec::new(), admitted_frames(), false, false, true)
+    }
+
+    fn start_variant(
+        refusals: Vec<u32>,
+        admitted_frames: Vec<Vec<u8>>,
+        empty: bool,
+        challenge: bool,
+        hold_joined: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
@@ -111,6 +106,10 @@ impl Stack {
                     for frame in &admitted_frames {
                         let _ = oteryn_session::write_frame(&mut stream, frame).await;
                     }
+                    if hold_joined {
+                        while oteryn_session::read_frame(&mut stream).await.is_ok() {}
+                        continue;
+                    }
                     // A restarted server drops the admitted stream immediately after joining.
                     let _ = stream.shutdown().await;
                     continue;
@@ -127,8 +126,17 @@ impl Stack {
         let requests = Arc::new(Mutex::new(Vec::new()));
         let log = Arc::clone(&requests);
         servers.spawn(async move {
+            let mut verifier = challenge.then(MockChallengeVerifier::default);
             while let Ok((stream, _peer)) = http.accept().await {
-                serve_http(stream, game_port, &log).await;
+                serve_http(
+                    stream,
+                    game_port,
+                    &log,
+                    empty,
+                    hold_joined,
+                    verifier.as_mut(),
+                )
+                .await;
             }
         })?;
         Ok(Self {
@@ -143,6 +151,7 @@ impl Stack {
 
     pub(super) fn config(&self) -> NativeLoginConfig {
         NativeLoginConfig {
+            device_sessions: Default::default(),
             platform_url: self.http_url.clone(),
             gateway_url: self.http_url.clone(),
             oauth_client_id: "oteryn-native".to_owned(),
@@ -153,6 +162,16 @@ impl Stack {
             callback_timeout: Duration::from_secs(10),
             retry_unit: Duration::from_millis(10),
             open_browser: Arc::new(complete_browser_sign_in),
+            account_services: Arc::new(crate::account_services::present),
+            coin_shop: Arc::new(crate::coin_shop::present),
+            premium: Arc::new(crate::premium::present),
+            training_queue: Default::default(),
+            select_character: Arc::new(|rows, _, _| {
+                crate::character_selection::SelectionAction::Play {
+                    character_id: rows[0].character.character_id.clone(),
+                    channel_id: Some(rows[0].channels[0].0.clone()),
+                }
+            }),
         }
     }
 
@@ -184,6 +203,11 @@ impl Stack {
 
 /// The browser: signs in at once and follows the redirect with the exact `state`.
 fn complete_browser_sign_in(url: &str) -> bool {
+    let returned = if url.contains("/oauth/challenge?") {
+        "challenge-proof-1"
+    } else {
+        "code-1"
+    };
     let query_value = |name: &str| {
         url.split(['?', '&'])
             .find_map(|pair| pair.strip_prefix(name)?.strip_prefix('='))
@@ -203,7 +227,7 @@ fn complete_browser_sign_in(url: &str) -> bool {
         if let Ok(mut stream) = std::net::TcpStream::connect(&authority) {
             let _ = write!(
                 stream,
-                "GET /callback?code=code-1&state={state} HTTP/1.1\r\nhost: {authority}\r\n\r\n"
+                "GET /callback?code={returned}&state={state} HTTP/1.1\r\nhost: {authority}\r\n\r\n"
             );
             let _ = stream.read_to_end(&mut Vec::new());
         }
@@ -211,7 +235,14 @@ fn complete_browser_sign_in(url: &str) -> bool {
     true
 }
 
-async fn serve_http(mut stream: tokio::net::TcpStream, game_port: u16, log: &Mutex<Vec<String>>) {
+async fn serve_http(
+    mut stream: tokio::net::TcpStream,
+    game_port: u16,
+    log: &Mutex<Vec<String>>,
+    empty: bool,
+    training: bool,
+    verifier: Option<&mut MockChallengeVerifier>,
+) {
     let mut request = Vec::new();
     let mut chunk = [0_u8; 4096];
     let (head, body) = loop {
@@ -239,12 +270,29 @@ async fn serve_http(mut stream: tokio::net::TcpStream, game_port: u16, log: &Mut
     };
     let line = head.lines().next().unwrap_or_default();
     let target = line.split(' ').take(2).collect::<Vec<_>>().join(" ");
+    if target == "POST /oauth/token"
+        && let Some(verifier) = verifier
+    {
+        let (status, response) = verifier.exchange(&body);
+        if let Ok(mut requests) = log.lock() {
+            requests.push(format!("{target} {body}"));
+        }
+        let _ = stream.write_all(format!(
+            "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{response}", response.len()
+        ).as_bytes()).await;
+        return;
+    }
     let response = match target.as_str() {
         "GET /v1/client/directory" => format!(
-            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD_REF}","name":"Alpha","channels":[],"characters":[]}}]}}"#
+            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First"}}],"characters":[]}}]}}"#
+        ),
+        "GET /api/v1/game-auth/native-characters" if empty => r#"{"protocol_version":2,"characters":[]}"#.to_owned(),
+        "GET /api/v1/game-auth/native-characters" if training => super::training_batch_tests::roster(),
+        "GET /api/v1/game-auth/native-characters" => format!(
+            r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Ari","availability":"AVAILABLE"}}]}}"#
         ),
         "POST /oauth/token" => r#"{"token_type":"Bearer","access_token":"access-1","expires_in":300,"scope":"game:ticket"}"#.to_owned(),
-        "POST /v1/game-auth/tickets" => {
+        "POST /api/v1/game-auth/tickets" => {
             r#"{"protocol_version":1,"ticket":"ticket-1","expires_in":60}"#.to_owned()
         }
         "POST /v1/login" => {
@@ -283,4 +331,48 @@ pub(super) fn count(requests: &[String], target: &str) -> usize {
         .iter()
         .filter(|request| request.starts_with(target))
         .count()
+}
+
+/// Test-only one-use verifier: no production bypass and no real payment/identity keys.
+#[derive(Default)]
+pub(super) struct MockChallengeVerifier {
+    binding: Option<String>,
+    consumed: bool,
+}
+impl MockChallengeVerifier {
+    pub(super) fn exchange(&mut self, form: &str) -> (u16, &'static str) {
+        let fields: Vec<_> = form.split('&').collect();
+        let bound = fields.contains(&"code=code-1")
+            && fields
+                .iter()
+                .any(|field| field.starts_with("code_verifier="));
+        let binding = fields
+            .iter()
+            .filter(|field| !field.starts_with("challenge_"))
+            .copied()
+            .collect::<Vec<_>>()
+            .join("&");
+        if self.binding.is_none()
+            && !fields
+                .iter()
+                .any(|field| field.starts_with("challenge_token="))
+            && bound
+        {
+            self.binding = Some(binding.clone());
+            return (
+                403,
+                r#"{"error":"oteryn_challenge_required","challenge_id":"01890a5d-ac96-774b-bcce-b302099a8057","expires_in":120}"#,
+            );
+        }
+        if self.binding.as_ref() == Some(&binding)
+            && !self.consumed
+            && bound
+            && fields.contains(&"challenge_token=challenge-proof-1")
+            && fields.contains(&"challenge_id=01890a5d-ac96-774b-bcce-b302099a8057")
+        {
+            self.consumed = true;
+            return (200, r#"{"token_type":"Bearer","access_token":"access-1"}"#);
+        }
+        (403, r#"{"error":"invalid_challenge"}"#)
+    }
 }

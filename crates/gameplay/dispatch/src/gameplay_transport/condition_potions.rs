@@ -14,7 +14,9 @@ use crate::foundation::{
 use crate::gameplay_transport::actor_spell::{
     PlayerBatchPreflight, check_owner_batch, install_owner_batch, stage_player_batch,
 };
-use oteryn_gameplay_progression::condition_potions::{ConditionPotion, DEFINITION_REVISION};
+#[cfg(test)]
+use oteryn_gameplay_progression::condition_potions::ConditionPotion;
+use oteryn_gameplay_progression::condition_potions::{DEFINITION_REVISION, PotionCondition};
 
 #[derive(Debug)]
 pub(in crate::gameplay_transport) struct PendingConditionPotion {
@@ -43,6 +45,7 @@ fn vocation_name(vocation: Vocation) -> &'static str {
 
 /// Typed source values enter the one existing condition store; its expiry, conflict slot,
 /// suppression and KeptCurrent rules remain authoritative.
+#[cfg(test)]
 fn prepared_conditions(
     before: &ConditionStore<String>,
     potion: ConditionPotion,
@@ -50,10 +53,32 @@ fn prepared_conditions(
     digest: [u8; 32],
     event: [u8; 16],
 ) -> Result<ConditionStore<String>, UseDisposition> {
-    let definition = ConditionDefinition::new(potion.key(), DEFINITION_REVISION, potion.values())
-        .ok_or(UseDisposition::Rejected)?;
-    let decision = GameplayDecisionRoot::from_bytes(digest);
+    prepared_potion_conditions(before, potion.into(), now_us, digest, event, 0)
+}
+
+fn prepared_potion_conditions(
+    before: &ConditionStore<String>,
+    potion: PotionCondition,
+    now_us: u64,
+    digest: [u8; 32],
+    event: [u8; 16],
+    mana_shield_capacity: u32,
+) -> Result<ConditionStore<String>, UseDisposition> {
     let mut next = before.clone();
+    // Crystal potions.lua:21-26: dispel only poison; drinking without poison is legal.
+    if potion == PotionCondition::Antidote {
+        next.dispel_key(crate::domain::condition::ConflictKey::Element(
+            crate::domain::condition::DotElement::Poison,
+        ));
+        return Ok(next);
+    }
+    let definition = ConditionDefinition::new(
+        potion.key(),
+        DEFINITION_REVISION,
+        potion.values().ok_or(UseDisposition::Rejected)?,
+    )
+    .ok_or(UseDisposition::Rejected)?;
+    let decision = GameplayDecisionRoot::from_bytes(digest);
     next.apply(
         &definition,
         None,
@@ -61,9 +86,8 @@ fn prepared_conditions(
         &[],
         &ApplicationFacts {
             now: now_us,
-            // Skill conditions do not consume movement or mana-shield formula facts.
             base_speed: 0,
-            mana_shield_capacity: 0,
+            mana_shield_capacity,
             target_reentry_protected: false,
             source_reentry_protected: false,
             target_is_player: true,
@@ -87,9 +111,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         inventory: &ItemUseInventory,
         entry: &BackpackEntry,
         record: &ItemProfileRecord,
-        potion: ConditionPotion,
+        potion: PotionCondition,
     ) -> Result<UseDisposition, UseDisposition> {
         let session = command.game_session_id;
+        let flask = if potion == PotionCondition::Antidote {
+            flask_plan(
+                native,
+                inventory,
+                entry,
+                &ReferenceItemField::Known(ReferenceItemTarget {
+                    key: "oteryn:item.tibia.i285".to_owned(),
+                    revision: "definition-r1".to_owned(),
+                }),
+            )?
+        } else {
+            ItemUseFlaskPlan::None
+        };
+        // A reserved condition may not burn its source without its required flask output.
+        if flask == ItemUseFlaskPlan::Missing {
+            return Err(UseDisposition::NoRoom);
+        }
+        if let ItemUseFlaskPlan::Stack {
+            item_instance_id, ..
+        } = &flask
+            && !self
+                .states
+                .player_trades
+                .physical(session, Some(*item_instance_id))
+        {
+            return Err(UseDisposition::Rejected);
+        }
         let request = ItemUseRequest {
             kind: ItemUseKind::Potion,
             command_id: command.command_id,
@@ -104,7 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source_item_instance_id: entry.item.item_instance_id,
             source_definition: entry.item.definition.clone(),
             source_quantity_before: entry.item.quantity,
-            flask: ItemUseFlaskPlan::None,
+            flask,
         };
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
@@ -125,17 +176,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(UseDisposition::Rejected)?;
         let facts = state.character_facts();
         if !potion.allows_base_vocation(vocation_name(facts.vocation))
+            || (potion == PotionCondition::MagicShield && facts.level < 14)
             || !requirements_met(&record.semantics.use_requirements, facts)
         {
             return Err(UseDisposition::RequirementNotMet);
         }
         let expected = state.conditions.clone();
-        let next = prepared_conditions(
+        let mana_shield_capacity =
+            potion.mana_shield_capacity(facts.level, facts.magic_level, facts.max_mana);
+        let next = prepared_potion_conditions(
             &expected,
             potion,
             now.get(),
             native.source_digest(),
             request.event_id,
+            mana_shield_capacity,
         )?;
         let batch = OwnerCombatBatch {
             caster: actor,
@@ -174,9 +229,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| UseDisposition::Rejected)?;
         let player = stage_player_batch(&runtime, &states, &batch, None)
             .map_err(|_| UseDisposition::Rejected)?;
-        let application =
-            PreparedConditionPotion::capture(&physical, &player, &request, native.source_digest())
-                .map_err(|_| UseDisposition::Rejected)?;
+        let application = PreparedConditionPotion::capture(
+            &physical,
+            &player,
+            &request,
+            native.source_digest(),
+            mana_shield_capacity,
+        )
+        .map_err(|_| UseDisposition::Rejected)?;
         states
             .item_uses
             .gate(&runtime, actor, session)
@@ -226,13 +286,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .map_err(|_| UseDisposition::Rejected)?;
                 let attempt = window.install();
-                install_owner_batch(
+                let receipt = install_owner_batch(
                     &mut runtime,
                     &mut states,
                     attempt.physical,
                     Some(attempt.player),
                     checked,
                 );
+                if receipt.applied {
+                    states.analyser.supply(
+                        actor,
+                        receipt.command.game_session_id(),
+                        &attempt.request.source_definition,
+                        1,
+                    );
+                }
                 if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
                     gate.settle(command.command_id, UseDisposition::Committed, &[]);
                 }
@@ -342,13 +410,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 };
                 let attempt = window.install();
-                install_owner_batch(
+                let receipt = install_owner_batch(
                     &mut runtime,
                     &mut states,
                     attempt.physical,
                     Some(attempt.player),
                     checked,
                 );
+                if receipt.applied {
+                    states.analyser.supply(
+                        actor,
+                        receipt.command.game_session_id(),
+                        &attempt.request.source_definition,
+                        1,
+                    );
+                }
                 UseDisposition::Committed
             }
             Ok(false) => {

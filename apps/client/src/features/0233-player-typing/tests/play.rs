@@ -75,7 +75,7 @@ async fn ready(link: &PlayLink) -> Result<(), Error> {
     Ok(())
 }
 #[test]
-fn player_typing_command_and_push_reach_the_panel() -> Result<(), Error> {
+fn composer_typing_and_push_reach_the_panel() -> Result<(), Error> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| {
@@ -90,12 +90,15 @@ fn player_typing_command_and_push_reach_the_panel() -> Result<(), Error> {
                 let task = tokio::spawn(run_session(peer, incoming, outbox));
                 ready(&link).await?;
                 assert_eq!(link.player_typing_panel().indicators[0].identity, [7; 16]);
-                link.player_typing_request(true);
+                link.chat_composer(true, "hello".into());
+                link.chat_composer(true, "hello again".into());
+                link.chat_composer(false, "hello again".into());
                 tokio::time::timeout(Duration::from_secs(3), async {
                     while commands
                         .lock()
                         .unwrap_or_else(PoisonError::into_inner)
-                        .is_empty()
+                        .len()
+                        < 2
                     {
                         tokio::task::yield_now().await;
                     }
@@ -103,7 +106,7 @@ fn player_typing_command_and_push_reach_the_panel() -> Result<(), Error> {
                 .await?;
                 assert_eq!(
                     *commands.lock().unwrap_or_else(PoisonError::into_inner),
-                    vec![vec![8, 1]]
+                    vec![vec![8, 1], vec![8, 0]]
                 );
                 drop(link);
                 task.await?;
@@ -112,4 +115,48 @@ fn player_typing_command_and_push_reach_the_panel() -> Result<(), Error> {
         })?
         .join()
         .map_err(|_| "player typing test thread panicked")?
+}
+
+#[test]
+fn sending_chat_queues_stop_behind_an_in_flight_start() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.player_typing_initialize(true);
+    outbox.chat_initialize(true);
+    link.chat_text("hello".into());
+    link.chat_request(oteryn_client_ui::chat::Mode::Say, "");
+    assert!(matches!(
+        incoming.try_recv()?,
+        crate::combat_input::PlayCommand::PlayerTyping(PlayerTypingCommand { typing: true, .. })
+    ));
+    assert!(matches!(
+        incoming.try_recv()?,
+        crate::combat_input::PlayCommand::PlayerTyping(PlayerTypingCommand { typing: false, .. })
+    ));
+    assert!(matches!(
+        incoming.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(_)
+    ));
+    assert!(incoming.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn typing_initialization_resets_the_composer_start_gate() -> Result<(), Error> {
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.player_typing_initialize(true);
+    link.chat_text("hello".into());
+    assert!(matches!(
+        incoming.try_recv()?,
+        crate::combat_input::PlayCommand::PlayerTyping(_)
+    ));
+    outbox.player_typing_initialize(false);
+    link.chat_text("hello".into());
+    assert!(incoming.try_recv().is_err());
+    outbox.player_typing_initialize(true);
+    link.chat_text("hello".into());
+    assert!(matches!(
+        incoming.try_recv()?,
+        crate::combat_input::PlayCommand::PlayerTyping(_)
+    ));
+    Ok(())
 }

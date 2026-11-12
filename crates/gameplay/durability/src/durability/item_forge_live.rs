@@ -20,6 +20,8 @@ pub(crate) mod audit;
 mod dust_limit;
 #[path = "item_forge_live/inventory.rs"]
 mod inventory;
+#[path = "item_forge_live/preview.rs"]
+pub(super) mod preview;
 #[path = "item_forge_live/storage.rs"]
 mod storage;
 #[cfg(test)]
@@ -61,6 +63,38 @@ async fn retained_reply(
 }
 
 impl DurabilityRoot {
+    /// Current dust is read from its balance owner, independently of historical receipts.
+    pub async fn read_current_forge_dust(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+    ) -> LimitResult<Value> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ForgeDustLimitError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                let Ok((world, channel)) = scope_of(&fence) else {
+                    return Ok(Err(ForgeDustLimitError::AuthorityRejected));
+                };
+                if !lock_dust_limit_current(&mut tx, &node, &fence, command,
+                    *world.as_bytes(), *channel.as_bytes()).await? {
+                    return Ok(Err(ForgeDustLimitError::AuthorityRejected));
+                }
+                let balance = read_forge_dust(&mut tx, fence.character_id).await?;
+                let value = json!({"current_dust": balance.balance(), "dust_limit": balance.limit().get()});
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(value))
+            })
+        }).await?
+    }
+
     /// Receipt-only probe. It checks the current session/scope independently but needs
     /// neither today's item custody nor today's content to return a retained outcome.
     pub async fn read_item_forge_reply(

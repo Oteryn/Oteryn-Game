@@ -5,9 +5,11 @@ use crate::durability::item_fee_burn_audit::OneItemNpcPurchaseV1;
 impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
+            Self::ArenaEntry { .. } => 17,
             Self::TaskBoardTalisman { .. } => 13,
             Self::Forge { .. } => 14,
             Self::QuestAccessPurchase { .. } => 15,
+            Self::QuestRewardPayment { .. } => 18,
             Self::HirelingService { .. } => 472,
             Self::BosstiarySlot { .. } => 16,
             Self::PreyListReroll { .. } | Self::PreyPickAgain { .. } => 12,
@@ -26,12 +28,13 @@ impl FeeBurnCause {
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
+            Self::ArenaEntry { occurrence } => occurrence,
             Self::TaskBoardTalisman { occurrence } | Self::BosstiarySlot { occurrence } => {
                 occurrence
             }
             Self::HirelingService { occurrence, .. } => occurrence,
             Self::Forge { occurrence, .. } => occurrence,
-            Self::QuestAccessPurchase { occurrence }
+            Self::QuestRewardPayment { occurrence, .. } | Self::QuestAccessPurchase { occurrence }
             | Self::PreyListReroll { occurrence, .. }
             | Self::PreyPickAgain { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
@@ -49,6 +52,7 @@ impl FeeBurnCause {
     }
     pub(super) fn key(&self) -> &str {
         match self {
+            Self::ArenaEntry { .. } => "oteryn:service.svargrond-arena.entry",
             Self::TaskBoardTalisman { .. } => "oteryn:taskboard.talisman",
             Self::PreyPickAgain { slot, .. } => match slot {
                 1 => "oteryn:prey.pick_again.1",
@@ -57,6 +61,7 @@ impl FeeBurnCause {
             },
             Self::Forge { .. } => "oteryn:service.forge",
             Self::QuestAccessPurchase { .. } => "oteryn:service.quest.rotten-blood.access",
+            Self::QuestRewardPayment { callback, .. } => callback,
             Self::HirelingService { service, .. } => service,
             Self::BosstiarySlot { .. } => "oteryn:bosstiary.slot_remove",
             Self::PreyListReroll { slot, .. } => match slot {
@@ -86,6 +91,7 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
+            Self::ArenaEntry { .. } => Ok(()),
             Self::TaskBoardTalisman { .. } | Self::BosstiarySlot { .. } => Ok(()),
             Self::Forge { occurrence, proof } => {
                 let value = crate::durability::character_forge_dust::live::audit::decode(proof)
@@ -96,6 +102,7 @@ impl FeeBurnCause {
                 Ok(())
             }
             Self::QuestAccessPurchase { .. } => Ok(()),
+            Self::QuestRewardPayment { callback, gold, .. } if callback.starts_with("oteryn:quest-reward/") && callback.len() <= 128 && (1..=1_000_000_000_000).contains(gold) => Ok(()),
             Self::HirelingService { service, .. } if service.starts_with("oteryn:service.hireling.") => Ok(()),
             Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => Ok(()),
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
@@ -108,7 +115,7 @@ impl FeeBurnCause {
             Self::NpcTravel { service, .. } if service.starts_with("oteryn:service.travel.") => {
                 Ok(())
             }
-            Self::AreaDonation { area: 1, .. } => Ok(()),
+            Self::AreaDonation { area: 1..=1024, .. } => Ok(()),
             Self::NpcRepair { occurrence, repair }
                 if repair.occurrence.as_slice() == occurrence =>
             {
@@ -137,6 +144,7 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 { service_key: self.key().into(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
             Self::BosstiarySlot { occurrence } => {
                 FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),
@@ -159,6 +167,8 @@ impl FeeBurnCause {
             Self::QuestAccessPurchase { occurrence } => FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
                 service_key:self.key().into(),occurrence:occurrence.to_vec(),atelier_proof:Vec::new(),
             }),
+            Self::QuestRewardPayment { callback, occurrence, gold, include_bank } => FeeBurnCauseV1::QuestRewardPayment(
+                super::super::item_fee_burn_audit::OneItemQuestRewardPaymentV1 { purchase: Some(OneItemNpcPurchaseV1 { service_key: callback.clone(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }), fee_gold_units: *gold, include_bank: *include_bank }),
             Self::HirelingService { service, occurrence } => FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 { service_key: service.clone(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
             Self::PreyListReroll { occurrence, .. } | Self::PreyPickAgain { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {

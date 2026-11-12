@@ -8,7 +8,7 @@
 //! loads the lowered quest content into it (QUEST-LOWER-1).
 //!
 //! [`QuestStateCatalogue::evaluate`] is the pure §4 validation of one transition against the
-//! values the writer read under lock: the closed `from` comparisons, then `SET`, checked `ADD`
+//! values the writer read under lock: the closed `from` comparisons, then `SET`, exact `SET_IF`, checked `ADD`
 //! and `SET_NOW` (database transaction time, never a node clock), each within the track's
 //! bounds. It writes nothing; `durability::quest_state` owns the transaction.
 //!
@@ -16,20 +16,52 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+pub mod admission_binding;
+
+// Source qualification only: the coordinator retained new NPC execution in
+// Left out. These evaluators are not a second production conversation adapter.
+pub mod authored_bindings;
+#[cfg(test)]
+pub mod batch3_a;
+pub mod carried_step;
 pub mod classic_dialogue;
 pub mod classic_talk;
+pub mod cults_of_tibia;
+pub mod dark_trails;
+pub mod death_objectives;
+pub mod deepling_boss_access;
+pub mod elvenbane;
+pub mod falcon;
+pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod hero_of_bounac;
+pub mod hive_access;
+#[path = "batch3_a/hot_cuisine.rs"]
+pub mod hot_cuisine;
+pub mod isle_of_evil;
+pub mod kill_objectives;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kill_goals;
+pub mod native_kills;
+pub mod native_rules;
+pub mod npc_rules;
+pub mod planegazer_finale;
 mod quests_2_focus;
+pub mod reward_callbacks;
 pub mod rotten_blood;
+pub mod schrodinger_island;
+pub mod shared_switches;
+pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
 pub mod threatened_dreams;
+pub mod timers;
+pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod wrath_sleeping_dragon;
 
@@ -41,8 +73,8 @@ pub mod predicate;
 
 /// `QUESTSTATE0-RL-01`: tracks per Character.
 pub const QUESTSTATE0_RL_01: usize = 4096;
-/// `QUESTSTATE0-RL-02`: effects per transition.
-pub const QUESTSTATE0_RL_02: usize = 8;
+/// `QUESTSTATE0-RL-02`: effects per atomic transition (migration 1600).
+pub const QUESTSTATE0_RL_02: usize = 16;
 /// `QUESTSTATE0-RL-04`: request binding bytes.
 pub const QUESTSTATE0_RL_04: usize = 1024;
 /// `QUESTSTATE0-RL-05`: quest states per Character.
@@ -61,6 +93,12 @@ pub const QUESTGATE0_RL_10: usize = 16;
 
 const KEY_PREFIX: &str = "oteryn:";
 const DEFINITION_HASH_VERSION: u8 = 2;
+
+/// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start.
+#[must_use]
+pub(super) fn in_runtime_scope(quest: &str) -> bool {
+    quest != "oteryn:quest.dawnport_quest"
+}
 
 /// An Oteryn key (§13.2): `oteryn:` and a non-empty tail of `[A-Za-z0-9._:/-]`, at most
 /// [`QUESTSTATE0_RL_06`] bytes. A source key never reaches the store.
@@ -99,6 +137,8 @@ pub enum QuestComparison {
     Between(i64, i64),
     /// `elapsed >= s`: database time minus the value, in seconds.
     ElapsedAtLeast(i64),
+    /// A previously initialized timestamp whose nonnegative elapsed time is strictly below the bound.
+    ElapsedLessThan(i64),
 }
 
 impl QuestComparison {
@@ -114,6 +154,12 @@ impl QuestComparison {
             Self::Between(low, high) => (low..=high).contains(&value),
             Self::ElapsedAtLeast(seconds) => {
                 i128::from(now) - i128::from(value) >= i128::from(seconds)
+            }
+            Self::ElapsedLessThan(seconds) => {
+                seconds > 0
+                    && value > 0
+                    && now >= value
+                    && i128::from(now) - i128::from(value) < i128::from(seconds)
             }
         }
     }
@@ -134,6 +180,7 @@ impl QuestComparison {
                 return;
             }
             Self::ElapsedAtLeast(value) => (8, std::slice::from_ref(value)),
+            Self::ElapsedLessThan(value) => (9, std::slice::from_ref(value)),
         };
         out.push(tag);
         for value in values {
@@ -146,13 +193,48 @@ impl QuestComparison {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestEffectKind {
     Set(i64),
+    /// Replace only an exact locked value; other values remain unchanged.
+    SetIf {
+        equals: i64,
+        value: i64,
+    },
+    /// Raise a locked value to this floor, preserving already higher progress.
+    RaiseTo(i64),
+    /// The same monotone operation pinned to its physical admission terms.
+    RaiseToWithBinding {
+        value: i64,
+        binding: [u8; 32],
+    },
+    /// Set a value while pinning cross-owner admission terms (PC3 f673adfeb).
+    SetWithBinding {
+        value: i64,
+        binding: [u8; 32],
+    },
     /// Checked `i64` addition.
     Add(i64),
+    /// Checked addition while pinning physical admission terms.
+    AddWithBinding {
+        delta: i64,
+        binding: [u8; 32],
+    },
     /// The database transaction time, in Unix seconds.
     SetNow,
+    /// The same database transaction clock, pinned to physical admission terms.
+    SetNowWithBinding {
+        binding: [u8; 32],
+    },
     /// A source `computed: expression` effect with no closed kind yet: its transition is
     /// `NOT_SUPPORTED` until an amendment adds one (§4).
     Computed,
+    /// A source-specific bounded rule over its complete locked snapshot.
+    Native(native_rules::NativeRule),
+    /// Preserve this track until another effect's original locked value reaches a threshold.
+    /// Reused from questpc3 262618b3; the index remains inside this transition.
+    SetWhenAtLeast {
+        other_effect: u8,
+        minimum: i64,
+        value: i64,
+    },
 }
 
 impl QuestEffectKind {
@@ -162,12 +244,53 @@ impl QuestEffectKind {
                 out.push(1);
                 out.extend_from_slice(&value.to_be_bytes());
             }
+            Self::RaiseTo(value) => {
+                out.push(9);
+                out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::RaiseToWithBinding { value, binding } => {
+                out.push(10);
+                out.extend_from_slice(&value.to_be_bytes());
+                out.extend_from_slice(&binding);
+            }
+            Self::SetWithBinding { value, binding } => {
+                out.push(7);
+                out.extend_from_slice(&value.to_be_bytes());
+                out.extend_from_slice(&binding);
+            }
             Self::Add(value) => {
                 out.push(2);
                 out.extend_from_slice(&value.to_be_bytes());
             }
+            Self::SetIf { equals, value } => {
+                out.push(6);
+                out.extend_from_slice(&equals.to_be_bytes());
+                out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::AddWithBinding { delta, binding } => {
+                out.push(8);
+                out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&binding);
+            }
             Self::SetNow => out.push(3),
+            Self::SetNowWithBinding { binding } => {
+                out.push(12);
+                out.extend_from_slice(&binding);
+            }
             Self::Computed => out.push(4),
+            Self::Native(rule) => {
+                out.push(5);
+                rule.encode(out);
+            }
+            Self::SetWhenAtLeast {
+                other_effect,
+                minimum,
+                value,
+            } => {
+                out.extend_from_slice(&[11, other_effect]);
+                out.extend_from_slice(&minimum.to_be_bytes());
+                out.extend_from_slice(&value.to_be_bytes());
+            }
         }
     }
 }
@@ -191,6 +314,8 @@ pub struct QuestTransition {
     /// quest XP obligation written by the committing transition. In the definition hash: a reward
     /// edit is a `REVISION_MISMATCH` for players in progress, like any transition edit (§6).
     pub experience: Option<i64>,
+    /// Current global occurrence required by this transition. Rechecked under the durable fence.
+    pub world_change: Option<String>,
 }
 
 /// Why a transition writes nothing (§4 "Validation").
@@ -253,6 +378,16 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
+    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+    predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
+    native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NpcDefinitionPredecessor {
+    hash: [u8; 32],
+    defaults: BTreeMap<String, i64>,
 }
 
 impl QuestStateCatalogue {
@@ -292,7 +427,22 @@ impl QuestStateCatalogue {
             if transition.effects.len() > QUESTSTATE0_RL_02 {
                 return Err(E::TooManyEffects(transition.key));
             }
-            if transition.effects.is_empty() && !transition.completes {
+            if transition.effects.is_empty()
+                && !transition.completes
+                && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
+                    && transition.quest == "oteryn:quest/worldchange/benevola")
+                    || transition.key.starts_with("oteryn:quest-reward/"))
+                    && transition.experience.is_none())
+            {
+                return Err(E::InvalidEffect(transition.key));
+            }
+            if transition.world_change.as_ref().is_some_and(|key| {
+                key.is_empty()
+                    || key.len() > 100
+                    || !key
+                        .bytes()
+                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
+            }) {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition
@@ -301,8 +451,14 @@ impl QuestStateCatalogue {
             {
                 return Err(E::InvalidExperience(transition.key));
             }
+            if transition.effects.iter().any(|effect| {
+                matches!(effect.effect, QuestEffectKind::Native(rule)
+                    if !rule.valid_effects(&transition.quest, &transition.effects))
+            }) {
+                return Err(E::InvalidEffect(transition.key));
+            }
             let mut seen = BTreeSet::new();
-            for effect in &transition.effects {
+            for (index, effect) in transition.effects.iter().enumerate() {
                 let Some(track) = track_map.get(&effect.track) else {
                     return Err(E::UnknownTrack(effect.track.clone()));
                 };
@@ -315,10 +471,31 @@ impl QuestStateCatalogue {
                 let comparison_ok = match effect.from {
                     QuestComparison::Between(low, high) => low <= high,
                     QuestComparison::ElapsedAtLeast(seconds) => seconds >= 0,
+                    QuestComparison::ElapsedLessThan(seconds) => {
+                        (1..=366 * 24 * 60 * 60).contains(&seconds)
+                    }
                     _ => true,
                 };
                 let effect_ok = match effect.effect {
-                    QuestEffectKind::Set(value) => (track.min..=track.max).contains(&value),
+                    QuestEffectKind::Set(value)
+                    | QuestEffectKind::SetWithBinding { value, .. }
+                    | QuestEffectKind::RaiseTo(value)
+                    | QuestEffectKind::RaiseToWithBinding { value, .. } => {
+                        (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::SetIf { equals, value } => {
+                        (track.min..=track.max).contains(&equals)
+                            && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        value,
+                        ..
+                    } => {
+                        usize::from(other_effect) < transition.effects.len()
+                            && usize::from(other_effect) != index
+                            && (track.min..=track.max).contains(&value)
+                    }
                     _ => true,
                 };
                 if !comparison_ok || !effect_ok {
@@ -349,6 +526,10 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            npc_legacy: BTreeMap::new(),
+            predecessors: BTreeMap::new(),
+            authored_bindings: None,
+            native_recipe_evidence: None,
         })
     }
 
@@ -365,7 +546,7 @@ impl QuestStateCatalogue {
         if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
             return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
         }
-        Self::new(
+        let mut extended = Self::new(
             self.content_revision.clone(),
             self.tracks.values().cloned().chain(tracks).collect(),
             self.transitions
@@ -373,7 +554,43 @@ impl QuestStateCatalogue {
                 .cloned()
                 .chain(transitions)
                 .collect(),
-        )
+        )?;
+        // Existing definitions may include the immutable native binding document in their hash.
+        extended.hashes.extend(self.hashes.clone());
+        extended.npc_legacy = self.npc_legacy.clone();
+        extended.predecessors = self.predecessors.clone();
+        extended.authored_bindings = self.authored_bindings.clone();
+        extended.native_recipe_evidence = self.native_recipe_evidence.clone();
+        Ok(extended)
+    }
+
+    /// Test-support fixtures may author an extra transition through the same full
+    /// catalogue validation and definition hashing as production content. As with
+    /// entities/test-support, this adds no production mutation or fence bypass.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_fixture_transition(
+        &self,
+        transition: QuestTransition,
+    ) -> Result<Self, QuestCatalogueError> {
+        let changed_quest = transition.quest.clone();
+        let mut transitions: Vec<_> = self.transitions.values().cloned().collect();
+        transitions.push(transition);
+        let mut updated = Self::new(
+            self.content_revision.clone(),
+            self.tracks.values().cloned().collect(),
+            transitions,
+        )?;
+        updated.hashes.extend(
+            self.hashes
+                .iter()
+                .filter(|(quest, _)| **quest != changed_quest)
+                .map(|(quest, hash)| (quest.clone(), *hash)),
+        );
+        updated.npc_legacy.clone_from(&self.npc_legacy);
+        updated.predecessors = self.predecessors.clone();
+        updated.authored_bindings = self.authored_bindings.clone();
+        updated.native_recipe_evidence = self.native_recipe_evidence.clone();
+        Ok(updated)
     }
 
     /// A catalogue with no quest: every transition request is unknown.
@@ -383,6 +600,18 @@ impl QuestStateCatalogue {
     }
 
     #[must_use]
+    pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| runtime.world.as_slice())
+    }
+
+    pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| &runtime.source)
+    }
+
     pub fn content_revision(&self) -> &str {
         &self.content_revision
     }
@@ -390,6 +619,11 @@ impl QuestStateCatalogue {
     #[must_use]
     pub fn track(&self, key: &str) -> Option<&QuestTrack> {
         self.tracks.get(key)
+    }
+
+    /// Immutable declarations used by the admission read view; no progress is written.
+    pub fn declared_tracks(&self) -> impl Iterator<Item = &QuestTrack> {
+        self.tracks.values()
     }
 
     #[must_use]
@@ -413,10 +647,11 @@ impl QuestStateCatalogue {
         stored: &BTreeMap<String, i64>,
         now: i64,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
-        if transition
-            .effects
-            .iter()
-            .any(|effect| effect.effect == QuestEffectKind::Computed)
+        if transition.effects.iter().enumerate().any(|(index,effect)| {
+            effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
+                QuestEffectKind::SetWhenAtLeast {other_effect,..}
+                    if usize::from(other_effect)==index || usize::from(other_effect)>=transition.effects.len())
+        })
         {
             return Err(QuestRefusal::NotSupported);
         }
@@ -432,16 +667,56 @@ impl QuestStateCatalogue {
             }
             current.push((track, value));
         }
+        let native = transition
+            .effects
+            .iter()
+            .find_map(|effect| match effect.effect {
+                QuestEffectKind::Native(rule) => Some(rule),
+                _ => None,
+            });
+        let native_after = if let Some(rule) = native {
+            if !rule.valid_effects(&transition.quest, &transition.effects) {
+                return Err(QuestRefusal::NotSupported);
+            }
+            let snapshot = current
+                .iter()
+                .map(|(track, value)| (track.key.clone(), *value))
+                .collect();
+            Some(rule.evaluate(&snapshot)?)
+        } else {
+            None
+        };
         transition
             .effects
             .iter()
-            .zip(current)
+            .zip(current.iter().copied())
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
-                    QuestEffectKind::Set(value) => Some(value),
-                    QuestEffectKind::Add(delta) => before.checked_add(delta),
-                    QuestEffectKind::SetNow => Some(now),
+                    QuestEffectKind::RaiseTo(value)
+                    | QuestEffectKind::RaiseToWithBinding { value, .. } => Some(before.max(value)),
+                    QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
+                        Some(value)
+                    }
+                    QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
+                        before.checked_add(delta)
+                    }
+                    QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
+                        Some(now)
+                    }
+                    QuestEffectKind::SetIf { equals, value } => {
+                        Some(if before == equals { value } else { before })
+                    }
                     QuestEffectKind::Computed => None,
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        minimum,
+                        value,
+                    } => current
+                        .get(usize::from(other_effect))
+                        .map(|(_, observed)| if *observed >= minimum { value } else { before }),
+                    QuestEffectKind::Native(_) => native_after
+                        .as_ref()
+                        .and_then(|after| after.get(&effect.track).copied()),
                 }
                 .filter(|after| (track.min..=track.max).contains(after))
                 .ok_or(QuestRefusal::OutOfRange)?;
@@ -512,6 +787,16 @@ fn definition_hash(
             }
         }
     }
+    for transition in transitions
+        .values()
+        .filter(|transition| transition.quest == quest && transition.world_change.is_some())
+    {
+        out.extend_from_slice(b"world-change-gate/v1");
+        push_text(&mut out, &transition.key);
+        if let Some(change) = &transition.world_change {
+            push_text(&mut out, change);
+        }
+    }
     Sha256::digest(&out).into()
 }
 
@@ -544,6 +829,7 @@ mod tests {
 
     fn transition(key: &str, effects: Vec<QuestEffect>, completes: bool) -> QuestTransition {
         QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects,
@@ -573,6 +859,62 @@ mod tests {
             .collect();
         let transition = catalogue.transition(key).expect("transition");
         catalogue.evaluate(transition, &stored, now)
+    }
+
+    #[test]
+    fn conditional_set_matches_exact_value_preserves_other_values_and_binds_hash() {
+        const KEY: &str = "oteryn:quest-transition/test.conditional-reset";
+        let make = |equals| {
+            catalogue(vec![transition(
+                KEY,
+                vec![effect(
+                    STAGE,
+                    QuestComparison::Any,
+                    QuestEffectKind::SetIf { equals, value: 0 },
+                )],
+                false,
+            )])
+        };
+        let catalogue = make(1);
+        for before in [-1, 0, 1, 2] {
+            let changes =
+                run(&catalogue, KEY, &[(STAGE, before)], 100).expect("conditional effect");
+            assert_eq!(
+                changes,
+                vec![QuestTrackChange {
+                    track: STAGE.into(),
+                    before,
+                    after: if before == 1 { 0 } else { before },
+                }]
+            );
+        }
+        assert_ne!(
+            catalogue.definition_hash(QUEST),
+            make(2).definition_hash(QUEST)
+        );
+        for kind in [
+            QuestEffectKind::SetIf {
+                equals: 11,
+                value: 0,
+            },
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 11,
+            },
+        ] {
+            assert!(
+                QuestStateCatalogue::new(
+                    "content-1",
+                    vec![track(STAGE, -1, -1, 10)],
+                    vec![transition(
+                        KEY,
+                        vec![effect(STAGE, QuestComparison::Any, kind)],
+                        false
+                    )]
+                )
+                .is_err()
+            );
+        }
     }
 
     #[test]
@@ -629,7 +971,11 @@ mod tests {
             Err(E::DuplicateEffectTrack(_))
         ));
         assert!(matches!(
-            build(transition("oteryn:t/1", vec![set(STAGE); 9], false)),
+            build(transition(
+                "oteryn:t/1",
+                vec![set(STAGE); QUESTSTATE0_RL_02 + 1],
+                false
+            )),
             Err(E::TooManyEffects(_))
         ));
         assert!(matches!(
@@ -655,6 +1001,7 @@ mod tests {
         assert!(build(transition("oteryn:t/1", vec![], true)).is_ok());
         // QUESTGATE0-RL-05: experience is 1 to 100,000,000; anything else is not admitted.
         let rewarded = |experience| QuestTransition {
+            world_change: None,
             experience: Some(experience),
             ..transition("oteryn:t/1", vec![set(STAGE)], false)
         };
@@ -903,6 +1250,7 @@ mod tests {
         // A reward is part of the transition (§6; QUEST-GATE-0 §5.5): adding or changing one
         // changes the hash, so an in-progress Character is refused, never awarded the new amount.
         let rewarded = catalogue(vec![QuestTransition {
+            world_change: None,
             experience: Some(500),
             ..transition(
                 "oteryn:t/start",
@@ -917,6 +1265,7 @@ mod tests {
         let rewarded_hash = rewarded.definition_hash(QUEST).expect("hash");
         assert_ne!(rewarded_hash, hash);
         let rewarded_more = catalogue(vec![QuestTransition {
+            world_change: None,
             experience: Some(501),
             ..transition(
                 "oteryn:t/start",
@@ -939,5 +1288,43 @@ mod tests {
         assert_eq!(QuestRefusal::RevisionMismatch.code(), "REVISION_MISMATCH");
         assert!(QuestStateCatalogue::empty("content-1").is_some());
         assert!(QuestStateCatalogue::empty("bad revision").is_none());
+    }
+    #[test]
+    fn fixture_transition_keeps_full_owner_and_duplicate_validation() -> Result<(), String> {
+        let base = catalogue(vec![]);
+        let aging = transition(
+            "oteryn:quest-transition/test.rats.fixture-age",
+            vec![effect(
+                TIMER,
+                QuestComparison::Any,
+                QuestEffectKind::Add(-1801),
+            )],
+            false,
+        );
+        let extended = base
+            .with_fixture_transition(aging.clone())
+            .map_err(|error| format!("{error:?}"))?;
+        assert_ne!(extended.definition_hash(QUEST), base.definition_hash(QUEST));
+        assert!(matches!(
+            extended.with_fixture_transition(aging),
+            Err(QuestCatalogueError::DuplicateKey(_))
+        ));
+        let foreign = QuestTransition {
+            world_change: None,
+            key: "oteryn:quest-transition/test.rats.foreign".into(),
+            quest: "oteryn:quest.other".into(),
+            effects: vec![effect(
+                TIMER,
+                QuestComparison::Any,
+                QuestEffectKind::Add(-1801),
+            )],
+            completes: false,
+            experience: None,
+        };
+        assert!(matches!(
+            base.with_fixture_transition(foreign),
+            Err(QuestCatalogueError::ForeignTrack(_))
+        ));
+        Ok(())
     }
 }

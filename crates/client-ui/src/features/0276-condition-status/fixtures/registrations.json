@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0276-condition-status",
+    "kind": "keybindings",
+    "id": "0276-condition-status-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+C",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0276-condition-status",
+    "kind": "panels",
+    "id": "0276-condition-status-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0276-condition-status",
+    "kind": "handlers",
+    "id": "0276-condition-status-query",
+    "status": "supported",
+    "commands": [
+      492
+    ],
+    "direction": "client_to_server",
+    "capability": 276,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Condition state is server-owned and has no client authority settings."
+    }
+  }
+]

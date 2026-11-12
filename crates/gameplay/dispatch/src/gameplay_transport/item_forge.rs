@@ -13,6 +13,13 @@ macro_rules! authority_methods {
         fn item_forge_available(&self) -> bool {
             false
         }
+        fn item_forge_balance(
+            &self,
+            _admitted: AdmittedSession,
+            _command_id: u64,
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { Some(Vec::new()) }
+        }
         fn item_forge(
             &self,
             _admitted: AdmittedSession,
@@ -33,6 +40,13 @@ macro_rules! composed_methods {
                 .and_then(|generation| generation.native_gameplay())
                 .is_some()
         }
+        async fn item_forge_balance(
+            &self,
+            admitted: AdmittedSession,
+            command_id: u64,
+        ) -> Option<Vec<u8>> {
+            item_forge::balance(self, admitted, command_id).await
+        }
         async fn item_forge(
             &self,
             admitted: AdmittedSession,
@@ -45,6 +59,58 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+pub(super) async fn balance(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+) -> Option<Vec<u8>> {
+    let (Some(fence), Some(actor), Ok(id)) = (
+        admitted.item_fence,
+        admitted.runtime_actor,
+        CommandId::new(command_id),
+    ) else {
+        return Some(Vec::new());
+    };
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_ITEM_FORGE_V1)
+        || fence.game_session_id != admitted.game_session_id
+        || fence.connection_generation.get() != admitted.continuity.connection_generation
+    {
+        return Some(Vec::new());
+    }
+    {
+        let runtime = owner.runtime.lock().await;
+        let binding = runtime.binding();
+        if admitted.world_id != binding.world_id()
+            || Some(admitted.channel_id) != binding.channel_id()
+            || fence.runtime_scope != binding.runtime_scope()
+            || fence.scope_ownership_generation != binding.scope_generation()
+            || runtime.owner_fence().is_err()
+            || runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .is_err()
+        {
+            return Some(Vec::new());
+        }
+    }
+    match owner
+        .root
+        .read_current_forge_dust(
+            owner.character,
+            owner.holder,
+            fence,
+            CommandRef::new(admitted.game_session_id, id),
+        )
+        .await
+    {
+        Ok(value) => serde_json::to_vec(&value).ok(),
+        Err(ForgeDustLimitError::Unavailable(_)) => None,
+        Err(_) => Some(Vec::new()),
+    }
+}
 
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

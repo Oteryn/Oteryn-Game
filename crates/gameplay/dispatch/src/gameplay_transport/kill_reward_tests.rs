@@ -136,22 +136,27 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     )
     .expect("facts");
     PendingKillSettlement {
+        world_change: None,
         forge: None,
         // W06 callbacks are absent for this ordinary-kill fixture.
         echo: None,
         callback_loot: Vec::new(),
+        tutorial_loot: Arc::default(),
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         boss_reward: None,
         activity_death: None,
         grizzly: None,
+        objectives: None,
         damage_shares: Vec::new(),
         prey_checkpoint: None,
         activity_observed_at: None,
         activity_at_death: Some(Vec::new()),
         facts,
         creature: "fixture:rat".into(),
+        soulpit_experience: None,
         row: Some(row(drops)),
+        encounter_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {
@@ -188,6 +193,31 @@ fn taken(outcome: TakeOutcome) -> TakenKillSettlement {
         TakeOutcome::Empty => panic!("expected an entry, found none"),
         TakeOutcome::CapacityWait => panic!("expected an entry, found capacity_wait"),
     }
+}
+
+#[test]
+fn newhaven_cached_plan_reserves_only_shortfall_and_releases_it() {
+    let queue = KillSettlementQueue::default();
+    let entry = pending(2, 50, 3, 30);
+    let death = entry.facts.death;
+    assert_eq!(queue.append(entry), AppendOutcome::Queued);
+    let in_flight = taken(queue.take(session(50), 3));
+    let initial = in_flight.loot_mints;
+    assert!((28..64).contains(&initial));
+    assert!(queue.ensure_loot_mint_reservation(death, initial, 28));
+    assert_eq!(queue.counts().2, initial);
+    assert!(queue.ensure_loot_mint_reservation(death, initial, initial + 1));
+    assert_eq!(queue.counts().2, initial + 1);
+    assert!(queue.ensure_loot_mint_reservation(death, initial, initial + 1));
+    assert_eq!(
+        queue.counts().2,
+        initial + 1,
+        "same plan never double reserves"
+    );
+    assert!(!queue.ensure_loot_mint_reservation(death, initial, 65));
+    assert_eq!(queue.counts().2, initial + 1);
+    in_flight.finish();
+    assert_eq!(queue.counts(), (0, 0, 0));
 }
 
 #[test]
@@ -1375,4 +1405,119 @@ fn talisman_spoils_scales_each_chance_rounds_up_and_caps() {
     table.entries[0].probability_ppm = Some(999_999);
     apply_talisman_loot_bonus(&mut table, i64::MAX);
     assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
+}
+
+#[test]
+fn worldchg_native_death_uses_carrier_floor_not_overlay_floor() {
+    use crate::durability::world_event::changes::counters::{CounterKind, Credit};
+    let position = crate::foundation::MovementLocalPosition {
+        x: 33530,
+        y: 31630,
+        floor: 14,
+    };
+    assert_eq!(
+        super::world_change_credits("oteryn:creature.seacrest_serpent", position),
+        vec![(CounterKind::FireFeathered, Credit::Kill(0))]
+    );
+    assert!(
+        super::world_change_credits(
+            "oteryn:creature.seacrest_serpent",
+            crate::foundation::MovementLocalPosition {
+                floor: -14,
+                ..position
+            }
+        )
+        .is_empty()
+    );
+}
+
+#[test]
+fn pubproj_physical_source_batch_keeps_original_occurrence_on_retry_without_rewards() {
+    let (mut runtime, target) = runtime_with_killed_creature();
+    let (death, _) = runtime
+        .borrow_combat_death()
+        .projected_death(target)
+        .expect("sealed physical death");
+    let queue = KillSettlementQueue::default();
+    queue.statistics().capture(
+        &runtime,
+        target,
+        death,
+        "oteryn:creature.rat",
+        false,
+        1790000000000,
+    );
+    let first = queue
+        .statistics()
+        .batch(1790000000001, true)
+        .expect("first batch");
+    assert_eq!(first.events.len(), 1);
+    let retry = queue
+        .statistics()
+        .batch(1790000000002, true)
+        .expect("retry before ACK");
+    assert_eq!(
+        retry.events, first.events,
+        "lost batch ACK cannot move the occurrence's UTC day"
+    );
+    queue.statistics().acknowledge(&first);
+    queue.statistics().capture(
+        &runtime,
+        target,
+        death,
+        "oteryn:creature.rat",
+        false,
+        1790086400000,
+    );
+    assert!(
+        queue
+            .statistics()
+            .batch(1790086400001, true)
+            .expect("new cut")
+            .events
+            .is_empty(),
+        "same physical death cannot be counted under a later day"
+    );
+    assert_eq!(
+        queue.counts(),
+        (0, 0, 0),
+        "no reward row or credited Character is required for capture"
+    );
+}
+#[test]
+fn pubproj_physical_source_invalid_key_and_regressed_clock_hold_coverage() {
+    let (mut runtime, target) = runtime_with_killed_creature();
+    let (death, _) = runtime
+        .borrow_combat_death()
+        .projected_death(target)
+        .expect("sealed physical death");
+    for key in ["player", "unknown"] {
+        let queue = KillSettlementQueue::default();
+        queue
+            .statistics()
+            .capture(&runtime, target, death, key, false, 1790000000000);
+        let batch = queue
+            .statistics()
+            .batch(1790000000001, true)
+            .expect("quarantined source cut");
+        assert!(batch.events.is_empty());
+        assert!(
+            batch.gap_ms.is_some(),
+            "invalid source cannot become known zero"
+        );
+    }
+    let queue = KillSettlementQueue::default();
+    assert!(queue.statistics().batch(1790000000000, true).is_some());
+    assert!(
+        queue.statistics().batch(1789999999999, true).is_none(),
+        "unsafe clock cannot advance coverage"
+    );
+    assert!(
+        queue
+            .statistics()
+            .batch(1790000000001, true)
+            .expect("reconciled clock cut")
+            .gap_ms
+            .is_some()
+    );
 }

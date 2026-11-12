@@ -16,6 +16,7 @@ use crate::project::{CreatureFacts, Families, LegacyPosition};
 use crate::sector::{Item, Tile};
 use crate::spawn;
 
+pub mod layers;
 pub mod subareas;
 
 /// What a palette key of the World Project resolves to in the pinned content revision.
@@ -897,6 +898,14 @@ impl State<'_> {
                     ))
                 })?;
             let mut item = item.clone();
+            if item.attrs.count == Some(0)
+                && matches!(
+                    self.resolver.resolve(key),
+                    Resolution::Resolved(Family::Item, _)
+                )
+            {
+                item.attrs = item.attrs.with_legacy_default_item_count();
+            }
             if let Some(to) = item.attrs.teleport {
                 let from = (tile.x, tile.y, z);
                 self.teleports_seen.insert(from);
@@ -1118,6 +1127,7 @@ fn assemble(
         }
     }
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
+    let layers = layers::realize(input, state.resolver, &sectors)?;
     let manifest = Manifest {
         subareas: subareas?,
         format: bundle::FORMAT.into(),
@@ -1139,7 +1149,7 @@ fn assemble(
         },
         npcs: npc_report.counts(&npcs, input.families),
     };
-    let bytes = bundle::write_with_npcs(&manifest, &sectors, &spawns, &npcs)?;
+    let bytes = bundle::write_with_layers(&manifest, &sectors, &spawns, &npcs, &layers)?;
     let mut digest = [0; 32];
     digest.copy_from_slice(&bytes[bytes.len() - 32..]);
     Ok(Compiled {
@@ -1312,6 +1322,9 @@ fn prove(
         },
         npcs: npc_report.counts(&npcs, families),
     };
+    if read.layers != layers::realize(input, resolver, &read.sectors)? {
+        return differs("compiled layer table differs".into());
+    }
     let got = &read.manifest;
     for (field, same) in [
         ("subareas", expected.subareas == got.subareas),
@@ -1421,6 +1434,9 @@ impl<'a> Context<'a, '_> {
                 top_level = top_level.saturating_add(1);
             }
             let mut attrs = item.attrs.clone();
+            if matches!(own, Some(Resolution::Resolved(Family::Item, _))) {
+                attrs = attrs.with_legacy_default_item_count();
+            }
             if let Some(teleport) = teleport {
                 attrs.teleport = teleport;
                 if teleport.is_none() {

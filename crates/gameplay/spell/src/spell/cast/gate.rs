@@ -74,6 +74,9 @@ pub fn admit_condition_gates(
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
 ) -> Result<(), SpellCastDisposition> {
+    if state.drome_practice && spell.soul > 0 {
+        return Err(SpellCastDisposition::NotAvailable);
+    }
     if state.conditions.has_status(
         oteryn_gameplay_domain::domain::condition::StatusKind::Feared,
         now.get(),

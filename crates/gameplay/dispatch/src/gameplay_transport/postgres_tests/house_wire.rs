@@ -181,7 +181,7 @@ fn scenario() -> TestResult {
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         owner
             .runtime
@@ -330,7 +330,7 @@ fn scenario() -> TestResult {
         drop(fresh);
         // A new composed runtime owner reads the durable notice (no cached management state).
         let mut restarted = deps.owner(&h, &authority);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         let mut admitted = initial;
         reach(&restarted, &mut admitted, 8).await?;
         let page = send(&restarted, &mut admitted, 57, &query()).await?.1;
@@ -401,6 +401,48 @@ fn scenario() -> TestResult {
         );
         let members:i64=sqlx::query_scalar("SELECT count(*) FROM game_house_acl_entries WHERE house_key=$1 AND list_key='door:6:0:-7'").bind(HOUSE).fetch_one(&h.pool).await?;
         assert_eq!(members, 1);
+        for (selector, members) in [
+            (wire::HouseAclSelector::Guest, vec![]),
+            (wire::HouseAclSelector::Subowner, vec![id(41)]),
+            (
+                wire::HouseAclSelector::Door {
+                    x: 6,
+                    y: 0,
+                    floor: -7,
+                },
+                vec![id(41)],
+            ),
+        ] {
+            let read = wire::HouseAclRead {
+                house: HOUSE.into(),
+                selector,
+            };
+            let payload = wire::encode_house_acl_read_query(
+                id(42),
+                "oteryn:content.area.city.liberty_bay",
+                &read,
+            )
+            .map_err(debug)?;
+            let (status, response) = send(&restarted, &mut admitted, 57, &payload).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(
+                wire::decode_house_acl_snapshot(&response).map_err(debug)?,
+                wire::HouseAclSnapshot {
+                    revision: 5,
+                    members
+                }
+            );
+            let wrong_world = wire::encode_house_acl_read_query(
+                id(99),
+                "oteryn:content.area.city.liberty_bay",
+                &read,
+            )
+            .map_err(debug)?;
+            assert_eq!(
+                send(&restarted, &mut admitted, 57, &wrong_world).await?.1,
+                wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
+            );
+        }
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
         assert_eq!(

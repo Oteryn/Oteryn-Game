@@ -13,6 +13,7 @@ pub const COMMAND_TYPE_BOSS_REWARD_OPEN: u32 = 340;
 pub const MAX_BOSS_KEY_BYTES: usize = 512;
 pub const COOLDOWN_PAGE_SIZE: usize = 64;
 pub const MAX_QUERY_BYTES: usize = 515;
+pub const MAX_TAINT_QUERY_BYTES: usize = MAX_QUERY_BYTES + 2;
 pub const MAX_RESULT_BYTES: usize = 34_400;
 pub const REWARD_CHEST_PAGE_SIZE: usize = 64;
 pub const MAX_REWARD_CHEST_QUERY_BYTES: usize = 18;
@@ -150,6 +151,16 @@ pub use staged::{
 /// An empty cursor starts a list; subsequent cursors are the last key of a full page.
 /// Unknown/repeated fields, invalid keys and oversized requests fail closed.
 pub fn decode_cooldown_query(payload: &[u8]) -> Result<&str, Error> {
+    let payload = if let Some(cursor) = payload.strip_suffix(&[16, 1]) {
+        // Canonical opt-in is last, after an optional nonempty cursor. Preserve
+        // rejection of explicit empty cursors followed by other fields.
+        if cursor == [10, 0] {
+            return Err(Error::Malformed);
+        }
+        cursor
+    } else {
+        payload
+    };
     if payload.len() > MAX_QUERY_BYTES {
         return Err(Error::LimitExceeded);
     }
@@ -290,3 +301,42 @@ mod reward_tests {
         assert_eq!(encode_reward_chest(now, &[expired]), Err(Error::Malformed));
     }
 }
+
+/// Private Quest-owned taint projection within the opted-in boss status reply.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BossTaints {
+    pub soul_war: u8,
+    pub rotten_blood: u8,
+    pub rotten_blood_flags: u8,
+    pub rotten_blood_final: bool,
+}
+
+pub fn append_boss_taints(payload: &mut Vec<u8>, taints: BossTaints) -> Result<(), Error> {
+    if taints.soul_war > 5 || taints.rotten_blood > 4 || taints.rotten_blood_flags > 15 {
+        return Err(Error::Malformed);
+    }
+    if payload
+        .len()
+        .checked_add(10)
+        .is_none_or(|len| len > MAX_RESULT_BYTES)
+    {
+        return Err(Error::LimitExceeded);
+    }
+    push_message_field(
+        payload,
+        7,
+        &[
+            8,
+            taints.soul_war,
+            16,
+            taints.rotten_blood,
+            24,
+            taints.rotten_blood_flags,
+            32,
+            u8::from(taints.rotten_blood_final),
+        ],
+    );
+    Ok(())
+}
+
+pub mod catalogue;

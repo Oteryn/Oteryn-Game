@@ -1,3 +1,8 @@
+#[path = "bazaar_tests.rs"]
+mod bazaar;
+#[path = "challenge_tests.rs"]
+mod challenge;
+
 use super::*;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -266,6 +271,7 @@ fn retryable_rows_reuse_the_identical_request() -> TestResult {
     let login = GatewayLogin {
         attempt_ref: &attempt_ref,
         character_id: CHARACTER,
+        channel_id: None,
         client_build: "dev-1",
     };
     let grant =
@@ -320,6 +326,7 @@ fn terminal_rows_stop_and_retries_are_bounded() -> TestResult {
     let login = GatewayLogin {
         attempt_ref: &attempt_ref,
         character_id: CHARACTER,
+        channel_id: None,
         client_build: "dev-1",
     };
     let spent_ticket = ticket();
@@ -439,7 +446,7 @@ fn token_exchange_and_ticket_issuance() -> TestResult {
     let requests = server.requests.lock().map_err(|_| "poisoned")?.clone();
     assert!(requests[0].starts_with("POST /oauth/token "));
     assert!(request_body(&requests[0]).contains("code_verifier=verifier-1"));
-    assert!(requests[1].starts_with("POST /v1/game-auth/tickets "));
+    assert!(requests[1].starts_with("POST /api/v1/game-auth/tickets "));
     assert!(
         requests[1]
             .to_ascii_lowercase()
@@ -447,3 +454,68 @@ fn token_exchange_and_ticket_issuance() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    let valid = format!(
+        r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Ari","availability":"AVAILABLE"}}]}}"#
+    );
+    let server = spawn_server(
+        &runtime,
+        vec![
+            (200, "", valid),
+            (401, "", String::new()),
+            (429, "retry-after: 60\r\n", String::new()),
+            (503, "", String::new()),
+            (200, "", "x".repeat(16_385)),
+            (200, "", r#"{"protocol_version":2,"characters":[]}"#.into()),
+            (
+                200,
+                "",
+                r#"{"protocol_version":1,"ticket":"ticket-1","expires_in":60}"#.into(),
+            ),
+        ],
+    )?;
+    let client = client_for(&server)?;
+    let token = AccessToken(SecretText("owner-access".into()));
+    let rows = runtime.block_on(client.owner_characters(&token, CancellationToken::new()))?;
+    assert_eq!(rows[0].character_id, CHARACTER);
+    assert_eq!(rows[0].availability, CharacterAvailability::Available);
+    for expected in [
+        NativeLoginError::TokenRefused,
+        NativeLoginError::Platform(PlatformClientError::HttpStatus(429)),
+        NativeLoginError::Platform(PlatformClientError::HttpStatus(503)),
+        NativeLoginError::Platform(PlatformClientError::ResponseTooLarge),
+    ] {
+        assert_eq!(
+            runtime
+                .block_on(client.owner_characters(&token, CancellationToken::new()))
+                .err(),
+            Some(expected)
+        );
+    }
+    assert!(
+        runtime
+            .block_on(client.owner_characters(&token, CancellationToken::new()))?
+            .is_empty()
+    );
+    runtime.block_on(client.issue_native_ticket(token, CancellationToken::new()))?;
+    let requests = server.requests.lock().map_err(|_| "request lock")?;
+    assert_eq!(requests.len(), 7);
+    for request in &requests[..6] {
+        assert!(request.starts_with("GET /api/v1/game-auth/native-characters "));
+        assert!(
+            request
+                .to_ascii_lowercase()
+                .contains("authorization: bearer owner-access")
+        );
+    }
+    assert!(requests[6].starts_with("POST /api/v1/game-auth/tickets "));
+    Ok(())
+}
+
+#[path = "coin_purchase_tests.rs"]
+mod coin_purchase_tests;

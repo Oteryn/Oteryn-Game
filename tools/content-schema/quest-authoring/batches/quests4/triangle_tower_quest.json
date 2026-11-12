@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "quest_directory": "triangle_tower_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/triangle-tower-wall",
+      "quest": "oteryn:quest.triangle_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32573,
+          "y": 32121,
+          "floor": -7
+        },
+        "unique": 30034,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32566,
+            "y": 32119,
+            "floor": -7
+          },
+          "appearance": 1270,
+          "replacement": null,
+          "create_on_close": 1025
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:1-19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1022-1025"
+      ]
+    }
+  ],
+  "runtime_exclusions": [
+    {
+      "key": "oteryn:quest-callback/triangle-tower-wall",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    }
+  ],
+  "npc_source": {
+    "quest": "triangle_tower_quest",
+    "runtime_admission": false,
+    "entries": [],
+    "sources": [
+      "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:1-19",
+      "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1022-1025"
+    ]
+  },
+  "step_inventory": [
+    {
+      "element": "oteryn:quest-callback/triangle-tower-wall",
+      "trigger": "USE UID30034",
+      "condition": "source lever/wall state",
+      "effect": {
+        "remove": 1270,
+        "create": 1025
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:1-19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1022-1025"
+      ]
+    }
+  ],
+  "preserved_claims": [
+    {
+      "key": "oteryn:reward-claim.kv.triangletower",
+      "policy": "Existing complete native bag is unchanged."
+    }
+  ]
+}

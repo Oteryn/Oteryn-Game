@@ -73,7 +73,13 @@ macro_rules! composed_methods {
             &self,
             admitted: $crate::gameplay_transport::connection::AdmittedSession,
         ) -> Option<Vec<u8>> {
-            self.cyclopedia_tracker_domain_snapshot(admitted).await
+            $crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+                .retry_unavailable(async || {
+                    self.cyclopedia_tracker_domain_snapshot(admitted).await
+                        .ok_or($crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
+                })
+                .await
+                .ok()
         }
 
         async fn cyclopedia_tracker_refresh(

@@ -4,6 +4,7 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_runtime::chat_public_channels::ChatRoom;
 use oteryn_client_ui::chat_public_channels::{ChatPanel, Intent, panel_text, room_name};
+use oteryn_client_ui::spell_action_bar::movement::MovementSpell;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -16,6 +17,9 @@ const MESSAGE: usize = 102;
 const OPEN: usize = 103;
 const CLOSE: usize = 104;
 const SEND: usize = 105;
+const LEVITATE_UP: usize = 107;
+const LEVITATE_DOWN: usize = 108;
+const MAGIC_ROPE: usize = 109;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
 #[derive(Default)]
@@ -29,7 +33,10 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && ((id == ROOMS && note == LBN_SELCHANGE as usize)
-                    || (matches!(id, OPEN | CLOSE | SEND) && note == BN_CLICKED as usize))
+                    || (matches!(
+                        id,
+                        OPEN | CLOSE | SEND | LEVITATE_UP | LEVITATE_DOWN | MAGIC_ROPE
+                    ) && note == BN_CLICKED as usize))
             {
                 (*actions).0.push(id);
             }
@@ -71,7 +78,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Public Channels").as_ptr(),
+            wide(tr!("Public Channels")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -101,7 +108,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 10, 230, 180],
             LBS_NOTIFY as u32 | WS_BORDER,
         );
-        for room in extended_rooms() {
+        for room in ChatRoom::ALL {
             SendMessageW(
                 rooms,
                 LB_ADDSTRING,
@@ -119,11 +126,18 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             WS_BORDER | WS_TABSTOP,
         );
         for (x, label, id) in [
-            (250, "Open", OPEN),
-            (360, "Close", CLOSE),
-            (470, "Send", SEND),
+            (250, tr!("Open"), OPEN),
+            (360, tr!("Close"), CLOSE),
+            (470, tr!("Send"), SEND),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 48, 100, 28], WS_TABSTOP);
+        }
+        for (y, label, id) in [
+            (210, tr!("Levitate Up"), LEVITATE_UP),
+            (250, tr!("Levitate Down"), LEVITATE_DOWN),
+            (290, tr!("Magic Rope"), MAGIC_ROPE),
+        ] {
+            control(hwnd, "BUTTON", label, id, [10, y, 230, 28], WS_TABSTOP);
         }
         let transcript = control(
             hwnd,
@@ -149,9 +163,23 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 break;
             }
             for action in std::mem::take(&mut actions.0) {
+                let movement = match action {
+                    LEVITATE_UP => Some(MovementSpell::LevitateUp),
+                    LEVITATE_DOWN => Some(MovementSpell::LevitateDown),
+                    MAGIC_ROPE => Some(MovementSpell::MagicRope),
+                    _ => None,
+                };
+                if let Some(spell) = movement {
+                    crate::play::feature_local_movement_spells::input::enqueue(
+                        &mut mailbox,
+                        &commands,
+                        spell,
+                    );
+                    continue;
+                }
                 if action == ROOMS {
                     if let Ok(row) = usize::try_from(SendMessageW(rooms, LB_GETCURSEL, 0, 0))
-                        && let Some(room) = extended_rooms().get(row)
+                        && let Some(room) = ChatRoom::ALL.get(row)
                     {
                         mailbox.chat_public.room = *room;
                     }
@@ -181,15 +209,6 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         }
         close(&weak);
     }
-}
-
-const fn extended_rooms() -> [ChatRoom; 4] {
-    [
-        ChatRoom::AdvertisingRookgaard,
-        ChatRoom::Tutor,
-        ChatRoom::Gamemaster,
-        ChatRoom::GuildLeaders,
-    ]
 }
 
 fn close(weak: &WeakMailbox) {

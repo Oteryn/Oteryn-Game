@@ -6,6 +6,8 @@ const MS: u64 = 1_000;
 
 #[path = "condition_attribute_slot_tests.rs"]
 mod condition_attribute_slot_tests;
+#[path = "condition_cake_regen_tests.rs"]
+mod condition_cake_regen_tests;
 #[path = "condition_suppression_tests.rs"]
 mod condition_suppression_tests;
 
@@ -36,6 +38,7 @@ fn provenance(
     def: &ConditionDefinition,
 ) -> ConditionProvenance<u32> {
     ConditionProvenance {
+        historical_source: None,
         source: Some(source),
         source_kind: kind,
         definition_key: def.key().to_owned(),
@@ -376,6 +379,7 @@ fn the_channel_order_is_due_then_actor_then_sequence() {
         },
         provenance: ConditionProvenance::<u32> {
             source: None,
+            historical_source: None,
             source_kind: ConditionSourceKind::SelfUse,
             definition_key: "cond.recovery".to_owned(),
             definition_revision: 1,
@@ -1678,4 +1682,57 @@ fn protection_zone_element_policy_deals_permitted_ticks_and_consumes_all_damage_
             }
         }
     }
+}
+
+#[test]
+fn pubproj_historical_source_expires_with_condition_and_never_restores_authority() {
+    let root = root();
+    let historical = ConditionHistoricalSource::Creature {
+        key: "oteryn:creature.dragon".into(),
+        name: "Dragon".into(),
+    };
+    let definition = dot(DotElement::Poison, 20, 20, true);
+    let mut store = ConditionStore::<String>::new();
+    store
+        .apply_with_historical_source(
+            &definition,
+            Some("creature:original-placement".into()),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts(0, &root),
+            &historical,
+        )
+        .unwrap();
+    assert_eq!(store.instances().len(), 1);
+    assert_eq!(
+        store.instances()[0].provenance().source.as_deref(),
+        Some("creature:original-placement")
+    );
+    let snapshot = store.persistent_snapshot(0).unwrap();
+    assert!(
+        snapshot["conditions"][0]["provenance"]
+            .get("historical_source")
+            .is_none(),
+        "private provenance never leaves the logout writer"
+    );
+    let restored = ConditionStore::<String>::from_persistent_snapshot(&snapshot, 1).unwrap();
+    assert!(restored.instances()[0].provenance().is_unattributed());
+    let mut forged = snapshot;
+    forged["conditions"][0]["provenance"]["historical_source"] =
+        serde_json::to_value(&historical).unwrap();
+    assert!(
+        ConditionStore::<String>::from_persistent_snapshot(&forged, 1).is_err(),
+        "snapshot input cannot resurrect attacker identity"
+    );
+    let ticks = store.take_due(4_000_000, TickFacts::default());
+    assert_eq!(ticks.len(), 2);
+    assert!(
+        ticks
+            .iter()
+            .all(|tick| tick.provenance.historical_source.as_ref() == Some(&historical))
+    );
+    assert!(
+        store.instances().is_empty(),
+        "metadata has no lifetime outside its exhausted condition"
+    );
 }

@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "confession"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You know my confession now. Keep the three wills as a reminder that the past cannot be erased."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "math"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Would you like to learn the rule of mathemagics?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "First tell me your favourite colour."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "keywords": [
+        "green"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you ready to finish the lesson?"
+      ]
+    }
+  ]
+}

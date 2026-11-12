@@ -1,0 +1,56 @@
+{
+  "schema": "OTERYN_QUEST_REWARD_USE_PROOF/v1",
+  "runtime_path": "bundle_chest::use_bundle_chest -> reward_claim_mint",
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_claims.rs",
+  "test_sha256": "d38da5f632c20232dabfa0283990485721d1eb74d17e04376e77f6740404b184",
+  "cases": [
+    {
+      "wiki_title": "Heaven Blossom Quest",
+      "claim_key": "oteryn:reward-claim.kv.heavenblossom",
+      "test": "qready2_heaven_blossom_quest_1",
+      "marker": "QREADY2_HEAVEN_BLOSSOM_QUEST_1",
+      "duration_seconds": 31.119,
+      "claim_sha256": "e815e8735a23da8121fc0e5a47d3b11fafb50e9af8dd471dbd26539baca8b437"
+    },
+    {
+      "wiki_title": "Iron Hammer Quest",
+      "claim_key": "oteryn:reward-claim.kv.ironhamer",
+      "test": "qready2_iron_hammer_quest_1",
+      "marker": "QREADY2_IRON_HAMMER_QUEST_1",
+      "duration_seconds": 31.151,
+      "claim_sha256": "a2f728585c83935e25d1337e076a0a8347a739aab0ec7617f8dcafa3d1ec2cad"
+    },
+    {
+      "wiki_title": "Iron Ore Quest",
+      "claim_key": "oteryn:reward-claim.kv.ironore",
+      "test": "qready2_iron_ore_quest_1",
+      "marker": "QREADY2_IRON_ORE_QUEST_1",
+      "duration_seconds": 42.448,
+      "claim_sha256": "2de2d27fdc0966e0974dbbf24e5b8e796cf57b75e8ea7666368ef59b627f8261"
+    },
+    {
+      "wiki_title": "Isle of the Mists Quest",
+      "claim_key": "oteryn:reward-claim.kv.isleofthemists",
+      "test": "qready2_isle_of_the_mists_quest_1",
+      "marker": "QREADY2_ISLE_OF_THE_MISTS_QUEST_1",
+      "duration_seconds": 38.813,
+      "claim_sha256": "79dbc81f4a1eba116eb8de1a2cffb67d20a46cb3862d50ba12afbb20044e9840"
+    },
+    {
+      "wiki_title": "Lone Medusa Quest",
+      "claim_key": "oteryn:reward-claim.quest.u8_5.lone_medusa",
+      "test": "qready2_lone_medusa_quest_1",
+      "marker": "QREADY2_LONE_MEDUSA_QUEST_1",
+      "duration_seconds": 41.839,
+      "claim_sha256": "c8fa5e9810db7cc26cd4901c1742ee76addb642166a2774033ce1f361d77b1c9"
+    },
+    {
+      "wiki_title": "Minotaur Leather Quest",
+      "claim_key": "oteryn:reward-claim.kv.minotaurleatherquest",
+      "test": "qready2_minotaur_leather_quest_1",
+      "marker": "QREADY2_MINOTAUR_LEATHER_QUEST_1",
+      "duration_seconds": 42.499,
+      "claim_sha256": "a43ff58ce48ce0d1bc3d229281fcf2da63a03680f720d86272d4b0d8984825db"
+    }
+  ]
+}

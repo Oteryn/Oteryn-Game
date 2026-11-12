@@ -594,6 +594,14 @@
       "tier": 4
     },
     {
+      "creature": "oteryn:creature.cake_golem",
+      "display_name": "Cake Golem",
+      "exclusive": false,
+      "experience": 100,
+      "max_health": 444,
+      "tier": 2
+    },
+    {
       "creature": "oteryn:creature.candy_floss_elemental",
       "display_name": "Candy Floss Elemental",
       "exclusive": false,
@@ -6230,8 +6238,8 @@
       "minimum_level": 1,
       "nonexclusive_count": 89,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 89,
-      "runtime_unsettleable_count": 87,
+      "runtime_available_count": 86,
+      "runtime_unsettleable_count": 81,
       "tier": 1
     },
     {
@@ -6249,10 +6257,10 @@
       "experience_max": 999,
       "experience_min": 100,
       "minimum_level": 50,
-      "nonexclusive_count": 161,
+      "nonexclusive_count": 162,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 161,
-      "runtime_unsettleable_count": 161,
+      "runtime_available_count": 153,
+      "runtime_unsettleable_count": 152,
       "tier": 2
     },
     {
@@ -6272,8 +6280,8 @@
       "minimum_level": 100,
       "nonexclusive_count": 188,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 188,
-      "runtime_unsettleable_count": 188,
+      "runtime_available_count": 186,
+      "runtime_unsettleable_count": 186,
       "tier": 3
     },
     {
@@ -6293,8 +6301,8 @@
       "minimum_level": 250,
       "nonexclusive_count": 154,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 154,
-      "runtime_unsettleable_count": 154,
+      "runtime_available_count": 153,
+      "runtime_unsettleable_count": 153,
       "tier": 4
     },
     {

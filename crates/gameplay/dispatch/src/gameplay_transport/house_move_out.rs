@@ -114,7 +114,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 binding.runtime_scope(),
                 binding.scope_generation().get(),
             )
-            .await?;
+            .await
+            .inspect_err(|_| {
+                super::operator_event("house_disposition_deferred reason=delivery_failed items_retained");
+            })?;
         drop(runtime);
         drop(permit);
         super::hireling::recall_lost_houses(self).await.ok_or(HouseDispositionError::Rejected)

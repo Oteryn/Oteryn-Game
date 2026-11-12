@@ -1,4 +1,5 @@
 use super::*;
+use crate::map::boot::BundleCollisionIndexExt;
 
 pub(super) struct Serving<'a, 'f, 's> {
     pub(super) listener: &'a TcpListener,
@@ -37,17 +38,30 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let proof = owners.holder;
     let evidence = owners.evidence;
     let achievements = owners.achievements;
+    let native = owners
+        .active_generation
+        .and_then(|active| active.native_gameplay());
     let runtime = owners.runtime;
     let config = &material.config;
+    let (active_layers_epoch, active_layers) =
+        super::super::raid_scheduler::world_change_layers(owners.movement_cells);
     let raids = super::super::raid_scheduler::RaidScheduler {
         root,
         character: authority,
         node: proof,
         runtime,
+        map: match owners.movement_cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                Some(index.map())
+            }
+            _ => None,
+        },
         world: material.world,
         channel: material.channel,
         generation,
         reset_epoch,
+        active_layers_epoch,
+        active_layers,
         bundle_digest: config
             .world_bundle
             .as_ref()
@@ -70,11 +84,30 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         proof,
         evidence,
         &material.intents,
+        config,
+        native,
         shutdown,
     ));
-    let mut expiry = pin!(audit_expiry_loop(root, authority, &loops_stop));
+    let mut expiry = pin!(both(
+        both(
+            audit_expiry_loop(root, authority, &loops_stop),
+            online_statistics_retention_loop(root, authority, &loops_stop)
+        ),
+        coin_worker::run(root, authority, proof, material.world, &loops_stop)
+    ));
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
+    let collector = audit_collector::Collector {
+        root,
+        authority,
+        proof,
+        config: &config.audit_collector,
+        t94_key_id: material
+            .world_event_outcomes
+            .lock()
+            .ok()
+            .and_then(|value| value.as_ref().and_then(|value| value.audit_key_id.clone())),
+    };
     let mut projection = pin!(both(
         both(
             both(
@@ -120,15 +153,31 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 &loops_stop
             ),
         ),
-        public_projections_loop(
-            root,
-            authority,
-            material
-                .public_projections
-                .lock()
-                .ok()
-                .and_then(|mut public| public.take()),
-            &loops_stop
+        both(
+            both(
+                collector.run(&loops_stop),
+                t94::run(
+                    root,
+                    authority,
+                    material
+                        .world_event_outcomes
+                        .lock()
+                        .ok()
+                        .and_then(|mut value| value.take()),
+                    material.world,
+                    &loops_stop
+                )
+            ),
+            public_projections_loop(
+                root,
+                authority,
+                material
+                    .public_projections
+                    .lock()
+                    .ok()
+                    .and_then(|mut public| public.take()),
+                &loops_stop
+            )
         ),
     ));
     let mut projection_done = false;
@@ -146,7 +195,31 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 .and_then(|mut commands| commands.take()),
             &loops_stop
         ),
-        timed_npc_loop(runtime, timed_npcs, &loops_stop),
+        both(
+            bazaar_loop(
+                root,
+                authority,
+                proof,
+                evidence,
+                material
+                    .bazaar
+                    .lock()
+                    .ok()
+                    .and_then(|mut bazaar| bazaar.take()),
+                &loops_stop
+            ),
+            both(
+                timed_npc_loop(root, material.world, runtime, timed_npcs, &loops_stop),
+                account_closure_offline_loop(
+                    root,
+                    authority,
+                    proof,
+                    runtime,
+                    (material.world, material.channel),
+                    &loops_stop
+                )
+            ),
+        ),
     ));
     let mut commands_done = false;
     let mut signal = pin!(signalled.cancelled());
@@ -284,8 +357,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
 }
 
 async fn timed_npc_loop(
+    root: &DurabilityRoot,
+    world: WorldId,
     runtime: &Mutex<ChannelRuntimeV1>,
-    timed_npcs: bundle_npcs::TimedNpcSpawns,
+    mut timed_npcs: bundle_npcs::TimedNpcSpawns,
     stop: &CancellationToken,
 ) {
     if timed_npcs.is_empty() {
@@ -300,6 +375,12 @@ async fn timed_npc_loop(
         let Some(now) = crate::world_clock::now_utc_ms() else {
             continue;
         };
+        // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:456-483: a committed next-save
+        // flag controls appearance/removal; transient read failure keeps known state.
+        match root.cake_brutus_present(world).await {
+            Ok(present) => timed_npcs.set_brutus_present(present),
+            Err(_) => event("event=cake_brutus_projection state=retry"),
+        }
         let mut runtime = runtime.lock().await;
         if let Some(Err(error)) = timed_npcs.tick(&mut runtime, now) {
             event(&format!(
@@ -308,3 +389,6 @@ async fn timed_npc_loop(
         }
     }
 }
+
+#[path = "coin_worker.rs"]
+mod coin_worker;

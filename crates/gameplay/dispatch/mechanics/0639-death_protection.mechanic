@@ -1,0 +1,8 @@
+name=death_protection
+commands=664
+transport=death_protection
+composed=death_protection
+authority=death_protection
+offer=638,death_protection::offered,death_protection_available
+[route]
+routing::death_protection::route(authority, &session.admitted, command).await

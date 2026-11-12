@@ -1,1 +1,13 @@
-//! Guild input is composed by the feature module.
+use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
+
+/// Ctrl+G opens the guild panel from play.
+#[must_use]
+pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
+    events.iter().any(|event| {
+        matches!(event,
+        NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false }
+        if code.get() == 10 && modifiers.contains(Modifier::Control)
+            && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Alt)
+            && !modifiers.contains(Modifier::Super))
+    })
+}

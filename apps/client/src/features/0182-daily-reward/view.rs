@@ -3,7 +3,7 @@ use oteryn_client_ui::daily_reward::DailyRewardPanel;
 impl PlayLink {
     #[must_use]
     pub fn daily_reward_panel(&self) -> DailyRewardPanel {
-        lock(&self.mailbox).daily_reward
+        lock(&self.mailbox).daily_reward.clone()
     }
 }
 #[cfg(windows)]
@@ -11,3 +11,35 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+impl PlayLink {
+    pub fn open_daily_reward_picker(&self) {
+        self.daily_reward_picker_request(None);
+        #[cfg(windows)]
+        picker_native::open_picker(self);
+        #[cfg(not(windows))]
+        {
+            lock(&self.mailbox).daily_reward.picker_open = true;
+        }
+    }
+}
+#[cfg(windows)]
+#[path = "picker_native.rs"]
+mod picker_native;
+
+impl PlayLink {
+    pub fn open_returner_reward(&self) {
+        self.returner_reward_request(false);
+        #[cfg(windows)]
+        returner_native::open_reward(self);
+        #[cfg(not(windows))]
+        {
+            lock(&self.mailbox).daily_reward.returner_open = true;
+        }
+    }
+}
+#[cfg(windows)]
+#[path = "returner_native.rs"]
+mod returner_native;
+#[cfg(windows)]
+pub(in crate::play) use returner_native::notify as notify_returner;

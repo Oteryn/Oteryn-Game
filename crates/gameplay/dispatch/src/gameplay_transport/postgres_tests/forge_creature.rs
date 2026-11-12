@@ -98,7 +98,7 @@ pub(super) async fn prepare(
     .await
     .map_err(debug)?;
     tx.commit().await?;
-    if matches!(case, Case::ForgeNoShared) {
+    if matches!(case, Case::ForgeNoShared | Case::EliteNoShared) {
         let result = crate::gameplay_transport::connection::FreshAdmissionAuthority::chat_intent(
             owner,
             players[0].0,
@@ -187,4 +187,9 @@ pub(super) async fn assert_no_gain(h: &Harness) -> TestResult {
         "failed fenced transaction cannot leave a dust credit"
     );
     Ok(())
+}
+
+#[test]
+fn elite_dust_real_party_shared_off_excludes_non_damaging_member() -> TestResult {
+    party_xp::run(Case::EliteNoShared)
 }

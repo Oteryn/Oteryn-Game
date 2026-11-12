@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-DAILY-KILLS-REQUEST-BYTES",
+  "owner_contract": "OTERYN_GAME_WORLD_DAILY_KILLS_PROJECTION_V2.md",
+  "resource": "pubproj daily kills request-bytes",
+  "unit": "bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Complete replacement snapshots are refused on overflow; no truncation. Source retention is bounded per pass and runs independently of publication flags.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/tests/support/authority_cases/pubproj_daily_kills.rs:pubproj_daily_kills_multichannel_batch_dedup_rollback_resync_and_gap"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/public_projections/daily_kills.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/public_kill_statistics.rs"
+  ],
+  "notes": "Owner2026-11-07 PUBPROJ. Ordinals continue the allocation from base maximum10018: next10019 plus lane offset50. No numeric client protocol identifier."
+}

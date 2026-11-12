@@ -1,7 +1,25 @@
 //! Server-owned weekly Task Board panel.
+#[path = "state/fights.rs"]
+pub mod fights;
+mod input;
+#[path = "view/soulseals.rs"]
+mod soulseals;
+pub use soulseals::{soulseals_key, soulseals_text};
+mod protocol;
+pub use input::{creature_choices, creature_name, open_key};
+#[path = "view/shop_names.rs"]
+mod shop_names;
+#[path = "protocol/talisman.rs"]
+pub mod talisman;
+#[path = "view/tree.rs"]
+mod tree;
+pub use tree::{TreeNode, tree_nodes};
+mod view;
 pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };
+pub use protocol::{FullIntent, apply_full_result, full_request};
+pub use view::{shop_offer_choice, shop_offer_text};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -13,8 +31,14 @@ pub enum Intent {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TaskBoardPanel {
+    pub fights: fights::FightPanel,
     pub selected: bool,
     pub open: bool,
+    pub soulseals_open: bool,
+    pub weekly_results_selected: bool,
+    pub weekly_checked: bool,
+    pub weekly_results_open: bool,
+    pub weekly_results_seen: Option<u64>,
     pub pending: bool,
     pub state: Option<task_board::TaskBoardReply>,
     pub feedback: Option<&'static str>,
@@ -44,18 +68,20 @@ pub fn weekly_request(
 
 pub fn apply_weekly(panel: &mut TaskBoardPanel, reply: task_board::full::Reply) {
     panel.pending = false;
-    panel.feedback =
-        (reply.refusal != 0).then_some("The server refused the weekly Task Board action");
+    panel.feedback = tree::refusal_message(reply.refusal);
+    if reply.weekly_results.is_none() {
+        panel.weekly_results_open = false;
+    }
     panel.weekly = Some(reply);
 }
 
 pub fn request(panel: &mut TaskBoardPanel, intent: Intent) -> Option<TaskBoardCommand> {
     if !panel.selected {
-        panel.feedback = Some("Task Board is unavailable in this session");
+        panel.feedback = Some(tr!("Task Board is unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     let (action, task) = match intent {
@@ -73,21 +99,26 @@ pub fn request(panel: &mut TaskBoardPanel, intent: Intent) -> Option<TaskBoardCo
 
 pub fn apply_result(panel: &mut TaskBoardPanel, response: &TaskBoardResponse) {
     panel.pending = false;
+    panel.weekly = None;
     panel.feedback = Some(if response.reply.refused {
-        "The server refused the Task Board action"
+        tr!("The server refused the Task Board action")
     } else {
-        "The server confirmed the Task Board action"
+        tr!("The server confirmed the Task Board action")
     });
     panel.state = Some(response.reply.clone());
 }
 
 #[must_use]
 pub fn panel_text(panel: &TaskBoardPanel) -> String {
-    let mut text = String::from("Task Board\n");
+    if let Some(reply) = &panel.weekly {
+        return view::panel_text(reply, panel.feedback);
+    }
+    let mut text = String::from(tr!("Task Board\n"));
     if let Some(state) = &panel.state {
-        text.push_str(&format!(
+        text.push_str(&lfmt!(
             "Points: {}  Bounty points: {}\n",
-            state.points, state.bounty_points
+            state.points,
+            state.bounty_points
         ));
         for (index, task) in state.tasks.iter().enumerate() {
             let progress = if state.selected == (index + 1) as u8 {
@@ -95,7 +126,7 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
             } else {
                 0
             };
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "{}. {}: {}/{}  last claim: {}\n",
                 index + 1,
                 task.race,
@@ -105,7 +136,7 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
             ));
         }
         for path in 0..task_board::TALISMAN_PATHS {
-            text.push_str(&format!(
+            text.push_str(&lfmt!(
                 "Talisman {}: level {}, bonus {}, next cost {}\n",
                 path + 1,
                 state.talisman_levels[path],
@@ -114,7 +145,7 @@ pub fn panel_text(panel: &TaskBoardPanel) -> String {
             ));
         }
     } else {
-        text.push_str("Refresh to load the board\n");
+        text.push_str(tr!("Refresh to load the board\n"));
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);

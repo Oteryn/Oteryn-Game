@@ -23,7 +23,7 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
 }
 
 #[test]
-fn a4_invisible_postgres_other_player_keeps_entity_while_monster_drops_target() -> TestResult {
+fn a4_invisible_postgres_other_player_cannot_see_or_target_caster() -> TestResult {
     invisibility_case::<true>()
 }
 
@@ -76,7 +76,11 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 };
                 supplied.cosmetics = pinned(serde_json::to_vec(&cosmetics)?);
                 supplied.source_world = Some(pinned(source.to_vec()));
-                supplied.build_training.as_mut().ok_or("build training")?.content_revision = "content-1".into();
+                supplied
+                    .build_training
+                    .as_mut()
+                    .ok_or("build training")?
+                    .content_revision = "content-1".into();
                 let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
                     .map_err(debug)?;
                 let issuance = NativeEntryActivationIssuance {
@@ -88,9 +92,13 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                 };
                 let mut controller = ContentActivationController::new();
                 let pin = activate_native_entry_room_with_gameplay(
-                    &mut controller, &NodeBootQuiescence::before_channel_runtime(),
-                    world, &issuance, &supplied,
-                ).map_err(debug)?;
+                    &mut controller,
+                    &NodeBootQuiescence::before_channel_runtime(),
+                    world,
+                    &issuance,
+                    &supplied,
+                )
+                .map_err(debug)?;
                 (controller, pin)
             } else {
                 production_generation_with_source(world, "content-1", Some(source))?
@@ -259,8 +267,8 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             drop(states);
             drop(runtime);
             if let Some(observer) = observer {
-                // Crystal 201189f8 player.cpp:1383-1396: invisible players remain
-                // visible entities to other players (only their outfit is blanked).
+                // SRV6 owner difference: unlike Crystal player.cpp:1383-1396,
+                // another player must receive no invisible player entity.
                 let channel = owner
                     .observe_visible_entities(observer)
                     .await
@@ -277,10 +285,10 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .map_err(debug)?;
                 let received = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(&bytes).map_err(debug)?;
                 assert!(
-                    received.entities.iter().any(|entity| entity.entity.identity
+                    !received.entities.iter().any(|entity| entity.entity.identity
                         == actor.placement_identity()
                         && entity.entity.generation == actor.actor_local_generation()),
-                    "the spectator receives the invisible player's exact entity"
+                    "the spectator must not receive the invisible player entity"
                 );
                 let entity = oteryn_protocol_oteryn::appearance::EntityRef {
                     identity: actor.placement_identity(),
@@ -292,7 +300,10 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .appearance_observation_projected(actor, session, true, vec![entity])
                     .await
                     .ok_or("own invisible appearance")?;
-                assert!(matches!(own.bindings[0].look, oteryn_protocol_oteryn::appearance::Look::Outfit { .. }));
+                assert!(matches!(
+                    own.bindings[0].look,
+                    oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
+                ));
                 let projected = owner
                     .appearance_observation_projected(
                         observer,
@@ -302,10 +313,9 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     )
                     .await
                     .ok_or("invisible appearance projection")?;
-                assert_eq!(
-                    projected.bindings[0].look,
-                    oteryn_protocol_oteryn::appearance::Look::EmptyOutfit,
-                    "Crystal protocolgame.cpp:9233 sends an empty outfit to another observer"
+                assert!(
+                    projected.bindings.is_empty(),
+                    "invisible appearance must not leak to another player"
                 );
                 let legacy = owner
                     .appearance_observation_projected(
@@ -316,10 +326,17 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     )
                     .await
                     .ok_or("legacy invisible appearance projection")?;
-                assert!(matches!(
-                    legacy.bindings[0].look,
-                    oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
-                ));
+                assert!(
+                    legacy.bindings.is_empty(),
+                    "visibility is independent of empty-outfit capability"
+                );
+                assert_eq!(
+                    owner
+                        .attack_target(observer, observer_session, 2, Some(entity))
+                        .await,
+                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::TargetNotVisible,
+                    "a known entity reference cannot bypass invisibility"
+                );
             }
             owner.clock_origin -= std::time::Duration::from_secs(2);
             owner.drain_monster_melee().await;
@@ -362,6 +379,27 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     restored.bindings[0].look,
                     oteryn_protocol_oteryn::appearance::Look::Outfit { .. }
                 ));
+                let visible = owner
+                    .observe_visible_entities(observer)
+                    .await
+                    .ok_or("restored entities")?;
+                let snapshot =
+                    crate::gameplay_transport::world_spatial::SessionVisibility::default()
+                        .snapshot(&visible, &mut |_| Ok(()))
+                        .map_err(debug)?;
+                let (_, bytes) =
+                    crate::gameplay_transport::world_spatial::encode_visibility_snapshot(
+                        &[6],
+                        &snapshot,
+                    )
+                    .map_err(debug)?;
+                let received = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(&bytes).map_err(debug)?;
+                assert!(
+                    received
+                        .entities
+                        .iter()
+                        .any(|entity| entity.entity.identity == actor.placement_identity())
+                );
             }
             drop(owner);
             drop(authority);

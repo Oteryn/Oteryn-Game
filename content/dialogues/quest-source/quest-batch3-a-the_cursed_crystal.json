@@ -1,0 +1,259 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.tibia_tales",
+  "runtime_enabled": false,
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+  "npc_owner_question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211",
+  "purpose": "Pinned full dialogue and atomic native branches held for an approved owner; not a second NPC handler.",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.one_eyed_joe",
+      "fragments": [
+        {
+          "line": 81,
+          "literal_parts": [
+            "Well done! But know this: The cursed crystal seems to regenerate over time. It could be necessary to come back and repeat whatever you have done down there."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:81"
+        },
+        {
+          "line": 83,
+          "literal_parts": [
+            "Hello there. I'm sorry, I hardly noticed you. I'm a bit nervous. The spooky {sounds} down there, you know"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:83"
+        },
+        {
+          "line": 108,
+          "literal_parts": [
+            "As for myself I haven't been down there. But I heard some disturbing rumours. In these caves are wonderful crystal formations. Some more poetically inclined fellows call them the crystal gardens. ...",
+            "At first glance it seems to be a beautiful - and precious - surrounding. But in truth, deep down in these caverns exists an old evil. Want to hear more?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:108"
+        },
+        {
+          "line": 114,
+          "literal_parts": [
+            "Hmm. No, I don't think so. I still feel this strange prickling in my toes."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:114"
+        },
+        {
+          "line": 117,
+          "literal_parts": [
+            "Too bad."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:117"
+        },
+        {
+          "line": 120,
+          "literal_parts": [
+            "Protect your ears? Hmm ... Wasn't there some fabulous seafarer who used wax or something to plug his ears? There was a story about horrible bird-women or something ...? No, sounds like hogwash, doesn't it."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:120"
+        },
+        {
+          "line": 123,
+          "literal_parts": [
+            "The evil I mentioned is a strange crystal, imbued with some kind of unholy energy. It is very hard to destroy, no weapon is able to shatter the thing. Maybe a jarring, very loud sound could destroy it. ...",
+            "I heard of creatures, that are able to utter ear-splitting sounds. Don't remember the name, though. Would you go down there and try to destroy the crystal?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:123"
+        },
+        {
+          "line": 134,
+          "literal_parts": [
+            "Great! Good luck and be careful down there!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:134"
+        },
+        {
+          "line": 137,
+          "literal_parts": [
+            "In my humble opinion a pirate should win a fortune by boarding ships not by crawling through caves and tunnels. But who am I to bring into question the captain's decision. All I know is that they sell the crystals at a high price. ...",
+            "A certain amount of the crystals is ground to crystal dust with a special kind of mill. Don't ask me why. Some kind of magical component perhaps that they sell to mages and sorcerers."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:137"
+        },
+        {
+          "line": 143,
+          "literal_parts": [
+            "As for myself I haven't been down there. But I heard some disturbing rumours. In these caves are wonderful crystal formations. Some more poetically inclined fellows call them the crystal gardens. ...",
+            "At first glance it seems to be a beautiful - and precious - surrounding. But in truth, deep down in these caverns exists an old evil. Want to hear more?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:143"
+        },
+        {
+          "line": 149,
+          "literal_parts": [
+            "These caves are incredibly beautiful, {crystals} in vibrant colours grow there like exotic flowers. There are more than a few captains who send down their men in order to quarry the precious crystals. ...",
+            "But there are few volunteers. Often the crystal gatherers disappear and are never seen again. Other poor fellows then meet their former shipmates in the form of ghosts or skeletons. It's a {cursed} area, something evil is down there!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:149"
+        },
+        {
+          "line": 155,
+          "literal_parts": [
+            "I'm a pirate. Normally I'm sailing the seas, boarding other ships and gathering treasures. But at the moment my captain graciously assigned me to watch this {cursed} entrance."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:155"
+        },
+        {
+          "line": 157,
+          "literal_parts": [
+            "I'm One-Eyed Joe. From Josephina, got that? And I regard this eye patch as a personal feature of beauty!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:157"
+        },
+        {
+          "line": 159,
+          "literal_parts": [
+            "Good bye adventurer. It was nice to talk with you."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:159"
+        },
+        {
+          "line": 162,
+          "literal_parts": [
+            "Ah, the brave adventurer who sought to destroy the evil crystal down there. Have you been successful?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:162"
+        }
+      ],
+      "source_sha256": "fb1f6db7de0789925c794f194a23b5a49c3b0d1152dc0d203b5fe0546decea16"
+    }
+  ],
+  "blocked_branches": [
+    {
+      "key": "greet-reward",
+      "trigger": "greet",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "achievement",
+          "name": "Wail of the Banshee"
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i16119",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i16120",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i16121",
+          "count": 1
+        },
+        {
+          "kind": "uniform_choice",
+          "minimum": 1,
+          "maximum": 4,
+          "items_by_choice": [
+            5926,
+            6098,
+            6097,
+            6126
+          ],
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "value": 4
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+          "value": 4
+        },
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/time",
+          "value": 72000
+        }
+      ],
+      "reply": [
+        "Well done! But know this: The cursed crystal seems to regenerate over time. It could be necessary to come back and repeat whatever you have done down there."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:69",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:74",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:75",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:80",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:81"
+      ],
+      "left_out": "New NPC atomic random reward and inventory placement owner is not authorised by ANSWER 5/8."
+    },
+    {
+      "key": "mission-acceptance",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "shared_source_storage_set",
+          "storage": "Storage.Quest.U8_1.TibiaTales.DefaultStart",
+          "value": 1
+        },
+        {
+          "kind": "conditional_set",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+          "when": {
+            "op": "lt",
+            "value": 0
+          },
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Great! Good luck and be careful down there!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:128",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:129",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:130",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:131",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:133",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:134"
+      ],
+      "left_out": "Shared Tibia Tales entry flag is outside the assigned Cursed Crystal branch; no partial local acceptance."
+    }
+  ],
+  "notes": [
+    "All new generic NPC rules are source plans only; no generic durable NPC caller is approved.",
+    "Canonical quest remains oteryn:quest.tibia_tales; no sibling Tibia Tales rule or flag is changed."
+  ]
+}

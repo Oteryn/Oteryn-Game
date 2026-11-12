@@ -1,0 +1,292 @@
+{
+  "schema": 1,
+  "runtime_enabled": false,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/elevator-50092",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50092,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32612,
+        "y": 31499,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You don't know how to use this yet.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/elevator-50093",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50093,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32612,
+        "y": 31499,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You don't know how to use this yet.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/gap",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50111,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32569,
+        "y": 31507,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_gap.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/tunnel",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 40029,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32616,
+        "y": 31514,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_tunnel.lua:9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/discover-ore-wagon",
+      "quest": "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50091,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/ore_wagon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "read_only": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_ore_wagon.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_ore_wagon.lua:11"
+      ],
+      "success_message": "You have found the entrance to the hidden city of Beregar and may now use the ore wagon."
+    }
+  ],
+  "reason": "Complete source parameters retained; no unapproved shared-contract change or invented map binding is published.",
+  "holds": [
+    {
+      "callback": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/elevator-50092",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:9-23"
+          ],
+          "proof": "The source tests GoingDown==2 and never writes it; replacing a read-only guard by SET0 would remove completed elevator access.",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.action=50092"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/elevator-50093",
+      "reasons": [
+        {
+          "missing_fields": [
+            "storage.read_only"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:9-23"
+          ],
+          "proof": "The source tests GoingDown==2 and never writes it; replacing a read-only guard by SET0 would remove completed elevator access.",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.action=50093"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:3"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/gap",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.action=50111"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_gap.lua:9"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/tunnel",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.action=40029"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_tunnel.lua:9"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_hidden_city_of_beregar/discover-ore-wagon",
+      "reasons": [
+        {
+          "missing_fields": [
+            "success_message"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_ore_wagon.lua:9-11"
+          ],
+          "proof": "The donor emits the discovery text after the flag write; omitting it changes the interaction.",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+        },
+        {
+          "missing_fields": [
+            "map.attrs.action=50091"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_ore_wagon.lua:9",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_ore_wagon.lua:11"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    }
+  ],
+  "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+}

@@ -77,7 +77,7 @@ matching one locally when your change can reach it; commands are copied from
 - Export the admin URL into the environment without printing it
   (`set +x` first in scripts; never `echo` it or write it into a log, note or
   PR).
-- Run one target or one filtered test locally. The full six-partition suite is
+- Run one target or one filtered test locally. The full twenty-four-partition suite is
   CI's job (`heavy-tests`); running it locally costs about an hour of CPU.
 - A lock timeout or deadline in one partition can be contention. Re-run that
   test once in isolation; if it fails again it is a real failure.

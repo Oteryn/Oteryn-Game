@@ -25,14 +25,20 @@ use std::{
 };
 
 // D1093 mounts the existing source-bound compiler once, without a shared mod.rs edit.
+mod authored_items;
+
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
-pub use cosmetics_view::NativeCosmeticsView;
+pub use cosmetics_view::{MARRIAGE_GRANT_KEY, MARRIAGE_PROVENANCE, NativeCosmeticsView};
+
+mod market_catalogue;
 
 pub mod mount_taming;
 
+mod item_profile_updates;
 mod native_cosmetics;
+mod starting_loadout_input;
 
 pub const MAGIC: &[u8; 8] = b"OTNGP01\0";
 pub const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
@@ -65,12 +71,16 @@ const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
 /// The item-profile section alone: the production file passed 8 MiB once the Soulpit
 /// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
-/// MAX_RECORDS still bounds the record count.
+/// MAX_ITEM_RECORDS separately bounds the Item record count.
 const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
+/// W18's admitted furniture and bed cohorts bring the native Item provider to
+/// 4,956 records. Keep the existing 16 MiB Item byte bound and the other families'
+/// 4,096-record bound; only this source-backed Item cohort needs more entries.
+const MAX_ITEM_RECORDS: usize = 8192;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -155,6 +165,10 @@ struct SupplementsEnvelope {
     familiar_defenses: Option<String>,
     #[serde(deserialize_with = "required_supplement_option")]
     wheel_profile: Option<String>,
+    /// The compiler binds the accepted Market type source into the activated outer digest.
+    /// Historical artifacts without this pin retain their Item-profile-only admission.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    market_admission_sha256: Option<String>,
 }
 fn required_supplement_option<'de, D: serde::Deserializer<'de>>(
     d: D,
@@ -179,6 +193,10 @@ struct ProvisioningManifest {
     presentation_profiles: FilePin,
     #[serde(default)]
     item_profiles: Option<FilePin>,
+    #[serde(default)]
+    starting_loadout_item_profiles: Option<FilePin>,
+    #[serde(default)]
+    item_profile_updates: Option<FilePin>,
     #[serde(default)]
     spell_appearances: Option<FilePin>,
     #[serde(default)]
@@ -325,6 +343,12 @@ pub struct NativeItemAttributes {
     pub rune_consumption: Option<NativeRuneConsumption>,
     pub field_replaceable: Option<bool>,
     pub has_height: Option<bool>,
+    /// Crystal items.cpp:203-208: clip/top/bottom select orders 1/3/2.
+    /// Missing remains unknown and cannot authorize automatic carpet removal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub always_on_top: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub always_on_top_order: Option<u8>,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -400,8 +424,10 @@ pub struct NativeGameplayState {
     catalog: Arc<executable_catalog::CompiledCatalog>,
     policies: CompiledCreaturePolicies,
     creatures: CreatureProfilesDocument,
+    creature_profile_fingerprints: BTreeMap<String, [u8; 32]>,
     presentations: PresentationProfilesDocument,
     items: Option<ItemProfilesDocument>,
+    market_catalogue: Option<market_catalogue::MarketCatalogue>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
     training: Option<crate::content::training_formula::CompiledTrainingFormula>,
     magnitude_policy: oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy,
@@ -498,8 +524,16 @@ impl NativeGameplayState {
             .collect();
         &actual == expected
     }
+    /// Immutable public-template metadata of the active native generation.
+    pub fn item_profiles(&self) -> impl Iterator<Item = &ItemProfileRecord> {
+        self.items.iter().flat_map(|items| &items.records)
+    }
     pub fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
+    }
+    /// Canonical identity of the original admitted record, retaining explicit null facts.
+    pub fn creature_profile_fingerprint(&self, creature: &str) -> Option<[u8; 32]> {
+        self.creature_profile_fingerprints.get(creature).copied()
     }
     pub fn presentation_profiles(&self) -> &PresentationProfilesDocument {
         &self.presentations
@@ -519,6 +553,25 @@ impl NativeGameplayState {
     ) -> Option<&super::native_spell_appearances::CompiledSpellAppearances> {
         self.appearances.as_ref()
     }
+    /// Source-qualified Market types need not carry a spell-use Item policy.
+    /// Instance attributes remain the durable selector's responsibility.
+    pub fn marketable_definition(&self, key: &str, revision: &str) -> bool {
+        let Some(index) = self.item_index() else {
+            return false;
+        };
+        if index.definition_ref("Item", key, revision).is_none() {
+            return false;
+        }
+        self.market_catalogue
+            .as_ref()
+            .is_some_and(|catalogue| catalogue.admits(index, key, revision))
+            || self.item_policy(key, revision).is_some_and(|policy| {
+                use super::ReferenceItemField as F;
+                matches!(&policy.record().semantics.trade_restrictions,
+                    F::Known(trade) if trade.marketable == F::Known(true))
+            })
+    }
+
     pub fn item_policy(&self, key: &str, revision: &str) -> Option<QualifiedItemPolicy<'_>> {
         let record = self.items.as_ref()?.records.iter().find(|p| {
             (p.authoring.item.key == key && p.authoring.item.revision == revision)
@@ -687,7 +740,9 @@ impl NativeGameplayInput {
         };
         let cosmetics = match manifest.cosmetics {
             Some(pin) => {
+                let locator = directory.join(&pin.path);
                 let pin = load(pin, native_cosmetics::MAX_BYTES)?;
+                let pin = native_cosmetics::materialize(pin, &locator)?;
                 if native_cosmetics::decode(&pin.bytes)?.is_none() {
                     return Err(invalid("native gameplay v6 requires authored cosmetics"));
                 }
@@ -735,10 +790,22 @@ impl NativeGameplayInput {
             source_selection: load(manifest.source_selection, MAX_SELECTION)?,
             creature_profiles: load(manifest.creature_profiles, MAX_CREATURE_PROFILES)?,
             presentation_profiles: load(manifest.presentation_profiles, MAX_PROFILES)?,
-            item_profiles: manifest
-                .item_profiles
-                .map(|pin| load(pin, MAX_ITEM_PROFILES))
-                .transpose()?,
+            item_profiles: starting_loadout_input::merge(
+                item_profile_updates::merge(
+                    manifest
+                        .item_profiles
+                        .map(|pin| load(pin, MAX_ITEM_PROFILES))
+                        .transpose()?,
+                    manifest
+                        .item_profile_updates
+                        .map(|pin| load(pin, MAX_PROFILES))
+                        .transpose()?,
+                )?,
+                manifest
+                    .starting_loadout_item_profiles
+                    .map(|pin| load(pin, MAX_PROFILES))
+                    .transpose()?,
+            )?,
             spell_appearances: manifest
                 .spell_appearances
                 .map(|pin| load(pin, MAX_PROFILES))
@@ -914,6 +981,7 @@ pub fn compile_native_gameplay(
     }
     if let Some(config) = &input.familiar_config {
         let supplements = SupplementsEnvelope {
+            market_admission_sha256: Some(market_catalogue::SOURCE_SHA256.to_owned()),
             native_map_profile: input.native_map_profile,
             familiar_config: String::from_utf8(config.bytes.clone())
                 .map_err(|_| invalid("native gameplay config UTF8"))?,
@@ -1081,10 +1149,13 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         return Err(invalid("native gameplay profile discriminator or bounds"));
     }
     let records = creature_policies(&creatures, &presentations)?;
+    let creature_profile_fingerprints = raw_creature_profile_fingerprints(sections[3], &creatures)?;
     let items = if is_v2 {
         let items: ItemProfilesDocument = serde_json::from_slice(sections[5])
             .map_err(|_| invalid("native gameplay item profiles"))?;
-        if items.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1" || items.records.len() > MAX_RECORDS {
+        if items.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1"
+            || items.records.len() > MAX_ITEM_RECORDS
+        {
             return Err(invalid(
                 "native gameplay item profile discriminator or bounds",
             ));
@@ -1108,6 +1179,38 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     Ok((binding.external_id.clone(), binding))
                 })
                 .collect::<Result<_, ContentError>>()?;
+        // ITEMHOLD-Q: this existing canonical identity has no Crystal row. Its
+        // own Wiki itemid/revision and admitted 15.30 appearance bind it exactly;
+        // never fabricate a Crystal identity or admit a numeric-id fallback.
+        let bottle_binding = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.tibiawiki", "source_revision": "fandom-r1041565",
+            "identity_namespace": "tibiawiki/item_id", "external_id": "44179",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i44179", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("ITEMHOLD-Q Wiki identity"))?;
+        if admitted
+            .insert("44179".to_owned(), bottle_binding)
+            .is_some()
+        {
+            return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
+        }
+        // W02: Crystal201189f items.cpp:163-174 indexes ItemType by the exact
+        // appearance.id. Appearance48416 is independently captured by
+        // boss_reward_item_profiles.py; the existing canonical identity is reused.
+        // Its absent XML override retains Canary47df items.hpp:282,307 defaults.
+        let sugar_corpse_binding = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "identity_namespace": "ots/item_server_id", "external_id": "48416",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i48416", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("W02 Sugar corpse exact identity"))?;
+        if admitted
+            .insert("48416".to_owned(), sugar_corpse_binding)
+            .is_some()
+        {
+            return Err(invalid("W02 Sugar corpse identity collision"));
+        }
         let candidate_bytes = include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
         );
@@ -1135,6 +1238,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        authored_items::admit(&items, sections[5], &mut admitted)?;
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -1152,6 +1256,81 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 || !production_identities.insert(binding.target.clone())
             {
                 return Err(invalid("native gameplay item production binding"));
+            }
+            if binding.external_id == "48416" {
+                use super::{ReferenceItemField as F, ReferenceItemType as Type};
+                let semantics = &record.semantics;
+                let attributes = &record.attributes;
+                if !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations != [NativeItemDestination::Ground]
+                    || !matches!(&semantics.physical, F::Known(p) if p.weight == F::Known(0)
+                        && p.movable == F::Known(true) && p.pickupable == F::Known(false))
+                    || !matches!(&semantics.classification, F::Known(c) if c.item_type == F::Known(Type::Container))
+                    || !matches!(&semantics.stack, F::Known(s) if s.stackable == F::Known(false) && s.stack_max == F::NotApplicable)
+                    || !matches!(&semantics.container, F::Known(c) if c.capacity == F::Known(8))
+                    || semantics.temporal != F::NotApplicable
+                    || semantics.charges != F::NotApplicable
+                    || record.production_binding_qualification.is_some()
+                    || attributes.speed_bonus != Some(0)
+                    || attributes.blocks_movement != Some(false)
+                    || attributes.blocks_projectile != Some(false)
+                    || attributes.immovable_block_solid != Some(false)
+                    || attributes.has_height != Some(false)
+                    || attributes.field_condition.is_some()
+                    || attributes.field_replaceable.is_some()
+                    || attributes.rune_consumption.is_some()
+                    || !attributes.spell_augments.is_empty()
+                {
+                    return Err(invalid("W02 Sugar corpse source policy"));
+                }
+            }
+            if binding.external_id == "44179" {
+                use super::ReferenceItemField as F;
+                let canonical: serde_json::Value = serde_json::from_slice(include_bytes!(
+                    "../../../../../content/items/definitions/items-25500-25999.json"
+                ))
+                .map_err(|_| invalid("ITEMHOLD-Q canonical source"))?;
+                let canonical = canonical["records"]
+                    .as_array()
+                    .and_then(|rows| {
+                        rows.iter().find(|row| {
+                            row["definition"]["identity"]["key"] == "oteryn:item.tibia.i44179"
+                        })
+                    })
+                    .ok_or_else(|| invalid("ITEMHOLD-Q canonical identity"))?;
+                let semantics: super::ReferenceItemSemantics =
+                    serde_json::from_value(canonical["definition"]["semantics"].clone())
+                        .map_err(|_| invalid("ITEMHOLD-Q canonical semantics"))?;
+                let attrs = &record.attributes;
+                if record.semantics != semantics
+                    || !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations
+                        != [
+                            NativeItemDestination::CharacterInventory,
+                            NativeItemDestination::Ground,
+                        ]
+                    || !matches!(&semantics.physical, F::Known(p) if p.weight == F::Known(60)
+                        && p.movable == F::Known(true) && p.pickupable == F::Known(true))
+                    || !matches!(&semantics.stack, F::Known(s) if s.stackable == F::Known(false))
+                    || semantics.container != F::NotApplicable
+                    || semantics.charges != F::NotApplicable
+                    || semantics.temporal != F::NotApplicable
+                    || semantics.fluid != F::NotApplicable
+                    || record.production_binding_qualification.is_some()
+                    || attrs.speed_bonus != Some(0)
+                    || !attrs.spell_augments.is_empty()
+                    || attrs.blocks_movement != Some(false)
+                    || attrs.blocks_projectile != Some(false)
+                    || attrs.immovable_block_solid != Some(false)
+                    || attrs.field_condition.is_some()
+                    || attrs.rune_consumption.is_some()
+                    || attrs.field_replaceable.is_some()
+                    || attrs.has_height != Some(false)
+                {
+                    return Err(invalid("ITEMHOLD-Q exact Wiki recipe"));
+                }
             }
             if binding.external_id == "40450" {
                 use super::ReferenceItemField as F;
@@ -1187,10 +1366,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                         "native gameplay40450 closed candidate source policy",
                     ));
                 }
-            } else if record.production_binding_qualification.is_some() {
+            } else if record.production_binding_qualification.is_some()
+                && binding.source_key != authored_items::SOURCE
+            {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }
             exact(&binding.target, ProjectV2Family::Item)?;
+            if !matches!(
+                (
+                    record.attributes.always_on_top,
+                    record.attributes.always_on_top_order
+                ),
+                (None, None) | (Some(false), Some(0)) | (Some(true), Some(1..=3))
+            ) {
+                return Err(invalid("native gameplay item top-order source facts"));
+            }
             // WRITE0-RL-01: text belongs to a single item. Unmaterializable map
             // carriers may retain unknown stack facts; they grant no mint permission.
             if let super::ReferenceItemField::Known(text) = &record.semantics.readable_writeable {
@@ -1362,6 +1552,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy::Strict,
         )
     };
+    let mut market_catalogue = None;
     let (familiar_config, familiar_defenses, wheel_profile, native_map_profile) = if is_v5 {
         let envelope: SupplementsEnvelope = serde_json::from_slice(sections[8])
             .map_err(|_| invalid("native gameplay source supplements"))?;
@@ -1392,6 +1583,11 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 )
                 .map_err(|_| invalid("native gameplay familiar source defense"))
             })
+            .transpose()?;
+        market_catalogue = envelope
+            .market_admission_sha256
+            .as_deref()
+            .map(market_catalogue::MarketCatalogue::load)
             .transpose()?;
         (Some(config), defenses, wheel, envelope.native_map_profile)
     } else {
@@ -1442,8 +1638,10 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             catalog: Arc::new(catalog),
             policies,
             creatures,
+            creature_profile_fingerprints,
             presentations,
             items,
+            market_catalogue,
             appearances,
             training,
             magnitude_policy,
@@ -1488,6 +1686,34 @@ fn condition(text: &str) -> Result<Option<ConditionType>, ContentError> {
         _ => return Err(invalid("native gameplay unsupported condition immunity")),
     }))
 }
+// tools/content-schema/encounters/import_boss_levers.py:68-69,135 hashes canonical original records,
+// including explicit nulls. Typed serialization may omit those facts. Keep the
+// original-byte typed validation above: decoding Value alone loses duplicate fields.
+fn raw_creature_profile_fingerprints(
+    bytes: &[u8],
+    creatures: &CreatureProfilesDocument,
+) -> Result<BTreeMap<String, [u8; 32]>, ContentError> {
+    let document: serde_json::Value = serde_json::from_slice(bytes)
+        .map_err(|_| invalid("native gameplay creature source identity"))?;
+    let records = document
+        .get("records")
+        .and_then(serde_json::Value::as_array)
+        .filter(|records| records.len() == creatures.records.len() && records.len() <= MAX_RECORDS)
+        .ok_or_else(|| invalid("native gameplay creature source identity"))?;
+    let mut fingerprints = BTreeMap::new();
+    for (raw, typed) in records.iter().zip(&creatures.records) {
+        let canonical = serde_json::to_vec(raw)
+            .map_err(|_| invalid("native gameplay creature source identity"))?;
+        if fingerprints
+            .insert(typed.profile.target.key.clone(), sha256(&canonical))
+            .is_some()
+        {
+            return Err(invalid("native gameplay duplicate creature"));
+        }
+    }
+    Ok(fingerprints)
+}
+
 fn creature_policies(
     creatures: &CreatureProfilesDocument,
     presentations: &PresentationProfilesDocument,
@@ -1808,9 +2034,10 @@ pub mod test_support {
 
     mod activation_fixture;
     pub use activation_fixture::{
-        activated_loop_monster, activated_loop_monster_missing_child,
+        activated_boss_slot_loot_fixture, activated_loop_monster,
+        activated_loop_monster_missing_child, activated_reward_boss_corpse_capacity_fixture,
         activated_reward_boss_fixture, activated_with_custom_loot_tables,
-        activated_with_loot_tables, loop_monster_inner_digest,
+        activated_with_loot_tables, loop_monster_inner_digest, try_activate_input,
     };
 }
 
@@ -1826,6 +2053,291 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
+        let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
+        let mut supplied = input();
+        let mut raw: Value = serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+        let key = raw["records"][0]["profile"]["target"]["key"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        raw["records"][0]["profile"]["data"]["profile"]["details"]["reference_level"] = Value::Null;
+        supplied.creature_profiles = pinned(&serde_json::to_vec(&raw).unwrap());
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let admitted = decode(&artifact.server_artifact).unwrap();
+        let expected = sha256(&serde_json::to_vec(&raw["records"][0]).unwrap());
+        assert_eq!(
+            admitted.state.creature_profile_fingerprint(&key),
+            Some(expected)
+        );
+        let typed = serde_json::to_value(&admitted.state.creature_profiles().records[0]).unwrap();
+        assert_ne!(sha256(&serde_json::to_vec(&typed).unwrap()), expected);
+
+        raw["records"][0]["profile"]["data"]["profile"]["details"]
+            .as_object_mut()
+            .unwrap()
+            .remove("reference_level");
+        supplied.creature_profiles.bytes = serde_json::to_vec(&raw).unwrap();
+        // Even a semantically identical typed profile cannot change the admitted source bytes.
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        supplied.creature_profiles = pinned(&supplied.creature_profiles.bytes);
+        let changed = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let changed = decode(&changed.server_artifact).unwrap();
+        assert_ne!(
+            changed.state.creature_profile_fingerprint(&key),
+            Some(expected)
+        );
+        assert_eq!(
+            changed.state.creature_profiles(),
+            admitted.state.creature_profiles()
+        );
+    }
+
+    #[test]
+    fn creature_source_identity_keeps_duplicate_record_and_field_rejection() {
+        let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
+        let mut supplied = input();
+        let mut raw: Value = serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+        let first = raw["records"][0].clone();
+        raw["records"].as_array_mut().unwrap().push(first);
+        supplied.creature_profiles = pinned(&serde_json::to_vec(&raw).unwrap());
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+
+        let original = String::from_utf8(input().creature_profiles.bytes).unwrap();
+        let original_value: Value = serde_json::from_str(&original).unwrap();
+        let profile = serde_json::to_string(&original_value["records"][0]["profile"]).unwrap();
+        let duplicate = original.replacen(
+            "\"profile\":",
+            &format!("\"profile\":{profile},\"profile\":"),
+            1,
+        );
+        supplied.creature_profiles = pinned(duplicate.as_bytes());
+        // Value parsing would collapse duplicate fields; admission must still parse original bytes.
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+    }
+
+    #[test]
+    fn w18_native_item_top_order_and_furniture_cohort_keep_input_bounds() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        let mut profiles: Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))
+        .unwrap();
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let carpet = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i37365", "definition-r1")
+            .unwrap();
+        let attributes = &carpet.record().attributes;
+        assert_eq!(
+            attributes.always_on_top,
+            attributes.always_on_top_order.map(|order| order != 0)
+        );
+        assert!(attributes.always_on_top_order.is_some());
+
+        profiles["records"][0]["attributes"]["always_on_top"] = true.into();
+        profiles["records"][0]["attributes"]["always_on_top_order"] = 0.into();
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        assert!(
+            matches!(compile_native_gameplay(baseline.compiled(), &supplied),
+            Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item top-order source facts")
+        );
+
+        // Exercise the Item record bound separately from the unchanged 16 MiB
+        // byte bound. Duplicate identities would fail later; count must refuse first.
+        let smallest = profiles["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .min_by_key(|record| serde_json::to_vec(record).unwrap().len())
+            .unwrap()
+            .clone();
+        profiles["records"] = Value::Array(vec![smallest; MAX_ITEM_RECORDS + 1]);
+        let bytes = serde_json::to_vec(&profiles).unwrap();
+        assert!(bytes.len() <= MAX_ITEM_PROFILES);
+        supplied.item_profiles = Some(pinned(&bytes));
+        assert!(
+            matches!(compile_native_gameplay(baseline.compiled(), &supplied),
+            Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item profile discriminator or bounds")
+        );
+    }
+    #[test]
+    fn itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject() {
+        use super::super::ReferenceItemField as F;
+        use crate::domain::timed_item::TimedValues;
+        use crate::domain::timed_item_host::TimedDefinitionSource;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = starting_loadout_input::merge(
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/spell-native-profiles.json"
+            ))),
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/starting-loadout-profiles.json"
+            ))),
+        )
+        .unwrap();
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for id in [
+            2881, 2882, 3054, 3056, 3083, 3572, 12369, 14156, 33330, 39546, 44179, 52732,
+        ] {
+            let policy = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            let record = policy.record();
+            assert!(record.admission.materializable, "Item {id}");
+            assert_eq!(
+                record.admission.stack_class,
+                NativeItemStackClass::NonStackable
+            );
+            assert!(
+                record
+                    .admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory)
+            );
+            assert_eq!(record.semantics.container, F::NotApplicable);
+            assert_eq!(record.semantics.temporal, F::NotApplicable);
+            if let Some(weight) = match id {
+                33330 => Some(7500),
+                44179 => Some(60),
+                52732 => Some(90),
+                _ => None,
+            } {
+                assert!(
+                    matches!(&record.semantics.physical, F::Known(p) if p.weight == F::Known(weight))
+                );
+            }
+            if let Some(count) = match id {
+                3054 | 3056 => Some(200),
+                3083 => Some(150),
+                _ => None,
+            } {
+                assert!(
+                    matches!(&record.semantics.charges, F::Known(charges) if charges.count == F::Known(count))
+                );
+                let target = super::super::ReferenceItemTarget {
+                    key: record.production_definition.production_key.clone(),
+                    revision: record.production_definition.revision_ref.clone(),
+                };
+                let timed = record
+                    .semantics
+                    .resolve_timed_definition(&target)
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(timed.full, TimedValues::new(Some(count), None).unwrap());
+            }
+            if matches!(id, 2881 | 2882) {
+                assert!(
+                    matches!(&record.semantics.fluid, F::Known(fluid) if fluid.fluid_type == F::NotApplicable)
+                );
+            }
+        }
+        // Main admits starter Item 34017; keep a held row and an unknown ID here.
+        for id in [1000, 54609] {
+            assert!(
+                decoded
+                    .state
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .is_none()
+            );
+        }
+        for (field, reason) in [
+            ("weight", "ITEMHOLD-Q exact Wiki recipe"),
+            ("revision", "native gameplay item production binding"),
+        ] {
+            let mut profiles: Value =
+                serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+            let bottle = profiles["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|r| {
+                    r["production_definition"]["production_key"] == "oteryn:item.tibia.i44179"
+                })
+                .unwrap();
+            if field == "weight" {
+                bottle["semantics"]["physical"]["value"]["weight"]["value"] = 0.into();
+            } else {
+                bottle["production_binding"]["source_revision"] = "unqualified".into();
+            }
+            let mut bad = supplied.clone();
+            bad.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(matches!(compile_native_gameplay(baseline.compiled(), &bad),
+                Err(ContentError::InvalidArtifact(found)) if found == reason));
+        }
+    }
+
+    #[test]
+    fn sugar_corpse_source_binding_and_ground_policy_are_closed() {
+        // Canary47df sugar_daddy.lua:24; Crystal201189f items.cpp:163-174.
+        // The source DAT-only body keeps the actual loader's capacity8, and
+        // its physical corpse admission never grants carried Item custody.
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        let raw =
+            include_bytes!("../../../../../content/items/definitions/spell-native-profiles.json");
+        supplied.item_profiles = Some(pinned(raw));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let body = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i48416", "definition-r1")
+            .unwrap()
+            .record();
+        assert_eq!(
+            body.admission.legal_destinations,
+            [NativeItemDestination::Ground]
+        );
+        let original: Value = serde_json::from_slice(raw).unwrap();
+        for (field, value, reason) in [
+            (
+                "/semantics/container/value/capacity/value",
+                serde_json::json!(9),
+                "W02 Sugar corpse source policy",
+            ),
+            (
+                "/admission/legal_destinations",
+                serde_json::json!(["CharacterInventory", "Ground"]),
+                "W02 Sugar corpse source policy",
+            ),
+            (
+                "/semantics/physical/value/pickupable/value",
+                serde_json::json!(true),
+                "W02 Sugar corpse source policy",
+            ),
+            (
+                "/production_binding/source_revision",
+                serde_json::json!("unqualified"),
+                "native gameplay item production binding",
+            ),
+        ] {
+            let mut profiles = original.clone();
+            let body = profiles["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|row| {
+                    row["production_definition"]["production_key"] == "oteryn:item.tibia.i48416"
+                })
+                .unwrap();
+            *body.pointer_mut(field).unwrap() = value;
+            let mut bad = supplied.clone();
+            bad.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(matches!(compile_native_gameplay(baseline.compiled(), &bad),
+                Err(ContentError::InvalidArtifact(found)) if found == reason));
+        }
+    }
+
     #[test]
     fn hireling_lamp_inbox_destination_is_source_bound_and_not_portable() {
         use super::super::ReferenceItemField as F;
@@ -2906,6 +3418,50 @@ mod tests {
         assert_eq!(boss.category.as_str(), "nemesis");
     }
     #[test]
+    fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let rewards = native.reward_table();
+        use crate::content::creature_reward::NoSettlementReason;
+        let (creature, item, private_refusal) = (
+            "oteryn:creature.bakragore",
+            "oteryn:item.tibia.i44012",
+            NoSettlementReason::LootItemInadmissible,
+        );
+        assert_eq!(rewards.row(creature).err(), Some(private_refusal));
+        let corpse = rewards.reward_boss_corpse(creature).unwrap();
+        assert_eq!(corpse.corpse_item.production_key, item);
+        assert!(corpse.loot_table.entries.is_empty());
+        assert!(rewards.reward_boss_corpse("oteryn:creature.rat").is_none());
+        assert!(rewards.reward_boss_corpse("fixture:unknown").is_none());
+        assert!(rewards.row("oteryn:creature.the_primal_menace").is_ok());
+        // Main separates a reward boss's physical body from its private loot
+        // budget. The branch's exact native-goal loot closure now qualifies Spite.
+        let spite = rewards.row("oteryn:creature.goshnar_s_spite").unwrap();
+        assert_eq!(spite.corpse_item.production_key, "oteryn:item.tibia.i33867");
+        assert!(!spite.loot_table.entries.is_empty());
+        let supplied = NativeGameplayInput::from_manifest(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json"),
+        )
+        .unwrap();
+        let loot: crate::content::creature_reward::LootTablesSection =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().unwrap().bytes).unwrap();
+        let body = loot
+            .items
+            .iter()
+            .find(|facts| facts.item.key == "oteryn:item.tibia.i33867")
+            .unwrap();
+        assert!(body.materializable);
+        assert_eq!(body.container_capacity, Some(48));
+        let empty = rewards
+            .reward_boss_corpse("oteryn:creature.goshnar_s_spite")
+            .unwrap();
+        assert_eq!(empty.corpse_item, spite.corpse_item);
+        assert!(empty.loot_table.entries.is_empty());
+    }
+    #[test]
     fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {
         let world = test_source(1).unwrap().world_id;
         let baseline = qualify_native_entry_room(world).unwrap();
@@ -3292,6 +3848,69 @@ mod tests {
             "proposal-content-r1"
         );
     }
+    #[test]
+    fn reaudit_market_population_admission_is_bound_to_the_active_artifact() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys =
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
+        let supplied = v7_input(Some(keys));
+        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let state = decode(&compiled.server_artifact).unwrap().state;
+        assert!(
+            state
+                .item_policy("oteryn:item.tibia.i10219", "definition-r1")
+                .is_none()
+        );
+        assert!(state.marketable_definition("oteryn:item.tibia.i10219", "definition-r1"));
+        assert!(!state.marketable_definition("oteryn:item.tibia.i10219", "definition-r2"));
+        assert!(!state.marketable_definition("oteryn:item.tibia.i3031", "definition-r1"));
+        fn replace_admission(bytes: &[u8], pin: Option<&str>) -> Vec<u8> {
+            let mut output = bytes[..8].to_vec();
+            let mut cursor = 8;
+            let mut section = 0;
+            while cursor < bytes.len() {
+                let length =
+                    u32::from_be_bytes(bytes[cursor..cursor + 4].try_into().unwrap()) as usize;
+                cursor += 36;
+                let mut payload = bytes[cursor..cursor + length].to_vec();
+                if section == 8 {
+                    let mut value: Value = serde_json::from_slice(&payload).unwrap();
+                    if let Some(pin) = pin {
+                        value["market_admission_sha256"] = pin.into();
+                    } else {
+                        value
+                            .as_object_mut()
+                            .unwrap()
+                            .remove("market_admission_sha256");
+                    }
+                    payload = serde_json::to_vec(&value).unwrap();
+                }
+                output.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+                output.extend_from_slice(&sha256(&payload));
+                output.extend_from_slice(&payload);
+                cursor += length;
+                section += 1;
+            }
+            output
+        }
+        let historical = replace_admission(&compiled.server_artifact, None);
+        let historical_state = decode(&historical).unwrap().state;
+        assert!(
+            !historical_state.marketable_definition("oteryn:item.tibia.i10219", "definition-r1")
+        );
+        assert!(
+            StagedGeneration::stage(
+                &historical,
+                &compiled.client_artifact,
+                compiled.expectation()
+            )
+            .is_err()
+        );
+        let wrong_pin = replace_admission(&compiled.server_artifact, Some(&"0".repeat(64)));
+        assert!(decode(&wrong_pin).is_err());
+    }
+
     #[test]
     fn summer_corpse_capacity_reward_admission_accepts_thirty_and_refuses_thirty_one() {
         use super::super::creature_reward::NoSettlementReason;

@@ -100,10 +100,49 @@ impl From<FactsRefusal> for BootRefusal {
     }
 }
 
+/// The production bundle Item lookup. A known pinned reference may have no
+/// native profile: its unknown facts stay blocking/non-pickupable. Terrain-backed
+/// floor classification remains the map owner's existing qualified fallback.
+pub fn native_item_definition(
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    key: &str,
+) -> Option<ItemDefinition> {
+    use crate::content::{ReferenceItemField, ReferenceItemType};
+    let index = gameplay.and_then(|state| state.item_index())?;
+    let revision = index.revision(key)?;
+    let reference = index.definition_ref("Item", key, revision)?;
+    let profile = gameplay
+        .and_then(|state| state.item_policy(key, revision))
+        .map(|policy| policy.record());
+    let pickupable = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.physical, ReferenceItemField::Known(physical)
+                if physical.pickupable == ReferenceItemField::Known(true)
+        )
+    });
+    let door = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.classification, ReferenceItemField::Known(classification)
+                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+        )
+    });
+    let attributes = profile.map(|profile| &profile.attributes);
+    Some(ItemDefinition {
+        reference,
+        solid: attributes.and_then(|attributes| attributes.blocks_movement),
+        blocks_projectile: attributes
+            .and_then(|attributes| attributes.blocks_projectile)
+            .unwrap_or(true),
+        pickupable,
+        door,
+    })
+}
+
 /// A Channel booted from a world bundle: the shared base, its empty overlay, the start tile and
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]
 pub struct BundleWorld {
+    daily: Option<super::daily::DailyMap>,
     base: Arc<WorldBase>,
     map: Arc<BundleMap>,
     map_revision: String,
@@ -116,7 +155,11 @@ pub struct BundleWorld {
 /// Channel; the overlays are both empty.
 impl PartialEq for BundleWorld {
     fn eq(&self, other: &Self) -> bool {
-        self.base.digest() == other.base.digest()
+        self.daily == other.daily
+            && self.base.digest() == other.base.digest()
+            && self.base.active_layers() == other.base.active_layers()
+            && self.base.layer_epoch() == other.base.layer_epoch()
+            && self.base.exit_layers() == other.base.exit_layers()
             && self.base.content_revision() == other.base.content_revision()
             && self.base.tile_count() == other.base.tile_count()
             && self.base.entry_count() == other.base.entry_count()
@@ -159,17 +202,23 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
         return Err(BootRefusal::StartNotEnterable);
     }
     Ok(CheckedBundle {
+        composition: None,
         data,
         base,
         map_revision: revision,
         start: pins.start,
         spawns,
+        daily: None,
+        pins: pins.bundle.clone(),
     })
 }
 
 /// A bundle that passed [`check`] and waits for the served item definitions.
 #[derive(Debug)]
 pub struct CheckedBundle {
+    composition: Option<bundle::Bundle>,
+    daily: Option<super::daily::DailyMap>,
+    pins: BundlePins,
     data: Vec<u8>,
     base: Arc<WorldBase>,
     map_revision: String,
@@ -178,17 +227,179 @@ pub struct CheckedBundle {
 }
 
 impl CheckedBundle {
+    /// Regional/fixture bundles omit changes outside their admitted geography.
+    #[cfg(test)]
+    fn compose_admitted_layers(self, keys: &[&str]) -> Result<Self, BootRefusal> {
+        self.compose_admitted_layers_with_exits(keys, keys)
+    }
+
+    pub fn compose_admitted_layers_with_exits(
+        self,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        let selected: Vec<_> = keys
+            .iter()
+            .copied()
+            .filter(|key| self.base.admitted_layers.iter().any(|layer| layer == *key))
+            .collect();
+        let exit_selected: Vec<_> = exits
+            .iter()
+            .copied()
+            .filter(|key| self.base.admitted_layers.iter().any(|layer| layer == *key))
+            .collect();
+        self.compose_layers_with_exits(&selected, &exit_selected)
+    }
+
+    /// Select compiler-admitted named layers before any map facts, movement or spawn admission.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn compose_layers(self, keys: &[&str]) -> Result<Self, BootRefusal> {
+        self.compose_layers_with_exits(keys, keys)
+    }
+
+    /// Bind the actual boot composition to the independently resolved reset epoch.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn compose_epoch_layers(
+        self,
+        epoch: u64,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        self.compose_layers_with_exits(keys, exits)?
+            .with_layer_epoch(epoch)
+    }
+
+    pub fn compose_epoch_admitted_layers(
+        self,
+        epoch: u64,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        self.compose_admitted_layers_with_exits(keys, exits)?
+            .with_layer_epoch(epoch)
+    }
+
+    fn with_layer_epoch(mut self, epoch: u64) -> Result<Self, BootRefusal> {
+        if epoch == 0 {
+            return Err(LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                "zero world-change epoch".into(),
+            ))
+            .into());
+        }
+        let base = Arc::get_mut(&mut self.base).ok_or_else(|| {
+            LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                "base shared before epoch binding".into(),
+            ))
+        })?;
+        if base.layer_epoch.is_some() {
+            return Err(LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                "composition already epoch-bound".into(),
+            ))
+            .into());
+        }
+        base.layer_epoch = Some(epoch);
+        Ok(self)
+    }
+
+    /// Return metadata is admitted independently; an inactive Fury gate still has a safe exit.
+    pub fn compose_layers_with_exits(
+        mut self,
+        keys: &[&str],
+        exits: &[&str],
+    ) -> Result<Self, BootRefusal> {
+        let mut families = BTreeSet::new();
+        if exits.len() > 16
+            || !exits.iter().all(|key| {
+                self.base.admitted_layers.iter().any(|layer| layer == *key)
+                    && families.insert(key.rsplit_once('/').map_or(*key, |(family, _)| family))
+            })
+        {
+            return Err(LoadError::Bundle(oteryn_world_bundle::Error::Key(
+                "exit layer not compiled or ambiguous".into(),
+            ))
+            .into());
+        }
+        if keys.is_empty() {
+            if !exits.is_empty() {
+                Arc::get_mut(&mut self.base)
+                    .ok_or_else(|| {
+                        LoadError::Bundle(oteryn_world_bundle::Error::Format(
+                            "base shared before composition".into(),
+                        ))
+                    })?
+                    .exit_layers = exits.iter().map(|key| (*key).to_owned()).collect();
+            }
+            return Ok(self);
+        }
+        let mut decoded = bundle::read(&self.data).map_err(LoadError::from)?;
+        oteryn_world_bundle::layers::compose(&mut decoded, keys).map_err(LoadError::from)?;
+        self.base = Arc::new(WorldBase::composed(&decoded, keys, exits)?);
+        self.composition = Some(decoded);
+        Ok(self)
+    }
+
+    /// Builds the reset day's physical map before any collision or presentation owner exists.
+    pub fn with_daily_map(mut self, daily: super::daily::DailyMap) -> Self {
+        self.daily = Some(daily);
+        self
+    }
+
     /// Builds the World. `item` serves the definition of the Item a palette key names; a palette
     /// Item key it does not serve at its palette `id` refuses the boot (§1.6), and so does a
     /// start tile a solid item blocks.
     pub fn boot(
-        self,
+        mut self,
         world_id: WorldId,
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
+        let projection = self
+            .daily
+            .as_ref()
+            .map(|daily| match &self.composition {
+                Some(bundle) => {
+                    super::daily::Projection::from_manifest(bundle.manifest.clone(), daily, &item)
+                }
+                None => super::daily::Projection::new(&self.data, daily, &item),
+            })
+            .transpose()
+            .map_err(LoadError::from)?;
+        if let Some(projection) = &projection {
+            if let Some(mut decoded) = self.composition.take() {
+                super::daily::project_bundle(&mut decoded, projection).map_err(LoadError::from)?;
+                let active: Vec<_> = self
+                    .base
+                    .active_layers()
+                    .iter()
+                    .map(String::as_str)
+                    .collect();
+                let exits: Vec<_> = self.base.exit_layers().iter().map(String::as_str).collect();
+                let mut base = WorldBase::composed(&decoded, &active, &exits)?;
+                base.layer_epoch = self.base.layer_epoch();
+                self.base = Arc::new(base);
+                self.composition = Some(decoded);
+            } else {
+                // Preserve main's streaming projection when no entrance geometry is selected.
+                let (mut base, _) = super::load_daily_spawns(
+                    &self.data,
+                    &self.pins,
+                    super::LOAD_LIMITS,
+                    Some(projection),
+                )?;
+                base.active_layers = self.base.active_layers().to_vec();
+                base.exit_layers = self.base.exit_layers().to_vec();
+                base.layer_epoch = self.base.layer_epoch();
+                self.base = Arc::new(base);
+            }
+        }
         let mut spell_tiles = SpellTilesBuilder::new(Arc::clone(&self.base));
-        let (facts, blocked, floors) = scan(&self.data, &item, &mut spell_tiles)?;
+        let (facts, blocked, floors) = scan(
+            &self.data,
+            self.composition.as_ref(),
+            &item,
+            &mut spell_tiles,
+            projection.as_ref(),
+        )?;
         let spell_tiles = Arc::new(spell_tiles.finish(facts.doors())?);
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
@@ -216,6 +427,7 @@ impl CheckedBundle {
             })
             .map_err(BootRefusal::FloorChain)?;
         Ok(BundleWorld {
+            daily: self.daily,
             map: Arc::new(BundleMap {
                 entry_start: self.start,
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
@@ -239,15 +451,17 @@ impl CheckedBundle {
 /// `spell_tiles` collects the spell tile facts of the same sectors (BUNDLE-TILES-1).
 fn scan(
     data: &[u8],
+    composition: Option<&bundle::Bundle>,
     item: &impl Fn(&str) -> Option<ItemDefinition>,
     spell_tiles: &mut SpellTilesBuilder,
+    daily: Option<&super::daily::Projection>,
 ) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
     let mut masks: Vec<u8> = Vec::new();
     let mut floors = FloorTable::default();
     let mut refused = None;
     let mut blocked = BTreeSet::new();
-    let visited = bundle::visit(data, |manifest, sector| {
+    let mut scan_sector = |manifest: &bundle::Manifest, sector: &bundle::Sector| {
         if facts.is_none() {
             match BundleFacts::palette(manifest, item) {
                 Ok(palette) => {
@@ -285,11 +499,13 @@ fn scan(
             floors.add(at, mask);
             // NEWHAVEN-TELEPORT-1: the teleport attribute of a top-level entry; its floor byte
             // is the native floor (format document §5), which the reader checked is in the World.
-            if let Some((x, y, floor)) = tile
+            if let Some((ordinal, source)) = tile
                 .items
                 .iter()
                 .filter(|item| item.depth == 0)
-                .find_map(|item| item.attrs.teleport)
+                .enumerate()
+                .find(|(_, item)| item.attrs.teleport.is_some())
+                && let Some((x, y, floor)) = source.attrs.teleport
             {
                 floors.add_teleport(
                     at,
@@ -299,19 +515,41 @@ fn scan(
                         floor: i8::from_ne_bytes([floor]),
                     },
                 );
+                if let Some(appearance) = manifest
+                    .palette
+                    .get(source.palette as usize)
+                    .and_then(|entry| super::palette_appearance(&entry.key))
+                    && let Ok(ordinal) = u8::try_from(ordinal)
+                {
+                    floors.bind_teleport_source(at, ordinal, appearance);
+                }
             }
         }
-        facts.push(manifest, &sector, &mut blocked);
-        spell_tiles.push(manifest, &sector, &blocked, item, &masks);
+        facts.push(manifest, sector, &mut blocked);
+        spell_tiles.push(manifest, sector, &blocked, item, &masks);
         Ok(())
-    });
+    };
+    let manifest = if let Some(composed) = composition {
+        composed
+            .sectors
+            .iter()
+            .try_for_each(|sector| scan_sector(&composed.manifest, sector))
+            .map(|()| composed.manifest.clone())
+            .map_err(LoadError::from)
+    } else {
+        super::daily::visit(data, super::LOAD_LIMITS, daily, |manifest, sector| {
+            scan_sector(manifest, &sector)
+        })
+        .map(|visited| visited.manifest)
+        .map_err(LoadError::from)
+    };
     if let Some(refusal) = refused {
         return Err(refusal.into());
     }
-    let visited = visited.map_err(LoadError::from)?;
+    let manifest = manifest?;
     let mut facts = match facts {
         Some(facts) => facts,
-        None => BundleFacts::palette(&visited.manifest, item)?,
+        None => BundleFacts::palette(&manifest, item)?,
     };
     facts.finish();
     Ok((facts, blocked, floors))
@@ -412,7 +650,32 @@ impl BundleWorld {
         &self,
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
-        table_activation_spawns(&self.spawns, profile)
+        let mut sources = table_activation_spawns(&self.spawns, &profile)?;
+        if !self.base.active_layers().is_empty() {
+            // A layer may replace previously admitted ground. Recheck the composed map
+            // before handing ordinary source points to the creature owner.
+            for (points, _) in &mut sources {
+                points.retain(|((x, y, z), _, _, _, _)| {
+                    let (Ok(x), Ok(y), Ok(floor)) =
+                        (u16::try_from(*x), u16::try_from(*y), i8::try_from(-*z))
+                    else {
+                        return false;
+                    };
+                    let at = TilePos { x, y, floor };
+                    enterable(&self.base, &self.blocked, at)
+                        && !self.map.facts.doors().blocks(at)
+                        && self
+                            .base
+                            .tile(x, y, floor)
+                            .is_some_and(|tile| !tile.protection_zone())
+                });
+            }
+            sources.retain(|(points, _)| !points.is_empty());
+        }
+        if let Some(daily) = &self.daily {
+            sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
+        }
+        Some(sources)
     }
 
     /// Boss placements are kept separate from ordinary activation/respawn sources.
@@ -521,6 +784,7 @@ impl BundleWorld {
             base: Arc::clone(&self.base),
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
+            activity_bounds: None,
         }));
         Ok(NativeEntryMovementCells::from_bundle(
             entry,
@@ -552,6 +816,7 @@ struct BundleCollisionData {
     base: Arc<WorldBase>,
     blocked: Arc<BTreeSet<TilePos>>,
     map: Arc<BundleMap>,
+    activity_bounds: Option<[i32; 6]>,
 }
 
 impl PartialEq for BundleCollisionData {
@@ -559,6 +824,8 @@ impl PartialEq for BundleCollisionData {
         self.scope == other.scope
             && self.base.digest() == other.base.digest()
             && self.blocked == other.blocked
+            && self.activity_bounds == other.activity_bounds
+            && self.map.overlay.runtime_scope() == other.map.overlay.runtime_scope()
     }
 }
 
@@ -574,6 +841,12 @@ impl BundleCollisionData {
             return Err(StaticCellEngineError::ScopeMismatch);
         }
         let pos = tile_pos(cell).ok_or(StaticCellEngineError::Absent)?;
+        if self
+            .activity_bounds
+            .is_some_and(|bounds| !super::activity_contains(bounds, pos))
+        {
+            return Err(StaticCellEngineError::Absent);
+        }
         self.base
             .tile(pos.x, pos.y, pos.floor)
             .ok_or(StaticCellEngineError::Absent)?;
@@ -582,7 +855,7 @@ impl BundleCollisionData {
                 .map
                 .facts
                 .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
-                && !self.map.facts.doors().blocks(pos)
+                && !super::floor::CellBlocker::blocks(&self.map.facts, cell)
             {
                 CollisionClass::Walkable
             } else {
@@ -593,6 +866,78 @@ impl BundleCollisionData {
 }
 
 impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisionData {
+    fn activity_region(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+    ) -> Option<BundleCollisionIndex> {
+        if self.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
+            let [x0, y0, x1, y1, z0, z1] = bounds;
+            x0 < a || y0 < b || x1 > c || y1 > d || z0 < e || z1 > f
+        }) {
+            return None;
+        }
+        let runtime_scope = match instance {
+            Some(id) => {
+                crate::foundation::RuntimeScopeRefV1::instance(self.scope.world_id, id).ok()?
+            }
+            None => self.map.overlay.runtime_scope(),
+        };
+        let base = Arc::new(self.base.activity_region(bounds)?);
+        let cell = LogicalCell {
+            x: start[0],
+            y: start[1],
+            z: start[2],
+        };
+        let entry_start = tile_pos(cell)?;
+        let mut tile_shapes = Vec::with_capacity(base.tile_count());
+        for (floor, x, y, _) in base.tiles() {
+            let old = self.map.spell_tiles.base.tile_index(x, y, floor)?;
+            tile_shapes.push(*self.map.spell_tiles.tiles.get(old)?);
+        }
+        let spell_tiles = Arc::new(BundleSpellTiles {
+            base: Arc::clone(&base) as Arc<dyn crate::content::bundle_spell_tiles::BundleTileBase>,
+            tiles: tile_shapes,
+            shapes: self.map.spell_tiles.shapes.clone(),
+        });
+        let map = Arc::new(BundleMap {
+            entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
+            facts: self.map.facts.activity_region(bounds),
+            floors: self.map.floors.activity_region(bounds),
+            spell_tiles,
+        });
+        let view = Self {
+            scope: self.scope.clone(),
+            base,
+            blocked: Arc::new(
+                self.blocked
+                    .iter()
+                    .filter(|pos| super::activity_contains(bounds, **pos))
+                    .copied()
+                    .collect(),
+            ),
+            map,
+            activity_bounds: Some(bounds),
+        };
+        if view.lookup(&self.scope, cell).ok() != Some(CollisionClass::Walkable) {
+            return None;
+        }
+        Some(BundleCollisionIndex(Arc::new(view)))
+    }
+    fn for_activity_instance(&self, instance: [u8; 16]) -> Option<BundleCollisionIndex> {
+        let start = self.map.entry_start;
+        self.activity_region(
+            self.activity_bounds?,
+            Some(instance),
+            [
+                i32::from(start.x),
+                i32::from(start.y),
+                -i32::from(start.floor),
+            ],
+        )
+    }
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
@@ -600,6 +945,16 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.lookup(scope, cell)
     }
+    fn house_tiles_present(
+        &self,
+        scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        if scope != &self.scope {
+            return Err(StaticCellEngineError::ScopeMismatch);
+        }
+        Ok(self.map.facts.has_house_tiles())
+    }
+
     fn same_index(
         &self,
         other: &dyn crate::content::native_cell_lookup::BundleCollisionLookup,
@@ -613,15 +968,73 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
 pub use crate::content::native_cell_lookup::BundleCollisionIndex;
 pub trait BundleCollisionIndexExt {
     fn map(&self) -> &BundleMap;
+    fn fork_activity(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        bounds: [i32; 6],
+    ) -> Option<BundleCollisionIndex>;
 }
 
 impl BundleCollisionIndexExt for BundleCollisionIndex {
+    fn fork_activity(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        bounds: [i32; 6],
+    ) -> Option<BundleCollisionIndex> {
+        if let Some(parent) = self.0.parent_index() {
+            return parent.fork_activity(scope, bounds);
+        }
+        let source =
+            (self.0.as_ref() as &dyn std::any::Any).downcast_ref::<BundleCollisionData>()?;
+        if !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+            || scope.world_id() != source.scope.world_id
+            || bounds[0] > bounds[2]
+            || bounds[1] > bounds[3]
+            || bounds[4] > bounds[5]
+            || bounds[2]
+                .checked_sub(bounds[0])
+                .is_none_or(|span| span > 255)
+            || bounds[3]
+                .checked_sub(bounds[1])
+                .is_none_or(|span| span > 255)
+            || bounds[4] < 0
+            || bounds[5] > 15
+            || source.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
+                bounds[0] < a
+                    || bounds[1] < b
+                    || bounds[2] > c
+                    || bounds[3] > d
+                    || bounds[4] < e
+                    || bounds[5] > f
+            })
+        {
+            return None;
+        }
+        let map = Arc::new(BundleMap {
+            entry_start: source.map.entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&source.base), scope),
+            facts: source.map.facts.activity_copy(bounds),
+            floors: source.map.floors.clone(),
+            spell_tiles: Arc::clone(&source.map.spell_tiles),
+        });
+        Some(BundleCollisionIndex(Arc::new(BundleCollisionData {
+            scope: source.scope.clone(),
+            base: Arc::clone(&source.base),
+            blocked: Arc::clone(&source.blocked),
+            map,
+            activity_bounds: Some(bounds),
+        })))
+    }
+
     /// The Channel's map view over the same bundle.
     #[expect(
         clippy::expect_used,
         reason = "the bundle port is constructed only here from BundleCollisionData"
     )]
     fn map(&self) -> &BundleMap {
+        if let Some(parent) = self.0.parent_index() {
+            return parent.map();
+        }
         &(self.0.as_ref() as &dyn std::any::Any)
             .downcast_ref::<BundleCollisionData>()
             .expect("bundle map owner")
@@ -818,6 +1231,15 @@ pub mod tests {
         bundle_with_house(boxed, boxed_id, coin, coin_id, 0)
     }
 
+    /// Existing bundle fixture with admitted, initially unplaced plant states.
+    pub fn bundle_with_item_states(
+        (boxed, boxed_id): (&str, u32),
+        (coin, coin_id): (&str, u32),
+        states: &[(&str, u32)],
+    ) -> (Vec<u8>, BundlePins) {
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, 0, None, states)
+    }
+
     /// [`bundle_with_item_ids`] with the house marker `door_house` on the tile at x 6.
     fn bundle_with_house(
         boxed: &str,
@@ -826,13 +1248,21 @@ pub mod tests {
         coin_id: u32,
         door_house: u32,
     ) -> (Vec<u8>, BundlePins) {
-        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None)
+        bundle_with_grass(boxed, boxed_id, coin, coin_id, door_house, None, &[])
     }
 
     /// [`bundle`] whose grass is the Item key `item:grass` at Item id 2, routed to its walkable
     /// `ground` Terrain record, as the real World routes every ground (BOOT_WORLD_BUNDLE_REFUSED).
     pub fn bundle_with_item_grass() -> (Vec<u8>, BundlePins) {
-        bundle_with_grass("item:box", 0, "item:coin", 1, 0, Some(("item:grass", 2)))
+        bundle_with_grass(
+            "item:box",
+            0,
+            "item:coin",
+            1,
+            0,
+            Some(("item:grass", 2)),
+            &[],
+        )
     }
 
     fn bundle_with_grass(
@@ -842,6 +1272,7 @@ pub mod tests {
         coin_id: u32,
         door_house: u32,
         item_grass: Option<(&str, u32)>,
+        states: &[(&str, u32)],
     ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
@@ -856,6 +1287,7 @@ pub mod tests {
                 kind,
                 walkable,
                 ground_speed: walkable.map(|_| 150),
+                blocks_projectile: None,
             }),
         };
         let item = |key: &str, id| PaletteEntry {
@@ -864,7 +1296,7 @@ pub mod tests {
             id,
             terrain: None,
         };
-        let manifest = Manifest {
+        let mut manifest = Manifest {
             subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
@@ -903,6 +1335,9 @@ pub mod tests {
             spawns: Default::default(),
             npcs: Default::default(),
         };
+        manifest
+            .palette
+            .extend(states.iter().map(|&(key, id)| item(key, id)));
         let entry = |palette| Item {
             palette,
             depth: 0,
@@ -978,6 +1413,7 @@ pub mod tests {
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         };
         let item = |key: &str, id| PaletteEntry {
@@ -1161,6 +1597,258 @@ pub mod tests {
             map_revision: revision,
             start: TilePos { x, y: 0, floor: -7 },
         }
+    }
+
+    #[test]
+    fn w05b_boot_refuses_a_layer_not_compiled_into_its_bundle() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle();
+        let checked = check(bytes, pins(load, 2))?;
+        assert!(checked.compose_layers(&["fury_gates/thais"]).is_err());
+        let (bytes, load) = bundle();
+        let checked = check(bytes, pins(load, 2))?;
+        let world = checked
+            .compose_admitted_layers(&["nightmare_isle/darashia-west"])?
+            .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, items)?;
+        assert!(
+            world
+                .base()
+                .tile(2, 0, -7)
+                .is_some_and(|tile| tile.walkable())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn w05b_boot_composes_compiled_layer_before_collision_and_keeps_bundle_pin()
+    -> Result<(), Box<dyn Error>> {
+        let (bytes, mut load) = bundle();
+        let mut decoded = bundle::read(&bytes)?;
+        // Admit the main SP02 fungus ground and replacement states beside native gate geometry.
+        let fungus_palette = decoded.manifest.palette.len() as u32;
+        for appearance in [12065, 12059, 12060, 12061, 12062, 12063] {
+            let mut entry = decoded.manifest.palette[0].clone();
+            entry.key = format!("oteryn:item.tibia.i{appearance}");
+            entry.family = bundle::Family::Item;
+            entry.id = appearance;
+            decoded.manifest.palette.push(entry);
+        }
+        decoded.manifest.world.max_x = decoded.manifest.world.max_x.max(33344);
+        decoded.manifest.world.max_y = decoded.manifest.world.max_y.max(31851);
+        decoded.manifest.world.floors = vec![-9, -7];
+        decoded.sectors.insert(
+            0,
+            bundle::Sector {
+                floor: -9,
+                sx: 33312 / 32,
+                sy: 31850 / 32,
+                tiles: (33312..=33343)
+                    .map(|x| oteryn_world_bundle::sector::Tile {
+                        x,
+                        y: 31850,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items: vec![oteryn_world_bundle::sector::Item {
+                            palette: fungus_palette,
+                            depth: 0,
+                            attrs: Default::default(),
+                        }],
+                    })
+                    .collect(),
+            },
+        );
+        let served = |key: &str| {
+            items(key).or_else(|| {
+                let appearance: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+                [12065, 12059, 12060, 12061, 12062, 12063]
+                    .contains(&appearance)
+                    .then_some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(appearance + 1)?,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: false,
+                    })
+            })
+        };
+        let mut replacement = decoded.sectors[1].tiles[1].clone();
+        replacement.items[0].palette = 1; // source lava ground is not walkable
+        replacement.flags = 1;
+        decoded.layers.push(oteryn_world_bundle::layers::Layer {
+            key: "fury_gates/thais".into(),
+            palette: decoded.manifest.palette.clone(),
+            sectors: vec![bundle::Sector {
+                floor: -7,
+                sx: 0,
+                sy: 0,
+                tiles: vec![replacement],
+            }],
+        });
+        decoded.spawns = oteryn_world_bundle::spawn::Table {
+            creatures: vec![oteryn_world_bundle::spawn::Creature {
+                key: "oteryn:creature.silencer".into(),
+                period: oteryn_world_bundle::spawn::Period::All,
+            }],
+            sources: vec![oteryn_world_bundle::spawn::Source {
+                key: "oteryn:spawn.layer_test".into(),
+                floor: -7,
+                x: 3,
+                y: 0,
+                points: [2, 3]
+                    .into_iter()
+                    .map(|x| oteryn_world_bundle::spawn::Point {
+                        creature: 0,
+                        x,
+                        y: 0,
+                        direction: oteryn_world_bundle::spawn::Direction::North,
+                        respawn_ms: 90000,
+                        boss_policy: None,
+                    })
+                    .collect(),
+            }],
+        };
+        decoded.manifest.spawns = bundle::SpawnCounts {
+            sources: 1,
+            points: 2,
+        };
+        let bytes = oteryn_world_bundle::writer::write_with_layers(
+            &decoded.manifest,
+            &decoded.sectors,
+            &decoded.spawns,
+            &decoded.npcs,
+            &decoded.layers,
+        )?;
+        load.digest.copy_from_slice(&bytes[bytes.len() - 32..]);
+        let dated = check(bytes.clone(), pins(load.clone(), 3))?.compose_epoch_layers(
+            1,
+            &["fury_gates/thais"],
+            &["fury_gates/thais"],
+        )?;
+        assert!(
+            dated.compose_epoch_layers(2, &[], &[]).is_err(),
+            "an empty selection cannot relabel yesterday's geometry"
+        );
+        let offday = check(bytes.clone(), pins(load.clone(), 3))?
+            .compose_layers_with_exits(&[], &["fury_gates/thais"])?
+            .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;
+        assert!(offday.base().active_layers().is_empty());
+        assert_eq!(offday.base().exit_layers(), &["fury_gates/thais"]);
+        assert!(
+            offday
+                .base()
+                .tile(2, 0, -7)
+                .is_some_and(|tile| tile.walkable())
+        );
+        let checked = check(bytes, pins(load.clone(), 3))?;
+        let world = checked
+            .compose_epoch_layers(1, &["fury_gates/thais"], &["fury_gates/thais"])?
+            .with_daily_map(super::super::daily::DailyMap {
+                seed: [7; 32],
+                fungus: true,
+                grimvale_full_moon: false,
+                items: Vec::new(),
+                trader: None,
+            })
+            .boot(WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?, served)?;
+        assert_eq!(world.base().digest(), load.digest);
+        assert_eq!(world.base().active_layers(), &["fury_gates/thais"]);
+        assert_eq!(world.base().exit_layers(), &["fury_gates/thais"]);
+        assert_eq!(world.base().layer_epoch(), Some(1));
+        let fungus_ids: Vec<_> = (33312..=33343)
+            .map(|x| {
+                world
+                    .base()
+                    .tile(x, 31850, -9)
+                    .expect("admitted fungus tile")
+                    .ids()[0]
+            })
+            .collect();
+        assert!(
+            fungus_ids.iter().any(|id| (12059..=12063).contains(id)),
+            "active SP02 projection must transform fungus alongside the gate"
+        );
+        assert!(
+            fungus_ids.contains(&12065),
+            "the deterministic source chance also leaves ordinary fungus ground"
+        );
+        let changed = world.base().tile(2, 0, -7).ok_or("layer tile")?;
+        assert!(changed.protection_zone());
+        assert!(!changed.walkable());
+        assert!(
+            world
+                .base()
+                .tile(3, 0, -7)
+                .is_some_and(|tile| tile.walkable())
+        );
+        assert!(world.activation_spawns(|_| None).is_none());
+        let sources = world
+            .activation_spawns(|key| (key == "oteryn:creature.silencer").then_some((5400, false)))
+            .ok_or("source admission")?;
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].0.len(), 1);
+        assert_eq!(sources[0].0[0].0, (3, 0, 7));
+        let world_id = WorldId::decode(&id(1))?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world_id,
+            ChannelId::decode(&id(2))?,
+            NodeId::decode(&id(3))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world_id),
+        )?;
+        assert_eq!(runtime.begin_activation_spawn_sources(sources)?, 1);
+        let progress = runtime.realize_activation_spawn_window(0)?;
+        assert_eq!(progress.remaining, 0);
+        assert_eq!(runtime.spawn_point_creatures().len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_house_absence_comes_from_loaded_tiles_and_rejects_scope_substitution()
+    -> Result<(), Box<dyn Error>> {
+        let world_id = WorldId::decode(&id(1))?;
+        let channel_id = ChannelId::decode(&id(2))?;
+        let entry = crate::content::qualify_native_entry_room(world_id)?;
+        assert!(!entry.movement_cells().house_tiles().is_known_empty());
+        for house in [0, 42] {
+            let (bytes, load) = bundle_with_house("item:box", 0, "item:coin", 1, house);
+            let world = boot(&bytes, &pins(load, 2), world_id, channel_id, items)?;
+            let cells = world.movement_cells(entry.movement_cells())?;
+            assert_eq!(cells.house_tiles().is_known_empty(), house == 0);
+            let at = LogicalCell { x: 2, y: 0, z: 7 };
+            assert_eq!(
+                cells
+                    .house_tiles()
+                    .house_at(cells.scope(), at)
+                    .map(|house| house.is_none()),
+                if house == 0 {
+                    Ok(true)
+                } else {
+                    Err("House placement metadata unavailable")
+                }
+            );
+            let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+                cells.index()
+            else {
+                return Err("bundle collision index".into());
+            };
+            let mut foreign = cells.scope().clone();
+            foreign.map_revision = MapRevisionRef::new("different-native-map")?;
+            let spoofed = NativeEntryMovementCells::from_bundle(
+                entry.movement_cells(),
+                foreign,
+                index.clone(),
+                Arc::clone(&world.map.spell_tiles),
+            );
+            assert!(
+                !spoofed.house_tiles().is_known_empty(),
+                "another map cannot borrow an absence proof"
+            );
+        }
+        Ok(())
     }
 
     #[test]
@@ -1526,6 +2214,159 @@ pub mod tests {
         door_world_with(door_items)
     }
 
+    #[test]
+    fn soulpit_private_bundle_forks_scope_overlay_and_door_facts() -> Result<(), Box<dyn Error>> {
+        let source = door_world()?;
+        let world = WorldId::decode(&id(1))?;
+        let room = crate::content::qualify_native_entry_room(world)?;
+        let cells = source.movement_cells(room.movement_cells())?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        else {
+            return Err("bundle cells".into());
+        };
+        let scope = crate::foundation::RuntimeScopeRefV1::instance(world, id(9))
+            .map_err(|error| format!("{error:?}"))?;
+        let other_scope = crate::foundation::RuntimeScopeRefV1::instance(world, id(10))
+            .map_err(|error| format!("{error:?}"))?;
+        let activity = index
+            .fork_activity(scope, [0, 0, 8, 0, 7, 7])
+            .ok_or("private activity map")?;
+        let other = index
+            .fork_activity(other_scope, [0, 0, 8, 0, 7, 7])
+            .ok_or("second private map")?;
+        assert_eq!(activity.map().overlay.runtime_scope(), scope);
+        assert_eq!(other.map().overlay.runtime_scope(), other_scope);
+        assert!(!std::ptr::eq(activity.map(), index.map()));
+        assert!(!std::ptr::eq(activity.map(), other.map()));
+        assert!(
+            activity
+                .map()
+                .facts
+                .doors()
+                .toggle(door_key(), 0, false, u32::MAX, true)
+                .is_some()
+        );
+        assert_eq!(activity.map().facts.doors().revision(door_key()), 1);
+        assert_eq!(other.map().facts.doors().revision(door_key()), 0);
+        assert_eq!(source.facts().doors().revision(door_key()), 0);
+        assert!(source.facts().doors().blocks(DOOR_AT));
+        assert!(other.map().facts.doors().blocks(DOOR_AT));
+        Ok(())
+    }
+
+    #[test]
+    fn soulpit_common_static_collision_controls_real_bundle_movement() -> Result<(), Box<dyn Error>>
+    {
+        for walkable in [Some(false), Some(true), None] {
+            let (bytes, mut load) = bundle();
+            let read = bundle::read(&bytes)?;
+            let mut manifest = read.manifest;
+            manifest.palette[2].terrain = Some(oteryn_world_bundle::bundle::Terrain {
+                kind: oteryn_world_bundle::bundle::TerrainKind::Common,
+                walkable,
+                ground_speed: None,
+                blocks_projectile: None,
+            });
+            let bytes = oteryn_world_bundle::writer::write(&manifest, &read.sectors, &read.spawns)?;
+            load.digest = bundle::read(&bytes)?.digest;
+            let world_id = WorldId::decode(&id(1))?;
+            let source = boot(
+                &bytes,
+                &pins(load, 2),
+                world_id,
+                ChannelId::decode(&id(2))?,
+                items,
+            )?;
+            let at = TilePos {
+                x: 5,
+                y: 0,
+                floor: -7,
+            };
+            assert_eq!(source.enterable(at), walkable != Some(false));
+            let room = crate::content::qualify_native_entry_room(world_id)?;
+            let cells = source.movement_cells(room.movement_cells())?;
+            assert_eq!(
+                cells
+                    .index()
+                    .lookup(cells.scope(), LogicalCell { x: 5, y: 0, z: 7 }),
+                Ok(if walkable == Some(false) {
+                    CollisionClass::Blocked
+                } else {
+                    CollisionClass::Walkable
+                })
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn opening_door_collision_exception_keeps_other_solids_blocking() -> Result<(), Box<dyn Error>>
+    {
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let key = super::super::view::placement_key(DOOR_AT, 1).ok_or("door key")?;
+        assert!(world.map.facts.opening_door_enterable(world.base(), key));
+        assert!(
+            !world
+                .map
+                .facts
+                .opening_door_enterable(world.base(), key + 1)
+        );
+        let original = world
+            .map
+            .facts
+            .base_entry(DOOR_AT, 1, 0)
+            .ok_or("door facts")?;
+        assert!(
+            world
+                .map
+                .facts
+                .apply_quest_callback(key, 0, original, &[], &[], false, None)
+        );
+        assert!(
+            !world.map.facts.opening_door_enterable(world.base(), key),
+            "a different callback must not be bypassed by the native door owner"
+        );
+        let (bytes, mut load) =
+            bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        let blocker = data
+            .sectors
+            .iter()
+            .flat_map(|sector| &sector.tiles)
+            .find(|tile| tile.x == 7)
+            .and_then(|tile| tile.items.get(1))
+            .ok_or("blocker")?
+            .clone();
+        data.sectors
+            .iter_mut()
+            .flat_map(|sector| &mut sector.tiles)
+            .find(|tile| tile.x == 6)
+            .ok_or("door tile")?
+            .items
+            .push(blocker);
+        let bytes =
+            oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &Default::default())?;
+        load.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| {
+                let mut facts = door_items(key)?;
+                if key == "oteryn:item.tibia.i1000" {
+                    facts.solid = Some(true);
+                    facts.blocks_projectile = true;
+                }
+                Some(facts)
+            },
+        )?;
+        assert!(!world.map.facts.opening_door_enterable(world.base(), key));
+        Ok(())
+    }
+
     /// The door's tile.
     pub const DOOR_AT: TilePos = TilePos {
         x: 6,
@@ -1535,6 +2376,115 @@ pub mod tests {
 
     pub fn door_key() -> u64 {
         crate::map::view::placement_key(DOOR_AT, 1).unwrap_or(0)
+    }
+
+    #[test]
+    fn boss_activity_bundle_instances_bound_tiles_and_isolate_door_state()
+    -> Result<(), Box<dyn Error>> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        use crate::foundation::RuntimeScopeRefV1;
+        use crate::map::door::DoorUse;
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let world_id = WorldId::decode(&id(1))?;
+        let entry = crate::content::qualify_native_entry_room(world_id)?;
+        let cells = world.movement_cells(entry.movement_cells())?;
+        let NativeMovementCollisionIndex::Bundle(source) = cells.index() else {
+            return Err("bundle index".into());
+        };
+        let key = door_key();
+        assert!(matches!(
+            world.facts().doors().toggle(key, 0, false, u32::MAX, true),
+            Some(DoorUse::Toggled { open: true, .. })
+        ));
+        let template = source
+            .activity_region([2, 0, 6, 0, 7, 7], None, [2, 0, 7])
+            .ok_or("activity template")?;
+        let first = template
+            .for_activity_instance(id(81))
+            .ok_or("first Instance")?;
+        let second = template
+            .for_activity_instance(id(82))
+            .ok_or("second Instance")?;
+        assert_eq!(
+            first.map().overlay.runtime_scope(),
+            RuntimeScopeRefV1::instance(world_id, id(81)).map_err(|error| format!("{error:?}"))?
+        );
+        assert_eq!(
+            second.map().overlay.runtime_scope(),
+            RuntimeScopeRefV1::instance(world_id, id(82)).map_err(|error| format!("{error:?}"))?
+        );
+        assert_eq!(
+            first.map().entry_start,
+            TilePos {
+                x: 2,
+                y: 0,
+                floor: -7
+            }
+        );
+        assert_eq!(second.map().entry_start, first.map().entry_start);
+        assert!(!std::ptr::eq(first.map(), second.map()));
+        assert!(first.map().overlay.base().tile(1, 0, -7).is_none());
+        assert!(first.map().overlay.base().tile(7, 0, -7).is_none());
+        assert!(first.map().overlay.base().tile(2, 0, -7).is_some());
+        assert_eq!(first.map().overlay.base().digest(), world.base().digest());
+        let at = LogicalCell { x: 6, y: 0, z: 7 };
+        assert_eq!(first.lookup(cells.scope(), at), Ok(CollisionClass::Blocked));
+        assert_eq!(
+            second.lookup(cells.scope(), at),
+            Ok(CollisionClass::Blocked)
+        );
+        assert_eq!(first.map().facts.object_revision(key), 0);
+        assert!(matches!(
+            first
+                .map()
+                .facts
+                .doors()
+                .toggle(key, 0, false, u32::MAX, true),
+            Some(DoorUse::Toggled { open: true, .. })
+        ));
+        assert_eq!(
+            first.lookup(cells.scope(), at),
+            Ok(CollisionClass::Walkable)
+        );
+        assert_eq!(
+            second.lookup(cells.scope(), at),
+            Ok(CollisionClass::Blocked)
+        );
+        assert_eq!(world.facts().object_revision(key), 1);
+        assert_eq!(second.map().facts.object_revision(key), 0);
+        assert_eq!(
+            first.lookup(cells.scope(), LogicalCell { x: 7, y: 0, z: 7 }),
+            Err(StaticCellEngineError::Absent)
+        );
+        let mut stale = cells.scope().clone();
+        stale.generation_digest = [99; 32];
+        assert_eq!(
+            first.lookup(&stale, at),
+            Err(StaticCellEngineError::ScopeMismatch)
+        );
+        assert!(
+            template
+                .activity_region([1, 0, 6, 0, 7, 7], Some(id(83)), [2, 0, 7])
+                .is_none()
+        );
+        assert!(
+            source
+                .activity_region([0, 0, 65535, 65535, 0, 15], None, [2, 0, 7])
+                .is_none()
+        );
+        assert!(template.for_activity_instance([0; 16]).is_none());
+        assert!(
+            source
+                .activity_region([2, 0, 6, 0, 7, 7], None, [1, 0, 7])
+                .is_none()
+        );
+        assert!(
+            source
+                .activity_region([2, 0, 6, 0, 7, 7], None, [6, 0, 7])
+                .is_none()
+        );
+        Ok(())
     }
 
     #[test]

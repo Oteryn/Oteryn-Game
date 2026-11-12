@@ -83,6 +83,18 @@ impl RaidRandom {
         .map_err(|_| RaidError::Exhausted)
     }
 
+    /// Crystal a_piece_of_cake_config.lua:394-400: each golem chooses
+    /// its own city base uniformly, independently of the coordinate draws.
+    pub fn area_choice(&self, wave: u16, entry: u16, count: usize) -> Result<usize, RaidError> {
+        let index = (u64::from(wave) << 16) | u64::from(entry);
+        usize::try_from(self.below(
+            "area-choice",
+            index,
+            u64::try_from(count).map_err(|_| RaidError::Exhausted)?,
+        )?)
+        .map_err(|_| RaidError::Exhausted)
+    }
+
     /// Crystal 201189f src/lua/creature/raids.cpp:521-547,552-555:
     /// each entry selects its requested amount once, inclusively.
     pub fn amount(&self, wave: u16, entry: u16, min: u16, max: u16) -> Result<u16, RaidError> {
@@ -158,8 +170,23 @@ impl RaidArea {
         spawn_index: u16,
         attempt: u8,
     ) -> Result<RaidPosition, RaidError> {
-        self.validate()?;
         if attempt >= RAID_PLACEMENT_ATTEMPTS {
+            return Err(RaidError::InvalidState);
+        }
+        self.candidate_shared(random, wave, entry, spawn_index, attempt)
+    }
+
+    /// Flower Month's independently bounded shared budget (Crystal flower_month.lua:28-46).
+    pub fn candidate_shared(
+        self,
+        random: &RaidRandom,
+        wave: u16,
+        entry: u16,
+        spawn_index: u16,
+        attempt: u8,
+    ) -> Result<RaidPosition, RaidError> {
+        self.validate()?;
+        if attempt >= 250 {
             return Err(RaidError::InvalidState);
         }
         let index = (u64::from(wave) << 48)
@@ -272,6 +299,16 @@ mod tests {
         })?;
         assert!(placed.is_some());
         assert_eq!(reads, 7);
+        Ok(())
+    }
+
+    #[test]
+    fn flower_shared_sampling_accepts_249_but_xml_retains_its_ten_attempt_bound()
+    -> Result<(), RaidError> {
+        let random = RaidRandom::new([7; 32], [8; 16]);
+        assert!(area().candidate(&random, 0, 0, 0, 10).is_err());
+        assert!(area().contains(area().candidate_shared(&random, 0, 0, 24, 249)?));
+        assert!(area().candidate_shared(&random, 0, 0, 24, 250).is_err());
         Ok(())
     }
 

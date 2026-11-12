@@ -1,0 +1,17 @@
+{
+  "id": 450,
+  "name": "SERVER_MODAL_V1",
+  "owner_decision": "CGMECH T159 O040",
+  "owner": "Game connection-owned modal dialogs",
+  "requires": [
+    92
+  ],
+  "command_types": [
+    736,
+    737,
+    6196
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; active native gameplay, selected capability 92 and exact current connected actor required. Hireling selection additionally requires selected Store and Hireling management; callbacks use the existing fenced Store owner."
+}

@@ -714,7 +714,38 @@ pub(super) async fn scenario(
             let critical =
                 |b: i64| (b as f64 * (1.0 + f64::from(critical_extra) / 10000.0)).trunc() as i64;
             let flats = i64::from(flat) + ascetic_flat;
-            [bounds.map(|b| b + flats), bounds.map(|b| critical(b) + flats)]
+            let target_snapshot = runtime.companion_snapshot(target).map_err(debug)?;
+            let target_policy = &target_snapshot.state.policy;
+            let armor = target_policy.armor.ok_or("qualified target armor")?;
+            // Canary 99902524 tiger_clash.lua:6 enables armor blocking;
+            // creature.cpp:977-987 subtracts one for positive armor <= 3, then
+            // :1006-1007 and :911-914 apply mitigation before Wheel/Mantra flats.
+            // Read the actual qualified target rather than comparing post-defense
+            // damage with raw formula endpoints. This fixture has no armor draw
+            // or physical resistance; keep those assumptions explicit.
+            assert!(armor <= 3, "the target must have deterministic low armor");
+            assert!(target_policy.resistances.iter().all(|resistance| {
+                resistance.damage_type != "physical" || resistance.percent.numerator == 0
+            }), "the target must have no physical resistance");
+            let mitigation = target_policy.mitigation.ok_or("qualified target mitigation")?;
+            let mitigation_percent =
+                (mitigation.numerator as f64 / mitigation.denominator as f64).min(30.0);
+            assert!((0.0..=30.0).contains(&mitigation_percent));
+            let after_defenses = |raw: i64| {
+                let after_armor = raw.saturating_sub(i64::from(armor > 0)).max(0);
+                (after_armor as f64
+                    - after_armor as f64 * mitigation_percent / 100.0)
+                    .trunc() as i64
+            };
+            let raw_ranges = [bounds, bounds.map(critical)];
+            raw_ranges.map(|raw| {
+                let defended = raw.map(|value| after_defenses(value) + flats);
+                assert!(
+                    defended[1] - defended[0] <= raw[1] - raw[0],
+                    "target defenses must not widen the accepted damage interval"
+                );
+                defended
+            })
         };
         let before = owner
             .runtime

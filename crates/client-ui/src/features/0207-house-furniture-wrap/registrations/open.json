@@ -1,0 +1,9 @@
+{
+  "mechanic": "0207-house-furniture-wrap",
+  "id": "0207-house-furniture-wrap-open",
+  "status": "supported",
+  "kind": "keybindings",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+F",
+  "entry": "input.rs::open_key"
+}

@@ -51,6 +51,7 @@ pub(super) fn training_world(
                         kind: TerrainKind::Ground,
                         walkable: Some(true),
                         ground_speed: Some(150),
+                        blocks_projectile: None,
                     }),
                 })
             })
@@ -82,7 +83,14 @@ pub(super) fn training_world(
             floor: -7,
             sx: 0,
             sy: 0,
-            tiles: vec![tile(1, vec![0]), tile(2, vec![0]), tile(3, vec![0]), tile(4, vec![0]), tile(5, vec![0]), tile(6, vec![0, 1, 2])],
+            tiles: vec![
+                tile(1, vec![0]),
+                tile(2, vec![0]),
+                tile(3, vec![0]),
+                tile(4, vec![0]),
+                tile(5, vec![0]),
+                tile(6, vec![0, 1, 2]),
+            ],
         }],
         &Default::default(),
     )

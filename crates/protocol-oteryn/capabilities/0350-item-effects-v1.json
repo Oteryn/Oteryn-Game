@@ -1,0 +1,19 @@
+{
+  "id": 350,
+  "name": "ITEM_EFFECTS_V1",
+  "constant": "presentation::CAPABILITY_ITEM_EFFECTS_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [
+    104
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

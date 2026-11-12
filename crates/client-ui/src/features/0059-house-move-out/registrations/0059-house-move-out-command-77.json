@@ -1,0 +1,15 @@
+{
+  "mechanic": "0059-house-move-out",
+  "kind": "handlers",
+  "id": "0059-house-move-out-command-77",
+  "status": "supported",
+  "commands": [
+    77
+  ],
+  "direction": "client_to_server",
+  "capability": 59,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "This panel has no persistent client settings."
+  }
+}

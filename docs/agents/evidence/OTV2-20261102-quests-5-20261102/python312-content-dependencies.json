@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "captured_at": "2026-11-03T00:36:30Z",
+  "executable": "/home/mole/quests5-python312-venv/bin/python3",
+  "version": "3.12.15 (main, Oct  6 2026, 02:02:31) [GCC 12.2.0]",
+  "requirements": [
+    {
+      "path": "tools/content-schema/item-authoring/requirements.txt",
+      "sha256": "10ff7f8ce71269398ffcbc8fd77d6d24b047a905f6c02db72c11fd5597f85fd9"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/requirements.txt",
+      "sha256": "1a8cb600cc7fd9b3bf4c1c174a7304604a109c7af7f469d9ef39520a7c5ec55d"
+    }
+  ],
+  "install_command": [
+    "/home/mole/quests5-python312-venv/bin/python3",
+    "-m",
+    "pip",
+    "install",
+    "-r",
+    "tools/content-schema/item-authoring/requirements.txt",
+    "-r",
+    "tools/content-schema/imbuement-authoring/requirements.txt"
+  ],
+  "install_exit_code": 0,
+  "pip_check_exit_code": 0,
+  "pip_check_output": "No broken requirements found.\n",
+  "versions": {
+    "jsonschema": "4.26.0",
+    "referencing": "0.37.0",
+    "rfc3339-validator": "0.1.4",
+    "zstandard": "0.25.0"
+  },
+  "source": "Oteryn/Oteryn-Game@5fbe99b378d51c9cb69b2a49b28edf3b63ba7de4:.github/workflows/content-tree-migration.yml:74-77"
+}

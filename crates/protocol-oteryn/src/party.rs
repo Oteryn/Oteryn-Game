@@ -4,10 +4,17 @@ use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_
 use crate::world_spatial_entities::EntityRef;
 type Result<T> = std::result::Result<T, PartyWireError>;
 pub const CAPABILITY_PARTY_V1: u32 = 42;
+pub const CAPABILITY_PARTY_LIST_V1: u32 = 461;
+#[path = "party_list.rs"]
+mod list;
+pub use list::PartyListEntity;
+/// Negotiates member effect durations on the existing party query.
+pub const CAPABILITY_PARTY_MEMBER_EFFECTS_V1: u32 = 383;
 pub const COMMAND_TYPE_PARTY_INTENT: u32 = 45;
 pub const COMMAND_TYPE_PARTY_QUERY: u32 = 46;
 pub const MAX_PARTY_INTENT_BYTES: usize = 48;
-pub const MAX_PARTY_RESULT_BYTES: usize = 8192;
+pub const MAX_PARTY_RESULT_BYTES: usize = 65536;
+pub const MAX_LEGACY_PARTY_RESULT_BYTES: usize = 8192;
 pub const MAX_PARTY_MEMBERS: usize = 50;
 pub const MAX_PARTY_INVITATIONS: usize = 20;
 pub const MAX_PARTY_NAME_BYTES: usize = 64;
@@ -34,11 +41,16 @@ pub enum PartyDisposition {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartyEntry {
+    /// Negotiated member followed by its current summons; absent for legacy peers.
+    pub list: Vec<PartyListEntity>,
     pub handle: u64,
     pub name: String,
     pub leader: bool,
     /// Invitation expiry on the database clock, seconds since Unix epoch; zero for members.
     pub expires_at: u64,
+    /// Remaining milliseconds: Train, Protect, Enchant, Heal and Enlighten Party.
+    /// None means the extension was not selected or the member is outside this runtime.
+    pub party_spell_remaining_ms: Option<[u32; 5]>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartyResult {
@@ -140,7 +152,11 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
                 || entry.name.is_empty()
                 || entry.name.len() > MAX_PARTY_NAME_BYTES
                 || (field == 3 && entry.expires_at != 0)
-                || (field == 4 && (entry.expires_at == 0 || entry.leader))
+                || (field == 4
+                    && (entry.expires_at == 0
+                        || entry.leader
+                        || entry.party_spell_remaining_ms.is_some()
+                        || !entry.list.is_empty()))
             {
                 return bad();
             }
@@ -149,10 +165,50 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
             push_message_field(&mut inner, 2, entry.name.as_bytes());
             push_varint_field(&mut inner, 3, u64::from(entry.leader));
             push_varint_field(&mut inner, 4, entry.expires_at);
+            if let Some(remaining) = entry.party_spell_remaining_ms {
+                let mut durations = [0; 20];
+                for (chunk, duration) in durations.as_chunks_mut::<4>().0.iter_mut().zip(remaining)
+                {
+                    chunk.copy_from_slice(&duration.to_be_bytes());
+                }
+                push_message_field(&mut inner, 5, &durations);
+            }
+            if entry.list.len() > 3 {
+                return Err(PartyWireError::LimitExceeded);
+            }
+            let mut entities = std::collections::BTreeSet::new();
+            for (index, entity) in entry.list.iter().enumerate() {
+                if entity.summon != (index != 0)
+                    || !entities.insert((entity.entity.identity, entity.entity.generation))
+                {
+                    return bad();
+                }
+                push_message_field(&mut inner, 6, &entity.encode()?);
+            }
             push_message_field(&mut out, field, &inner);
         }
     }
     bounded(&out, MAX_PARTY_RESULT_BYTES)?;
+    Ok(out)
+}
+/// Enforce the result budget negotiated by the receiving peer.
+/// Callers without PARTY_LIST_V1 must never emit its optional fields.
+pub fn encode_party_result_for_peer(
+    result: &PartyResult,
+    party_list_selected: bool,
+) -> Result<Vec<u8>> {
+    let out = encode_party_result(result)?;
+    bounded(
+        &out,
+        if party_list_selected {
+            MAX_PARTY_RESULT_BYTES
+        } else {
+            MAX_LEGACY_PARTY_RESULT_BYTES
+        },
+    )?;
+    if !party_list_selected && result.members.iter().any(|member| !member.list.is_empty()) {
+        return bad();
+    }
     Ok(out)
 }
 /// Strict result decoder, shared by wire consumers and the dispatch qualification.
@@ -215,8 +271,10 @@ fn boolean(n: u64) -> Result<bool> {
     }
 }
 fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
-    bounded(input, 104)?;
+    bounded(input, 1536)?;
     let (mut handle, mut name, mut leader, mut expires) = (None, None, None, None);
+    let mut remaining = None;
+    let mut list = Vec::new();
     let mut cursor = 0;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
@@ -229,14 +287,33 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
             )?,
             24 => set_once(&mut leader, boolean(read_varint(input, &mut cursor)?)?)?,
             32 => set_once(&mut expires, read_varint(input, &mut cursor)?)?,
+            42 => {
+                let bytes = read_bytes(input, &mut cursor)?;
+                if bytes.len() != 20 {
+                    return bad();
+                }
+                let mut durations = [0; 5];
+                for (duration, chunk) in durations.iter_mut().zip(bytes.as_chunks::<4>().0) {
+                    *duration = u32::from_be_bytes(*chunk);
+                }
+                set_once(&mut remaining, durations)?;
+            }
+            50 => {
+                if list.len() >= 3 {
+                    return Err(PartyWireError::LimitExceeded);
+                }
+                list.push(PartyListEntity::decode(read_bytes(input, &mut cursor)?)?);
+            }
             _ => return bad(),
         }
     }
     Ok(PartyEntry {
+        list,
         handle: handle.ok_or(PartyWireError::Malformed)?,
         name: name.ok_or(PartyWireError::Malformed)?,
         leader: leader.ok_or(PartyWireError::Malformed)?,
         expires_at: expires.ok_or(PartyWireError::Malformed)?,
+        party_spell_remaining_ms: remaining,
     })
 }
 #[cfg(test)]

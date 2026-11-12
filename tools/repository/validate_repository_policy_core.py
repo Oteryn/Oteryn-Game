@@ -40,15 +40,15 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - synchronize
       - edited
 """
-EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "ff75ac35780038e15ba648e99b8540ef474d2b34b093fe684c045dc302265bd4"
+EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "fa39175ae4cd95951781d3955f63a005f7ea16398159a37ab9018c2d916cc890"
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "331213b6a65f8852cd43eaeba80d7cb4bc9b5dc928399cf679475c85bf0a589e"
 EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "9c5223ecee21f441d85fec7995135e8361f0c711876810b5a076de28e010e032"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "af19d064fcb78a26399231df50b5b99d9a2798647ab26c9b955b0a411e62141c"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "6745809a11b87234b9a50358e42f28d419cf138146cf5d3f455225e0cf000c9b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "c6558bc7fd91eb63d05bfe1c4dd298ea48f212ee"
-EXPECTED_POST_MERGE_RUST_SHA256 = "3ad10ed77185ae06bf0b1a2addaf5e94d52723ffc934c0944d028ad69182fff1"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ca101ab0e41b7ca661a981d22e9522c5220fc8a8"
+EXPECTED_POST_MERGE_RUST_SHA256 = "1c8c047cd989f6fead273a8a08ca80b846e802fefe2d7f106eae266f903124ce"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -403,7 +403,7 @@ def main() -> int:
         if world_digest != EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256:
             errors.append("merge gate World bundle must retain its reviewed fail-closed qualification")
         jobs = yaml_mapping_keys_at_indent(top_level_yaml_mapping_block(text, "jobs") or "", 2)
-        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "rust_fast", "rust_supply_chain", "validate", "game_gate"]:
+        if jobs != ["scope", "lanes", "governance", "dependency_review", "routing_contract", "world_bundle", "rust_policy", "runner_route", "rust_fast", "rust_supply_chain", "validate", "game_gate"]:
             errors.append("merge gate must contain only the canonical fast PR jobs")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
@@ -512,8 +512,8 @@ def main() -> int:
                 # codeql.yml analyses every push to main; this copy covers the merge queue only.
                 "    if: github.event_name == 'merge_group'\n",
                 "language: [python, actions]",
-                "github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
-                "github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
+                "github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066",
+                "github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066",
             ),
             "atlas_fullworld": (
                 "    name: Merge Queue / Atlas fullworld source\n",
@@ -638,9 +638,11 @@ def main() -> int:
             ),
             "rust_supply_chain": (
                 "    name: Merge Queue / Rust supply chain\n",
-                "EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25",
-                "      command: check\n",
-                "      arguments: --all-features\n",
+                'curl --fail --location --retry 5 --retry-all-errors',
+                'cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz',
+                '9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f',
+                'cargo +1.99.1 install --locked --quiet cargo-deny --version "=0.20.2"',
+                '"$deny_root/bin/cargo-deny" --all-features check',
             ),
             "node_boot": (
                 "    name: Merge Queue / Node boot against the real Platform\n",
@@ -716,8 +718,8 @@ def main() -> int:
             ("          - python\n", analyze),
             ("          - actions\n", analyze),
             ("          - rust\n", analyze),
-            ("github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370", analyze),
-            ("github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370", analyze),
+            ("github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066", analyze),
+            ("github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066", analyze),
             ("          category: /language:${{ matrix.language }}\n", analyze),
         ):
             if fragment not in block:

@@ -1,0 +1,10 @@
+{
+  "id": 662,
+  "name": "POTION_DURATIONS_QUERY",
+  "owner_decision": "NX-8 W09",
+  "capability": 381,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/potion-durations-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/potion-durations-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 481
+}

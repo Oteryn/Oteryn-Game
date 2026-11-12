@@ -1,0 +1,164 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "triangle_tower_quest",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "root/implementation-status.json",
+    "sha256": "1b48d46dbce6c98c52aa1df0c4cf29b5d033d596e63b17336c0adfbae2eeac6b"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 3,
+  "import_counts": {
+    "RĘCZNIE": 3
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "005d1bc541dc93b41c6868979938cb38ec12df56439a54d54df53f8e75a4bfd3",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "triangle_tower_quest",
+        "step": "Usunięcie pierwszej przeszkody",
+        "pattern": "P01",
+        "trigger": "Use uid30034; lever2772",
+        "guard": "item1270@(32566,32119,7) istnieje",
+        "effect": "usuń1270; lever2773; różne ID1270/1025 są literalnym źródłem",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:4"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak mutacji źródłowego obiektu1270→brak/1025 ze stanami2772/2773 w istniejącym World owner. Asymetria ID zachowana; intencji korekty nie zgadywano. Decyzja R-TRIANGLE-LEVER: Brakuje source-literal mutacji świata: remove 1270, create 1025 i zmiany dźwigni. Asymetria ID nie została uznana za zatwierdzoną poprawkę błędu donora.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590373823"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:3-18"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "c7fd6d37a770a4198d1f877cf1ad89e159a0332a2a1b8b030762f0d3bed2ce49",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "triangle_tower_quest",
+        "step": "Tworzenie zastępczej przeszkody",
+        "pattern": "P01",
+        "trigger": "Use uid30034; lever2772 bez1270 albo inny stan",
+        "guard": "brak dodatkowej kontroli istnienia1025",
+        "effect": "utwórz1025; dla gałęzi innego stanu lever2772",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:8"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak mutacji źródłowego obiektu1270→brak/1025 ze stanami2772/2773 w istniejącym World owner. Asymetria ID zachowana; intencji korekty nie zgadywano. Decyzja R-TRIANGLE-LEVER: Brakuje source-literal mutacji świata: remove 1270, create 1025 i zmiany dźwigni. Asymetria ID nie została uznana za zatwierdzoną poprawkę błędu donora.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590373823"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:3-18"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "304be7c93c2c04bb79ef59b24901cd6d40dc73a8c4bc12b1c61bad02864256fc",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "triangle_tower_quest",
+        "step": "Triangle Tower chest",
+        "pattern": "P05",
+        "trigger": "Use uid6160,item2472@(32565,32119,3)",
+        "guard": "KV triangletower nieodebrany",
+        "effect": "bag2853; necklace3083 argument150; sapphire3029×2; ring3097×1; KV=odebrane",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1831"
+        ],
+        "oteryn": "CZĘŚCIOWO — claim kv.triangletower not_playable; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Istniejący canonical claim kv.triangletower zachowany.",
+      "left_out": "ITEM_SEMANTICS_MISSING/WAITING_IMPLEMENTATION dla jednego garlic necklace3083 z150ładunkami. Nie wydawać150sztuk ani częściowego worka. Decyzja R-CHARGED-REWARDS: Brakuje atomowego wydania naładowanych nagród jako 3085 x1 / 200 charges oraz 3083 x1 / 150 charges. Pełne nagrody i ich pozostałe składniki pozostają w hold; liczba ładunków nie staje się liczbą przedmiotów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773836"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1832",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1831",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1593-1599",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1831-1838"
+      ],
+      "inventory_correction": {
+        "original": {
+          "quest": "triangle_tower_quest",
+          "step": "Triangle Tower chest",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1832"
+          ]
+        },
+        "reason": "Początek źródłowego rekordu skrzyni jest na linii1831; skorygowano jedną omyłkę numeru linii."
+      },
+      "evidence": {}
+    }
+  ]
+}

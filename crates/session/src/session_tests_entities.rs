@@ -2,6 +2,121 @@
 
 const OWN: [u8; 16] = [0xa0; 16];
 
+#[test]
+fn clxa_entity_light_survives_join_update_expiry_and_leave() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(clxa_entity_light_scenario)?
+        .join()
+        .map_err(|_| "CLX-A light session panicked")?
+}
+
+fn clxa_entity_light_scenario() -> Result<(), BoxError> {
+    block_on(async {
+        use oteryn_protocol_oteryn::world_spatial_entities::{
+            EntityFields, EntityLight, EntityLights,
+            encode_world_spatial_entities_delta_with_fields,
+            encode_world_spatial_entities_snapshot_with_fields,
+        };
+        let fields = EntityFields::selected(&[6, 19]);
+        let player = own(at(0, 0));
+        let rat = actor(EntityKind::Creature, 8, 1, at(1, 0));
+        let light = EntityLight {
+            level: 8,
+            color: 215,
+        };
+        let lights = EntityLights::from([(OWN, light), (rat.entity.identity, light)]);
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            own_identity: OWN,
+            entities: vec![player, rat],
+        };
+        let bytes = encode_world_spatial_entities_snapshot_with_fields(&snapshot, fields, &lights)
+            .map_err(|e| format!("{e:?}"))?;
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let peer = tokio::spawn(async move {
+            let clock = oteryn_protocol_oteryn::world_clock::encode_world_clock(
+                oteryn_protocol_oteryn::world_clock::WorldClock {
+                    tibian_minute: 0,
+                    light_level: 40,
+                    light_color: 215,
+                },
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            join_peer_with(
+                &mut server,
+                CLIENT_SUPPORTED_CAPABILITIES,
+                &[6, 19],
+                &[],
+                (2, bytes),
+                &[(18, 0, 1, clock)],
+            )
+            .await?;
+            let mut rest = Vec::new();
+            let _ = server.read_to_end(&mut rest).await;
+            Ok::<_, BoxError>(())
+        });
+        let mut session = Session::admit(client, entity_admission()?).await?;
+        assert_eq!(
+            session.visible_appearances()[0].light,
+            Some((light.level, light.color))
+        );
+        for (sequence, update, lights) in [
+            (
+                41,
+                entities_delta(at(0, 0), vec![], vec![player], vec![]),
+                EntityLights::new(),
+            ),
+            (
+                42,
+                entities_delta(at(0, 0), vec![], vec![], vec![rat.entity]),
+                EntityLights::new(),
+            ),
+        ] {
+            let bytes = encode_world_spatial_entities_delta_with_fields(&update, fields, &lights)
+                .map_err(|e| format!("{e:?}"))?;
+            let frame = oteryn_protocol_oteryn::encode_state_delta(
+                1,
+                sequence,
+                1,
+                sequence - 36,
+                sequence - 35,
+                2,
+                &bytes,
+            )?;
+            session.apply_state_delta(
+                sequence,
+                oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.payload(),
+            )?;
+            let entries = session.visible_appearances();
+            assert!(
+                entries
+                    .iter()
+                    .find(|e| e.entity.entity.identity == OWN)
+                    .ok_or("own")?
+                    .light
+                    .is_none()
+            );
+            if sequence == 41 {
+                assert_eq!(
+                    entries
+                        .iter()
+                        .find(|e| e.entity.entity == rat.entity)
+                        .ok_or("rat")?
+                        .light,
+                    Some((light.level, light.color))
+                );
+            } else {
+                assert_eq!(entries.len(), 1);
+            }
+        }
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
 fn at(x: i32, y: i32) -> ActorPosition {
     ActorPosition { x, y, floor: 0 }
 }
@@ -13,6 +128,7 @@ fn actor(
     position: ActorPosition,
 ) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity: [marker; 16],
@@ -35,6 +151,7 @@ fn own(position: ActorPosition) -> WorldSpatialEntity {
 
 fn corpse(marker: u8, position: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind: EntityKind::Corpse,
         entity: EntityRef {
             identity: [marker; 16],
@@ -136,9 +253,16 @@ fn the_advertised_set_is_closed_under_the_registry_requires() {
     // PROTOCOL_OTERYN_V1_REGISTRY.json `requires`: 4 needs 6, 12 needs 4, 14 needs 4 and 12.
     // CL25J extends the closure check for every newly advertised dependent mechanic.
     let requires: &[(u32, &[u32])] = &[
-        (4, &[6]), (12, &[4]), (14, &[4, 12]), (36, &[7]),
-        (152, &[14]), (153, &[37, 62]), (179, &[12, 14]),
-        (230, &[14, 18]), (240, &[7, 42]), (258, &[7, 43]),
+        (4, &[6]),
+        (12, &[4]),
+        (14, &[4, 12]),
+        (36, &[7]),
+        (152, &[14]),
+        (153, &[37, 62]),
+        (179, &[12, 14]),
+        (230, &[14, 18]),
+        (240, &[7, 42]),
+        (258, &[7, 43]),
     ];
     for (capability, needed) in requires {
         if CLIENT_SUPPORTED_CAPABILITIES.contains(capability) {
@@ -463,6 +587,76 @@ fn the_store_holds_exactly_256_entities_and_fails_closed_at_257() -> Result<(), 
             error,
             SessionError::EntityStoreInconsistent { .. }
         ));
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
+fn negotiated_names_survive_join_delta_and_visibility_leave() -> Result<(), BoxError> {
+    block_on(async {
+        use oteryn_protocol_oteryn::world_spatial_entities::{
+            EntityFields, EntityLights, encode_world_spatial_entities_delta_with_fields,
+            encode_world_spatial_entities_snapshot_with_fields,
+        };
+        let fields = EntityFields::selected(&[6, 286]);
+        let mut player = own(at(0, 0));
+        player.display_name = Some(EntityDisplayName::new("Player").map_err(|e| format!("{e:?}"))?);
+        let mut rat = actor(EntityKind::Creature, 8, 1, at(1, 0));
+        rat.display_name = Some(EntityDisplayName::new("Rat").map_err(|e| format!("{e:?}"))?);
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT_GENERATION,
+            actor_position: at(0, 0),
+            own_identity: OWN,
+            entities: vec![player, rat],
+        };
+        let bytes = encode_world_spatial_entities_snapshot_with_fields(
+            &snapshot,
+            fields,
+            &EntityLights::new(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        rat.position.x = 2;
+        rat.display_name = Some(EntityDisplayName::new("Cave Rat").map_err(|e| format!("{e:?}"))?);
+        let delta = entities_delta(at(0, 0), vec![], vec![rat], vec![]);
+        let delta_bytes =
+            encode_world_spatial_entities_delta_with_fields(&delta, fields, &EntityLights::new())
+                .map_err(|e| format!("{e:?}"))?;
+        let (client, peer) = entity_peer((2, bytes), &[6, 286], vec![]);
+        let mut session = Session::admit(client, entity_admission()?).await?;
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&286));
+        assert_eq!(session.visible_appearances().len(), 2);
+        let delta = oteryn_protocol_oteryn::encode_state_delta(1, 41, 1, 5, 6, 2, &delta_bytes)?;
+        session.apply_state_delta(
+            41,
+            oteryn_protocol_oteryn::decode_wire_envelope(&delta)?.payload(),
+        )?;
+        let appearances = session.visible_appearances();
+        let updated = appearances
+            .iter()
+            .find(|entry| entry.entity.entity == rat.entity)
+            .ok_or("rat missing")?;
+        assert_eq!(
+            updated
+                .entity
+                .display_name
+                .ok_or("name missing")?
+                .as_str()
+                .map_err(|e| format!("{e:?}"))?,
+            "Cave Rat"
+        );
+        assert_eq!(updated.entity.position.x, 2);
+        let leave = entities_delta(at(0, 0), vec![], vec![], vec![rat.entity]);
+        let leave_bytes =
+            encode_world_spatial_entities_delta_with_fields(&leave, fields, &EntityLights::new())
+                .map_err(|e| format!("{e:?}"))?;
+        let leave = oteryn_protocol_oteryn::encode_state_delta(1, 42, 1, 6, 7, 2, &leave_bytes)?;
+        session.apply_state_delta(
+            42,
+            oteryn_protocol_oteryn::decode_wire_envelope(&leave)?.payload(),
+        )?;
+        assert_eq!(session.visible_appearances().len(), 1);
         drop(session);
         peer.await??;
         Ok(())

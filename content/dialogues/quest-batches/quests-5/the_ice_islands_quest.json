@@ -1,0 +1,4321 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:877",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:918",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:919",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission01",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:894",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission02",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:895",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission05",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 6,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:898",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission06",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:899",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission07",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:900",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission08",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:901",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission10",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:903",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission11",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:904",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 44,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:893",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/iskan/find-sniffler",
+      "npc": "oteryn:npc.iskan",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "passage"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "ge",
+          "value": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well, one of the boys has run away. I think he got the scent of some beast. He's young and inexperienced so I can't blame the cub ...",
+        "I would like you to see after him. He should be somewhere north west of the town. He is probably marking his territory so you should be able to find his trace. Are you willing to do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:72-90"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "do for you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "job"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "shop"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:140",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139"
+            },
+            {
+              "keywords": [
+                "name"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:141"
+            },
+            {
+              "keywords": [
+                "nibelor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:142"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "svargrond"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:144",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "barbarian"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:145"
+            },
+            {
+              "keywords": [
+                "rumours"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:146"
+            },
+            {
+              "keywords": [
+                "chakoya"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:147"
+            },
+            {
+              "keywords": [
+                "monsters"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:148"
+            },
+            {
+              "keywords": [
+                "cult"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:149"
+            },
+            {
+              "keywords": [
+                "yeti"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:150"
+            },
+            {
+              "keywords": [
+                "test"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:151"
+            },
+            {
+              "keywords": [
+                "camps"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:152"
+            },
+            {
+              "keywords": [
+                "raiders"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:153"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:154"
+            },
+            {
+              "keywords": [
+                "bonelords"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:155"
+            },
+            {
+              "keywords": [
+                "edron"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "thais"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "carlin"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164"
+            },
+            {
+              "keywords": [
+                "venore"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165"
+            },
+            {
+              "keywords": [
+                "port hope"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:167",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166"
+            },
+            {
+              "keywords": [
+                "druids"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:168"
+            },
+            {
+              "keywords": [
+                "shamans"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:169"
+            },
+            {
+              "keywords": [
+                "king"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:171",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:172"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:173"
+            },
+            {
+              "keywords": [
+                "ferumbras"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:174"
+            },
+            {
+              "keywords": [
+                "gods"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "uman"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:178",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177"
+            },
+            {
+              "keywords": [
+                "chyll"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:179"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/iskan/sniffler-returned",
+      "npc": "oteryn:npc.iskan",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "passage"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "ge",
+          "value": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 2
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission01",
+          "value": 3
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You are a friend of mine and the boys now. I tell you something. If you ever need to go to the isle of Nibelor, just ask me for a {passage}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:72-95"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "do for you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "job"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "shop"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:140",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139"
+            },
+            {
+              "keywords": [
+                "name"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:141"
+            },
+            {
+              "keywords": [
+                "nibelor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:142"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "svargrond"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:144",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "barbarian"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:145"
+            },
+            {
+              "keywords": [
+                "rumours"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:146"
+            },
+            {
+              "keywords": [
+                "chakoya"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:147"
+            },
+            {
+              "keywords": [
+                "monsters"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:148"
+            },
+            {
+              "keywords": [
+                "cult"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:149"
+            },
+            {
+              "keywords": [
+                "yeti"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:150"
+            },
+            {
+              "keywords": [
+                "test"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:151"
+            },
+            {
+              "keywords": [
+                "camps"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:152"
+            },
+            {
+              "keywords": [
+                "raiders"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:153"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:154"
+            },
+            {
+              "keywords": [
+                "bonelords"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:155"
+            },
+            {
+              "keywords": [
+                "edron"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "thais"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "carlin"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164"
+            },
+            {
+              "keywords": [
+                "venore"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165"
+            },
+            {
+              "keywords": [
+                "port hope"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:167",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166"
+            },
+            {
+              "keywords": [
+                "druids"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:168"
+            },
+            {
+              "keywords": [
+                "shamans"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:169"
+            },
+            {
+              "keywords": [
+                "king"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:171",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:172"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:173"
+            },
+            {
+              "keywords": [
+                "ferumbras"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:174"
+            },
+            {
+              "keywords": [
+                "gods"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "uman"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:178",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177"
+            },
+            {
+              "keywords": [
+                "chyll"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:179"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/iskan/accept-sniffler",
+      "npc": "oteryn:npc.iskan",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "passage",
+            "mission"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "ge",
+          "value": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission01",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "That's surprising. Take a piece of meat. If you find the boy, feed it to him. That will give him enough strength and incentive to return to his pack ...",
+        "Talk to him by calling his name 'Sniffler' and tell him you got meat for him. After he has eaten the meat, return here to talk to me about your mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:72-74",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:102-119"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "do for you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "job"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "shop"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:140",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139"
+            },
+            {
+              "keywords": [
+                "name"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:141"
+            },
+            {
+              "keywords": [
+                "nibelor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:142"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "svargrond"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:144",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "barbarian"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:145"
+            },
+            {
+              "keywords": [
+                "rumours"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:146"
+            },
+            {
+              "keywords": [
+                "chakoya"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:147"
+            },
+            {
+              "keywords": [
+                "monsters"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:148"
+            },
+            {
+              "keywords": [
+                "cult"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:149"
+            },
+            {
+              "keywords": [
+                "yeti"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:150"
+            },
+            {
+              "keywords": [
+                "test"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:151"
+            },
+            {
+              "keywords": [
+                "camps"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:152"
+            },
+            {
+              "keywords": [
+                "raiders"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:153"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:154"
+            },
+            {
+              "keywords": [
+                "bonelords"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:155"
+            },
+            {
+              "keywords": [
+                "edron"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "thais"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "carlin"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164"
+            },
+            {
+              "keywords": [
+                "venore"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165"
+            },
+            {
+              "keywords": [
+                "port hope"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:167",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166"
+            },
+            {
+              "keywords": [
+                "druids"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:168"
+            },
+            {
+              "keywords": [
+                "shamans"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:169"
+            },
+            {
+              "keywords": [
+                "king"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:171",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:172"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:173"
+            },
+            {
+              "keywords": [
+                "ferumbras"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:174"
+            },
+            {
+              "keywords": [
+                "gods"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "uman"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:178",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177"
+            },
+            {
+              "keywords": [
+                "chyll"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:179"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/iskan/report-husky-killing",
+      "npc": "oteryn:npc.iskan",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "no"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "passage",
+            "mission",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "ge",
+          "value": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill",
+          "comparison": "ge",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Mhmm, you leave me no other choice than to inform the Jarl."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:72-74",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:129-133"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "do for you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "job"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:138"
+            },
+            {
+              "keywords": [
+                "shop"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:140",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:139"
+            },
+            {
+              "keywords": [
+                "name"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:141"
+            },
+            {
+              "keywords": [
+                "nibelor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:142"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "svargrond"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:144",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:143"
+            },
+            {
+              "keywords": [
+                "barbarian"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:145"
+            },
+            {
+              "keywords": [
+                "rumours"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:146"
+            },
+            {
+              "keywords": [
+                "chakoya"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:147"
+            },
+            {
+              "keywords": [
+                "monsters"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:148"
+            },
+            {
+              "keywords": [
+                "cult"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:149"
+            },
+            {
+              "keywords": [
+                "yeti"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:150"
+            },
+            {
+              "keywords": [
+                "test"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:151"
+            },
+            {
+              "keywords": [
+                "camps"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:152"
+            },
+            {
+              "keywords": [
+                "raiders"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:153"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:154"
+            },
+            {
+              "keywords": [
+                "bonelords"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:155"
+            },
+            {
+              "keywords": [
+                "edron"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "thais"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:163"
+            },
+            {
+              "keywords": [
+                "carlin"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:164"
+            },
+            {
+              "keywords": [
+                "venore"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:165"
+            },
+            {
+              "keywords": [
+                "port hope"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:167",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:166"
+            },
+            {
+              "keywords": [
+                "druids"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:168"
+            },
+            {
+              "keywords": [
+                "shamans"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:169"
+            },
+            {
+              "keywords": [
+                "king"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:171",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:170"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:172"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:173"
+            },
+            {
+              "keywords": [
+                "ferumbras"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:174"
+            },
+            {
+              "keywords": [
+                "gods"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "uman"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:175"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:176"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "alias",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:178",
+              "alias_of_source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:177"
+            },
+            {
+              "keywords": [
+                "chyll"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:179"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/start-breaking-ice",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission02",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission02",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "We could indeed need some help. These are very cold times. The ice is growing and becoming thicker everywhere ...",
+        "The problem is that the chakoyas may use the ice for a passage to the west and attack Svargrond ...",
+        "We need you to get a pick and to destroy the ice at certain places to the east. You will quickly recognise those spots by their unstable look ...",
+        "Use the pickaxe on at least three of these places and the chakoyas probably won't be able to pass the ice. Once you are done, return here and report about your mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:61-72"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/breaking-ice-done",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 4
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission02",
+          "value": 5
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "The spirits are at peace now. The threat of the chakoyas is averted for now. I thank you for your help. Perhaps you should ask Silfind if you can help her in some matters. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:73-78"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/mission-29",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 29
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "There is indeed an important mission. For a long time, the spirits have been worried and have called us for help. It seems that some of our dead have not reached the happy hunting grounds of after life ...",
+        "Everything we were able to find out leads to a place where none of our people is allowed to go. Just like we would never allow a stranger to go to that place ...",
+        "But you, you are different. You are not one of our people, yet you have proven worthy to be one us. You are special, the child of two worlds ...",
+        "We will grant you permission to travel to that isle of Helheim. Our legends say that this is the entrance to the dark world. The dark world is the place where the evil and lost souls roam in eternal torment ...",
+        "There you find for sure the cause for the unrest of the spirits. Find someone in Svargrond who can give you a passage to Helheim and seek for the cause. Are you willing to do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:78-87"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/mission-31",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 31
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "There is no need to report about your mission. To be honest, Ive sent a divination spirit with you as well as a couple of destruction spirits that were unleashed when you approached the altar ...",
+        "Forgive me my secrecy but you are not familiar with the spirits and you might have get frightened. The spirits are at work now, destroying the magic with that those evil creatures have polluted Helheim ...",
+        "I cant thank you enough for what you have done for the spirits of my people. Still I have to ask: Would you do us another favour?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:87-96"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/tylaf",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "tylaf"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "shard",
+            "reward"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 36
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 37
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission10",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You encountered the restless ghost of my apprentice Tylaf in the old mines? We must find out what has happened to him. I enable you to talk to his spirit ...",
+        "Talk to him and then report to me about your mission."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:158-166"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/accept-1",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "shard",
+            "reward",
+            "tylaf",
+            "cookie"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 30
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission07",
+          "value": 2
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "This is good news. As I explained, travel to Helheim, seek the reason for the unrest there and then report to me about your mission. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:174-183"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/hjaern/accept-2",
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "shard",
+            "reward",
+            "tylaf",
+            "cookie"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 32
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission08",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Thank you my friend. The local representative of the explorers society has asked for our help ...",
+        "You know their ways better than my people do and are probably best suited to represent us in this matter.",
+        "Search for Lurik and talk to him about aprobable mission he might have for you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:179-188"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-5",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 5
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I heard you have already helped our cause. Are you interested in another mission, even when it requires you to travel to a distant land?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:62-65"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-7",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 7
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Well done. The termites caused just the distraction that we needed. Are you ready for the next step of my plan?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:65-68"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-11",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 11
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you have the 5 bat wings I requested?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:77-80"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-13",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 6,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 13
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you have the 4 bear paws I requested?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:85-88"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-15",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 7,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 15
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you have the 3 bonelord eyes I requested?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:93-96"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-17",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 8,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 17
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you have the 2 fish fins I requested?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:101-104"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/mission-19",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 9,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 19
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you have the green dragon scale I requested?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:109-112"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/advance-9",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 9
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 10
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You saved the lives of many innocent animals. Thank you very much. If you are looking for another mission, just ask me."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:68-74"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/advance-10",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 10
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission05",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Our warriors need a more potent yet more secure berserker elixir to fight our enemies. To brew it, I need several ingredients. The first things needed are 5 bat wings. Bring them to me and Ill tell you the next ingredients we need."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:72-78"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/advance-12",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 12
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission05",
+          "value": 2
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "The second things needed are 4 bear paws. Bring them to me and Ill tell you the next ingredients we need."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:80-86"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/advance-14",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 14
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 15
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission05",
+          "value": 3
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "The next things needed are 3 bonelord eyes. Bring them to me and Ill tell you the next ingredients we need."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:88-94"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/advance-16",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 16
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 17
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission05",
+          "value": 4
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "The next things needed are 2 fish fins. Bring them to me and Ill tell you the next ingredients we need."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:96-102"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/advance-18",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 18
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 19
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission05",
+          "value": 5
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "The last thing needed is a green dragon scale. Bring them to me and Ill tell you the next ingredients we need."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:104-110"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/siflind/paint-instructions",
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "jug",
+            "animal cure"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Good! Now listen. To protect the animals there, we have to harm the profit of the hunters. Therefor, I ask you to ruin their best source of earnings. Are you willing to do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:137-140"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "ice_quest_if_elseif",
+            "foreign_animal_cure_if_elseif"
+          ],
+          "reason": "The second group reads InServiceOfYalahar and may change topic, consume gold and mint 8819; preserve the whole-message boundary.",
+          "prepared_subset": "Block animal cure on the prepared Ice rules; the foreign branch remains held.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:61-63",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:194-210"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/cure-dogs",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 20
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I am in dire need of help. A plague has befallen my dogs. I even called a druid of Carlin for help but all he could do was to recommend some strong medicine ...",
+        "The thing is the ingredients of the medicine are extremely rare and some only exist in far away and distant lands. If you could help me collecting the ingredients, I would be eternally grateful ...",
+        "Are you willing to help me?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:72-79",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/cure-dogs-complete",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 28
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 29
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission07",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Thank you. Now I have all necessary ingredients. As a reward I grant you the use of our dog sled, which is located to the east of here. ...",
+        "The dogs can be a bit moody, but if you always carry some ham with you there shouldnt be any problems. Oh, and Hjaern might have a mission for you. So maybe you go and talk to him."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:80-87",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-21",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 21
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-22",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 22
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-23",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 23
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-24",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 24
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-25",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 25
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-26",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 26
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ingredient-27",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 27
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What for ingredient do you have?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:88-90",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-cactus",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "cactus"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 21
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You will find this kind of cactus at places that are called deserts. Only an ordinary kitchen knife will be precise enough to produce the ingredient weneed. Do you have a part of that cactus with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:98-106",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-water",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "water"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 4,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 22
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You will need a specially prepared waterskin to collect the water. You can buy one from me ...",
+        "Use it on a geyser that is NOT active. The water of active geysers is far too hot. You can find inactive geysers on Okolnir. Do you have some geyser water with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:103-111",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-sulphur",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "sulphur"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 23
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I need fine sulphur of an inactive lava hole. No other sulphur will do. Use an ordinary kitchen spoon on an inactive lava hole. Do you have fine sulphur with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:111-119",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-herb",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "herb"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 6,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 24
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The frostbite herb is a local plant but its quite rare. You can find it on mountain peaks. You will need to cut it with a fine kitchen knife. Do you have a frostbite herb with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:116-124",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-blossom",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "blossom"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 7,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 25
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The purple kiss is a plant that grows in a place called jungle. You will have to use a kitchen knife to harvest its blossom. Do you have a blossom of a purple kiss with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:121-129",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-hydra-tongue",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "hydra tongue"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 8,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 26
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The hydra tongue is a common pest plant in warmer regions. You might find one in a shop. Do you have a hydra tongue with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:126-134",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/ask-spores",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "spores"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage",
+            "yes"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 9,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 27
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "The giant glimmercap mushroom exists in caves and other preferably warm and humid places. Use an ordinary kitchen spoon on a mushroom to collectits spores. Do you have the glimmercap spores?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:131-139",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/nilsor/accept-cure",
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "waterskin",
+            "cactus",
+            "water",
+            "sulphur",
+            "herb",
+            "blossom",
+            "hydra tongue",
+            "spores",
+            "svargrond",
+            "passage"
+          ],
+          "match_mode": "contains"
+        },
+        {
+          "keywords": [
+            "svargrond",
+            "passage"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 21
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission06",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "A thousand thanks in advance. I need no less than 7 ingredients for the cure. You can ask me about each specifically ...",
+        "I need a part of the sun adorer cactus, a vial of geyser water, sulphur of a lava hole, a frostbite herb, a blossom of a purple kiss, a hydra tongue and spores of a giant glimmercap mushroom ...",
+        "Turn them in individually by talking about them to me. As soon as I obtained them all, talk to me about the medicine. First time bring a Part of the Sun Adorer {Cactus}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:136-145",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "independent_if_groups",
+          "status": "COMPOUND_MESSAGE_LEFT_OUT",
+          "source_order": [
+            "travel_if_elseif",
+            "quest_if_elseif"
+          ],
+          "reason": "Both groups may run on one message; do not publish a partial topic/SET without the source travel effect.",
+          "prepared_subset": "Block passage/svargrond on every quest rule; also block yes on every rule except the topic1 accept-cure.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:61-83"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_ice_islands_quest/a_restless_soul/story",
+      "npc": "oteryn:npc.a_restless_soul",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "story"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "comparison": "eq",
+          "value": 37
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 38
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission10",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission11",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "I was captured and tortured to death by the cultists here. They worship a being that they call Ghazbaran ...",
+        "In his name they have claimed the mines and started to melt the ice to free an army of vile demons that have been frozen here for ages ...",
+        "Their plan is to create a new demon army for their master to conquer the world. Hjaern and the other shamans must learn about it! Hurry before its too late."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_restless_soul.lua:51-56",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_restless_soul.lua:69-81"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.hjaern",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Be greeted, |PLAYERNAME|. The {spiritual} world looks upon you and your deeds.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:234"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hjaern.lua:234",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    },
+    {
+      "npc": "oteryn:npc.siflind",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Be greeted, |PLAYERNAME|. If you are in need of potions or magical equipment, just ask me about my {offers}.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:214"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/siflind.lua:214",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    },
+    {
+      "npc": "oteryn:npc.nilsor",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Greetings, traveller |PLAYERNAME|. Is there anything I can {do for you}?",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:227"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/nilsor.lua:227",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    },
+    {
+      "npc": "oteryn:npc.a_restless_soul",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+              "comparison": "eq",
+              "value": 37
+            }
+          ],
+          "reply": "Ahhhh! At last someone that can listen to my {story}!",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_restless_soul.lua:56"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_restless_soul.lua:56",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    },
+    {
+      "npc": "oteryn:npc.iskan",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+              "comparison": "lt",
+              "value": 8
+            }
+          ],
+          "reply": "You are not one of us. I don't want to talk to you.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:55"
+          ]
+        },
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+              "comparison": "ge",
+              "value": 8
+            },
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill",
+              "comparison": "ge",
+              "value": 1
+            }
+          ],
+          "reply": "I was told you have been killing huskies here in Svargrond! Never do that again, okay? They are precious animals for us. Give me 500 gold and I will forget that incident without telling it to Jarl Sven. Okay?",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:57"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/iskan.lua:55",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "the_ice_islands_quest.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "note": "Selected source branches only; complete dispatch/matching/greeting qualification is held."
+      },
+      "preparation": {
+        "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+        "format": "offline_authoring_with_source_dispatch_constraints",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      }
+    }
+  ]
+}

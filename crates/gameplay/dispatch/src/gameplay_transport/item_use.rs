@@ -54,7 +54,7 @@ pub(super) mod condition_potions;
 pub(super) const ITEMUSE0_RL_01_USES_PER_SECOND: usize = 5;
 /// `ITEMUSE0-RL-04`: the ambiguous-commit bound before the in-flight slot is freed.
 pub(super) const ITEMUSE0_RL_04_AMBIGUOUS_MS: u64 = 2_000;
-/// The `potion` cooldown, shared by every potion. `PARITY_PENDING`: no official value.
+/// Crystal 201189f config.lua.dist:455 / src/lua/creature/actions.cpp:624-627: shared potion delay.
 const POTION_COOLDOWN_MS: u64 = 1_000;
 /// The `food` cooldown. `PARITY_PENDING`: no official value.
 const FOOD_COOLDOWN_MS: u64 = 200;
@@ -162,7 +162,67 @@ impl ItemUseGate {
 #[derive(Debug, Default)]
 pub struct ItemUseGates(Vec<(ExactActorRef, GameSessionId, ItemUseGate)>);
 
+#[derive(Clone, Copy)]
+pub(super) enum CooldownClass {
+    Food,
+    Potion,
+    Other,
+}
 impl ItemUseGates {
+    pub(super) fn cooldown_remaining(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        class: CooldownClass,
+        now_ms: u64,
+    ) -> Option<u64> {
+        runtime.player_control_facts(actor, session).ok()?;
+        let Some((_, _, gate)) = self
+            .0
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)
+        else {
+            return Some(0);
+        };
+        let own = match class {
+            CooldownClass::Food => gate.food_ready_ms,
+            CooldownClass::Potion => gate.potion_ready_ms,
+            CooldownClass::Other => 0,
+        }
+        .saturating_sub(now_ms);
+        let in_flight = gate.in_flight_since_ms.map_or(0, |since| {
+            since
+                .saturating_add(ITEMUSE0_RL_04_AMBIGUOUS_MS)
+                .saturating_sub(now_ms)
+        });
+        let recent = gate
+            .recent_ms
+            .iter()
+            .filter(|time| now_ms.saturating_sub(**time) < 1000);
+        let rate = if recent.clone().count() >= ITEMUSE0_RL_01_USES_PER_SECOND {
+            recent
+                .map(|time| time.saturating_add(1000).saturating_sub(now_ms))
+                .min()
+                .unwrap_or(0)
+        } else {
+            0
+        };
+        Some(own.max(in_flight).max(rate))
+    }
+    #[cfg(test)]
+    pub(super) fn start_test_potion(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_ms: u64,
+    ) -> Option<()> {
+        let gate = self.gate(runtime, actor, session)?;
+        gate.start(ItemUseKind::Potion, now_ms).ok()?;
+        gate.settle(1, UseDisposition::Committed, &[]);
+        Some(())
+    }
     pub(in crate::gameplay_transport) fn house_transfer_ready(
         &self,
         actor: ExactActorRef,
@@ -277,7 +337,7 @@ enum UseSource {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    fn owner_ms(&self) -> u64 {
+    pub(super) fn owner_ms(&self) -> u64 {
         u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
@@ -497,7 +557,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition);
         if let Some(potion) =
-            oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
+            oteryn_gameplay_progression::condition_potions::PotionCondition::from_key(
                 &entry.item.definition.production_key,
             )
         {
@@ -607,6 +667,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start(kind, self.owner_ms())?;
         }
+        let analyser_supply =
+            matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
         let commit = self
             .root
             .commit_item_use(self.character, self.holder, fence, request);
@@ -628,6 +690,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if known_commit {
+            if let Some(definition) = &analyser_supply {
+                states.analyser.supply(actor, session, definition, 1);
+            }
             apply_effect(
                 &runtime,
                 &mut states,
@@ -751,7 +816,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let placement = target.placement.clone();
         let base_target_item = {
             let mut runtime = self.runtime.lock().await;
-            let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+            let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
             let facts = at.map.facts.pinned();
             let map = super::world_map::MapViewSource {
                 overlay: &at.map.overlay,
@@ -973,6 +1038,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start_drink(self.owner_ms())?;
         }
+        let analyser_supply = restore.as_ref().map(|_| request.change.definition.clone());
         let commit =
             self.root
                 .commit_item_fluid_at(self.character, self.holder, fence, request, splash);
@@ -990,6 +1056,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if known_commit && let Some(restore) = restore {
+            if let Some(definition) = &analyser_supply {
+                states.analyser.supply(actor, session, definition, 1);
+            }
             apply_effect(
                 &runtime,
                 &mut states,
@@ -1020,6 +1089,37 @@ mod fluid_map_tests {
     use super::*;
 
     #[test]
+    fn srv9b_native_fluid_namespace_matches_shop_craft_and_drinking() {
+        assert!(drink_restore(7).is_none(), "oil cannot restore mana");
+        assert!(matches!(
+            drink_restore(10),
+            Some(ReferencePotionRestore {
+                resource: ReferenceRestoreResource::Mana,
+                min: 50,
+                max: 150,
+            })
+        ));
+        assert!(matches!(
+            drink_restore(11),
+            Some(ReferencePotionRestore {
+                resource: ReferenceRestoreResource::Health,
+                min: 60,
+                max: 60,
+            })
+        ));
+        for (source, subtype) in [
+            (2098, 6),
+            (2522, 12),
+            (2521, 2),
+            (391, 4),
+            (4848, 13),
+            (2520, 3),
+        ] {
+            assert_eq!(fluid_source_subtype(source), Some(subtype));
+        }
+    }
+
+    #[test]
     fn fluid_map_use_refuses_distant_and_other_floor_targets() {
         assert!(fluid_map_target_in_range(10, 10, 7, 10, 10, 7));
         assert!(!fluid_map_target_in_range(10, 10, 7, 12, 10, 7));
@@ -1027,7 +1127,8 @@ mod fluid_map_tests {
     }
 }
 
-/// Crystal `fluids.lua:35-40` consumes the target's `items.xml` `fluidsource` value.
+/// Crystal 201189f8 `data-global/scripts/actions/other/fluids.lua:151-153` copies
+/// the target's `items.xml` `fluidsource`, in the modern Item subtype namespace.
 /// These are the source objects present in the pinned donor XML used by Oteryn.
 fn fluid_source_subtype(id: u32) -> Option<u8> {
     match id {
@@ -1048,22 +1149,23 @@ fn fluid_source_subtype(id: u32) -> Option<u8> {
         | 21302..=21322
         | 31171..=31182 => Some(1),
         2520 => Some(3),
-        2098..=2101 => Some(4),
-        2522 => Some(5),
-        2521 | 2527..=2534 => Some(15),
-        391 => Some(19),
-        4848 | 5512..=5513 => Some(27),
+        2098..=2101 => Some(6),
+        2522 => Some(12),
+        2521 | 2527..=2534 => Some(2),
+        391 => Some(4),
+        4848 | 5512..=5513 => Some(13),
         _ => None,
     }
 }
 
-/// Crystal `fluids.lua:55-62`: mana fluid (7) restores `math.random(50, 150)` mana and life
-/// fluid (10) `addHealth(60)`. The drunk (3, 15, 43) and poison (4) conditions are not modelled
+/// Crystal `data-global/scripts/actions/other/fluids.lua:130-135`: mana fluid (10)
+/// restores `math.random(50, 150)` mana and life fluid (11) `addHealth(60)`.
+/// The drunk (2, 3, 13, 16) and poison (6) conditions are not modelled
 /// (`PARITY_PENDING`); every other fluid is only drunk.
 fn drink_restore(fluid: u8) -> Option<ReferencePotionRestore> {
     let (resource, min, max) = match fluid {
-        7 => (ReferenceRestoreResource::Mana, 50, 150),
-        10 => (ReferenceRestoreResource::Health, 60, 60),
+        10 => (ReferenceRestoreResource::Mana, 50, 150),
+        11 => (ReferenceRestoreResource::Health, 60, 60),
         _ => return None,
     };
     Some(ReferencePotionRestore { resource, min, max })
@@ -1229,12 +1331,14 @@ mod tests {
     #[test]
     fn drinking_restores_only_mana_and_life_fluid() {
         let restore = |fluid| drink_restore(fluid).map(|r| (r.resource, r.min, r.max));
-        assert_eq!(restore(7), Some((ReferenceRestoreResource::Mana, 50, 150)));
-        assert_eq!(
-            restore(10),
-            Some((ReferenceRestoreResource::Health, 60, 60))
-        );
-        assert_eq!(restore(1), None);
+        for fluid in 0..=20 {
+            let expected = match fluid {
+                10 => Some((ReferenceRestoreResource::Mana, 50, 150)),
+                11 => Some((ReferenceRestoreResource::Health, 60, 60)),
+                _ => None,
+            };
+            assert_eq!(restore(fluid), expected, "modern fluid subtype {fluid}");
+        }
         let mut gate = ItemUseGate::default();
         assert_eq!(gate.start_drink(10), Ok(()));
         assert_eq!(gate.start_drink(11), Err(UseDisposition::Exhausted));
@@ -1442,5 +1546,50 @@ impl ItemUseGates {
             gate.last = None;
             self.0.push((actor, session, gate));
         }
+    }
+}
+
+#[cfg(test)]
+mod action_bar_cooldown_tests {
+    use super::*;
+    #[test]
+    fn action_bar_read_preserves_prepare_in_flight_rate_and_expiry() -> Result<(), &'static str> {
+        let (runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x7b);
+        let mut gates = ItemUseGates::default();
+        {
+            let gate = gates.gate(&runtime, actor, session).ok_or("gate")?;
+            gate.admit(1, 0).map_err(|_| "admit")?;
+            gate.start(ItemUseKind::Potion, 0).map_err(|_| "prepare")?;
+        }
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Other, 500),
+            Some(1500)
+        );
+        gates.gate(&runtime, actor, session).ok_or("gate")?.settle(
+            1,
+            UseDisposition::Committed,
+            &[],
+        );
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Potion, 500),
+            Some(500)
+        );
+        for command in 2..=5 {
+            gates
+                .gate(&runtime, actor, session)
+                .ok_or("gate")?
+                .admit(command, 100 + command)
+                .map_err(|_| "rate")?;
+        }
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Food, 105),
+            Some(895)
+        );
+        assert_eq!(
+            gates.cooldown_remaining(&runtime, actor, session, CooldownClass::Other, 1105),
+            Some(0)
+        );
+        Ok(())
     }
 }

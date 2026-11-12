@@ -34,8 +34,11 @@ Scope: the command regenerates only the content tree, `content/world` and the Ru
 It does not regenerate other Item-derived artifacts (the weapon proficiency sample, the TibiaWiki
 snapshot re-key and promotion packet, the pins in `item_stats_promotion.rs`, the Crystal binding
 output); where a `--check` exists it runs it, and a failure there needs a manual regeneration.
-Hand-written count pins (for example `PROFICIENCY_BINDING_COUNT`) can go stale after a clean merge;
-the checks catch that, and the pin is then edited by hand.
+The native catalogue source budgets and World/NPC cohort fixtures are refreshed from the
+normal canonical package by refresh_source_cohort_extent. Other derived count pins require
+their corresponding source authoring tool.
+Thaian completion always runs the native WorldProject writer before source measurement and pins;
+its standalone entry point and the G4 fresh-output comparison use that same completed producer.
 """
 
 from __future__ import annotations
@@ -64,6 +67,7 @@ REGISTRY = (
 # Written by the authoring tools but not listed in the content manifest.
 EXTRA_DERIVED = (
     "content/interactions/index.json",
+    "content/quests/grizzly-boss-rooms.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
 )
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
@@ -79,6 +83,8 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-schema/world-authoring/questl2_chest_bindings.py",
+    "tools/content-migration/qengine_equipment_audit.py",
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
@@ -86,9 +92,16 @@ AUTHORING_TOOLS = (
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
     "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+    "tools/content-migration/qengine_equipment_audit.py",
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
+    ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
+    ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
     ["python3", "tools/content-migration/test_prey_difficulty.py"],
     ["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--check"],
@@ -98,6 +111,7 @@ CHECKS = (
     ["python3", "tools/content-migration/validate_world_project_v2_to_tree.py"],
     ["python3", "tools/content-migration/test_world_project_v2_to_tree.py"],
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
+    ["python3", "tools/content-schema/test_materialized_authored_props.py"],
     ["python3", "tools/content-census/item_key_references.py"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
@@ -484,7 +498,91 @@ def repin_rust_inventory() -> None:
     if count != 1:
         raise SystemExit(f"{npc_test.name}: source_tree_digest pin not found")
     npc_test.write_text(npc_text, encoding="utf-8", newline="\n")
+    # The inert raw intake must retain every normal non-raw batch, including
+    # separately qualified source successors. Its historical cohort assertions
+    # remain authored tests; only this exact measured extent is generated.
+    raw_test = ROOT / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
+    if raw_test.is_file():
+        imports = json.loads((WORLD / "provenance/imports.json").read_bytes())["batches"]
+        raw_id = "g4-item-fx-audio295-raw-evidence-r1"
+        if sum(batch["batch_id"] == raw_id for batch in imports) != 1:
+            raise SystemExit("raw import fixture requires exactly one unchanged raw cohort")
+        raw_text, count = re.subn(
+            r"assert_eq!\(batches\.len\(\), [\d_]+\);",
+            f"assert_eq!(batches.len(), {len(imports)-1});",
+            raw_test.read_text(encoding="utf-8"),
+        )
+        if count != 1:
+            raise SystemExit(f"{raw_test.name}: expected one generated source extent")
+        raw_test.write_text(raw_text, encoding="utf-8", newline="\n")
+    # Client map loading pins the same index that the canonical World tooling writes.
+    client = ROOT / "crates/client-assets/src/world.rs"
+    placement_digest = hashlib.sha256((WORLD / "placements/index.json").read_bytes()).hexdigest()
+    client_text, count = re.subn(
+        r'(pub const PLACEMENT_INDEX_SHA256: &str =\s*")[0-9a-f]{64}(";)',
+        lambda match: match.group(1) + placement_digest + match.group(2),
+        client.read_text(encoding="utf-8"),
+    )
+    if count != 1:
+        raise SystemExit("client World placement index pin not found")
+    client.write_text(client_text, encoding="utf-8", newline="\n")
 
+
+def source_cohort_extent(world: Path) -> dict[str, int | str]:
+    """Measure only the normal, already admitted WorldProject source documents."""
+    reference = json.loads((world / "definitions/reference.json").read_bytes())
+    declarations = json.loads((world / "definitions/declarations.json").read_bytes())
+    provenance = json.loads((world / "provenance/sources.json").read_bytes())
+    imports = json.loads((world / "provenance/imports.json").read_bytes())
+    project = json.loads((world / "project.json").read_bytes())
+    records = reference["records"]
+    profiles = declarations["authoring_profiles"]
+    npcs = [row for row in declarations["records"] if row["kind"] == "NPC"]
+    npc_profiles = {
+        (row[field]["family"], row[field]["key"], row[field]["revision"])
+        for row in npcs for field in ("presentation", "behavior")
+        if row.get(field) is not None
+    }
+    profile_id = lambda row: (row["target"]["family"], row["target"]["key"], row["target"]["revision"])
+    reference_id = lambda row: (row["identity"]["family"], row["identity"]["key"], row["identity"]["revision"])
+    known_profiles = {profile_id(row) for row in profiles}
+    known_references = {reference_id(row) for row in records}
+    if len(known_references) != len(records) or not npc_profiles <= known_profiles or not npc_profiles <= known_references:
+        raise SystemExit("source cohort contains duplicate references or missing NPC profiles")
+    return {
+        "references": len(records),
+        "sources": len(provenance["sources"]),
+        "imports": len(imports["batches"]),
+        "creatures": sum(row["kind"] == "Creature" for row in records),
+        "creature_records": sum(row["kind"] != "Item" and reference_id(row) not in npc_profiles for row in records),
+        "creature_profiles": sum(profile_id(row) not in npc_profiles for row in profiles),
+        "npc_records": len(npc_profiles),
+        "project_revision": project["project_revision"],
+    }
+
+
+def refresh_source_cohort_extent() -> None:
+    """Keep strict native source bounds and repository fixtures at the exact cohort."""
+    measured = source_cohort_extent(WORLD)
+    def rewrite(path: Path, pattern: str, replacement: str) -> None:
+        text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
+        if count != 1:
+            raise SystemExit(f"{path.name}: expected one source-cohort field, found {count}")
+        path.write_text(text, encoding="utf-8", newline="\n")
+    catalogue = ROOT / "crates/gameplay/content/src/content/npc_catalogue.rs"
+    catalogue_text = catalogue.read_text(encoding="utf-8")
+    catalogue_text = re.sub(r"\bCW2_B1_FULL_ITEM_FAMILY_COUNT,\s*", "", catalogue_text, count=1)
+    catalogue_text = re.sub(r"            // #1807 monster source mechanics.*?            max_import_records: [^\n]+", "            // Generated source-cohort bounds: regenerate_content.py measures the\n            // already admitted normal World package; limit+1 remains rejected.\n            max_reference_records: " + f'{measured["references"]:_},' + "\n            max_import_records: " + f'{measured["sources"]:_},', catalogue_text, count=1, flags=re.S)
+    catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
+    rewrite(catalogue, r"max_reference_records: [^,\n]+,", f'max_reference_records: {measured["references"]:_},')
+    rewrite(catalogue, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    for name, key in (("CREATURES", "creatures"), ("CREATURE_RECORDS", "creature_records"), ("CREATURE_PROFILES", "creature_profiles"), ("NPC_RECORDS", "npc_records")):
+        rewrite(PIN_TEST, rf"const {name}: usize = [\d_]+;", f'const {name}: usize = {measured[key]:_};')
+    rewrite(PIN_TEST, r"max_import_records: [^,\n]+,", f'max_import_records: {measured["sources"]:_},')
+    rewrite(PIN_TEST, r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);", f'assert_eq!(project.imports().len(), {measured["imports"]});')
+    rewrite(PIN_TEST, r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);", f'assert_eq!(v2.sources.len(), {measured["sources"]});')
+    for path, receiver in ((PIN_TEST, "project"), (ROOT / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue")):
+        rewrite(path, rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))', rf'\g<1>{measured["project_revision"]}\g<2>')
 
 def unresolved_worktree_paths() -> list[str]:
     """Workers resolve files without staging the coordinator's pending merge."""
@@ -492,8 +590,37 @@ def unresolved_worktree_paths() -> list[str]:
         path
         for path in git("diff", "--name-only", "--diff-filter=U").splitlines()
         if not (ROOT / path).is_file()
-        or re.search(r"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_text(), re.M)
+        or re.search(rb"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)", (ROOT / path).read_bytes(), re.M)
     ]
+
+
+def refresh_quest_callback_proof() -> None:
+    """Re-pin merged compiler/callback inputs without changing reviewed snapshots."""
+    directory = ROOT / "tools/content-schema/quest-authoring/samples/completion242"
+    approval_path = directory / "source-fix-approval.json"
+    receipt_path = directory / "source-fix-receipt.json"
+    if not approval_path.is_file() or not receipt_path.is_file():
+        return
+    approval = json.loads(approval_path.read_bytes())
+    receipt = json.loads(receipt_path.read_bytes())
+    if approval["compiler_inputs"] != receipt["compiler_inputs"]:
+        raise ValueError("source approval/receipt compiler inventory differs")
+    for document in (approval, receipt):
+        for descriptor in document["compiler_inputs"]:
+            relative = Path(descriptor["path"])
+            source = (ROOT / relative).resolve()
+            if relative.is_absolute() or ".." in relative.parts or not source.is_relative_to(ROOT):
+                raise ValueError("source compiler input escapes repository")
+            descriptor["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+    callback_path = "content/quests/world-callbacks.json"
+    digest = hashlib.sha256((ROOT / callback_path).read_bytes()).hexdigest()
+    for document in (approval, receipt):
+        for descriptor in document["proof_inputs"]:
+            if descriptor["path"] == callback_path:
+                descriptor["sha256"] = digest
+    approval_path.write_text(json.dumps(approval, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    receipt["approval"]["sha256"] = hashlib.sha256(approval_path.read_bytes()).hexdigest()
+    receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -506,7 +633,30 @@ def main() -> int:
     parser.add_argument("--no-stage", action="store_true", help="leave the git index untouched, including with --resolve")
     parser.add_argument("--skip-checks", action="store_true", help="regenerate only")
     parser.add_argument("--check", action="store_true", help="run the registered content checks without writing")
+    parser.add_argument("--capability-golden", help="regenerate only the named runtime capability golden")
+    parser.add_argument("--native-only", action="store_true", help="regenerate native providers and their registry pins without rebuilding the unchanged World package")
     args = parser.parse_args()
+    if args.capability_golden:
+        if args.check or args.resolve or args.skip_checks or args.no_stage:
+            parser.error("--capability-golden cannot be combined with content options")
+        run(["python3", "tools/contracts/update_capability_golden.py", args.capability_golden, "--client-registrations"])
+        return 0
+    if args.native_only:
+        if args.resolve or args.no_stage or args.check:
+            parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+        refresh_quest_callback_proof()
+        run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+        run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
+        run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
+        for census in ("equipment", "audit_sites", "room_sites"):
+            run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
+        run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
+        if not args.skip_checks:
+            run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
+        return 0
     if args.check:
         if args.resolve or args.skip_checks or args.no_stage:
             parser.error("--check cannot be combined with mutation options")
@@ -517,17 +667,38 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
+    refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.
     # Without local donor checkouts the committed, pinned source catalogue is retained.
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
+    run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
     materialize_world()
+    import questpc7_thaian_authoring
+    # install completes authoring through the native writer; no pins name staged Python bytes.
+    questpc7_thaian_authoring.install(ROOT)
+    refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
+    # Callback witnesses add authored props to the native index; rooms must pin that final index.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    # Claims above may add complete native container recipes. Rebuild their
+    # Item closure only after those final claims exist, before census and pins.
+    run(["python3", "tools/content-migration/register_spell_families.py"])
+    # Room provenance includes the native Item provider, including NPC inputs.
+    # Refresh after all native/map producers, before freshness checks and staging.
+    run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+    for census in ("equipment", "audit_sites", "room_sites"):
+        run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
+    run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
+    run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

@@ -1,0 +1,527 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "sea_of_light",
+    "elements": 19,
+    "auto": 0,
+    "manual": 19,
+    "statuses": {
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 7,
+      "LEFT_OUT": 12
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 31,
+      "reply_paragraphs": 32,
+      "conversations": 2
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Zaproszenie",
+      "pattern": "P09",
+      "trigger": "Spectulus mission",
+      "condition": "Questline=-1",
+      "effect": "topic1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:113",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "Start",
+      "pattern": "P11",
+      "trigger": "Spectulus yes",
+      "condition": "topic1;Questline<1",
+      "effect": "XP100;Questline1;Mission1=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:198",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "Plany oddane",
+      "pattern": "P10",
+      "trigger": "Spectulus mission",
+      "condition": "Questline2;remove9696×1",
+      "effect": "XP400;Questline3;Mission1=3;StudyTimer=now+1800",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:118",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "Badanie planów",
+      "pattern": "P17",
+      "trigger": "Spectulus mission",
+      "condition": "Questline3;StudyTimer>0 i<now",
+      "effect": "topic2;equal-now nie przechodzi",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:130",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Spectulus:130–137 rozróżnia StudyTimer>now oraz StudyTimer>0 i <now; nie zużywa przedmiotu ani nie wydaje nagrody. Zamknięty przygotowany selektor nie ma tej reguły zegara.",
+      "missing_owner_function": "NPC guard porównujący StudyTimer z autorytatywnym czasem",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "Wyjaśnienie kryształu",
+      "pattern": "P09",
+      "trigger": "Spectulus yes",
+      "condition": "topic2",
+      "effect": "topic3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:207",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 6,
+      "step": "Zgoda na szukanie",
+      "pattern": "P09",
+      "trigger": "Spectulus yes",
+      "condition": "topic3",
+      "effect": "topic4",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:210",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 7,
+      "step": "Zlecenie kopalni",
+      "pattern": "P09",
+      "trigger": "Spectulus yes",
+      "condition": "topic4",
+      "effect": "Questline4;Mission1=4;Mission2=1;mapmark33103/31811/7",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:213",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Spectulus topic4 łączy progres z map mark; przygotowane NPC DATA pomijają całą gałąź, zamiast wykonywać sam SET.",
+      "missing_owner_function": "QuestState + map mark publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "Pokazanie rare crystal",
+      "pattern": "P11",
+      "trigger": "Spectulus mission",
+      "condition": "Questline5;holds9697",
+      "effect": "XP500;Questline6;Mission2=3;nie zużywa9697",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:140",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Spectulus:140–152 sprawdza getItemCount(9697), a następnie przyznaje XP500 i ustawia Questline6/Mission2=3. Przedmiot nie jest zabierany; brak kwalifikacji inventory guard w tej trwałej gałęzi.",
+      "missing_owner_function": "NPC read-only inventory guard + XP + QuestState",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Zlecenie ofiary",
+      "pattern": "P09",
+      "trigger": "Spectulus mission",
+      "condition": "Questline6",
+      "effect": "topic5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:153",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 10,
+      "step": "Instrukcja studni",
+      "pattern": "P09",
+      "trigger": "Spectulus yes",
+      "condition": "topic5",
+      "effect": "topic6",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:223",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 11,
+      "step": "Urządzenie do zbierania",
+      "pattern": "P11",
+      "trigger": "Spectulus yes",
+      "condition": "topic6",
+      "effect": "Questline7;Mission3=1;9698×1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:226",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Przed finałem",
+      "pattern": "P09",
+      "trigger": "Spectulus mission",
+      "condition": "Questline9;holds9699",
+      "effect": "topic7",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:160",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Spectulus wymaga Questline9 i posiadania9699 przed topic7; samego tekstu nie dodano do przygotowanych DATA bez kwalifikowanego inventory guard.",
+      "missing_owner_function": "Autorytatywny NPC inventory guard",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "Finał",
+      "pattern": "P11",
+      "trigger": "Spectulus yes",
+      "condition": "topic7;remove9699×1",
+      "effect": "3028×10;3037×1;XP1000;Mission3=4;Questline10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/spectulus.lua:232",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "Żebrak: rozmowa wstępna",
+      "pattern": "P09",
+      "trigger": "Shoddy Beggar device/scientist",
+      "condition": "Questline1",
+      "effect": "topic2;łańcuchyes do7;inne odpowiedzi prowadzą do8..11",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:73",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ],
+      "reason": "Pełne literalne wypowiedzi i własne reguły danych przygotowano. Nowy opt-in rozmowy wymaga zakazanej zmiany wspólnego adaptera; przygotowane pliki nie są rejestrowane w runtime.",
+      "missing_owner_function": "NpcTalkBook / dispatch NPC adapter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/dialogues/quest-batches/quests-5/sea_of_light.json"
+      ]
+    },
+    {
+      "row": 15,
+      "step": "Żebrak: opłata za historię",
+      "pattern": "P10",
+      "trigger": "yes przytopic2",
+      "condition": "removeMoneyBank1",
+      "effect": "topic3;nie przyznajeplanu natychmiast",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:98",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "Żebrak: plan",
+      "pattern": "P11",
+      "trigger": "yes przytopic11",
+      "condition": "topic11",
+      "effect": "9696×1;Questline2;Mission1=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shoddy_beggar.lua:129",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Cała źródłowa wymiana/nagroda łączy przedmiot lub pieniądze z progresem, czasem, dostępem albo grantem. Wymagany wspólny owner jest zamrożony; nie dodano częściowej konsumpcji, częściowej nagrody ani zastępczego przedmiotu.",
+      "missing_owner_function": "Atomowa wymiana NPC 0831/0832 albo RewardClaimMint placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757104",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "Wydobycie rare crystal",
+      "pattern": "P30",
+      "trigger": "pick na7806@33031/31758/8",
+      "condition": "Questline4;random1..100<=30",
+      "effect": "9697×1;Questline5;przy porażce tylkoefekt;Mission2 niezmieniona",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:653",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Ofiara i wejście",
+      "pattern": "P02",
+      "trigger": "9697 na32011/31709/7",
+      "condition": "Questline7",
+      "effect": "Questline+1;Mission3+1;teleport32017/31730/8;zużyj źródłowyitem",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/sea_of_light/actions_sea_of_light.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    },
+    {
+      "row": 19,
+      "step": "Mirror crystal",
+      "pattern": "P02",
+      "trigger": "9698 na target9695",
+      "condition": "Questline8",
+      "effect": "Questline9;Mission3=3;9698→9699",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/sea_of_light/actions_sea_of_light.lua:26",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło rozpoznaje rzeczywisty użyty przedmiot i cel oraz ich pozycję/tożsamość. Istniejący inventory-backed ItemOnTarget nie jest tym ingress; nie zastąpiono transformacji consume+mint ani drugą rejestracją wspólnego itemu.",
+      "missing_owner_function": "Rzeczywisty UseWith / tożsamość i atomowa transformacja celu",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589756673",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0292-cast-consent",
+  "kind": "panels",
+  "id": "0292-cast-consent-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

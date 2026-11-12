@@ -2,19 +2,59 @@
   {
     "mechanic": "0049-house",
     "kind": "handlers",
-    "id": "0049-house-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0049-house-command",
+    "status": "supported",
     "commands": [
-      56,
+      56
+    ],
+    "direction": "client_to_server",
+    "capability": 49,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "No persistent house settings.",
+      "input": "W17 owns final mounting; typed actions are exposed by Panel."
+    }
+  },
+  {
+    "mechanic": "0049-house",
+    "kind": "handlers",
+    "id": "0049-house-ownership",
+    "status": "supported",
+    "commands": [
+      6129
+    ],
+    "direction": "client_to_server",
+    "capability": 49,
+    "entry": "protocol.rs::ownership_request"
+  },
+  {
+    "mechanic": "0049-house",
+    "kind": "panels",
+    "id": "0049-house-ownership-panel",
+    "status": "supported",
+    "entry": "view.rs::ownership_text"
+  },
+  {
+    "mechanic": "0049-house",
+    "kind": "panels",
+    "id": "0049-house-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0049-house",
+    "kind": "handlers",
+    "id": "0049-house-query",
+    "status": "supported",
+    "commands": [
       57
     ],
+    "direction": "client_to_server",
+    "capability": 49,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "No persistent house settings.",
+      "input": "W17 owns final mounting; typed actions are exposed by Panel."
     }
   }
 ]

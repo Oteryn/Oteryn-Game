@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 import json
 import copy
@@ -31,11 +32,14 @@ def test_relation_rows_route_by_owner():
     real_targets = migration.use_relation_targets
     migration.use_relation_targets = lambda: real_targets() - {dropped}
     try:
-        migration.main()
-    except migration.ValidationError as error:
-        assert str(error) == "RELATION_COVERAGE", error
-    else:
-        raise AssertionError("PR Use row without its sealed owner accepted")
+        with patch("register_spell_families.outputs", side_effect=AssertionError(
+                "invalid ownership reached full content replay")):
+            try:
+                migration.main()
+            except migration.ValidationError as error:
+                assert str(error) == "RELATION_COVERAGE", error
+            else:
+                raise AssertionError("PR Use row without its sealed owner accepted")
     finally:
         migration.use_relation_targets = real_targets
     print("ok test_relation_rows_route_by_owner")
@@ -127,18 +131,22 @@ if quest_families:
     assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
 
 reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_text())
+# Match the materializer's source-proven, exact Primal empty-loot admission.
+# Its witness rejects changed identities and every nonempty or unrelated Loot.
+from primal_reference_overlay import apply_reference
+apply_reference(reference['records'], ROOT)
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
-assert family_counts['Creature'] == 1863
+assert family_counts['Creature'] == 1_865
 assert lock["family_counts"] == {
     "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
-    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
+    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10, "Encounter": 108, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}
+assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_865, "Encounter": 108, "NPC": 2747}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -164,9 +172,9 @@ assert manifest["families"]["NPC"] == {"records": 1282, "index": "content/npcs/d
 assert manifest["families"]["Dialogue"] == {"records": 836, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
-assert manifest["families"]["Service.Bank"] == {"records": 1, "index": "content/services/bank/index.json"}
-assert manifest["families"]["Service.Promotion"] == {"records": 4, "index": "content/services/promotion/index.json"}
-assert manifest["families"]["Service.Blessing"] == {"records": 4, "index": "content/services/blessings/index.json"}
+assert manifest["families"]["Service.Bank"] == {"records": 2, "index": "content/services/bank/index.json"}
+assert manifest["families"]["Service.Promotion"] == {"records": 7, "index": "content/services/promotion/index.json"}
+assert manifest["families"]["Service.Blessing"] == {"records": 10, "index": "content/services/blessings/index.json"}
 assert any(path.startswith("content/services/bank/bank-") for path in paths)
 assert manifest["families"]["Charm"] == {"records": 25, "index": "content/charms/index.json"}
 assert "Charm" in project["migrated_families"] and "Charm" not in project["next_population_families"]
@@ -186,7 +194,8 @@ assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 
 # The admitted native successor must reproduce exact bytes over immutable r25.
-subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py")], check=True)
+def test_frozen_monster_snapshot():
+    subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py")], check=True)
 
 # Keep the standalone Quest preservation guards on the migration workflow's test path.
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_registration_preservation.py")], check=True)
@@ -236,7 +245,14 @@ starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
 subprocess.run([sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True)
 
 test_closed_weapon_metadata_admission()
-test_relation_rows_route_by_owner()
+# These complete read-only qualifications have no shared mutable inputs. The
+# monster check runs in its own process; always join both and propagate either
+# failure, including when the other check has already failed.
+with ThreadPoolExecutor(max_workers=2) as checks:
+    results = [checks.submit(test_frozen_monster_snapshot),
+               checks.submit(test_relation_rows_route_by_owner)]
+    for result in results:
+        result.result()
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_taxonomy.py")], check=True)
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_item_official_navigation.py")], check=True)
 def test_closed_bank_admission():
@@ -248,12 +264,19 @@ def test_closed_bank_admission():
     mutations = []
     # Each operator changes one admitted data invariant, leaving all unrelated facts intact.
     for operation in ("missing_flag", "false_flag", "wrong_provenance", "extra_offer", "duplicate_bank",
-                      "missing_consumer", "other_consumer", "changed_farewell", "generated_greeting"):
+                      "missing_consumer", "other_consumer", "changed_farewell", "generated_greeting",
+                      "missing_s10_consumer", "other_s10_consumer", "duplicate_s10_reference"):
         bad = copy.deepcopy(declarations)
         service = next(row for row in bad["records"] if row.get("kind") == "Service" and row.get("bank") is True)
         npc = next(row for row in bad["records"] if row.get("kind") == "NPC" and row["identity"]["key"] == "oteryn:npc.paulie")
         dialogue = next(row for row in bad["records"] if row.get("kind") == "Dialogue" and row["identity"]["key"] == "oteryn:dialogue.npc.paulie")
-        if operation == "missing_flag": service.pop("bank")
+        if operation in ("missing_s10_consumer", "duplicate_s10_reference", "other_s10_consumer"):
+            standard = {"family": "Service", "key": "oteryn:service.bank.standard", "revision": "definition-r1"}
+            target = next(row for row in bad["records"] if row.get("kind") == "NPC"
+                          and row["identity"]["key"] == ("oteryn:npc.norf" if operation == "other_s10_consumer" else "oteryn:npc.atur"))
+            if operation == "missing_s10_consumer": target["services"].remove(standard)
+            else: target["services"].append(standard)
+        elif operation == "missing_flag": service.pop("bank")
         elif operation == "false_flag": service["bank"] = False
         elif operation == "wrong_provenance": service["fields"][0]["value"]["value"] = "profession=banker"
         elif operation == "extra_offer": service["offers"] = []
@@ -272,7 +295,7 @@ def test_closed_bank_admission():
             pass
         else:
             raise AssertionError(f"unqualified Bank admission accepted: {operation}")
-    print("ok test_closed_bank_admission positive +9 closed negatives")
+    print("ok test_closed_bank_admission positive +12 closed negatives")
 
 
 test_closed_bank_admission()

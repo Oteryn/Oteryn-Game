@@ -74,6 +74,16 @@ pub struct DurableBuildState {
     skills: [(u16, u64); 7],
 }
 
+/// The persisted progression and revision context for a complete skills display.
+#[derive(Debug, Clone)]
+pub struct SkillDisplayProgression {
+    pub level: u32,
+    pub experience: u64,
+    pub profile_revision: String,
+    pub ruleset_revision: String,
+    pub content_revision: String,
+}
+
 impl Default for DurableBuildState {
     /// The chain seed, which a Character without a build row has.
     fn default() -> Self {
@@ -157,6 +167,49 @@ impl DurableBuildState {
         }
         Self::new(row.try_get::<String, _>(vocation)?, magic, skills)
             .map_err(|_| DurabilityError::InvalidStoredState)
+    }
+
+    /// Decode an ARRAY projection in family column order, retaining nullable death seeds.
+    pub(super) fn stored_array(
+        row: &sqlx::postgres::PgRow,
+        vocation: &str,
+        column: &str,
+    ) -> std::result::Result<Option<Self>, DurabilityError> {
+        let vocation: Option<String> = row.try_get(vocation)?;
+        let values: Vec<Option<i64>> = row.try_get(column)?;
+        if values.len() != 16 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let Some(vocation) = vocation else {
+            return if values.iter().all(Option::is_none) {
+                Ok(None)
+            } else {
+                Err(DurabilityError::InvalidStoredState)
+            };
+        };
+        let mut families = [(0, 0); 8];
+        for (family, pair) in families.iter_mut().zip(values.as_chunks::<2>().0) {
+            *family = (
+                u16::try_from(pair[0].ok_or(DurabilityError::InvalidStoredState)?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                u64::try_from(pair[1].ok_or(DurabilityError::InvalidStoredState)?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            );
+        }
+        let mut skills = [(0, 0); 7];
+        skills.copy_from_slice(&families[1..]);
+        Self::new(vocation, families[0], skills)
+            .map(Some)
+            .map_err(|_| DurabilityError::InvalidStoredState)
+    }
+
+    pub(super) fn family_values(&self) -> Vec<i64> {
+        self.families()
+            .into_iter()
+            .flat_map(|(level, progress)| {
+                [i64::from(level), i64::try_from(progress).unwrap_or(i64::MAX)]
+            })
+            .collect()
     }
 
     /// Binds the vocation and the sixteen family columns, in the order of `family_columns!`.
@@ -675,16 +728,14 @@ async fn apply_build_with_fence(
                          SELECT encode($1,'hex')::uuid, $2, $3, s.character_id, \
                            $4::text::numeric(20,0), $5::text::numeric(20,0), $6, s.level, \
                            s.level, s.total_experience, s.total_experience, \
-                           $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, \
-                           $21, $22, $23, \
-                           $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, \
-                           $37, $38, $39, $40, \
-                           $41, NULL, s.profile_revision, s.ruleset_revision, \
+                           $7, ($8::bigint[])[1]::integer, ($8::bigint[])[2], ($8::bigint[])[3]::integer, ($8::bigint[])[4], ($8::bigint[])[5]::integer, ($8::bigint[])[6], ($8::bigint[])[7]::integer, ($8::bigint[])[8], ($8::bigint[])[9]::integer, ($8::bigint[])[10], ($8::bigint[])[11]::integer, ($8::bigint[])[12], ($8::bigint[])[13]::integer, ($8::bigint[])[14], ($8::bigint[])[15]::integer, ($8::bigint[])[16], \
+                           $9, ($10::bigint[])[1]::integer, ($10::bigint[])[2], ($10::bigint[])[3]::integer, ($10::bigint[])[4], ($10::bigint[])[5]::integer, ($10::bigint[])[6], ($10::bigint[])[7]::integer, ($10::bigint[])[8], ($10::bigint[])[9]::integer, ($10::bigint[])[10], ($10::bigint[])[11]::integer, ($10::bigint[])[12], ($10::bigint[])[13]::integer, ($10::bigint[])[14], ($10::bigint[])[15]::integer, ($10::bigint[])[16], \
+                           $11, NULL, s.profile_revision, s.ruleset_revision, \
                            s.content_revision, s.simulation_revision, s.evidence_revision, \
                            s.declaration_revision, s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $43,$44,$45,$46,$47,$48 \
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $13,$14,$15,$16,$17,$18 \
                            FROM game_character_progression_state s \
-                          WHERE s.character_id = encode($42,'hex')::uuid"
+                          WHERE s.character_id = encode($12,'hex')::uuid"
     ))
     .bind(request.occurrence.0.as_slice())
     .bind(&binding)
@@ -692,7 +743,11 @@ async fn apply_build_with_fence(
     .bind(&original)
     .bind(&committed)
     .bind(request.cause.key());
-    let receipt = request.after.bind(request.before.bind(receipt));
+    let receipt = receipt
+        .bind(request.before.vocation())
+        .bind(request.before.family_values())
+        .bind(request.after.vocation())
+        .bind(request.after.family_values());
     let receipt = receipt
         .bind(request.pruned_stance.clone())
         .bind(character)
@@ -973,6 +1028,21 @@ impl DurabilityRoot {
         command: crate::foundation::CommandRef,
         content_digest: [u8; 32],
     ) -> Result<(DurableBuildState, u32)> {
+        let (build, points, _) = self
+            .read_skill_display_state(authority, node, fence, command, content_digest)
+            .await?;
+        Ok((build, points))
+    }
+
+    /// NX-7: level/XP, trained build and account loyalty from one fenced transaction.
+    pub async fn read_skill_display_state(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &super::item_transfer::CurrentCharacterItemFence,
+        command: crate::foundation::CommandRef,
+        content_digest: [u8; 32],
+    ) -> Result<(DurableBuildState, u32, Option<SkillDisplayProgression>)> {
         if content_digest == [0; 32] {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -1019,10 +1089,11 @@ impl DurabilityRoot {
                     }
                     let row = sqlx::query(concat!(
                         "SELECT b.vocation, ", family_columns!("b.", ""),
-                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points ",
+                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points, p.level, p.total_experience, p.profile_revision, p.ruleset_revision, p.content_revision ",
                         "FROM game_character_roots r ",
                         "LEFT JOIN game_character_build_state b USING(character_id) ",
                         "LEFT JOIN game_account_loyalty_projections l ON l.account_id=r.account_id ",
+                        "LEFT JOIN game_character_progression_state p USING(character_id) ",
                         "WHERE r.character_id=encode($1,'hex')::uuid"
                     )).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                     let build = if row.try_get::<Option<String>, _>("vocation")?.is_some() {
@@ -1032,8 +1103,17 @@ impl DurabilityRoot {
                     };
                     let points = u32::try_from(row.try_get::<i64, _>("loyalty_points")?)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let progression = row.try_get::<Option<i64>, _>("level")?.map(|level| {
+                        Ok::<_, DurabilityError>(SkillDisplayProgression {
+                            level: u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            experience: u64::try_from(row.try_get::<i64, _>("total_experience")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            profile_revision: row.try_get("profile_revision")?,
+                            ruleset_revision: row.try_get("ruleset_revision")?,
+                            content_revision: row.try_get("content_revision")?,
+                        })
+                    }).transpose()?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok((build, points)))
+                    Ok(Ok((build, points, progression)))
                 })
             })
             .await?
@@ -1116,9 +1196,9 @@ async fn load_receipt(
         "SELECT build_occurrence_id::text, command_binding, character_id::text, \
                 original_character_revision::text, committed_character_revision::text, cause, \
                 vocation_before, ",
-        family_columns!("", "_before"),
+        "ARRAY[", family_columns!("", "_before"), "]::bigint[] AS families_before",
         ", vocation_after, ",
-        family_columns!("", "_after"),
+        "ARRAY[", family_columns!("", "_after"), "]::bigint[] AS families_after",
         ", stance_before FROM game_character_build_receipts \
           WHERE build_occurrence_id = encode($1,'hex')::uuid"
     ))
@@ -1147,8 +1227,10 @@ fn decode_receipt(
         .map_err(invalid)?,
         cause: BuildCause::parse(row.try_get("cause")?)
             .ok_or(DurabilityError::InvalidStoredState)?,
-        before: DurableBuildState::stored(row, "vocation_before", "_before")?,
-        after: DurableBuildState::stored(row, "vocation_after", "_after")?,
+        before: DurableBuildState::stored_array(row, "vocation_before", "families_before")?
+            .ok_or(DurabilityError::InvalidStoredState)?,
+        after: DurableBuildState::stored_array(row, "vocation_after", "families_after")?
+            .ok_or(DurabilityError::InvalidStoredState)?,
         pruned_stance: row.try_get("stance_before")?,
     })
 }

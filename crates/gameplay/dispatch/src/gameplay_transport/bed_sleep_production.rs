@@ -16,6 +16,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: BedSleepIntent,
         target: ItemKey,
     ) -> Result<UseOutcome, crate::durability::DurabilityError> {
+        self.production_bed_skill(actor, command, intent.skill, target, None)
+            .await
+    }
+
+    pub(super) async fn production_bed_skill(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        skill: u8,
+        target: ItemKey,
+        expected_revision: Option<u64>,
+    ) -> Result<UseOutcome, crate::durability::DurabilityError> {
         if !self
             .session_premium_gate(command.game_session_id)
             .await
@@ -33,9 +45,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let ItemKey::MapBase {
-            placement_key,
-            bundle_digest,
             reset_epoch,
+            placement_key,
+            ..
         } = target
         else {
             return Ok(UseOutcome::rejected());
@@ -48,6 +60,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if command.item_fence != Some(current.item_fence()) || reset_epoch != self.reset_epoch {
             return Ok(UseOutcome::rejected());
         }
+        let changes = if expected_revision.is_some() {
+            let context = {
+                let runtime = self.runtime.lock().await;
+                let Ok(context) =
+                    crate::durability::consume_transform::HouseActionContext::from_native_owner(
+                        &runtime,
+                        actor,
+                        command.game_session_id,
+                        current.item_fence(),
+                    )
+                else {
+                    return Ok(UseOutcome::rejected());
+                };
+                context
+            };
+            let Some(map) = self.bundle_map() else {
+                return Ok(UseOutcome::rejected());
+            };
+            Some(
+                self.house_base_decoration_facts(&context, map.overlay.base().digest())
+                    .await
+                    .ok_or(crate::durability::DurabilityError::InvalidStoredState)?,
+            )
+        } else {
+            None
+        };
         let (session, _) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
                 .current_session_at(command.game_session_id)
@@ -73,8 +111,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(state) = runtime.house_actor_state(actor, command.game_session_id) else {
                 return Ok(UseOutcome::rejected());
             };
-            if self.movement_cells.scope().world_id != self.world_id
-                || self.movement_cells.scope().generation_digest
+            if self.movement_cells().scope().world_id != self.world_id
+                || self.movement_cells().scope().generation_digest
                     != runtime.content_pin().server_artifact_digest()
                 || state.scope != current.runtime_scope
                 || state.generation != current.scope_ownership_generation
@@ -86,57 +124,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(house) = HouseId::new(self.world_id, &state.house) else {
                 return Ok(UseOutcome::rejected());
             };
-            let Some((pos, ordinal)) = crate::map::view::placement_of(placement_key) else {
+            let Some(head) = self.bed_head_for_item(
+                &runtime,
+                &state.house,
+                state.position,
+                target,
+                changes.as_deref(),
+            ) else {
                 return Ok(UseOutcome::rejected());
             };
-            if state.position.floor != -i16::from(pos.floor)
-                || state.position.x.abs_diff(i32::from(pos.x)) > 1
-                || state.position.y.abs_diff(i32::from(pos.y)) > 1
-            {
-                return Ok(UseOutcome::rejected());
+            if let Some(revision) = expected_revision {
+                use crate::map::view::MapFacts as _;
+                let Some(map) = self.bundle_map() else {
+                    return Ok(UseOutcome::rejected());
+                };
+                let base = map.facts.base_only();
+                let facts = super::world_map::DecoratedFacts {
+                    base: &base,
+                    changes: changes.as_deref().unwrap_or_default(),
+                };
+                if facts.object_revision(placement_key) != revision {
+                    return Ok(UseOutcome::rejected());
+                }
             }
-            let Some(index) =
-                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
-            else {
-                return Ok(UseOutcome::rejected());
-            };
-            let head = if let Some(map) = self.bundle_map() {
-                // A map handle carries the bundle digest, not the gameplay artifact digest.
-                if bundle_digest != map.overlay.base().digest() {
-                    return Ok(UseOutcome::rejected());
-                }
-                let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
-                    return Ok(UseOutcome::rejected());
-                };
-                let Some(head) = bundle_bed_head(map, native, index, &state.house, pos, ordinal)
-                else {
-                    return Ok(UseOutcome::rejected());
-                };
-                head
-            } else {
-                if bundle_digest != runtime.content_pin().server_artifact_digest() {
-                    return Ok(UseOutcome::rejected());
-                }
-                let cell = LogicalCell {
-                    x: i32::from(pos.x),
-                    y: i32::from(pos.y),
-                    z: -i32::from(pos.floor),
-                };
-                let Some(placement) = self
-                    .movement_cells
-                    .house_tiles()
-                    .house_at(self.movement_cells.scope(), cell)
-                    .ok()
-                    .flatten()
-                    .filter(|p| p.house().key == state.house)
-                else {
-                    return Ok(UseOutcome::rejected());
-                };
-                let Some(head) = placement.bed_head_at(cell) else {
-                    return Ok(UseOutcome::rejected());
-                };
-                head
-            };
             let presence = NativeBedPresence {
                 world: self.world_id,
                 session: command.game_session_id,
@@ -171,17 +181,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 house: saved_house.house.clone(),
                 head,
                 sex,
-                skill: intent.skill,
+                skill,
                 final_position: Some(final_position),
             },
         };
-        super::bed_sleep::finish_owner_with_house_position(
+        super::bed_sleep::finish_skill_with_house_position(
             command,
-            intent,
+            skill,
             owner,
             Some((saved_house, super::canonical_uuid(&account))),
         )
         .await
+    }
+
+    /// Read-only selection admission. The ordinary sleep owner repeats this proof
+    /// and independently checks Premium, combat, ACL, occupancy and durable fences.
+    pub(super) fn bed_modal_target(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        admitted: connection::AdmittedSession,
+        target: ItemKey,
+        changes: &[super::world_map::HouseBaseMapEntry],
+    ) -> bool {
+        let Some(actor) = admitted.runtime_actor else {
+            return false;
+        };
+        let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) else {
+            return false;
+        };
+        self.bed_head_for_item(runtime, &state.house, state.position, target, Some(changes))
+            .is_some()
+    }
+
+    fn bed_head_for_item(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        house: &str,
+        position: crate::foundation::LocalPosition,
+        target: ItemKey,
+        changes: Option<&[super::world_map::HouseBaseMapEntry]>,
+    ) -> Option<LogicalCell> {
+        let ItemKey::MapBase {
+            placement_key,
+            bundle_digest,
+            reset_epoch,
+        } = target
+        else {
+            return None;
+        };
+        if reset_epoch != self.reset_epoch
+            || self.movement_cells().scope().world_id != self.world_id
+            || self.movement_cells().scope().generation_digest
+                != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        let (pos, ordinal) = crate::map::view::placement_of(placement_key)?;
+        if position.floor != -i16::from(pos.floor)
+            || position.x.abs_diff(i32::from(pos.x)) > 1
+            || position.y.abs_diff(i32::from(pos.y)) > 1
+        {
+            return None;
+        }
+        let index = super::item_ref_admission::pinned_index(runtime, self.active_generation)?;
+        if let Some(map) = self.bundle_map() {
+            // A map handle carries the bundle digest, not the gameplay artifact digest.
+            if bundle_digest != map.overlay.base().digest() {
+                return None;
+            }
+            let native = self.active_generation?.native_gameplay()?;
+            if let Some(changes) = changes {
+                let base = map.facts.base_only();
+                let facts = super::world_map::DecoratedFacts {
+                    base: &base,
+                    changes,
+                };
+                return bundle_bed_head(map, &facts, native, index, house, pos, ordinal);
+            }
+            return bundle_bed_head(map, &map.facts, native, index, house, pos, ordinal);
+        }
+        if bundle_digest != runtime.content_pin().server_artifact_digest() {
+            return None;
+        }
+        let cell = LogicalCell {
+            x: i32::from(pos.x),
+            y: i32::from(pos.y),
+            z: -i32::from(pos.floor),
+        };
+        self.movement_cells()
+            .house_tiles()
+            .house_at(self.movement_cells().scope(), cell)
+            .ok()
+            .flatten()
+            .filter(|placement| placement.house().key == house)?
+            .bed_head_at(cell)
     }
 }
 
@@ -218,12 +311,12 @@ impl crate::durability::spell_house_abi::HousePresenceProof for NativeBedPresenc
 
 fn bundle_bed_part<'a>(
     map: &crate::map::boot::BundleMap,
+    facts: &impl crate::map::view::MapFacts,
     native: &'a crate::content::native_gameplay::NativeGameplayState,
     index: &crate::content::item_ref::ItemDefinitionIndex,
     pos: crate::map::overlay::TilePos,
     ordinal: u8,
 ) -> Option<&'a crate::content::ReferenceItemBed> {
-    use crate::map::view::MapFacts as _;
     let base = map.overlay.base();
     let tile = base.tile(pos.x, pos.y, pos.floor)?;
     let id = *tile
@@ -238,11 +331,11 @@ fn bundle_bed_part<'a>(
         .overlay
         .tile(pos)
         .is_some_and(|tile| tile.is_hidden(ordinal))
-        || map.facts.base_hidden(key)
+        || facts.base_hidden(key)
     {
         return None;
     }
-    let facts = map.facts.base_entry(pos, ordinal, id)?;
+    let facts = facts.base_entry(pos, ordinal, id)?;
     if facts.pickupable {
         return None;
     }
@@ -259,6 +352,7 @@ fn bundle_bed_part<'a>(
 
 fn bundle_bed_head(
     map: &crate::map::boot::BundleMap,
+    facts: &impl crate::map::view::MapFacts,
     native: &crate::content::native_gameplay::NativeGameplayState,
     index: &crate::content::item_ref::ItemDefinitionIndex,
     house: &str,
@@ -273,7 +367,7 @@ fn bundle_bed_head(
     if map.facts.house_id(pos) != Some(source) {
         return None;
     }
-    let part = bundle_bed_part(map, native, index, pos, ordinal)?;
+    let part = bundle_bed_part(map, facts, native, index, pos, ordinal)?;
     let (dx, dy, opposite) = match part.partner_direction {
         Direction::North => (0, -1, Direction::South),
         Direction::East => (1, 0, Direction::West),
@@ -298,7 +392,14 @@ fn bundle_bed_head(
         .filter(|depth| **depth == 0)
         .enumerate()
         .filter_map(|(ordinal, _)| {
-            let other = bundle_bed_part(map, native, index, partner, u8::try_from(ordinal).ok()?)?;
+            let other = bundle_bed_part(
+                map,
+                facts,
+                native,
+                index,
+                partner,
+                u8::try_from(ordinal).ok()?,
+            )?;
             (other.part != part.part && other.partner_direction == opposite).then_some(other)
         });
     matches.next()?;

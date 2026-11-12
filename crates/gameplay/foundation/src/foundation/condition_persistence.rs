@@ -42,6 +42,9 @@ impl ConditionStore<String> {
             saved.provenance.source_kind = ConditionSourceKind::Restored;
             saved.provenance.source = None;
             saved.provenance.lineage = None;
+            // Logout deliberately drops historical attacker display as well as
+            // authority. Old schema1 snapshots omit this optional field unchanged.
+            saved.provenance.historical_source = None;
             conditions.push(saved);
         }
         serde_json::to_value(SavedConditions {
@@ -93,6 +96,12 @@ impl ConditionStore<String> {
                 || instance.ends_at == Some(0)
                 || (instance.tick_debt_us > 0 && instance.next_tick_at != Some(0))
                 || (instance.immediate_debt_us > 0 && instance.immediate_due != Some(0))
+                || instance.regeneration_phase.is_some_and(|phase| {
+                    !matches!(definition.values, ConditionValues::SpellRegeneration { .. })
+                        || instance.next_tick_at.is_none()
+                        || phase.health_last_age_us > instance.elapsed_before_start
+                        || phase.mana_last_age_us > instance.elapsed_before_start
+                })
                 || !instance.provenance.is_unattributed()
                 || instance.provenance.definition_key != definition.key
                 || instance.provenance.definition_revision != definition.revision

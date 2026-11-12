@@ -37,3 +37,40 @@ fn the_entry_door_semantic_placement_draws_a_marker() -> Result<(), BatchError> 
     assert_eq!(view.scene().sprites().len(), 2);
     Ok(())
 }
+
+#[test]
+fn overlay_snapshot_clears_stale_markers_and_keeps_later_deltas() -> Result<(), BatchError> {
+    for step_between in [false, true] {
+        let mut view = view()?;
+        let (link, _commands, outbox) = play_channel();
+        outbox.push(vec![SessionEvent::WorldObjectOverlay(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 1,
+            new_revision: 2,
+            value: entry(key(103, 200, 0, 0)),
+        })]);
+        if step_between {
+            outbox.stepped(moved_to(100, 200, 0));
+        }
+        outbox.push(vec![
+            SessionEvent::WorldObjectOverlaySnapshot(AppliedDelta {
+                server_sequence: 2,
+                base_revision: 2,
+                new_revision: 9,
+                value: vec![],
+            }),
+            SessionEvent::WorldObjectOverlay(AppliedDelta {
+                server_sequence: 3,
+                base_revision: 9,
+                new_revision: 10,
+                value: entry(key(104, 200, 0, 0)),
+            }),
+        ]);
+        view.tick(&link).map_err(|_| BatchError::InvalidView)?;
+        assert_eq!(view.marker_count(), 1);
+        assert!(view.markers.contains_key(&key(104, 200, 0, 0)));
+        assert!(!view.markers.contains_key(&key(102, 199, 0, 0)));
+        assert!(!view.markers.contains_key(&key(103, 200, 0, 0)));
+    }
+    Ok(())
+}

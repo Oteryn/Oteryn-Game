@@ -3,7 +3,14 @@ use oteryn_foundation::ProcessGeneration;
 use std::fmt::{self, Display, Formatter};
 
 mod batch;
+#[cfg(windows)]
+mod capture;
+mod graphics;
+#[cfg(windows)]
+pub use capture::CapturedFrame;
+pub mod lighting;
 mod resources;
+pub use graphics::{ANTIALIASING, Antialiasing, GRAPHICS_ENGINE, GraphicsEngine, PresentationMode};
 
 #[cfg(windows)]
 mod scene_gpu;
@@ -15,12 +22,11 @@ pub mod world;
 
 pub use batch::{
     AtlasImage, AtlasPage, BatchError, CellKey, CellSlot, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS,
-    MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES,
-    QuadBatches, QuadInstance, SpriteBatch, SpriteFrame, TileBatch, TileView, VERTICES_PER_QUAD,
-    instance_bytes,
+    MAX_PAGE_UPLOAD_BYTES, MAX_PAGE_UPLOAD_CELLS, MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS,
+    PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES, QuadBatches, QuadInstance, SpriteBatch,
+    SpriteFrame, TileBatch, TileView, VERTICES_PER_QUAD, instance_bytes, lit_atlas, weather_atlas,
 };
 pub use oteryn_client_domain::TileCoord;
-pub use resources::ResourceCache;
 
 #[cfg(windows)]
 pub use windows::WindowsRenderer;
@@ -190,77 +196,8 @@ pub enum SurfaceDecision {
     Close,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RendererCounter {
-    PresentedFrames,
-    ReconfigureAttempts,
-}
-
-impl Display for RendererCounter {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::PresentedFrames => "presented-frames",
-            Self::ReconfigureAttempts => "reconfigure-attempts",
-        })
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RendererError {
-    StaleGeneration {
-        expected: ProcessGeneration,
-        received: ProcessGeneration,
-    },
-    InvalidTransition {
-        phase: SurfacePhase,
-        event: SurfaceEventKind,
-    },
-    CounterOverflow {
-        counter: RendererCounter,
-    },
-    ReconfigureLimitExceeded {
-        max_attempts: u8,
-    },
-    SurfaceCreation,
-    AdapterUnavailable,
-    DeviceRequest,
-    SurfaceUnsupported,
-    Validation,
-    BackendFatal,
-}
-
-impl Display for RendererError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::StaleGeneration { expected, received } => write!(
-                formatter,
-                "renderer rejected stale process generation {received}; current generation is {expected}"
-            ),
-            Self::InvalidTransition { phase, event } => {
-                write!(formatter, "renderer cannot apply {event} while {phase}")
-            }
-            Self::CounterOverflow { counter } => {
-                write!(formatter, "renderer {counter} counter reached its bound")
-            }
-            Self::ReconfigureLimitExceeded { max_attempts } => write!(
-                formatter,
-                "renderer exceeded {max_attempts} consecutive surface recovery attempts"
-            ),
-            Self::SurfaceCreation => formatter.write_str("renderer surface creation failed"),
-            Self::AdapterUnavailable => {
-                formatter.write_str("renderer found no compatible DX12 adapter")
-            }
-            Self::DeviceRequest => formatter.write_str("renderer device creation failed"),
-            Self::SurfaceUnsupported => {
-                formatter.write_str("renderer surface is unsupported by the adapter")
-            }
-            Self::Validation => formatter.write_str("renderer validation failed"),
-            Self::BackendFatal => formatter.write_str("renderer backend failed"),
-        }
-    }
-}
-
-impl std::error::Error for RendererError {}
+mod error;
+pub use error::{RendererCounter, RendererError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SurfaceState {
@@ -451,3 +388,5 @@ impl SurfaceState {
 
 #[cfg(test)]
 mod tests;
+
+pub use batch::name_text;

@@ -61,3 +61,28 @@ pub(super) fn apply<S: SessionStream>(
         value,
     }))
 }
+
+impl<S: SessionStream> Session<S> {
+    /// The latest validated full map snapshot, including any mid-session replacement.
+    pub fn world_map_snapshot(&self) -> Option<WorldMapViewSnapshot> {
+        self.gated_snapshot(STATE_DOMAIN_WORLD_MAP_VIEW)
+            .and_then(|snapshot| decode_world_map_snapshot(&snapshot.payload).ok())
+    }
+}
+
+/// Publish a whole replacement rather than letting the native reducer merge old tiles into it.
+pub(super) fn replacement_event(
+    sequence: u64,
+    base_revision: u64,
+    revision: u64,
+    payload: &[u8],
+) -> Result<SessionEvent, SessionError> {
+    let value = decode_world_map_snapshot(payload)
+        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+    Ok(SessionEvent::WorldMapSnapshot(AppliedDelta {
+        server_sequence: sequence,
+        base_revision,
+        new_revision: revision,
+        value,
+    }))
+}

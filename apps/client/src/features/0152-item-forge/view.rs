@@ -5,8 +5,16 @@ impl PlayLink {
         lock(&self.mailbox).item_forge.clone()
     }
 }
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 #[path = "native.rs"]
-mod native;
+pub(in crate::play) mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+#[cfg(windows)]
+pub(in crate::play) fn poll_resource_dialog(
+    mailbox: &crate::play::mailbox::SharedMailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+) {
+    native::open_resource_dialog(mailbox, commands);
+}

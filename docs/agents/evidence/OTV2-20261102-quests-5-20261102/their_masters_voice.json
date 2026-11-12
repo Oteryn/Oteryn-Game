@@ -1,0 +1,621 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "their_masters_voice",
+    "elements": 15,
+    "auto": 0,
+    "manual": 15,
+    "statuses": {
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 1,
+      "LEFT_OUT": 14
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 4,
+      "reply_paragraphs": 4,
+      "conversations": 1
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Servant Sentry — podjęcie pomocy",
+      "pattern": "P09",
+      "trigger": "slime",
+      "condition": "interakcja NPC",
+      "effect": "topic=1; prośba yes",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:80",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/their_masters_voice.json"
+      ],
+      "reason": "Pełne literalne pytanie o pomoc i istniejący wariant keyword SlimeGobblerReceived są przygotowane jako DATA. Ich uruchomienie wymaga nowego wspólnego opt-in/routingu, którego koordynator zabronił w tej partii.",
+      "missing_owner_function": "NpcTalkBook opt-in / quest NPC dispatch",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": {
+        "prepared_input": "their_masters_voice.npc.json",
+        "runtime": false,
+        "scope": "Source-exact full replies; literal single-keyword messages only; item/foreign/greet effect branches are not reduced to SET."
+      },
+      "left_out": {
+        "reason": "Pełne literalne pytanie o pomoc i istniejący wariant keyword SlimeGobblerReceived są przygotowane jako DATA. Ich uruchomienie wymaga nowego wspólnego opt-in/routingu, którego koordynator zabronił w tej partii.",
+        "dependency": "NpcTalkBook opt-in / quest NPC dispatch",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:80",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 2,
+      "step": "Servant Sentry — gobbler",
+      "pattern": "P11",
+      "trigger": "yes",
+      "condition": "topic=1; brak guardu wcześniejszej nagrody",
+      "effect": "SlimeGobblerReceived=1; daj12077×1; topic=0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:83",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przekazanie gobblera12077 i SlimeGobblerReceived=1 jest nierozdzielne. Bez atomowego ownera nagrody nie zapisujemy samej flagi ani nie wydajemy przedmiotu poza receiptem.",
+      "missing_owner_function": "NPC exchange/reward owner 0831/0832",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Przekazanie gobblera12077 i SlimeGobblerReceived=1 jest nierozdzielne. Bez atomowego ownera nagrody nie zapisujemy samej flagi ani nie wydajemy przedmiotu poza receiptem.",
+        "dependency": "NPC exchange/reward owner 0831/0832",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/servant_sentry.lua:83",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 3,
+      "step": "Slime Gobbler — rejestracja",
+      "pattern": "P02",
+      "trigger": "item12077",
+      "condition": "target w12059…12063",
+      "effect": "delegacja Gobbler_onUse",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/actions_slime_gobbler.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gobbler usuwa world slime i jednocześnie aktualizuje osobiste wyczerpanie oraz wspólny licznik wydarzenia. Nie ma istniejącego receipt ownera tej konsumpcji i świata; nie przenosimy jej do player-only SET.",
+      "missing_owner_function": "UseWith world-item removal + world event state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Gobbler usuwa world slime i jednocześnie aktualizuje osobiste wyczerpanie oraz wspólny licznik wydarzenia. Nie ma istniejącego receipt ownera tej konsumpcji i świata; nie przenosimy jej do player-only SET.",
+        "dependency": "UseWith world-item removal + world event state",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/actions_slime_gobbler.lua:2",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 4,
+      "step": "Gobbler: konsumpcja śluzu",
+      "pattern": "P02/P17",
+      "trigger": "Gobbler_onUse",
+      "condition": "target12059…12063; exhaust[player]>=now odrzuca",
+      "effect": "exhaust=now+5s; XP20; target→12065; dopisz pozycję i uid gracza",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:111",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gobbler usuwa world slime i jednocześnie aktualizuje osobiste wyczerpanie oraz wspólny licznik wydarzenia. Nie ma istniejącego receipt ownera tej konsumpcji i świata; nie przenosimy jej do player-only SET.",
+      "missing_owner_function": "UseWith world-item removal + world event state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Gobbler usuwa world slime i jednocześnie aktualizuje osobiste wyczerpanie oraz wspólny licznik wydarzenia. Nie ma istniejącego receipt ownera tej konsumpcji i świata; nie przenosimy jej do player-only SET.",
+        "dependency": "UseWith world-item removal + world event state",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:111",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 5,
+      "step": "Kwalifikacja uczestnika",
+      "pattern": "P30",
+      "trigger": "po każdym usunięciu śluzu",
+      "condition": "co najmniej25 śluzów tego uid w tej próbie",
+      "effect": "dopisz uid do valid_participants",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:129",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Próg25 śluzów kwalifikuje gracza do wspólnego wydarzenia, przechowując identyfikator w zbiorze validParticipants. Sam track gracza nie reprezentuje tego zbioru i cyklu życia spotkania.",
+      "missing_owner_function": "World event participant ownership",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Próg25 śluzów kwalifikuje gracza do wspólnego wydarzenia, przechowując identyfikator w zbiorze validParticipants. Sam track gracza nie reprezentuje tego zbioru i cyklu życia spotkania.",
+        "dependency": "World event participant ownership",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:129",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 6,
+      "step": "Początek odliczania i fal",
+      "pattern": "P16/P27",
+      "trigger": "pierwszy / setny usunięty śluz",
+      "condition": "pierwszy→timer; >=100 i current_wave=0→fala",
+      "effect": "revertQuest po60min; startServantWave",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:144",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:144",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 7,
+      "step": "Fala sług",
+      "pattern": "P27",
+      "trigger": "startServantWave / śmierć ostatniego sługi",
+      "condition": "current_wave !=25 lub mageSpawned=true",
+      "effect": "wave++; 25 pozycji; diamond roll<=10, golden<=40, iron<=100",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:69",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:69",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 8,
+      "step": "Mad Mage po falach",
+      "pattern": "P27",
+      "trigger": "startServantWave",
+      "condition": "current_wave=25 i not mageSpawned",
+      "effect": "spawn Mad Mage losowo w jednej z3 pozycji; MageDeath; mageSpawned=true",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:60",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:60",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 9,
+      "step": "Śmierć sługi — adapter",
+      "pattern": "P07",
+      "trigger": "ServantDeath",
+      "condition": "wydarzenie zarejestrowane przy spawnie",
+      "effect": "delegacja Servant_onDeath",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/creaturescripts_servant_death.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/creaturescripts_servant_death.lua:2",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 10,
+      "step": "Śmierć ostatniego sługi — kolejna fala",
+      "pattern": "P27",
+      "trigger": "Servant_onDeath",
+      "condition": "usuń matching uid z current_servants; pusta lista",
+      "effect": "startServantWave",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:152",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:152",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 11,
+      "step": "Śmierć maga — adapter",
+      "pattern": "P07",
+      "trigger": "MageDeath",
+      "condition": "wydarzenie przy spawnie",
+      "effect": "delegacja Mage_onDeath",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/creaturescripts_mage_death.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/creaturescripts_mage_death.lua:2",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 12,
+      "step": "Śmierć maga — niedokończone rozliczenie",
+      "pattern": "P30",
+      "trigger": "Mage_onDeath",
+      "condition": "killer.uid w valid_participants",
+      "effect": "brak nagrody: komentarz add achievements if needed",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:166",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mage_onDeath ma jedynie komentarz o ewentualnym achievement, bez wartości, nagrody i reguły beneficjentów. Nie wymyślamy brakującego rozliczenia.",
+      "missing_owner_function": "Missing donor reward rule",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589434967",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mage_onDeath ma jedynie komentarz o ewentualnym achievement, bez wartości, nagrody i reguły beneficjentów. Nie wymyślamy brakującego rozliczenia.",
+        "dependency": "Missing donor reward rule",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:166",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589434967"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 13,
+      "step": "Reset po godzinie",
+      "pattern": "P16/P25",
+      "trigger": "revertQuest",
+      "condition": "timer60min od1. śluzu",
+      "effect": "usuń current_servants/current_mage; przywróć śluzy; wave=0; nie czyści mageSpawned/participants/exhaust",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:87",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/their_masters_voice.lua:87",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 14,
+      "step": "Wejście — brak helpera",
+      "pattern": "P03",
+      "trigger": "aid47710",
+      "condition": "NIEZNANE: Entrance_onStepIn niezdefiniowane w donorze",
+      "effect": "nie można ustalić bez zgody/alternatywnego źródła",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/movements_entrance.lua:4",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Rejestracja aid47710 odwołuje się do Entrance_onStepIn, którego nie ma w przypiętych skryptach i bibliotece. Brakuje źródłowego guardu i destination.",
+      "missing_owner_function": "Missing donor entry handler",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589434428",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Rejestracja aid47710 odwołuje się do Entrance_onStepIn, którego nie ma w przypiętych skryptach i bibliotece. Brakuje źródłowego guardu i destination.",
+        "dependency": "Missing donor entry handler",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/movements_entrance.lua:4",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589434428"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    },
+    {
+      "row": 15,
+      "step": "Cykliczny dodatkowy Mad Mage",
+      "pattern": "P15",
+      "trigger": "GlobalEvent14400000ms",
+      "condition": "brak guardu fazy/occupancy",
+      "effect": "spawn Mad Mage w jednej z7 pozycji; setReward(true); nil użyte przed sprawdzeniem",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/globalevents_their_master_voice_mad_mage.lua:12",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+      "missing_owner_function": "BossActivity/WorldBundle temporal encounter owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "source_implementation": null,
+      "left_out": {
+        "reason": "Mechanika obejmuje wspólny licznik100, fale sług, śmierci i przywracanie świata po czasie. Źródłowa akcja tego wiersza musi należeć do tego samego encounter ownera; koordynator odłożył nowe fale, spawn/cleanup i timery do wspólnego PR.",
+        "dependency": "BossActivity/WorldBundle temporal encounter owner",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/their_masters_voice/globalevents_their_master_voice_mad_mage.lua:12",
+        "question": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589966703"
+        ],
+        "answer": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+        ],
+        "contract": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84"
+      }
+    }
+  ]
+}

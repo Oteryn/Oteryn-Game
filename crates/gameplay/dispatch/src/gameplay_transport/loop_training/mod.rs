@@ -1,10 +1,13 @@
 //! LOOP-TRAIN-1 server composition. No client-selected skill, rate, clock or charge count.
 mod exercise;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use exercise::EXERCISE_READBACK_BARRIER;
 pub(super) mod wire;
 use super::capabilities::OfferedCapability;
 use super::connection::{AdmittedSession, FirstEntryOutcome, UseCommand};
 use super::{ComposedFreshAdmission, item_view::ItemKey};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::exercise_training::ExerciseDummyKey;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::loop_training::{TrainingContext, TrainingLogout};
@@ -98,20 +101,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         expected: CurrentCharacterItemFence,
     ) -> Option<CurrentCharacterGameplayFence> {
+        self.training_fence_durable(expected).await.ok().flatten()
+    }
+    /// Only a successfully read different authority proves this trainer stale.
+    /// Holder contention and failed reads leave its retained work uncertain.
+    async fn training_fence_durable(
+        &self,
+        expected: CurrentCharacterItemFence,
+    ) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
+        use crate::durability::character_authority::CharacterAuthorityError;
         let current = FreshAdmissionStore::from_root(self.root.clone())
             .current_session(expected.game_session_id)
-            .await
-            .ok()?;
-        if super::item_fence_of(current) != Some(expected) {
-            return None;
+            .await?;
+        if current.session_state() == crate::foundation::GameSessionState::Terminal
+            || super::item_fence_of(current) != Some(expected)
+        {
+            return Ok(None);
         }
         let revision = self
             .root
             .read_current_character(self.character, expected.character_id)
             .await
-            .ok()?
+            .map_err(|error| match error {
+                CharacterAuthorityError::Unavailable(error) => error,
+                CharacterAuthorityError::Rejected
+                | CharacterAuthorityError::Conflict
+                | CharacterAuthorityError::NameUnavailable => {
+                    crate::durability::DurabilityError::CommitRejected
+                }
+            })?
             .revision;
-        Some(CurrentCharacterGameplayFence {
+        Ok(Some(CurrentCharacterGameplayFence {
             expected_character_revision: revision,
             character_id: expected.character_id,
             game_session_id: expected.game_session_id,
@@ -119,7 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             character_lease_generation: expected.character_lease_generation,
             runtime_scope: expected.runtime_scope,
             scope_ownership_generation: expected.scope_ownership_generation,
-        })
+        }))
     }
     pub(in crate::gameplay_transport) async fn admit_loop_training(
         &self,
@@ -279,7 +299,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         key: ItemKey,
         range: u32,
-    ) -> Option<String> {
+    ) -> Option<TrainingTarget> {
         use crate::map::view::MapFacts;
         let fence = command.item_fence?;
         let mut runtime = self.runtime.lock().await;
@@ -301,7 +321,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
-        let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+        let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
         let ItemKey::MapBase {
             bundle_digest,
             placement_key,
@@ -322,10 +342,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal 201189f exercise_training_weapons.lua:177-185 permits a house
         // dummy only while the player and dummy are in that same house scope.
         let house_at = |tile: crate::map::overlay::TilePos| {
-            self.movement_cells
+            self.movement_cells()
                 .house_tiles()
                 .house_at(
-                    self.movement_cells.scope(),
+                    self.movement_cells().scope(),
                     crate::content::LogicalCell {
                         x: i32::from(tile.x),
                         y: i32::from(tile.y),
@@ -336,7 +356,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flatten()
                 .map(|placement| placement.house().key.as_str())
         };
-        if !same_training_house(house_at(player), house_at(pos)) {
+        let dummy_house = house_at(pos);
+        if !same_training_house(house_at(player), dummy_house) {
             return None;
         }
         if player.floor != pos.floor
@@ -399,7 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let definition = super::item_look::typed_definition(index, reference)?;
         // Both actor and target are server-qualified PZ cells. Unknown tile facts fail closed.
-        let scope = self.movement_cells.scope();
+        let scope = self.movement_cells().scope();
         for cell in [
             crate::content::LogicalCell {
                 x: at.at.x,
@@ -413,7 +434,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         ] {
             if !self
-                .movement_cells
+                .movement_cells()
                 .spell_tiles()
                 .lookup(scope, cell)
                 .ok()?
@@ -423,7 +444,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
         }
-        Some(definition.production_key)
+        Some(TrainingTarget {
+            production_key: definition.production_key,
+            house_dummy: house_dummy_key(
+                dummy_house,
+                self.world_id,
+                bundle_digest,
+                placement_key,
+                reset_epoch,
+            ),
+        })
     }
 
     pub(in crate::gameplay_transport) async fn offline_training(
@@ -442,10 +472,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return Some(TrainingResult::REFUSED);
         };
-        let Some(key) = self.training_target(actor, command, target, 1).await else {
+        let Some(target) = self.training_target(actor, command, target, 1).await else {
             return Some(TrainingResult::REFUSED);
         };
-        let Some(family) = context.rates.statues.get(&key).copied() else {
+        let Some(family) = context.rates.statues.get(&target.production_key).copied() else {
             return Some(TrainingResult::REFUSED);
         };
         let Some(premium) = self.premium_coordinator else {
@@ -529,12 +559,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+struct TrainingTarget {
+    production_key: String,
+    house_dummy: Option<ExerciseDummyKey>,
+}
+
+fn house_dummy_key(
+    house: Option<&str>,
+    world_id: crate::foundation::WorldId,
+    bundle_digest: [u8; 32],
+    placement_key: u64,
+    reset_epoch: u64,
+) -> Option<ExerciseDummyKey> {
+    house.map(|_| ExerciseDummyKey {
+        world_id,
+        bundle_digest,
+        placement_key,
+        reset_epoch,
+    })
+}
+
 fn same_training_house(player_house: Option<&str>, dummy_house: Option<&str>) -> bool {
     player_house == dummy_house
 }
 
 #[cfg(test)]
 mod donor_house_tests {
+    use crate::foundation::WorldId;
+
     #[test]
     fn exercise_dummy_requires_player_and_dummy_in_the_same_house_class() {
         assert!(super::same_training_house(None, None));
@@ -545,6 +597,20 @@ mod donor_house_tests {
             Some("house-a"),
             Some("house-b")
         ));
+    }
+
+    #[test]
+    fn training_target_house_dummy_key_only_for_house_tiles() -> Result<(), &'static str> {
+        let world_id = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .map_err(|_| "world")?;
+        assert_eq!(super::house_dummy_key(None, world_id, [2; 32], 3, 4), None);
+        let key =
+            super::house_dummy_key(Some("house"), world_id, [2; 32], 3, 4).ok_or("house key")?;
+        assert_eq!(key.world_id, world_id);
+        assert_eq!(key.bundle_digest, [2; 32]);
+        assert_eq!(key.placement_key, 3);
+        assert_eq!(key.reset_epoch, 4);
+        Ok(())
     }
 }
 

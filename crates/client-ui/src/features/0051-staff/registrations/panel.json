@@ -1,0 +1,7 @@
+{
+  "mechanic": "0051-staff",
+  "kind": "panels",
+  "id": "0051-staff-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

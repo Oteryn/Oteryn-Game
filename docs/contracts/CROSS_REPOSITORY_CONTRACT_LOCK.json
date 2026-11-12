@@ -74,7 +74,7 @@
       "canonical_contract_path": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
       "schema_path": "docs/contracts/protocol-oteryn/v1/foundation.proto",
       "schema_revision": 1,
-      "schema_sha256": "6e1c614661e72daac529be9d0ec06317201b916cd47ae17ff1590da5c7205ebe",
+      "schema_sha256": "61d6fabe6f0733eed983fcd2e753e816036844c7f05ca1f9514ba090f144ed38",
       "registry_path": "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json",
       "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
       "source_pull_request": 94,
@@ -322,6 +322,96 @@
       ],
       "production_enabled": false,
       "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A). Accepted by the owner (D1004, D1007) at the pinned revision; the later contract edit that records the acceptance (status line, section 14 step 1, section 15) is editorial and changes no member, path, bound, code or response. Implementation and the Platform consumer stay disabled by default until section 14 step 4 (U-CC7, U-CC9). Acceptance locks the Game-side wire only; Platform implementation needs its own task allocation and owner decisions in the #1622 STATE (for the Bazaar: D1004, D1005, D1007)."
+    },
+    {
+      "coordination_id": "PLAT3-CONTRACTS-BAZAAR-AUTHORITY",
+      "contract_name": "oteryn-game-bazaar-authority-v1",
+      "status": "PENDING_CANONICAL_MERGE",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_contract_path": "docs/contracts/OTERYN_GAME_BAZAAR_AUTHORITY_V1.md",
+      "pending_pull_request": 3010,
+      "contract_status": "CANDIDATE_REVISION_1_NOT_ACCEPTED",
+      "accepted_for_fnd02": false,
+      "production_enabled": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANDIDATE_CONTRACT_NOT_IMPLEMENTED"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "ADAPTERS_DEFAULT_OFF_NOT_QUALIFIED"
+        }
+      ],
+      "rollout_order": [
+        "independent review and owner acceptance of candidate and source mappings",
+        "supply real review PR then pin actual merged canonical SHA, revision and digest",
+        "implement Game producer and qualify Platform adapters with flags default off",
+        "shared exact-head interrupted-flow qualification then separate environment enablement"
+      ],
+      "notes": "Candidate opened for independent review. Platform evidence: efdd058839cca2b922391e9a8323236e94e78834."
+    },
+    {
+      "coordination_id": "PLAT3-CONTRACTS-ACCOUNT-DELETION-FINALIZATION",
+      "contract_name": "oteryn-game-account-deletion-finalization-v1",
+      "status": "PENDING_CANONICAL_MERGE",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_contract_path": "docs/contracts/OTERYN_GAME_ACCOUNT_DELETION_FINALIZATION_V1.md",
+      "pending_pull_request": 3010,
+      "contract_status": "CANDIDATE_REVISION_1_NOT_ACCEPTED",
+      "accepted_for_fnd02": false,
+      "production_enabled": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "GAME_PRODUCER_IMPLEMENTED_PENDING_CROSS_REPOSITORY_QUALIFICATION"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "ADAPTERS_DEFAULT_OFF_NOT_QUALIFIED"
+        }
+      ],
+      "rollout_order": [
+        "independent review and owner acceptance of candidate and source mappings",
+        "supply real review PR then pin actual merged canonical SHA, revision and digest",
+        "Game producer defaults ON per owner 2026-11-06; qualify Platform adapters independently",
+        "shared exact-head interrupted-flow qualification then separate environment enablement"
+      ],
+      "notes": "Game configuration and lifecycle-read extension: fixtures/account-deletion/CONTRACT-NOTES.md. Candidate acceptance remains separate. Platform evidence: efdd058839cca2b922391e9a8323236e94e78834."
+    },
+    {
+      "coordination_id": "PLAT3-CONTRACTS-WORLD-EVENT-OUTCOMES-AND-GUILD-SEASON",
+      "contract_name": "oteryn-game-world-event-outcomes-and-guild-season-v1",
+      "status": "PENDING_CANONICAL_MERGE",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_contract_path": "docs/contracts/OTERYN_GAME_WORLD_EVENT_OUTCOMES_AND_GUILD_SEASON_V1.md",
+      "pending_pull_request": 3010,
+      "contract_status": "CANDIDATE_REVISION_1_NOT_ACCEPTED",
+      "accepted_for_fnd02": false,
+      "production_enabled": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANDIDATE_CONTRACT_NOT_IMPLEMENTED"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "ADAPTERS_DEFAULT_OFF_NOT_QUALIFIED"
+        }
+      ],
+      "rollout_order": [
+        "independent review and owner acceptance of candidate and source mappings",
+        "supply real review PR then pin actual merged canonical SHA, revision and digest",
+        "implement Game producer and qualify Platform adapters with flags default off",
+        "shared exact-head interrupted-flow qualification then separate environment enablement"
+      ],
+      "notes": "Candidate opened for independent review. Platform evidence: efdd058839cca2b922391e9a8323236e94e78834."
     }
   ]
 }

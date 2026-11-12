@@ -13,7 +13,7 @@ pub(super) fn run_case(
         return Ok(());
     };
     std::thread::Builder::new()
-        .stack_size(16 * 1024 * 1024)
+        .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
             let rt = crate::bestiary_postgres_harness::runtime()
                 .map_err(|error| format!("{error:?}"))?;
@@ -66,9 +66,17 @@ pub(super) fn cell(x: i32) -> MovementLocalPosition {
     }
 }
 
-pub(super) fn dependencies(
+pub(in super::super::super) fn dependencies(
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
+) -> TestResult<(Dependencies, ExactActorRef)> {
+    dependencies_with_capacity(active, pin, 8)
+}
+
+pub(super) fn dependencies_with_capacity(
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    capacity: usize,
 ) -> TestResult<(Dependencies, ExactActorRef)> {
     let mut deps = Dependencies::new()?;
     deps.room = pin.qualified_room().clone();
@@ -91,7 +99,7 @@ pub(super) fn dependencies(
         1,
         1,
         "runtime-scope-assignment:1",
-        8,
+        capacity,
         channel_pin,
     )
     .map_err(debug)?;

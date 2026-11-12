@@ -1,0 +1,1263 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.hidden_threats",
+  "quest": "oteryn:quest.tibia_tales",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:84"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:83"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/ratter_door",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:85"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/servant_door",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:101"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued01",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_01.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued02",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_slave.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued03",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_02.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued04",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_03.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued05",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_butler.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued06",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_04.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued07",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_05.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued08",
+      "quest": "oteryn:quest.tibia_tales",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_footman.lua:59"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_ratter/greet-new",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_ratter",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Welcome stranger! You might be surprised that I don't attack you immediately. The point is, that I think you could be useful to me. What you see in front of you is a great mine of the corym! ...",
+        "We dig up all what mother earth delivers to us, valuable natural resources. But the yield is getting worse and here I need your {help}."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_ratter/greet-started",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_ratter",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "We dig up all what mother earth delivers to us, valuable natural resources."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:65"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_ratter/help",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_ratter",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [],
+      "reply": [
+        "Recently the amount of delivered ores is decreasing. Could you find out the reason, why the situation has become worse?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_ratter/accept",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_ratter",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Nice! I have opened the mine for you. But take care of you! The monsters of depth won't spare you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/ratter_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:81"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_ratter/accept-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_ratter",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Nice! I have opened the mine for you. But take care of you! The monsters of depth won't spare you."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/ratter_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_ratter.lua:81"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/greet-start",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "We work as hard we can, my master! Wait, I haven't seen you here before. You were sent by the Corym Ratter, I see. He misses the courage to visit us and find the reason for {decreasing resources}? He's the coward I have expected."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/all-rescued",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "eq",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Well done! The riot progesses! No fight without weapons. In the mine the temperature is quite high, higher as expected in this depth. Therefore we need heat-resistent weapons and armors. ...",
+        "This effect can be reached by adding rare earth to the common materials. But this can only be found in the stomaches of stonerefiners. 20 of these should be enough. Well, I see you have already collected enough of them! Would you give it to me?"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/greet-rare-earth",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Well, I see you have already collected enough rare earth! Would you give it to me?"
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:70"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/greet-rescues",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "You have to liberate all the Corym I told you. Unlock the three affected areas."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:74"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/greet-other",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Every man is the architect of his own fortune. The times of repression are finally over."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:78"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/resources",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "say",
+      "keywords": [
+        "decreasing resources"
+      ],
+      "guards": [],
+      "reply": [
+        "You have to know, that our work is very hard and the conditions we have are terrible. The wanted amount is abolutely unrealistic. Beyond that the food we get is never enough. ...",
+        "Our workers should give their best while starving. This is not possible. That's the point to {defy} the authority."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/defy",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "say",
+      "keywords": [
+        "defy"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I see you are interested to change our sitation. The first thing I like you to do is to liberate the jailed coryms. There are three areas with locked doors. You have to find a way to get access. ...",
+        "For this reason I will give you access to the second floor. It was closed because it wasn't possible to continue working at these enourmous high temperatures. Furthermore we were instantly attacked by stonerefiners. So take care of you!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/servant_door",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:97"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/defy-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "say",
+      "keywords": [
+        "defy"
+      ],
+      "guards": [],
+      "reply": [
+        "I see you are interested to change our sitation. The first thing I like you to do is to liberate the jailed coryms. There are three areas with locked doors. You have to find a way to get access. ...",
+        "For this reason I will give you access to the second floor. It was closed because it wasn't possible to continue working at these enourmous high temperatures. Furthermore we were instantly attacked by stonerefiners. So take care of you!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:97"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/rare-earth",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i27301",
+          "count": 20,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Thank you very much! Our smiths are now able to craft heat-resistent weapons and armor. A little reward for you is this. ...",
+        "There is one last thing I would like to say to you, there are rumours that this dungeon can only be entered alive. This could mean that there's an unknown dungeon keeper guarding this place, so take care of you!"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i27301",
+          "count": 20
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3040",
+          "count": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_servant/rare-earth-missing",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_servant",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i27301",
+          "count": 20,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "You don't have enough, return when could you bring 20 of rare earth to me."
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_servant.lua:110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_1/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_1",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued01",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "My hero! A friend of mine sent you to liberate me? A true friend! I am poor but nevertheless I give you this as little reward."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued01",
+          "value": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3030",
+          "count": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_01.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_1/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_1",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "My hero! A friend of mine sent you to liberate me? A true friend!"
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_01.lua:67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_slave/greet-new",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_slave",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued02",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Every man is the architect of his own fortune. There will be the day of {pay back}."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_slave.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_slave/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_slave",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "The repression has taken too long. With our new weapons the respective people will get their just punishment."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_slave.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_slave/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_slave",
+      "trigger": "say",
+      "keywords": [
+        "pay back"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued02",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "The repression has taken too long. With our new weapons the respective people will get their just punishment."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued02",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_slave.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_slave/rescue-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_slave",
+      "trigger": "say",
+      "keywords": [
+        "pay back"
+      ],
+      "guards": [],
+      "reply": [
+        "The repression has taken too long. With our new weapons the respective people will get their just punishment."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_slave.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_2/greet-new",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_2",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued03",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Every man is the architect of his own fortune. The times of {repression} are finally over."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_02.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_2/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_2",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "We need weapons to overcome our situation."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_02.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_2/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_2",
+      "trigger": "say",
+      "keywords": [
+        "repression"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued03",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "We need weapons to overcome our situation."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued03",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_02.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_2/rescue-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_2",
+      "trigger": "say",
+      "keywords": [
+        "repression"
+      ],
+      "guards": [],
+      "reply": [
+        "We need weapons to overcome our situation."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_02.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_3/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_3",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued04",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "My hero! A friend of mine sent you to liberate me? A true friend! I am poor but nevertheless I give you this as little reward."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued04",
+          "value": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3032",
+          "count": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_03.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_3/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_3",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "My hero! A friend of mine sent you to liberate me? A true friend!"
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_03.lua:67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_butler/greet-new",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_butler",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued05",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Every man is the architect of his own fortune. The times of {repression} are finally over."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_butler.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_butler/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_butler",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "We have to dig up valuable resources, but don't get enough to eat. The situation is terrible."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_butler.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_butler/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_butler",
+      "trigger": "say",
+      "keywords": [
+        "repression"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued05",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "We have to dig up valuable resources, but don't get enough to eat. The situation is terrible."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued05",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_butler.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_butler/rescue-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_butler",
+      "trigger": "say",
+      "keywords": [
+        "repression"
+      ],
+      "guards": [],
+      "reply": [
+        "We have to dig up valuable resources, but don't get enough to eat. The situation is terrible."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_butler.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_4/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_4",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued06",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "Every man is the architect of his own fortune. I want to see the daylight again! Just smell fresh air."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued06",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_04.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_4/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_4",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Every man is the architect of his own fortune. I want to see the daylight again! Just smell fresh air."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_04.lua:66"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_5/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_5",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued07",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "My hero! A friend of mine sent you to liberate me? A true friend! I am poor but nevertheless I give you this as little reward."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued07",
+          "value": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3029",
+          "count": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_05.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_worker_5/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_worker_5",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "My hero! A friend of mine sent you to liberate me? A true friend!"
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_worker_05.lua:67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_footman/greet-new",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_footman",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued08",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Every man is the architect of his own fortune. We have nearly died of {hunger}."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_footman.lua:60"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_footman/greet-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_footman",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "What we get to eat is really ridiculous."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_footman.lua:64"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_footman/rescue",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_footman",
+      "trigger": "say",
+      "keywords": [
+        "hunger"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued08",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "op": "between",
+          "value": 0,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "What we get to eat is really ridiculous. Particularly in view of the fact that we should dig up an insane amount of ores."
+      ],
+      "effects": [
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescue_mission",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/corym_rescued08",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_footman.lua:76"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tibia_tales/corym_footman/rescue-repeat",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.corym_footman",
+      "trigger": "say",
+      "keywords": [
+        "hunger"
+      ],
+      "guards": [],
+      "reply": [
+        "What we get to eat is really ridiculous. Particularly in view of the fact that we should dig up an insane amount of ores."
+      ],
+      "effects": [],
+      "sources": [
+        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/corym_footman.lua:76"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-otservbr-global/npc/corym_butler.lua",
+      "sha256": "045a7f5ecc773e962492dc1d7c92ab23b28d5cacdd193cc4818514d47cb54b57",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_footman.lua",
+      "sha256": "c535be49f54dbb4c64f0de21a2df099443ac671a691757662269f1dcef5f1097",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_ratter.lua",
+      "sha256": "6cdadfe5c542508fd7c10bcff7f752fd42528a1b8ab0b852de1ceae7b3869f0a",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_servant.lua",
+      "sha256": "c5edcb889d6149169d5e7f03dd27bda47f3df62161ae62a043277aa42784bd31",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_slave.lua",
+      "sha256": "b76801379572ecf46561b6352135921731b14a1ac82f9b0d48248b68d509d60b",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_01.lua",
+      "sha256": "52fcb188a51ad723746b5f8b35b00b2f2b0b164c8250e96b7fac3a7442ce00ad",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_02.lua",
+      "sha256": "fd6292307e436789b2811f52a8aeb332c954ffcbe8a700a4b54f661c1d62b561",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_03.lua",
+      "sha256": "e69b29006bfbf2bdc5aca02a1fd6887dbe449fa3bb223413f2045204b9e5f320",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_04.lua",
+      "sha256": "210df7efbdffa4935969486b756d8fe99b148e6ca6b719878eeab32a0a69404c",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    {
+      "path": "data-otservbr-global/npc/corym_worker_05.lua",
+      "sha256": "142b4ad3f51e2f0ba0d6a7fcc8903149dcd8bd8ebca53cc8fd5c6be09c9efb9b",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    }
+  ]
+}

@@ -4,11 +4,15 @@
     "kind": "handlers",
     "id": "0140-prey-actions",
     "status": "supported",
-    "commands": [160],
+    "commands": [
+      160
+    ],
     "direction": "client_to_server",
     "capability": 140,
     "entry": "protocol.rs::request",
-    "not_applicable": {"settings": "Prey state and actions are server-owned."}
+    "not_applicable": {
+      "settings": "Prey state and actions are server-owned."
+    }
   },
   {
     "mechanic": "0140-prey",

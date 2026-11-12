@@ -1,0 +1,27 @@
+[package]
+name = "oteryn-task-supervisor"
+version.workspace = true
+description = "Bounded supervision for Oteryn background tasks"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "runtime"
+release-role = "production"
+
+[features]
+# tokio-console diagnostics build only (with `--cfg tokio_unstable`): name tokio tasks.
+diagnostics = ["tokio/tracing"]
+
+[dependencies]
+oteryn-error-codes = { version = "=0.1.0", path = "../error-codes" }
+tokio.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "test-util"] }
+
+[lints]
+workspace = true

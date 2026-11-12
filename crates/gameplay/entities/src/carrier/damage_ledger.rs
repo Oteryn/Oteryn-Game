@@ -299,6 +299,14 @@ fn is_more_preferred_contributor(
     }
 }
 
+impl CommittedLethalReceipt {
+    /// Read-only identity of an actual committed physical death, including a
+    /// nonreward Instance death. This issues no corpse or gameplay authority.
+    pub fn statistics_death_key(&self) -> Result<CreatureDeathOccurrenceKey, CarrierError> {
+        self.projection.occurrence.death_key()
+    }
+}
+
 #[cfg(any(test, feature = "test-support"))]
 impl CommittedLethalReceipt {
     /// Test builds only: the carried projection, mutable so a test can present Combat with

@@ -129,6 +129,7 @@ impl FreshAdmissionAuthority for Owners {
             observer: own,
             entities: vec![
                 ChannelEntity {
+                    display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
@@ -138,6 +139,7 @@ impl FreshAdmissionAuthority for Owners {
                     revision: 0,
                 },
                 ChannelEntity {
+                    display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Creature,

@@ -1,0 +1,557 @@
+{
+  "schema": "OTERYN_QNPCFX_ITEM_PROFILES/v1",
+  "producer": "tools/content-migration/qnpcfx_item_profiles.py",
+  "runtime_enabled": true,
+  "purpose": "Physical custody for source-authored NPC hand-ins; no custom use effects.",
+  "decision": "QNPCFX: production NPC effect qualification",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "bytes": 5017996
+    }
+  ],
+  "authoring_inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/native/hot_cuisine.json",
+      "sha256": "191410317d0968dcc87e67234a0f4fcbcc3b7b933e7fc4ca8653314a3bfde732"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/bigfoot_burden.json",
+      "sha256": "62476b40c12ef72f6d6e6b68741fca5c3e986307dc9aef768fb2473a864a29e5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
+      "sha256": "af1367a098447ed4db829695b9219a38047864fa79584df0e1d68ab8543f9078"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/hot_cuisine.json",
+      "sha256": "0db245ea075d9c2d721948b717b41e8fdd339424c3ed1df000af78fe86b117c6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/in_service_of_yalahar.json",
+      "sha256": "422b08d1a301a94ef46099a106ad5070e5a9261acc70742ff88f95ea286e77ec"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_cursed_crystal.json",
+      "sha256": "2cb50dcd08d0175c964c5f3c3ea225d5c0f4c2bedec87c8e00a560ff6188391e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_hidden_city_of_beregar.json",
+      "sha256": "c91ea5245afd922aae7a22c8bb8a24613a32def50c738ed5b9f94c4117c81c15"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_way_of_the_monk.json",
+      "sha256": "96fcca86fb9e6c018ec4db0e8c65895d16649b8f024001bebc34c5831c8a0916"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/bigfoot_burden.json",
+      "sha256": "a2e49d270711a75557734271985c0a96cf112f9edad6101922054785db1e9e23"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/in_service_of_yalahar.json",
+      "sha256": "80b9ab4b2dccd86cfe34105ef0c9c63cb11ef638d05d1269853a0e7b3a8d49d6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/the_cursed_crystal.json",
+      "sha256": "5411868e9537f0d8861b524c364918a2e31b1d221980374e9df74cac0ca8eb10"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/the_hidden_city_of_beregar.json",
+      "sha256": "1bc4f197150fc8eb4fb3f00e3469a8bd66a7b5d5faa61540194fee8073066c09"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
+      "sha256": "dd843254d571c1af6bbc5bbb3d6347381998ced731bd4b6869338df446083457"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/a_pirates_tail_quest-world.json",
+      "sha256": "43f188b87cd2a3d2e964feaa94a7100831e0e16e4828dcf7a9637b2b8c0109c5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/hero_of_rathleton-presentation.json",
+      "sha256": "a8365c947d0646533b0f54cad5bfddeb5fd7f25fcb6e80a13370968a4dcc9161"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/hero_of_rathleton-world.json",
+      "sha256": "9b55bea562c8735df7b0df2360b7086e2dcd64eacfa5f45b488ae26a6162d174"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/marapur-world.json",
+      "sha256": "dec674f5c8926cf0353561c8f7e198e995f85cc725420f9cdaae2dd916630257"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-presentation.json",
+      "sha256": "6e8def57a7e848f4857c17f2ac16316ae8c66cc4968fc5b25c071b35e20f3eda"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/held/the_shattered_isles_quest-world.json",
+      "sha256": "bd9a2a807850cf6aa1a054a6ddeb60aaa77119e639865f9112927020e55a9fc3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/a_pirates_tail_quest.json",
+      "sha256": "992217a1aef354e3584ad473338245229761211d8a936b3f4bfba7028f5b2b79"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/hero_of_rathleton.json",
+      "sha256": "efa62bc5b06604f80e1782c223ea56cbf270333afa618144e9a523ab58ac8304"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/oramond.json",
+      "sha256": "493d06e23694cab38141ceec7172123d7463dcd3e215e7184a26e1e004b6ad65"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/npc/the_shattered_isles_quest.json",
+      "sha256": "e429b37732effbe3cecff3bd64fe38d6fdab82d8943a0626bba9d7ad7c2684b7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/a_pirates_tail_quest.json",
+      "sha256": "f41e8017a0ce0114cd11eb3b0c3c3b43090ec6febd5c1951f838f5943376e750"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/hero_of_rathleton.json",
+      "sha256": "25866fef2a71ba2be3e62f00d38383e5fa9055028d068276f330e4a8125c7634"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/marapur.json",
+      "sha256": "b3dbf18d7b5648d6a693cb8cbf1e4379fb1de535c70f5581b589c4d79525717f"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_b/world/the_shattered_isles_quest.json",
+      "sha256": "aa289b238c34a0e3c61b7ea0436320d465c8e63d496dd525e406b3c5bd073b24"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/heart_of_destruction.json",
+      "sha256": "6170d46611212fabab89a1835ecb6651055448e593a3d4d776b9c88b755d08f2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/the_order_of_the_stag.json",
+      "sha256": "de84b8174627b5aadb26161effd7ef5c731a7172e7b374cda70d575ebc9e273d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/the_primal_ordeal.json",
+      "sha256": "30a4f0c73d507e3854edc855c537f561a94b8cf87f5cb80eea329fa3e5abdf16"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/deaths/tower_defence_quest.json",
+      "sha256": "ed1d62470e853a753da06266227ffc0aca1a6ecafecd7bf27d4e8ff665f34740"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/gnomadness_native.json",
+      "sha256": "adc5971134282a515df36a8d7bd864197e8f961f55e221d091f9e5deb399bca0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/heart_of_destruction_deaths.json",
+      "sha256": "4b5272a503fca16bf344ff3993509a5db6df8239756430440245d9dccd3f590c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/cradle_of_monsters.json",
+      "sha256": "2c02973cbce192c21293ea888019715ce01d6c04b69edce19021b21a159ca1e0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/heart_of_destruction.json",
+      "sha256": "bde09bb77c04190451427949eb4d93fc867a7b6908d360add60d20b5eeb7a0a0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
+      "sha256": "5f53a5a7cf55177743f1c78a680f1b0bdc76fd40d70dd2145efdcd47059a059e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_primal_ordeal.json",
+      "sha256": "58800c5f98c1d1feb00a5b606c4228453a7307df92910d74de04d0d4edcae238"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/npc/the_order_of_the_stag.json",
+      "sha256": "5edadd7894b40774bf46235b3e0b199ce139e708fdeb5966feac726858e3dec7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/npc/tower_defence_quest.json",
+      "sha256": "eeb44417991894656a1b617b9e48e4a2cc01c4e67eac1644644d0936f58e1c87"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/stag_death.json",
+      "sha256": "f6d9bfe03e6b52918dbc5a2c2fb84ffd4b254decb9449f276b1d1a7d185d90ec"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/world/the_primal_ordeal.json",
+      "sha256": "e530a62ea2ef8759a34bd49dac210caa6581162e42530145c983a0624e75f3bb"
+    },
+    {
+      "path": "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json",
+      "sha256": "ac18e35eb65368db8bf7d06affc1cda615abc17ca45ab3beca0f2c0e8dc09d37"
+    },
+    {
+      "path": "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json",
+      "sha256": "563c338d7ce2a36c10491acd9ec657a59e20bb9d64c6e7d286f827aabc8d472f"
+    },
+    {
+      "path": "content/dialogues/quest-source/quest-batch3-a-the_way_of_the_monk.json",
+      "sha256": "c444da8c9c1b9274814b48c954bc9035f462a8d4c6d200e5056b59eb77f0cbb8"
+    },
+    {
+      "path": "tools/content-migration/quest_batch3_item_profiles.py",
+      "sha256": "a39681f845e4ec72d759682962b99a4266bfeca9f577f2fb7720387ef07426d4"
+    }
+  ],
+  "canonical_inputs": [
+    {
+      "path": "content/items/definitions/items-00000-00499.json",
+      "sha256": "c29c94efdfb37a753a3b1a1ce0cdd28c74e0a1c0d5bff461a7e2f86870010d94"
+    },
+    {
+      "path": "content/items/definitions/items-00500-00999.json",
+      "sha256": "5996b9ed3908269e45acf33feb90e73255317cc75ebcb44b611d883eb91ae059"
+    },
+    {
+      "path": "content/items/definitions/items-01000-01499.json",
+      "sha256": "6b0ff0ce370507360d6b72e9c1f032e20dc24bd0242ac5dc2aea9c3c592f827a"
+    },
+    {
+      "path": "content/items/definitions/items-01500-01999.json",
+      "sha256": "e98b6f9bc784109cd878a417b89d8c232efd3d027b16f69ce8406e1e37a785d2"
+    },
+    {
+      "path": "content/items/definitions/items-03500-03999.json",
+      "sha256": "4c028d4835be6101f89fbab1d98faefe99ec880df0c74c66443a981afe875cf0"
+    },
+    {
+      "path": "content/items/definitions/items-05000-05499.json",
+      "sha256": "2f22166ec5ca096c440da8c87db4389af0b262053650b35483853e6856cef355"
+    },
+    {
+      "path": "content/items/definitions/items-05500-05999.json",
+      "sha256": "62ac68d0b89fce71fd0db45d289e2558fc6e0c4cc8c756c2a9e33758f06e186a"
+    },
+    {
+      "path": "content/items/definitions/items-10000-10499.json",
+      "sha256": "3c37f01fefdbc490f72fb6fc90b8b000e691199b8dece7732fcaec243dbe2326"
+    },
+    {
+      "path": "content/items/definitions/items-10500-10999.json",
+      "sha256": "6b608a2af22526ec4ae80f7764092082a701142ad9d79156814a348679e75f85"
+    },
+    {
+      "path": "content/items/definitions/items-16000-16499.json",
+      "sha256": "1b5ea110c1ea32441dee10e79d019c9b799eb6e2948dce19321610f53717d1fe"
+    },
+    {
+      "path": "content/items/definitions/items-16500-16999.json",
+      "sha256": "321fd2900b3ec927a42fed055ecbeb81afdc7fd444135ebf4365a20b3c59bcdd"
+    },
+    {
+      "path": "content/items/definitions/items-17000-17499.json",
+      "sha256": "50ded9548117be0b9bbb0736ee3d60466e80fad80baf5d218e7cf32f42049f9c"
+    },
+    {
+      "path": "content/items/definitions/items-17500-17999.json",
+      "sha256": "79ee5cc95cdf572b11edadc6dd763e9ac3baf4fe6a68892dc7bae770d531f7d9"
+    },
+    {
+      "path": "content/items/definitions/items-18000-18499.json",
+      "sha256": "634854affe75b920ca0a4f95704c8e0068b0a749b6d2b21bee740b7bb87f53f3"
+    },
+    {
+      "path": "content/items/definitions/items-18500-18999.json",
+      "sha256": "5a64227887be32b4a1ea4a94d3cb8a1a4ad138a1891d65d0072bc3ce361bfb1d"
+    },
+    {
+      "path": "content/items/definitions/items-20500-20999.json",
+      "sha256": "3d12f360ac21a4cb8108b37c560ac81fba15c851fdebdda64a84a48d5de53ff5"
+    },
+    {
+      "path": "content/items/definitions/items-21000-21499.json",
+      "sha256": "bbde56730dba51ebf592df924ef0a544f3c56553ff08e52cb627178666d561c0"
+    },
+    {
+      "path": "content/items/definitions/items-21500-21999.json",
+      "sha256": "7fa4726300e50bb82d51d800364444a77a9b1ac4126944e0fb7bb326ada4ae56"
+    },
+    {
+      "path": "content/items/definitions/items-22000-22499.json",
+      "sha256": "aa930195c69ab2cf57cc1d33c5611a4a543932c0a60794fbc6d29a507f7e9bef"
+    },
+    {
+      "path": "content/items/definitions/items-22500-22999.json",
+      "sha256": "34be5013a4ef47e10fa53675ea4be8a59b9c7605bb147fe4f988c894d9ad3c84"
+    },
+    {
+      "path": "content/items/definitions/items-24500-24999.json",
+      "sha256": "310beb2c72fdd531c30d0bbf390de4e1fedb80baa7fe6f73af6eb0e9cd2f4244"
+    },
+    {
+      "path": "content/items/definitions/items-25000-25499.json",
+      "sha256": "c861c9d60d0da94a2f0465ad4bad0d9b88a5e83779fc1592db3f3e056d2a3479"
+    },
+    {
+      "path": "content/items/definitions/items-26500-26999.json",
+      "sha256": "5158c2146ecd0cecc35503f2bfd198b1af033c50597eef00561bd28dc52e8a87"
+    },
+    {
+      "path": "content/items/definitions/items-27500-27999.json",
+      "sha256": "3853af2c97a7fd33ace405005c7d4a3bf1e11aa5cf7da796f4f3a2d5f54f34c3"
+    },
+    {
+      "path": "content/items/definitions/items-28000-28499.json",
+      "sha256": "b29046d34d923f910b445f9675f190b1a5d460ec7b584a94cb8ad3dd2fb3300a"
+    },
+    {
+      "path": "content/items/definitions/items-28500-28999.json",
+      "sha256": "ab430f09558a741812d55deaaf88cb64637515e965ccda9b31f5dd9a7aec2bd8"
+    },
+    {
+      "path": "content/items/definitions/items-29000-29499.json",
+      "sha256": "3253769ea81341046d540c2c02e610076cd0cbc0ea79e3bc2e97b92fbe3e8573"
+    },
+    {
+      "path": "content/items/definitions/items-29500-29999.json",
+      "sha256": "cd0ffa6dde24531c20c491b04d87ae9a37b208f122fd73d7c8581676c594e1f6"
+    },
+    {
+      "path": "content/items/definitions/items-30000-30499.json",
+      "sha256": "5ceea989066815fb3aac1bb9fff336070d3247490315e2188664801be4b63099"
+    },
+    {
+      "path": "content/items/definitions/items-31000-31499.json",
+      "sha256": "78d89f6fb82d0f5b6b8b222feb5e1d6856e03c9bd560a7abb0e9f2d1a81b99a5"
+    },
+    {
+      "path": "content/items/definitions/items-31500-31999.json",
+      "sha256": "4841f1fdb841522222816d72596ca831ddaf249a8d49ca07651788d0e2e3e079"
+    },
+    {
+      "path": "content/items/definitions/items-32000-32499.json",
+      "sha256": "8a1952ec00bb04cbe8c58ba5b538ca6de2b4889fcbc4deb22c250ac0e83401d2"
+    },
+    {
+      "path": "content/items/definitions/items-32500-32999.json",
+      "sha256": "24775ab2ee8f3b16022387ca182cf4a00932000c011c62dabffec483fe3da1a8"
+    },
+    {
+      "path": "content/items/definitions/items-33000-33499.json",
+      "sha256": "b59926c451893928fd8e23bb92d4f02370354e18a64a74f4e162c438c31be412"
+    }
+  ],
+  "binding_input": {
+    "path": "imports/crystalserver/bindings/items.json",
+    "sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+  },
+  "accepted_inputs": [
+    {
+      "path": "content/items/definitions/spell-native-profiles.json",
+      "sha256": "652fc1afd55fded6e61ae6da2d3bec52198c2f7dc3eb80cae4c63f5c1eed57a7"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
+      "sha256": "ea3b460a81255b88e088a985cbca006183dce913747acb4793aebd2fcd3cab44"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-quest-interaction-item-admission.json",
+      "sha256": "700360003db9a916bf5ef8d5b51ce659e4ee7e98c15d5ac5f944001e2c95568a"
+    }
+  ],
+  "records": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/52636",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "tender venison"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Exquisite venison from the Adan wilds."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 500
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "52636",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i52636",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i52636",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    }
+  ],
+  "classification": [
+    {
+      "key": "oteryn:item.tibia.i52636",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:88039",
+      "uses": [
+        {
+          "path": "tools/content-schema/quest-authoring/batch3_c/npc/the_order_of_the_stag.json",
+          "pointer": "/rules/79/guards/0/item",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:111"
+          ]
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/batch3_c/npc/the_order_of_the_stag.json",
+          "pointer": "/rules/81/guards/0/item",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:129"
+          ]
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/batch3_c/npc/the_order_of_the_stag.json",
+          "pointer": "/rules/81/effects/0/item",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:129"
+          ]
+        }
+      ],
+      "canonical_materializable": false,
+      "existing_native_profile": true,
+      "holds": [],
+      "classification": "EXISTING_NATIVE",
+      "reason": null
+    }
+  ]
+}

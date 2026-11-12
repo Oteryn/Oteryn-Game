@@ -98,6 +98,7 @@ fn death() -> TestResult<CharacterDeathRequest<50>> {
         };
     }
     Ok(CharacterDeathRequest {
+        public_cause: None,
         occurrence: PlayerDeathOccurrence::from_bytes(id(170)).map_err(debug)?,
         context: context.clone(),
         policy_revision: "policy-1".into(),

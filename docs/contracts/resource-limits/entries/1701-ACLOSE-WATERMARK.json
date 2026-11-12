@@ -1,0 +1,20 @@
+{
+  "id": "ACLOSE-WATERMARK",
+  "owner_contract": "OTERYN_GAME_ACCOUNT_DELETION_FINALIZATION_V1.md",
+  "resource": "Account closure liveness watermark",
+  "unit": "bytes",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 512,
+    "maximum": 512
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded resumable account closure; unavailable owners remain pending.",
+  "client_visible": false,
+  "boundary_tests": [
+    "account_deletion_postgres_producer_replays_resolves_and_fences"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/character_command/account_deletion/"
+  ]
+}

@@ -52,7 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let Some(position) = super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+        let Some(position) = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
         else {
             return GuildReply::Rejected;
         };

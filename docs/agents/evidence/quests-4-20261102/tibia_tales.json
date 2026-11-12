@@ -1,0 +1,457 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "tibia_tales",
+    "frozen_stage1": {
+      "total": 4,
+      "auto": 0,
+      "manual": 4
+    },
+    "authored_callback_definitions": 0,
+    "runtime_catalogue_callback_definitions": 0,
+    "runtime_exclusions": [],
+    "npc_source_files": 1,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Pełne źródło Ultimate Booze; zakres odróżniony od pozostałych wpisów dziennika.",
+    "left_out_summary": "Brak native profili136/138 i atomowego callera consume/grant/state/XP. Reward5710 jest dopuszczony i nie jest błędnie opisany jako brak danych."
+  },
+  "steps": [
+    {
+      "cluster": "explorer",
+      "cluster_row": 160,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "tibia_tales",
+        "step": "Ultimate Booze: przyjęcie",
+        "pattern": "P09/P11",
+        "trigger": "Boozer: mission → yes",
+        "condition": "UltimateBoozeQuest<1; topic1",
+        "effect": "DefaultStart=1; UltimateBoozeQuest=1; daje138×1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 159,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Boozer: mission → yes”: warunki UltimateBoozeQuest<1; topic1; wynik DefaultStart=1; UltimateBoozeQuest=1; daje138×1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 138: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Zakres tibia_tales to Ultimate Booze (ANSWER pkt6), bez15 innych questów dziennika.136/138 nie mają native profile.5710 ma materializable native inventory profile mimo canonical flagfalse, więc nie oznaczono go jako brak nagrody. Wymagane atomic consume/give/state/XP100 bez ground drop; istniejącego NPC exchange ownera nie rozszerzono."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "tibia-tales-scope"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boozer.lua:69"
+        ],
+        "item_facts": {
+          "138": {
+            "key": "oteryn:item.tibia.i138",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 292,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i138",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "138: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 161,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "tibia_tales",
+        "step": "Ultimate Booze: napełnienie w misji",
+        "pattern": "P02",
+        "trigger": "item138 na target5538",
+        "condition": "UltimateBoozeQuest=1",
+        "effect": "UltimateBoozeQuest=2; removeItem(138,1); daje136×1; GULP; SOUND_YELLOW",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 160,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item138 na target5538”: warunki UltimateBoozeQuest=1; wynik UltimateBoozeQuest=2; removeItem(138,1); daje136×1; GULP; SOUND_YELLOW. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 136: brak native profile; 138: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Zakres tibia_tales to Ultimate Booze (ANSWER pkt6), bez15 innych questów dziennika.136/138 nie mają native profile.5710 ma materializable native inventory profile mimo canonical flagfalse, więc nie oznaczono go jako brak nagrody. Wymagane atomic consume/give/state/XP100 bez ground drop; istniejącego NPC exchange ownera nie rozszerzono."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "tibia-tales-scope"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tibia_tales/actions_ultimate_booze_beer_bottle.lua:2"
+        ],
+        "item_facts": {
+          "136": {
+            "key": "oteryn:item.tibia.i136",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 120,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i136",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "138": {
+            "key": "oteryn:item.tibia.i138",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 292,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i138",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "5538": {
+            "key": "oteryn:item.tibia.i5538",
+            "definition": {
+              "path": "content/items/definitions/items-29000-29499.json",
+              "line": 1,
+              "record": 274,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5538",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "136: brak native profile",
+          "138: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 162,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "tibia_tales",
+        "step": "Ultimate Booze: napełnienie poza etapem1",
+        "pattern": "P02",
+        "trigger": "item138 na target5538",
+        "condition": "UltimateBoozeQuest!=1",
+        "effect": "stan bez zmiany; removeItem(138,1); daje136×1; donor nie ogranicza wymiany do aktywnej misji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 161,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item138 na target5538”: warunki UltimateBoozeQuest!=1; wynik stan bez zmiany; removeItem(138,1); daje136×1; donor nie ogranicza wymiany do aktywnej misji. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 136: brak native profile; 138: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Zakres tibia_tales to Ultimate Booze (ANSWER pkt6), bez15 innych questów dziennika.136/138 nie mają native profile.5710 ma materializable native inventory profile mimo canonical flagfalse, więc nie oznaczono go jako brak nagrody. Wymagane atomic consume/give/state/XP100 bez ground drop; istniejącego NPC exchange ownera nie rozszerzono."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "tibia-tales-scope"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tibia_tales/actions_ultimate_booze_beer_bottle.lua:7"
+        ],
+        "item_facts": {
+          "136": {
+            "key": "oteryn:item.tibia.i136",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 120,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i136",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "138": {
+            "key": "oteryn:item.tibia.i138",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 292,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i138",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "5538": {
+            "key": "oteryn:item.tibia.i5538",
+            "definition": {
+              "path": "content/items/definitions/items-29000-29499.json",
+              "line": 1,
+              "record": 274,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5538",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "136: brak native profile",
+          "138: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 163,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "tibia_tales",
+        "step": "Ultimate Booze: oddanie i nagroda",
+        "pattern": "P10/P11",
+        "trigger": "Boozer: mission",
+        "condition": "UltimateBoozeQuest=2; removeItem(136,1)",
+        "effect": "zabiera136×1; UltimateBoozeQuest=3; daje5710×1 i3035×10; XP100",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 162,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Boozer: mission”: warunki UltimateBoozeQuest=2; removeItem(136,1); wynik zabiera136×1; UltimateBoozeQuest=3; daje5710×1 i3035×10; XP100. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 136: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Zakres tibia_tales to Ultimate Booze (ANSWER pkt6), bez15 innych questów dziennika.136/138 nie mają native profile.5710 ma materializable native inventory profile mimo canonical flagfalse, więc nie oznaczono go jako brak nagrody. Wymagane atomic consume/give/state/XP100 bez ground drop; istniejącego NPC exchange ownera nie rozszerzono."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "tibia-tales-scope"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/boozer.lua:61"
+        ],
+        "item_facts": {
+          "136": {
+            "key": "oteryn:item.tibia.i136",
+            "definition": {
+              "path": "content/items/definitions/items-03500-03999.json",
+              "line": 1,
+              "record": 120,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i136",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "3035": {
+            "key": "oteryn:item.tibia.i3035",
+            "definition": {
+              "path": "content/items/definitions/items-17500-17999.json",
+              "line": 1,
+              "record": 317,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3035",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 420,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i3035",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0
+              }
+            }
+          },
+          "5710": {
+            "key": "oteryn:item.tibia.i5710",
+            "definition": {
+              "path": "content/items/definitions/items-29000-29499.json",
+              "line": 1,
+              "record": 464,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5710",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 807,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i5710",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [
+          "136: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067399"
+        ]
+      }
+    }
+  ]
+}

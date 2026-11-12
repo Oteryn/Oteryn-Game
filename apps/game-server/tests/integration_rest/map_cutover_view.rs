@@ -88,6 +88,7 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             ),
             entry("item:coin", Family::Item, 0, None),

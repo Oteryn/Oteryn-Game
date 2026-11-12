@@ -196,7 +196,7 @@
     },
     "quest": {
       "type": "object", "additionalProperties": false, "required": ["identity", "display_name", "kind", "shown_in_quest_log", "claims"],
-      "properties": {
+      "properties": {"visibility":{"type":"string","enum":["public","hidden"],"default":"public"},
         "identity": {"$ref": "#/$defs/identity"},
         "display_name": {"type": "string", "minLength": 1},
         "kind": {"enum": ["reward_only", "storyline", "script_only"]},

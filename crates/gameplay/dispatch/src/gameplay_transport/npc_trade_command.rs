@@ -182,7 +182,7 @@ pub(super) async fn trade(
         return Err(Box::new(NpcTradeStep::rejected()));
     }
     let now = unix_ms_now();
-    let (offer, coins) = {
+    let (offer, coins, yasir_position) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
         let offer = match admission.states.npc_conversations.trade_in(
@@ -215,6 +215,29 @@ pub(super) async fn trade(
         if !available {
             return Err(Box::new(NpcTradeStep::rejected()));
         }
+        let yasir_position = if offer.npc_key == "oteryn:npc.yasir" {
+            let source = runtime
+                .visible_entities()
+                .npcs
+                .iter()
+                .find(|npc| {
+                    npc.actor.placement_identity() == intent.npc_actor.identity
+                        && npc.generation == intent.npc_actor.generation
+                })
+                .and_then(|npc| {
+                    Some((
+                        u16::try_from(npc.position.x).ok()?,
+                        u16::try_from(npc.position.y).ok()?,
+                        i8::try_from(npc.position.floor).ok()?,
+                    ))
+                });
+            let Some(source) = source else {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            };
+            Some(source)
+        } else {
+            None
+        };
         let coin = |coin: Coin| {
             let production_key = coin.production_key();
             index
@@ -237,6 +260,7 @@ pub(super) async fn trade(
                 platinum,
                 crystal,
             },
+            yasir_position,
         )
     };
     // Crystal npc.cpp590-595: source23721 invokes the actual LootPouch sweep.
@@ -298,6 +322,34 @@ pub(super) async fn trade(
             }
         }
     }
+    let fluid_container =
+        crate::content::npc_catalogue::subtype_trades::fluid_container(&offer.item_key);
+    if fluid_container && offer.sub_type.is_some_and(|subtype| subtype > 20) {
+        return Err(Box::new(NpcTradeStep::rejected()));
+    }
+    let full_charges = if !fluid_container {
+        offer.sub_type
+    } else {
+        None
+    };
+    if let Some(charges) = full_charges {
+        use crate::content::ReferenceItemField::Known;
+        let native_charges = native
+            .item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )
+            .and_then(|policy| match &policy.record().semantics.charges {
+                Known(facts) => match facts.count {
+                    Known(count) => Some(count),
+                    _ => None,
+                },
+                _ => None,
+            });
+        if native_charges != Some(u32::from(charges)) {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        }
+    }
     let backpack = match admission
         .root
         .read_character_backpack(admission.character, fence.character_id)
@@ -313,6 +365,14 @@ pub(super) async fn trade(
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
     let request = NpcTradeRequest {
+        fluid_subtype: if fluid_container {
+            offer
+                .sub_type
+                .and_then(|subtype| u8::try_from(subtype).ok())
+        } else {
+            None
+        },
+        full_charges,
         cause: NpcTradeCause {
             npc_key: offer.npc_key,
             catalogue_revision: offer.catalogue_revision,
@@ -366,6 +426,18 @@ pub(super) async fn trade(
                 fence,
                 request,
                 selection,
+                sell_all,
+            )
+            .await
+    } else if let Some(source) = yasir_position {
+        admission
+            .root
+            .commit_yasir_trade(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                source,
                 sell_all,
             )
             .await

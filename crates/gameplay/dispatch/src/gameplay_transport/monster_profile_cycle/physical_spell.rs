@@ -178,6 +178,7 @@ pub(super) async fn execute(
     proposals: &[ProfileAbilityProposal],
     parties: &ReferenceParties,
     now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) {
     for proposal in proposals {
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
@@ -187,6 +188,7 @@ pub(super) async fn execute(
             if let Some(source) = composed::source_for(runtime, native, proposal) {
                 composed::execute(
                     runtime, states, attack, room, native, map, &source, proposal, parties, now,
+                    charms,
                 )
                 .await;
             }
@@ -262,7 +264,12 @@ pub(super) async fn execute(
                 &mut spells,
                 runtime,
                 stamp,
-                states,
+                &mut super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+                    states,
+                    attack,
+                    catalogue: charms,
+                    root: GameplayDecisionRoot::from_bytes(native.source_digest()),
+                },
                 &parent_source,
                 proposal,
                 &mut reader,
@@ -303,7 +310,10 @@ pub(super) async fn execute(
             }
         }
     }
-    timers::drain(runtime, states, attack, room, native, map, parties, now).await;
+    timers::drain(
+        runtime, states, attack, room, native, map, parties, now, charms,
+    )
+    .await;
 }
 
 fn source_for(
@@ -529,9 +539,13 @@ async fn prepare_source_reader<'native>(
         .state(proposal.issuer)
         .map(|state| match state.attack_facing() {
             crate::movement::CardinalStep::North => Facing::North,
-            crate::movement::CardinalStep::East => Facing::East,
+            crate::movement::CardinalStep::East
+            | crate::movement::CardinalStep::NorthEast
+            | crate::movement::CardinalStep::SouthEast => Facing::East,
             crate::movement::CardinalStep::South => Facing::South,
-            crate::movement::CardinalStep::West => Facing::West,
+            crate::movement::CardinalStep::West
+            | crate::movement::CardinalStep::NorthWest
+            | crate::movement::CardinalStep::SouthWest => Facing::West,
         })?;
     let (Ok(center), Ok(mut cast_tiles)) = (
         source.cast_center(from, to, Some(facing)),
@@ -696,7 +710,10 @@ async fn prepare_source_reader<'native>(
             Some("life_drain") => Some(Kind::LifeDrain),
             Some("mana_drain") => Some(Kind::ManaDrain),
             Some("drowning") => Some(Kind::Drown),
-            None => None,
+            // Crystal src/items/functions/item/item_parse.cpp:528-536 excludes Undefined from
+            // absorbpercentall, and defines no specific Undefined item absorb.
+            // Keep the source element for HP delivery without inventing elemental absorption.
+            Some("undefined") | None => None,
             _ => continue,
         };
         let protection = kind.and_then(|kind| state.equipped_element_protection(kind));

@@ -1,14 +1,9 @@
 //! DAILYFX sinks borrow the claim transaction and its Character -> Account lock order.
 //! Wildcards belong to PREY (Account + World); boost grants remain immutable DAILY lines.
 use super::DurabilityError;
-use super::character_inbox::{
-    RewardClaimInboxError, RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput,
-    RewardClaimInboxMintRequest, RewardClaimInboxPlan,
-};
 use super::daily_reward_claim::DailyRewardClaimRequest;
-use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::Type2Transaction;
-use super::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass};
+use super::item_transfer::CurrentCharacterItemFence;
 use sqlx::{Postgres, Row, Transaction};
 
 pub(super) async fn grant(
@@ -17,12 +12,22 @@ pub(super) async fn grant(
     request: DailyRewardClaimRequest,
     day: u8,
     premium: bool,
+    selection: Option<&oteryn_protocol_oteryn::daily_reward::picker::Claim>,
 ) -> Result<(), DurabilityError> {
     let character = fence.character_id.as_bytes().as_slice();
     let world = fence.runtime_scope.world_id();
     let claim = request.transaction_id.as_slice();
     let reward = oteryn_gameplay_progression::daily_reward::reward_for_day(day, premium)
         .ok_or(DurabilityError::InvalidStoredState)?;
+    let temple = super::daily_reward_picked_items::mint(
+        tx,
+        fence,
+        request,
+        day,
+        reward.temple_teleport_scrolls,
+        selection,
+    )
+    .await?;
     let mut line: i16 = 0;
     for (kind, quantity) in [
         ("BOUNTY_REROLL", reward.bounty_reroll_tokens),
@@ -33,73 +38,7 @@ pub(super) async fn grant(
             continue;
         }
         let item = if kind == "TEMPLE_SCROLL" {
-            // Crystal 201189f: data-global/scripts/actions/other/temple_scroll.lua:18
-            // binds the temple teleport scroll to item 25718.
-            let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
-                .fetch_one(&mut ***tx)
-                .await?;
-            let item_id = super::item_mint::uuid_text(&item)?;
-            let crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } =
-                fence.runtime_scope
-            else {
-                return Err(DurabilityError::InvalidStoredState);
-            };
-            let (content_revision, ruleset_revision): (String, String) = sqlx::query_as(
-                "SELECT content_revision,ruleset_revision FROM public.game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-            ).bind(character).fetch_one(&mut ***tx).await?;
-            let revision =
-                oteryn_gameplay_content::content::daily_reward::DailyRewardContent::catalogue()
-                    .ok_or(DurabilityError::InvalidStoredState)?
-                    .revision
-                    .clone();
-            RewardClaimInboxMintCandidate::mint_atomic_in_transaction(
-                tx,
-                fence,
-                RewardClaimInboxPlan {
-                    command: request.command,
-                    character_id: fence.character_id,
-                    world_id: world,
-                    channel_id,
-                    transaction_id: request.transaction_id,
-                    source_binding: request.request_binding,
-                    item_instance_ids: vec![item_id],
-                },
-                RewardClaimInboxMintRequest {
-                    claim: TypedDefinitionRef {
-                        family: "DailyReward".into(),
-                        production_key: format!("oteryn:daily_reward.day{day}"),
-                        revision_ref: revision,
-                    },
-                    content_revision,
-                    ruleset_revision,
-                    sim_revision: "daily-reward-v2".into(),
-                    outputs: vec![RewardClaimInboxMintOutput {
-                        source_line: u32::try_from(line)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
-                        item: ItemDefinitionFacts {
-                            weight: None,
-                            definition: TypedDefinitionRef {
-                                family: "Item".into(),
-                                production_key: "oteryn:item.tibia.i25718".into(),
-                                revision_ref: "definition-r1".into(),
-                            },
-                            stack: ItemStackClass::NonStackable,
-                            container_capacity: None,
-                            container_slot_equip_pattern: false,
-                        },
-                        quantity: u32::from(quantity),
-                        key_number: None,
-                    }],
-                },
-            )
-            .await
-            .map_err(|error| match error {
-                RewardClaimInboxError::Unavailable(error) => error,
-                _ => DurabilityError::InvalidStoredState,
-            })?;
-            sqlx::query("INSERT INTO public.game_item_bindings(item_instance_id,world_id,character_id,cause) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD')")
-                .bind(&item).bind(world.as_bytes().as_slice()).bind(character).execute(&mut ***tx).await?;
-            Some(item)
+            temple.clone()
         } else {
             grant_balance(tx, fence, request, kind, quantity).await?;
             None

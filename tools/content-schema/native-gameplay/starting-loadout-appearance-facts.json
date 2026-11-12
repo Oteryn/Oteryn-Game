@@ -1,0 +1,120 @@
+{
+  "schema": "OTERYN_STARTING_LOADOUT_APPEARANCE_FACTS/v1",
+  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "source_path": "data/items/appearances.dat",
+  "source_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+  "records": [
+    {
+      "item_id": 3571,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 4
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 3572,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 2
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 7773,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 6
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 7774,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 6
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 7991,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 4
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 7992,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 1
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 8095,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 7
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    },
+    {
+      "item_id": 50171,
+      "flags": {
+        "flags.clothes": true,
+        "clothes.slot": 0
+      },
+      "physical": {
+        "movable": true,
+        "pickupable": true,
+        "block_solid": false,
+        "block_projectile": false,
+        "has_height": false
+      }
+    }
+  ]
+}

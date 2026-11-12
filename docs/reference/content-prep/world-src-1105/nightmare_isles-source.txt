@@ -1,0 +1,121 @@
+Source: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8
+SHA256: ca41506fb7949527c1254a0a9fca146f455a982b912cead5545fa02acddc5c65
+1: local function Nightmarewebhook(message) -- New local function that runs on delay to send webhook message.
+2: 	Webhook.sendMessage(":thought_balloon: " .. message, announcementChannels["serverAnnouncements"])
+3: end
+4:
+5: local nightmareIsleConfig = {
+6: 	{ displayName = "North of Ankrahmun", mapName = "ankrahmun-north", storage = GlobalStorage.WorldBoard.NightmareIsle.AnkrahmunNorth },
+7: 	{ displayName = "North of Darashia", mapName = "darashia-north", storage = GlobalStorage.WorldBoard.NightmareIsle.DarashiaNorth },
+8: 	{ displayName = "West of Darashia", mapName = "darashia-west", storage = GlobalStorage.WorldBoard.NightmareIsle.DarashiaWest },
+9: }
+10:
+11: local nightmareIsleEvent = GlobalEvent("Nightmare Isle")
+12:
+13: function nightmareIsleEvent.onStartup()
+14: 	for _, config in ipairs(nightmareIsleConfig) do
+15: 		Game.setStorageValue(config.storage, -1)
+16: 	end
+17:
+18: 	local randomMap = nightmareIsleConfig[math.random(#nightmareIsleConfig)]
+19: 	Game.loadMap(DATA_DIRECTORY .. "/world/world_changes/nightmare_isle/" .. randomMap.mapName .. ".otbm")
+20: 	Game.setStorageValue(randomMap.storage, 1)
+21:
+22: 	logger.info("[World Change] Nightmare Isle is active in " .. randomMap.displayName)
+23:
+24: 	addEvent(Nightmarewebhook, 60000, string.format("Nightmare Isle will be active %s today", randomMap.displayName))
+25: 	return true
+26: end
+27:
+28: nightmareIsleEvent:register()
+29:
+30: local teleportExits = {
+31: 	{ position = Position(33255, 32678, 7), storage = GlobalStorage.WorldBoard.NightmareIsle.AnkrahmunNorth },
+32: 	{ position = Position(33215, 32273, 7), storage = GlobalStorage.WorldBoard.NightmareIsle.DarashiaNorth },
+33: 	{ position = Position(33032, 32400, 7), storage = GlobalStorage.WorldBoard.NightmareIsle.DarashiaWest },
+34: }
+35:
+36: local teleportExit = MoveEvent()
+37:
+38: function teleportExit.onStepIn(creature, item, position, fromPosition)
+39: 	local player = creature:getPlayer()
+40: 	if not player then
+41: 		return
+42: 	end
+43:
+44: 	for _, config in ipairs(teleportExits) do
+45: 		if Game.getStorageValue(config.storage) == 1 then
+46: 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+47: 			player:teleportTo(config.position)
+48: 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+49: 			return true
+50: 		end
+51: 	end
+52: 	return true
+53: end
+54:
+55: teleportExit:uid(35020)
+56: teleportExit:register()
+57:
+58: local teleportEntrace = MoveEvent()
+59:
+60: function teleportEntrace.onStepIn(creature, item, position, fromPosition)
+61: 	local player = creature:getPlayer()
+62: 	if not player then
+63: 		return
+64: 	end
+65:
+66: 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+67: 	player:teleportTo(Position(33497, 32616, 8))
+68: 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+69: 	return true
+70: end
+71:
+72: teleportEntrace:uid(64001, 64002, 64003)
+73: teleportEntrace:register()
+74:
+75: local teleportPositions = {
+76: 	[64103] = Position(33475, 32641, 10),
+77: 	[64104] = Position(33473, 32647, 9),
+78: 	[64105] = Position(33463, 32585, 8),
+79: 	[64106] = Position(33457, 32580, 8),
+80: 	[64107] = Position(33422, 32582, 8),
+81: 	[64108] = Position(33430, 32600, 10),
+82: 	[64109] = Position(33420, 32604, 10),
+83: 	[64120] = Position(33446, 32616, 11),
+84: 	[64121] = Position(33460, 32632, 10),
+85: 	[64122] = Position(33429, 32626, 10),
+86: 	[64123] = Position(33425, 32633, 8),
+87: 	[64124] = Position(33435, 32631, 8),
+88: 	[64125] = Position(33478, 32621, 10),
+89: 	[64126] = Position(33484, 32629, 8),
+90: 	[64127] = Position(33452, 32617, 11),
+91: 	[64128] = Position(33419, 32589, 10),
+92: }
+93:
+94: local teleportLadder = MoveEvent()
+95:
+96: function teleportLadder.onStepIn(creature, item, position, fromPosition)
+97: 	local player = creature:getPlayer()
+98: 	if not player then
+99: 		return true
+100: 	end
+101:
+102: 	local targetPosition = teleportPositions[item.actionid]
+103: 	if not targetPosition then
+104: 		return true
+105: 	end
+106:
+107: 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+108: 	player:teleportTo(targetPosition)
+109: 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+110: 	return true
+111: end
+112:
+113: teleportLadder:type("stepin")
+114:
+115: for index, value in pairs(teleportPositions) do
+116: 	teleportLadder:aid(index)
+117: end
+118:
+119: teleportLadder:register()

@@ -1,0 +1,64 @@
+{
+  "schema": 2,
+  "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+  "premium_required": true,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 6,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/authored-mystery/lai/statue",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "npc": "oteryn:npc.lai",
+      "trigger": "say",
+      "keywords": [
+        "statue"
+      ],
+      "keyword_mode": "exact",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "op": "eq",
+          "value": -1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission06",
+          "op": "ge",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ge",
+          "value": 23
+        }
+      ],
+      "reply": [
+        "Find the three shrine fragments in Inukaya, the Muggy Plains and Kilmaresh. Bring them to the crystal in Kha'zeel to assemble the guardian statue."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=107855&oldid=1091060"
+      ]
+    }
+  ]
+}

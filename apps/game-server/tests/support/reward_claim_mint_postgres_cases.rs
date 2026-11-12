@@ -4,6 +4,9 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
+#[path = "reward_claim_mint_postgres_cases/filled_fluid.rs"]
+mod filled_fluid;
+
 use crate::durability::item_weight_lookup::TEST_WEIGHTS;
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
@@ -801,6 +804,7 @@ fn chest(
     quantity: u32,
 ) -> RewardClaimMintRequest {
     RewardClaimMintRequest {
+        backpack_outputs: false,
         command,
         claim: definition("RewardClaim", claim_key),
         source_placement: "fixture:placement.chest".into(),
@@ -808,6 +812,8 @@ fn chest(
         quantity,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
         backpack: backpack_facts(),
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),
@@ -1600,15 +1606,15 @@ fn database_rejects_unproven_reward_claim_rows() -> TestResult {
             // MINT receipt of the current transaction.
             vec![
                 format!(
-                    "INSERT INTO game_item_mint_receipts(death_world_id, death_channel_id, \
+                    "INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id, death_channel_id, \
                        death_scope_ownership_generation, death_actor_local_id, \
                        death_actor_local_generation, loot_table_family, \
                        loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
                        draw_ordinal, intent_binding, transaction_id, event_id, \
                        item_instance_id, occurred_at, envelope_sha256, committed_at) \
-                     VALUES ('{world}', '{}', 1, 900, 1, 'LootTable', 'fixture:loot.forged', \
+                     VALUES (1,game_item_death_scope_key('{world}'::uuid,1::smallint,'{0}'::uuid,NULL),'{world}', '{0}', 1, 900, 1, 'LootTable', 'fixture:loot.forged', \
                        'definition-r1', 'fixture:purpose', 0, decode(repeat('ab',33),'hex'), \
-                       '{}', '{}', '{}', 1000, sha256(decode('ab','hex')), 1000)",
+                       '{1}', '{2}', '{3}', 1000, sha256(decode('ab','hex')), 1000)",
                     uuid(id(CHANNEL)),
                     uuid(id(175)),
                     uuid(id(176)),
@@ -1710,6 +1716,7 @@ fn a_key_claim_records_its_number_once_and_the_database_rejects_any_other_key_ro
             .map_err(debug)?;
         let backpack = harness.equip_backpack(&authority, 1).await?;
         let key = RewardClaimMintRequest {
+            backpack_outputs: false,
             key_number: Some(10),
             ..chest(
                 command(2)?,
@@ -2788,6 +2795,7 @@ mod quest_obligations {
     /// `step` is the amount the step adds; another amount is another definition hash.
     fn quest_catalogue(step: i64) -> TestResult<Arc<QuestStateCatalogue>> {
         let transition = |key: &str, from, effect| QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects: vec![QuestEffect {

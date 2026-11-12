@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.draconia",
+  "quest": "oteryn:quest.draconia_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/dragonfetish",
+      "quest": "oteryn:quest.draconia_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/an_old_dragon_lord.lua:61-73"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/draconia_quest/an_old_dragonlord/already",
+      "quest": "oteryn:quest.draconia_quest",
+      "npc": "oteryn:npc.an_old_dragonlord",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/dragonfetish",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/an_old_dragon_lord.lua:62"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/draconia_quest/an_old_dragonlord/missing",
+      "quest": "oteryn:quest.draconia_quest",
+      "npc": "oteryn:npc.an_old_dragonlord",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/dragonfetish",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3723",
+          "count": 1,
+          "subtype": null,
+          "op": "lt"
+        }
+      ],
+      "reply": [
+        "AHHHH THE PAIN OF AGESSS! I NEED MUSSSSHRROOOMSSS TO EASSSE MY PAIN! BRRRING ME MUSHRRROOOMSSS!"
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/an_old_dragon_lord.lua:67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/draconia_quest/an_old_dragonlord/exchange",
+      "quest": "oteryn:quest.draconia_quest",
+      "npc": "oteryn:npc.an_old_dragonlord",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "any_message": false,
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/dragonfetish",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3723",
+          "count": 1,
+          "subtype": null,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3723",
+          "count": 1,
+          "subtype": null,
+          "optional": false
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/dragonfetish",
+          "value": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i3206",
+          "count": 1,
+          "subtype": null
+        },
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/an_old_dragon_lord.lua:73"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/draconia_quest/an_old_dragonlord/other-greeting",
+      "quest": "oteryn:quest.draconia_quest",
+      "npc": "oteryn:npc.an_old_dragonlord",
+      "trigger": "greet",
+      "keywords": [],
+      "any_message": true,
+      "guards": [],
+      "reply": [
+        "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+      ],
+      "effects": [
+        {
+          "kind": "end_conversation",
+          "delay_ms": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/an_old_dragon_lord.lua:40"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/an_old_dragon_lord.lua",
+      "sha256": "85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

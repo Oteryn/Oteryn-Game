@@ -140,3 +140,11 @@ cost 25 plus the previous upgrade count, at most 225 upgrades, final limit 4600.
 This intentionally differs from the literal Crystal configuration, whose threshold
 225 stops the 20-unit progression at 240. PR #2785 owner answers Q1–Q3 confirm this
 progression, recursive custody/material scope and native ItemInstance preservation.
+
+## Current dust query
+
+Command 668 (capability 152) accepts an empty payload. Its accepted reply is
+`{"current_dust":73,"dust_limit":125}`: the current durable balance and limit,
+including zero at the initial limit when no balance row exists. This is a
+session-fenced read, independent of forge history and mutation receipts.
+It neither charges action cooldown nor changes durable value.

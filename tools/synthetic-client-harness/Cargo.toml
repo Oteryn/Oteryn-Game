@@ -24,6 +24,10 @@ rustls.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
+oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
+oteryn-client-ui = { version = "=0.1.0", path = "../../crates/client-ui" }
+oteryn-client = { version = "=0.1.0", path = "../../apps/client" }
+oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
 rcgen.workspace = true
 tokio-rustls.workspace = true
 

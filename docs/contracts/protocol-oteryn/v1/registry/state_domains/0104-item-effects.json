@@ -1,0 +1,24 @@
+{
+  "id": 104,
+  "name": "ITEM_EFFECTS",
+  "owner_decision": "NX-5",
+  "owner": "current Channel item-effect presentation journal",
+  "capability": 350,
+  "revision": "Connection-local: empty revision-0 snapshot; each item-effect batch increments it. Reconnect skips historical cues.",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "ITEM_EFFECTS_BATCH_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#WorldPresentationBatchV1",
+      "max_payload_bytes": 131136
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "ITEM_EFFECTS_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/presentation_v1.proto#WorldPresentationSnapshotV1",
+      "max_payload_bytes": 0
+    }
+  ]
+}

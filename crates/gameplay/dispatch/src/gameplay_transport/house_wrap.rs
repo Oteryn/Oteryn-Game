@@ -1,14 +1,17 @@
 //! HOUSE-ITEM-WIRE-1: explicit wrap command, House custody and durable conversion.
-use super::house_furnishing::{self as rules, Action, Authority, Command, Item, Rule, State};
 use super::furniture_catalog;
+use super::house_furnishing::{self as rules, Action, Authority, Command, Item, Rule, State};
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use crate::content::ReferenceItemField;
+use crate::domain::hireling::catalogue::{DECORATION_KIT_ITEM_ID, wrapped_trade_item};
 use crate::durability::house_scope_handoff::HouseId;
 use crate::durability::house_wrap::HouseWrapCommand;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::domain::hireling::catalogue::{DECORATION_KIT_ITEM_ID, wrapped_trade_item};
 use oteryn_protocol_oteryn::house_wrap as wire;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+#[path = "house_wrap/catalogue.rs"]
+pub(super) mod catalogue;
 
 const FURNITURE: &str = "oteryn:item.tibia.i6355";
 const KIT: &str = "oteryn:item.tibia.i6371";
@@ -36,6 +39,20 @@ macro_rules! authority_methods {
         fn house_wrap_available(&self) -> bool {
             false
         }
+        fn house_furniture_catalogue(
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: u16,
+        ) -> impl std::future::Future<
+            Output = Option<
+                Result<
+                    oteryn_protocol_oteryn::house_wrap::Catalogue,
+                    oteryn_protocol_oteryn::house_wrap::Refusal,
+                >,
+            >,
+        > {
+            async { None }
+        }
         fn house_wrap(
             &self,
             _: $crate::gameplay_transport::connection::AdmittedSession,
@@ -56,6 +73,18 @@ macro_rules! composed_methods {
                     .and_then(|g| g.native_gameplay())
                     .is_some()
         }
+        async fn house_furniture_catalogue(
+            &self,
+            admitted: connection::AdmittedSession,
+            page: u16,
+        ) -> Option<
+            Result<
+                oteryn_protocol_oteryn::house_wrap::Catalogue,
+                oteryn_protocol_oteryn::house_wrap::Refusal,
+            >,
+        > {
+            house_wrap::catalogue::read(self, admitted, page).await
+        }
         async fn house_wrap(
             &self,
             admitted: connection::AdmittedSession,
@@ -68,25 +97,84 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
-fn draft(request: wire::Request, definition: &str, target: Option<&TypedDefinitionRef>) -> Option<String> {
-    if let Some(target)=target {
+fn native_wrap_eligible(id: u32) -> bool {
+    #[derive(serde::Deserialize)]
+    struct Eligibility {
+        wrap_eligible: Vec<u32>,
+    }
+    static SOURCE: std::sync::OnceLock<Option<Eligibility>> = std::sync::OnceLock::new();
+    SOURCE
+        .get_or_init(|| {
+            serde_json::from_str(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../tools/content-schema/native-gameplay/house-decoration-actions.json"
+            )))
+            .ok()
+        })
+        .as_ref()
+        .is_some_and(|source| source.wrap_eligible.binary_search(&id).is_ok())
+}
+
+fn draft(
+    request: wire::Request,
+    definition: &str,
+    target: Option<&TypedDefinitionRef>,
+) -> Option<String> {
+    // Crystal src/game/game.cpp:4876-4880 selects unwrap for the decoration
+    // kit; its appearance eligibility never authorizes a wrap-to-self action.
+    if request.action == wire::Action::Wrap && definition == "oteryn:item.tibia.i23398" {
+        return None;
+    }
+    if let Some(target) = target {
         request.expected_revision.checked_add(1)?;
-        let id=target.production_key.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
-        if target.family != "Item" || target.revision_ref != "definition-r1" || (!wrapped_trade_item(id) && furniture_catalog::wrapped_to(id) != Some(DECORATION_KIT_ITEM_ID)) { return None; }
-        let kit=format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}");
-        return match request.action {
-            wire::Action::Unwrap if definition==kit => Some(target.production_key.clone()),
-            wire::Action::Wrap if definition==target.production_key => Some(kit),
+        let id = target
+            .production_key
+            .strip_prefix("oteryn:item.tibia.i")?
+            .parse::<u32>()
+            .ok()?;
+        if target.family != "Item"
+            || target.revision_ref != "definition-r1"
+            || (!wrapped_trade_item(id) && !native_wrap_eligible(id))
+        {
+            return None;
+        }
+        let kit = format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}");
+        let legacy_kit =
+            furniture_catalog::wrapped_to(id).map(|id| format!("oteryn:item.tibia.i{id}"));
+        let proposed = match request.action {
+            wire::Action::Unwrap
+                if definition == kit || legacy_kit.as_deref() == Some(definition) =>
+            {
+                Some(target.production_key.clone())
+            }
+            wire::Action::Wrap if definition == target.production_key => Some(kit),
             _ => None,
         };
+        if proposed.is_some() || request.action == wire::Action::Unwrap {
+            return proposed;
+        }
+        // A prior purchased/wrapped orientation cannot suppress a currently
+        // source-qualified forward pair after the same furniture was rotated.
     }
     request.expected_revision.checked_add(1)?;
-    let source_id = definition.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
+    let source_id = definition
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse::<u32>()
+        .ok()?;
     let (action, output_id) = match request.action {
+        // Crystal src/game/game.cpp:4898 uses the common decoration kit;
+        // items.cpp:238-241/item_parse.cpp:203-206 establish eligibility.
+        // Preserve the existing explicit HOUSE-ITEM-WIRE-1 oven reference pair.
+        wire::Action::Wrap if source_id != 6355 && native_wrap_eligible(source_id) => {
+            (Action::Wrap, DECORATION_KIT_ITEM_ID)
+        }
         wire::Action::Wrap => (Action::Wrap, furniture_catalog::wrapped_to(source_id)?),
         // Crystal construction_kits.lua:1-58 places a kit only on a House tile;
         // House admission and ACL fencing are enforced by execute before this draft.
-        wire::Action::Unwrap => (Action::PlaceKit, furniture_catalog::construction_kit_to(source_id)?),
+        wire::Action::Unwrap => (
+            Action::PlaceKit,
+            furniture_catalog::construction_kit_to(source_id)?,
+        ),
     };
     let output = format!("oteryn:item.tibia.i{output_id}");
     let mut state = State {
@@ -163,7 +251,11 @@ pub(super) async fn execute(
     {
         return refuse(wire::Refusal::Stale);
     }
-    let target=owner.root.house_furniture_kit_target(owner.character,request.item).await.ok()?;
+    let target = owner
+        .root
+        .house_furniture_kit_target(owner.character, request.item)
+        .await
+        .ok()?;
     let _lane = owner.spell_lane_permit().await?;
     let blocked_doors = owner.door.lock().await.blocking_cells().clone();
     let (house, placement_blocked) = {
@@ -182,9 +274,18 @@ pub(super) async fn execute(
             return refuse(wire::Refusal::NotWrapable);
         }
 
-        if let Some(target)=&target
-            && (index.definition_ref(&target.family,&target.production_key,&target.revision_ref).is_none()
-                || index.definition_ref("Item",&format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}"),&target.revision_ref).is_none()) {
+        if let Some(target) = &target
+            && (index
+                .definition_ref(&target.family, &target.production_key, &target.revision_ref)
+                .is_none()
+                || index
+                    .definition_ref(
+                        "Item",
+                        &format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}"),
+                        &target.revision_ref,
+                    )
+                    .is_none())
+        {
             return refuse(wire::Refusal::NotWrapable);
         }
 
@@ -222,8 +323,8 @@ pub(super) async fn execute(
                     },
                 )
                 .ok()?
-                || owner.movement_cells.index().lookup(
-                    owner.movement_cells.scope(),
+                || owner.movement_cells().index().lookup(
+                    owner.movement_cells().scope(),
                     crate::content::LogicalCell {
                         x: cell.x,
                         y: cell.y,
@@ -233,7 +334,10 @@ pub(super) async fn execute(
         } else {
             false
         };
-        (HouseId::new(admitted.world_id, &state.house)?, placement_blocked)
+        (
+            HouseId::new(admitted.world_id, &state.house)?,
+            placement_blocked,
+        )
     };
     let native = owner.active_generation?.native_gameplay()?.clone();
     let reply = owner
@@ -251,7 +355,11 @@ pub(super) async fn execute(
             // original target cell blocked now. None closes the proposed fresh
             // pair, while preserving that authoritative receipt lookup.
             move |key| {
-                if placement_blocked { None } else { draft(request, key, target.as_ref()) }
+                if placement_blocked {
+                    None
+                } else {
+                    draft(request, key, target.as_ref())
+                }
             },
             move |key| {
                 let policy = native.item_policy(key, "definition-r1")?;
@@ -269,17 +377,35 @@ pub(super) async fn execute(
         .ok()?;
     // Keep durable replay and current authority outcomes intact. Only the
     // fresh pair rejected for our live placement check receives Blocked.
-    Some(if placement_blocked && reply == wire::Reply::Refused(wire::Refusal::NotWrapable) {
-        wire::Reply::Refused(wire::Refusal::Blocked)
-    } else {
-        reply
-    })
+    Some(
+        if placement_blocked && reply == wire::Reply::Refused(wire::Refusal::NotWrapable) {
+            wire::Reply::Refused(wire::Refusal::Blocked)
+        } else {
+            reply
+        },
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+    #[test]
+    fn initialized_appearance_eligibility_wraps_transient_forms_but_not_the_kit_itself() {
+        let request = wire::Request {
+            action: wire::Action::Wrap,
+            item: [7; 16],
+            expected_revision: 1,
+            acl_revision: 1,
+            position: [1, 2, 7],
+        };
+        assert!(native_wrap_eligible(23398));
+        assert!(draft(request, "oteryn:item.tibia.i23398", None).is_none());
+        assert_eq!(
+            draft(request, "oteryn:item.tibia.i35950", None).as_deref(),
+            Some("oteryn:item.tibia.i23398")
+        );
+    }
     #[test]
     fn house_wrap_drafts_only_the_reference_pair() {
         let mut request = wire::Request {
@@ -297,22 +423,39 @@ mod tests {
 
     #[test]
     fn purchased_kit_keeps_its_exact_source_target_both_directions() {
-        let mut request=wire::Request {action:wire::Action::Unwrap,item:[7;16],
-            expected_revision:1,acl_revision:1,position:[1,2,7]};
+        let mut request = wire::Request {
+            action: wire::Action::Unwrap,
+            item: [7; 16],
+            expected_revision: 1,
+            acl_revision: 1,
+            position: [1, 2, 7],
+        };
         for id in crate::domain::hireling::catalogue::WRAPPED_TRADE_ITEM_IDS {
-            let target=TypedDefinitionRef {family:"Item".into(),production_key:format!("oteryn:item.tibia.i{id}"),
-                revision_ref:"definition-r1".into()};
-            request.action=wire::Action::Unwrap;
-            assert_eq!(draft(request,"oteryn:item.tibia.i23398",Some(&target)),Some(target.production_key.clone()));
-            request.action=wire::Action::Wrap;
-            assert_eq!(draft(request,&target.production_key,Some(&target)).as_deref(),Some("oteryn:item.tibia.i23398"));
-            assert!(draft(request,"oteryn:item.tibia.i3264",Some(&target)).is_none());
+            let target = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: format!("oteryn:item.tibia.i{id}"),
+                revision_ref: "definition-r1".into(),
+            };
+            request.action = wire::Action::Unwrap;
+            assert_eq!(
+                draft(request, "oteryn:item.tibia.i23398", Some(&target)),
+                Some(target.production_key.clone())
+            );
+            request.action = wire::Action::Wrap;
+            assert_eq!(
+                draft(request, &target.production_key, Some(&target)).as_deref(),
+                Some("oteryn:item.tibia.i23398")
+            );
+            assert!(draft(request, "oteryn:item.tibia.i3264", Some(&target)).is_none());
         }
-        request.action=wire::Action::Unwrap;
-        assert!(draft(request,"oteryn:item.tibia.i23398",None).is_none());
-        let forged=TypedDefinitionRef {family:"Item".into(),production_key:"oteryn:item.tibia.i3657".into(),
-            revision_ref:"definition-r1".into()};
-        assert!(draft(request,"oteryn:item.tibia.i23398",Some(&forged)).is_none());
+        request.action = wire::Action::Unwrap;
+        assert!(draft(request, "oteryn:item.tibia.i23398", None).is_none());
+        let forged = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i3657".into(),
+            revision_ref: "definition-r1".into(),
+        };
+        assert!(draft(request, "oteryn:item.tibia.i23398", Some(&forged)).is_none());
     }
 
     #[test]

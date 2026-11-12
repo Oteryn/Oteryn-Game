@@ -4,7 +4,9 @@ mod mapping_reducer;
 use super::*;
 pub use item_dictionary::AppearanceItemDictionary;
 use oteryn_protocol_oteryn::appearance as wire;
+pub use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 use std::collections::BTreeMap;
+pub use wire::Look;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppearanceUpdate {
@@ -96,13 +98,37 @@ pub(crate) fn validate_result(
     Ok(())
 }
 impl AppearanceState {
+    fn binding(
+        &self,
+        entity: world_spatial_entities::EntityRef,
+        reference: u32,
+    ) -> Option<&wire::Binding> {
+        self.bindings
+            .get(&entity)
+            .filter(|binding| binding.appearance_ref == reference)
+    }
+
+    fn forge_marker(&self, entity: &WorldSpatialEntity) -> Option<u8> {
+        if entity.kind != world_spatial_entities::EntityKind::Creature {
+            return None;
+        }
+        let binding = self.bindings.get(&entity.entity)?;
+        match entity.detail {
+            world_spatial_entities::EntityDetail::Actor { appearance_ref, .. }
+                if appearance_ref == binding.appearance_ref =>
+            {
+                binding.forge_stacks
+            }
+            _ => None,
+        }
+    }
+
     pub(crate) fn resolve(
         &self,
         entity: world_spatial_entities::EntityRef,
         reference: u32,
     ) -> Option<&wire::Look> {
-        let binding = self.bindings.get(&entity)?;
-        (binding.appearance_ref == reference).then_some(&binding.look)
+        self.binding(entity, reference).map(|binding| &binding.look)
     }
 }
 
@@ -138,3 +164,48 @@ impl<S: SessionStream> Session<S> {
 
 #[cfg(test)]
 mod mapping_tests;
+
+/// Connection-local, visibility-filtered presentation. A missing look is not a guessed outfit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VisibleAppearance {
+    pub entity: WorldSpatialEntity,
+    pub look: Option<wire::Look>,
+    /// Server-reported (light level, indexed colour), absent when unlit.
+    pub light: Option<(u8, u8)>,
+    /// Negotiated forge marker: 1..=5 influenced stacks; 15 fiendish.
+    pub forge_stacks: Option<u8>,
+}
+
+impl<S: SessionStream> Session<S> {
+    /// Resolve only the exact visible incarnation and dictionary reference.
+    pub fn visible_appearances(&self) -> Vec<VisibleAppearance> {
+        self.entities
+            .as_ref()
+            .into_iter()
+            .flat_map(WorldEntities::iter)
+            .map(|entity| VisibleAppearance {
+                entity: *entity,
+                forge_stacks: self
+                    .is_selected(wire::CAPABILITY_FORGE_CREATURE_V1)
+                    .then(|| self.appearance.as_ref()?.forge_marker(entity))
+                    .flatten(),
+                light: self
+                    .entities
+                    .as_ref()
+                    .and_then(|stored| stored.lights.get(&entity.entity.identity))
+                    .map(|light| (light.level, light.color)),
+                look: match entity.detail {
+                    world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } => self
+                        .appearance
+                        .as_ref()
+                        .and_then(|state| state.resolve(entity.entity, appearance_ref))
+                        .cloned(),
+                    _ => None,
+                },
+            })
+            .collect()
+    }
+}
+pub(crate) fn item_references(state: &AppearanceState) -> Option<Vec<u32>> {
+    state.items.as_ref().map(|items| items.references())
+}

@@ -1,0 +1,1803 @@
+{
+  "schema": 1,
+  "quest_directory": "rotten_blood_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/rotten-blood-exit",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 34070,
+          "y": 31974,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32955,
+        "y": 32398,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:53",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-enter",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34120,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34101,
+        "y": 31679,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-leave",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34101,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34120,
+        "y": 31980,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:30"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-return",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32970,
+          "y": 32337,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34065,
+        "y": 31718,
+        "floor": -15
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:76",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:83"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-full-counter",
+      "quest": "oteryn:quest/rotten-blood",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 34065,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32972,
+        "y": 32336,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u13_20/rotten_blood/putrefactory_task",
+          "minimum": 100,
+          "maximum": 2147483647,
+          "set": 100,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "You need to reach 100 points to enter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3070",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:46",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:58",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:65"
+      ]
+    }
+  ],
+  "runtime_exclusions": [
+    {
+      "key": "oteryn:quest-callback/rotten-putrefactory-return",
+      "reason": "Native map route and Lua have different targets; callback runs after native relocation and cannot ordinarily replace that route.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589413137"
+    }
+  ],
+  "npc_source": {
+    "quest": "rotten_blood_quest",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [
+      {
+        "npc_source_name": "torkada",
+        "source_blob_sha256": "3a4dedfca6c1afa630a72e2749677770ee84f0e04589048f5c8252ea7f3ee5ef",
+        "review_rows": [
+          "R4C173"
+        ],
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/torkada.lua:40-103",
+            "line_start": 40,
+            "line_end": 103,
+            "source_sha256": "0100bc29a3b8f8883b4f02fac51d5fdae6ff8bb654fc62634a8646a16df01b14",
+            "guarded_source_lua": "\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif player:getLevel() < 250 then\n\t\tnpcHandler:say(\"You need at least level 250 to start our mission.\", npc, creature)\n\t\treturn false\n\tend\n\n\tlocal access = player:kv():scoped(\"rotten-blood-quest\"):get(\"access\") or 0\n\tif access > 0 then\n\t\tif player:getStorageValue(Storage.Quest.U13_20.RottenBlood.AccessDoor) ~= 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U13_20.RottenBlood.AccessDoor, 1)\n\t\tend\n\t\tnpcHandler:say(\"You already have accepted this mission.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tmessage = message:lower()\n\tif MsgContains(message, \"time\") then\n\t\tnpcHandler:say(\"This expedition is here on an important {mission} for the inquisition\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"mission\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say(\"Are you willing, to bring the fury of the inquisition to that foul place and eradicate all evil you find? Speak, {yes} or {no}?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 2 then\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tnpcHandler:say({\n\t\t\t\"So hereby receive the blessings of the gods, provided by me as the voice of the inquisition! ...\",\n\t\t\t\"Go now and search the ancient temple in the north-west part of the drefian ruins. Slay the evil that lurks there and cleanse the foul place from its taint!\",\n\t\t}, npc, creature)\n\t\tplayer:kv():scoped(\"rotten-blood-quest\"):set(\"access\", 1)\n\t\tplayer:setStorageValue(Storage.Quest.U13_20.RottenBlood.AccessDoor, 1)\n\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)\n\telseif MsgContains(message, \"no\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tnpcHandler:say(\"Ok then not.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings! This isn't the {time} to chitchat though.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye, |PLAYERNAME|.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 58,
+                "lua_literal": "\"You need at least level 250 to start our mission.\""
+              },
+              {
+                "line": 62,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 62,
+                "lua_literal": "\"access\""
+              },
+              {
+                "line": 67,
+                "lua_literal": "\"You already have accepted this mission.\""
+              },
+              {
+                "line": 73,
+                "lua_literal": "\"time\""
+              },
+              {
+                "line": 74,
+                "lua_literal": "\"This expedition is here on an important {mission} for the inquisition\""
+              },
+              {
+                "line": 76,
+                "lua_literal": "\"mission\""
+              },
+              {
+                "line": 77,
+                "lua_literal": "\"Are you willing, to bring the fury of the inquisition to that foul place and eradicate all evil you find? Speak, {yes} or {no}?\""
+              },
+              {
+                "line": 79,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 82,
+                "lua_literal": "\"So hereby receive the blessings of the gods, provided by me as the voice of the inquisition! ...\""
+              },
+              {
+                "line": 83,
+                "lua_literal": "\"Go now and search the ancient temple in the north-west part of the drefian ruins. Slay the evil that lurks there and cleanse the foul place from its taint!\""
+              },
+              {
+                "line": 85,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 85,
+                "lua_literal": "\"access\""
+              },
+              {
+                "line": 88,
+                "lua_literal": "\"no\""
+              },
+              {
+                "line": 90,
+                "lua_literal": "\"Ok then not.\""
+              },
+              {
+                "line": 96,
+                "lua_literal": "\"Greetings! This isn't the {time} to chitchat though.\""
+              },
+              {
+                "line": 97,
+                "lua_literal": "\"Bye.\""
+              },
+              {
+                "line": 98,
+                "lua_literal": "\"Bye, |PLAYERNAME|.\""
+              }
+            ]
+          }
+        ],
+        "runtime_admission": false,
+        "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+        "full_source_lua": "local internalNpcName = \"Torkada\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 0\nnpcConfig.walkRadius = 0\n\nnpcConfig.outfit = {\n\tlookType = 1243,\n\tlookHead = 59,\n\tlookBody = 78,\n\tlookLegs = 78,\n\tlookFeet = 57,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif player:getLevel() < 250 then\n\t\tnpcHandler:say(\"You need at least level 250 to start our mission.\", npc, creature)\n\t\treturn false\n\tend\n\n\tlocal access = player:kv():scoped(\"rotten-blood-quest\"):get(\"access\") or 0\n\tif access > 0 then\n\t\tif player:getStorageValue(Storage.Quest.U13_20.RottenBlood.AccessDoor) ~= 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U13_20.RottenBlood.AccessDoor, 1)\n\t\tend\n\t\tnpcHandler:say(\"You already have accepted this mission.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tmessage = message:lower()\n\tif MsgContains(message, \"time\") then\n\t\tnpcHandler:say(\"This expedition is here on an important {mission} for the inquisition\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"mission\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say(\"Are you willing, to bring the fury of the inquisition to that foul place and eradicate all evil you find? Speak, {yes} or {no}?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 2 then\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tnpcHandler:say({\n\t\t\t\"So hereby receive the blessings of the gods, provided by me as the voice of the inquisition! ...\",\n\t\t\t\"Go now and search the ancient temple in the north-west part of the drefian ruins. Slay the evil that lurks there and cleanse the foul place from its taint!\",\n\t\t}, npc, creature)\n\t\tplayer:kv():scoped(\"rotten-blood-quest\"):set(\"access\", 1)\n\t\tplayer:setStorageValue(Storage.Quest.U13_20.RottenBlood.AccessDoor, 1)\n\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)\n\telseif MsgContains(message, \"no\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tnpcHandler:say(\"Ok then not.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings! This isn't the {time} to chitchat though.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye, |PLAYERNAME|.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/torkada.lua:1-103"
+      },
+      {
+        "npc_source_name": "bloodshade_sacrifice",
+        "source_blob_sha256": "e24d8e7d21af9e18e631975374625c1514c11f8a279e1e259ab7e7417616dd27",
+        "review_rows": [
+          "R4C174"
+        ],
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_sacrifice.lua:40-100",
+            "line_start": 40,
+            "line_end": 100,
+            "source_sha256": "cc34e3092a9579b81bd73d53e6701fb8ba3213f6b6b3d6adb3f2397a561fd65d",
+            "guarded_source_lua": "npcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal access = player:kv():scoped(\"rotten-blood-quest\"):get(\"access\") or 0\n\tif access > 2 then\n\t\tnpcHandler:say(\"You already have access.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tmessage = message:lower()\n\tif MsgContains(message, \"quest\") then\n\t\tnpcHandler:say({\n\t\t\t\"To enter the realm of the sanguine master and destroy its spawn, a sufficient sacrifice is imperative. ...\",\n\t\t\t\"Find and slay the keeper of blooded tears and bring the nectar of his eyes before the blood god. Present your gift on the sacrificial altar. ...\",\n\t\t\t\"After - and under no circumstances before - you have completed this procedure, you can enter the sacred fluid. You can, of course also take a slightly faster... {detour}.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"detour\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say({\n\t\t\t\"Hm. I see. Well, I will be frank. Every blood sacrifice has its price. Blood money will please the blood god... just as well. ...\",\n\t\t\t\"The sum would be five million gold pieces and I... my master will be pleased. Are you prepared for a sacrifice such as this?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 2 then\n\t\tnpcHandler:say(\"You are willing to pay 5000000 gold pieces, then? There is no turning back after our... transaction is complete. Are you sure?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 3)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 then\n\t\tif not player:removeMoneyBank(5000000) then\n\t\t\tnpcHandler:say(\"Sorry, you don't have enough gold.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\tnpcHandler:say(\"The bargain has been made, the business is done.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tplayer:kv():scoped(\"rotten-blood-quest\"):set(\"access\", 4)\n\telseif MsgContains(message, \"no\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tnpcHandler:say(\"Ok then not.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Mortal! If you are on a {quest} to serve the blood god, my master - be greeted!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye, |PLAYERNAME|.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 52,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 52,
+                "lua_literal": "\"access\""
+              },
+              {
+                "line": 54,
+                "lua_literal": "\"You already have access.\""
+              },
+              {
+                "line": 60,
+                "lua_literal": "\"quest\""
+              },
+              {
+                "line": 62,
+                "lua_literal": "\"To enter the realm of the sanguine master and destroy its spawn, a sufficient sacrifice is imperative. ...\""
+              },
+              {
+                "line": 63,
+                "lua_literal": "\"Find and slay the keeper of blooded tears and bring the nectar of his eyes before the blood god. Present your gift on the sacrificial altar. ...\""
+              },
+              {
+                "line": 64,
+                "lua_literal": "\"After - and under no circumstances before - you have completed this procedure, you can enter the sacred fluid. You can, of course also take a slightly faster... {detour}.\""
+              },
+              {
+                "line": 67,
+                "lua_literal": "\"detour\""
+              },
+              {
+                "line": 69,
+                "lua_literal": "\"Hm. I see. Well, I will be frank. Every blood sacrifice has its price. Blood money will please the blood god... just as well. ...\""
+              },
+              {
+                "line": 70,
+                "lua_literal": "\"The sum would be five million gold pieces and I... my master will be pleased. Are you prepared for a sacrifice such as this?\""
+              },
+              {
+                "line": 73,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 74,
+                "lua_literal": "\"You are willing to pay 5000000 gold pieces, then? There is no turning back after our... transaction is complete. Are you sure?\""
+              },
+              {
+                "line": 76,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 78,
+                "lua_literal": "\"Sorry, you don't have enough gold.\""
+              },
+              {
+                "line": 82,
+                "lua_literal": "\"The bargain has been made, the business is done.\""
+              },
+              {
+                "line": 84,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 84,
+                "lua_literal": "\"access\""
+              },
+              {
+                "line": 85,
+                "lua_literal": "\"no\""
+              },
+              {
+                "line": 87,
+                "lua_literal": "\"Ok then not.\""
+              },
+              {
+                "line": 93,
+                "lua_literal": "\"Mortal! If you are on a {quest} to serve the blood god, my master - be greeted!\""
+              },
+              {
+                "line": 94,
+                "lua_literal": "\"Bye.\""
+              },
+              {
+                "line": 95,
+                "lua_literal": "\"Bye, |PLAYERNAME|.\""
+              }
+            ]
+          }
+        ],
+        "runtime_admission": false,
+        "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+        "full_source_lua": "local npcType = Game.createNpcType(\"Bloodshade Sacrifice\")\nlocal npcConfig = {}\n\nlocal npcName = \"A Bloodshade\"\nnpcConfig.name = npcName\nnpcConfig.description = npcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 0\nnpcConfig.walkRadius = 0\n\nnpcConfig.outfit = {\n\tlookType = 1414,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal access = player:kv():scoped(\"rotten-blood-quest\"):get(\"access\") or 0\n\tif access > 2 then\n\t\tnpcHandler:say(\"You already have access.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tmessage = message:lower()\n\tif MsgContains(message, \"quest\") then\n\t\tnpcHandler:say({\n\t\t\t\"To enter the realm of the sanguine master and destroy its spawn, a sufficient sacrifice is imperative. ...\",\n\t\t\t\"Find and slay the keeper of blooded tears and bring the nectar of his eyes before the blood god. Present your gift on the sacrificial altar. ...\",\n\t\t\t\"After - and under no circumstances before - you have completed this procedure, you can enter the sacred fluid. You can, of course also take a slightly faster... {detour}.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"detour\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say({\n\t\t\t\"Hm. I see. Well, I will be frank. Every blood sacrifice has its price. Blood money will please the blood god... just as well. ...\",\n\t\t\t\"The sum would be five million gold pieces and I... my master will be pleased. Are you prepared for a sacrifice such as this?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 2 then\n\t\tnpcHandler:say(\"You are willing to pay 5000000 gold pieces, then? There is no turning back after our... transaction is complete. Are you sure?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 3)\n\telseif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 3 then\n\t\tif not player:removeMoneyBank(5000000) then\n\t\t\tnpcHandler:say(\"Sorry, you don't have enough gold.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\tnpcHandler:say(\"The bargain has been made, the business is done.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tplayer:kv():scoped(\"rotten-blood-quest\"):set(\"access\", 4)\n\telseif MsgContains(message, \"no\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\tnpcHandler:say(\"Ok then not.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Mortal! If you are on a {quest} to serve the blood god, my master - be greeted!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye, |PLAYERNAME|.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_sacrifice.lua:1-100"
+      },
+      {
+        "npc_source_name": "bloodshade_rotten",
+        "source_blob_sha256": "153105638eeaa55321f4e30caf4f5796291c89329092b32b3d4e6d6f9103df7c",
+        "review_rows": [
+          "R4C181",
+          "R4C182"
+        ],
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_rotten.lua:40-155",
+            "line_start": 40,
+            "line_end": 155,
+            "source_sha256": "d96b650951e2e4d19c346197b4c117790baa88877e014eaed59fe354dfb0b5d3",
+            "guarded_source_lua": "npcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nlocal function getPlayerTaintLevel(player)\n\tlocal kv = player:kv():scoped(\"rotten-blood-quest\")\n\tlocal currentTaintKV = kv:get(\"taints\") or 0\n\tlocal currentTaintCondition = 0\n\tlocal taintCondition = player:getCondition(CONDITION_BAKRAGORE, CONDITIONID_DEFAULT)\n\tif taintCondition then\n\t\tcurrentTaintCondition = taintCondition:getParameter(CONDITION_PARAM_SUBID) or 0\n\tend\n\treturn math.max(currentTaintKV, currentTaintCondition)\nend\n\nlocal function setPlayerTaintLevel(player, newTaintLevel)\n\tlocal kv = player:kv():scoped(\"rotten-blood-quest\")\n\tkv:set(\"taints\", newTaintLevel)\n\n\tfor i = 0, 10 do\n\t\tplayer:removeCondition(CONDITION_BAKRAGORE, i)\n\tend\n\n\tif newTaintLevel > 0 then\n\t\tlocal condition = Condition(CONDITION_BAKRAGORE, CONDITIONID_DEFAULT, 0, true)\n\t\tcondition:setParameter(CONDITION_PARAM_SUBID, newTaintLevel)\n\t\tcondition:setParameter(CONDITION_PARAM_TICKS, -1)\n\t\tplayer:addCondition(condition)\n\tend\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tmessage = message:lower()\n\n\tif MsgContains(message, \"taints\") or MsgContains(message, \"cleanse\") or MsgContains(message, \"purify\") then\n\t\tlocal currentTaint = getPlayerTaintLevel(player)\n\n\t\tif currentTaint == 0 then\n\t\t\tnpcHandler:say(\"Your soul is already pure, mortal. You carry no taint of the rotten blood.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\tlocal newTaintLevel = currentTaint - 1\n\t\tnpcHandler:say(\"I can sense \" .. currentTaint .. \" levels of rotten taint in your soul. I can reduce it to \" .. newTaintLevel .. \" level\" .. (newTaintLevel == 1 and \"\" or \"s\") .. \". Do you wish me to proceed with the purification? Say {yes} to confirm or {no} to cancel.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 then\n\t\tlocal currentTaint = getPlayerTaintLevel(player)\n\n\t\tif currentTaint > 0 then\n\t\t\tplayer:removeIcon(\"rotten-area\")\n\t\t\tplayer:removeIconBakragore()\n\t\t\tlocal newTaintLevel = currentTaint - 1\n\n\t\t\tsetPlayerTaintLevel(player, newTaintLevel)\n\n\t\t\tif newTaintLevel == 0 then\n\t\t\t\tplayer:removeIcon(\"rotten-area\")\n\t\t\t\tplayer:removeIconBakragore()\n\t\t\t\tnpcHandler:say(\"Your soul has been completely purified! All rotten taint has been cleansed from your being. You are now free from this burden.\", npc, creature)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYDAMAGE)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I have reduced your taint from \" .. currentTaint .. \" to \" .. newTaintLevel .. \" level\" .. (newTaintLevel == 1 and \"\" or \"s\") .. \". The taint icon has been updated. Return to me if you wish to purify further.\", npc, creature)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say(\"Your soul is already pure. There is nothing more I can do for you.\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"no\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say(\"Very well. Return to me if you change your mind about purifying your soul.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tlocal access = player:kv():scoped(\"rotten-blood-quest\"):get(\"access\") or 0\n\tif access == 5 then\n\t\tnpcHandler:say(\"You already have started this quest. If you wish to cleanse your soul from rotten {taints}, I can help you with that.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"quest\") then\n\t\tnpcHandler:say({\n\t\t\t\"First you must fight the two pairs of evil twins that lurk in the realm beyond here. ...\",\n\t\t\t\"Only when you are victorious over all four of them, your path to the source of vileness, the path to Bakragore will be opened. ...\",\n\t\t\t\"And even this victory will only be the beginning.\",\n\t\t}, npc, creature)\n\t\tplayer:kv():scoped(\"rotten-blood-quest\"):set(\"access\", 5)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Mortal! If you are on a {quest} to serve the blood god, my master - be greeted! I can also cleanse you from rotten {taints} that burden your soul.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye, |PLAYERNAME|.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 45,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 46,
+                "lua_literal": "\"taints\""
+              },
+              {
+                "line": 56,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 57,
+                "lua_literal": "\"taints\""
+              },
+              {
+                "line": 81,
+                "lua_literal": "\"taints\""
+              },
+              {
+                "line": 81,
+                "lua_literal": "\"cleanse\""
+              },
+              {
+                "line": 81,
+                "lua_literal": "\"purify\""
+              },
+              {
+                "line": 85,
+                "lua_literal": "\"Your soul is already pure, mortal. You carry no taint of the rotten blood.\""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\"I can sense \""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\" levels of rotten taint in your soul. I can reduce it to \""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\" level\""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\"\""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\"s\""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\". Do you wish me to proceed with the purification? Say {yes} to confirm or {no} to cancel.\""
+              },
+              {
+                "line": 96,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 100,
+                "lua_literal": "\"rotten-area\""
+              },
+              {
+                "line": 107,
+                "lua_literal": "\"rotten-area\""
+              },
+              {
+                "line": 109,
+                "lua_literal": "\"Your soul has been completely purified! All rotten taint has been cleansed from your being. You are now free from this burden.\""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\"I have reduced your taint from \""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\" to \""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\" level\""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\"\""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\"s\""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\". The taint icon has been updated. Return to me if you wish to purify further.\""
+              },
+              {
+                "line": 117,
+                "lua_literal": "\"Your soul is already pure. There is nothing more I can do for you.\""
+              },
+              {
+                "line": 123,
+                "lua_literal": "\"no\""
+              },
+              {
+                "line": 124,
+                "lua_literal": "\"Very well. Return to me if you change your mind about purifying your soul.\""
+              },
+              {
+                "line": 129,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 129,
+                "lua_literal": "\"access\""
+              },
+              {
+                "line": 131,
+                "lua_literal": "\"You already have started this quest. If you wish to cleanse your soul from rotten {taints}, I can help you with that.\""
+              },
+              {
+                "line": 136,
+                "lua_literal": "\"quest\""
+              },
+              {
+                "line": 138,
+                "lua_literal": "\"First you must fight the two pairs of evil twins that lurk in the realm beyond here. ...\""
+              },
+              {
+                "line": 139,
+                "lua_literal": "\"Only when you are victorious over all four of them, your path to the source of vileness, the path to Bakragore will be opened. ...\""
+              },
+              {
+                "line": 140,
+                "lua_literal": "\"And even this victory will only be the beginning.\""
+              },
+              {
+                "line": 142,
+                "lua_literal": "\"rotten-blood-quest\""
+              },
+              {
+                "line": 142,
+                "lua_literal": "\"access\""
+              },
+              {
+                "line": 148,
+                "lua_literal": "\"Mortal! If you are on a {quest} to serve the blood god, my master - be greeted! I can also cleanse you from rotten {taints} that burden your soul.\""
+              },
+              {
+                "line": 149,
+                "lua_literal": "\"Bye.\""
+              },
+              {
+                "line": 150,
+                "lua_literal": "\"Bye, |PLAYERNAME|.\""
+              }
+            ]
+          }
+        ],
+        "runtime_admission": false,
+        "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+        "full_source_lua": "local npcType = Game.createNpcType(\"Bloodshade Rotten\")\nlocal npcConfig = {}\n\nlocal npcName = \"A Bloodshade\"\nnpcConfig.name = npcName\nnpcConfig.description = npcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 0\nnpcConfig.walkRadius = 0\n\nnpcConfig.outfit = {\n\tlookType = 1414,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nlocal function getPlayerTaintLevel(player)\n\tlocal kv = player:kv():scoped(\"rotten-blood-quest\")\n\tlocal currentTaintKV = kv:get(\"taints\") or 0\n\tlocal currentTaintCondition = 0\n\tlocal taintCondition = player:getCondition(CONDITION_BAKRAGORE, CONDITIONID_DEFAULT)\n\tif taintCondition then\n\t\tcurrentTaintCondition = taintCondition:getParameter(CONDITION_PARAM_SUBID) or 0\n\tend\n\treturn math.max(currentTaintKV, currentTaintCondition)\nend\n\nlocal function setPlayerTaintLevel(player, newTaintLevel)\n\tlocal kv = player:kv():scoped(\"rotten-blood-quest\")\n\tkv:set(\"taints\", newTaintLevel)\n\n\tfor i = 0, 10 do\n\t\tplayer:removeCondition(CONDITION_BAKRAGORE, i)\n\tend\n\n\tif newTaintLevel > 0 then\n\t\tlocal condition = Condition(CONDITION_BAKRAGORE, CONDITIONID_DEFAULT, 0, true)\n\t\tcondition:setParameter(CONDITION_PARAM_SUBID, newTaintLevel)\n\t\tcondition:setParameter(CONDITION_PARAM_TICKS, -1)\n\t\tplayer:addCondition(condition)\n\tend\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tmessage = message:lower()\n\n\tif MsgContains(message, \"taints\") or MsgContains(message, \"cleanse\") or MsgContains(message, \"purify\") then\n\t\tlocal currentTaint = getPlayerTaintLevel(player)\n\n\t\tif currentTaint == 0 then\n\t\t\tnpcHandler:say(\"Your soul is already pure, mortal. You carry no taint of the rotten blood.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\tlocal newTaintLevel = currentTaint - 1\n\t\tnpcHandler:say(\"I can sense \" .. currentTaint .. \" levels of rotten taint in your soul. I can reduce it to \" .. newTaintLevel .. \" level\" .. (newTaintLevel == 1 and \"\" or \"s\") .. \". Do you wish me to proceed with the purification? Say {yes} to confirm or {no} to cancel.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"yes\") and npcHandler:getTopic(playerId) == 1 then\n\t\tlocal currentTaint = getPlayerTaintLevel(player)\n\n\t\tif currentTaint > 0 then\n\t\t\tplayer:removeIcon(\"rotten-area\")\n\t\t\tplayer:removeIconBakragore()\n\t\t\tlocal newTaintLevel = currentTaint - 1\n\n\t\t\tsetPlayerTaintLevel(player, newTaintLevel)\n\n\t\t\tif newTaintLevel == 0 then\n\t\t\t\tplayer:removeIcon(\"rotten-area\")\n\t\t\t\tplayer:removeIconBakragore()\n\t\t\t\tnpcHandler:say(\"Your soul has been completely purified! All rotten taint has been cleansed from your being. You are now free from this burden.\", npc, creature)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYDAMAGE)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I have reduced your taint from \" .. currentTaint .. \" to \" .. newTaintLevel .. \" level\" .. (newTaintLevel == 1 and \"\" or \"s\") .. \". The taint icon has been updated. Return to me if you wish to purify further.\", npc, creature)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say(\"Your soul is already pure. There is nothing more I can do for you.\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"no\") and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say(\"Very well. Return to me if you change your mind about purifying your soul.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tlocal access = player:kv():scoped(\"rotten-blood-quest\"):get(\"access\") or 0\n\tif access == 5 then\n\t\tnpcHandler:say(\"You already have started this quest. If you wish to cleanse your soul from rotten {taints}, I can help you with that.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"quest\") then\n\t\tnpcHandler:say({\n\t\t\t\"First you must fight the two pairs of evil twins that lurk in the realm beyond here. ...\",\n\t\t\t\"Only when you are victorious over all four of them, your path to the source of vileness, the path to Bakragore will be opened. ...\",\n\t\t\t\"And even this victory will only be the beginning.\",\n\t\t}, npc, creature)\n\t\tplayer:kv():scoped(\"rotten-blood-quest\"):set(\"access\", 5)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Mortal! If you are on a {quest} to serve the blood god, my master - be greeted! I can also cleanse you from rotten {taints} that burden your soul.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Bye.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Bye, |PLAYERNAME|.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_rotten.lua:1-155"
+      }
+    ],
+    "policy": "Existing Rotten Blood owner ANSWERs and Newhaven native travel design remain authoritative; do not activate superseded raw branches. Kesar Order of Stag branches excluded."
+  },
+  "step_inventory": [
+    {
+      "element": "Torkada mission",
+      "patterns": [
+        "P09",
+        "P13",
+        "P29"
+      ],
+      "trigger": "Torkada: time→mission→yes",
+      "condition": "level≥250; access0",
+      "effect": "KVaccess1; AccessDoor47952=1; restoredoor foraccess>0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/torkada.lua:57"
+      ],
+      "existing": "TAK — owned progression and NPC route. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:352",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Paid access",
+      "patterns": [
+        "P09",
+        "P10",
+        "P13",
+        "P29"
+      ],
+      "trigger": "Bloodshade sacrifice: quest→detour→yes→yes",
+      "condition": "access≤2; bank+gold≥5000000",
+      "effect": "consume5000000; access4",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_sacrifice.lua:52"
+      ],
+      "existing": "TAK — fenced payment and progress. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:352",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Sacrifice stage 0",
+      "patterns": [
+        "P02",
+        "P29"
+      ],
+      "trigger": "Use43891",
+      "condition": "access0; held32594≥1",
+      "effect": "access1; consume1tear",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:3"
+      ],
+      "existing": "TAK — source state-dependent consumption owner. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:380",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Sacrifice stage 1",
+      "patterns": [
+        "P02",
+        "P29"
+      ],
+      "trigger": "Use43891",
+      "condition": "access1; held32594≥1",
+      "effect": "access2; retain tear",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:3"
+      ],
+      "existing": "TAK — source state-dependent consumption owner. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:380",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Sacrifice stage 2",
+      "patterns": [
+        "P02",
+        "P29"
+      ],
+      "trigger": "Use43891",
+      "condition": "access2; held32594≥1",
+      "effect": "access3; consume1tear",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:3"
+      ],
+      "existing": "TAK — source state-dependent consumption owner. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:380",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Sacrifice stage 3",
+      "patterns": [
+        "P02",
+        "P29"
+      ],
+      "trigger": "Use43891",
+      "condition": "access3; held32594≥1",
+      "effect": "access4; consume1tear",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:3"
+      ],
+      "existing": "TAK — source state-dependent consumption owner. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:380",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Blood entrance",
+      "patterns": [
+        "P03",
+        "P29"
+      ],
+      "trigger": "StepIn32953,32398,9",
+      "condition": "level≥250; access≥4",
+      "effect": "allowed→34070,31975,14; deniedaccess→32955,32398,9 and20%currentHP damage onlyifremaining>10; deniedlevel→from",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Blood exit",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn34070,31974,14",
+      "condition": "player",
+      "effect": "teleport32955,32398,9",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_blood_entrance.lua:46"
+      ],
+      "existing": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Bloodshade acknowledgement",
+      "patterns": [
+        "P09",
+        "P29"
+      ],
+      "trigger": "Bloodshade rotten: quest",
+      "condition": "Crystalaccess!=5; existingOterynrestricts4",
+      "effect": "access5",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_rotten.lua:129"
+      ],
+      "existing": "CZĘŚCIOWO — qualified4→5 NPC transition; arbitrary earlierstate rejected. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command/endgame.rs:352",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bloodshade cleanse",
+      "patterns": [
+        "P09",
+        "P29"
+      ],
+      "trigger": "taints/cleanse/purify→yes",
+      "condition": "maxKV/conditiontaints>0",
+      "effect": "Crystal removes1 immediately; existingowner rule regular/all cleanse with68h afterfirst",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bloodshade_rotten.lua:81"
+      ],
+      "existing": "TAK acceptedowner rule; literal Crystal intentionally superseded. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:500",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Putrefactory entry",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "UseAID34120",
+      "condition": "player",
+      "effect": "teleport34101,31679,13",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Putrefactory exit",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "UseAID34101",
+      "condition": "player",
+      "effect": "teleport34120,31980,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:18"
+      ],
+      "existing": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Putrefactory full counter gate",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "UseAID34065",
+      "condition": "PutrefactoryTask47956≥100",
+      "effect": "teleport32972,32336,15; no consumption; preserve arbitrary oldcounter without fixed SET",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:33"
+      ],
+      "existing": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Putrefactory return",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn32970,32337,15",
+      "condition": "player",
+      "effect": "teleport34065,31718,15",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:68"
+      ],
+      "existing": "CZĘŚCIOWO — Use/StepIn i literalny storage istnieją; brak tego powiązania w 20 rekordach danych. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Ground-specific internal teleport",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn34003,31841,14",
+      "condition": "item42676 onground",
+      "effect": "teleport34122,31879,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/teleport_rotten_blood.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Putrefactory timer",
+      "patterns": [
+        "P16",
+        "P25"
+      ],
+      "trigger": "20s globaltick",
+      "condition": "player within34002,31658,14→34115,31770,15",
+      "effect": "counter+1 cap100; icon onlypositive; negativeinitialquirk",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:19"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Putrefactory login/area icons",
+      "patterns": [
+        "P25"
+      ],
+      "trigger": "login and2s globaltick",
+      "condition": "mainarea or vestibule or leverroom",
+      "effect": "restore/removeicon; detect3regions",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:55"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reservoir 1",
+      "patterns": [
+        "P02",
+        "P17"
+      ],
+      "trigger": "UseAID47953 at34081,31704,14",
+      "condition": "storage48057≤now",
+      "effect": "normalizecounternegative0; +20 cap100; positioncd20s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reservoir 2",
+      "patterns": [
+        "P02",
+        "P17"
+      ],
+      "trigger": "UseAID47953 at34013,31744,14",
+      "condition": "storage48058≤now",
+      "effect": "normalizecounternegative0; +20 cap100; positioncd20s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reservoir 3",
+      "patterns": [
+        "P02",
+        "P17"
+      ],
+      "trigger": "UseAID47953 at34044,31712,14",
+      "condition": "storage48059≤now",
+      "effect": "normalizecounternegative0; +20 cap100; positioncd20s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reservoir 4",
+      "patterns": [
+        "P02",
+        "P17"
+      ],
+      "trigger": "UseAID47953 at34051,31706,15",
+      "condition": "storage48060≤now",
+      "effect": "normalizecounternegative0; +20 cap100; positioncd20s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reservoir 5",
+      "patterns": [
+        "P02",
+        "P17"
+      ],
+      "trigger": "UseAID47953 at34060,31735,15",
+      "condition": "storage48061≤now",
+      "effect": "normalizecounternegative0; +20 cap100; positioncd20s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Reservoir 6",
+      "patterns": [
+        "P02",
+        "P17"
+      ],
+      "trigger": "UseAID47953 at34095,31684,15",
+      "condition": "storage48062≤now",
+      "effect": "normalizecounternegative0; +20 cap100; positioncd20s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:155"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ichgahal admission",
+      "patterns": [
+        "P06",
+        "P17",
+        "P25"
+      ],
+      "trigger": "Uselever32979,32333,15; participantsx32978..32974,y32333,z15",
+      "condition": "level250;1–5players; emptyroom; cooldownready",
+      "effect": "boss33008,32333,15; teleport33004,32341,15; room32998,32326→33018,32343,z15; exit33004,32343; cddefault20h;20min defaulttimeout",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_ichgahal.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath admission",
+      "patterns": [
+        "P06",
+        "P17",
+        "P25"
+      ],
+      "trigger": "Uselever33079,32333,15; participantsx33078..33074,y32333,z15",
+      "condition": "level250;1–5players; emptyroom; cooldownready",
+      "effect": "boss33044,32332,15; teleport33043,32341,15; room33035,32327→33052,32344,z15; exit33043,32344; cddefault20h;20min defaulttimeout",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_vemiath.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Murcion admission",
+      "patterns": [
+        "P06",
+        "P17",
+        "P25"
+      ],
+      "trigger": "Uselever32979,32365,15; participantsx32974..32978,y32365,z15",
+      "condition": "level250;1–5players; emptyroom; cooldownready",
+      "effect": "boss33008,32365,15; teleport33009,32372,15; room33000,32360→33017,32375,z15; exit33904,31693; cd20h;20min defaulttimeout",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_murcion.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz admission",
+      "patterns": [
+        "P06",
+        "P17",
+        "P25"
+      ],
+      "trigger": "Uselever33079,32367,15; participantsx33074..33078,y32367,z15",
+      "condition": "level250;1–5players; emptyroom; cooldownready",
+      "effect": "boss33044,32362,15; teleport33044,32373,15; room33035,32358→33052,32375,z15; exit33904,31693; cd20h;20min defaulttimeout",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_chagorz.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore canonical admission",
+      "patterns": [
+        "P06",
+        "P17",
+        "P25"
+      ],
+      "trigger": "Uselever33015,32392,15; participantsx33010..33014,y32392,z15",
+      "condition": "level250;1–5players; emptyroom; cooldownready",
+      "effect": "boss33044,32394,15; teleport33044,32407,15; room33034,32389→33053,32410,z15; exit34106,32052,13; cd68h;20min defaulttimeout",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_bakragore.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore duplicate admission",
+      "patterns": [
+        "P06",
+        "P17",
+        "P25"
+      ],
+      "trigger": "Uselever33079,32398,15; participantsx33078..33074,y32398,z15",
+      "condition": "level250;1–5players; emptyroom; cooldownready",
+      "effect": "boss33044,32394,15; teleport33044,32407,15; room33034,32389→33053,32410,z15; exit34106,32052,13; cd20h;20min defaulttimeout",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_bakragore1.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "BossLever lifecycle",
+      "patterns": [
+        "P25",
+        "P17"
+      ],
+      "trigger": "admitted rottenboss lever",
+      "condition": "spawn successful",
+      "effect": "clearrotten icons; persistboss cooldown; timeoutremovesplayers; death shortensremainingtime",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_ichgahal.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz world initialization",
+      "patterns": [
+        "P22"
+      ],
+      "trigger": "scriptload",
+      "condition": "none",
+      "effect": "Game storage010126=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_chagorz.lua:27"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Spore field 43294",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "StepIn item43294",
+      "condition": "player",
+      "effect": "agony floor(maxHP×10%)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_fields.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Spore field 43295",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "StepIn item43295",
+      "condition": "player",
+      "effect": "agony floor(maxHP×15%); also heals Ichgahal13500",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_fields.lua:22"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ichgahal StepOut spore",
+      "patterns": [
+        "P16",
+        "P24"
+      ],
+      "trigger": "monsterStepOutAID47949",
+      "condition": "nameIchgahal",
+      "effect": "oldtile43294→43295after3s→removeafter3s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/movements_fields.lua:52"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore personal death",
+      "patterns": [
+        "P25",
+        "P29"
+      ],
+      "trigger": "playerdeathin33034,32389→33053,32410,z15",
+      "condition": "maxKV/conditiontaints",
+      "effect": "Crystal subtractmin2; mainowner explicitly uses sharedterminalfailure only",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_bakragore_player_death.lua:45"
+      ],
+      "existing": "TAK owneroverride implemented; literalindividualdeath notported. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:480",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Login taint restore",
+      "patterns": [
+        "P25",
+        "P29"
+      ],
+      "trigger": "playerlogin",
+      "condition": "taints1..9; conditiondiffers",
+      "effect": "applyCONDITION_BAKRAGORE duration7days",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_login.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Login icon reset",
+      "patterns": [
+        "P16",
+        "P25"
+      ],
+      "trigger": "playerlogin",
+      "condition": "player existsafter2s",
+      "effect": "clear3icons; optional undefinedupdateRottenHazardIcon",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_area_login.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ordinary monster death binding",
+      "patterns": [
+        "P07",
+        "P21"
+      ],
+      "trigger": "onStartup,16listedtypes",
+      "condition": "MonsterType exists",
+      "effect": "registerRottenBloodMonsterDeath",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/startup_register_events.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "AI death cleanup",
+      "patterns": [
+        "P25"
+      ],
+      "trigger": "MonsterAI_Death",
+      "condition": "monster",
+      "effect": "MonsterAI.onDeath clearspermonsterstate",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/creaturescripts_monster_ai_death.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath mechanic cleanup",
+      "patterns": [
+        "P25",
+        "P22"
+      ],
+      "trigger": "bossdeath",
+      "condition": "matchingboss",
+      "effect": "clearpauseflags; Vemiath/BakclearGlobalRottenBloodStates andtimer",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/vemiath_mechanics_death.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz mechanic cleanup",
+      "patterns": [
+        "P25",
+        "P22"
+      ],
+      "trigger": "bossdeath",
+      "condition": "matchingboss",
+      "effect": "clearpauseflags; Vemiath/BakclearGlobalRottenBloodStates andtimer",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/chagorz_mechanics_death.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore mechanic cleanup",
+      "patterns": [
+        "P25",
+        "P22"
+      ],
+      "trigger": "bossdeath",
+      "condition": "matchingboss",
+      "effect": "clearpauseflags; Vemiath/BakclearGlobalRottenBloodStates andtimer",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore bonus corpse reward",
+      "patterns": [
+        "P11",
+        "P28"
+      ],
+      "trigger": "bossdeath",
+      "condition": "essencecountmonsterstorage88888>0;corpse",
+      "effect": "chance1/2/3/4essences=5/8/12/15%; otherpositive5%; successrandom43895or43860",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua:21"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Hazard swap",
+      "patterns": [
+        "P16",
+        "P17",
+        "P30"
+      ],
+      "trigger": "onCombat",
+      "condition": "inside33800..34137,31653..31932,z14/15; hazard1..4=2%/≥5=5%; strict60scd",
+      "effect": "after2s,recheckzone/samefloor/distance≤2; swapplayerandmonster",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua:65"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Hazard bloodjaw on kill",
+      "patterns": [
+        "P07",
+        "P16",
+        "P17",
+        "P21"
+      ],
+      "trigger": "RottenBloodMonsterDeath; last-hitplayer elsemostdamage",
+      "condition": "16types;nonsummon;zone;hazard≥2=6%,≥6=9%;strict30scd",
+      "effect": "spawn elderbloodjaw(no space)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua:129"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Hazard root",
+      "patterns": [
+        "P16",
+        "P17",
+        "P30"
+      ],
+      "trigger": "onCombat",
+      "condition": "zone;hazard≥3;3%;strict5scd",
+      "effect": "after500ms recheck; root3000ms",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua:177"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Hazard damage multiplier",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "onDrainHealth",
+      "condition": "zone; hazard≥4/7/8",
+      "effect": "add ceil(primary×15/30/45%) and secondary separately",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/eventcallback_on_combat_rottenblood.lua:217"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Party minimum hazard icon",
+      "patterns": [
+        "P21",
+        "P29",
+        "P30"
+      ],
+      "trigger": "monsterThink nearbyplayers",
+      "condition": "max(KV,condition) perparty; cache10s",
+      "effect": "minimumallpartymembers; taint1..4→same,5→0,6..9→1..4; branches≥5 unreachablethroughthisicon",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/monster_onthink_area_icons.lua:34"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Upper-left arrow stacks",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "monsterThink, dedup1s",
+      "condition": "33800..33941,31653..31771,z14/15",
+      "effect": "arrow+1 every30s cap100; clearonleave",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/monster_onthink_area_icons.lua:117"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Lower-left cross stacks",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "monsterThink, dedup1s",
+      "condition": "33800..33937,31809..31931,z14/15",
+      "effect": "redcross+1 every1s cap111; energy1300–1500thenreset0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/monster_onthink_area_icons.lua:134"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Shared bloodjaw count",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "ensureElderBloodjaws",
+      "condition": "room maxparticipanttaint",
+      "effect": "base2;+1at5,+1at8,+1at9;cap5;10walkablerandomattempts",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua:53"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Shared 30-second teleport helper",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "initializeBoss helper",
+      "condition": "bossalive",
+      "effect": "37000center15s every30s; NO AID; actualcallerclosure uncertain",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua:114"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bloodjaw centre activation",
+      "patterns": [
+        "P16",
+        "P24",
+        "P30"
+      ],
+      "trigger": "ElderBloodjaw StepIn centreteleport",
+      "condition": "helperactive",
+      "effect": "removeallbloodjaws;pause;warning10s+5s;40%maxHP agonytoall;resume15s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua:196"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Player centre activation",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "StepInAID50001,Vemiath/Chagorz/Bakcentres",
+      "condition": "bloodjawwithin2; boss/main targetrequired",
+      "effect": "removebloodjaws;pause;target15%maxHPafter5s+25%after15s;respawnbloodjaws;resume. Missingboss/targetleavespaused",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/teleport_step_event.lua:27"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Admin teleport diagnostic",
+      "patterns": [
+        "P26"
+      ],
+      "trigger": "/testteleport bossname",
+      "condition": "groupType god AND groupAccess; 5 named bosses",
+      "effect": "create37000 AID50001 at bosscentre, remove after15s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/test_teleport_command.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Admin mechanics diagnostic",
+      "patterns": [
+        "P26"
+      ],
+      "trigger": "/testmechanics disable/enable/status,bossname",
+      "condition": "groupType god AND groupAccess",
+      "effect": "write/read boss<name>NoFunctions and<name>TeleportPaused; no bossname allowlist",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/test_mechanics_command.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ichgahal monster mechanics",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Ichgahal.onThink/onMove",
+      "condition": "bossalive;pauseguards",
+      "effect": "4mushrooms+bloodjaw;3activecycles8–9s; onMove43294→43295after5s, no removal",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/ichgahal.lua:140"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Murcion monster mechanics",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Murcion.onThink/onMove",
+      "condition": "bossalive;pauseguards",
+      "effect": "4mushrooms+bloodjaw;3activecycles8–9s; stepping42851/42853heals15000; trail42851→42853after4s→remove3s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/murcion.lua:132"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath monster mechanics",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Vemiath.onThink/onMove",
+      "condition": "bossalive;pauseguards",
+      "effect": "90steleport37000aid50001 lasts15s; ensure4pillars; bloodjawcount2–5",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/vemiath.lua:232"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz monster mechanics",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Chagorz.onThink/onMove",
+      "condition": "bossalive;pauseguards",
+      "effect": "90steleport37000aid50001 lasts15s; ensure4pillars; bloodjawhelper",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/chagorz.lua:222"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore monster mechanics",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Bakragore.onThink/onMove",
+      "condition": "bossalive;pauseguards",
+      "effect": "90steleport37000aid50001 lasts15s; ensure4pillars+4mushrooms+2–5bloodjaws",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:234"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath stationary penalty",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Vemiath.onThink each1s",
+      "condition": "playerunchangedposition",
+      "effect": "stack+1cap21;1–14→floor3%maxHP,15–19→7%,≥20→15%; movingstack−1nodamage",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/vemiath.lua:365"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath player trail",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Vemiath.onMove player",
+      "condition": "notghost; specifictrailabsent",
+      "effect": "43589→43590after1s→43297after3s→remove3s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/vemiath.lua:444"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz stationary penalty",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Chagorz.onThink each1s",
+      "condition": "playerunchangedposition",
+      "effect": "stack+1cap21;1–14→floor3%maxHP,15–19→7%,≥20→15%; movingstack−1nodamage",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/chagorz.lua:294"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz player trail",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Chagorz.onMove player",
+      "condition": "notghost; specifictrailabsent",
+      "effect": "43589→43590after1s→43625after3s→remove3s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/chagorz.lua:373"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore stationary penalty",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Bakragore.onThink each1s",
+      "condition": "playerunchangedposition",
+      "effect": "stack+1cap21;1–14→floor3%maxHP,15–19→7%,≥20→15%; movingstack−1nodamage",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:443"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore player trail",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "Bakragore.onMove player",
+      "condition": "notghost; specifictrailabsent",
+      "effect": "43589→43590after1s→43297after3s→remove3s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:633"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Mushroom explosion",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "mushroomThink",
+      "condition": "playerwithin1 OR18s timer; bossnearby",
+      "effect": "after1s or18s lifedrain2500–3000 radius3 thenremove; removeifnoMurcion/Ichgahal/Bakwithin15",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/mushroom.lua:101"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Elder Bloodjaw AI",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "elder_bloodjawThink",
+      "condition": "nearone5bosses; elsedelete",
+      "effect": "targetradius10 priorityKnight100/Paladin75/otherknown70;≤30%HP+30; critchance15%+60% configured",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/elder_bloodjaw.lua:100",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/systems/monster_ai.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/systems/monster_ai.lua:303"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Elder Bloodjaw ball spell",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "spell elder bloodjaw ball",
+      "condition": "cast",
+      "effect": "lifedrain donorcombatmatrix;2000ms cooldown;selftarget",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/elder_bloodjaw_ball.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Elder Bloodjaw ring spell",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "spell elder bloodjaw ring",
+      "condition": "cast",
+      "effect": "lifedrain donorcombatmatrix;2000ms cooldown;selftarget",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/elder_bloodjaw_ring.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Murcion essence claim",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use43501",
+      "condition": "storage52280<1",
+      "effect": "consumeitem;storage52280=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Murcion flame activation",
+      "patterns": [
+        "P01",
+        "P22"
+      ],
+      "trigger": "Useflame@33085,32398,15",
+      "condition": "storage52280≥1;globalessence≤0",
+      "effect": "43983→43984;pillar33081,32398,15:43507→43508;global1;personal0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:25"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ichgahal essence claim",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use43503",
+      "condition": "storage52281<1",
+      "effect": "consumeitem;storage52281=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ichgahal flame activation",
+      "patterns": [
+        "P01",
+        "P22"
+      ],
+      "trigger": "Useflame@33076,32389,15",
+      "condition": "storage52281≥1;globalessence≤0",
+      "effect": "43497→43498;pillar33076,32395,15:43507→43508;global1;personal0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:25"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz essence claim",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use43502",
+      "condition": "storage52282<1",
+      "effect": "consumeitem;storage52282=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Chagorz flame activation",
+      "patterns": [
+        "P01",
+        "P22"
+      ],
+      "trigger": "Useflame@33067,32398,15",
+      "condition": "storage52282≥1;globalessence≤0",
+      "effect": "43987→43988;pillar33071,32398,15:43507→43508;global1;personal0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:25"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath essence claim",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use43504",
+      "condition": "storage52283<1",
+      "effect": "consumeitem;storage52283=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Vemiath flame activation",
+      "patterns": [
+        "P01",
+        "P22"
+      ],
+      "trigger": "Useflame@33076,32407,15",
+      "condition": "storage52283≥1;globalessence≤0",
+      "effect": "43985→43986;pillar33076,32401,15:43507→43508;global1;personal0",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/rottenEssences.lua:25"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore essence/Echoes phase",
+      "patterns": [
+        "P22",
+        "P27",
+        "P30"
+      ],
+      "trigger": "firstthink,monsterstorage99999!=1",
+      "condition": "activeessences;allroomplayersmaxKV/conditiontaint≥5 andplayercount>0",
+      "effect": "record88888count;spawnEchoes atsourcepositions ifallpass; bothsuccess/failconsumeallactiveworldessences,resetflames/pillars;set99999=1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:369",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:530"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Bakragore resistance placeholder",
+      "patterns": [
+        "P16",
+        "P30"
+      ],
+      "trigger": "onAppear after1s",
+      "condition": "essencecount>0",
+      "effect": "calculatesmin(15+5×count,50) and logs; DOES NOT setresistance",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:614"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Rotten boss death progress binding",
+      "patterns": [
+        "P07",
+        "P21",
+        "P29"
+      ],
+      "trigger": "five monster.events RottenBloodBossDeath",
+      "condition": "definition absentinCrystal data/data-global Lua",
+      "effect": "Canary auxiliary definition exists; mainowner decisions govern distinctflags/baseoutfit, notCanaryaddon",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/bakragore.lua:16",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/rotten_blood_quest/murcion.lua:16"
+      ],
+      "existing": "CZĘŚCIOWO — istnieją progres/consumer i wybrane reguły walki; brak dowodu tej całej mechaniki. Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/rotten_blood.rs:11; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/encounters/src/bosses/rotten_blood/mod.rs:1",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

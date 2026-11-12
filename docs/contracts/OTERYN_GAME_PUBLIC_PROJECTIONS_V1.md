@@ -7,8 +7,10 @@
   architect review (protocol, privacy, persistence), which the control plane runs. Revision 2
   fixes the vocation ids (§4.0), adds `guild_visible` with its shared wire fixtures
   (§4.2) and its revision trigger (§5), and records the owner decisions
-  Q2 to Q4 (§12). `character_deaths`, `guild` and `house` stay **CANDIDATE** (revision 1,
-  GAME-PUBLIC-PROJ-0, 2026-10-08) and authorize no runtime work until their own acceptance.
+  Q2 to Q4 (§12). `character_deaths`, `guild` and `house` are **ACCEPTED**, owner decision
+  2026-11-07 (PUBPROJ, “1 tak, 2 zgoda”), under the V2 profile in
+  `OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`, replacing their candidate revision 1
+  wire shapes below. The accepted V1 families and watermark enum are unchanged.
   Each implementing child needs its own #1622 allocation.
 - Contract ID: `oteryn-game-public-projections-v1`
 - Coordination: #1622 (P5); Oteryn/Oteryn-Platform#1476 (Platform mirror; P8 DECANARY-PUBLIC-1
@@ -211,10 +213,18 @@ different content, `429` rate limited, `503` unavailable.
 {"contract_version":1,"operation":"PublishWorldHighscoresV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","category":1,"filter":0,"projection_epoch":"1","projection_revision":"17","source_observed_at":"1790000000","computed_at":"1790000000","rows":[{"rank":"1","character_id":"01934f10-7c04-7001-805b-3b1122334401","name":"Aldric","vocation":4,"level":"412","value":"11400000000"}]}
 ```
 
-- Subject: `world_id`, `category` 1..11 (the HIGHSCORES-0 §3 ids that have a Game source; 13
-  Loyalty is Platform's and never published by Game), and `filter` 0..5 (0 = all, otherwise a base
+- Subject: `world_id`, `category` 1..12, 14, 16 or 17, and `filter` 0..5 (0 = all, otherwise a base
   vocation by its §4.0 id 1..5, HIGHSCORES-0 §5). Every row of a base-vocation filter carries
   that `vocation`; Game refuses a list that does not.
+- Category 14 uses the reserved HIGHSCORES-0 Drome Score id for lifetime cumulative
+  Drome levels; 17 is the next free id for current-rotation Drome levels
+  (source: `docs/reference/tibia-manual/combat.md:262`). Category 13 remains Platform Loyalty
+  and is never published by Game. Reserved 15 (Goshnar's Taint) remains outside this Game export. Category 16
+  (Phosphorus Record) ranks characters with a recorded Phosphorus victory by
+  their highest defeated difficulty (owner-supplied TibiaWiki extract, 2026-11-09).
+  This adds allowed subject values without changing the v1 envelope or exact member grammar.
+  Consumers must accept 14, 16 and 17 before those exports are enabled; older consumers may refuse
+  them as unsupported. No existing category is reassigned and no Platform page is created.
 - `computed_at` is the snapshot's `computed_at`. `rows` are the snapshot's rows for that filter in
   `position` order: 0..1,000 rows (`HIGHSCORES0-RL-02`). Under filter 0, `rank` is the competition
   rank of the list (1, 2, 2, 4). Under a base-vocation filter each row keeps its World competition
@@ -278,7 +288,10 @@ different content, `429` rate limited, `503` unavailable.
   presence), `ChannelId`, position, sex, comments, house (the `house` family names its owner),
   creation time. Adding a field is a new `contract_version`.
 
-### 4.3 `character_deaths`
+### 4.3 `character_deaths` (ACCEPTED as V2, 2026-11-07)
+
+The following V1 example is superseded by the accepted V2 profile, including
+stable killer identity, in `OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`.
 
 ```json
 {"contract_version":1,"operation":"PublishCharacterDeathsV1","source_authority":"oteryn:game:primary","character_id":"01934f10-7c04-7001-805b-3b1122334401","projection_epoch":"1","projection_revision":"3","source_observed_at":"1790000000","deaths":[{"occurred_at":"1789990000","level":"413","pvp":true,"killers":["Beren","Mira"]}]}
@@ -301,7 +314,10 @@ different content, `429` rate limited, `503` unavailable.
   marks and kill points. Platform hides entries older than `PUBPROJ-DEATHS-WINDOW` (30 days) at
   read time, so aging needs no publication.
 
-### 4.4 `guild` (consistent with GUILD-0, candidate)
+### 4.4 `guild` (ACCEPTED as V2, 2026-11-07)
+
+The following candidate V1 shape is superseded by V2 stable member CharacterIds
+and `(rank_level, character_id)` ordering; see `OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`.
 
 ```json
 {"contract_version":1,"operation":"PublishGuildV1","source_authority":"oteryn:game:primary","guild_id":"01934f10-7c06-7001-805b-3b1122334401","projection_epoch":"1","projection_revision":"5","source_observed_at":"1790000000","guild":[{"world_id":"01934f10-7c02-7001-805b-3b1122334401","name":"Red Rose","state":"ACTIVE","founded_at":"1789000000","ranks":[{"level":1,"name":"Leader"},{"level":2,"name":"Vice Leader"},{"level":3,"name":"Member"}],"members":[{"name":"Aldric","rank_level":1,"joined_at":"1789000000"}]}]}
@@ -323,7 +339,10 @@ different content, `429` rate limited, `503` unavailable.
   invitations, applications, the activity log and every guildhall ACL. A member's other characters
   are never linked (GUILD-0 §4.2).
 
-### 4.5 `house` (consistent with HOUSE-OWN-0, candidate)
+### 4.5 `house` (ACCEPTED as V2, 2026-11-07)
+
+The body below is accepted unchanged under the V2 envelope and route; see
+`OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md`.
 
 ```json
 {"contract_version":1,"operation":"PublishHouseV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","house_key":"oteryn:content.house.example-street-1","projection_epoch":"1","projection_revision":"12","source_observed_at":"1790000000","house":[{"name":"Example Street 1","kind":"private_house","town":"oteryn:content.area.city.example","size_sqm":"24","beds":"2","rent_gold":"5000","status":"OWNED","owner_kind":"CHARACTER","owner_name":"Aldric","paid_until":"1792000000"}]}
@@ -712,9 +731,9 @@ the owner decided (Q3) that the pages answer 503 until their families are fresh.
   accepted is not sent again.
 - **Highscores ids.** Filter 0 is all vocations and filters 1..5 are the base vocations by their
   §4.0 id; categories are 1 experience, 2 magic, 3 fist, 4 club, 5 sword, 6 axe, 7 distance,
-  8 shielding, 9 fishing, 10 achievement and 11 charm. Ids 1..9 and filters 1..5 are the
-  Platform consumer's (`CommunityDataPolicy`, Oteryn/Oteryn-Platform#1645); the producer's tests
-  pin both tables.
+  8 shielding, 9 fishing, 10 achievement points, 11 charm and 12 boss points. Ids 1..9 and filters
+  1..5 are the Platform consumer's (`CommunityDataPolicy`, Oteryn/Oteryn-Platform#1645); the
+  producer's tests pin both tables.
 - **Transport.** A dedicated client certificate and key (`[platform.public_projections]`),
   distinct from every other Game identity. Each exchange uses a new connection
   (`Connection: close`, as every Game client to Platform does), so every `world_online` exchange
@@ -753,3 +772,12 @@ Owner decisions relayed by the control plane on 2026-10-15 (Oteryn/Oteryn-Platfo
 
 `character_deaths`, `guild` and `house` remain candidates. After acceptance, any change to a
 member, path, bound or response of an accepted family is a new `contract_version`.
+
+### PLAT-WIRE-1 proposed extensions
+
+[World totals V1](world-totals/v1/README.md) specifies the public-safe
+`world_totals` sample family and its Game producer, with JSON schema and golden
+vectors. [Kills listener V2](kills/v2/README.md) proposes durable cursor, replay,
+gap and consistent rebuild semantics on the existing `character-deaths` route.
+These extensions await Platform acceptance; they do not change the acceptance
+status or wire semantics of the families above.

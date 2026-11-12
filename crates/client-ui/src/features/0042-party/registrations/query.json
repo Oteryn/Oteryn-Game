@@ -1,0 +1,15 @@
+{
+  "mechanic": "0042-party",
+  "kind": "handlers",
+  "id": "0042-party-query",
+  "status": "supported",
+  "commands": [
+    46
+  ],
+  "direction": "client_to_server",
+  "capability": 42,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Party membership and permissions are server-owned."
+  }
+}

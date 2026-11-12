@@ -1,6 +1,5 @@
 //! WAVE-A/M11: the parameter dispatcher consumes qualified vertical-movement plans.
-//! Pinned source tiles exercise the recipes. Bundle immovable facts remain fail-closed
-//! pending BUNDLE-TILES-IMMOVABLE-1; opening the room gate does not supply those facts.
+//! Pinned source tiles and booted bundle tiles exercise the real parameter dispatcher.
 use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -30,7 +29,7 @@ fn vertical_move_postgres_parameter_dispatch_levitate_and_magic_rope() -> TestRe
         .spawn(|| {
             run(async |admin| {
                 for case in 0..5 {
-                    scenario(admin.clone(), case).await?;
+                    scenario(admin.clone(), case, false).await?;
                 }
                 Ok(())
             })
@@ -45,7 +44,7 @@ fn at(x: i32, y: i32, floor: i16) -> MovementLocalPosition {
     MovementLocalPosition { x, y, floor }
 }
 
-async fn scenario(admin: String, case: u8) -> TestResult {
+pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestResult {
     let h =
         Harness::create_with_admission_seed(admin, &format!("vertical_move_{case}"), false, false)
             .await?;
@@ -66,30 +65,91 @@ async fn scenario(admin: String, case: u8) -> TestResult {
     )?;
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
-    let room = pin.qualified_room();
-    let start = match case {
-        0 => at(1, 5, -6),
-        1 => at(1, 4, -5),
-        2 => at(-4, -3, -6),
-        _ => at(7, 14, -8),
+    let bundle = use_bundle.then(|| {
+        crate::map::spell_tiles::tests::vertical_movement::world(
+            world,
+            crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel"),
+        )
+    });
+    let bundle_room = bundle.as_ref().map(|bundle| {
+        pin.qualified_room()
+            .bundle_view(
+                bundle
+                    .movement_cells(pin.qualified_room().movement_cells())
+                    .expect("bundle movement cells"),
+                bundle.frame_binding_digest(world),
+                bundle.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 10,
+                    y: 10,
+                    floor: 6,
+                },
+            )
+            .expect("bundle room")
+    });
+    let room = bundle_room.as_ref().unwrap_or(pin.qualified_room());
+    let start = if use_bundle {
+        match case {
+            0 => at(10, 10, 6),
+            1 => at(10, 9, 5),
+            _ => at(10, 10, 8),
+        }
+    } else {
+        match case {
+            0 => at(1, 5, -6),
+            1 => at(1, 4, -5),
+            2 => at(-4, -3, -6),
+            _ => at(7, 14, -8),
+        }
     };
     let channel_pin = ChannelContentPin::from_activation(
         world,
         1,
-        pin.identity().server_artifact_digest(),
-        pin.identity().client_artifact_digest(),
+        room.compiled().server_digest(),
+        room.compiled().client_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
     let deps = Dependencies::with_content(channel_pin, room.clone(), native.spell_book().clone())?;
     let (actor, session) = (deps.actor, deps.admitted.game_session_id);
+    let premium = if use_bundle {
+        use crate::gameplay_transport::spell_premium_coordinator::{
+            SpellPremiumCoordinator, purchase_fixture,
+        };
+        let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+        h.root
+            .latch_premium_activation(
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await
+            .map_err(debug)?;
+        Some(SpellPremiumCoordinator::new(
+            consumer,
+            Some(clock),
+            Some(activation),
+            Some(h.root.clone()),
+        ))
+    } else {
+        None
+    };
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
+    owner.premium_coordinator = premium.as_ref();
+    owner.movement_cells = (room.movement_cells()).into();
     // No qualified room: the same accessor path a bundle World uses.
     owner.rooms = SeamRooms::new(None, Some(room));
     let mut admitted = deps.admitted;
     owner.admit_progression_session(&mut admitted).await;
+    if use_bundle {
+        owner.admit_premium(id(40), session);
+        owner
+            .states
+            .chat
+            .admit(session, "Movement", owner.owner_now());
+    }
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -184,8 +244,8 @@ async fn scenario(admin: String, case: u8) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice())
         .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice())
-        .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-    if case >= 3 {
+        .bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+    if case >= 3 && !use_bundle {
         seed_rope_blockers(&h, &deps, room, native, case == 4).await?;
     }
     let name = if case >= 3 { "Magic Rope" } else { "Levitate" };
@@ -206,6 +266,34 @@ async fn scenario(admin: String, case: u8) -> TestResult {
         parameter: (case < 3).then(|| if case == 1 { "down" } else { "up" }.into()),
     };
     let before = owner.observe_vitals(actor, session).await.ok_or("vitals")?;
+    if use_bundle {
+        let text = match case {
+            0 => "exani hur \"up",
+            1 => "exani hur \"down",
+            _ => "exani tera",
+        };
+        let (chat, cast) = owner
+            .complete_chat_intent(
+                actor,
+                session,
+                1,
+                &oteryn_protocol_oteryn::chat::ChatIntent::Say {
+                    mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
+                    text: text.into(),
+                },
+            )
+            .await
+            .ok_or("spoken cast")?;
+        assert_eq!(
+            chat.disposition,
+            oteryn_protocol_oteryn::chat::ChatDisposition::Ok,
+            "case {case}: {cast:?}"
+        );
+        assert_eq!(
+            cast.ok_or("chat spell outcome")?.disposition,
+            SpellCastDisposition::Cast
+        );
+    }
     let dispatch = owner
         .cast_parameters(actor, session, 1, &intent, &UnavailableAccessOwner)
         .await;
@@ -237,12 +325,20 @@ async fn scenario(admin: String, case: u8) -> TestResult {
             PrivateSpellEffect::Teleport
         }
     );
-    let destination = match case {
-        0 => at(1, 4, -5),
-        1 => at(1, 5, -6),
-        3 => at(7, 13, -7),
-        4 => at(7, 15, -7),
-        _ => start,
+    let destination = if use_bundle {
+        match case {
+            0 => at(10, 9, 5),
+            1 => at(10, 10, 6),
+            _ => at(10, 11, 7),
+        }
+    } else {
+        match case {
+            0 => at(1, 4, -5),
+            1 => at(1, 5, -6),
+            3 => at(7, 13, -7),
+            4 => at(7, 15, -7),
+            _ => start,
+        }
     };
     assert_eq!(
         deps.runtime

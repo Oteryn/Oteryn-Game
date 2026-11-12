@@ -102,6 +102,7 @@ mod tests {
                 kind: TerrainKind::Ground,
                 walkable: Some(walkable),
                 ground_speed: Some(speed),
+                blocks_projectile: None,
             }),
         };
         let manifest = Manifest {
@@ -395,6 +396,10 @@ impl CreatureMovementCadence {
             crate::movement::CardinalStep::East => (1, 0),
             crate::movement::CardinalStep::South => (0, 1),
             crate::movement::CardinalStep::West => (-1, 0),
+            crate::movement::CardinalStep::NorthEast => (1, -1),
+            crate::movement::CardinalStep::SouthEast => (1, 1),
+            crate::movement::CardinalStep::SouthWest => (-1, 1),
+            crate::movement::CardinalStep::NorthWest => (-1, -1),
         };
         let next = crate::foundation::MovementLocalPosition {
             x: at.x.checked_add(dx).ok_or(E::MissingMap)?,
@@ -407,6 +412,7 @@ impl CreatureMovementCadence {
             z: i32::from(next.floor),
         };
         let duration = creature_step_duration(runtime, self.actor, source, ground, onto, now)
+            .and_then(|duration| duration.checked_mul(direction.pacing_cost()))
             .ok_or(E::MissingSpeed)?;
         if self.pacer.wait_until(now).is_some() {
             return Ok(None);

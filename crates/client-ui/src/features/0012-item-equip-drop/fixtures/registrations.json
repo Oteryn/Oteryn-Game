@@ -2,16 +2,31 @@
   {
     "mechanic": "0012-item-equip-drop",
     "kind": "handlers",
-    "id": "0012-item-equip-drop-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0012-item-equip-drop-inventory",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 12,
+    "entry": "protocol.rs::project",
+    "push_messages": [
+      "Inventory"
+    ],
+    "reducer": "protocol.rs::project",
+    "test": "tests/panel.rs::equipped_ammo_unequips_whole_without_a_count_prompt",
+    "shared_commands": [
+      9
+    ],
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "view": "Native slot controls live in apps/client/src/features/0012-item-equip-drop/native.rs.",
+      "input": "The production drag bridge emits command 9 through the shared item movement route.",
+      "settings": "Equipment and selection are session state; no persistent settings."
     }
+  },
+  {
+    "mechanic": "0012-item-equip-drop",
+    "kind": "panels",
+    "id": "0012-item-equip-drop-slots",
+    "status": "supported",
+    "entry": "state.rs::rows"
   }
 ]

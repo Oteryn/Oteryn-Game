@@ -1,0 +1,383 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-morguthis-entry",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40085,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33258,
+            "y": 32707,
+            "floor": -13
+          },
+          "ordinal": 0,
+          "appearance": 415
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33259,
+        "y": 32707,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/morguthis_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_morguthis_room.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-omruc-specific",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40086,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33205,
+            "y": 32956,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 415
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33205,
+        "y": 32955,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/omrucs_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_specific.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-omruc-room",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40087,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33206,
+            "y": 33002,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 1236
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33207,
+        "y": 33002,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/omrucs_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 2,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_omruc_room.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-rahemos-levers",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40088,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33122,
+            "y": 32760,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 415
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33124,
+        "y": 32760,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/rahemos_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_levers.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-rahemos-room",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40089,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33085,
+            "y": 32781,
+            "floor": -14
+          },
+          "ordinal": 0,
+          "appearance": 423
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33086,
+        "y": 32781,
+        "floor": -14
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/rahemos_treasure",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 2,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_rahemos_room.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-vashresamun-specific",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40090,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33194,
+            "y": 32666,
+            "floor": -15
+          },
+          "ordinal": 0,
+          "appearance": 423
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33194,
+        "y": 32665,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamuns_treasure",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_specific.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ancient-tombs-vashresamun-room",
+      "quest": "oteryn:quest.the_ancient_tombs_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 40091,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33128,
+            "y": 32657,
+            "floor": -15
+          },
+          "ordinal": 0,
+          "appearance": 460
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33129,
+        "y": 32657,
+        "floor": -15
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/vashresamuns_treasure",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 3,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_enter_vashresamun_room.lua:9"
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": 502,
+  "name": "CAST_CONTROL",
+  "owner_decision": "S17-A",
+  "capability": 290,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
+  "max_payload_bytes": 512,
+  "max_result_payload_bytes": 512
+}

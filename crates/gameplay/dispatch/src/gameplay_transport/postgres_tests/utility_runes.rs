@@ -269,7 +269,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         &[11, 30], crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
         1, "policy-1", BUNDLE_WORLD_OFFERED_CAPABILITIES).map_err(debug)?;
     owner.rooms = SeamRooms::new(None, Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     let mut admitted = dependencies.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
@@ -621,7 +621,7 @@ async fn seed_target(
     sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,$4,$5,$6,$7,$8,100)")
         .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(43).as_slice()).bind(&target.spatial_position).bind(id(182).as_slice()).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).execute(&mut *tx).await?;
     if corpse {
-        sqlx::query("INSERT INTO game_item_mint_receipts(death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable','fixture:cultist','r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,1)")
+        sqlx::query("INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id,death_channel_id,death_scope_ownership_generation,death_actor_local_id,death_actor_local_generation,loot_table_family,loot_table_production_key,loot_table_revision_ref,loot_purpose_key,draw_ordinal,intent_binding,transaction_id,event_id,item_instance_id,occurred_at,envelope_sha256,committed_at,corpse_top_damage_character_id,materialized_at) VALUES(1,game_item_death_scope_key(encode($1,'hex')::uuid,1::smallint,encode($2,'hex')::uuid,NULL),encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,10,1,'LootTable','fixture:cultist','r1','CORPSE_MATERIALIZATION',0,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,$7,1,encode($8,'hex')::uuid,1)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(vec![1_u8;33]).bind(id(181).as_slice()).bind(id(183).as_slice()).bind(id(180).as_slice()).bind(vec![1_u8;32]).bind(id(41).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
@@ -822,7 +822,7 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
     let mut owner = dependencies.owner(&harness, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(&room), Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     if case == WorldItemCase::House {
         owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
             &[11, 30],

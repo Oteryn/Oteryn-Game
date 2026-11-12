@@ -1,17 +1,29 @@
 [
   {
     "mechanic": "0075-server-save-countdown",
+    "kind": "panels",
+    "id": "0075-server-save-countdown-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0075-server-save-countdown",
     "kind": "handlers",
-    "id": "0075-server-save-countdown-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0075-server-save-countdown-push",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 75,
+    "entry": "protocol.rs::apply",
+    "push_messages": [
+      "ServerSaveCountdown"
+    ],
+    "reducer": "protocol.rs::apply",
+    "test": "protocol.rs::server_save_replaces_previous_announcement",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Notices are transient server announcements.",
+      "state": "Shared notice state lives in 0031-tutorial-notices.",
+      "input": "Shared notice shortcut is registered by 0031-tutorial-notices."
     }
   }
 ]

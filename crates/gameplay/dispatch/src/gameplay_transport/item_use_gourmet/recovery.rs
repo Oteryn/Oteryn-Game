@@ -53,6 +53,11 @@ pub(in crate::gameplay_transport) async fn restore_house(
         .read_character_build_state(owner.character, character)
         .await
         .ok()?;
+    let learned = owner
+        .root
+        .read_character_known_spells(owner.character, character)
+        .await
+        .ok()?;
     let stance = owner
         .root
         .read_character_stance(owner.character, character)
@@ -110,6 +115,7 @@ pub(in crate::gameplay_transport) async fn restore_house(
         now.get(),
     )?;
     let mut prepared = crate::spell::cast::PlayerSpellState::new(facts, monk.0, monk.1)?;
+    prepared.install_learned_spells(learned);
     prepared.make_playable(now).ok()?;
     if let Some(vitals) = saved.vitals {
         prepared.restore_saved_vitals(vitals.health(), vitals.mana());

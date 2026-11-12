@@ -1,15 +1,19 @@
 //! The existing item/NPC owners while the real House scope owns the player.
 //! House movement retains native House custody and the existing STEP pacing.
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::ObservationError;
+mod map;
 mod reply;
 mod snapshot;
 pub(super) mod step;
 pub(super) use reply::result;
 
 pub(super) struct State {
+    spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     actor: ExactActorRef,
     enabled: bool,
     items: Option<SessionItemView>,
+    world_map: Option<SessionMapView>,
     containers: Option<ContainerViewState>,
     visibility: Option<SessionVisibility>,
     appearances: SessionAppearance,
@@ -40,15 +44,51 @@ impl State {
         }
         if matches!(
             command.command_type,
+            oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_QUERY
+                | oteryn_protocol_oteryn::server_modal::COMMAND_TYPE_SERVER_MODAL_ANSWER
+        ) {
+            return Some(routing::server_modal::route(authority, admitted, command).await);
+        }
+        if matches!(
+            command.command_type,
             store::COMMAND_TYPE_STORE_CATALOGUE_PAGE
                 | store::COMMAND_TYPE_STORE_HISTORY_PAGE
+                | store::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE
                 | store::COMMAND_TYPE_STORE_PURCHASE
                 | store::COMMAND_TYPE_STORE_INBOX_CLAIM
         ) {
             self.stash_rows = None;
             return Some(routing::store::route(authority, admitted, command).await);
         }
-        if !self.enabled {
+        if command.command_type == oteryn_protocol_oteryn::house_sale::COMMAND {
+            self.stash_rows = None;
+            return routing::house_sale::route(authority, admitted, command).await;
+        }
+        // Podiums use capability 150 independently of hirelings (Crystal game.cpp:4603-4636).
+        if matches!(
+            command.command_type,
+            oteryn_protocol_oteryn::house_podium::COMMAND_QUERY
+                | oteryn_protocol_oteryn::house_podium::COMMAND_SET
+                | oteryn_protocol_oteryn::house_podium::COMMAND_PROJECTION
+        ) {
+            self.stash_rows = None;
+            return routing::house_podium::route(authority, admitted, command).await;
+        }
+        // W18 rotation has its own capability445 and current named-House owner,
+        // independently of the hireling service. The registered route retains
+        // command selection, exact DTO decoding and the owner generation fence.
+        if command.command_type == oteryn_protocol_oteryn::house_rotation::COMMAND {
+            self.stash_rows = None;
+            return routing::house_rotation::route(authority, admitted, command).await;
+        }
+        // Ordinary item USE and container views keep their existing capability gates
+        // in a House without requiring the independent hireling mechanic.
+        if !self.enabled
+            && !(self.items.is_some()
+                && matches!(command.command_type,
+                world_object::COMMAND_TYPE_USE_INTENT
+                | oteryn_protocol_oteryn::container_tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT))
+        {
             return Some(Dispatch::Unregistered);
         }
         if command.command_type != stash::COMMAND_TYPE_STASH_INTENT {
@@ -56,8 +96,34 @@ impl State {
         }
         match command.command_type {
             world_object::COMMAND_TYPE_USE_INTENT => {
-                // The House services use carried items/Inbox definitions. Map,
-                // creature and rune targets retain their separate scope owners.
+                if let Ok(intent) = decode_use_intent_target(
+                    admitted.continuity.selected_capabilities.as_slice(),
+                    command.payload,
+                ) && matches!(intent.target, UseTarget::WorldObject(_))
+                    && intent.use_with.is_none()
+                    && intent.use_with_map_item.is_none()
+                    && intent.use_with_position.is_none()
+                    && admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
+                    && admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(CAPABILITY_WORLD_INTERACTION_V1)
+                {
+                    // Static beds have a base ordinal, not an inventory handle. Only
+                    // the bed rule is admitted here; other House world USE stays closed.
+                    return Some(Dispatch::Use(
+                        authority
+                            .server_modal_offer_bed(*admitted, intent.target, None)
+                            .await
+                            .unwrap_or_else(UseOutcome::rejected),
+                    ));
+                }
+                // The same item directory contains carried and actual House map handles.
+                // The House event owner classifies exact bed kits with native bed
+                // map targets; creature/rune and other map targets keep their owners.
                 let plain = decode_use_intent_target(
                     admitted.continuity.selected_capabilities.as_slice(),
                     command.payload,
@@ -67,7 +133,16 @@ impl State {
                         intent.target,
                         UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
                     ) && intent.use_with.is_none()
-                        && intent.use_with_map_item.is_none()
+                        && (intent.use_with_map_item.is_none()
+                            || (matches!(intent.target, UseTarget::Item(_))
+                                && matches!(
+                                    intent.use_with_map_item,
+                                    Some(
+                                        oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                                            _
+                                        )
+                                    )
+                                )))
                         && intent.use_with_position.is_none()
                 });
                 if !plain {
@@ -243,7 +318,7 @@ impl State {
             }
             _ => {}
         }
-        self.spatial(stream, authority, admitted).await
+        self.spatial(stream, authority, admitted, false).await
     }
 
     async fn item_delta<S: AsyncWrite + Unpin>(
@@ -284,7 +359,7 @@ impl State {
             .await
             .ok_or(ServeEnd::Disconnected)?;
         }
-        Ok(())
+        self.refresh_map(stream, authority, admitted).await
     }
 
     async fn npc<S: AsyncWrite + Unpin>(
@@ -316,16 +391,20 @@ impl State {
         stream: &mut S,
         authority: &A,
         admitted: &mut AdmittedSession,
+        periodic: bool,
     ) -> Result<(), ServeEnd> {
         if let Some(view) = self.visibility.as_mut() {
-            let entities = authority
-                .observe_visible_entities(self.actor)
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+            let entities = crate::gameplay_transport::entity_names::observe(
+                authority,
+                self.actor,
+                admitted.continuity.selected_capabilities,
+            )
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
             let sequence = admitted.continuity.server_sequence;
-            let (_, revision) = self
+            let projection = self
                 .appearances
-                .refresh(
+                .refresh_result(
                     stream,
                     authority,
                     self.actor,
@@ -336,12 +415,20 @@ impl State {
                     sequence,
                     self.spatial_revision,
                 )
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+                .await;
+            let (_, revision) = match projection {
+                Ok(published) => published,
+                Err(ObservationError::HolderBusy | ObservationError::RespawnPending)
+                    if periodic =>
+                {
+                    return Ok(());
+                }
+                Err(_) => return Err(ServeEnd::Disconnected),
+            };
             self.spatial_revision = revision;
             admitted.continuity.spatial_revision = revision;
         }
-        Ok(())
+        self.refresh_map(stream, authority, admitted).await
     }
 
     async fn vitals<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
@@ -401,6 +488,12 @@ impl State {
         if self.enabled {
             self.vitals(stream, authority, admitted, true).await?;
         }
+        if let Some(catalog) = &mut self.spell_catalog {
+            let mut sequence = admitted.continuity.server_sequence;
+            catalog
+                .refresh(stream, authority, self.actor, admitted, &mut sequence)
+                .await?;
+        }
         if self.npc_active
             && let Some(update) = authority
                 .npc_follow(self.actor, admitted.game_session_id, self.npc_shown)
@@ -408,6 +501,6 @@ impl State {
         {
             self.npc(stream, admitted, &update).await?;
         }
-        self.spatial(stream, authority, admitted).await
+        self.spatial(stream, authority, admitted, true).await
     }
 }

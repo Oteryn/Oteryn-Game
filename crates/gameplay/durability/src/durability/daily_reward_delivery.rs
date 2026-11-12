@@ -26,11 +26,13 @@ pub trait DailyRewardPremiumGate: Sync {
 #[derive(Debug, Clone)]
 pub struct DailyRewardDeliveryPlan {
     pub content_revision: String,
+    pub selection: Option<oteryn_protocol_oteryn::daily_reward::picker::Claim>,
 }
 
 #[derive(Debug, Clone)]
 pub struct DailyRewardView {
     pub epoch: u64,
+    pub history: Vec<oteryn_protocol_oteryn::daily_reward::details::Receipt>,
     pub lane_day: u8,
     pub streak: u32,
     pub jokers: u8,
@@ -100,7 +102,8 @@ impl DurabilityRoot {
                 oteryn_gameplay_progression::daily_reward::advance_daily_reward(state, epoch, jokers)
                     .map_err(|_| DurabilityError::InvalidStoredState)?.claimed_lane_day
             } else { state.lane_day };
-            Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled }))
+            let history=super::daily_reward::history::load(&mut tx,fence.character_id.as_bytes(),fence.runtime_scope.world_id().as_bytes(),epoch).await?;
+            Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled, history }))
         })).await?
     }
 
@@ -160,7 +163,8 @@ impl DurabilityRoot {
                     if !current(&mut tx, &node, fence, request.command).await? {
                         return Ok(Err(Error::AuthorityRejected));
                     }
-                    let outcome = apply(&mut tx, fence, request, *gate).await;
+                    let outcome =
+                        apply(&mut tx, fence, request, *gate, plan.selection.as_ref()).await;
                     if outcome.is_ok() {
                         tx.commit(deadline).await?;
                     }
@@ -201,6 +205,7 @@ async fn apply<G: DailyRewardPremiumGate>(
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     gate: &G,
+    selection: Option<&oteryn_protocol_oteryn::daily_reward::picker::Claim>,
 ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
     let world = fence.runtime_scope.world_id();
     // A competing claim must not retain the mint performed before this callback.
@@ -232,6 +237,35 @@ async fn apply<G: DailyRewardPremiumGate>(
     sqlx::query("INSERT INTO public.game_daily_reward_commands VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid)")
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(request.transaction_id.as_slice()).execute(&mut ***tx).await?;
-    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium).await?;
+    if let Some(selection) = selection {
+        let offer =
+            picker::offer_in_transaction(tx, fence, request.reset_epoch, receipt.lane_day, premium)
+                .await?;
+        let picks: Vec<_> = selection
+            .picks
+            .iter()
+            .map(
+                |p| oteryn_gameplay_progression::daily_reward::picker::Pick {
+                    item: p.item,
+                    count: p.count,
+                },
+            )
+            .collect();
+        if selection.epoch != request.reset_epoch
+            || selection.day != receipt.lane_day
+            || !oteryn_gameplay_progression::daily_reward::picker::valid(&offer, &picks)
+        {
+            return Err(DailyRewardClaimError::InvalidRequest);
+        }
+    }
+    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium, selection)
+        .await?;
     Ok(outcome)
 }
+
+#[path = "daily_reward_delivery/picker.rs"]
+mod picker;
+
+#[path = "daily_reward_delivery/returner.rs"]
+mod returner;
+pub use returner::ReturnerOutcome;

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0067-bestiary-charm-progression",
+  "kind": "panels",
+  "id": "0067-bestiary-charm-progression-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

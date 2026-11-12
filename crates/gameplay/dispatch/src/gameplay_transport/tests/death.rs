@@ -229,6 +229,10 @@ fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
         crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         [0xab; 32],
         actor_spell::PlayerDeath {
+            public_cause: crate::durability::character_death::PublicDeathCause::creature(
+                "oteryn:creature.dragon",
+                "Dragon",
+            ),
             occurrence,
             cell: MovementLocalPosition {
                 x: -2,
@@ -243,6 +247,13 @@ fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
         },
     );
     assert_eq!(request.occurrence, occurrence);
+    assert_eq!(
+        request.public_cause,
+        crate::durability::character_death::PublicDeathCause::creature(
+            "oteryn:creature.dragon",
+            "Dragon"
+        )
+    );
     assert_eq!(request.policy, progression.policy);
     assert!(request.held_blessings.is_empty());
     assert_eq!(

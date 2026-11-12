@@ -728,7 +728,7 @@
         "oteryn:creature.true_midnight_asura",
         "oteryn:creature.winged_jaracal"
       ],
-      "experience_per_creature_mean": 7762,
+      "experience_per_creature_mean": 7940,
       "id": "oteryn:area.hunting_place.asura_citadel",
       "kind": "named_area",
       "min_level": {
@@ -747,7 +747,7 @@
       },
       "name": "Asura Citadel",
       "recommended_range": {
-        "max": 633,
+        "max": 647,
         "min": 168
       },
       "trivial_thresholds": {
@@ -771,7 +771,7 @@
         "oteryn:creature.true_frost_flower_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 3785,
+      "experience_per_creature_mean": 3901,
       "id": "oteryn:area.hunting_place.asura_palace",
       "kind": "named_area",
       "min_level": {
@@ -790,7 +790,7 @@
       },
       "name": "Asura Palace",
       "recommended_range": {
-        "max": 233,
+        "max": 247,
         "min": 188
       },
       "trivial_thresholds": {
@@ -806,7 +806,7 @@
         "oteryn:creature.true_frost_flower_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 5969,
+      "experience_per_creature_mean": 6272,
       "id": "oteryn:area.hunting_place.asura_vaults",
       "kind": "named_area",
       "min_level": {
@@ -825,7 +825,7 @@
       },
       "name": "Asura Vaults",
       "recommended_range": {
-        "max": 425,
+        "max": 453,
         "min": 210
       },
       "trivial_thresholds": {
@@ -2963,7 +2963,7 @@
         "oteryn:creature.darklight_striker",
         "oteryn:creature.walking_pillar"
       ],
-      "experience_per_creature_mean": 21200,
+      "experience_per_creature_mean": 19716,
       "id": "oteryn:area.hunting_place.darklight_core",
       "kind": "named_area",
       "min_level": {
@@ -11217,7 +11217,7 @@
         "oteryn:creature.varg",
         "oteryn:creature.vladrukh"
       ],
-      "experience_per_creature_mean": 70836,
+      "experience_per_creature_mean": 70279,
       "id": "oteryn:area.hunting_place.norcferatu_dungeons",
       "kind": "named_area",
       "min_level": {
@@ -11236,7 +11236,7 @@
       },
       "name": "Norcferatu Dungeons",
       "recommended_range": {
-        "max": 3061,
+        "max": 3047,
         "min": 188
       },
       "trivial_thresholds": {
@@ -11253,7 +11253,7 @@
         "oteryn:creature.orclops_bloodbreaker",
         "oteryn:creature.varg"
       ],
-      "experience_per_creature_mean": 7642,
+      "experience_per_creature_mean": 6992,
       "id": "oteryn:area.hunting_place.norcferatu_fortress",
       "kind": "named_area",
       "min_level": {
@@ -11272,7 +11272,7 @@
       },
       "name": "Norcferatu Fortress",
       "recommended_range": {
-        "max": 591,
+        "max": 536,
         "min": 188
       },
       "trivial_thresholds": {
@@ -12738,7 +12738,7 @@
         "oteryn:creature.radiant_templar",
         "oteryn:creature.radiant_zealot"
       ],
-      "experience_per_creature_mean": 41608,
+      "experience_per_creature_mean": 48246,
       "id": "oteryn:area.hunting_place.radiant_ascendancy",
       "kind": "named_area",
       "min_level": {
@@ -12757,7 +12757,7 @@
       },
       "name": "Radiant Ascendancy",
       "recommended_range": {
-        "max": 1910,
+        "max": 2131,
         "min": 398
       },
       "trivial_thresholds": {
@@ -12774,7 +12774,7 @@
         "oteryn:creature.radiant_paragon",
         "oteryn:creature.radiant_warden"
       ],
-      "experience_per_creature_mean": 42157,
+      "experience_per_creature_mean": 48884,
       "id": "oteryn:area.hunting_place.radiant_skyhold",
       "kind": "named_area",
       "min_level": {
@@ -12793,7 +12793,7 @@
       },
       "name": "Radiant Skyhold",
       "recommended_range": {
-        "max": 1938,
+        "max": 2159,
         "min": 398
       },
       "trivial_thresholds": {
@@ -17318,10 +17318,9 @@
     },
     {
       "creatures": [
-        "oteryn:creature.evil_mastermind",
         "oteryn:creature.vampire"
       ],
-      "experience_per_creature_mean": 490,
+      "experience_per_creature_mean": 305,
       "id": "spawn-region:z01-x127-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -17429,7 +17428,7 @@
         "oteryn:creature.vampire_bride",
         "oteryn:creature.varg"
       ],
-      "experience_per_creature_mean": 4417,
+      "experience_per_creature_mean": 4123,
       "id": "spawn-region:z01-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -17448,7 +17447,7 @@
       },
       "name": "z01-x128-y122",
       "recommended_range": {
-        "max": 313,
+        "max": 285,
         "min": 180
       },
       "trivial_thresholds": {
@@ -18189,10 +18188,9 @@
         "oteryn:creature.acid_blob",
         "oteryn:creature.cyclops",
         "oteryn:creature.cyclops_drone",
-        "oteryn:creature.gargoyle",
-        "oteryn:creature.monstor"
+        "oteryn:creature.gargoyle"
       ],
-      "experience_per_creature_mean": 265,
+      "experience_per_creature_mean": 188,
       "id": "spawn-region:z02-x127-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -18299,7 +18297,7 @@
         "oteryn:creature.vampire_bride",
         "oteryn:creature.varg"
       ],
-      "experience_per_creature_mean": 3027,
+      "experience_per_creature_mean": 2897,
       "id": "spawn-region:z02-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -18318,7 +18316,7 @@
       },
       "name": "z02-x128-y122",
       "recommended_range": {
-        "max": 206,
+        "max": 179,
         "min": 146
       },
       "trivial_thresholds": {
@@ -18367,30 +18365,29 @@
       "creatures": [
         "oteryn:creature.dawnfire_asura",
         "oteryn:creature.hellspawn",
-        "oteryn:creature.midnight_asura",
-        "oteryn:creature.the_flaming_orchid"
+        "oteryn:creature.midnight_asura"
       ],
-      "experience_per_creature_mean": 4590,
+      "experience_per_creature_mean": 3287,
       "id": "spawn-region:z02-x128-y127",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 31,
-          "knight": 14,
-          "paladin": 19,
-          "sorcerer": 31
+          "druid": 19,
+          "knight": 10,
+          "paladin": 13,
+          "sorcerer": 19
         },
         "solo": {
-          "druid": 188,
-          "knight": 66,
-          "paladin": 98,
-          "sorcerer": 188
+          "druid": 141,
+          "knight": 50,
+          "paladin": 74,
+          "sorcerer": 141
         }
       },
       "name": "z02-x128-y127",
       "recommended_range": {
-        "max": 315,
-        "min": 188
+        "max": 241,
+        "min": 141
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -18502,10 +18499,9 @@
     },
     {
       "creatures": [
-        "oteryn:creature.energized_raging_mage",
         "oteryn:creature.golden_servant"
       ],
-      "experience_per_creature_mean": 225,
+      "experience_per_creature_mean": 450,
       "id": "spawn-region:z02-x129-y123",
       "kind": "spawn_region",
       "min_level": {
@@ -18516,16 +18512,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 75,
-          "knight": 28,
-          "paladin": 41,
-          "sorcerer": 75
+          "druid": 20,
+          "knight": 10,
+          "paladin": 14,
+          "sorcerer": 20
         }
       },
       "name": "z02-x129-y123",
       "recommended_range": {
-        "max": 75,
-        "min": 75
+        "max": 20,
+        "min": 20
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -18873,7 +18869,7 @@
         "oteryn:creature.radiant_templar",
         "oteryn:creature.radiant_zealot"
       ],
-      "experience_per_creature_mean": 34067,
+      "experience_per_creature_mean": 38496,
       "id": "spawn-region:z02-x132-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -18892,7 +18888,7 @@
       },
       "name": "z02-x132-y127",
       "recommended_range": {
-        "max": 1620,
+        "max": 1786,
         "min": 420
       },
       "trivial_thresholds": {
@@ -19389,14 +19385,13 @@
     },
     {
       "creatures": [
-        "oteryn:creature.boogey",
         "oteryn:creature.cyclops",
         "oteryn:creature.cyclops_drone",
         "oteryn:creature.cyclops_smith",
         "oteryn:creature.demon_skeleton",
         "oteryn:creature.vampire_pig"
       ],
-      "experience_per_creature_mean": 248,
+      "experience_per_creature_mean": 202,
       "id": "spawn-region:z03-x127-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -19612,7 +19607,7 @@
         "oteryn:creature.vampire_bride",
         "oteryn:creature.werewolf"
       ],
-      "experience_per_creature_mean": 2173,
+      "experience_per_creature_mean": 2107,
       "id": "spawn-region:z03-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -20157,10 +20152,9 @@
       "creatures": [
         "oteryn:creature.cobra_assassin",
         "oteryn:creature.cobra_scout",
-        "oteryn:creature.cobra_vizier",
-        "oteryn:creature.guard_captain_quaid"
+        "oteryn:creature.cobra_vizier"
       ],
-      "experience_per_creature_mean": 12485,
+      "experience_per_creature_mean": 7313,
       "id": "spawn-region:z03-x130-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -20179,7 +20173,7 @@
       },
       "name": "z03-x130-y127",
       "recommended_range": {
-        "max": 754,
+        "max": 395,
         "min": 314
       },
       "trivial_thresholds": {
@@ -20429,7 +20423,7 @@
         "oteryn:creature.radiant_templar",
         "oteryn:creature.radiant_zealot"
       ],
-      "experience_per_creature_mean": 34067,
+      "experience_per_creature_mean": 38496,
       "id": "spawn-region:z03-x132-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -20448,7 +20442,7 @@
       },
       "name": "z03-x132-y127",
       "recommended_range": {
-        "max": 1620,
+        "max": 1786,
         "min": 420
       },
       "trivial_thresholds": {
@@ -20941,14 +20935,13 @@
         "oteryn:creature.doom_deer",
         "oteryn:creature.fire_devil",
         "oteryn:creature.gozzler",
-        "oteryn:creature.mephiles",
         "oteryn:creature.minotaur_mage",
         "oteryn:creature.nomad",
         "oteryn:creature.pirate_buccaneer",
         "oteryn:creature.pirate_corsair",
         "oteryn:creature.undead_gladiator"
       ],
-      "experience_per_creature_mean": 255,
+      "experience_per_creature_mean": 242,
       "id": "spawn-region:z04-x127-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -21209,7 +21202,7 @@
         "oteryn:creature.varg",
         "oteryn:creature.werewolf"
       ],
-      "experience_per_creature_mean": 2444,
+      "experience_per_creature_mean": 2311,
       "id": "spawn-region:z04-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -21228,7 +21221,7 @@
       },
       "name": "z04-x128-y122",
       "recommended_range": {
-        "max": 150,
+        "max": 137,
         "min": 126
       },
       "trivial_thresholds": {
@@ -21912,10 +21905,9 @@
       "creatures": [
         "oteryn:creature.cobra_assassin",
         "oteryn:creature.cobra_scout",
-        "oteryn:creature.cobra_vizier",
-        "oteryn:creature.gaffir"
+        "oteryn:creature.cobra_vizier"
       ],
-      "experience_per_creature_mean": 11735,
+      "experience_per_creature_mean": 7313,
       "id": "spawn-region:z04-x130-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -21934,7 +21926,7 @@
       },
       "name": "z04-x130-y127",
       "recommended_range": {
-        "max": 712,
+        "max": 395,
         "min": 314
       },
       "trivial_thresholds": {
@@ -22250,7 +22242,7 @@
         "oteryn:creature.radiant_paragon",
         "oteryn:creature.radiant_warden"
       ],
-      "experience_per_creature_mean": 34427,
+      "experience_per_creature_mean": 38902,
       "id": "spawn-region:z04-x132-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -22269,7 +22261,7 @@
       },
       "name": "z04-x132-y127",
       "recommended_range": {
-        "max": 1634,
+        "max": 1799,
         "min": 420
       },
       "trivial_thresholds": {
@@ -23012,7 +23004,6 @@
         "oteryn:creature.cyclops_drone",
         "oteryn:creature.cyclops_smith",
         "oteryn:creature.dark_monk",
-        "oteryn:creature.dirtbeard",
         "oteryn:creature.gang_member",
         "oteryn:creature.killer_rabbit",
         "oteryn:creature.minotaur_archer",
@@ -23029,7 +23020,7 @@
         "oteryn:creature.valkyrie",
         "oteryn:creature.witch"
       ],
-      "experience_per_creature_mean": 184,
+      "experience_per_creature_mean": 175,
       "id": "spawn-region:z05-x127-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -23300,7 +23291,7 @@
         "oteryn:creature.varg",
         "oteryn:creature.werewolf"
       ],
-      "experience_per_creature_mean": 1667,
+      "experience_per_creature_mean": 1578,
       "id": "spawn-region:z05-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -23897,30 +23888,29 @@
         "oteryn:creature.dragon_lord",
         "oteryn:creature.falcon_knight",
         "oteryn:creature.falcon_paladin",
-        "oteryn:creature.grand_chaplain_gaunder",
-        "oteryn:creature.thawing_dragon_lord"
+        "oteryn:creature.grand_chaplain_gaunder"
       ],
-      "experience_per_creature_mean": 4612,
+      "experience_per_creature_mean": 5031,
       "id": "spawn-region:z05-x130-y122",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 68,
-          "knight": 26,
-          "paladin": 38,
-          "sorcerer": 68
+          "druid": 20,
+          "knight": 10,
+          "paladin": 14,
+          "sorcerer": 20
         },
         "solo": {
-          "druid": 336,
-          "knight": 115,
-          "paladin": 172,
-          "sorcerer": 336
+          "druid": 146,
+          "knight": 52,
+          "paladin": 77,
+          "sorcerer": 146
         }
       },
       "name": "z05-x130-y122",
       "recommended_range": {
-        "max": 336,
-        "min": 336
+        "max": 413,
+        "min": 146
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -24514,7 +24504,7 @@
         "oteryn:creature.radiant_paragon",
         "oteryn:creature.radiant_warden"
       ],
-      "experience_per_creature_mean": 34427,
+      "experience_per_creature_mean": 38902,
       "id": "spawn-region:z05-x132-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -24533,7 +24523,7 @@
       },
       "name": "z05-x132-y127",
       "recommended_range": {
-        "max": 1634,
+        "max": 1799,
         "min": 420
       },
       "trivial_thresholds": {
@@ -25375,7 +25365,6 @@
         "oteryn:creature.cyclops_drone",
         "oteryn:creature.cyclops_smith",
         "oteryn:creature.dark_monk",
-        "oteryn:creature.doctor_perhaps",
         "oteryn:creature.dragon_lord",
         "oteryn:creature.dwarf_guard",
         "oteryn:creature.elf",
@@ -25699,7 +25688,7 @@
         "oteryn:creature.werewolf",
         "oteryn:creature.witch"
       ],
-      "experience_per_creature_mean": 1600,
+      "experience_per_creature_mean": 1498,
       "id": "spawn-region:z06-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -28515,7 +28504,6 @@
       "creatures": [
         "oteryn:creature.bat",
         "oteryn:creature.bear",
-        "oteryn:creature.bibby_bloodbath",
         "oteryn:creature.cyclops",
         "oteryn:creature.deer",
         "oteryn:creature.dragon",
@@ -28547,7 +28535,7 @@
         "oteryn:creature.wisp",
         "oteryn:creature.wolf"
       ],
-      "experience_per_creature_mean": 132,
+      "experience_per_creature_mean": 90,
       "id": "spawn-region:z07-x127-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -28921,7 +28909,7 @@
         "oteryn:creature.wolf",
         "oteryn:creature.worker_golem"
       ],
-      "experience_per_creature_mean": 910,
+      "experience_per_creature_mean": 849,
       "id": "spawn-region:z07-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -29155,13 +29143,14 @@
         "oteryn:creature.spit_nettle",
         "oteryn:creature.tarantula",
         "oteryn:creature.tarnished_spirit",
+        "oteryn:creature.the_old_widow",
         "oteryn:creature.tiger",
         "oteryn:creature.wasp",
         "oteryn:creature.white_shade",
         "oteryn:creature.wolf",
         "oteryn:creature.wyvern"
       ],
-      "experience_per_creature_mean": 161,
+      "experience_per_creature_mean": 259,
       "id": "spawn-region:z07-x128-y126",
       "kind": "spawn_region",
       "min_level": {
@@ -29398,11 +29387,10 @@
         "oteryn:creature.orc_shaman",
         "oteryn:creature.orc_spearman",
         "oteryn:creature.orc_warrior",
-        "oteryn:creature.renegade_orc",
         "oteryn:creature.sandcrawler",
         "oteryn:creature.snake"
       ],
-      "experience_per_creature_mean": 399,
+      "experience_per_creature_mean": 405,
       "id": "spawn-region:z07-x129-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -32655,7 +32643,7 @@
         "oteryn:creature.worker_golem",
         "oteryn:creature.zombie"
       ],
-      "experience_per_creature_mean": 1827,
+      "experience_per_creature_mean": 1712,
       "id": "spawn-region:z08-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -33426,7 +33414,6 @@
     {
       "creatures": [
         "oteryn:creature.crawler",
-        "oteryn:creature.dazed_leaf_golem",
         "oteryn:creature.falcon_knight",
         "oteryn:creature.falcon_paladin",
         "oteryn:creature.flimsy_lost_soul",
@@ -33441,7 +33428,7 @@
         "oteryn:creature.swarmer",
         "oteryn:creature.waspoid"
       ],
-      "experience_per_creature_mean": 3332,
+      "experience_per_creature_mean": 2999,
       "id": "spawn-region:z08-x130-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -33460,7 +33447,7 @@
       },
       "name": "z08-x130-y122",
       "recommended_range": {
-        "max": 234,
+        "max": 192,
         "min": 146
       },
       "trivial_thresholds": {
@@ -34269,7 +34256,7 @@
         "oteryn:creature.true_midnight_asura",
         "oteryn:creature.winged_jaracal"
       ],
-      "experience_per_creature_mean": 6603,
+      "experience_per_creature_mean": 6825,
       "id": "spawn-region:z08-x132-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -34288,7 +34275,7 @@
       },
       "name": "z08-x132-y127",
       "recommended_range": {
-        "max": 480,
+        "max": 494,
         "min": 210
       },
       "trivial_thresholds": {
@@ -34969,6 +34956,7 @@
         "oteryn:creature.ghost",
         "oteryn:creature.hellhound",
         "oteryn:creature.hellspawn",
+        "oteryn:creature.hirintror",
         "oteryn:creature.ice_golem",
         "oteryn:creature.lancer_beetle",
         "oteryn:creature.mammoth",
@@ -34977,7 +34965,7 @@
         "oteryn:creature.undead_dragon",
         "oteryn:creature.wailing_widow"
       ],
-      "experience_per_creature_mean": 1717,
+      "experience_per_creature_mean": 1669,
       "id": "spawn-region:z09-x125-y121",
       "kind": "spawn_region",
       "min_level": {
@@ -36161,7 +36149,7 @@
         "oteryn:creature.worker_golem",
         "oteryn:creature.zombie"
       ],
-      "experience_per_creature_mean": 2423,
+      "experience_per_creature_mean": 2261,
       "id": "spawn-region:z09-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -36180,7 +36168,7 @@
       },
       "name": "z09-x128-y122",
       "recommended_range": {
-        "max": 180,
+        "max": 152,
         "min": 104
       },
       "trivial_thresholds": {
@@ -36414,7 +36402,7 @@
         "oteryn:creature.true_dawnfire_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 1476,
+      "experience_per_creature_mean": 1525,
       "id": "spawn-region:z09-x128-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -36466,7 +36454,7 @@
         "oteryn:creature.weretiger",
         "oteryn:creature.white_weretiger"
       ],
-      "experience_per_creature_mean": 2895,
+      "experience_per_creature_mean": 2964,
       "id": "spawn-region:z09-x128-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -36606,9 +36594,10 @@
         "oteryn:creature.troll_champion",
         "oteryn:creature.vicious_squire",
         "oteryn:creature.vile_grandmaster",
+        "oteryn:creature.weakened_shlorg",
         "oteryn:creature.wild_warrior"
       ],
-      "experience_per_creature_mean": 1333,
+      "experience_per_creature_mean": 1490,
       "id": "spawn-region:z09-x129-y123",
       "kind": "spawn_region",
       "min_level": {
@@ -36627,7 +36616,7 @@
       },
       "name": "z09-x129-y123",
       "recommended_range": {
-        "max": 65,
+        "max": 93,
         "min": 56
       },
       "trivial_thresholds": {
@@ -38597,6 +38586,7 @@
       "creatures": [
         "oteryn:creature.carrion_worm",
         "oteryn:creature.crystalcrusher",
+        "oteryn:creature.diblis_the_fair",
         "oteryn:creature.drillworm",
         "oteryn:creature.frost_dragon",
         "oteryn:creature.frost_dragon_hatchling",
@@ -38614,7 +38604,7 @@
         "oteryn:creature.wiggler",
         "oteryn:creature.zombie"
       ],
-      "experience_per_creature_mean": 684,
+      "experience_per_creature_mean": 742,
       "id": "spawn-region:z10-x125-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -38625,16 +38615,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 62,
-          "knight": 24,
-          "paladin": 35,
-          "sorcerer": 62
+          "druid": 73,
+          "knight": 28,
+          "paladin": 40,
+          "sorcerer": 73
         }
       },
       "name": "z10-x125-y128",
       "recommended_range": {
-        "max": 62,
-        "min": 62
+        "max": 73,
+        "min": 73
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -39412,7 +39402,7 @@
         "oteryn:creature.war_golem",
         "oteryn:creature.worker_golem"
       ],
-      "experience_per_creature_mean": 4717,
+      "experience_per_creature_mean": 4362,
       "id": "spawn-region:z10-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -39431,7 +39421,7 @@
       },
       "name": "z10-x128-y122",
       "recommended_range": {
-        "max": 329,
+        "max": 302,
         "min": 188
       },
       "trivial_thresholds": {
@@ -39662,7 +39652,7 @@
         "oteryn:creature.true_frost_flower_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 1471,
+      "experience_per_creature_mean": 1520,
       "id": "spawn-region:z10-x128-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -39708,7 +39698,7 @@
         "oteryn:creature.true_frost_flower_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 2388,
+      "experience_per_creature_mean": 2482,
       "id": "spawn-region:z10-x128-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -39904,12 +39894,13 @@
         "oteryn:creature.poison_spider",
         "oteryn:creature.rabbit",
         "oteryn:creature.rotworm",
+        "oteryn:creature.sir_valorcrest",
         "oteryn:creature.stone_devourer",
         "oteryn:creature.vampire",
         "oteryn:creature.wasp",
         "oteryn:creature.wilting_leaf_golem"
       ],
-      "experience_per_creature_mean": 708,
+      "experience_per_creature_mean": 743,
       "id": "spawn-region:z10-x129-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -39920,16 +39911,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 62,
-          "knight": 24,
-          "paladin": 35,
-          "sorcerer": 62
+          "druid": 75,
+          "knight": 28,
+          "paladin": 41,
+          "sorcerer": 75
         }
       },
       "name": "z10-x129-y124",
       "recommended_range": {
-        "max": 62,
-        "min": 62
+        "max": 75,
+        "min": 75
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -41917,9 +41908,10 @@
         "oteryn:creature.skeleton",
         "oteryn:creature.spider",
         "oteryn:creature.troll",
-        "oteryn:creature.troll_champion"
+        "oteryn:creature.troll_champion",
+        "oteryn:creature.zevelon_duskbringer"
       ],
-      "experience_per_creature_mean": 1464,
+      "experience_per_creature_mean": 1488,
       "id": "spawn-region:z11-x127-y123",
       "kind": "spawn_region",
       "min_level": {
@@ -41930,16 +41922,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 56,
-          "knight": 22,
-          "paladin": 32,
-          "sorcerer": 56
+          "druid": 97,
+          "knight": 36,
+          "paladin": 52,
+          "sorcerer": 97
         }
       },
       "name": "z11-x127-y123",
       "recommended_range": {
-        "max": 93,
-        "min": 56
+        "max": 97,
+        "min": 97
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -42188,7 +42180,7 @@
         "oteryn:creature.war_golem",
         "oteryn:creature.worker_golem"
       ],
-      "experience_per_creature_mean": 5609,
+      "experience_per_creature_mean": 5176,
       "id": "spawn-region:z11-x128-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -42207,7 +42199,7 @@
       },
       "name": "z11-x128-y122",
       "recommended_range": {
-        "max": 412,
+        "max": 371,
         "min": 188
       },
       "trivial_thresholds": {
@@ -42261,7 +42253,6 @@
     },
     {
       "creatures": [
-        "oteryn:creature.black_knight",
         "oteryn:creature.bone_bear",
         "oteryn:creature.bonelord",
         "oteryn:creature.crypt_construct",
@@ -42281,7 +42272,7 @@
         "oteryn:creature.wiggler",
         "oteryn:creature.wyvern"
       ],
-      "experience_per_creature_mean": 4189,
+      "experience_per_creature_mean": 4333,
       "id": "spawn-region:z11-x128-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -42300,7 +42291,7 @@
       },
       "name": "z11-x128-y124",
       "recommended_range": {
-        "max": 387,
+        "max": 400,
         "min": 104
       },
       "trivial_thresholds": {
@@ -42418,7 +42409,7 @@
         "oteryn:creature.true_frost_flower_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 1965,
+      "experience_per_creature_mean": 2034,
       "id": "spawn-region:z11-x128-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -42468,7 +42459,7 @@
         "oteryn:creature.true_frost_flower_asura",
         "oteryn:creature.true_midnight_asura"
       ],
-      "experience_per_creature_mean": 1648,
+      "experience_per_creature_mean": 1723,
       "id": "spawn-region:z11-x128-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -42579,7 +42570,6 @@
       "creatures": [
         "oteryn:creature.a_carved_stone_tile",
         "oteryn:creature.ancient_scarab",
-        "oteryn:creature.annihilon",
         "oteryn:creature.betrayed_wraith",
         "oteryn:creature.bonebeast",
         "oteryn:creature.bonelord",
@@ -42601,14 +42591,11 @@
         "oteryn:creature.flamethrower",
         "oteryn:creature.gargoyle",
         "oteryn:creature.giant_spider",
-        "oteryn:creature.golgordan",
         "oteryn:creature.gozzler",
         "oteryn:creature.grim_reaper",
         "oteryn:creature.hell_hole",
-        "oteryn:creature.hellgorak",
         "oteryn:creature.hellhound",
         "oteryn:creature.juggernaut",
-        "oteryn:creature.latrivan",
         "oteryn:creature.lost_soul",
         "oteryn:creature.magicthrower",
         "oteryn:creature.nightmare",
@@ -42618,33 +42605,31 @@
         "oteryn:creature.son_of_verminor",
         "oteryn:creature.spectre",
         "oteryn:creature.stone_golem",
-        "oteryn:creature.ushuriel",
         "oteryn:creature.vampire",
         "oteryn:creature.vampire_bride",
-        "oteryn:creature.vampire_viscount",
-        "oteryn:creature.zugurosh"
+        "oteryn:creature.vampire_viscount"
       ],
-      "experience_per_creature_mean": 2553,
+      "experience_per_creature_mean": 1511,
       "id": "spawn-region:z11-x129-y123",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 23,
-          "knight": 11,
-          "paladin": 15,
-          "sorcerer": 23
+          "druid": 10,
+          "knight": 8,
+          "paladin": 9,
+          "sorcerer": 10
         },
         "solo": {
-          "druid": 155,
-          "knight": 55,
-          "paladin": 81,
-          "sorcerer": 155
+          "druid": 104,
+          "knight": 38,
+          "paladin": 56,
+          "sorcerer": 104
         }
       },
       "name": "z11-x129-y123",
       "recommended_range": {
-        "max": 155,
-        "min": 155
+        "max": 104,
+        "min": 104
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -42664,7 +42649,6 @@
         "oteryn:creature.lava_golem",
         "oteryn:creature.leaf_golem",
         "oteryn:creature.lost_berserker",
-        "oteryn:creature.madareth",
         "oteryn:creature.magma_crawler",
         "oteryn:creature.massive_earth_elemental",
         "oteryn:creature.modified_gnarlhound",
@@ -42684,30 +42668,31 @@
         "oteryn:creature.rotworm",
         "oteryn:creature.vampire",
         "oteryn:creature.weeper",
+        "oteryn:creature.white_pale",
         "oteryn:creature.wiggler",
         "oteryn:creature.wilting_leaf_golem"
       ],
-      "experience_per_creature_mean": 1489,
+      "experience_per_creature_mean": 1198,
       "id": "spawn-region:z11-x129-y124",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 10,
+          "druid": 8,
           "knight": 8,
-          "paladin": 9,
-          "sorcerer": 10
+          "paladin": 8,
+          "sorcerer": 8
         },
         "solo": {
-          "druid": 104,
-          "knight": 38,
-          "paladin": 56,
-          "sorcerer": 104
+          "druid": 84,
+          "knight": 31,
+          "paladin": 46,
+          "sorcerer": 84
         }
       },
       "name": "z11-x129-y124",
       "recommended_range": {
-        "max": 104,
-        "min": 104
+        "max": 84,
+        "min": 84
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -42859,7 +42844,6 @@
     {
       "creatures": [
         "oteryn:creature.ancient_scarab",
-        "oteryn:creature.ashmunrah",
         "oteryn:creature.behemoth",
         "oteryn:creature.demon_skeleton",
         "oteryn:creature.flamethrower",
@@ -42877,7 +42861,7 @@
         "oteryn:creature.snake",
         "oteryn:creature.vampire"
       ],
-      "experience_per_creature_mean": 492,
+      "experience_per_creature_mean": 338,
       "id": "spawn-region:z11-x129-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -42888,16 +42872,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 33,
-          "knight": 14,
-          "paladin": 20,
-          "sorcerer": 33
+          "druid": 12,
+          "knight": 8,
+          "paladin": 10,
+          "sorcerer": 12
         }
       },
       "name": "z11-x129-y128",
       "recommended_range": {
-        "max": 33,
-        "min": 33
+        "max": 12,
+        "min": 12
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -42952,30 +42936,29 @@
         "oteryn:creature.deepling_tyrant",
         "oteryn:creature.deepling_warrior",
         "oteryn:creature.fish",
-        "oteryn:creature.obujos",
         "oteryn:creature.shark"
       ],
-      "experience_per_creature_mean": 4062,
+      "experience_per_creature_mean": 1786,
       "id": "spawn-region:z11-x130-y122",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 31,
-          "knight": 14,
-          "paladin": 19,
-          "sorcerer": 31
+          "druid": 20,
+          "knight": 10,
+          "paladin": 14,
+          "sorcerer": 20
         },
         "solo": {
-          "druid": 189,
-          "knight": 66,
-          "paladin": 98,
-          "sorcerer": 189
+          "druid": 146,
+          "knight": 52,
+          "paladin": 77,
+          "sorcerer": 146
         }
       },
       "name": "z11-x130-y122",
       "recommended_range": {
-        "max": 260,
-        "min": 189
+        "max": 146,
+        "min": 146
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -43262,31 +43245,29 @@
         "oteryn:creature.deepling_elite",
         "oteryn:creature.deepling_guard",
         "oteryn:creature.deepling_spellsinger",
-        "oteryn:creature.deepling_warrior",
-        "oteryn:creature.jaul",
-        "oteryn:creature.tanjis"
+        "oteryn:creature.deepling_warrior"
       ],
-      "experience_per_creature_mean": 8683,
+      "experience_per_creature_mean": 1900,
       "id": "spawn-region:z11-x131-y122",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 41,
-          "knight": 17,
-          "paladin": 24,
-          "sorcerer": 41
+          "druid": 20,
+          "knight": 10,
+          "paladin": 14,
+          "sorcerer": 20
         },
         "solo": {
-          "druid": 230,
-          "knight": 80,
-          "paladin": 119,
-          "sorcerer": 230
+          "druid": 146,
+          "knight": 52,
+          "paladin": 77,
+          "sorcerer": 146
         }
       },
       "name": "z11-x131-y122",
       "recommended_range": {
-        "max": 618,
-        "min": 230
+        "max": 146,
+        "min": 146
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -43768,37 +43749,6 @@
       "recommended_range": {
         "max": 56,
         "min": 56
-      },
-      "trivial_thresholds": {
-        "burst_hp_percent": 10,
-        "kill_time_seconds": 8
-      }
-    },
-    {
-      "creatures": [
-        "oteryn:creature.koshei_the_deathless"
-      ],
-      "experience_per_creature_mean": 0,
-      "id": "spawn-region:z12-x047-y046",
-      "kind": "spawn_region",
-      "min_level": {
-        "party": {
-          "druid": 8,
-          "knight": 8,
-          "paladin": 8,
-          "sorcerer": 8
-        },
-        "solo": {
-          "druid": 50,
-          "knight": 20,
-          "paladin": 29,
-          "sorcerer": 50
-        }
-      },
-      "name": "z12-x047-y046",
-      "recommended_range": {
-        "max": 50,
-        "min": 50
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -44997,6 +44947,7 @@
     },
     {
       "creatures": [
+        "oteryn:creature.arachir_the_ancient_one",
         "oteryn:creature.banshee",
         "oteryn:creature.bat",
         "oteryn:creature.blood_hand",
@@ -45027,27 +44978,27 @@
         "oteryn:creature.white_shade",
         "oteryn:creature.zombie"
       ],
-      "experience_per_creature_mean": 1595,
+      "experience_per_creature_mean": 1602,
       "id": "spawn-region:z12-x128-y126",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 11,
+          "druid": 12,
           "knight": 8,
-          "paladin": 9,
-          "sorcerer": 11
+          "paladin": 10,
+          "sorcerer": 12
         },
         "solo": {
-          "druid": 108,
-          "knight": 39,
-          "paladin": 58,
-          "sorcerer": 108
+          "druid": 113,
+          "knight": 41,
+          "paladin": 60,
+          "sorcerer": 113
         }
       },
       "name": "z12-x128-y126",
       "recommended_range": {
-        "max": 108,
-        "min": 108
+        "max": 113,
+        "min": 113
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -45367,14 +45318,13 @@
         "oteryn:creature.ghost",
         "oteryn:creature.gravedigger",
         "oteryn:creature.grim_reaper",
-        "oteryn:creature.koshei_the_deathless",
         "oteryn:creature.shadow_pupil",
         "oteryn:creature.werelion",
         "oteryn:creature.werelioness",
         "oteryn:creature.white_lion",
         "oteryn:creature.wyrm"
       ],
-      "experience_per_creature_mean": 1637,
+      "experience_per_creature_mean": 1801,
       "id": "spawn-region:z12-x129-y126",
       "kind": "spawn_region",
       "min_level": {
@@ -49129,37 +49079,6 @@
     },
     {
       "creatures": [
-        "oteryn:creature.snake_god_essence"
-      ],
-      "experience_per_creature_mean": 7410,
-      "id": "spawn-region:z14-x127-y121",
-      "kind": "spawn_region",
-      "min_level": {
-        "party": {
-          "druid": 41,
-          "knight": 17,
-          "paladin": 24,
-          "sorcerer": 41
-        },
-        "solo": {
-          "druid": 230,
-          "knight": 80,
-          "paladin": 119,
-          "sorcerer": 230
-        }
-      },
-      "name": "z14-x127-y121",
-      "recommended_range": {
-        "max": 521,
-        "min": 230
-      },
-      "trivial_thresholds": {
-        "burst_hp_percent": 10,
-        "kill_time_seconds": 8
-      }
-    },
-    {
-      "creatures": [
         "oteryn:creature.dwarf",
         "oteryn:creature.dwarf_geomancer",
         "oteryn:creature.dwarf_guard",
@@ -49445,31 +49364,29 @@
     },
     {
       "creatures": [
-        "oteryn:creature.inky",
-        "oteryn:creature.sharptooth",
         "oteryn:creature.splasher"
       ],
-      "experience_per_creature_mean": 1733,
+      "experience_per_creature_mean": 1500,
       "id": "spawn-region:z14-x128-y121",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 31,
-          "knight": 14,
-          "paladin": 19,
-          "sorcerer": 31
+          "druid": 8,
+          "knight": 8,
+          "paladin": 8,
+          "sorcerer": 8
         },
         "solo": {
-          "druid": 188,
-          "knight": 66,
-          "paladin": 98,
-          "sorcerer": 188
+          "druid": 24,
+          "knight": 11,
+          "paladin": 16,
+          "sorcerer": 24
         }
       },
       "name": "z14-x128-y121",
       "recommended_range": {
-        "max": 188,
-        "min": 188
+        "max": 136,
+        "min": 24
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -49890,7 +49807,6 @@
         "oteryn:creature.ghoul",
         "oteryn:creature.green_djinn",
         "oteryn:creature.lich",
-        "oteryn:creature.morguthis",
         "oteryn:creature.mummy",
         "oteryn:creature.necromancer",
         "oteryn:creature.priestess",
@@ -49903,7 +49819,7 @@
         "oteryn:creature.vampire",
         "oteryn:creature.warlock"
       ],
-      "experience_per_creature_mean": 627,
+      "experience_per_creature_mean": 524,
       "id": "spawn-region:z14-x129-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -49914,16 +49830,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 37,
-          "knight": 16,
-          "paladin": 22,
-          "sorcerer": 37
+          "druid": 33,
+          "knight": 14,
+          "paladin": 20,
+          "sorcerer": 33
         }
       },
       "name": "z14-x129-y127",
       "recommended_range": {
-        "max": 37,
-        "min": 37
+        "max": 33,
+        "min": 33
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -49944,8 +49860,6 @@
         "oteryn:creature.magicthrower",
         "oteryn:creature.mummy",
         "oteryn:creature.necromancer",
-        "oteryn:creature.omruc",
-        "oteryn:creature.rahemos",
         "oteryn:creature.scarab",
         "oteryn:creature.shredderthrower",
         "oteryn:creature.slime",
@@ -49953,7 +49867,7 @@
         "oteryn:creature.vampire",
         "oteryn:creature.warlock"
       ],
-      "experience_per_creature_mean": 705,
+      "experience_per_creature_mean": 447,
       "id": "spawn-region:z14-x129-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -49964,16 +49878,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 37,
-          "knight": 16,
-          "paladin": 22,
-          "sorcerer": 37
+          "druid": 33,
+          "knight": 14,
+          "paladin": 20,
+          "sorcerer": 33
         }
       },
       "name": "z14-x129-y128",
       "recommended_range": {
-        "max": 37,
-        "min": 37
+        "max": 33,
+        "min": 33
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -50255,10 +50169,9 @@
         "oteryn:creature.plaguethrower",
         "oteryn:creature.scarab",
         "oteryn:creature.slime",
-        "oteryn:creature.thalas",
         "oteryn:creature.vampire"
       ],
-      "experience_per_creature_mean": 493,
+      "experience_per_creature_mean": 318,
       "id": "spawn-region:z14-x130-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -50269,16 +50182,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 56,
-          "knight": 22,
-          "paladin": 32,
-          "sorcerer": 56
+          "druid": 42,
+          "knight": 17,
+          "paladin": 25,
+          "sorcerer": 42
         }
       },
       "name": "z14-x130-y128",
       "recommended_range": {
-        "max": 56,
-        "min": 56
+        "max": 42,
+        "min": 42
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -50651,7 +50564,7 @@
         "oteryn:creature.walking_pillar",
         "oteryn:creature.wandering_pillar"
       ],
-      "experience_per_creature_mean": 18531,
+      "experience_per_creature_mean": 18201,
       "id": "spawn-region:z14-x132-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -50670,7 +50583,7 @@
       },
       "name": "z14-x132-y124",
       "recommended_range": {
-        "max": 704,
+        "max": 677,
         "min": 608
       },
       "trivial_thresholds": {
@@ -50823,7 +50736,7 @@
         "oteryn:creature.sopping_carcass",
         "oteryn:creature.walking_pillar"
       ],
-      "experience_per_creature_mean": 21598,
+      "experience_per_creature_mean": 20750,
       "id": "spawn-region:z14-x133-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -50842,7 +50755,7 @@
       },
       "name": "z14-x133-y124",
       "recommended_range": {
-        "max": 786,
+        "max": 759,
         "min": 650
       },
       "trivial_thresholds": {
@@ -51275,30 +51188,29 @@
         "oteryn:creature.ghost",
         "oteryn:creature.rift_brood",
         "oteryn:creature.rift_scythe",
-        "oteryn:creature.rift_worm",
-        "oteryn:creature.zugurosh"
+        "oteryn:creature.rift_worm"
       ],
-      "experience_per_creature_mean": 2984,
+      "experience_per_creature_mean": 1230,
       "id": "spawn-region:z15-x127-y121",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 62,
-          "knight": 24,
-          "paladin": 35,
-          "sorcerer": 62
+          "druid": 81,
+          "knight": 30,
+          "paladin": 44,
+          "sorcerer": 81
         },
         "solo": {
-          "druid": 314,
-          "knight": 108,
-          "paladin": 161,
-          "sorcerer": 314
+          "druid": 390,
+          "knight": 133,
+          "paladin": 199,
+          "sorcerer": 390
         }
       },
       "name": "z15-x127-y121",
       "recommended_range": {
-        "max": 314,
-        "min": 314
+        "max": 390,
+        "min": 390
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -51780,31 +51692,32 @@
         "oteryn:creature.plaguesmith",
         "oteryn:creature.son_of_verminor",
         "oteryn:creature.spectre",
+        "oteryn:creature.the_pale_count",
         "oteryn:creature.undead_dragon",
         "oteryn:creature.vampire_bride",
         "oteryn:creature.vicious_manbat"
       ],
-      "experience_per_creature_mean": 3808,
+      "experience_per_creature_mean": 4860,
       "id": "spawn-region:z15-x128-y126",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 31,
+          "druid": 32,
           "knight": 14,
-          "paladin": 19,
-          "sorcerer": 31
+          "paladin": 20,
+          "sorcerer": 32
         },
         "solo": {
-          "druid": 188,
-          "knight": 66,
-          "paladin": 98,
-          "sorcerer": 188
+          "druid": 193,
+          "knight": 68,
+          "paladin": 100,
+          "sorcerer": 193
         }
       },
       "name": "z15-x128-y126",
       "recommended_range": {
-        "max": 233,
-        "min": 188
+        "max": 337,
+        "min": 193
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -51918,10 +51831,9 @@
     },
     {
       "creatures": [
-        "oteryn:creature.shard_of_corruption",
         "oteryn:creature.stone_golem"
       ],
-      "experience_per_creature_mean": 82,
+      "experience_per_creature_mean": 160,
       "id": "spawn-region:z15-x129-y122",
       "kind": "spawn_region",
       "min_level": {
@@ -51932,16 +51844,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 42,
-          "knight": 17,
-          "paladin": 25,
-          "sorcerer": 42
+          "druid": 25,
+          "knight": 12,
+          "paladin": 16,
+          "sorcerer": 25
         }
       },
       "name": "z15-x129-y122",
       "recommended_range": {
-        "max": 42,
-        "min": 42
+        "max": 25,
+        "min": 25
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -52110,7 +52022,6 @@
         "oteryn:creature.bonelord",
         "oteryn:creature.crypt_shambler",
         "oteryn:creature.demon_skeleton",
-        "oteryn:creature.dipthrah",
         "oteryn:creature.ghost",
         "oteryn:creature.lich",
         "oteryn:creature.magicthrower",
@@ -52119,10 +52030,9 @@
         "oteryn:creature.scorpion",
         "oteryn:creature.shredderthrower",
         "oteryn:creature.stalker",
-        "oteryn:creature.vampire",
-        "oteryn:creature.vashresamun"
+        "oteryn:creature.vampire"
       ],
-      "experience_per_creature_mean": 635,
+      "experience_per_creature_mean": 308,
       "id": "spawn-region:z15-x129-y127",
       "kind": "spawn_region",
       "min_level": {
@@ -52133,16 +52043,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 56,
-          "knight": 22,
-          "paladin": 32,
-          "sorcerer": 56
+          "druid": 37,
+          "knight": 16,
+          "paladin": 22,
+          "sorcerer": 37
         }
       },
       "name": "z15-x129-y127",
       "recommended_range": {
-        "max": 56,
-        "min": 56
+        "max": 37,
+        "min": 37
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -52161,12 +52071,11 @@
         "oteryn:creature.flamethrower",
         "oteryn:creature.ghost",
         "oteryn:creature.green_djinn",
-        "oteryn:creature.mahrdis",
         "oteryn:creature.mummy",
         "oteryn:creature.necromancer",
         "oteryn:creature.vampire"
       ],
-      "experience_per_creature_mean": 576,
+      "experience_per_creature_mean": 386,
       "id": "spawn-region:z15-x129-y128",
       "kind": "spawn_region",
       "min_level": {
@@ -52177,16 +52086,16 @@
           "sorcerer": 8
         },
         "solo": {
-          "druid": 42,
-          "knight": 17,
-          "paladin": 25,
-          "sorcerer": 42
+          "druid": 37,
+          "knight": 16,
+          "paladin": 22,
+          "sorcerer": 37
         }
       },
       "name": "z15-x129-y128",
       "recommended_range": {
-        "max": 42,
-        "min": 42
+        "max": 37,
+        "min": 37
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -52324,6 +52233,7 @@
         "oteryn:creature.enslaved_dwarf",
         "oteryn:creature.fire_elemental",
         "oteryn:creature.fury",
+        "oteryn:creature.furyosa",
         "oteryn:creature.glooth_golem",
         "oteryn:creature.hellfire_fighter",
         "oteryn:creature.hellhound",
@@ -52342,27 +52252,27 @@
         "oteryn:creature.vulcongra",
         "oteryn:creature.young_sea_serpent"
       ],
-      "experience_per_creature_mean": 1990,
+      "experience_per_creature_mean": 2403,
       "id": "spawn-region:z15-x130-y124",
       "kind": "spawn_region",
       "min_level": {
         "party": {
-          "druid": 15,
-          "knight": 8,
-          "paladin": 11,
-          "sorcerer": 15
+          "druid": 28,
+          "knight": 13,
+          "paladin": 18,
+          "sorcerer": 28
         },
         "solo": {
-          "druid": 126,
-          "knight": 45,
-          "paladin": 67,
-          "sorcerer": 126
+          "druid": 177,
+          "knight": 62,
+          "paladin": 92,
+          "sorcerer": 177
         }
       },
       "name": "z15-x130-y124",
       "recommended_range": {
-        "max": 126,
-        "min": 126
+        "max": 177,
+        "min": 177
       },
       "trivial_thresholds": {
         "burst_hp_percent": 10,
@@ -52826,7 +52736,7 @@
         "oteryn:creature.darklight_striker",
         "oteryn:creature.wandering_pillar"
       ],
-      "experience_per_creature_mean": 21354,
+      "experience_per_creature_mean": 20732,
       "id": "spawn-region:z15-x132-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -52893,7 +52803,7 @@
         "oteryn:creature.darklight_striker",
         "oteryn:creature.walking_pillar"
       ],
-      "experience_per_creature_mean": 21310,
+      "experience_per_creature_mean": 19818,
       "id": "spawn-region:z15-x133-y124",
       "kind": "spawn_region",
       "min_level": {
@@ -58982,8 +58892,8 @@
       "burst": 1500,
       "dps_milli": 86250,
       "ehp": 35711,
-      "exp_level": 260,
-      "experience": 20680,
+      "exp_level": 250,
+      "experience": 19232,
       "key": "oteryn:creature.darklight_matter",
       "name": "Darklight Matter",
       "pace_level": 1252,
@@ -58999,14 +58909,14 @@
     {
       "burst": 0,
       "dps_milli": 0,
-      "ehp": 40243,
-      "exp_level": 261,
-      "experience": 20870,
+      "ehp": 40560,
+      "exp_level": 251,
+      "experience": 19409,
       "key": "oteryn:creature.darklight_source",
       "name": "Darklight Source",
-      "pace_level": 1413,
+      "pace_level": 1424,
       "review": true,
-      "suggested_level": 1413,
+      "suggested_level": 1424,
       "survival_level": {
         "druid": 8,
         "knight": 8,
@@ -59017,14 +58927,14 @@
     {
       "burst": 1900,
       "dps_milli": 143000,
-      "ehp": 37157,
-      "exp_level": 260,
-      "experience": 20650,
+      "ehp": 37445,
+      "exp_level": 250,
+      "experience": 19205,
       "key": "oteryn:creature.darklight_striker",
       "name": "Darklight Striker",
-      "pace_level": 1303,
+      "pace_level": 1313,
       "review": true,
-      "suggested_level": 1303,
+      "suggested_level": 1313,
       "survival_level": {
         "druid": 776,
         "knight": 262,
@@ -59954,8 +59864,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 46101,
-      "exp_level": 412,
-      "experience": 47820,
+      "exp_level": 452,
+      "experience": 56428,
       "key": "oteryn:creature.devoted_radiant_acolyte",
       "name": "Devoted Radiant Acolyte",
       "pace_level": 1623,
@@ -59972,8 +59882,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 49380,
-      "exp_level": 409,
-      "experience": 47050,
+      "exp_level": 448,
+      "experience": 55519,
       "key": "oteryn:creature.devoted_radiant_inquisitor",
       "name": "Devoted Radiant Inquisitor",
       "pace_level": 1739,
@@ -59990,8 +59900,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 41400,
-      "exp_level": 425,
-      "experience": 50560,
+      "exp_level": 466,
+      "experience": 59661,
       "key": "oteryn:creature.devoted_radiant_paragon",
       "name": "Devoted Radiant Paragon",
       "pace_level": 1454,
@@ -60008,8 +59918,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 52839,
-      "exp_level": 422,
-      "experience": 49900,
+      "exp_level": 462,
+      "experience": 58882,
       "key": "oteryn:creature.devoted_radiant_templar",
       "name": "Devoted Radiant Templar",
       "pace_level": 1863,
@@ -60026,8 +59936,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 52740,
-      "exp_level": 428,
-      "experience": 51280,
+      "exp_level": 469,
+      "experience": 60510,
       "key": "oteryn:creature.devoted_radiant_warden",
       "name": "Devoted Radiant Warden",
       "pace_level": 1859,
@@ -60044,8 +59954,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 50920,
-      "exp_level": 425,
-      "experience": 50500,
+      "exp_level": 465,
+      "experience": 59590,
       "key": "oteryn:creature.devoted_radiant_zealot",
       "name": "Devoted Radiant Zealot",
       "pace_level": 1794,
@@ -61304,8 +61214,8 @@
       "burst": 250,
       "dps_milli": 112500,
       "ehp": 10144,
-      "exp_level": 164,
-      "experience": 8930,
+      "exp_level": 151,
+      "experience": 7680,
       "key": "oteryn:creature.dworc_shadowstalker",
       "name": "Dworc Shadowstalker",
       "pace_level": 338,
@@ -64652,8 +64562,8 @@
       "burst": 500,
       "dps_milli": 164500,
       "ehp": 9378,
-      "exp_level": 162,
-      "experience": 8770,
+      "exp_level": 149,
+      "experience": 7550,
       "key": "oteryn:creature.gloom_maw",
       "name": "Gloom Maw",
       "pace_level": 311,
@@ -67135,14 +67045,14 @@
     {
       "burst": 0,
       "dps_milli": 0,
-      "ehp": 411810,
+      "ehp": 705960,
       "exp_level": 4197,
       "experience": 3250000,
       "key": "oteryn:creature.ichgahal",
       "name": "Ichgahal",
-      "pace_level": 14683,
+      "pace_level": 25189,
       "review": true,
-      "suggested_level": 14683,
+      "suggested_level": 25189,
       "survival_level": {
         "druid": 8,
         "knight": 8,
@@ -72805,14 +72715,14 @@
     {
       "burst": 1300,
       "dps_milli": 55000,
-      "ehp": 39331,
+      "ehp": 39648,
       "exp_level": 263,
       "experience": 21175,
       "key": "oteryn:creature.mycobiontic_beetle",
       "name": "Mycobiontic Beetle",
-      "pace_level": 1381,
+      "pace_level": 1392,
       "review": true,
-      "suggested_level": 1381,
+      "suggested_level": 1392,
       "survival_level": {
         "druid": 524,
         "knight": 178,
@@ -73939,14 +73849,14 @@
     {
       "burst": 1300,
       "dps_milli": 55000,
-      "ehp": 35825,
+      "ehp": 36385,
       "exp_level": 259,
       "experience": 20600,
       "key": "oteryn:creature.oozing_corpus",
       "name": "Oozing Corpus",
-      "pace_level": 1256,
+      "pace_level": 1276,
       "review": true,
-      "suggested_level": 1256,
+      "suggested_level": 1276,
       "survival_level": {
         "druid": 524,
         "knight": 178,
@@ -74300,8 +74210,8 @@
       "burst": 785,
       "dps_milli": 261250,
       "ehp": 11584,
-      "exp_level": 177,
-      "experience": 10250,
+      "exp_level": 163,
+      "experience": 8820,
       "key": "oteryn:creature.orclops_bloodbreaker",
       "name": "Orclops Bloodbreaker",
       "pace_level": 389,
@@ -74837,8 +74747,8 @@
       }
     },
     {
-      "burst": 0,
-      "dps_milli": 0,
+      "burst": 1400,
+      "dps_milli": 350000,
       "ehp": 101925,
       "exp_level": 10085,
       "experience": 16000000,
@@ -74848,10 +74758,10 @@
       "review": true,
       "suggested_level": 3617,
       "survival_level": {
-        "druid": 8,
-        "knight": 8,
-        "paladin": 8,
-        "sorcerer": 8
+        "druid": 566,
+        "knight": 192,
+        "paladin": 287,
+        "sorcerer": 566
       }
     },
     {
@@ -76082,8 +75992,8 @@
       "burst": 950,
       "dps_milli": 237500,
       "ehp": 44678,
-      "exp_level": 336,
-      "experience": 32960,
+      "exp_level": 359,
+      "experience": 37245,
       "key": "oteryn:creature.radiant_acolyte",
       "name": "Radiant Acolyte",
       "pace_level": 1572,
@@ -76100,8 +76010,8 @@
       "burst": 1000,
       "dps_milli": 250000,
       "ehp": 41423,
-      "exp_level": 333,
-      "experience": 32460,
+      "exp_level": 356,
+      "experience": 36680,
       "key": "oteryn:creature.radiant_inquisitor",
       "name": "Radiant Inquisitor",
       "pace_level": 1456,
@@ -76118,8 +76028,8 @@
       "burst": 1000,
       "dps_milli": 250000,
       "ehp": 44073,
-      "exp_level": 346,
-      "experience": 34780,
+      "exp_level": 370,
+      "experience": 39301,
       "key": "oteryn:creature.radiant_paragon",
       "name": "Radiant Paragon",
       "pace_level": 1551,
@@ -76136,8 +76046,8 @@
       "burst": 1050,
       "dps_milli": 262500,
       "ehp": 45371,
-      "exp_level": 345,
-      "experience": 34520,
+      "exp_level": 369,
+      "experience": 39008,
       "key": "oteryn:creature.radiant_templar",
       "name": "Radiant Templar",
       "pace_level": 1597,
@@ -76154,8 +76064,8 @@
       "burst": 1050,
       "dps_milli": 262500,
       "ehp": 48399,
-      "exp_level": 350,
-      "experience": 35540,
+      "exp_level": 375,
+      "experience": 40160,
       "key": "oteryn:creature.radiant_warden",
       "name": "Radiant Warden",
       "pace_level": 1704,
@@ -76172,8 +76082,8 @@
       "burst": 1000,
       "dps_milli": 250000,
       "ehp": 44088,
-      "exp_level": 348,
-      "experience": 35220,
+      "exp_level": 373,
+      "experience": 39799,
       "key": "oteryn:creature.radiant_zealot",
       "name": "Radiant Zealot",
       "pace_level": 1551,
@@ -83426,8 +83336,8 @@
       "burst": 700,
       "dps_milli": 175000,
       "ehp": 10754,
-      "exp_level": 149,
-      "experience": 7475,
+      "exp_level": 155,
+      "experience": 8100,
       "key": "oteryn:creature.true_dawnfire_asura",
       "name": "True Dawnfire Asura",
       "pace_level": 361,
@@ -83444,8 +83354,8 @@
       "burst": 0,
       "dps_milli": 0,
       "ehp": 11007,
-      "exp_level": 153,
-      "experience": 7850,
+      "exp_level": 160,
+      "experience": 8600,
       "key": "oteryn:creature.true_feverbloom_asura",
       "name": "True Feverbloom Asura",
       "pace_level": 369,
@@ -83480,8 +83390,8 @@
       "burst": 450,
       "dps_milli": 112500,
       "ehp": 12263,
-      "exp_level": 147,
-      "experience": 7313,
+      "exp_level": 156,
+      "experience": 8200,
       "key": "oteryn:creature.true_midnight_asura",
       "name": "True Midnight Asura",
       "pace_level": 414,
@@ -84704,8 +84614,8 @@
       "burst": 1600,
       "dps_milli": 63571,
       "ehp": 49536,
-      "exp_level": 273,
-      "experience": 22600,
+      "exp_level": 262,
+      "experience": 21018,
       "key": "oteryn:creature.walking_pillar",
       "name": "Walking Pillar",
       "pace_level": 1746,

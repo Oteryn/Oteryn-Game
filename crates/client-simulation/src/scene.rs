@@ -27,6 +27,25 @@ pub fn visit_scene<'a, E>(
     player: ((i32, i32), &[Draw]),
     tile_at: impl Fn(i32, i32) -> Option<&'a MapTile>,
     glyph_at: impl Fn(i32, i32) -> Option<Draw>,
+    emit: impl FnMut((i32, i32), Draw) -> Result<(), E>,
+) -> Result<(), E> {
+    visit_scene_entities(
+        origin,
+        anchor,
+        player,
+        tile_at,
+        |x, y| glyph_at(x, y).into_iter().collect(),
+        emit,
+    )
+}
+
+/// Scene traversal with all live actors on a tile, preserving map over-layers.
+pub fn visit_scene_entities<'a, E>(
+    origin: (i32, i32),
+    anchor: Option<(i32, i32)>,
+    player: ((i32, i32), &[Draw]),
+    tile_at: impl Fn(i32, i32) -> Option<&'a MapTile>,
+    glyph_at: impl Fn(i32, i32) -> Vec<Draw>,
     mut emit: impl FnMut((i32, i32), Draw) -> Result<(), E>,
 ) -> Result<(), E> {
     for row in 0..SCENE_ROWS as i32 + SCAN_MARGIN {
@@ -47,7 +66,7 @@ pub fn visit_scene<'a, E>(
                 offset: [draw.offset[0] - lift, draw.offset[1] - lift],
                 ..draw
             };
-            if let Some(glyph) = glyph_at(x, y) {
+            for glyph in glyph_at(x, y) {
                 emit(tile, lifted(glyph))?;
             }
             if tile == player.0 {

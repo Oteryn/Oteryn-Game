@@ -70,6 +70,16 @@ pub(super) fn check_intent(intent: &ChatIntent, selected: &[u32]) -> Result<(), 
 
 pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, SessionError> {
     let line = chat::decode_chat_line(payload)?;
+    if matches!(
+        line,
+        ChatLine::Local {
+            mode: chat::ChatSpeechMode::MonsterSay,
+            ..
+        }
+    ) && !selected.contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        return Err(SessionError::SessionUnusable);
+    }
     if matches!(line, ChatLine::PrivateChannel(_))
         && !selected.contains(&CAPABILITY_CHAT_PRIVATE_CHANNEL_V1)
     {

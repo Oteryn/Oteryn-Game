@@ -84,6 +84,25 @@ fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
 }
 
 #[test]
+fn nbroute_field_step_busy_holder_postgres() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            field_scenario(
+                admin,
+                3188,
+                1,
+                2118,
+                true,
+                false,
+                false,
+                Scenario::HolderBusy,
+            )
+            .await
+        })
+    })
+}
+
+#[test]
 fn field_runes_postgres_player_contact_ticks_and_incidental_skull() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -282,6 +301,7 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
+    HolderBusy,
     DestroyField,
     DestroyFar,
     DestroyBlocked,
@@ -850,6 +870,10 @@ async fn field_scenario_inner(
             .map_err(debug)?;
     }
     let mut owner = dependencies.owner(&harness, &authority);
+    // Equipped scenarios explicitly advance residual evaluation to application+11s.
+    // Keep ambient connection turns at their simulation instant until then: SQL
+    // latency must not inject a real nine-second fire pulse into replay checks.
+    let _simulation_clock = equipped(scenario).then(|| owner.freeze_owner_clock_for_test());
     owner.emit = |_, line| {
         eprintln!(
             "FIELD-RUNES owner module={} event={} code={:?}",
@@ -858,7 +882,7 @@ async fn field_scenario_inner(
     };
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         &[11, 30],
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
@@ -1833,7 +1857,7 @@ async fn field_scenario_inner(
             );
         }
         if let Some(creature) = creature {
-            qualify_creature_residual(&mut owner, creature, output).await?;
+            qualify_creature_residual(&owner, creature, output).await?;
         }
         if player_field
             && scenario != Scenario::Death
@@ -1842,10 +1866,34 @@ async fn field_scenario_inner(
             let target_session =
                 crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
             let before = player_health(&owner, target, target_session).await?;
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(11))
-                .ok_or("clock provisioning")?;
+            // Eleven seconds from application, not eleven seconds plus all the
+            // SQL/map work above. Poison's third pulse is due at twelve seconds;
+            // CI load must not silently turn this two-pulse assertion into three.
+            let periodic_now = {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get(&runtime, target, target_session)
+                    .ok_or("player state")?;
+                let started_at = state
+                    .owned_conditions()
+                    .instances()
+                    .iter()
+                    .find(|condition| {
+                        condition
+                            .provenance()
+                            .source
+                            .as_deref()
+                            .is_some_and(|source| source.starts_with("player:field:"))
+                    })
+                    .map_or(owner.owner_now().get(), |condition| condition.started_at());
+                // Periodic evaluation truncates to milliseconds; round the
+                // application instant up so energy's eleven-second tick is due.
+                let started_at = started_at.div_ceil(1_000) * 1_000;
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(started_at)
+                    .checked_add(11_000_000)
+                    .map_err(debug)?
+            };
             let mut interrupted = if matches!(
                 scenario,
                 Scenario::PeriodicRollback
@@ -1865,7 +1913,9 @@ async fn field_scenario_inner(
                 None
             };
             eprintln!("FIELD-RUNES periodic begin {scenario:?}");
-            let tick = owner.tick_spell_periodic(target, target_session).await;
+            let tick = owner
+                .tick_spell_periodic_at(target, target_session, periodic_now)
+                .await;
             eprintln!("FIELD-RUNES periodic returned {scenario:?}");
             if scenario == Scenario::PeriodicPermissionChange {
                 // Change exactly the current source liveness at the retained
@@ -2185,6 +2235,7 @@ fn field_world_inner(
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -2195,6 +2246,7 @@ fn field_world_inner(
                     kind: TerrainKind::Wall,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             },
         ],
@@ -2348,7 +2400,7 @@ async fn step_creature_on_field(
         .active_generation
         .and_then(|active| active.native_gameplay())
         .ok_or("native content")?;
-    let room = owner.rooms.gate_field_step_ingress().ok_or("field room")?;
+    let room = owner.rooms().gate_field_step_ingress().ok_or("field room")?;
     let pass = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match owner.root.try_issue_semantic_pass() {
@@ -2386,7 +2438,7 @@ async fn step_creature_on_field(
             let before = runtime
                 .read_actor_position(creature)
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+            let (dx, dy) = direction.delta();
             let at = before.position();
             let destination = MovementLocalPosition {
                 x: at.x + dx,
@@ -2421,25 +2473,44 @@ async fn step_creature_on_field(
 }
 
 async fn qualify_creature_residual(
-    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     creature: crate::foundation::ExactActorRef,
     output: u32,
 ) -> TestResult {
-    let before = owner
-        .runtime
-        .lock()
-        .await
-        .companion_snapshot(creature)
-        .map_err(debug)?
-        .health;
-    owner.clock_origin -= std::time::Duration::from_secs(11);
+    let (before, periodic_now) = {
+        let snapshot = owner
+            .runtime
+            .lock()
+            .await
+            .companion_snapshot(creature)
+            .map_err(debug)?;
+        let started_at = snapshot
+            .state
+            .conditions
+            .instances()
+            .iter()
+            .find(|condition| {
+                condition.provenance().source_kind
+                    == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field
+            })
+            .ok_or("creature field condition")?
+            .started_at();
+        // Match the player's eleven-second residual window, independent of
+        // real time spent projecting and expiring the durable field.
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+            started_at.div_ceil(1_000) * 1_000,
+        )
+        .checked_add(11_000_000)
+        .map_err(debug)?;
+        (snapshot.health, now)
+    };
     owner
         .states
         .spell_states
         .lock()
         .await
         .next_monster_ai_pass_us = 0;
-    owner.drain_monster_melee().await;
+    owner.drain_monster_melee_at(periodic_now).await;
     let after = owner
         .runtime
         .lock()
@@ -2677,6 +2748,95 @@ async fn drive_player_field(
             )
             .map_err(debug)?;
     }
+    if scenario == Scenario::HolderBusy {
+        use std::time::{Duration, Instant};
+        let mut permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+        let origin = owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(target)
+            .map_err(debug)?;
+        // Retain checkout for the entire command budget. No SQL transaction is
+        // open while waiting and neither Channel guard is held.
+        let held = owner.root.try_issue_semantic_pass()?;
+        let started = Instant::now();
+        let unavailable = owner.acquire_field_step_pass().await;
+        assert!(
+            matches!(
+                unavailable,
+                Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
+            ),
+            "persistent contention must refuse"
+        );
+        assert!(
+            started.elapsed() >= Duration::from_millis(500),
+            "command retry budget executed"
+        );
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let blocking = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+            let now = owner.owner_now().get();
+            let result = owner
+                .step_with_field_ingress(
+                    &mut permit,
+                    unavailable,
+                    &mut runtime,
+                    &mut states,
+                    target,
+                    session,
+                    now,
+                    crate::movement::CardinalStep::West,
+                    &blocking,
+                    None,
+                )
+                .await;
+            assert!(matches!(
+                result,
+                Err(crate::movement::MovementError::NotQualified)
+            ));
+            assert_eq!(runtime.read_actor_position(target).map_err(debug)?, origin);
+        }
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let held = owner.root.try_issue_semantic_pass()?;
+        // Poll checkout once while occupied, then release on that observation.
+        // This condition-driven handshake makes the regression red without relying
+        // on a guessed sleep, and proves both Channel locks remain available.
+        let pass = owner.acquire_field_step_pass();
+        tokio::pin!(pass);
+        let polled = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(pass.as_mut(), cx))
+        })
+        .await;
+        assert!(polled.is_pending(), "busy field checkout must wait");
+        assert!(owner.runtime.try_lock().is_ok());
+        assert!(owner.states.spell_states.try_lock().is_ok());
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let pass = pass.await.map_err(debug)?;
+        let mut runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let blocking = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+        let now = owner.owner_now().get();
+        let result = owner
+            .step_with_field_ingress(
+                &mut permit,
+                Ok(pass),
+                &mut runtime,
+                &mut states,
+                target,
+                session,
+                now,
+                crate::movement::CardinalStep::West,
+                &blocking,
+                None,
+            )
+            .await;
+        assert!(result.is_ok(), "released holder must move: {result:?}");
+        assert_ne!(runtime.read_actor_position(target).map_err(debug)?, origin);
+        eprintln!("NBROUTE-3 executed persistent rejection and released-holder field STEP");
+        return Ok(());
+    }
     let original = player_health(owner, target, session).await?;
     let initial_damage = if matches!(scenario, Scenario::Aged | Scenario::DepartedCaster) {
         20
@@ -2847,7 +3007,7 @@ async fn drive_player_field(
             assert_eq!(
                 player_health(owner, target, session).await?,
                 original - initial_damage,
-                "the actual player entry owner enforces protection and World policy; replay does no extra damage"
+                "scenario={scenario:?} output={output} step={id} replay={replay}: the actual player entry owner enforces protection and World policy; replay does no extra damage"
             );
         }
         let harm:(i64,i64)=sqlx::query_as("SELECT count(*),COALESCE(sum(damage),0)::bigint FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32").fetch_one(&harness.pool).await?;
@@ -2945,7 +3105,7 @@ async fn qualify_barrier_consumers(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("native content")?;
-    let room = owner.rooms.gate_field_step_ingress().ok_or("field room")?;
+    let room = owner.rooms().gate_field_step_ingress().ok_or("field room")?;
     let pass = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match owner.root.try_issue_semantic_pass() {

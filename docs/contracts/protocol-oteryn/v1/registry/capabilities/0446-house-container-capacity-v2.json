@@ -1,0 +1,14 @@
+{
+  "id": 446,
+  "name": "HOUSE_CONTAINER_CAPACITY_V2",
+  "owner_decision": "W18-HOUSE-CONTAINER-CAPACITY-2",
+  "owner": "Game House item owner",
+  "requires": [
+    14,
+    49
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES advertises this supplementary extension. Authenticated selection requires 14 and 49; up to 25 entries are admitted only for a currently proved named-House container. Capability 14 retains 20 entries in every legacy scope."
+}

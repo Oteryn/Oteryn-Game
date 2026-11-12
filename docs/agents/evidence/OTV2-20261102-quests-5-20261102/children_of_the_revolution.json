@@ -1,0 +1,1110 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "children_of_the_revolution",
+    "elements": 37,
+    "auto": 2,
+    "manual": 35,
+    "statuses": {
+      "LEFT_OUT": 27,
+      "CALLBACK_DATA_IMPLEMENTED": 2,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 8
+    },
+    "new_callbacks": 2,
+    "prepared_npc": {
+      "rules": 22,
+      "reply_paragraphs": 54,
+      "conversations": 1
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/children-of-the-revolution-battle-passage-1",
+    "oteryn:quest-callback/children-of-the-revolution-battle-passage-2"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Dokumenty Zalamona",
+      "pattern": "P05",
+      "trigger": "Use uid3162",
+      "condition": "Questline=1",
+      "effect": "daj637; Questline=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:75-84",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przedmiot i stan/claim muszą mieć jeden kwalifikowany receipt oraz pojemność/placement. Nie rozbudowujemy placementu RewardClaimMint według pierwszego ANSWER pkt5. Fizyczne map bindings tych skrzyń nie są tutaj potwierdzone; nie deklarujemy ich braku ani gotowej grywalności.",
+      "missing_owner_function": "RewardClaimMint / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Świątynia",
+      "pattern": "P03",
+      "trigger": "StepIn uid3163",
+      "condition": "Questline=4",
+      "effect": "Questline=5; Mission01=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_temple.lua:9-19",
+      "initial_import": "AUTO",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pierwotne AUTO było zbyt szerokie: Crystal wykonuje SET i TALKTYPE_MONSTER_SAY. Zamknięty callback nie przenosi success speech, a samo SET byłoby niepełnym krokiem. Przekwalifikowano RĘCZNIE; wymagany kompletny route, nie cichy zapis stanu.",
+      "missing_owner_function": "World callback success speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Skrzynia trucizny",
+      "pattern": "P05",
+      "trigger": "Use uid3164",
+      "condition": "Questline=9",
+      "effect": "daj10183; Questline=10",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission3_chest.lua:3-15",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przedmiot i stan/claim muszą mieć jeden kwalifikowany receipt oraz pojemność/placement. Nie rozbudowujemy placementu RewardClaimMint według pierwszego ANSWER pkt5. Fizyczne map bindings tych skrzyń nie są tutaj potwierdzone; nie deklarujemy ich braku ani gotowej grywalności.",
+      "missing_owner_function": "RewardClaimMint / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "Zatrucie wody",
+      "pattern": "P02",
+      "trigger": "item10183 na target.aid8012",
+      "condition": "Questline=10",
+      "effect": "Questline=11; Mission03=2; zużyj10183",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission3_poison_water.lua:3-16",
+      "initial_import": "AUTO",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pierwotne AUTO było zbyt szerokie: użycie 10183 na aid8012 ma atomowo zużyć przedmiot, wykonać oba SET i źródłową wypowiedź. Brak success speech w zamkniętym callbacku; nie włączono częściowego kroku. Przekwalifikowano RĘCZNIE.",
+      "missing_owner_function": "Item/quest receipt + success speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "Odczyt symboli",
+      "pattern": "P03",
+      "trigger": "StepIn(33357,31123,5)",
+      "condition": "StrangeSymbols<1; Mission03≥2",
+      "effect": "Mission04=2; StrangeSymbols=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_symbol.lua:9-19",
+      "initial_import": "AUTO",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pierwotne AUTO było zbyt szerokie: Crystal wykonuje SET i TALKTYPE_MONSTER_SAY. Zamknięty callback nie przenosi success speech, a samo SET byłoby niepełnym krokiem. Przekwalifikowano RĘCZNIE; wymagany kompletny route, nie cichy zapis stanu.",
+      "missing_owner_function": "World callback success speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "Olej",
+      "pattern": "P02",
+      "trigger": "item10189 na cel",
+      "condition": "Mission04=3; donorowe not target.actionid ==8013 nie ogranicza celu",
+      "effect": "Questline=14; Mission04=4; zużyj10189",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_grease_oil.lua:3-17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Source guard „not target.actionid == 8013” jest błędem donora; intencja8013 jest jawna w tym samym pliku i pierwszego ANSWER pkt3 dopuszcza naprawę z testem. Cały consume+2SET+speech pozostaje w Left out do kwalifikacji wspólnego route; błąd nie jest potajemnie poprawiany w danych.",
+      "missing_owner_function": "Item/quest receipt + success speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "Drzwi Zalamona",
+      "pattern": "P04",
+      "trigger": "Use uid3170; item9874",
+      "condition": "NewFrontier.Mission08≥2; WrathOfEmperor.Mission11<2",
+      "effect": "teleport na drzwi;9874→9875",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_zalamon_door.lua:3-17",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Wymagane są dokładny warunek misji, transformacja9874→9875 oraz teleport na drzwi. Nie zakwalifikowano całego source route i fizycznego selector object; nie otwieramy samych drzwi bez pełnego warunku.",
+      "missing_owner_function": "Door / guarded world effect",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "Schody po bitwie",
+      "pattern": "P01/P16",
+      "trigger": "StepIn uid3169",
+      "condition": "tile ma1977",
+      "effect": "górne566→8281 na150s; jeśliMission05=1 to2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_stair.lua:1-35",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 9,
+      "step": "Bitwa: przyjęcie",
+      "pattern": "P06/P22/P30",
+      "trigger": "StepIn pad bitwy",
+      "condition": "inicjator Questline19; worldMission05≠1; cztery pady zajęte graczami",
+      "effect": "worldMission05=1; currentRun++; schody1897→1977; pozostali bez guardu questa",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_click.lua:78-111",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "Bitwa: fale",
+      "pattern": "P27/P30",
+      "trigger": "19 callbacków co30s",
+      "condition": "bieżący currentRun",
+      "effect": "20 przeciwników/fala; EternalGuardian×3 fale następnie LizardChosen;200 prób spawn/fala w prostokącie",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_click.lua:16-74",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 11,
+      "step": "Bitwa: zakończenie",
+      "pattern": "P16/P22/P25",
+      "trigger": "timeout600s; schody30s",
+      "condition": "zgodny currentRun",
+      "effect": "worldMission05=-1;usuń potwory;gracze w spectators do Zalamona;Questline19→20",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_click.lua:23-54",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "Szpiegowanie SpyBuilding01",
+      "pattern": "P03",
+      "trigger": "StepIn aid8009",
+      "condition": "SpyBuilding01<1; brak guardu aktywnej misji",
+      "effect": "Mission02 +=1; SpyBuilding01=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_spy.lua:2-33",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło inkrementuje Mission02 i zaznacza konkretną SpyBuilding przy właściwym stanie; obecne callback StorageEffect jest SET-only, bez success speech. Nie obliczamy wartości klientem ani nie rozbijamy atomowego kroku. Wymagane kwalifikowane powiązanie istniejącego QuestState ADD w world route.",
+      "missing_owner_function": "StepIn ADD+SET / source speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "Szpiegowanie SpyBuilding02",
+      "pattern": "P03",
+      "trigger": "StepIn aid8010",
+      "condition": "SpyBuilding02<1; brak guardu aktywnej misji",
+      "effect": "Mission02 +=1; SpyBuilding02=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_spy.lua:6-33",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło inkrementuje Mission02 i zaznacza konkretną SpyBuilding przy właściwym stanie; obecne callback StorageEffect jest SET-only, bez success speech. Nie obliczamy wartości klientem ani nie rozbijamy atomowego kroku. Wymagane kwalifikowane powiązanie istniejącego QuestState ADD w world route.",
+      "missing_owner_function": "StepIn ADD+SET / source speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "Szpiegowanie SpyBuilding03",
+      "pattern": "P03",
+      "trigger": "StepIn aid8011",
+      "condition": "SpyBuilding03<1; brak guardu aktywnej misji",
+      "effect": "Mission02 +=1; SpyBuilding03=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_spy.lua:10-33",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło inkrementuje Mission02 i zaznacza konkretną SpyBuilding przy właściwym stanie; obecne callback StorageEffect jest SET-only, bez success speech. Nie obliczamy wartości klientem ani nie rozbijamy atomowego kroku. Wymagane kwalifikowane powiązanie istniejącego QuestState ADD w world route.",
+      "missing_owner_function": "StepIn ADD+SET / source speech",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "Przejście do bitwy 1",
+      "pattern": "P03",
+      "trigger": "StepIn(33356, 31124, 7)",
+      "condition": "teleportAccess=1",
+      "effect": "teleport(33261, 31077, 8); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:14-25"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "children_of_the_revolution.callbacks.json"
+      ]
+    },
+    {
+      "row": 16,
+      "step": "Przejście do bitwy 2",
+      "pattern": "P03",
+      "trigger": "StepIn(33261, 31076, 8)",
+      "condition": "teleportAccess=1",
+      "effect": "teleport(33356, 31126, 7); inaczej fromPosition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:1-27",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG. Teleport ruchu jest przygotowany; osobny jawny CONST_ME_TELEPORT pozostaje presentation Left out do kwalifikacji istniejącego ownera.",
+      "missing_owner_function": "Istniejący world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "effect": "CONST_ME_TELEPORT",
+          "reason": "Nie zakwalifikowano publikacji jawnego efektu donora przez istniejący movement/presentation owner. Callback ruchu pozostaje dopuszczony drugim ANSWER pkt6; pełny efekt nie jest deklarowany jako wykonany.",
+          "sources": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/movements_teleport.lua:14-25"
+          ],
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+          "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "children_of_the_revolution.callbacks.json"
+      ]
+    },
+    {
+      "row": 17,
+      "step": "Puzzle: dźwignia 1",
+      "pattern": "P01/P18/P16",
+      "trigger": "Use(33349,31123,5)",
+      "condition": "Questline=14",
+      "effect": "toggle symbole 1,2,4; rozwiązanie9933,9936,9939,9938→Questline17/Mission04=5;9126 cofa się po5s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua:1-59",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "Puzzle: dźwignia 2",
+      "pattern": "P01/P18/P16",
+      "trigger": "Use(33349,31124,5)",
+      "condition": "Questline=14",
+      "effect": "toggle symbole 1,2,4; rozwiązanie9933,9936,9939,9938→Questline17/Mission04=5;9126 cofa się po5s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua:1-59",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 19,
+      "step": "Puzzle: dźwignia 3",
+      "pattern": "P01/P18/P16",
+      "trigger": "Use(33349,31125,5)",
+      "condition": "Questline=14",
+      "effect": "toggle symbole 3,4; rozwiązanie9933,9936,9939,9938→Questline17/Mission04=5;9126 cofa się po5s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua:1-59",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 20,
+      "step": "Puzzle: dźwignia 4",
+      "pattern": "P01/P18/P16",
+      "trigger": "Use(33349,31126,5)",
+      "condition": "Questline=14",
+      "effect": "toggle symbole 2,3; rozwiązanie9933,9936,9939,9938→Questline17/Mission04=5;9126 cofa się po5s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua:1-59",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 21,
+      "step": "Puzzle: dźwignia 5",
+      "pattern": "P01/P18/P16",
+      "trigger": "Use(33349,31127,5)",
+      "condition": "Questline=14",
+      "effect": "toggle symbole 1,3; rozwiązanie9933,9936,9939,9938→Questline17/Mission04=5;9126 cofa się po5s",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/children_of_the_revolution/actions_mission4_levers_puzzle.lua:1-59",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Czasowe schody, wspólne puzzle, world state oraz fale/cleanup wymagają spójnego właściciela świata i odtwarzania timerów. pierwszego ANSWER pkt5 wyklucza rozszerzenie W02/Instance/encounter; nie zastąpiono ich pojedynczym SET ani teleportem.",
+      "missing_owner_function": "Właściciel zmian świata / timers / encounter",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 22,
+      "step": "Skrzynia ChestTomeOfKnowledge1",
+      "pattern": "P05",
+      "trigger": "chest table id6289",
+      "condition": "ChestTomeOfKnowledge1 nieodebrane",
+      "effect": "daj10217×1; zapisz claim",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2756-2762",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przedmiot i stan/claim muszą mieć jeden kwalifikowany receipt oraz pojemność/placement. Nie rozbudowujemy placementu RewardClaimMint według pierwszego ANSWER pkt5. Fizyczne map bindings tych skrzyń nie są tutaj potwierdzone; nie deklarujemy ich braku ani gotowej grywalności.",
+      "missing_owner_function": "RewardClaimMint / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 23,
+      "step": "Skrzynia FlaskOfExtraGreasyOil",
+      "pattern": "P05",
+      "trigger": "chest table id6290",
+      "condition": "FlaskOfExtraGreasyOil nieodebrane",
+      "effect": "daj10189×1; zapisz claim",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2763-2769",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przedmiot i stan/claim muszą mieć jeden kwalifikowany receipt oraz pojemność/placement. Nie rozbudowujemy placementu RewardClaimMint według pierwszego ANSWER pkt5. Fizyczne map bindings tych skrzyń nie są tutaj potwierdzone; nie deklarujemy ich braku ani gotowej grywalności.",
+      "missing_owner_function": "RewardClaimMint / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 24,
+      "step": "Skrzynia ChestTomeOfKnowledge2",
+      "pattern": "P05",
+      "trigger": "chest table id6291",
+      "condition": "ChestTomeOfKnowledge2 nieodebrane",
+      "effect": "daj10217×1; zapisz claim",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2770-2776",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Przedmiot i stan/claim muszą mieć jeden kwalifikowany receipt oraz pojemność/placement. Nie rozbudowujemy placementu RewardClaimMint według pierwszego ANSWER pkt5. Fizyczne map bindings tych skrzyń nie są tutaj potwierdzone; nie deklarujemy ich braku ani gotowej grywalności.",
+      "missing_owner_function": "RewardClaimMint / physical chest qualification",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 25,
+      "step": "Zalamon: Wprowadzenie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes→yes",
+      "condition": "Questline<1;topics1→2",
+      "effect": "Questline=1;Mission00=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:246-261",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:70",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 26,
+      "step": "Zalamon: Dokumenty: oddanie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes→yes",
+      "condition": "Questline=2;topics3→4;637×1",
+      "effect": "zabierz637;Questline=3;Mission00=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:265-274",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne donorowe gałęzie mają konsumpcję lub mint przedmiotu razem z progresją (oraz XP w finale). Rozszerzanie kontraktu wymian0831/0832 zabronione przez pierwszego ANSWER pkt5; prompt dialogue może istnieć, ale trwały krok i nagroda pozostają niewłączone.",
+      "missing_owner_function": "NPC atomic item/state/XP exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:251",
+      "source_implementation": []
+    },
+    {
+      "row": 27,
+      "step": "Zalamon: Rozpoznanie: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes",
+      "condition": "Questline=3;topic5",
+      "effect": "Questline=4;Mission01=1;znacznik(33177,31193,7)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:275-281",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Akceptacja źródłowa zmienia stan i dodaje map mark(s). DATA adapter celowo nie wykonuje SET-only podzbioru; brak kwalifikowanego route całego efektu. Pozostają źródłowe prompty, bez przejścia misji.",
+      "missing_owner_function": "NPC map-mark presentation with state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:263",
+      "source_implementation": []
+    },
+    {
+      "row": 28,
+      "step": "Zalamon: Rozpoznanie: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission",
+      "condition": "Questline=5",
+      "effect": "Questline=6;Mission01=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:88-96",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:101",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 29,
+      "step": "Zalamon: Budynki: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes",
+      "condition": "Questline=6;topic6",
+      "effect": "Questline=7;Mission02=1;4 znaczniki",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:281-292",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Akceptacja źródłowa zmienia stan i dodaje map mark(s). DATA adapter celowo nie wykonuje SET-only podzbioru; brak kwalifikowanego route całego efektu. Pozostają źródłowe prompty, bez przejścia misji.",
+      "missing_owner_function": "NPC map-mark presentation with state",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:271",
+      "source_implementation": []
+    },
+    {
+      "row": 30,
+      "step": "Zalamon: Budynki: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission",
+      "condition": "Questline=7;wszystkie3 flagi Spy=1",
+      "effect": "Questline=8;Mission02=5",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:106-114",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:111",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 31,
+      "step": "Zalamon: Trucizna: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes→yes",
+      "condition": "Questline=8;topics7→8",
+      "effect": "Questline=9;Mission03=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:293-307",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:278",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 32,
+      "step": "Zalamon: Trucizna: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission",
+      "condition": "Questline=11",
+      "effect": "Questline=12;Mission03=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:123-130",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:133",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 33,
+      "step": "Zalamon: Świątynia: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes",
+      "condition": "Questline=12;topic10",
+      "effect": "Questline=13;Mission04=1 tylko jeśli≤1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:308-317",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:288",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 34,
+      "step": "Zalamon: Symbole: tłumaczenie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: symbols→yes",
+      "condition": "StrangeSymbols=1;topic11",
+      "effect": "StrangeSymbols=2;Mission04=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:318-326",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:296",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 35,
+      "step": "Zalamon: Puzzle: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes",
+      "condition": "Questline=17;topic12",
+      "effect": "daj10217;Questline=18;Mission04=6",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:327-336",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne donorowe gałęzie mają konsumpcję lub mint przedmiotu razem z progresją (oraz XP w finale). Rozszerzanie kontraktu wymian0831/0832 zabronione przez pierwszego ANSWER pkt5; prompt dialogue może istnieć, ale trwały krok i nagroda pozostają niewłączone.",
+      "missing_owner_function": "NPC atomic item/state/XP exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:306",
+      "source_implementation": []
+    },
+    {
+      "row": 36,
+      "step": "Zalamon: Bitwa: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission→yes",
+      "condition": "Questline=18;topic13",
+      "effect": "teleportAccess=1;Questline=19;Mission05=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:337-345",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/children_of_the_revolution.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:316",
+      "source_implementation": [
+        "children_of_the_revolution.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 37,
+      "step": "Zalamon: Bitwa: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "Zalamon: mission",
+      "condition": "Questline=20",
+      "effect": "Questline=21;Mission05=3;daj10199;XP10000",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:150-162",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełne donorowe gałęzie mają konsumpcję lub mint przedmiotu razem z progresją (oraz XP w finale). Rozszerzanie kontraktu wymian0831/0832 zabronione przez pierwszego ANSWER pkt5; prompt dialogue może istnieć, ale trwały krok i nagroda pozostają niewłączone.",
+      "missing_owner_function": "NPC atomic item/state/XP exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "report_source_correction": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:173",
+      "source_implementation": []
+    }
+  ]
+}

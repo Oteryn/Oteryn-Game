@@ -34,6 +34,10 @@ fn worst_kill_loot() -> AnalyserFact {
 
 fn every_kind() -> Vec<AnalyserFact> {
     vec![
+        AnalyserFact::Kill { race: None },
+        AnalyserFact::Kill {
+            race: Some(nz(MAX_BESTIARY_RACE)),
+        },
         AnalyserFact::Experience {
             raw: 1_200,
             gained: 1_800,
@@ -198,7 +202,7 @@ fn malformed_facts_fail_closed() {
     let malformed = [
         &[][..],                                                       // empty oneof
         &[0x0a, 0x00, 0x0a, 0x00], // two experience facts in one oneof
-        &[0x3a, 0x00],             // unknown oneof field 7
+        &[0x42, 0x00],             // unknown oneof field 8
         &[0x08, 0x01],             // a varint where a message belongs
         &[0x1a, 0x02, 0x10, 0x01], // supply_used without item_type
         &[0x1a, 0x04, 0x08, 0x01, 0x10, 0x00], // supply count 0
@@ -296,8 +300,8 @@ fn pending_queue_splits_worst_case_batches_by_bytes_and_never_drops_them() {
 }
 
 #[test]
-fn registries_bind_the_analyser_ids_and_limits() {
-    let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
+fn registries_bind_the_analyser_ids_and_limits() -> Result<(), Box<dyn std::error::Error>> {
+    let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY)?;
     let only = |section: &str, id: u32| {
         let matches: Vec<&Value> = protocol[section]
             .as_array()
@@ -311,10 +315,31 @@ fn registries_bind_the_analyser_ids_and_limits() {
     let capability = only("capabilities", CAPABILITY_ANALYSER_V1);
     assert_eq!(capability["name"], "ANALYSER_V1");
     assert_eq!(
-        capability["offered"], false,
-        "not offered before ANALYSER-EMIT-1"
+        capability["offered"], true,
+        "offered with the committed-outcome producer"
     );
-    assert_eq!(capability["command_types"], serde_json::json!([]));
+    assert_eq!(
+        capability["command_types"],
+        serde_json::json!([
+            crate::analyser_catalogue::COMMAND_TYPE_ANALYSER_ITEM_QUERY,
+            crate::analyser_party::COMMAND_TYPE_ANALYSER_PARTY_QUERY,
+        ])
+    );
+    // Both collecting lanes must retain independent negotiated routes.
+    for (kind, owner) in [
+        (734, CAPABILITY_ANALYSER_V1),
+        (735, CAPABILITY_ANALYSER_V1),
+        (
+            crate::imbuement_details::COMMAND_TYPE_IMBUEMENT_DETAILS,
+            447,
+        ),
+        (
+            crate::weapon_proficiency_state::COMMAND_TYPE_WEAPON_PROFICIENCY_STATE,
+            448,
+        ),
+    ] {
+        assert_eq!(only("command_types", kind)["capability"], owner);
+    }
     assert_eq!(
         capability["state_domains"],
         serde_json::json!([STATE_DOMAIN_ACTOR_ANALYSER])
@@ -347,6 +372,7 @@ fn registries_bind_the_analyser_ids_and_limits() {
         "AnalyserExperienceV1",
         "AnalyserItemCountV1",
         "AnalyserKillLootV1",
+        "AnalyserKillV1",
         "AnalyserImpactV1",
         "AnalyserDamageInputV1",
         "AnalyserDroppedV1",
@@ -382,6 +408,7 @@ fn registries_bind_the_analyser_ids_and_limits() {
         limit("ANALYSERS0-RL-04"),
         Some(MAX_ANALYSER_PENDING_FACTS as u64)
     );
+    Ok(())
 }
 
 // TEST-FUZZ-1: bounded randomized decoder and generated-value round trips.
@@ -417,5 +444,65 @@ fn fuzz_decode_analyser_snapshot() {
         |_| (),
         decode_analyser_snapshot,
         |_| Vec::new(),
+    );
+}
+
+#[test]
+fn analyser_kill_fact_is_distinct_from_loot_fragments() {
+    // Field 7 is one committed kill, including a creature without a Bestiary race.
+    assert!(decode_analyser_fact(&[0x3a, 0x00]).is_ok());
+}
+
+#[test]
+fn analyser_is_offered_by_all_server_profiles() {
+    for offers in [
+        crate::capability_tables::PRODUCTION_OFFERS_V1,
+        crate::capability_tables::ITEM_VIEW_OFFERS_V1,
+        crate::capability_tables::BUNDLE_WORLD_OFFERS_V1,
+    ] {
+        assert!(offers.iter().any(|(id, _)| *id == CAPABILITY_ANALYSER_V1));
+    }
+}
+
+#[test]
+fn kill_counts_survive_fragmentation_and_zero_loot_and_kill_decode_is_strict() {
+    let kill = AnalyserFact::Kill { race: Some(nz(1)) };
+    let fragment = AnalyserFact::KillLoot {
+        race: Some(nz(1)),
+        corpse_items: vec![item(1, 1); 32],
+        gold: 0,
+    };
+    let one = vec![kill.clone(), fragment.clone(), fragment.clone()];
+    let two = vec![kill.clone(), fragment.clone(), kill.clone(), fragment];
+    assert_ne!(encode_analyser_facts(&one), encode_analyser_facts(&two));
+    for (facts, expected) in [(&one, 1), (&two, 2)] {
+        let decoded =
+            decode_analyser_facts(&encode_analyser_facts(facts).expect("batch")).expect("decode");
+        assert_eq!(
+            decoded
+                .iter()
+                .filter(|fact| matches!(fact, AnalyserFact::Kill { .. }))
+                .count(),
+            expected
+        );
+    }
+    assert_eq!(
+        decode_analyser_fact(&encode_analyser_fact(&kill).expect("empty corpse kill")),
+        Ok(kill)
+    );
+    for invalid in [
+        vec![0x3a, 0x04, 0x08, 1, 0x08, 1],
+        vec![0x3a, 0x02, 0x10, 1],
+    ] {
+        assert_eq!(
+            decode_analyser_fact(&invalid),
+            Err(AnalyserWireError::Malformed)
+        );
+    }
+    assert_eq!(
+        encode_analyser_fact(&AnalyserFact::Kill {
+            race: Some(nz(MAX_BESTIARY_RACE + 1))
+        }),
+        Err(AnalyserWireError::LimitExceeded)
     );
 }

@@ -1,0 +1,13 @@
+{
+  "id": 382,
+  "name": "DEATH_PROTECTION_V1",
+  "owner_decision": "NX-8 C20c",
+  "owner": "Game immutable death outcome",
+  "requires": [],
+  "command_types": [
+    664
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Current admitted session reads its Character latest immutable death receipt; no authority grant."
+}

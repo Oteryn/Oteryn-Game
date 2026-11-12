@@ -87,7 +87,7 @@ fn imbuement_postgres_storage_bounds_bindings_and_restart() -> TestResult {
                 ),
                 (3, 0, 1, 72_000_000, id(120), id(130), "23514"),
                 (0, -1, 1, 72_000_000, id(120), id(130), "23514"),
-                (0, 20, 1, 72_000_000, id(120), id(130), "23514"),
+                (0, 26, 1, 72_000_000, id(120), id(130), "23514"),
                 (0, 0, 0, 72_000_000, id(120), id(130), "23514"),
                 (0, 0, 4, 72_000_000, id(120), id(130), "23514"),
                 (0, 0, 1, -1, id(120), id(130), "23514"),
@@ -276,6 +276,8 @@ fn imbuement_postgres_storage_bounds_bindings_and_restart() -> TestResult {
                         &harness.node,
                         fence()?,
                         NpcTradeRequest {
+                            fluid_subtype: None,
+        full_charges: None,
                             cause: NpcTradeCause {
                                 npc_key: "fixture:npc.trader".into(),
                                 catalogue_revision: 1,

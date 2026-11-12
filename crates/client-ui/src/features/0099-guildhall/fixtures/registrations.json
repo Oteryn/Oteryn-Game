@@ -2,18 +2,32 @@
   {
     "mechanic": "0099-guildhall",
     "kind": "handlers",
-    "id": "0099-guildhall-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0099-guildhall-command",
+    "status": "supported",
     "commands": [
       115
     ],
+    "direction": "client_to_server",
+    "capability": 99,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0099-guildhall",
+    "kind": "keybindings",
+    "id": "0099-guildhall-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+G",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0099-guildhall",
+    "kind": "panels",
+    "id": "0099-guildhall-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

@@ -10,6 +10,7 @@ mod attack_facing;
 pub mod behaviour_profile;
 mod channel_owner;
 mod creature_steps;
+pub mod creature_think_hook;
 mod movement_attack;
 #[path = "ai/movement_goal.rs"]
 pub mod movement_goal;
@@ -132,9 +133,13 @@ pub struct CreatureAiState {
     attack_observation: Option<movement_attack::AttackObservation>,
     forced_target: Option<(ExactActorRef, u64)>,
     forced_distance: Option<u64>,
+    /// Canary monster.cpp:1456-1462: Fatal Hold suppresses fleeing without changing targeting.
+    fatal_hold_until: u64,
     change_ticks_ms: u64,
     schedule: ProfileScheduleState,
     last: Option<ThinkReport>,
+    /// The admitted creature definition key, `oteryn:creature.<name>`; selects the think hook.
+    creature_key: Option<String>,
 }
 
 impl std::fmt::Debug for CreatureAiState {
@@ -170,15 +175,24 @@ impl CreatureAiState {
             attack_observation: None,
             forced_target: None,
             forced_distance: None,
+            fatal_hold_until: 0,
             change_ticks_ms: 0,
             schedule: ProfileScheduleState::new(actor),
             last: None,
+            creature_key: None,
         }
     }
 
     #[must_use]
     pub const fn actor(&self) -> ExactActorRef {
         self.actor
+    }
+
+    /// The creature definition key the think hook is selected by; `None` for a creature
+    /// admitted without one (legacy `admit_creature`).
+    #[must_use]
+    pub fn creature_key(&self) -> Option<&str> {
+        self.creature_key.as_deref()
     }
 
     #[must_use]
@@ -246,9 +260,20 @@ pub struct CreatureAiTable {
     window: Option<u64>,
     window_started: usize,
     step_timers: Option<creature_steps::StepTimers>,
+    think_hooks: creature_think_hook::CreatureThinkHooks,
 }
 
 impl CreatureAiTable {
+    /// The per-creature think hooks (Crystal `mType.onThink`), keyed by creature definition key.
+    pub fn think_hooks_mut(&mut self) -> &mut creature_think_hook::CreatureThinkHooks {
+        &mut self.think_hooks
+    }
+
+    #[must_use]
+    pub const fn think_hooks(&self) -> &creature_think_hook::CreatureThinkHooks {
+        &self.think_hooks
+    }
+
     /// Admits `state` with its first think due at `now_us`. A creature already present is
     /// replaced.
     pub fn admit(&mut self, state: CreatureAiState, now_us: u64) {
@@ -281,6 +306,15 @@ impl CreatureAiTable {
     #[must_use]
     pub fn state(&self, actor: ExactActorRef) -> Option<&CreatureAiState> {
         self.entry(actor).map(|entry| &entry.state)
+    }
+
+    /// The admitted charm hit retains one deadline on the existing creature incarnation.
+    pub fn apply_fatal_hold(&mut self, actor: ExactActorRef, until: u64) -> bool {
+        let Some(entry) = self.entry_mut(actor) else {
+            return false;
+        };
+        entry.state.fatal_hold_until = entry.state.fatal_hold_until.max(until);
+        true
     }
 
     /// The native melee owner consumes this recorded selection instead of independently
@@ -404,6 +438,14 @@ impl CreatureAiTable {
             if report.idle {
                 entry.due_us = None;
             }
+            crate::observability::record_ai_evaluation(
+                report.units,
+                CREATUREAI0_EVALUATION_UNITS_PER_THINK,
+                report.over_budget,
+            );
+        }
+        if let Ok(report) = &report {
+            self.run_think_hook(actor, facts.position, facts.now_us, report);
         }
         Some(report)
     }

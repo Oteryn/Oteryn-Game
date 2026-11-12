@@ -1,0 +1,17 @@
+{
+  "id": 280,
+  "name": "PARTY_EFFECTS_V1",
+  "constant": "party_effects::CAPABILITY_PARTY_EFFECTS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    496
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

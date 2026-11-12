@@ -61,6 +61,7 @@ fn policy() -> FiniteProgressionPolicy<String, 10> {
 
 fn death(tag: u8, blessings: &[&str]) -> TestResult<CharacterDeathRequest<10>> {
     Ok(CharacterDeathRequest {
+        public_cause: None,
         pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag))
             .map_err(|error| format!("{error:?}"))?,

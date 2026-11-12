@@ -66,6 +66,7 @@ pub struct RaidCreatureStatus {
 #[derive(Debug, Default)]
 pub(super) struct RaidSpawnLedger {
     receipts: BTreeMap<RaidSpawnIdentity, RaidSpawnReceipt>,
+    shared_attempts: BTreeMap<([u8; 16], u16), u8>,
     // A closing marker is reserved before the first actor admission. Closing
     // an existing run never needs more capacity than that run already owns.
     runs: BTreeMap<[u8; 16], bool>,
@@ -86,7 +87,7 @@ impl RaidSpawnLedger {
     }
 
     fn size(&self) -> usize {
-        self.receipts.len() + self.runs.len()
+        self.receipts.len() + self.runs.len() + self.shared_attempts.len()
     }
 }
 
@@ -96,6 +97,49 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::WrongScope);
         }
         Ok(())
+    }
+
+    /// Flower Month shares250 placement attempts per wave (Crystal flower_month.lua:28-46).
+    /// Spend before a physical read: failures and partial retries cannot refund attempts.
+    /// The durable caller proves this firing/step; a restarted run is LOST, never replayed.
+    pub fn spend_raid_shared_attempt(
+        &mut self,
+        stamp: RuntimeWorkStamp,
+        firing_id: [u8; 16],
+        wave: u16,
+    ) -> Result<Option<u8>, CarrierError> {
+        self.check_raid_stamp(stamp)?;
+        // RAID-1's MAX_WAVES=50; at most50 counters can belong to one admitted run.
+        if wave >= 50 || WorldId::decode(&firing_id).is_err() {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        if self.raid_spawns.runs.get(&firing_id) == Some(&true) {
+            return Err(CarrierError::PlanConflict);
+        }
+        let new_run = !self.raid_spawns.runs.contains_key(&firing_id);
+        let new_wave = !self
+            .raid_spawns
+            .shared_attempts
+            .contains_key(&(firing_id, wave));
+        let required = usize::from(new_run) + usize::from(new_wave);
+        if (new_run && self.raid_spawns.sealed)
+            || self.raid_spawns.size().saturating_add(required) > self.raid_spawns.limit()
+        {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        // Reserve the existing close marker before the first read, including failed reads.
+        self.raid_spawns.runs.entry(firing_id).or_insert(false);
+        let spent = self
+            .raid_spawns
+            .shared_attempts
+            .entry((firing_id, wave))
+            .or_insert(0);
+        if *spent >= 250 {
+            return Ok(None);
+        }
+        let attempt = *spent;
+        *spent += 1;
+        Ok(Some(attempt))
     }
 
     /// Called only after the durable writer commits the exact step. A repeated
@@ -177,6 +221,30 @@ impl ChannelRuntimeV1 {
 
     /// Current liveness joins retained raid identities to the actual actor
     /// carrier; recycled slots never make an old raid creature alive again.
+    /// Read the existing ledger's stable identity for one exact live actor.
+    /// This immutable binding never grants a placement or a world contribution.
+    pub fn raid_identity_for_actor(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<RaidSpawnIdentity>, CarrierError> {
+        self.owner_fence()?;
+        if !self.contains_live_creature(actor) {
+            return Ok(None);
+        }
+        let mut rows = self
+            .raid_spawns
+            .receipts
+            .iter()
+            .filter_map(|(identity, receipt)| {
+                (receipt.outcome == RaidSpawnOutcome::Placed(actor)).then_some(*identity)
+            });
+        let first = rows.next();
+        if rows.next().is_some() {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        Ok(first)
+    }
+
     pub fn raid_creatures(
         &self,
         firing_id: [u8; 16],
@@ -230,6 +298,10 @@ impl ChannelRuntimeV1 {
             self.raid_spawns.sealed = true;
             return Ok(0);
         }
+        // The retained close marker rejects replays; attempt counters can now be released.
+        self.raid_spawns
+            .shared_attempts
+            .retain(|(firing, _), _| *firing != firing_id);
         if !cleanup {
             return Ok(0);
         }

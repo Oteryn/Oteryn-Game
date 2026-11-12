@@ -14,8 +14,11 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod floor_assembly;
+mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
+mod seed_drop;
 
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
@@ -188,12 +191,13 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         for entry in items {
             let mut item = entry.item;
-            if entry.field_collision.is_some() {
+            if entry.field_collision.is_some() || entry.native_corpse {
                 if item.ground.map_revision != field_revision
                     || item.ground.content_revision != field_content
                     || item.ground.native_room_placement_context.as_slice()
                         != field_pin.1.as_slice()
-                    || item.runtime_scope_ownership_generation != field_pin.2
+                    || (entry.field_collision.is_some()
+                        && item.runtime_scope_ownership_generation != field_pin.2)
                 {
                     continue;
                 }
@@ -211,12 +215,12 @@ impl LoopGroundOverlay {
                 blocks_projectile: entry
                     .field_collision
                     .is_some_and(|(_, projectile)| projectile),
-                pickupable: entry.field_collision.is_none(),
+                pickupable: entry.field_collision.is_none() && !entry.native_corpse,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
             };
-            if entry.field_collision.is_some() {
+            if entry.field_collision.is_some() || entry.native_corpse {
                 let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
                     &item.ground.spatial_position,
                 ) else {
@@ -264,6 +268,14 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.inner.movement_item(id)
+    }
+
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
+
     fn base_hidden(&self, key: u64) -> bool {
         self.inner.base_hidden(key)
     }
@@ -323,6 +335,15 @@ impl LoopGroundCache {
             state.epoch = state.epoch.wrapping_add(1);
             state.current = None;
         }
+    }
+
+    /// An unresolved map MINT origin is still part of the scene census even
+    /// while its visual origin is hidden. None means the cache lock failed.
+    pub(super) fn pending_origin(&self, key: u64) -> Option<Option<CommandRef>> {
+        self.state
+            .lock()
+            .ok()
+            .map(|state| state.pending_origins.get(&key).copied())
     }
 
     fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
@@ -514,6 +535,16 @@ pub(super) async fn move_loop_item(
     command: UseCommand,
     request: LoopMove,
 ) -> LoopMoveResult {
+    move_loop_item_with_house_capacity(admission, actor, command, request, false).await
+}
+
+pub(super) async fn move_loop_item_with_house_capacity(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    request: LoopMove,
+    house_capacity_v2: bool,
+) -> LoopMoveResult {
     let refused = LoopMoveResult::Refused;
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
@@ -529,6 +560,28 @@ pub(super) async fn move_loop_item(
     ) {
         return refused(LoopMoveRefusal::Rejected);
     }
+    let named_house = command.item_fence.is_some_and(|fence| {
+        matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        )
+    }) && admission
+        .runtime
+        .lock()
+        .await
+        .house_actor_state(actor, command.game_session_id)
+        .is_ok();
+    if named_house {
+        return house_container::move_item(
+            admission,
+            actor,
+            command,
+            request,
+            &permit,
+            house_capacity_v2,
+        )
+        .await;
+    }
     if matches!(request.item, ItemKey::MapBase { .. } | ItemKey::MapAdded(_)) {
         let result =
             map_pickup::move_map_item(admission, actor, command, request, &permit, None).await;
@@ -543,7 +596,7 @@ pub(super) async fn move_loop_item(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox) = {
+    let (native, pins, index, mailbox, seed_target, assembly_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -552,11 +605,14 @@ pub(super) async fn move_loop_item(
         let native = native_for_move(&runtime, admission.active_generation, dead, pending);
         let index = pinned_index(&runtime, admission.active_generation);
         let pin = runtime.content_pin();
-        let content_revision = sha256_revision(pin.server_artifact_digest());
+        let content_digest = pin.server_artifact_digest();
+        let content_revision = sha256_revision(content_digest);
         let placement_context = pin.frame_binding_digest().to_vec();
         let mut mailbox = None;
+        let mut seed_target = None;
+        let mut assembly_target = None;
         let pins =
-            super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
+            super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
                 if let (LoopTarget::Ground(to), Some(index)) = (&request.target, index)
                     && let (Ok(x), Ok(y), Ok(floor)) = (
@@ -566,6 +622,10 @@ pub(super) async fn move_loop_item(
                     )
                 {
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
+                    seed_target =
+                        seed_drop::target(at.map, *to, content_digest, admission.reset_epoch);
+                    assembly_target =
+                        floor_assembly::target(at.map, *to, content_digest, admission.reset_epoch);
                 }
                 (
                     at.map.overlay.base().clone(),
@@ -574,7 +634,7 @@ pub(super) async fn move_loop_item(
                     placement_context,
                 )
             });
-        (native, pins, index, mailbox)
+        (native, pins, index, mailbox, seed_target, assembly_target)
     };
     let Some(native) = native else {
         return refused(LoopMoveRefusal::Rejected);
@@ -634,23 +694,107 @@ pub(super) async fn move_loop_item(
         }
     };
     let touches_ground = pickup_cell.is_some() || matches!(destination, LoopDestination::Ground(_));
-    let committed = admission
-        .root
-        .commit_item_loop_move(
-            &permit,
-            admission.character,
-            admission.holder,
-            &fence,
-            CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-            LoopMoveRequest {
-                item,
-                count: request.count,
-                pickup_cell,
-                destination,
-            },
+    let loop_request = LoopMoveRequest {
+        item,
+        count: request.count,
+        pickup_cell,
+        destination,
+    };
+    let command_ref = CommandRef::new(command.game_session_id, command_id);
+    let seed_target = if seed_target.is_some() {
+        match admission
+            .root
+            .item_loop_is_seed(
+                &permit,
+                admission.character,
+                admission.holder,
+                fence,
+                &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                crate::durability::item_loop_move::SeedDropProbe {
+                    command: command_ref,
+                    item,
+                },
+            )
+            .await
+        {
+            Ok(true) => seed_target,
+            Ok(false) => None,
+            Err(_) => return LoopMoveResult::Unknown,
+        }
+    } else {
+        None
+    };
+    let seed_result = match seed_target {
+        Some(target) => {
+            admission
+                .root
+                .commit_item_loop_seed_drop(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    CommandRef::new(command.game_session_id, command_id),
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request.clone(),
+                    target,
+                )
+                .await
+        }
+        None => Ok(None),
+    };
+    let committed = match seed_result {
+        Ok(Some(result)) => Ok(result),
+        Ok(None) if assembly_target.is_some() => {
+            let Some(target) = assembly_target else {
+                return refused(LoopMoveRefusal::Rejected);
+            };
+            admission
+                .root
+                .commit_item_loop_floor_assembly(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    native,
+                    loop_request,
+                    target,
+                )
+                .await
+        }
+        Ok(None) => {
+            admission
+                .root
+                .commit_item_loop_move(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    CommandRef::new(command.game_session_id, command_id),
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request,
+                )
+                .await
+        }
+        Err(error) => Err(error),
+    };
+    // Consequence metadata is returned only after the physical transaction commits.
+    // Replay and ordinary drops carry none, so neither can repeat source presentation.
+    if let Ok(Ok(receipt)) = &committed
+        && !receipt.replayed
+        && let Some(effect) = receipt.floor_effect
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(map) = admission.bundle_map()
+        && let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(to.x),
+            u16::try_from(to.y),
+            i8::try_from(to.floor),
         )
-        .await;
+    {
+        map.facts
+            .emit_movement_effect(TilePos { x, y, floor }, effect);
+    }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {
@@ -667,6 +811,9 @@ pub(super) async fn move_loop_item(
         admission.states.loop_ground.invalidate();
     }
     drop(permit);
+    if touches_ground && matches!(committed, Ok(Ok(_))) {
+        admission.refresh_terrain_tools().await;
+    }
     // ATTACK-2: a moved item may have been the swing weapon's container; the next swing reads
     // the equipment again.
     admission
@@ -706,11 +853,44 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// A door's step-out consequence uses the same item-loop receipt and custody writer as
-/// ground moves. Its Channel lane is already held; reach is the vacated doorway, rather
-/// than the player's new tile (which can be two tiles from the donor's destination).
-#[allow(clippy::too_many_arguments, reason = "one fenced door item relocation")]
-pub(super) async fn relocate_door_item(
+/// Finite source-script relocation may span a small authored room. Both cells
+/// must exist on the same floor; ordinary item drops still use drop_cell.
+fn source_drop_cell(
+    base: &WorldBase,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<Vec<u8>, LoopMoveResult> {
+    if from.2 != to.floor || from.0.abs_diff(to.x) > 32 || from.1.abs_diff(to.y) > 32 {
+        return Err(LoopMoveResult::TooFar);
+    }
+    let source = (
+        u16::try_from(from.0),
+        u16::try_from(from.1),
+        i8::try_from(from.2),
+    );
+    if !matches!(source, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    }
+    // Validate the actual destination; no fictitious player/source position is used.
+    let destination = (
+        u16::try_from(to.x),
+        u16::try_from(to.y),
+        i8::try_from(to.floor),
+    );
+    if !matches!(destination, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+        return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
+    }
+    Ok(ground_cell(to.x, to.y, to.floor))
+}
+
+/// A qualified source script uses the existing item-loop receipt/custody writer.
+/// Its caller holds the lane and proves the authored source/destination pair;
+/// voluntary moves retain their ordinary one-cell reach check.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one fenced source script item relocation"
+)]
+pub(super) async fn relocate_source_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     actor: ExactActorRef,
@@ -766,7 +946,7 @@ pub(super) async fn relocate_door_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = drop_cell(
+        let Some(ground) = source_drop_cell(
             map.overlay.base(),
             (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
             destination,
@@ -833,6 +1013,34 @@ pub(super) async fn observe_container(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
 ) -> Option<ContainerObservation> {
+    observe_container_with_house_capacity(admission, actor, fence, target, false).await
+}
+
+pub(super) async fn observe_container_with_house_capacity(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: Option<CurrentCharacterItemFence>,
+    target: ItemKey,
+    house_capacity_v2: bool,
+) -> Option<ContainerObservation> {
+    let named_house = if let Some(current) = fence.filter(|current| {
+        matches!(
+            current.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        )
+    }) {
+        admission
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, current.game_session_id)
+            .is_ok()
+    } else {
+        false
+    };
+    if named_house {
+        return house_container::observe(admission, actor, fence, target, house_capacity_v2).await;
+    }
     if matches!(target, ItemKey::BrowseField { .. }) {
         return super::browse_field::observe(admission, actor, fence, target).await;
     }
@@ -885,7 +1093,7 @@ pub(super) async fn observe_container(
             let pin = runtime.content_pin();
             let content_revision = sha256_revision(pin.server_artifact_digest());
             let placement_context = pin.frame_binding_digest().to_vec();
-            let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+            let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
             (
                 at.map.overlay.base().clone(),
                 (at.at.x, at.at.y, at.at.floor),
@@ -1005,6 +1213,135 @@ pub(super) async fn observe_container(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sewer_ground_projection_retains_callback_identity_and_pinned_removal()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::map::boot::tests as fixture;
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let facts = crate::map::facts::BundleFacts::palette(&bundle.manifest, |key| {
+            fixture::items(if key == "oteryn:item.tibia.i435" {
+                "item:coin"
+            } else {
+                key
+            })
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let pos = TilePos {
+            x: 7,
+            y: 0,
+            floor: -7,
+        };
+        assert!(facts.create_movement_item(pos, 435, 0, || true));
+        let pinned = facts.pinned();
+        let ground = HashMap::new();
+        let projection = LoopGroundFacts {
+            inner: &pinned,
+            ground: &ground,
+        };
+        let entries = projection.movement_items(pos);
+        assert_eq!(entries, facts.movement_items(pos));
+        let [entry] = entries.as_slice() else {
+            return Err("one sewer".into());
+        };
+        let view::EntrySource::Added(id) = entry.source else {
+            return Err("added sewer".into());
+        };
+        assert_eq!(projection.movement_item(id.get()), Some((pos, id)));
+        assert!(facts.remove_movement_item(pos, id.get(), 435));
+        assert_eq!(
+            projection.movement_items(pos),
+            entries,
+            "pinned map retains the issued handle"
+        );
+        let current = LoopGroundFacts {
+            inner: &facts,
+            ground: &ground,
+        };
+        assert!(current.movement_items(pos).is_empty());
+        assert_eq!(
+            current.movement_item(id.get()),
+            None,
+            "removed handle is stale"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn committed_corpse_survives_owner_generation_but_not_foreign_frame_or_scope()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::durability::item_loop_move::LoopGroundItem;
+        use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
+        let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world = WorldId::decode(&id(1))?;
+        let scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(2),
+        };
+        let index = ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i3031","definition-r1"],["oteryn:item.tibia.i48416","definition-r1"]]}"#)?;
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+            ("oteryn:item.tibia.i48416", 1),
+            ("oteryn:item.tibia.i3031", 0),
+        );
+        let base = Arc::new(crate::map::load(&bytes, &pins)?);
+        let pin = ([7; 32], [8; 32], 2);
+        let item = LoopGroundItem {
+            native_corpse: true,
+            field_collision: None,
+            stack_ordinal: 1,
+            item: GroundItemInstance {
+                item_instance_id: id(3),
+                world_id: world,
+                runtime_scope: scope,
+                definition: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i48416".into(),
+                    revision_ref: "definition-r1".into(),
+                },
+                quantity: 1,
+                runtime_scope_ownership_generation: 1,
+                ground: GroundPlacement {
+                    spatial_position: ground_cell(1, 0, 7),
+                    corpse_ref: vec![1],
+                    map_revision: sha256_revision(
+                        Sha256::digest(map_revision(&base).as_bytes()).into(),
+                    ),
+                    content_revision: sha256_revision(pin.0),
+                    native_room_placement_context: pin.1.to_vec(),
+                },
+                minted_transaction_id: id(4),
+            },
+        };
+        let tile = TilePos {
+            x: 1,
+            y: 0,
+            floor: -7,
+        };
+        let project =
+            |item| LoopGroundOverlay::build_for_scope(base.clone(), scope, &index, pin, vec![item]);
+        assert!(
+            project(item.clone()).overlay().has_added_item(tile),
+            "accepted corpse history survives owner replacement"
+        );
+        let mut foreign = item.clone();
+        foreign.item.ground.native_room_placement_context = vec![9; 32];
+        assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut foreign = item.clone();
+        foreign.item.runtime_scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(5),
+        };
+        assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut field = item;
+        field.native_corpse = false;
+        field.field_collision = Some((false, false));
+        assert!(
+            !project(field).overlay().has_added_item(tile),
+            "fields still require the live owner generation"
+        );
+        Ok(())
+    }
 
     #[test]
     fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>

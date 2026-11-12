@@ -165,7 +165,7 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
     let mut owner = dependencies.owner(&harness, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         if enabled { &[11, 30] } else { &[18] },
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),

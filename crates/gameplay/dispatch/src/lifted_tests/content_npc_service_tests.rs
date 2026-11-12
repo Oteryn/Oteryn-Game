@@ -115,6 +115,7 @@ fn npc(
     (
         reference(ProjectV2Family::Npc, key),
         ProjectV2Declaration::Npc {
+            visibility: Default::default(),
             identity: identity(key),
             presentation: None,
             behavior: None,
@@ -211,15 +212,18 @@ fn timed_count_equals_charges() {
         (Some(500), false),
         (Some(499), true),
         (Some(501), true),
-        (None, true),
+        (None, false),
     ] {
         let o = offer("oteryn:item.timed", Dir::SellToPlayer, 5, count);
-        let want = Some(if held {
-            NpcOfferHeldReason::TimedCountMismatch
-        } else {
-            NpcOfferHeldReason::ChargedOrFluidPending
-        });
-        assert_eq!(reason_of(o), want, "count {count:?}");
+        let want = held.then_some(NpcOfferHeldReason::TimedCountMismatch);
+        assert_eq!(reason_of(o.clone()), want, "count {count:?}");
+        if !held {
+            let m = model(&[service("oteryn:service.t", vec![o], vec![])]);
+            let service = m.services().values().next().expect("service");
+            assert_eq!(service.offers.len(), 1);
+            assert_eq!(service.offers[0].count, Some(1));
+            assert_eq!(service.offers[0].sub_type, Some(500));
+        }
     }
 }
 

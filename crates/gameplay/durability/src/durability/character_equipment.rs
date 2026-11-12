@@ -621,10 +621,15 @@ async fn apply_resolved_equipment_in_transaction(
                         {
                             return Err(rejected("equipment swap container semantics"));
                         }
-                        if content.is_timed_item(
+                        if unhosted_timed_item(
+                            tx,
+                            content,
+                            old.item_instance_id,
                             &old.definition.production_key,
                             &old.definition.revision_ref,
-                        ) {
+                        )
+                        .await?
+                        {
                             return Err(rejected("equipment swap timed not hosted"));
                         }
                         continue;
@@ -657,10 +662,15 @@ async fn apply_resolved_equipment_in_transaction(
                             {
                                 return Err(rejected("equipment swap container semantics"));
                             }
-                            if content.is_timed_item(
+                            if unhosted_timed_item(
+                                tx,
+                                content,
+                                old.item_instance_id,
                                 &old.definition.production_key,
                                 &old.definition.revision_ref,
-                            ) {
+                            )
+                            .await?
+                            {
                                 return Err(rejected("equipment swap timed not hosted"));
                             }
                             hand_displacement = Some((old.clone(), 0));
@@ -713,7 +723,7 @@ async fn apply_resolved_equipment_in_transaction(
                     {
                         return Err(rejected("equipment swap container semantics"));
                     }
-                    if content.is_timed_item(&key, &revision) {
+                    if unhosted_timed_item(tx, content, *identity, &key, &revision).await? {
                         return Err(rejected("equipment swap timed not hosted"));
                     }
                     use super::item_transfer::ItemStackClass;
@@ -968,6 +978,7 @@ mod tests {
 
 #[derive(Debug, Clone)]
 pub struct RawCastDurableFacts {
+    pub learned: std::collections::BTreeSet<String>,
     pub account: [u8; 16],
     pub loyalty_points: u32,
     pub equipment: EquipmentSnapshot,
@@ -990,7 +1001,11 @@ pub async fn read_raw_cast_facts_in_transaction(
         .command
         .ok_or_else(|| rejected("cast read needs actual command"))?;
     let raw = read_lifecycle_facts_in_transaction(tx, authority).await?;
+    let learned =
+        super::character_known_spells::read_known_spells_in_transaction(tx, raw.fence.character_id)
+            .await?;
     Ok(RawCastDurableFacts {
+        learned,
         account: raw.account,
         loyalty_points: raw.loyalty_points,
         equipment: raw.equipment,
@@ -1288,6 +1303,12 @@ pub trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
     /// True unless the definition is known to have no timed field (`temporal` active-time
     /// budget or `charges`); unknown or conflicting timed content is timed.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool;
+    /// The immutable definition has an absolute lifetime. The writer still
+    /// requires this exact ItemInstance's original pending deadline proof.
+    fn supports_absolute_deadline(&self, _production_key: &str, _revision_ref: &str) -> bool {
+        false
+    }
+
     /// The exact definition's inventory-admitted class in this same Content generation.
     /// Unknown never permits a same-definition exchange; stacks need the separate merge shape.
     fn equipment_stack_class(
@@ -1400,7 +1421,7 @@ async fn precheck_move(
                     !matches!((key,revision),(Ok(key),Ok(revision)) if content.is_ammunition_item(&key,&revision))
                 }) {return Ok(Some(EquipmentMoveRefusal::SlotMismatch));}
             }
-            if content.is_timed_item(&key, &revision) {
+            if unhosted_timed_item(tx, content, request.item, &key, &revision).await? {
                 return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
             }
             if let Some(old) = snapshot.items.iter().find(|item| item.slot == to) {
@@ -1411,8 +1432,14 @@ async fn precheck_move(
                 {
                     return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
                 }
-                if content
-                    .is_timed_item(&old.definition.production_key, &old.definition.revision_ref)
+                if unhosted_timed_item(
+                    tx,
+                    content,
+                    old.item_instance_id,
+                    &old.definition.production_key,
+                    &old.definition.revision_ref,
+                )
+                .await?
                 {
                     return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
                 }
@@ -1709,4 +1736,22 @@ impl DurabilityRoot {
             })
             .await
     }
+}
+
+async fn unhosted_timed_item<C: EquipmentMoveContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    content: &C,
+    item: [u8; 16],
+    key: &str,
+    revision: &str,
+) -> Result<bool> {
+    if !content.is_timed_item(key, revision) {
+        return Ok(false);
+    }
+    if !content.supports_absolute_deadline(key, revision) {
+        return Ok(true);
+    }
+    let hosted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_floor_transform_deadlines d JOIN game_floor_transform_receipts r ON r.transaction_id=d.source_transaction_id JOIN game_floor_transform_recipes p ON p.recipe=r.recipe WHERE d.item_instance_id=encode($1,'hex')::uuid AND p.output_key=$2 AND $3='definition-r1') OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p WHERE p.item_instance_id=encode($1,'hex')::uuid AND p.definition_production_key=$2 AND p.definition_revision=$3 AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts done WHERE done.item_instance_id=p.item_instance_id))")
+        .bind(item.as_slice()).bind(key).bind(revision).fetch_one(&mut **tx).await?;
+    Ok(!hosted)
 }

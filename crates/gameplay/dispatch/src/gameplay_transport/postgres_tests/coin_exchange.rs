@@ -618,7 +618,7 @@ fn coin_use_scenario() -> TestResult {
         let cells = map.movement_cells(deps.room.movement_cells()).map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
         let fence = owner.current_quest_fence(deps.admitted.game_session_id).await.map_err(|_| "fence")?.ok_or("fence")?.item_fence();
@@ -681,7 +681,7 @@ fn coin_use_scenario() -> TestResult {
             // retired inputs, and cannot borrow another stack or replay a bank command.
             let mut restarted = deps.owner(&h, &authority);
             restarted.active_generation = Some(active);
-            restarted.movement_cells = &cells;
+            restarted.movement_cells = (&cells).into();
             let replay = restarted.use_item_completion(deps.actor, UseCommand { game_session_id: fence.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source)).await.ok_or_else(|| format!("round {round} replay"))?;
             assert_eq!(replay.disposition, expected);
             assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("replayed")?, after);
@@ -711,7 +711,7 @@ fn coin_use_scenario() -> TestResult {
         sqlx::raw_sql("DROP TRIGGER goldconvr_test_failure ON game_coin_exchange_receipts; DROP FUNCTION goldconvr_test_failure();").execute(&h.pool).await?;
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         assert!(restarted.resume_npc_bank(deps.actor, command).await.is_none());
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("bank cannot resume use")?, before);
         // A different source under the same command is rejected before executing the pending use.
@@ -818,7 +818,48 @@ fn converter_scenario() -> TestResult {
 
         // gold_converter.lua L17-36: a fresh converter spends one of its 500 charges.
         seed_converter_bag(&h, &[(162, "oteryn:item.tibia.i23722", 1, None), (164, gold, 100, None)]).await?;
-        let converted = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("gold converter")?;
+        let converted = {
+            // Contend after replay lookup, at the fresh conversion's second lane acquisition.
+            let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+            let conversion = crate::gameplay_transport::coin_use::CONVERTER_COMMIT_LANE_BARRIER
+                .scope(
+                    Arc::clone(&barrier),
+                    owner.use_gold_converter(
+                        deps.actor,
+                        command(1),
+                        ItemKey::Instance(id(162)),
+                        ItemKey::Instance(id(164)),
+                    ),
+                );
+            tokio::pin!(conversion);
+            tokio::select! {
+                () = barrier.0.notified() => {}
+                result = &mut conversion => return Err(format!("conversion ended before lane contention: {result:?}").into()),
+            }
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("competing checkpoint lane")?;
+            barrier.1.notify_one();
+            // A cooperative yield must not masquerade as waiting for the occupied lane.
+            let polled = {
+                let mut waiting = std::pin::pin!(tokio::task::unconstrained(conversion.as_mut()));
+                std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(waiting.as_mut(), cx))
+                })
+                .await
+            };
+            assert!(
+                polled.is_pending(),
+                "conversion must wait for the occupied spell lane"
+            );
+            assert!(
+                deps.runtime.try_lock().is_ok(),
+                "a converter waiting for the lane must leave runtime available to its owner"
+            );
+            drop(permit);
+            conversion.await.ok_or("gold converter")?
+        };
         assert_eq!(converted.disposition, UseDisposition::Committed);
         assert_eq!(converter_row(&h, 162).await?, ("oteryn:item.tibia.i23722".into(), 1, Some(499)));
         assert_eq!(quantity(&h, "3035").await?, 1);

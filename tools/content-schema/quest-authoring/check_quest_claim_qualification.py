@@ -11,9 +11,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COVERAGE = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
-# W15b supports 308 claims; eight have source-selector dispatch PG grant
-# coverage. Every other supported claim keeps its per-World qualification hold.
-EXPECTED_DENOMINATOR = 300
+# W15b supports 308 claims; ITEMHOLD-Q adds the three named admissions below.
+# Eleven have source-selector dispatch PG grant coverage. Every other supported
+# claim keeps its per-World qualification hold.
+# Batch 3 qualified the three independent Demon Helmet claims through the
+# existing USE/MINT/replay owner; this does not qualify its access mechanisms.
+ITEMHOLD_ADMISSIONS = frozenset({
+    "oteryn:reward-claim.kv.ornamentedshield",
+    "oteryn:reward-claim.kv.powerring2",
+    "oteryn:reward-claim.kv.triangletower",
+})
+# QUEST-FINISH supports 334 in-scope claims. The 39 previously qualified claims
+# plus 88 Phase A claims, the Mintwallin prison key and 44 further A..M
+# story/outfit reward sources have source-selector dispatch PostgreSQL proof.
+# Every other supported claim keeps its per-World qualification hold; reward
+# qualification does not certify access puzzles or a complete storyline.
+EXPECTED_DENOMINATOR = 145
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

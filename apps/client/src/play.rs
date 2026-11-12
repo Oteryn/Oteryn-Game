@@ -1,35 +1,48 @@
-//! Play view after admission (N2N3-1): the map around the own actor, one marker per overlay
-//! object, and the walk over `Session::step`.
+//! Play view after admission: map, overlays, vitals and movement.
 //!
-//! The view holds no authority. It is built from the join snapshot, and only a step outcome's
-//! domain-1 and domain-2 deltas move it. The map is the start area anchored at the join
-//! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
+//! The view projects server-owned positions, overlays and live map tiles.
 
-use crate::input::{ClickWalk, StepDir};
+#[path = "tutorial_overlay.rs"]
+mod tutorial_overlay;
+
+use crate::input::StepDir;
+#[cfg(test)]
 use crate::map::World;
 use crate::scene::Scene;
 use feature_local_reference_preferences::settings::LocalPlayState;
-use oteryn_platform_client::native_login::PublicClass;
-use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{
-    EntityRef, JoinSnapshot, SessionEvent, WorldObjectOverlayEntry, WorldSpatialEntity,
-};
+use input::Input;
+#[cfg(test)]
+use oteryn_renderer::BatchError;
+use oteryn_renderer::TileCoord;
+#[cfg(test)]
+use oteryn_session::WorldObjectOverlayEntry;
+use oteryn_session::{SessionEvent, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
-/// One input waiting for its turn on the session task.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Input {
-    Arrow(StepDir),
-    Cast(NonZeroU32),
-    Attack(EntityRef),
-    Logout,
-}
-
-const MAX_QUEUED_INPUTS: usize = 16;
-
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    game_notifications: feature_local_game_notifications::state::State,
+    touch: feature_0233_touch_controls::state::State,
+    ui_sounds: Vec<UiSound>,
+    creature_drag: feature_0082_creature_push::state::CreatureDrag,
+    world_context_feedback: Option<String>,
+    death: feature_local_death_respawn::protocol::DeathState,
+    target_walk_feedback: Option<&'static str>,
+    served_channel: Option<oteryn_client_runtime::channel_list::ServedChannel>,
+    world_weather: Option<oteryn_session::world_weather::WorldWeather>,
+    world_clock: Option<oteryn_session::world_clock::WorldClock>,
+    resource_hud: resource_hud::ViewState,
+    party_icon_epoch: std::time::Instant,
+    party_icons_refresh: Option<std::time::Instant>,
+    party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
+    vitals: Option<oteryn_session::ActorVitals>,
+    battle_instinct: Option<oteryn_client_ui::battle_instinct_status::BattleInstinctStatus>,
+    battle_instinct_refresh: Option<std::time::Instant>,
+    sounds: Vec<SoundCue>,
+    visuals: Vec<VisualCue>,
+    spell_words: std::collections::BTreeMap<u32, String>,
+    pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,
     /// The direction of the latest step sent; the player is drawn facing it.
     facing: StepDir,
@@ -37,135 +50,88 @@ pub struct PlayView {
     /// Every decodable overlay entry with its floor; the current floor selects what is drawn.
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
     local: LocalPlayState,
+    live_map: bool,
+    minimap: feature_local_minimap::state::SharedMinimap,
     /// Added to a session position to reach the map position drawn there.
     anchor: TileCoord,
     /// The session floor the map is anchored to; on any other floor no map is drawn.
     map_floor: Option<i16>,
     scene: Scene,
-    walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,
+    cursor_spell: Option<NonZeroU32>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    appearances: Vec<oteryn_session::VisibleAppearance>,
+    ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
+    action_line: Option<&'static str>,
     /// The last refused logout's line, shown until the next combat line or logout answer.
     logout_line: Option<String>,
     /// Recent server messages in their validated delivery order, owned by this connection.
     server_messages: VecDeque<oteryn_session::AppliedDelta<oteryn_session::ServerMessage>>,
 }
 
-impl PlayView {
-    pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
-        let position = snapshot.world_spatial.actor_position;
-        Self::new(
-            TileCoord::new(position.x, position.y),
-            position.floor,
-            &snapshot.world_object_overlay,
-        )
-    }
-
-    pub fn new(
-        own: TileCoord,
-        floor: i16,
-        overlay: &[WorldObjectOverlayEntry],
-    ) -> Result<Self, BatchError> {
-        let local = LocalPlayState::new(World::builtin()?);
-        let anchor = TileCoord::new(0, 0);
-        let mut view = Self {
-            own,
-            facing: StepDir::South,
-            floor,
-            markers: BTreeMap::new(),
-            scene: Scene::centered_on(local.world(), None, own, StepDir::South, &[])?,
-            local,
-            anchor,
-            map_floor: None,
-            walk: ClickWalk::new(),
-            in_flight: false,
-            inputs: VecDeque::new(),
-            entities: Vec::new(),
-            combat_line: None,
-            logout_line: None,
-            server_messages: VecDeque::new(),
-        };
-        for entry in overlay {
-            view.set_marker(entry);
-        }
-        view.rebuild()?;
-        Ok(view)
-    }
-
-    /// Appends `input` unless the same one already waits (a repeated press of a slot or click of
-    /// a target is one command) or the queue is full.
-    fn queue(&mut self, input: Input) {
-        if self.inputs.len() < MAX_QUEUED_INPUTS && !self.inputs.contains(&input) {
-            self.inputs.push_back(input);
-        }
-    }
-
-    /// One shell tick, never waiting on the network: applies every outcome the session task has
-    /// delivered, then hands it the next step if one is due. A session end returns to login with
-    /// its public class, a committed logout to character selection; a view error is a render
-    /// failure.
-    pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
-        const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
-        while let Some(event) = link.poll() {
-            match event {
-                PlayEvent::Stepped(outcome) => {
-                    self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
-                }
-                PlayEvent::Pushed(pushed) => {
-                    self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
-                }
-                PlayEvent::Combat(report) => self.apply_combat(report),
-                PlayEvent::LogoutRefused(result) => self.apply_logout_refusal(result),
-                PlayEvent::LoggedOut => return Err(PlayEnd::LoggedOut),
-                PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
-            }
-        }
-        // One chronological queue: each input goes out in the order it was given. A step still
-        // in flight holds back the arrow and what was given after it.
-        while let Some(&input) = self.inputs.front() {
-            match input {
-                Input::Cast(spell) => feature_local_spell_action_bar::input::send_cast(link, spell),
-                Input::Attack(target) => {
-                    feature_0011_world_interaction::input::send_attack(link, target)
-                }
-                Input::Logout => link.request_logout(),
-                Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
-                    Some(direction) => link.request(direction),
-                    None => break,
-                },
-            }
-            if !matches!(input, Input::Arrow(_)) {
-                self.inputs.pop_front();
-            }
-        }
-        if self.inputs.is_empty()
-            && let Some(direction) = self.send_step().map_err(|_error| UNAVAILABLE)?
-        {
-            link.request(direction);
-        }
-        Ok(())
-    }
-}
+mod construction;
 
 mod end;
+#[path = "features/0233-touch-controls/mod.rs"]
+mod feature_0233_touch_controls;
+mod hud_layout;
+mod input;
 mod mailbox;
+mod refusal_details;
+mod resource_hud;
+pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
 mod session_loop;
 mod session_stepper;
+#[cfg(windows)]
+mod status_window;
+mod stepper;
+mod tick;
+pub use feature_0233_touch_controls::promoted::is_touch_promoted;
+pub use feature_0233_touch_controls::state::Phase as TouchPhase;
+pub use resource_hud::ResourceHudOptions;
+mod window_controls;
+pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
+
+#[cfg(windows)]
+pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
+pub use feature_local_reference_preferences::settings::{
+    ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences, CustomAction,
+    FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, GraphicsPreferences, HelpTopic,
+    HoverTooltip, MiscellaneousPreferences, MousePreset, MovementKeys, ObjectTarget,
+    PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
+    ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
+    SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help, help_text,
+    preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
+};
+
+pub use feature_0004_item_view_move::state::GroundItem;
+pub use feature_0017_attack::view::GuildFilter;
+pub use feature_local_minimap::view::{MinimapBinding, MinimapMark, MinimapMemory};
+pub use feature_local_spell_action_bar::view::{
+    BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility, SpellAim,
+};
+
+pub use feature_0023_presentation::state::*;
 
 pub use end::{PlayEnd, public_class};
 use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
+pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
-pub use session_loop::{Stepper, run_session};
+pub use session_loop::Stepper;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "screenshots_live_tests.rs"]
+mod screenshots_live_tests;

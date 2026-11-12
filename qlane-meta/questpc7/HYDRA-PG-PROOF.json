@@ -1,0 +1,360 @@
+{
+  "quest": "oteryn:quest.hydra_egg_quest",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "test": "questpc7_hydra_requires_personal_native_nest_pickup",
+    "seconds": 42.847576199,
+    "log": "/tmp/questpc7-hydra-red.log",
+    "marker": "QUESTPC7_HYDRA POSTGRES_STARTED",
+    "failure": "Native Hydra kill alone incorrectly permits nest completion without a personal ordinary pickup; actualCommitted expectedRejected."
+  },
+  "status": "QUALIFIED",
+  "scope": [
+    "fresh subject quest state",
+    "CurrentPremium entry and nest acknowledgement",
+    "one actual native Hydra lethal occurrence",
+    "ordinary map-source command9 pickup",
+    "unrelated carried egg refuses",
+    "exact source pickup milestone survives stack merge",
+    "no fabricated quest chest or reward MINT",
+    "ordinary reset epoch replenishment to be proved",
+    "real native pickup merged into one existing carried stack",
+    "ordinary source replenishes at active reset1 after quest completion",
+    "personal quest completion revision remains unchanged",
+    "shared codec preserves explicit zero and runtime zero eligibility remains strict"
+  ],
+  "decisions": "CONTRACT-NOTES.md: Hydra Egg personal native pickup",
+  "fixture_repairs": [
+    "Stopped an early compile before source generation completed; exit130 is not a PG RED and is not counted as proof."
+  ],
+  "assumptions": [
+    "Selected existing1063 is a conservative authored search marker, not a uniquely resolved donor nest type.",
+    "Legacy B3 Item count0 denotes one materialized object; explicit opt-in export adapter preserves codec/runtime strictness."
+  ],
+  "green": {
+    "seconds": 44.918829126,
+    "log": "/tmp/questpc7-hydra-green.log",
+    "marker": "QUESTPC7_HYDRA POSTGRES_CASE_COMPLETED",
+    "scope": [
+      "fresh entry",
+      "native Hydra lethal",
+      "missing pickup refuses",
+      "unrelated carried egg refuses",
+      "ordinary command9 MapBase pickup",
+      "exact pickup replay and stale new command",
+      "native pickup milestone plus current carried quantity",
+      "nest completion without extra egg MINT"
+    ]
+  },
+  "legacy_export_unit": {
+    "test": "legacy_zero_item_quantity_defaults_without_weakening_the_sector_codec",
+    "log": "/tmp/questpc7-hydra-legacy-count-unit.log",
+    "cases": 1,
+    "kind": "unit, not a PostgreSQL proof"
+  },
+  "expanded_green": {
+    "seconds": 43.817053605,
+    "log": "/tmp/questpc7-hydra-reset-green.log",
+    "postgres": "18.6",
+    "marker": "QUESTPC7_HYDRA ACTIVE_EPOCH_REPLENISHMENT_CONFIRMED epochs=2 quest_completion_unchanged=true",
+    "scope": [
+      "actual carried stack count1 proves native pickup merged",
+      "active reset0->1 consumer precondition",
+      "ordinary native egg repick after selected quest completion",
+      "two native map MINT receipts across two epochs",
+      "unchanged personal quest completion revision",
+      "repeat quest acknowledgement refuses"
+    ]
+  },
+  "fixture_boundary": "Reset pointer1 is an activated boot/reset-consumer environment precondition, matching existing world-reset map-pickup fixtures; it does not qualify the reset activation writer. No subject quest-stage seed. One unrelated egg through fenced ordinary MINT/transfer is an explicit negative provenance input; the selected reward comes only from ordinary native map pickup.",
+  "checks": [
+    {
+      "check": "hidden-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_hidden_full_native_route",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 44.335,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-hidden-pg.log"
+    },
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 11.933,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-loader-units.log"
+    },
+    {
+      "check": "world-callback-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 2.625,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-world-callback-units.log"
+    },
+    {
+      "check": "reward-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "reward_callbacks::"
+      ],
+      "seconds": 1.403,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-reward-units.log"
+    },
+    {
+      "check": "strict-pickup-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-world",
+        "--lib",
+        "map::overlay::pickup::"
+      ],
+      "seconds": 98.215,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-strict-pickup-units.log"
+    },
+    {
+      "check": "compiler-bundle",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--test",
+        "bundle"
+      ],
+      "seconds": 1.564,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-compiler-bundle.log"
+    },
+    {
+      "check": "author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/quest-authoring",
+        "-p",
+        "test_qengine_rewards.py"
+      ],
+      "seconds": 9.477,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-author.log"
+    },
+    {
+      "check": "generation",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/qengine_rewards.py",
+        "--check"
+      ],
+      "seconds": 7.618,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-generation.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-world-bundle",
+        "-p",
+        "oteryn-world-bundle-compiler"
+      ],
+      "seconds": 101.895,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-world-bundle",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 200.582,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 122.334,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-hydra-pin-check"
+      ],
+      "seconds": 128.222,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-pin-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 163.965,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 48.217,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 10.703,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-hydra-fmt.log"
+    }
+  ],
+  "build_repairs": [
+    "An attempted fixture gameplay_drain field does not exist(E0609); corrected to the existing reset_epoch=GameplayDrain::epoch consumer API. No test or product guard weakened."
+  ],
+  "environment_repairs": [
+    "Before validation, verified all compilers idle, retained focused PG cache and removed inactive incremental caches;11538665472 bytes free.",
+    "After strict clippy, idle-only cleanup restored10043039744 free bytes."
+  ],
+  "verification_audit": {
+    "empty_filters": [
+      {
+        "check": "item-pickup-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-items",
+          "--lib",
+          "map_pickup::"
+        ],
+        "seconds": 37.388,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hydra-item-pickup-units.log"
+      },
+      {
+        "check": "codec-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle",
+          "--lib",
+          "sector::"
+        ],
+        "seconds": 0.921,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hydra-codec-units.log"
+      }
+    ],
+    "resolution": "Neither empty filter is counted as qualification evidence. The3 real world pickup tests exercise the item eligibility policy, including explicit0/101 quantity refusals;13 real compiler bundle tests exercise the codec/export path, including raw zero preservation. Existing assertions were not edited.",
+    "meaningful_gate_count": 15,
+    "extra_ancillary": "All4 world-bundle subarea library tests also passed in /tmp/questpc7-hydra-codec-corrected.log; these are not relabelled as sector tests."
+  }
+}

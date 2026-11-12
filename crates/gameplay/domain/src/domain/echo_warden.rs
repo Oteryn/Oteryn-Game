@@ -1,13 +1,15 @@
 //! Echo Warden rules from Crystal `201189f871d23597b82caf88fd611454a2ddefb8`.
 //!
-//! These preserve that donor's encounter variant: every activated portal creates a Warden
-//! and seven to twelve minions. Retail has additional raid outcomes; their unsourced selection
-//! odds are not inferred here. The owner supplies random draws, live creature facts and time.
+//! Warden mechanics preserve the donor variant. Current outcome families, lifetime and
+//! rewards are supplemented by TibiaWiki Echo Raid revision 1211164 and Echo Warden
+//! revision 1196691. The owner supplies random draws, live creature facts and time.
 
 /// `data-global/lib/core/echo_warden.lua:22-41`.
 pub const PORTAL_ITEM_ID: u16 = 54_133;
 pub const PORTAL_DELAY_MS: u64 = 30_000;
 pub const PORTAL_TTL_MS: u64 = 120_000;
+/// TibiaWiki Echo Raid revision 1211164: children remain for ten minutes.
+pub const CHILD_TTL_MS: u64 = 600_000;
 pub const SPAWN_CHANCE_NUM: u32 = 100;
 pub const SPAWN_CHANCE_DEN: u32 = 200_000;
 pub const WARDEN_ADDS_MIN: u8 = 7;
@@ -110,6 +112,14 @@ pub fn portal_timing(death_at_ms: u64) -> Option<EchoPortalTiming> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EchoRaidPlan {
     minion_count: u8,
+    outcome: EchoOutcome,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EchoOutcome {
+    Regular,
+    Influenced,
+    Warden,
 }
 
 impl EchoRaidPlan {
@@ -119,7 +129,35 @@ impl EchoRaidPlan {
         }
         Ok(Self {
             minion_count: minion_draw,
+            outcome: EchoOutcome::Warden,
         })
+    }
+
+    /// Wiki Echo Raid revision 1211164: 10%, doubled with completed Bestiary.
+    /// The non-Warden family draw is supplied separately; its retail weights are unknown.
+    pub fn select(
+        warden_roll: u8,
+        completed_bestiary: bool,
+        influenced: bool,
+        minion_draw: u8,
+    ) -> Result<Self, EchoWardenError> {
+        if !(1..=100).contains(&warden_roll) {
+            return Err(EchoWardenError::InvalidDraw);
+        }
+        let mut plan = Self::new(minion_draw)?;
+        if warden_roll > if completed_bestiary { 20 } else { 10 } {
+            plan.outcome = if influenced {
+                EchoOutcome::Influenced
+            } else {
+                EchoOutcome::Regular
+            };
+        }
+        Ok(plan)
+    }
+
+    #[must_use]
+    pub const fn outcome(self) -> EchoOutcome {
+        self.outcome
     }
 
     #[must_use]
@@ -129,12 +167,18 @@ impl EchoRaidPlan {
 
     #[must_use]
     pub const fn spawn_count(self) -> u8 {
-        self.minion_count + 1
+        match self.outcome {
+            EchoOutcome::Regular => 8,
+            EchoOutcome::Influenced => 4,
+            EchoOutcome::Warden => self.minion_count + 1,
+        }
     }
 
     #[must_use]
     pub const fn variant_at(self, index: u8) -> Option<EchoVariant> {
-        if index == 0 {
+        if !matches!(self.outcome, EchoOutcome::Warden) {
+            None
+        } else if index == 0 {
             Some(EchoVariant::Warden)
         } else if index <= self.minion_count {
             Some(EchoVariant::Minion)
@@ -147,10 +191,17 @@ impl EchoRaidPlan {
     /// (`echo_warden.lua:192-200,234-241`). A failed spawn still consumes that slot.
     #[must_use]
     pub const fn spawn_delay_ms(self, index: u8) -> Option<u64> {
-        if index > self.minion_count {
+        if index >= self.spawn_count() {
             return None;
         }
-        Some(index.saturating_sub(1) as u64 * SPAWN_STEP_MS)
+        Some(
+            if matches!(self.outcome, EchoOutcome::Warden) {
+                index.saturating_sub(1)
+            } else {
+                index
+            } as u64
+                * SPAWN_STEP_MS,
+        )
     }
 }
 

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0019-world-light",
+  "kind": "panels",
+  "id": "0019-world-light-clock",
+  "status": "supported",
+  "entry": "view.rs::clock_text"
+}

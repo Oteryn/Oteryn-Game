@@ -448,9 +448,17 @@ async fn projection_cases(database: &Database) -> TestResult {
         highscores(&pool).await?,
         vec![(0x90, 1, 1, 1), (0x90, 1, 1, 2), (0x91, 11, 1, 1)]
     );
-    // A category outside 1..=11 refuses the job's snapshot with it.
-    let refused = attempt(&pool, &snapshot(4, 0x90, 12)).await;
-    assert_eq!(sqlstate(&refused).as_deref(), Some("23514"), "{refused:?}");
+    // Reserved Loyalty13 and Taint15 are not Game sources;
+    // 18 is beyond the admitted 1..=12 | 14 | 16 | 17 category domain.
+    for category in [13, 15, 18] {
+        let refused = attempt(&pool, &snapshot(4, 0x90, category)).await;
+        assert_eq!(
+            sqlstate(&refused).as_deref(),
+            Some("23514"),
+            "category {category}: {refused:?}"
+        );
+        assert_eq!(highscores(&pool).await?.len(), 3);
+    }
     assert_eq!(highscores(&pool).await?.len(), 3);
     // With a source, a highscores resync queues every pair at a new revision.
     assert_eq!(resync(&pool, "highscores", false).await?, 1);
@@ -619,7 +627,7 @@ async fn projection_cases(database: &Database) -> TestResult {
         ),
         (
             "resync unknown family",
-            "SELECT game_public_projection_resync('guild', false)",
+            "SELECT game_public_projection_resync('unsupported_public_family', false)",
             "22023",
         ),
         (

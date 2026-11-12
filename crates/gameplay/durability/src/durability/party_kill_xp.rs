@@ -19,6 +19,8 @@ pub struct PartyKillXpMember<const N: usize> {
     pub fence: CurrentCharacterGameplayFence,
     pub request: ExperienceAwardRequest<N>,
     pub premium: bool,
+    /// Proven membership of the frozen Task Board kill recipients.
+    pub task_board_eligible: bool,
     /// Full dust award, independent of the member's XP share and stamina.
     pub forge_dust: Option<u32>,
     /// Current runtime stamina; durable stamina remains the upper bound.
@@ -45,6 +47,9 @@ pub struct PartyKillXpRequest<const N: usize> {
 
 #[derive(Debug)]
 pub struct PartyKillXpAward {
+    /// Existing committed base XP (before party sharing) and final awarded XP.
+    pub raw: i64,
+    pub gained: i64,
     pub character: CharacterId,
     /// Zero stamina can remove an award without redistributing it.
     pub xp: Option<ExperienceCommitOutcome>,
@@ -79,7 +84,9 @@ pub fn encode_death_key(death: crate::foundation::CreatureDeathOccurrenceKey) ->
     key
 }
 
-fn decoded_death_scope(death: &[u8]) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
+pub(crate) fn decoded_death_scope(
+    death: &[u8],
+) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
     use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
     let (instance, fields) = match death {
         bytes if bytes.len() == 52 => (false, bytes),
@@ -97,6 +104,13 @@ fn decoded_death_scope(death: &[u8]) -> Option<(crate::foundation::RuntimeScopeR
         return None;
     }
     Some((scope, generation))
+}
+
+/// The same decoder fences XP and its native encounter descendants. Scope kind
+/// is part of identity, including when Channel and Instance UUID bytes coincide.
+pub(crate) fn death_matches_fence(death: &[u8], fence: &CurrentCharacterGameplayFence) -> bool {
+    decoded_death_scope(death)
+        == Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
 }
 
 /// Holds the death lock through planning; an existing receipt is terminal data, never a grant.
@@ -152,7 +166,7 @@ pub async fn reconcile_in_transaction(
     {
         return Err(CharacterProgressionError::ConflictingOccurrence);
     }
-    let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
+    let rows = sqlx::query("SELECT character_id::text,reward_occurrence_id::text,xp_awarded,bounty_dust_key FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id LIMIT 51")
         .bind(death).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
     if rows.is_empty()
         || rows.len() > 50
@@ -188,14 +202,31 @@ pub async fn reconcile_in_transaction(
         } else {
             None
         };
-        let forge_dust = super::character_forge_dust::read_creature_gain(
+        let mut forge_dust = super::character_forge_dust::read_creature_gain(
             tx,
             character,
             forge_id(death, character, 0),
         )
         .await
         .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+        if let Some(key) = row
+            .try_get::<Option<Vec<u8>>, _>("bounty_dust_key")
+            .map_err(DurabilityError::from)?
+        {
+            forge_dust = super::character_forge_dust::read_creature_gain(
+                tx,
+                character,
+                forge_id(&key, character, 0),
+            )
+            .await
+            .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+            if forge_dust.is_none() {
+                return Err(DurabilityError::InvalidStoredState.into());
+            }
+        }
         result.push(PartyKillXpAward {
+            raw: base_xp,
+            gained: row.try_get("xp_awarded").map_err(DurabilityError::from)?,
             character,
             xp,
             forge_dust,
@@ -260,9 +291,17 @@ pub async fn commit_in_transaction<const N: usize>(
         .bind(&input.creature).bind(input.base_xp).bind(i64::try_from(input.death_at_ms).map_err(|_|CharacterProgressionError::InvalidInput)?).bind(input.death_at_us.to_string()).bind(i16::try_from(input.members.len()).map_err(|_|CharacterProgressionError::InvalidInput)?).bind(input.shared)
         .bind(input.party_id.as_ref().map(|id|id.as_slice())).bind(input.party_revision.map(|r|r.to_string()))
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
+    super::world_event_outcomes::capture_kill(tx, &input).await?;
+    super::world_event::capture_kill(tx, &input).await?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
-        let forge_dust = if let Some(amount) = member.forge_dust {
+        let bounty = super::task_board::read_talisman_in_transaction(tx, member.fence).await?;
+        let elite_dust = if member.premium && member.task_board_eligible {
+            bounty.completion_dust(&input.creature)
+        } else {
+            0
+        };
+        let mut forge_dust = if let Some(amount) = member.forge_dust {
             use super::character_forge_dust::{
                 ForgeDustGainCause, ForgeDustOutcome, ForgeDustWriteIds,
                 gain_forge_dust_in_transaction,
@@ -288,6 +327,37 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
+        // A selection identity, rather than this death, fences completion dust. Another
+        // death can settle before the separate Task Board credit has drained.
+        let mut bounty_dust_key = (elite_dust > 0).then(|| bounty.selection_serial().to_be_bytes());
+        if let Some(key) = bounty_dust_key {
+            use super::character_forge_dust::{
+                ForgeDustGainCause, ForgeDustOutcome, ForgeDustWriteIds,
+                gain_forge_dust_in_transaction,
+            };
+            let character = member.fence.character_id;
+            let outcome = gain_forge_dust_in_transaction(
+                tx,
+                &member.fence,
+                ForgeDustGainCause::CreatureKill {
+                    occurrence: forge_id(&key, character, 0),
+                },
+                elite_dust,
+                ForgeDustWriteIds {
+                    entry_id: forge_id(&key, character, 1),
+                    transaction_id: forge_id(&key, character, 2),
+                },
+            )
+            .await
+            .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+            match outcome {
+                ForgeDustOutcome::Written(entry) => forge_dust = Some(entry),
+                ForgeDustOutcome::AlreadyWritten(entry) if forge_dust.is_none() => {
+                    forge_dust = Some(entry)
+                }
+                ForgeDustOutcome::AlreadyWritten(_) => bounty_dust_key = None,
+            }
+        }
         let mut modifiers =
             hunting_xp::read_in_transaction(tx, &member.fence, &input.creature, member.premium)
                 .await?;
@@ -327,14 +397,16 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
-        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14)")
+        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent,bounty_dust_key) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14,$15)")
             .bind(input.death_key.as_slice()).bind(member.fence.character_id.as_bytes().as_slice())
             .bind(xp.as_ref().map(|_|request.occurrence.as_bytes().as_slice()))
             .bind(member.shared).bind(member.party_id.as_ref().map(|id|id.as_slice())).bind(member.party_revision.map(|r|r.to_string()))
             .bind(raw).bind(modifiers.prey_slot).bind(modifiers.prey_epoch).bind(modifiers.prey_grade)
-            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent)
+            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent).bind(bounty_dust_key.as_ref().map(|key| key.as_slice()))
             .execute(&mut **tx).await.map_err(DurabilityError::from)?;
         awards.push(PartyKillXpAward {
+            raw: input.base_xp,
+            gained: amount,
             character: member.fence.character_id,
             xp,
             forge_dust,
@@ -405,6 +477,46 @@ mod scoped_death_tests {
             5_u64.to_be_bytes().as_slice(),
         ]
         .concat()
+    }
+
+    #[test]
+    fn native_death_fence_keeps_scope_kind_world_and_generation() -> std::result::Result<(), String>
+    {
+        use crate::foundation::{ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+        let channel = channel_bytes();
+        let mut instance = vec![2];
+        instance.extend_from_slice(&channel);
+        let (channel_scope, generation) = decoded_death_scope(&channel).ok_or("channel source")?;
+        let (instance_scope, _) = decoded_death_scope(&instance).ok_or("Instance source")?;
+        let mut fence = CurrentCharacterGameplayFence {
+            character_id: CharacterId::from_bytes(id(3)).map_err(|e| format!("{e:?}"))?,
+            game_session_id: GameSessionId::decode(&id(4)).map_err(|e| format!("{e:?}"))?,
+            connection_generation: ConnectionGeneration::new(1).map_err(|e| format!("{e:?}"))?,
+            character_lease_generation: 1,
+            runtime_scope: channel_scope,
+            scope_ownership_generation: ScopeOwnershipGeneration::new(generation)
+                .map_err(|e| format!("{e:?}"))?,
+            expected_character_revision: crate::domain::CharacterRevision::new(1)
+                .map_err(|e| format!("{e:?}"))?,
+        };
+        assert!(death_matches_fence(&channel, &fence));
+        assert!(!death_matches_fence(&instance, &fence));
+        fence.runtime_scope = instance_scope;
+        assert!(death_matches_fence(&instance, &fence));
+        assert!(!death_matches_fence(&channel, &fence));
+        let mut foreign = instance.clone();
+        foreign[1..17].copy_from_slice(&id(9));
+        assert!(!death_matches_fence(&foreign, &fence));
+        foreign = instance.clone();
+        foreign[0] = 1;
+        assert!(!death_matches_fence(&foreign, &fence));
+        for length in 0..instance.len() {
+            assert!(!death_matches_fence(&instance[..length], &fence));
+        }
+        fence.scope_ownership_generation =
+            ScopeOwnershipGeneration::new(generation + 1).map_err(|e| format!("{e:?}"))?;
+        assert!(!death_matches_fence(&instance, &fence));
+        Ok(())
     }
 
     #[test]

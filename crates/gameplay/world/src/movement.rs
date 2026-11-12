@@ -25,6 +25,7 @@ use {
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
+pub mod cake_extraction;
 pub mod interest;
 pub mod monster_map;
 pub mod pacing;
@@ -36,21 +37,43 @@ pub mod speed;
 
 pub const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 
+/// One native grid step. Diagonals are a single destination proof, never two
+/// partially committed cardinal steps. Network use requires its negotiated capability.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CardinalStep {
+#[repr(u8)]
+pub enum GridStep {
     North,
     East,
     South,
     West,
+    NorthEast,
+    SouthEast,
+    SouthWest,
+    NorthWest,
 }
 
-impl CardinalStep {
-    const fn delta(self) -> (i32, i32) {
+/// Existing callers and cardinal route searches retain their source-compatible name.
+pub use GridStep as CardinalStep;
+
+impl GridStep {
+    pub const fn delta(self) -> (i32, i32) {
         match self {
             Self::North => (0, -1),
             Self::East => (1, 0),
             Self::South => (0, 1),
             Self::West => (-1, 0),
+            Self::NorthEast => (1, -1),
+            Self::SouthEast => (1, 1),
+            Self::SouthWest => (-1, 1),
+            Self::NorthWest => (-1, -1),
+        }
+    }
+    /// Canary04b83b5 creature.hpp:45; creature.cpp:1607-1626. The 50ms
+    /// source duration is rounded before applying the diagonal cost of three.
+    pub const fn pacing_cost(self) -> u32 {
+        match self {
+            Self::North | Self::East | Self::South | Self::West => 1,
+            _ => 3,
         }
     }
 }
@@ -196,7 +219,7 @@ impl<'a> MovementDecision<'a> {
             return Err(MovementError::NotQualified);
         }
         owner
-            .commit_cardinal(self.expected, self.destination)
+            .commit_grid_step(self.expected, self.destination)
             .map_err(MovementError::Actor)
     }
 }
@@ -515,6 +538,65 @@ mod tests {
             MovementLocalPosition { x, y: 5, floor: 7 },
         )?;
         Ok((actor, snapshot))
+    }
+
+    #[test]
+    fn diagonal_step_has_one_destination_one_revision_and_stale_refusal()
+    -> Result<(), Box<dyn Error>> {
+        let mut runtime = runtime()?;
+        let (actor, before) = admitted_at(&mut runtime, 30, 4)?;
+        let scope = scope_for_world(before.world_id())?;
+        // The two cardinal cross-cells are deliberately not admitted. Only the
+        // actual diagonal destination has a walkability proof.
+        let index = index(&scope, &[(5, 4, 7, walkable())])?;
+        let binding = selection(before, &scope);
+        assert!(
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(
+                    before,
+                    MovementLocalPosition {
+                        x: 5,
+                        y: 4,
+                        floor: 7
+                    }
+                )
+                .is_err(),
+            "the legacy cardinal commit still refuses a diagonal"
+        );
+        let mut turn =
+            MovementOwnerTurn::begin(&mut runtime, NonZeroUsize::new(3).ok_or("budget")?);
+        assert!(
+            turn.try_step(actor, before, &binding, &index, GridStep::East)
+                .is_err()
+        );
+        let after = match turn.try_step(actor, before, &binding, &index, GridStep::NorthEast)? {
+            MovementTurnOutcome::Applied(after) => after,
+            _ => return Err("diagonal unexpectedly deferred".into()),
+        };
+        assert_eq!(
+            after.position(),
+            MovementLocalPosition {
+                x: 5,
+                y: 4,
+                floor: 7
+            }
+        );
+        assert_eq!(after.revision(), before.revision() + 1);
+        assert_eq!(
+            turn.try_step(actor, before, &binding, &index, GridStep::NorthEast),
+            Err(MovementError::SnapshotMismatch)
+        );
+        for direction in [
+            GridStep::NorthEast,
+            GridStep::SouthEast,
+            GridStep::SouthWest,
+            GridStep::NorthWest,
+        ] {
+            assert_eq!(direction.pacing_cost(), 3);
+        }
+        assert_eq!(GridStep::North.pacing_cost(), 1);
+        Ok(())
     }
 
     #[test]

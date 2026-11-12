@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "22a8d5c75d8ec58b77b6a35b8edf9b0883c486c0ae31bfe69c21a35655ffc6e8",
+  "digest": "8f578285e03020023b59ca54e3752830f1975b6a660e934ad57e9369572ddbc5",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "e06-market-crystal-parity-20261031-r1",
+  "content_revision": "seasonal-cake-creature-20261107-r1",
   "production": false,
   "entry_start": {
     "x": 32534,

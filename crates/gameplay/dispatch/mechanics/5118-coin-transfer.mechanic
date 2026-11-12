@@ -1,0 +1,10 @@
+name=coin_transfer
+commands=6127
+transport=coin_transfer
+composed=coin_transfer
+authority=coin_transfer
+[route]
+{
+ let bytes=authority.coin_transfer_command(session.admitted,command.command_id,command.payload).await.ok_or(ServeEnd::Disconnected)?;
+ routing::Dispatch::Reply(oteryn_protocol_oteryn::CommandStatus::Accepted,bytes)
+}

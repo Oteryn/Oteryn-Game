@@ -1,20 +1,39 @@
 [
   {
     "mechanic": "0051-staff",
+    "kind": "panels",
+    "id": "0051-staff-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0051-staff",
     "kind": "handlers",
-    "id": "0051-staff-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0051-staff-receipt",
+    "status": "supported",
     "commands": [
-      60,
       61
     ],
+    "direction": "client_to_server",
+    "capability": 51,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "No client authority settings; signatures, roster and scope are server-owned."
+    }
+  },
+  {
+    "mechanic": "0051-staff",
+    "kind": "handlers",
+    "id": "0051-staff-request",
+    "status": "supported",
+    "commands": [
+      60
+    ],
+    "direction": "client_to_server",
+    "capability": 51,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "No client authority settings; signatures, roster and scope are server-owned."
     }
   }
 ]

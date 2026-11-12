@@ -1,0 +1,7 @@
+{
+  "mechanic": "0031-tutorial-notices",
+  "kind": "panels",
+  "id": "0031-tutorial-notices-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

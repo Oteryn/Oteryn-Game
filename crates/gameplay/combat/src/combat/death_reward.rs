@@ -231,6 +231,8 @@ impl<const N: usize> RewardProgressionBinding<N> {
 /// Complete semantic input of one death's reward composition.
 #[derive(Debug, Clone)]
 pub struct CreatureDeathRewardInput<const N: usize> {
+    /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
+    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
@@ -376,6 +378,8 @@ pub enum CombatDeathRewardXpError {
 /// always populated (never short-circuited by the other).
 #[derive(Debug)]
 pub struct CreatureDeathRewardOutcome {
+    /// Advisory committed child details, including entries preceding a later MINT error.
+    pub committed_loot: Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     pub death: CreatureDeathOccurrenceKey,
     pub loot: Result<CommittedCorpseLoot, CombatDeathRewardLootError>,
     pub xp: Result<ExperienceCommitOutcome, CombatDeathRewardXpError>,
@@ -417,35 +421,25 @@ pub fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
     }
 }
 
-/// A death has no durable placement rule yet (out of scope; owned by a
-/// future Ground/room placement decision). This builds the smallest
-/// defensible `GroundPlacement`: the corpse's own local position, and a
-/// `corpse_ref` that is a canonical big-endian encoding of the exact death
-/// key, so two entries of the same death always frame to the same
-/// placement and two different deaths never collide.
+/// Place the corpse at the native death's captured position. The reference
+/// encodes the exact death scope and actor generation, preserving Channel
+/// bytes and tagging Instance custody separately for deterministic replay.
 fn ground_placement(
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
-) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
+) -> GroundPlacement {
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
-    let mut corpse_ref = Vec::with_capacity(52);
-    corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
-    corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
-    corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
-    corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
-    Ok(GroundPlacement {
+    GroundPlacement {
         spatial_position,
-        corpse_ref,
+        corpse_ref: death.native_bytes(),
         map_revision: ground.map_revision.clone(),
         content_revision: ground.content_revision.clone(),
         native_room_placement_context: ground.native_room_placement_context.clone(),
-    })
+    }
 }
 
 /// Runs the loot descendant (D3 §4.1): plans and preflights the whole plan,
@@ -469,16 +463,66 @@ async fn settle_loot(
     loot_table_ref: &LootDefinitionRef,
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
+    committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
+    corpse_race: Option<BestiaryRace>,
+    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
-    let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
+    let mut plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
+    if let Some(claim) = &tutorial_corruptor {
+        if claim.source_outputs().len() != claim.items().len() {
+            return Err(CombatDeathRewardLootError::Corpse(
+                ItemMintError::InvalidInput,
+            ));
+        }
+        let mut ordinary_ordinal = u32::try_from(claim.items().len())
+            .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
+        // Extra event rolls already follow the appended guarantees. Compact
+        // ordinary root slots instead of adding N to those existing positions.
+        for entry in &mut plan.entries {
+            if entry.parent.is_none()
+                && !claim
+                    .source_outputs()
+                    .any(|(_, source)| source == entry.draw_ordinal)
+            {
+                ordinary_ordinal =
+                    ordinary_ordinal
+                        .checked_add(1)
+                        .ok_or(CombatDeathRewardLootError::Corpse(
+                            ItemMintError::InvalidInput,
+                        ))?;
+                entry.placement_ordinal = ordinary_ordinal;
+            }
+        }
+        for (offset, (id, source)) in claim.source_outputs().enumerate() {
+            let entry = plan
+                .entries
+                .iter_mut()
+                .find(|entry| entry.parent.is_none() && entry.draw_ordinal == source)
+                .ok_or(CombatDeathRewardLootError::Corpse(
+                    ItemMintError::InvalidInput,
+                ))?;
+            if entry.item.production_key != format!("oteryn:item.tibia.i{id}")
+                || entry.quantity != 1
+            {
+                return Err(CombatDeathRewardLootError::Corpse(
+                    ItemMintError::InvalidInput,
+                ));
+            }
+            // A replay's guaranteed causes do not change when ordinary loot
+            // gains/loses a stamina, event or duplex roll before preparation.
+            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
+            if purpose.len() > entry.purpose_key.len() {
+                return Err(CombatDeathRewardLootError::Plan(
+                    crate::combat::LootPlanError::PlanBytesExceeded,
+                ));
+            }
+            entry.purpose_key = purpose;
+            entry.draw_ordinal = u32::try_from(offset)
+                .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
+            entry.placement_ordinal = entry.draw_ordinal + 1;
+        }
+    }
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
     if plan
         .entries
@@ -503,18 +547,23 @@ async fn settle_loot(
     // sentinel purpose key, draw ordinal 0 and the corpse's own definition in
     // place of a loot table (D3 §4.1).
     let corpse_definition = to_typed_definition(corpse_item);
+    let mut corpse_cause = ItemMintCause::from_creature_death(
+        death,
+        corpse_definition.clone(),
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
+        0,
+    )
+    .map_err(CombatDeathRewardLootError::Corpse)?;
+    if let Some(race) = corpse_race {
+        corpse_cause = corpse_cause
+            .with_corpse_race(race)
+            .map_err(CombatDeathRewardLootError::Corpse)?;
+    }
     let corpse_request = ItemMintRequest {
-        cause: ItemMintCause::from_creature_death(
-            death,
-            corpse_definition.clone(),
-            CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
-            0,
-        )
-        .map_err(CombatDeathRewardLootError::Corpse)?,
+        cause: corpse_cause,
         item: corpse_definition,
         quantity: 1,
-        ground: ground_placement(death, corpse, ground)
-            .map_err(CombatDeathRewardLootError::Corpse)?,
+        ground: ground_placement(death, corpse, ground),
         content_revision: ground.content_revision.clone(),
         ruleset_revision: ground.ruleset_revision.clone(),
         sim_revision: ground.sim_revision.clone(),
@@ -524,7 +573,7 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if plan.entries.iter().any(|entry| entry.parent.is_some()) {
+    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
         let mut children = Vec::with_capacity(plan.entries.len());
         for entry in &plan.entries {
             let parent = match entry.parent {
@@ -575,6 +624,7 @@ async fn settle_loot(
                 &mut children,
                 top_damage_character_id,
                 ground.boss_spawn.clone(),
+                tutorial_corruptor,
             )
             .await
             .map_err(CombatDeathRewardLootError::Corpse)?;
@@ -582,10 +632,14 @@ async fn settle_loot(
         let corpse = outcomes.next().ok_or(CombatDeathRewardLootError::Corpse(
             ItemMintError::InvalidInput,
         ))?;
-        return Ok(CommittedCorpseLoot {
-            corpse,
-            entries: outcomes.collect(),
-        });
+        let entries: Vec<_> = outcomes.collect();
+        committed_loot.extend(
+            entries
+                .iter()
+                .zip(&plan.entries)
+                .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
+        );
+        return Ok(CommittedCorpseLoot { corpse, entries });
     }
     let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
         session
@@ -651,7 +705,9 @@ async fn settle_loot(
             .commit_corpse_loot_mint(permit, session.authority, session.node, &mut candidate)
             .await
             .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?;
-        entries.push(committed(outcome));
+        let mint = committed(outcome);
+        committed_loot.push((mint.clone(), entry.item.clone(), entry.quantity));
+        entries.push(mint);
     }
     Ok(CommittedCorpseLoot {
         corpse: corpse_mint,
@@ -792,7 +848,19 @@ pub async fn settle_creature_death_rewards<const N: usize>(
     slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
+    settle_creature_death_rewards_inner(permit, facts, session, slot, input, None).await
+}
+
+async fn settle_creature_death_rewards_inner<const N: usize>(
+    permit: &SpellLanePermit,
+    facts: ProjectedCreatureDeathFacts,
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    input: CreatureDeathRewardInput<N>,
+    corpse_race: Option<BestiaryRace>,
+) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
     let principal = admit_principal(&facts, &input)?;
+    let mut committed_loot = Vec::new();
     let loot = settle_loot(
         permit,
         session,
@@ -804,6 +872,9 @@ pub async fn settle_creature_death_rewards<const N: usize>(
         &input.loot_table_ref,
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
+        &mut committed_loot,
+        corpse_race,
+        input.tutorial_corruptor.clone(),
     )
     .await;
 
@@ -823,6 +894,7 @@ pub async fn settle_creature_death_rewards<const N: usize>(
     };
 
     Ok(CreatureDeathRewardOutcome {
+        committed_loot,
         death: facts.death,
         loot,
         xp,
@@ -928,7 +1000,15 @@ pub async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
             reward_revision: progression.reward_revision.clone(),
         });
     let principal = admit_principal(&facts, &input)?;
-    let rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    let rewards = settle_creature_death_rewards_inner(
+        permit,
+        facts,
+        session,
+        slot,
+        input,
+        bestiary.race.clone(),
+    )
+    .await?;
     let boss = bestiary.boss.clone();
     let bestiary = match binding {
         Some(binding) => {
@@ -965,7 +1045,15 @@ pub async fn settle_creature_death_rewards_with_party_experience<const N: usize>
             policy_revision: p.policy_revision,
             reward_revision: p.reward_revision,
         });
-    let mut rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    let mut rewards = settle_creature_death_rewards_inner(
+        permit,
+        facts,
+        session,
+        slot,
+        input,
+        bestiary.race.clone(),
+    )
+    .await?;
     rewards.xp = xp;
     let boss = bestiary.boss.clone();
     let bestiary = match binding {
@@ -1099,6 +1187,136 @@ mod tests {
     use super::*;
 
     #[test]
+    fn worldchg_actual_corpse_plan_still_refuses_thirty_one_entries() {
+        // An admitted source corpse may declare36slots, while this independent
+        // execution budget continues to cap actual planned loot at30entries.
+        assert!(check_corpse_container_capacity(20).is_ok());
+        assert!(check_corpse_container_capacity(31).is_err());
+    }
+
+    #[test]
+    fn worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans() {
+        use oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables;
+        let mut identity = [1u8; 16];
+        identity[6] = 0x71;
+        identity[8] = 0x81;
+        let world = crate::foundation::WorldId::decode(&identity).expect("world");
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().expect("active native generation");
+        let native = generation.native_gameplay().expect("native gameplay");
+        let source: oteryn_gameplay_content::content::creature_reward::LootTablesSection =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+            ))
+            .expect("retained source tables");
+        for (name, corpse, required, chance, count) in [
+            ("demon_skeleton", 5963, 3062, 5581, 16),
+            ("calamary", 13853, 3581, 122700, 1),
+            ("seacrest_serpent", 21893, 21747, 69559, 20),
+        ] {
+            let creature = format!("oteryn:creature.{name}");
+            let row = native
+                .reward_table()
+                .row(&creature)
+                .expect("source corpse and entire native loot closure must settle");
+            assert_eq!(
+                row.corpse_item.production_key,
+                format!("oteryn:item.tibia.i{corpse}")
+            );
+            assert!(
+                native
+                    .item_policy(
+                        &row.corpse_item.production_key,
+                        &row.corpse_item.revision_ref
+                    )
+                    .expect("native corpse")
+                    .record()
+                    .admission
+                    .materializable
+            );
+            let retained = source
+                .tables
+                .iter()
+                .find(|table| table.identity.key == format!("oteryn:loot.creature.{name}"))
+                .expect("retained table");
+            assert_eq!(row.loot_table.entries.len(), count);
+            assert_eq!(row.loot_table.entries.len(), retained.entries.len());
+            for (entry, original) in row.loot_table.entries.iter().zip(&retained.entries) {
+                assert_eq!(entry.item.production_key, original.item.key);
+                assert_eq!(entry.min_count, original.min_count);
+                assert_eq!(entry.max_count, original.max_count);
+                assert_eq!(entry.probability_ppm, original.probability_ppm);
+                assert!(entry.details.children.is_empty());
+                assert!(
+                    native
+                        .item_policy(&entry.item.production_key, &entry.item.revision_ref)
+                        .expect("entire loot Item closure")
+                        .record()
+                        .admission
+                        .materializable
+                );
+            }
+            let required_key = format!("oteryn:item.tibia.i{required}");
+            let target = row
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == required_key)
+                .expect("required input drop");
+            assert_eq!(target.probability_ppm, Some(chance));
+            assert!(target.details.stackable);
+            // The actual source table has at most20flat outputs. Preserve its RNG,
+            // chances and quantities; find an ordinary bounded seed that drops the input.
+            assert!(check_corpse_container_capacity(count).is_ok());
+            let mut observed = false;
+            for seed in 0..8192u32 {
+                let key = LootPlanDeathKey::new([1; 16], [2; 16], 1, seed, 1);
+                let plan = plan_creature_loot(key, &row.loot_table_ref, &row.loot_table)
+                    .expect("unchanged native loot planner");
+                let top_level = plan
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.parent.is_none())
+                    .count();
+                assert!(top_level <= count);
+                assert!(check_corpse_container_capacity(top_level).is_ok());
+                if plan
+                    .entries
+                    .iter()
+                    .any(|entry| entry.item.production_key == required_key && entry.quantity > 0)
+                {
+                    observed = true;
+                    break;
+                }
+            }
+            assert!(
+                observed,
+                "bounded ordinary source seed must produce {required_key}"
+            );
+        }
+        // Full source decay closure stays materializable; source cap36 is never clamped.
+        for id in [
+            3583, 5963, 3990, 4103, 4104, 13853, 13854, 13855, 13856, 21893, 21894, 21895, 21896,
+        ] {
+            assert!(
+                native
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .expect("native source decay closure")
+                    .record()
+                    .admission
+                    .materializable
+            );
+        }
+        let seacrest = source
+            .items
+            .iter()
+            .find(|facts| facts.item.key == "oteryn:item.tibia.i21893")
+            .expect("source corpse facts");
+        assert_eq!(seacrest.container_capacity, Some(36));
+        assert!(check_corpse_container_capacity(31).is_err());
+    }
+
+    #[test]
     fn animus_multiplier_is_species_scoped_steps_and_caps() {
         assert_eq!(animus_mastery_experience(10_000, 200, false), 10_000);
         assert_eq!(animus_mastery_experience(10_000, 0, true), 10_200);
@@ -1213,6 +1431,51 @@ mod tests {
     }
 
     #[test]
+    fn instance_ground_placement_preserves_the_native_death_namespace() {
+        use crate::foundation::{
+            ChannelId, CombatDeathFixture, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+        };
+        let id = |seed| {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        };
+        let world = WorldId::decode(&id(1)).expect("world");
+        let instance = RuntimeScopeRefV1::instance(world, id(2)).expect("Instance");
+        let channel =
+            RuntimeScopeRefV1::channel(world, ChannelId::decode(&id(2)).expect("Channel"));
+        let ground = DeathGroundContext {
+            boss_spawn: None,
+            map_revision: "map-1".into(),
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+            native_room_placement_context: b"room".to_vec(),
+        };
+        let placed = |scope| {
+            let mut fixture = CombatDeathFixture::new_for_scope(
+                scope,
+                ScopeOwnershipGeneration::new(1).expect("generation"),
+            )
+            .expect("physical carrier");
+            fixture
+                .strike("fixture:scoped-ground.strike", CombatDeathFixture::HEALTH)
+                .expect("lethal strike");
+            let (death, at) = fixture.project_death().expect("physical death");
+            let placement = ground_placement(death, at, &ground);
+            assert_eq!(placement, ground_placement(death, at, &ground));
+            placement
+        };
+        let instance = placed(instance);
+        let channel = placed(channel);
+        assert_eq!(instance.corpse_ref.len(), 53);
+        assert_eq!(instance.corpse_ref[0], 2);
+        assert_eq!(channel.corpse_ref.len(), 52);
+        assert_eq!(instance.spatial_position, channel.spatial_position);
+        assert_ne!(instance.corpse_ref, channel.corpse_ref);
+    }
+
+    #[test]
     fn ground_placement_differs_between_distinct_deaths_and_matches_for_replay() {
         use crate::foundation::{ChannelId, CombatDeathFixture, ScopeOwnershipGeneration, WorldId};
 
@@ -1253,15 +1516,11 @@ mod tests {
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         };
-        // Ordinary creature corpse placement now explicitly refuses Instance deaths.
-        // This Channel fixture must still preserve its existing replay identity.
-        let placement_a =
-            ground_placement(death_a, corpse, &ground).expect("Channel ground placement");
-        let placement_b =
-            ground_placement(death_b, corpse, &ground).expect("Channel ground placement");
+        // Existing Channel replay identity retains its original byte framing.
+        let placement_a = ground_placement(death_a, corpse, &ground);
+        let placement_b = ground_placement(death_b, corpse, &ground);
         assert_ne!(placement_a.corpse_ref, placement_b.corpse_ref);
-        let replayed =
-            ground_placement(death_a, corpse, &ground).expect("Channel ground placement replay");
+        let replayed = ground_placement(death_a, corpse, &ground);
         assert_eq!(placement_a, replayed);
     }
 }

@@ -1565,3 +1565,30 @@ fn charm_effect_speed_definitions_match_authored_condition_bindings_and_remain_d
         assert_eq!(u64::from(duration), expected_duration);
     }
 }
+
+#[test]
+fn srx2_mana_drain_runs_numb_and_adrenaline_but_not_cleanse() {
+    let catalogue = forced_catalogue();
+    for name in ["oteryn:charm.numb", "oteryn:charm.adrenaline_burst"] {
+        let state = State::with(RACE, &[(name, 3)]);
+        let outcomes = evaluate(
+            &catalogue,
+            &state,
+            CharmHookEvent::IncomingManaDrain { mana_drained: 10 },
+            1,
+        )
+        .expect("native mana hit");
+        assert_eq!(outcomes.len(), 1, "{name}");
+    }
+    let state = State::with(RACE, &[("oteryn:charm.cleanse", 3)]);
+    assert!(
+        evaluate(
+            &catalogue,
+            &state,
+            CharmHookEvent::IncomingManaDrain { mana_drained: 10 },
+            1
+        )
+        .expect("mana hit")
+        .is_empty()
+    );
+}

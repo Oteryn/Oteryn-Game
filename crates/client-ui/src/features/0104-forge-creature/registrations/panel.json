@@ -1,0 +1,7 @@
+{
+  "mechanic": "0104-forge-creature",
+  "kind": "panels",
+  "id": "0104-forge-creature-label",
+  "status": "supported",
+  "entry": "view.rs::label"
+}

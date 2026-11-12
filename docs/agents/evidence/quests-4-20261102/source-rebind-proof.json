@@ -1,0 +1,461 @@
+{
+  "schema": "OTERYN_QUESTS4_PUBLICATION_REBIND_EVIDENCE/v1",
+  "captured_utc": "2026-11-03T08:54:10.742236+00:00",
+  "implementation_backup_commit": "999e8c2b4d27533758f926804616d14aecdba44c",
+  "prepared_history_tip": "5fda9800fef3e7a92f81ed1e5f1332ab130f60e2",
+  "authorizing_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6591352410",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6598145442"
+  ],
+  "semantic_proof_summary": {
+    "schema": "OTERYN_QUESTS4_SOURCE_FIX_DOWNSTREAM_PROOF/v1",
+    "status": "PASS",
+    "mode": "final",
+    "captured_utc": "2026-11-03T08:49:05.278983+00:00",
+    "baseline": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+    "head": "a80c080878034db477b6868eac5d49da4dd3ba13",
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6591118308",
+    "does_not_grant_approval_or_replace_generators_tests": true,
+    "reviewed_64_snapshotsha": "793fd30d2ea380489926e7ebe89362fb3615dc24c66beeb05152ba963c9e861c",
+    "reviewed_64_bytes_identical": true,
+    "downstream_files": 30,
+    "changed_downstream_files": 30,
+    "deferred_reference_count": 0,
+    "approval_receipt_state": "exact_three_edits",
+    "approval_receipt_exact_scalar_changes": 3,
+    "runtime_quest_state_except_authoring_sources_exact": true,
+    "original_source_cores_native_annotations_and_recipe_payloads_exact": true,
+    "definition_receipt_provenance_rows": 28,
+    "old_20_callbacks_and_field_order_exact": true,
+    "new_callback_count": 86,
+    "v2_decoded_exact_producer_metadata_fields": 660,
+    "all_non_hash_values_keys_types_list_counts_and_order_exact": true,
+    "qualified_hash_changes": 5226,
+    "snapshot94_sha256": "79b391ca69608a0746490900a953e642dc81d509416b7e74fa563102bfb78879",
+    "repository_index_ref_api_remote_writes": false
+  },
+  "full_semantic_proof_sha256": "61ca6b6d99b8a4939fa09b99c5ad587f257186f6359462eb470ace12622fbcf9",
+  "semantic_verifier_sha256": "7358814829d26f1cb2eebef27840a3bfcf3ba1addc279f32e044415d97bddbaf",
+  "reviewed_manifest_sha256": "fbf2b085aec09070798f44a21c0b231c255a1d82eec93da506b8d13e0b423c5e",
+  "approval_receipt_exact_changes": [
+    {
+      "file": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
+      "path": "/proof_inputs/1/sha256",
+      "old": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+      "new": "e3ef2895e08459e7de56af1a018f0dfbc19fb8d4d1cb1dc975cf3c33d8c8362b"
+    },
+    {
+      "file": "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json",
+      "path": "/approval/sha256",
+      "old": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+      "new": "76764548c9ac7e1c29d7758476d029bf7bc871a5628c70a2fe85269b3f958349"
+    },
+    {
+      "file": "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json",
+      "path": "/proof_inputs/1/sha256",
+      "old": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+      "new": "e3ef2895e08459e7de56af1a018f0dfbc19fb8d4d1cb1dc975cf3c33d8c8362b"
+    }
+  ],
+  "shard002": {
+    "path": "content/quests/definitions/quests-00200-00299.json",
+    "bytes_before": 6350087,
+    "bytes_after": 6350087,
+    "exact_json_diff": [
+      {
+        "path": "/records/0/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/1/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/7/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/10/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/24/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/25/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/44/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/47/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      },
+      {
+        "path": "/records/79/definition/oteryn_recipe/source_change_provenance/sha256",
+        "old": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+        "new": "cf949acf22b6fa66b08661207d890dd2538a572c6968a8b83428b4a9e17d1dbf"
+      }
+    ]
+  },
+  "callbacks": {
+    "path": "content/quests/world-callbacks.json",
+    "old_count": 20,
+    "newly_added": 86,
+    "total_count": 106,
+    "old_sha256": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+    "new_sha256": "e3ef2895e08459e7de56af1a018f0dfbc19fb8d4d1cb1dc975cf3c33d8c8362b",
+    "old_raw_objects_and_order_identical": true,
+    "removing_only_86_new_records_recreates_old_file_byte_for_byte": true,
+    "reconstructed_old_file_sha256": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb"
+  },
+  "regeneration_history": {
+    "run_id": "quests4-source-rebind-20261103-02",
+    "steps": [
+      {
+        "step": 1,
+        "generator": "amend_monk_source_receipt",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "73a2f86c9e83605fe4ba4c54d6839a84d22c031f19454f787620e4a6e81c2916",
+        "changed_downstream_files": 2,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 2,
+        "generator": "quest_tree_authoring content",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "07fdaab2f20e4931d2ba48346477e36bac145755b12aa56ced6bebfd4f6a8da5",
+        "changed_downstream_files": 6,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 3,
+        "generator": "quest_rollout_authoring",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "77ea7d23dfd851a218267f2e8f990eec6d9ff64d7eaffd80cba5e37bd9b32b70",
+        "changed_downstream_files": 7,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 4,
+        "generator": "quest_binding_authoring",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "7566d7b76ef6178d11e813e1456fbf043a36ed130085012a2183693f07269ce9",
+        "changed_downstream_files": 15,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 5,
+        "generator": "quest_v2_export",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "2bf18f28e21076254eec6aa78df82eb7f5424685e46bf10d25043152caf82e12",
+        "changed_downstream_files": 17,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 6,
+        "generator": "quest_state_lowering",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "5be6b6e684b7ee3b1a0e83305e5ea55988563c3ad2928af09164f0e93b83e59b",
+        "changed_downstream_files": 18,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 7,
+        "generator": "quest_completion_import",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "c04e3ae50de62a7316631b576e90759251c65ff573feadcd5b13bd9e6493cb2e",
+        "changed_downstream_files": 20,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 8,
+        "generator": "collect_claim_candidates",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "4ae315cfd96b821606883bd6fcc7b15d3bc38b06cac363e5bf6fdc798bedc82b",
+        "changed_downstream_files": 21,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 9,
+        "generator": "use_trigger_candidates",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "66112f76f20f2119613cf12d8d0749bced14011d2435c63ea43f4047dfa61404",
+        "changed_downstream_files": 22,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 10,
+        "generator": "quest_reward_only_binding_candidates",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "8df1c62611d10e0237edac1d5abc6c5e1035d259f6e89bf73248eeab497a2ac9",
+        "changed_downstream_files": 23,
+        "reviewed_64_bytes_identical": true
+      },
+      {
+        "step": 11,
+        "generator": "quest_donor_source_authoring",
+        "semantic_diff_status": "PASS_PARTIAL",
+        "log_sha256": "54e95086889b212c8bb67d95506ea0ab456a19e7bf9ec60fc6d9f184b3d39ec1",
+        "changed_downstream_files": 30,
+        "reviewed_64_bytes_identical": true
+      }
+    ],
+    "interpretation": "Historical generator execution, revalidated against current identical implementation bytes; final frozen-SHA test results are recorded on PR #2842."
+  },
+  "derived_files": [
+    {
+      "path": "content/quests/definitions/index.json",
+      "qualified_hash_changes": 3,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "qualified_hash_changes": 3,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "qualified_hash_changes": 16,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "qualified_hash_changes": 9,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "content/quests/missions/completion-candidate.json",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "content/quests/missions/quest-state-completion-candidate.json",
+      "qualified_hash_changes": 2061,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "content/quests/missions/quest-state.json",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
+      "qualified_hash_changes": 307,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/recipes/supplementary-index.json",
+      "qualified_hash_changes": 3,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/chosen-reward-item-candidates.json",
+      "qualified_hash_changes": 548,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json",
+      "qualified_hash_changes": 1148,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/requirement-choices.json",
+      "qualified_hash_changes": 26,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-only-105.json",
+      "qualified_hash_changes": 105,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
+      "qualified_hash_changes": 1,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json",
+      "qualified_hash_changes": 2,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/crosswalk.json",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/dialogue.json.gz",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": true,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/summary.json",
+      "qualified_hash_changes": 2,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/coverage.json",
+      "qualified_hash_changes": 6,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/npc-dependencies.json",
+      "qualified_hash_changes": 1,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/npc-index.json",
+      "qualified_hash_changes": 1,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/npc.json.gz",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": true,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/rollout/quest-rollout.json",
+      "qualified_hash_changes": 4,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json",
+      "qualified_hash_changes": 1,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json",
+      "qualified_hash_changes": 6,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json",
+      "qualified_hash_changes": 1,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/v2-export/declarations.json",
+      "qualified_hash_changes": 612,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/v2-export/report.json",
+      "qualified_hash_changes": 332,
+      "changed": true,
+      "deferred_references": 0,
+      "gzip_decoded": false,
+      "all_other_values_exact": true
+    }
+  ],
+  "merge_note": "The coordinator regenerates derived hashes on the combined batch tree; no manual hash merging.",
+  "deployment": "DRAFT; not deployed; qualified QuestState definition compatibility/migration remains Left out."
+}

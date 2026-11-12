@@ -1,0 +1,1123 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "the_cursed_crystal",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-a/implementation-status.json",
+    "sha256": "749700c6749aba9456736bde7c52fc9688d72fd91d7efad022d9c2a9725e64bd"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 23,
+  "import_counts": {
+    "RĘCZNIE": 19,
+    "AUTO": 4
+  },
+  "content_counts": {
+    "npc_rules_source_only": 16,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 4,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+      "sha256": "2cb50dcd08d0175c964c5f3c3ea225d5c0f4c2bedec87c8e00a560ff6188391e",
+      "count": 16,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-the_cursed_crystal.json",
+      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
+      "count": 0,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-a-the_cursed_crystal.json",
+      "sha256": "09d07cc101c1a046230fb0babc82c50ec48f3e22992a2d2d2e26a1b28eeb52cf",
+      "count": 4,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "197b3a454790b72de5f0a5a122c2b6168ffc3902ae4310790901a30fdb6f6362",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Rozgrzanie wosku",
+        "pattern": "P02",
+        "trigger": "Use5902 na2535/2537/2539/2541",
+        "guard": "target item",
+        "effect": "usuń5902×1; daj9106×1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:37"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: usuń5902×1; daj9106×1. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "9b21daa9329aab66e2286e6b968a23ad711c41e3e3fd2752b3f5639088576175",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Kość: zapisany papier",
+        "pattern": "P05/P14",
+        "trigger": "aid40001@(31974,32907,8)",
+        "guard": "Oneeyedjoe<1;SheetOfPaper<1",
+        "effect": "daj2820 z pełnym tekstem źródła; SheetOfPaper=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:79"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: daj2820 z pełnym tekstem źródła; SheetOfPaper=1. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "4113a8af5b21c7c4131c9f7b0a42f2aaacf615caec0685a338e458b0a398a5f4",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Kość: kryształowy dzwonek",
+        "pattern": "P05",
+        "trigger": "aid40001@(32031,32914,8)",
+        "guard": "Oneeyedjoe<1;SmallCrystalBell<1",
+        "effect": "daj21554×1;SmallCrystalBell=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:90"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: daj21554×1;SmallCrystalBell=1. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:90",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "744d071f53390e00c6bb4a9cf1ca72bbe15f75685a63a02e2545a9cc6624fe83",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Olej z Meduzy",
+        "pattern": "P02/P17",
+        "trigger": "aid40002,item21572",
+        "guard": "Oneeyedjoe<1;papier>0;dzwonek>0;Time<now",
+        "effect": "daj21504×1;Oneeyedjoe=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:100"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: daj21504×1;Oneeyedjoe=1. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:100",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "de7e8037bc5496aa0a6aeea5c016b7fa5b9d840f7cd0ca14e4c16d98db3a0013",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Receptura 11466+21504",
+        "pattern": "P02",
+        "trigger": "Use11466 na21504 lub odwrotnie",
+        "guard": "po jednym składniku",
+        "effect": "usuń oba po1; daj21505×1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:2",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:47"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: usuń oba po1; daj21505×1. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:47",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "4b93faeb9b76e890b43d03e83f0a350d6081070fb7b2786942c942b9bd1ed5df",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Receptura 21505+21507",
+        "pattern": "P02",
+        "trigger": "Use21505 na21507 lub odwrotnie",
+        "guard": "po jednym składniku",
+        "effect": "usuń oba po1; daj21506×1;Questline<2→2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:2",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:47"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: usuń oba po1; daj21506×1;Questline<2→2. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:47",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "657ea124d5c6815b314e2d626784e85efb8f56bea3e610348da1f71c4a35d205",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Ochrona uszu",
+        "pattern": "P02",
+        "trigger": "Use9106 na własną postać",
+        "guard": "Oneeyedjoe<2;floor10;abs(x-31942)<5,abs(y-32936)<5",
+        "effect": "Oneeyedjoe=2; usuń9106×1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:29"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: Oneeyedjoe=2; usuń9106×1. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:29",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "acb332b89cb424307f45783dc4de31ed805d3616494628e5af2a6ae6bdc53d18",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Alternatywne napełnienie fiolki",
+        "pattern": "P02",
+        "trigger": "Use11466 na2873",
+        "guard": "brak warunku misji",
+        "effect": "daj12819×1; usuń11466×1; źródłowy komunikat błędu poprzedza gałąź",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:67"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: daj12819×1; usuń11466×1; źródłowy komunikat błędu poprzedza gałąź. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:67",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "85254c59a402724c41b2cbdeb1984b0d1629c58a54750aba2da8244276e8b830",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Zastosowanie maści i uwolnienie",
+        "pattern": "P02/P16",
+        "trigger": "Use21506 na10420",
+        "guard": "Oneeyedjoe=2;abs(x-31942)<5,abs(y-32936)<5,z10",
+        "effect": "Questline<3→3;Oneeyedjoe=3; usuń21506×1 i10420;10797→10870 na5s",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Ointment.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: Questline<3→3;Oneeyedjoe=3; usuń21506×1 i10420;10797→10870 na5s. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Ointment.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "a37f555849478d3d355f8f5d7097eed06c6f69a7d9b35283b052fa8c20a4ced4",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Niezarejestrowana konkurencyjna gałąź maści",
+        "pattern": "P02",
+        "trigger": "actions_MedusaOil.onUse dla21506",
+        "guard": "21506 nie znajduje się w id rejestracji:9106,11466,21504,21505,21507",
+        "effect": "gałąź nieosiągalna; nie rejestrować jej zamiast actions_Ointment",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:75"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: gałąź nieosiągalna; nie rejestrować jej zamiast actions_Ointment. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:12",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "f70d451ffc8cd3db6139faa574801886396fbc88fec7dbfcbc07f7ad28da2d4b",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Dzwonek tworzy wir",
+        "pattern": "P02/P16",
+        "trigger": "Use21554",
+        "guard": "x31957..31966,y32935..32942,z9; tile4809..4813; brak7804 wobszarze",
+        "effect": "utwórz7804 na polu gracza,aid35001; usuń po10000ms",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:42"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: utwórz7804 na polu gracza,aid35001; usuń po10000ms. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_Misc.lua:42",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "c8b994897b5c48bfcd1d93e2d09fdcd553895741eef232910198173bc54fd986",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Wejście przez wir",
+        "pattern": "P03",
+        "trigger": "StepIn aid35001",
+        "guard": "pozycja w źródłowym prostokącie",
+        "effect": "teleport(31961,32938,10); poza obszarem komunikat",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:16"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: teleport(31961,32938,10); poza obszarem komunikat. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:16",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "a1c49db25fcf1c665b6d5baf84d11882a7e892254511fe728243c6c475fb4325",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Przejście (31973, 32905, 11)",
+        "pattern": "P03",
+        "trigger": "StepIn aid25018@(31973, 32905, 11)",
+        "guard": "gracz",
+        "effect": "teleport(31971, 32904, 10)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_MISSING_MAP_BINDING",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: map.attrs.action=25018. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_cursed_crystal.json",
+        "content/quests/world-callbacks-held/batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "map.attrs.action=25018"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+            ],
+            "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+            "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+            "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-29",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "704bb6ddeff86132751f0931d7916adaf4f0f7be106a4546f2bdba320dd006d4",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Przejście (31973, 32905, 10)",
+        "pattern": "P03",
+        "trigger": "StepIn aid25018@(31973, 32905, 10)",
+        "guard": "gracz",
+        "effect": "teleport(31975, 32911, 9)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_MISSING_MAP_BINDING",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: map.attrs.action=25018. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_cursed_crystal.json",
+        "content/quests/world-callbacks-held/batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "map.attrs.action=25018"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+            ],
+            "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+            "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+            "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-31",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "9a9b6ca00dbc3bd51dc09335215eccdf3ca1c05be136ac775e5fe5da974ea499",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Przejście (32009, 32928, 9)",
+        "pattern": "P03",
+        "trigger": "StepIn aid25018@(32009, 32928, 9)",
+        "guard": "gracz",
+        "effect": "teleport(32009, 32929, 10)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_MISSING_MAP_BINDING",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: map.attrs.action=25018. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_cursed_crystal.json",
+        "content/quests/world-callbacks-held/batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "map.attrs.action=25018"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+            ],
+            "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+            "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+            "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-33",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "3bb33fc9361409b555b091bda198defe76dba33fdc7335ab6c4a847947f1377b",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Przejście (32009, 32928, 10)",
+        "pattern": "P03",
+        "trigger": "StepIn aid25018@(32009, 32928, 10)",
+        "guard": "gracz",
+        "effect": "teleport(32009, 32929, 9)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_MISSING_MAP_BINDING",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: map.attrs.action=25018. All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_cursed_crystal.json",
+        "content/quests/world-callbacks-held/batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "map.attrs.action=25018"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+            ],
+            "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+            "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+            "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-35",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "56e97407e805598afa8e7cd5cfeb72a93cbc7dd048176af3b12c84a4c4280dfd",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Inskrypcja na dwóch polach",
+        "pattern": "P03/P14",
+        "trigger": "StepIn aid25018@(32017,32917/32918,10)",
+        "guard": "Questline=0 dla zmiany; komunikat przy każdym wejściu",
+        "effect": "Questline=1 jeśli0; pełny komunikat o kryształach",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:37"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Wykonanie: Questline=1 jeśli0; pełny komunikat o kryształach. Wymaga rozszerzenia wspólnego wykonawcy callbacków/mapy/spotkania albo właściciela fizycznych efektów; brak zaakceptowanego wywołania całego kroku w ComposedFreshAdmission::execute_quest_callback. Zakres pozostaje Left out zgodnie z decyzją o niezmienianiu wspólnych właścicieli. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:37",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "6d68dfaf85e54325940206e674c4a819b4a4ba1e13c0c321d42f7d409d820d38",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Wyjaśnienie misji",
+        "pattern": "P09",
+        "trigger": "One-Eyed Joe: mission/cursed",
+        "guard": "Oneeyedjoe<0;topic<1",
+        "effect": "pełny dialog źródła;topic1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:111"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:111",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "309a2d5dbd5989626446534a2be2f0ff2aba5d587038844645860f5d34bdb735",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Oferta po wyjaśnieniu",
+        "pattern": "P09",
+        "trigger": "One-Eyed Joe: yes,topic1",
+        "guard": "topic1",
+        "effect": "pełny dialog;topic2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:130"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:130",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "af11e9010f343cdbf6c9d53f5f08fb9e306a732cdbf7ac7328606d0cfb82d2e5",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Przyjęcie misji",
+        "pattern": "P09",
+        "trigger": "One-Eyed Joe: yes,topic2",
+        "guard": "topic2",
+        "effect": "DefaultStart(TibiaTales)=1;Questline<0→0;Oneeyedjoe=0;topic0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:137"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Cały start zapisuje shared TibiaTales.DefaultStart; nie wykonano częściowych lokalnych zapisów ani sukcesu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:137",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "fd17f6e595679db5a4118d16671f934b3624ace5eba57e765a083be9a45c810f",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Informacje i status",
+        "pattern": "P09",
+        "trigger": "One-Eyed Joe: protect ears/crystals/sounds/job/name/bye/yes/no; fallback",
+        "guard": "źródłowa kolejność topic/storage guards",
+        "effect": "pełne donorowe wypowiedzi i reset tematów; brak wymyślonego progresu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:118"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:118",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "e43745d7940d3d35a461e855ec6dce15a5f6e79233856899a3cdb0ed0b85066a",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Nagroda na powitaniu",
+        "pattern": "P11/P17",
+        "trigger": "One-Eyed Joe greet",
+        "guard": "Oneeyedjoe=3;Questline=3",
+        "effect": "achievement Wail of the Banshee;16119/16120/16121×1;1z5926/6098/6097/6126;joe=4;questline=4;Time=now+20h",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:69"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Trzy stałe przedmioty i uniform choice5926/6098/6097/6126 oraz zapisy czasu/postępu pozostają jednym held krokiem. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:69",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "bf5ce5f2c53186e8951a3e2264f3371fb3fbbb259f05d4df2291b533a0fa4497",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "the_cursed_crystal",
+        "step": "Reset po terminie",
+        "pattern": "P17/P09",
+        "trigger": "każde creatureSayCallback",
+        "guard": "Time>0 && now>=Time",
+        "effect": "joe/questline/medusaoil/paper/bell=-1;Time pozostaje bez resetu (nie poprawiać po cichu)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:103"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC. Test rzeczywistego JSON sprawdza deadline, brak wygaśnięcia przytime0 i reset przed tą samą wiadomością mission.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_cursed_crystal.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs",
+        "content/dialogues/quest-source/quest-batch3-a-the_cursed_crystal.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:103",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    }
+  ]
+}

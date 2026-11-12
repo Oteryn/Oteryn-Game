@@ -2,17 +2,27 @@
 //!
 //! The crate has no dependencies. [`error_kinds!`] declares a boundary enum's code kinds from one
 //! list, [`Line`] renders the one-line diagnostic format and [`parse_line`] reads it back, and
-//! [`install_panic_hook`] is the only function that performs I/O (one line to stderr).
+//! [`Span`] provides RAII operation lifetimes, [`FlightRecorder`] retains bounded debug context,
+//! and [`metrics`] provides bounded counters and histograms. [`emit`] is the shared writer.
 
 #[cfg(test)]
 mod build_source;
+mod emit;
 mod filter;
+mod flight;
 mod hook;
 mod line;
+pub mod metrics;
+mod span;
 
+pub use emit::{capture, emit, install_observer};
 pub use filter::{Filter, LogSpecError, filter, init_filter};
+pub use flight::{DEFAULT_CAPACITY, FlightRecorder, MAX_CAPACITY};
 pub use hook::{PANIC, PanicKind, install_panic_hook, panic_line};
-pub use line::{Level, Line, ParseError, ParsedLine, escape_detail, parse_line, unix_ms};
+pub use line::{
+    FieldValue, Level, Line, ParseError, ParsedLine, escape_detail, parse_line, unix_ms,
+};
+pub use span::{Span, SpanField, assert_no_unset};
 
 /// The vocabulary categories (`FOUNDATION_ERROR_VOCABULARY.md`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

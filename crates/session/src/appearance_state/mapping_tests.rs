@@ -95,3 +95,45 @@ fn appearance_mapping_context_palette_and_item_downgrades_refuse() {
     };
     assert!(from_snapshots(&[4, 6, 25], &[domain], [1; 32], Some(items)).is_ok());
 }
+
+#[test]
+fn nx8_forge_marker_requires_exact_creature_incarnation_and_reference() {
+    let snapshot = wire::Snapshot::decode(GOLDEN).expect("valid appearance fixture");
+    let mut binding = snapshot.bindings[0].clone();
+    binding.forge_stacks = Some(15);
+    let state = AppearanceState {
+        revision: 1,
+        high_water: snapshot.high_water,
+        catalogue: snapshot.catalogue,
+        items: None,
+        bindings: [(binding.entity, binding.clone())].into_iter().collect(),
+    };
+    let mut entity = WorldSpatialEntity {
+        display_name: None,
+        kind: world_spatial_entities::EntityKind::Creature,
+        entity: binding.entity,
+        position: ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+        detail: world_spatial_entities::EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: binding.appearance_ref,
+            health_percent: 100,
+        },
+    };
+    assert_eq!(state.forge_marker(&entity), Some(15));
+    entity.entity.generation += 1;
+    assert_eq!(state.forge_marker(&entity), None);
+    entity.entity = binding.entity;
+    entity.kind = world_spatial_entities::EntityKind::Player;
+    assert_eq!(state.forge_marker(&entity), None);
+    entity.kind = world_spatial_entities::EntityKind::Creature;
+    entity.detail = world_spatial_entities::EntityDetail::Actor {
+        direction: StepDirection::South,
+        appearance_ref: binding.appearance_ref + 1,
+        health_percent: 100,
+    };
+    assert_eq!(state.forge_marker(&entity), None);
+}

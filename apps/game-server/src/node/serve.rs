@@ -8,8 +8,12 @@
 //! signal or the end of any loop. Events are single stderr lines without
 //! secrets (D6).
 
+mod audit_collector;
 mod channel_boot;
+mod public_house_catalogue;
+mod qualification_fixture;
 mod supervision;
+mod t94;
 mod world_reset;
 
 use super::cancellation::first;
@@ -52,6 +56,7 @@ use crate::gameplay_transport::{EvidenceUnavailable, FreshEvidenceSource};
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
+use crate::native_admission_source::bazaar::transport as bazaar_transport;
 use crate::native_admission_source::character_commands::{
     CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
 };
@@ -76,7 +81,7 @@ use tokio::net::{TcpListener, UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
 mod bundle_npcs;
-mod daily_world_changes;
+pub(crate) mod daily_world_changes;
 
 /// Registered protocol facts fixed by the build (D5).
 const PROTOCOL_MAJOR: u64 = 1;
@@ -215,14 +220,50 @@ impl From<StartupError> for BootError {
 }
 
 static BOOT_TRACE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+static LAST_ERRORS: std::sync::OnceLock<std::sync::Mutex<std::collections::VecDeque<OpsError>>> =
+    std::sync::OnceLock::new();
 const PROCESS: &str = "oteryn-game-server";
+
+#[derive(Clone, serde::Serialize)]
+struct OpsError {
+    ts: u64,
+    code: String,
+    module: String,
+    event: String,
+    trace: Option<String>,
+}
 
 /// Write one leveled diagnostic line of `process` to stderr unless `OTERYN_LOG` drops it
 /// (ERR-NODE-1). Warn, error and coded lines are always written.
 pub fn emit(process: &str, line: &oteryn_error_codes::Line<'_>) {
+    record_error(line);
     if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
         eprintln!("{}", line.render(process, oteryn_error_codes::unix_ms()));
     }
+}
+
+fn record_error(line: &oteryn_error_codes::Line<'_>) {
+    if let Some(code) = line.code {
+        let errors = LAST_ERRORS.get_or_init(Default::default);
+        let mut errors = errors
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if errors.len() == 10 {
+            errors.pop_front();
+        }
+        errors.push_back(OpsError {
+            ts: oteryn_error_codes::unix_ms(),
+            code: format!("E{:04}", code.number),
+            module: line.module.to_owned(),
+            event: line.event.to_owned(),
+            trace: line.trace.map(str::to_owned),
+        });
+    }
+}
+
+pub(super) fn install_error_sink() {
+    static INSTALL: std::sync::Once = std::sync::Once::new();
+    INSTALL.call_once(|| oteryn_error_codes::install_observer(record_error));
 }
 
 /// Start of a game-server process, before anything else: mint the boot trace, install the
@@ -234,6 +275,7 @@ pub fn begin_process(
     log_spec_code: oteryn_error_codes::ErrorCode,
 ) -> Result<String, oteryn_error_codes::LogSpecError> {
     use oteryn_error_codes::{Level, Line};
+    install_error_sink();
     let trace = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
     let build = oteryn_error_codes::build_id(version);
     oteryn_error_codes::install_panic_hook(process, build.clone(), trace.clone());
@@ -388,17 +430,21 @@ fn unix_now() -> i64 {
 }
 
 /// PREM-WIRE-1 production composition (PREMIUM-ACTIVATION-0 §1.1-§1.2): the one Premium fence,
-/// the system trusted clock, the durable activation latch and no activation.
+/// the system trusted clock, the durable latch and an optional operator activation record.
 fn production_premium_reads(
     root: &DurabilityRoot,
+    activation: Option<&super::config::PremiumActivationConfig>,
 ) -> crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator {
     use crate::gameplay_transport::spell_premium_coordinator::{
-        SpellPremiumCoordinator, SystemTrustedClock,
+        PremiumActivation, SpellPremiumCoordinator, SystemTrustedClock,
     };
     SpellPremiumCoordinator::new(
         std::sync::Arc::default(),
         Some(std::sync::Arc::new(SystemTrustedClock)),
-        None,
+        activation.map(|record| PremiumActivation {
+            activation_id: record.activation_id.clone(),
+            switch_over_us: record.switch_over_us,
+        }),
         Some(root.clone()),
     )
 }
@@ -406,6 +452,14 @@ fn production_premium_reads(
 fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
+
+type BazaarTransportMaterial = (
+    bazaar_transport::BazaarDescriptor,
+    ProducerDescriptor,
+    String,
+    String,
+    bool,
+);
 
 /// Everything read before any socket is bound (D1).
 struct Material {
@@ -423,12 +477,26 @@ struct Material {
         std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
     /// Character-command consumer identity and source authority; `None`
     /// (the default) disables it. Taken once by the serving loop.
-    character_commands: std::sync::Mutex<Option<(CommandDescriptor, String)>>,
+    character_commands: std::sync::Mutex<
+        Option<(
+            CommandDescriptor,
+            String,
+            crate::durability::character_command::account_deletion::Config,
+        )>,
+    >,
+    bazaar: std::sync::Mutex<Option<BazaarTransportMaterial>>,
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
     /// by the serving loop.
-    public_projections:
-        std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
+    public_projections: std::sync::Mutex<
+        Option<(
+            PublicProjectionDescriptor,
+            String,
+            std::path::PathBuf,
+            public_projections::v2::Activation,
+        )>,
+    >,
+    world_event_outcomes: std::sync::Mutex<Option<t94::Material>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -635,7 +703,77 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 &others,
             )
             .map_err(|_| invalid("platform.character_commands"))?;
-            Some((descriptor, commands.source_authority.clone()))
+            Some((
+                descriptor,
+                commands.source_authority.clone(),
+                commands.account_deletion.clone(),
+            ))
+        }
+    };
+    let bazaar = match &platform.bazaar {
+        None => None,
+        Some(bazaar) => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.bazaar.client_certificate_file",
+                &bazaar.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.bazaar.client_key_file",
+                &secret(
+                    "platform.bazaar.client_key_file",
+                    &bazaar.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            let Some((receipt, receipt_source, _)) = &character_commands else {
+                return Err(invalid("platform.bazaar.character_receipt_identity"));
+            };
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            if let Some(commands) = &platform.character_commands {
+                others.push(chain(
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                )?);
+            }
+            if let Some(public) = platform.public_projections.as_ref().filter(|p| p.enabled) {
+                others.push(chain(
+                    "platform.public_projections.client_certificate_file",
+                    &public.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = bazaar_transport::BazaarDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.bazaar"))?;
+            Some((
+                descriptor,
+                receipt.producer().clone(),
+                bazaar.source_authority.clone(),
+                receipt_source.clone(),
+                bazaar.enabled,
+            ))
         }
     };
     let public_projections = match &platform.public_projections {
@@ -690,10 +828,15 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 descriptor,
                 public.source_authority.clone(),
                 public.epoch_fence_file.clone(),
+                public_projections::v2::Activation {
+                    character_online_sessions: public.character_online_sessions_enabled,
+                    world_daily_kills: public.world_daily_kills_enabled,
+                },
             ))
         }
         _ => None,
     };
+    let world_event_outcomes = t94::material(platform, endpoint.clone(), &roots, &client)?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -750,7 +893,9 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         runtime_status,
         account_characters: std::sync::Mutex::new(account_characters),
         character_commands: std::sync::Mutex::new(character_commands),
+        bazaar: std::sync::Mutex::new(bazaar),
         public_projections: std::sync::Mutex::new(public_projections),
+        world_event_outcomes: std::sync::Mutex::new(world_event_outcomes),
         descriptor,
         launch,
         s2,
@@ -1006,7 +1151,12 @@ async fn account_characters_loop(
     first(publisher.run(), stop.cancelled()).await;
 }
 
-const PUBLIC_PRIVILEGES: &str = "SELECT has_table_privilege('game_character_roots', 'SELECT') \
+const PUBLIC_PRIVILEGES: &str = "SELECT has_table_privilege('game_public_world_deaths', 'SELECT') \
+     AND has_table_privilege('game_public_world_totals_heads', 'SELECT') \
+     AND has_table_privilege('game_public_world_totals_samples', 'SELECT') \
+     AND has_column_privilege('game_public_world_totals_samples', 'acked', 'UPDATE') \
+     AND has_function_privilege('game_public_world_totals_sample(uuid)', 'EXECUTE') \
+     AND has_table_privilege('game_character_roots', 'SELECT') \
      AND has_table_privilege('game_character_progression_state', 'SELECT') \
      AND has_table_privilege('game_character_build_state', 'SELECT') \
      AND has_table_privilege('game_durability_reconnect_sessions', 'SELECT') \
@@ -1040,13 +1190,44 @@ pub async fn public_store_readable(root: &DurabilityRoot) -> Option<bool> {
 /// Character authority. Disabled unless configured and enabled; refused (and
 /// logged) when the node's role lacks the privileges, so Platform keeps the
 /// families stale and unserved.
+// Insert in node/serve.rs; run beside audit_expiry_loop unconditionally from
+// supervision (no Platform material or publication flag gate).
+async fn online_statistics_retention_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    stop: &CancellationToken,
+) {
+    loop {
+        match root.maintain_public_online_statistics(authority).await {
+            Ok(changed) if changed > 0 => event(&format!(
+                "event=statistics_retention family=character_online_sessions result=ok rows={changed}"
+            )),
+            Ok(_) => {}
+            Err(_) => event(
+                "event=statistics_retention family=character_online_sessions result=unavailable",
+            ),
+        }
+        if first(tokio::time::sleep(Duration::from_secs(1)), stop.cancelled())
+            .await
+            .is_none()
+        {
+            return;
+        }
+    }
+}
+
 async fn public_projections_loop(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
-    public: Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>,
+    public: Option<(
+        PublicProjectionDescriptor,
+        String,
+        std::path::PathBuf,
+        public_projections::v2::Activation,
+    )>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority, fence)) = public else {
+    let Some((descriptor, source_authority, fence, activation)) = public else {
         return;
     };
     match first(
@@ -1063,7 +1244,7 @@ async fn public_projections_loop(
         Some(true) => {}
     }
     event("event=public_projections state=started");
-    let publisher = public_projections::Publisher::new(
+    let mut publisher = public_projections::Publisher::new(
         SystemClock::default(),
         crate::durability::public_projections::PublicProjectionsStore { root, authority },
         MtlsPublicSink::new(descriptor),
@@ -1071,6 +1252,7 @@ async fn public_projections_loop(
         source_authority,
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
     );
+    publisher.v2_activation = activation;
     first(publisher.run(), stop.cancelled()).await;
 }
 
@@ -1101,31 +1283,38 @@ async fn highscores_loop(
     first(job.run(receiver), stop.cancelled()).await;
 }
 
-/// Both futures to completion on this task.
-async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
-    let mut a = pin!(a);
-    let mut b = pin!(b);
-    let (mut a_done, mut b_done) = (false, false);
-    poll_fn(|context| {
-        if !a_done {
-            a_done = a.as_mut().poll(context).is_ready();
-        }
-        if !b_done {
-            b_done = b.as_mut().poll(context).is_ready();
-        }
-        if a_done && b_done {
-            Poll::Ready(())
-        } else {
-            Poll::Pending
-        }
-    })
-    .await;
+/// Both futures to completion on this task, retaining each child's ownership until both end.
+/// Box before constructing the join future: nested joins otherwise embed every child in
+/// each ancestor's state and debug poll temporaries, even when the outer node is boxed.
+fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) -> impl Future<Output = ()> {
+    let mut a = Box::pin(a);
+    let mut b = Box::pin(b);
+    async move {
+        let (mut a_done, mut b_done) = (false, false);
+        poll_fn(|context| {
+            if !a_done {
+                a_done = a.as_mut().poll(context).is_ready();
+            }
+            if !b_done {
+                b_done = b.as_mut().poll(context).is_ready();
+            }
+            if a_done && b_done {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
+    }
 }
 
 /// The Character Authority side of the command consumer: it refreshes the
 /// account's security evidence of a decoded create, then decides under the
 /// reconciled Character authority (contract §6).
 struct CommandDecider<'a, 'r, 'c> {
+    lifecycle_observed: bool,
+    closure_epoch_fence: EpochFenceFile,
+    deletion: crate::durability::character_command::account_deletion::Config,
     root: &'a DurabilityRoot,
     authority: &'a ReconciledCharacterAuthority<'r, 'c>,
     proof: &'a NodeIncarnationProof,
@@ -1134,15 +1323,114 @@ struct CommandDecider<'a, 'r, 'c> {
 }
 
 impl Decider for CommandDecider<'_, '_, '_> {
+    async fn begin_closure_lifecycle_read(
+        &mut self,
+        request: &crate::native_admission_source::account_closure::LifecycleRequest,
+    ) {
+        self.lifecycle_observed = false;
+        let _ = self
+            .root
+            .invalidate_account_closure_lifecycle(
+                self.authority,
+                self.proof,
+                &request.account_id,
+                &request.termination_id,
+            )
+            .await;
+    }
+
+    async fn quarantine_closure_publication(
+        &mut self,
+        p: &crate::native_admission_source::account_closure::Publication,
+    ) {
+        let _ = self
+            .root
+            .quarantine_account_closure_publication(self.authority, self.proof, p)
+            .await;
+    }
+
+    fn lifecycle_recovery_generation(&self) -> Option<u64> {
+        if !self.deletion.enabled || self.deletion.lifecycle_source!=crate::durability::character_command::account_deletion::LifecycleSource::PlatformPull {return None;}
+        self.authority
+            .record_for(self.root)
+            .ok()
+            .map(|r| r.recovery_generation)
+    }
+    async fn observe_closure_lifecycle(
+        &mut self,
+        request: &crate::native_admission_source::account_closure::LifecycleRequest,
+        raw: &[u8],
+    ) {
+        self.lifecycle_observed = self
+            .root
+            .observe_account_closure_lifecycle(self.authority, self.proof, request, raw)
+            .await
+            .is_ok();
+    }
+
+    async fn next_closure_publication(
+        &mut self,
+    ) -> Option<crate::native_admission_source::account_closure::Publication> {
+        // Pending jobs and outboxes survive disabling. Never erase or release them.
+        use crate::native_admission_source::account_characters::EpochFence;
+        let publication = self
+            .root
+            .next_account_closure_publication(self.authority, self.proof, &self.source_authority)
+            .await
+            .ok()
+            .flatten()?;
+        if publication.operation!=crate::native_admission_source::descriptor::Operation::PublishAccountClosureCommandReceiptV2 {
+            let body:serde_json::Value=serde_json::from_str(&publication.body).ok()?;
+            let epoch=body["projection_epoch"].as_str().and_then(crate::native_admission_source::character_commands::counter)?;
+            let floor=self.closure_epoch_fence.read().ok()?;
+            if epoch<floor {event("event=account_closure state=pending reason=epoch_resync");return None;}
+            if epoch>floor {self.closure_epoch_fence.persist(epoch).ok()?;}
+        }
+        Some(publication)
+    }
+    async fn acknowledge_closure_publication(
+        &mut self,
+        p: &crate::native_admission_source::account_closure::Publication,
+    ) {
+        let _ = self
+            .root
+            .acknowledge_account_closure(self.authority, self.proof, None, Some(p))
+            .await;
+    }
+    async fn acknowledge_receipt(&mut self, command: &str, operation: &str) {
+        if crate::native_admission_source::character_commands::account_deletion_command(command) {
+            let _ = self
+                .root
+                .acknowledge_account_closure(self.authority, self.proof, Some(operation), None)
+                .await;
+        }
+    }
+
     async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
         let mut held = None;
-        if let Input::Intent(raw) = input
-            && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
-        {
+        let refresh_account = match input {
+            Input::Intent(raw) => match classify_intent(raw, command, operation_id) {
+                Classified::Create(intent) => Some(uuid_text(&intent.account_id)),
+                _ => crate::durability::bazaar::decode_transfer(raw, operation_id)
+                    .map(|intent| intent.to_account_id.as_str().to_owned())
+                    .or_else(|| {
+                        if !self.deletion.enabled {
+                            return None;
+                        }
+                        crate::durability::character_command::account_deletion::decode(
+                            raw,
+                            command,
+                            operation_id,
+                        )
+                        .ok()
+                        .map(|intent| intent.account_id)
+                    }),
+            },
+            _ => None,
+        };
+        if let Some(account) = refresh_account {
             // A failed refresh leaves the evidence stale; the decision then
             // reads it as unknown and stays transient until the intent expires.
-            // The reason is logged as fixed tokens only (no account or bytes).
-            let account = uuid_text(&intent.account_id);
             let started = std::time::Instant::now();
             match self
                 .evidence
@@ -1164,15 +1452,23 @@ impl Decider for CommandDecider<'_, '_, '_> {
         }
         // The decision is the next pass after the acceptance; the accepted
         // slot is cleared only once it has read the evidence.
+        let mut deletion = self.deletion.clone();
+        if deletion.lifecycle_source
+            == crate::durability::character_command::account_deletion::LifecycleSource::PlatformPull
+            && !self.lifecycle_observed
+        {
+            deletion.lifecycle_source =
+                crate::durability::character_command::account_deletion::LifecycleSource::Pending;
+        }
         let decision = self
             .root
-            .decide_character_command(
+            .decide_character_command_configured(
                 self.authority,
                 self.proof,
                 &self.source_authority,
-                command,
-                operation_id,
+                (command, operation_id),
                 input,
+                &deletion,
             )
             .await;
         if let Some(evidence) = held {
@@ -1189,28 +1485,248 @@ async fn character_commands_loop(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
-    commands: Option<(CommandDescriptor, String)>,
+    commands: Option<(
+        CommandDescriptor,
+        String,
+        crate::durability::character_command::account_deletion::Config,
+    )>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority)) = commands else {
+    let Some((descriptor, source_authority, deletion)) = commands else {
         return;
     };
     event("event=character_commands state=started");
-    let decider = CommandDecider {
+    let make_decider = || CommandDecider {
+        lifecycle_observed: false,
+        closure_epoch_fence: EpochFenceFile::new(deletion.epoch_fence_file.clone()),
+        deletion: deletion.clone(),
         root,
         authority,
         proof,
         evidence,
         source_authority: source_authority.clone(),
     };
+    let publisher =
+        crate::native_admission_source::character_commands::run_account_closure_publications(
+            SystemClock::default(),
+            MtlsSource::new(descriptor.clone()),
+            make_decider(),
+            event,
+        );
     let consumer = Consumer::new(
         SystemClock::default(),
         MtlsSource::new(descriptor),
-        decider,
-        source_authority,
+        make_decider(),
+        source_authority.clone(),
         event,
     );
-    first(consumer.run(), stop.cancelled()).await;
+    first(both(consumer.run(), publisher), stop.cancelled()).await;
+}
+
+/// One bounded owner reconciliation per cadence, independent of Platform reachability.
+async fn account_closure_offline_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    runtime: &Mutex<ChannelRuntimeV1>,
+    scope: (crate::foundation::WorldId, crate::foundation::ChannelId),
+    stop: &CancellationToken,
+) {
+    let mut tick = tokio::time::interval(std::time::Duration::from_secs(1));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    loop {
+        if first(tick.tick(), stop.cancelled()).await.is_none() {
+            return;
+        }
+        if let Ok(sessions) = root
+            .next_account_closure_terminal(
+                authority,
+                proof,
+                (*scope.0.as_bytes(), *scope.1.as_bytes()),
+            )
+            .await
+        {
+            for (session, scope) in sessions {
+                let Ok(session) = crate::foundation::GameSessionId::decode(&session) else {
+                    continue;
+                };
+                let absent = {
+                    let runtime = runtime.lock().await;
+                    runtime
+                        .prove_player_session_absent_in(session, scope)
+                        .ok()
+                        .flatten()
+                };
+                if let Some(absent) = absent {
+                    let _ = root
+                        .acknowledge_account_closure_offline(authority, proof, absent)
+                        .await;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/// Production dispatch boundary after fresh-evidence refresh. Keeping it
+/// explicit also lets qualification drive the actual durable caller.
+pub(crate) async fn dispatch_bazaar_intent(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    receipt_source: &str,
+    command: &str,
+    operation: &str,
+    raw: &[u8],
+) -> Decision {
+    root.decide_bazaar_command(authority, proof, receipt_source, command, operation, raw)
+        .await
+}
+
+/// The production snapshot boundary uses the authority's own batch bound.
+pub(crate) async fn snapshot_bazaar_transport(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    source: &str,
+    enabled: bool,
+) -> Result<bazaar_transport::TransportBatch, crate::native_admission_source::SourceError> {
+    let mut batch = root
+        .bazaar_transport_snapshot(
+            authority,
+            proof,
+            source,
+            crate::durability::bazaar::TRANSPORT_BATCH_LIMIT,
+        )
+        .await
+        .map_err(|_| crate::native_admission_source::SourceError::Unavailable)?;
+    batch.enabled &= enabled;
+    Ok(batch)
+}
+
+struct BazaarAuthority<'a, 'r, 's> {
+    root: &'a DurabilityRoot,
+    authority: &'a ReconciledCharacterAuthority<'r, 's>,
+    proof: &'a NodeIncarnationProof,
+    evidence: &'a FreshEvidenceSource,
+    source: String,
+    receipt_source: String,
+    enabled: bool,
+}
+impl bazaar_transport::Authority for BazaarAuthority<'_, '_, '_> {
+    async fn decide(&mut self, command: &str, operation: &str, raw: &[u8]) -> Decision {
+        if !self.enabled {
+            return Decision::Transient;
+        }
+        let value = serde_json::from_slice::<serde_json::Value>(raw).ok();
+        let mut held = Vec::new();
+        let mut accounts = std::collections::BTreeSet::new();
+        for key in ["seller_account_id", "buyer_account_id"] {
+            if let Some(account) = value
+                .as_ref()
+                .and_then(|value| value.get(key))
+                .and_then(serde_json::Value::as_str)
+                && crate::native_admission_source::character_commands::uuid_v7(account)
+            {
+                accounts.insert(account);
+            }
+        }
+        for account in accounts {
+            if let Ok(evidence) = self
+                .evidence
+                .refresh_account_held(self.root, self.proof, account)
+                .await
+            {
+                held.push(evidence);
+            }
+        }
+        let result = dispatch_bazaar_intent(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.receipt_source,
+            command,
+            operation,
+            raw,
+        )
+        .await;
+        for evidence in held {
+            let _ = evidence.release().await;
+        }
+        result
+    }
+    async fn read_failure(&mut self, command: &str, operation: &str, input: Input<'_>) -> Decision {
+        if !self.enabled {
+            return Decision::Transient;
+        }
+        self.root
+            .decide_bazaar_input(
+                self.authority,
+                self.proof,
+                &self.receipt_source,
+                command,
+                operation,
+                input,
+            )
+            .await
+    }
+    async fn snapshot(
+        &mut self,
+    ) -> Result<bazaar_transport::TransportBatch, crate::native_admission_source::SourceError> {
+        snapshot_bazaar_transport(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.source,
+            self.enabled,
+        )
+        .await
+    }
+    async fn acknowledge(
+        &mut self,
+        key: bazaar_transport::DeliveryKey,
+        digest: [u8; 32],
+        status: u16,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .bazaar_transport_ack(self.authority, self.proof, key, digest, status)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+    async fn reconcile(
+        &mut self,
+        state: &bazaar_transport::RemoteState,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .bazaar_reconcile_receipt(self.authority, self.proof, state)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+}
+
+async fn bazaar_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    material: Option<BazaarTransportMaterial>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, receipt, source, receipt_source, enabled)) = material else {
+        return;
+    };
+    let store = BazaarAuthority {
+        root,
+        authority,
+        proof,
+        evidence,
+        source: source.clone(),
+        receipt_source,
+        enabled,
+    };
+    let transport = bazaar_transport::MtlsTransport::new(descriptor, receipt);
+    let consumer = bazaar_transport::Consumer::new(store, transport, source);
+    first(consumer.run(event), stop.cancelled()).await;
 }
 
 async fn backoff(attempt: &mut u32) {
@@ -1236,9 +1752,14 @@ async fn backoff_within(attempt: &mut u32, budget: Option<tokio::time::Instant>)
 
 /// Re-establish the durability holder after any reported demand, and at a
 /// fixed interval well inside the 30-minute holder lifetime (D3 step 2).
-async fn maintain(root: DurabilityRoot, stop: CancellationToken) {
+async fn maintain(
+    root: DurabilityRoot,
+    stop: CancellationToken,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
+) {
     let mut since = tokio::time::Instant::now();
     while !stop.is_cancelled() {
+        heartbeat.beat();
         if first(tokio::time::sleep(MAINTENANCE_POLL), stop.cancelled())
             .await
             .is_none()
@@ -1378,6 +1899,10 @@ where
     let mut attempt = 0;
     let mut runs = 0;
     loop {
+        // Earlier boot reads can retire their holder while returning valid
+        // results. Prepare a real ready holder before the custody operation;
+        // the operation still supplies its own authoritative typed outcome.
+        let _ = root.await_ready().await;
         let result = {
             let _boot = root.boot_pass_deadline(deadline);
             operation().await
@@ -1723,6 +2248,21 @@ struct Readiness<'a> {
 }
 
 impl Readiness<'_> {
+    /// Shutdown has stopped the maintenance pump. Replenish or observe the real
+    /// holder here; requesting maintenance and sleeping alone cannot do so.
+    /// Keep the caller's existing shutdown deadline authoritative.
+    async fn await_holder(
+        &self,
+        budget: Option<tokio::time::Instant>,
+    ) -> Result<(), DurabilityError> {
+        match budget {
+            Some(deadline) => tokio::time::timeout_at(deadline, self.root.await_ready())
+                .await
+                .map_err(|_| DurabilityError::RootUnavailable)?,
+            None => self.root.await_ready().await,
+        }
+    }
+
     /// Prepare the exact successor of the current Runtime guard chain.
     async fn prepare(
         &self,
@@ -1736,7 +2276,11 @@ impl Readiness<'_> {
         // shutdown budget, or a bounded number of times at boot.
         let mut attempt = 0;
         let current = loop {
-            match guards.load(std::slice::from_ref(&key)).await {
+            let loaded = match self.await_holder(budget).await {
+                Ok(()) => guards.load(std::slice::from_ref(&key)).await,
+                Err(error) => Err(error),
+            };
+            match loaded {
                 Ok(mut rows) => break rows.pop().flatten(),
                 Err(error) => {
                     let exhausted = match budget {
@@ -1846,11 +2390,15 @@ impl Readiness<'_> {
                 if budget.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
                     return Err(BootError::Readiness("shutdown budget"));
                 }
-                match self
-                    .root
-                    .publish_runtime_readiness(self.proof, &publication)
-                    .await
-                {
+                let outcome = match self.await_holder(budget).await {
+                    Ok(()) => {
+                        self.root
+                            .publish_runtime_readiness(self.proof, &publication)
+                            .await
+                    }
+                    Err(error) => Err(AssignmentError::from(error)),
+                };
+                match outcome {
                     Ok(
                         GuardPublicationDisposition::Applied
                         | GuardPublicationDisposition::Existing,
@@ -2018,14 +2566,71 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
     (bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80).then_some(bytes)
 }
 
-async fn handle_control(stream: &mut UnixStream) -> Option<[u8; 16]> {
+async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
     let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
     let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
     limited.read_to_end(&mut request).await.ok()?;
     if request.len() > CONTROL_REQUEST_BYTES {
         return None;
     }
-    parse_operation_id(&request)
+    Some(request)
+}
+
+/// Bounded, privacy-safe node health for local read-only operations clients.
+fn control_health(root: &DurabilityRoot) -> String {
+    let last_errors = LAST_ERRORS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone();
+    let stalled_tasks = oteryn_task_supervisor::supervised_tasks()
+        .into_iter()
+        .filter(|task| task.is_stalled(Duration::from_secs(30)))
+        .map(|task| {
+            serde_json::json!({
+                "name": task.name,
+                "age_ms": task.age_ms,
+                "since_beat_ms": task.since_beat_ms,
+            })
+        })
+        .collect::<Vec<_>>();
+    serde_json::json!({
+        "readiness": root.is_ready(),
+        "db_pool": if root.is_ready() { "ready" } else { "unavailable" },
+        "platform": "unknown",
+        "tick_ms": null,
+        "connections": 0,
+        "stalled_tasks": stalled_tasks,
+        "last_errors": last_errors,
+    })
+    .to_string()
+}
+
+fn control_diagnose(request: &[u8]) -> Option<String> {
+    let remainder = request.strip_prefix(b"diagnose")?.strip_suffix(b"\n")?;
+    let filter = if remainder.is_empty() {
+        ""
+    } else {
+        std::str::from_utf8(remainder.strip_prefix(b" ")?).ok()?
+    };
+    if !filter.is_empty()
+        && !(filter.len() == 5
+            && filter.starts_with('E')
+            && filter[1..].bytes().all(|byte| byte.is_ascii_digit()))
+    {
+        return None;
+    }
+    let errors = LAST_ERRORS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    serde_json::to_string(
+        &errors
+            .iter()
+            .filter(|error| filter.is_empty() || error.code == filter)
+            .collect::<Vec<_>>(),
+    )
+    .ok()
 }
 
 /// One request at a time, bounded size and deadline; only uid 0 is served.
@@ -2037,6 +2642,8 @@ async fn control_loop(
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
     intents: &ProducerDescriptor,
+    config: &NodeConfig,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2056,19 +2663,46 @@ async fn control_loop(
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
         let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
-            let answer = match handle_control(&mut stream).await {
-                Some(operation) => {
-                    bootstrap_one(
-                        root, authority, proof, evidence, intents, &capacity, operation,
+            let request = handle_control(&mut stream).await;
+            let (answer, event_name) = match request {
+                Some(request) if request == b"health\n" => (control_health(root), "ops_health"),
+                Some(request) if control_diagnose(&request).is_some() => (
+                    control_diagnose(&request).unwrap_or_else(|| "[]".to_owned()),
+                    "ops_diagnose",
+                ),
+                Some(request) if request.starts_with(b"qualify ") => (
+                    qualification_fixture::prepare(
+                        root, authority, proof, config, native, &request,
                     )
                     .await
+                    .to_owned(),
+                    "character_bootstrap",
+                ),
+                Some(request) if parse_operation_id(&request).is_some() => {
+                    let Some(operation) = parse_operation_id(&request) else {
+                        return;
+                    };
+                    (
+                        bootstrap_one(
+                            root, authority, proof, evidence, intents, &capacity, operation,
+                        )
+                        .await
+                        .to_owned(),
+                        "character_bootstrap",
+                    )
                 }
-                None => "rejected",
+                _ => ("rejected".to_owned(), "character_bootstrap"),
             };
-            event_traced(
-                &format!("event=character_bootstrap result={answer}"),
-                connection,
-            );
+            match event_name {
+                "ops_health" => event_traced("event=ops_health result=served", connection),
+                "ops_diagnose" => {
+                    event_traced("event=ops_diagnose result=served", connection);
+                }
+                _ => event_traced(
+                    &format!("event=character_bootstrap result={answer}"),
+                    connection,
+                ),
+            }
             let _ = stream.write_all(format!("{answer}\n").as_bytes()).await;
             let _ = stream.shutdown().await;
         })
@@ -2093,10 +2727,18 @@ async fn audit_expiry_loop(
         let mut deleted = 0_u64;
         let mut failed = false;
         for _ in 0..AUDIT_RUN_CAP {
+            let bazaar_deleted = match root.expire_bazaar_audit(authority, AUDIT_BATCH).await {
+                Ok(count) => count,
+                Err(_) => {
+                    failed = true;
+                    0
+                }
+            };
+            deleted = deleted.saturating_add(bazaar_deleted);
             match root.expire_character_audit(authority, AUDIT_BATCH).await {
                 Ok(count) => {
                     deleted = deleted.saturating_add(count);
-                    if count < u64::from(AUDIT_BATCH) {
+                    if count < u64::from(AUDIT_BATCH) && bazaar_deleted < u64::from(AUDIT_BATCH) {
                         break;
                     }
                 }
@@ -2105,6 +2747,13 @@ async fn audit_expiry_loop(
                     break;
                 }
             }
+        }
+        match root.expire_account_closure_audit(authority).await {
+            Ok(count) => deleted = deleted.saturating_add(count),
+            Err(_) => failed = true,
+        }
+        if root.t94_expire(authority).await.is_err() {
+            failed = true;
         }
         match root.expire_staff_audit().await {
             Ok(count) => deleted = deleted.saturating_add(count),
@@ -2208,15 +2857,25 @@ pub async fn run_with_npc_data_project(
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
-        tokio::spawn(async move {
-            termination().await;
-            signalled.cancel();
-        })
+        oteryn_task_supervisor::spawn_lifecycle_supervised(
+            "termination_watcher",
+            None,
+            async move {
+                termination().await;
+                signalled.cancel();
+            },
+        )
     };
     // D3 step 2.
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
-    let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
+    let maintenance_root = root.clone();
+    let maintenance_stop = stop_maintenance.clone();
+    let maintenance = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+        "durability_maintenance",
+        None,
+        move |heartbeat| maintain(maintenance_root, maintenance_stop, heartbeat),
+    );
     let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
@@ -2278,41 +2937,7 @@ fn boot_bundle_items(
     channel: ChannelId,
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
-    use crate::content::{ReferenceItemField, ReferenceItemType};
-    let index = gameplay.and_then(|state| state.item_index());
-    let item = |key: &str| {
-        let index = index?;
-        let revision = index.revision(key)?;
-        let reference = index.definition_ref("Item", key, revision)?;
-        let profile = gameplay
-            .and_then(|state| state.item_policy(key, revision))
-            .map(|policy| policy.record());
-        let pickupable = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.physical,
-                ReferenceItemField::Known(physical)
-                    if physical.pickupable == ReferenceItemField::Known(true)
-            )
-        });
-        // MAP-DOOR-1: doorhood is the content profile's `item_type`, never an appearance id.
-        let door = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.classification,
-                ReferenceItemField::Known(classification)
-                    if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-            )
-        });
-        let attributes = profile.map(|profile| &profile.attributes);
-        Some(crate::map::facts::ItemDefinition {
-            reference,
-            solid: attributes.and_then(|attributes| attributes.blocks_movement),
-            blocks_projectile: attributes
-                .and_then(|attributes| attributes.blocks_projectile)
-                .unwrap_or(true),
-            pickupable,
-            door,
-        })
-    };
+    let item = |key: &str| crate::map::boot::native_item_definition(gameplay, key);
     checked
         .boot(world, channel, item)
         .map_err(BootError::WorldBundle)
@@ -2462,7 +3087,7 @@ pub(crate) async fn realize_bundle_spawns(
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
-    let sources = world
+    let mut sources = world
         .activation_spawns(|key| {
             let policy = runtime.companion_policy(key).ok()?;
             Some((
@@ -2471,7 +3096,78 @@ pub(crate) async fn realize_bundle_spawns(
             ))
         })
         .ok_or_else(refuse)?;
-    realize_activation_paced(runtime, sources, signalled).await
+    let bindings =
+        crate::durability::world_event::changes::counters::bindings().map_err(|_| refuse())?;
+    for source in &bindings.spawn_sources {
+        if runtime.world_change_cycles().is_none()
+            || !oteryn_gameplay_world_change::owner::counter_admitted(source.kind)
+        {
+            continue;
+        }
+        let point = &source.point;
+        let policy = runtime
+            .companion_policy(&point.creature)
+            .map_err(|_| refuse())?;
+        sources.push((
+            vec![(
+                (
+                    i32::from(point.cell.x),
+                    i32::from(point.cell.y),
+                    i16::from(point.cell.floor),
+                ),
+                point.respawn_ms,
+                point.creature.clone(),
+                u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
+                policy.blocked_by_nearby_players,
+            )],
+            5_000,
+        ));
+    }
+    let mut voice_sources = Vec::new();
+    if runtime.world_change_cycles().is_some()
+        && oteryn_gameplay_world_change::owner::counter_admitted(
+            oteryn_gameplay_world_change::counter::CounterKind::TheirMastersVoice,
+        )
+    {
+        use oteryn_gameplay_world::terrain_tools::{VOICE_MAGE_HOMES, VOICE_SERVANT_HOMES};
+        for (homes, key, cohort) in [
+            (
+                VOICE_SERVANT_HOMES.as_slice(),
+                "oteryn:creature.iron_servant",
+                "their_masters_voice.wave.0",
+            ),
+            (
+                VOICE_MAGE_HOMES.as_slice(),
+                "oteryn:creature.mad_mage",
+                "their_masters_voice.mage",
+            ),
+        ] {
+            let policy = runtime.companion_policy(key).map_err(|_| refuse())?;
+            for &(x, y, z) in homes {
+                let index = u16::try_from(sources.len()).map_err(|_| refuse())?;
+                voice_sources.push((index, cohort));
+                sources.push((
+                    vec![(
+                        (x, y, z),
+                        86_400_000,
+                        key.to_owned(),
+                        u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
+                        policy.blocked_by_nearby_players,
+                    )],
+                    5_000,
+                ));
+            }
+        }
+    }
+    let realized = realize_activation_paced(runtime, sources, signalled).await?;
+    if realized.is_some() {
+        for (source, cohort) in voice_sources {
+            runtime
+                .bind_world_spawn_source(source, cohort, 1)
+                .map_err(|_| refuse())?;
+        }
+    }
+    Ok(realized)
 }
 
 /// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
@@ -2604,6 +3300,7 @@ async fn boot_and_serve(
     };
     let channel_boot::PreparedChannel {
         activity_templates,
+        soulpit_template,
         active_content,
         qualified_room,
         movement_cells,
@@ -2621,6 +3318,16 @@ async fn boot_and_serve(
         timed_npcs,
         required_capabilities,
     } = channel;
+    public_house_catalogue::capture(
+        root,
+        &authority,
+        &proof,
+        material,
+        &assignment,
+        reset_epoch,
+        bundle.as_ref(),
+    )
+    .await;
     if signalled.is_cancelled() {
         stopped_before_ready();
         return Ok(());
@@ -2678,6 +3385,11 @@ async fn boot_and_serve(
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
+        bulletin_source: std::env::var_os("OTERYN_BULLETIN_FILE").map(|path| {
+            std::sync::Arc::new(crate::gameplay_transport::bulletin::BulletinSource::new(
+                path.into(),
+            ))
+        }),
         server_motd: config.server_motd.clone(),
         certificates: material.gameplay_chain.clone(),
         private_key: material.gameplay_key.clone_key(),
@@ -2689,26 +3401,37 @@ async fn boot_and_serve(
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
     // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
-    // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
-    // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
-    let premium_reads = production_premium_reads(root);
+    // (PREMIUM-ACTIVATION-0 §1.1), durable latch and optional activation record (§1.2).
+    // The serving path pulls into this coordinator's consumer using the existing client gate.
+    let premium_reads = production_premium_reads(root, config.premium_activation.as_ref());
     // Local operator mode; the Platform runtime-status payload has a closed contract.
     eprintln!(
         "event=store_configuration store_purchases={}",
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
+            *proof.fact().node_id().as_bytes(),
+        )
+        .map_err(|_| BootError::Serve)?,
         activity_templates: &activity_templates,
+        soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
         store_purchases: config.store_purchases,
-        store: Some(crate::native_admission_source::store::StoreClient::new(
-            Box::new(
-                crate::native_admission_source::store::MtlsStoreTransport::new(
-                    material.store.clone(),
+        store: Some(
+            crate::native_admission_source::store::StoreClient::new(
+                Box::new(
+                    crate::native_admission_source::store::MtlsStoreTransport::new(
+                        material.store.clone(),
+                    ),
                 ),
+                material.store.source_authority().to_owned(),
+            )
+            .with_coins(
+                crate::native_admission_source::coins::CoinClient::configured()
+                    .map_err(|_| BootError::Serve)?,
             ),
-            material.store.source_authority().to_owned(),
-        )),
+        ),
         emit,
         root,
         character: &authority,
@@ -2736,7 +3459,9 @@ async fn boot_and_serve(
         quest_log_content: &quest_log_content,
         last_position_flush: Some(&last_position_flush),
     };
-    supervision::supervise(supervision::Serving {
+    // The long-lived supervisor owns its child jobs on the heap. Keep its state out of
+    // the boot future too; boxing only the outer node leaves stacked poll temporaries.
+    Box::pin(supervision::supervise(supervision::Serving {
         listener: &listener,
         control: &control,
         listener_config,
@@ -2750,9 +3475,13 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
-    })
+    }))
     .await
 }
+
+#[cfg(test)]
+#[path = "serve/future_stack_tests.rs"]
+mod future_stack_tests;
 
 #[cfg(test)]
 mod tests {
@@ -2793,9 +3522,9 @@ mod tests {
         runtime.block_on(async {
             let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
                 .expect("lazy root");
-            let reads = production_premium_reads(&root);
-            // PREMIUM-ACTIVATION-0 §1.2: no activation record in production, so Premium is
-            // never delivered and every account reads Free, without a latch write.
+            let reads = production_premium_reads(&root, None);
+            // PREMIUM-ACTIVATION-0 §1.2: without an activation record, every account
+            // reads Free, without a latch write.
             assert!(reads.activation().is_none());
             assert!(reads.reads_latch());
             assert!(reads.has_clock());
@@ -2803,6 +3532,30 @@ mod tests {
                 reads.premium_gate([1; 16]).await,
                 crate::domain::premium::PremiumGate::CLOSED
             );
+        });
+    }
+
+    #[test]
+    fn production_premium_reads_start_the_configured_coordinator() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let activation = super::super::config::PremiumActivationConfig {
+                activation_id: "fixture-activation".to_owned(),
+                switch_over_us: 1_790_769_600_000_000,
+            };
+            let reads = production_premium_reads(&root, Some(&activation));
+            let configured = reads.activation().expect("configured activation");
+            assert_eq!(configured.activation_id, activation.activation_id);
+            assert_eq!(configured.switch_over_us, activation.switch_over_us);
+            assert!(reads.reads_latch());
+            assert!(reads.has_clock());
+            // Configuration alone never proves an entitlement.
+            assert!(!reads.consumer().premium_current([1; 16], None));
         });
     }
 
@@ -3565,6 +4318,30 @@ mod tests {
         assert_eq!(parsed.trace.as_deref(), Some(trace));
         assert!(!text.contains("character="));
         assert!(!text.contains("character_id"));
+    }
+
+    #[test]
+    fn diagnose_filter_accepts_only_a_registered_code_shape() {
+        assert!(control_diagnose(b"diagnose\n").is_some());
+        assert!(control_diagnose(b"diagnose E4001\n").is_some());
+        assert!(control_diagnose(b"diagnose E40\n").is_none());
+        assert!(control_diagnose(b"diagnose player-id\n").is_none());
+    }
+
+    #[test]
+    fn scheduler_failures_reach_health_and_diagnose() {
+        {
+            let mut span = super::super::scheduler_diagnostics::job("test_pass");
+            span.set_outcome("failed");
+            span.set_code(
+                super::super::scheduler_diagnostics::SchedulerErrorKind::JobFailed.code(),
+            );
+        }
+
+        let diagnose = control_diagnose(b"diagnose E2015\n").expect("valid diagnose command");
+        assert!(diagnose.contains("\"code\":\"E2015\""));
+        assert!(diagnose.contains("\"module\":\"scheduler\""));
+        assert!(diagnose.contains("\"event\":\"job_end\""));
     }
 
     #[test]

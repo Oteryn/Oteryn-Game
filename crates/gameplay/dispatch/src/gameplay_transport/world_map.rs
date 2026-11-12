@@ -29,6 +29,9 @@
 
 #![cfg_attr(not(test), allow(dead_code))]
 
+mod house;
+pub(super) use house::{DecoratedFacts, HouseBaseMapEntry};
+
 use super::item_view::{
     ItemHandleTable, ItemKey, ItemViewDelta, ItemViewError, ItemViewSnapshotDomain, SessionItemView,
 };
@@ -75,7 +78,7 @@ impl<F: MapFacts> MapViewSource<'_, F> {
                 reset_epoch: self.reset_epoch,
             },
             MapEntryKey::Added(id) => ItemKey::MapAdded(id.get()),
-            MapEntryKey::Ground(id) => ItemKey::Instance(id),
+            MapEntryKey::Ground(id) | MapEntryKey::House(id) => ItemKey::Instance(id),
         }
     }
 }
@@ -259,12 +262,64 @@ pub fn plan<F: MapFacts>(
     plan_with(source, actor, PlanBuffers::default())
 }
 
+/// One original HouseInterior item, with facts from the current content pin.
+/// It uses the ordinary bounded map handles while retaining its distinct custody.
+pub(super) struct HouseMapEntry {
+    pub position: TilePos,
+    pub item: [u8; 16],
+    pub ordinal: u64,
+    pub facts: view::EntryFacts,
+}
+
 /// [`plan`] in the buffers of an earlier plan.
 fn plan_with<F: MapFacts>(
     source: &MapViewSource<'_, F>,
     actor: ActorPosition,
     buffers: PlanBuffers,
 ) -> Result<MapPlan, MapViewError> {
+    plan_with_house(source, actor, buffers, None)
+}
+
+fn plan_with_house<F: MapFacts>(
+    source: &MapViewSource<'_, F>,
+    actor: ActorPosition,
+    buffers: PlanBuffers,
+    house: Option<&[HouseMapEntry]>,
+) -> Result<MapPlan, MapViewError> {
+    let mut house_tiles = std::collections::BTreeMap::<TilePos, Vec<&HouseMapEntry>>::new();
+    let mut unique = std::collections::BTreeSet::new();
+    let channel_overlay = house.is_none();
+    for entry in house.unwrap_or_default() {
+        if entry.ordinal == 0
+            || !unique.insert(entry.item)
+            || !source.facts.house_tile(entry.position)
+            || source
+                .overlay
+                .base()
+                .tile(entry.position.x, entry.position.y, entry.position.floor)
+                .is_none()
+        {
+            return Err(MapViewError::Wire(WorldMapWireError::Malformed));
+        }
+        house_tiles.entry(entry.position).or_default().push(entry);
+    }
+    for entries in house_tiles.values_mut() {
+        entries.sort_unstable_by_key(|entry| entry.ordinal);
+        if entries
+            .windows(2)
+            .any(|pair| pair[0].ordinal == pair[1].ordinal)
+        {
+            return Err(MapViewError::Wire(WorldMapWireError::Malformed));
+        }
+    }
+    let append_house = |pos, pool: &mut Vec<ComposedEntry>| {
+        if let Some(entries) = house_tiles.get(&pos) {
+            pool.extend(entries.iter().map(|entry| ComposedEntry {
+                source: EntrySource::House(entry.item),
+                facts: entry.facts,
+            }));
+        }
+    };
     let PlanBuffers {
         mut tiles,
         mut entries,
@@ -276,7 +331,8 @@ fn plan_with<F: MapFacts>(
     } = buffers;
     let at = tile_pos(actor).ok_or(MapViewError::Position)?;
     let layout = WindowLayout::of(at).ok_or(MapViewError::Position)?;
-    let overlays = window_overlay(source.overlay, &layout);
+    // An empty House still excludes every Channel ground/volatile overlay.
+    let overlays = channel_overlay.then(|| window_overlay(source.overlay, &layout));
     pool.clear();
     slots.clear();
     slots.resize(layout.len(), Slot::default());
@@ -286,11 +342,12 @@ fn plan_with<F: MapFacts>(
         let Some(pos) = layout.pos_of(index) else {
             continue;
         };
-        let overlay = overlays[index];
+        let overlay = overlays.as_ref().and_then(|tiles| tiles[index]);
         let start = pool.len();
         let stored =
             view::compose_into(source.overlay.base(), overlay, source.facts, pos, &mut pool)?;
         let ground_speed = crate::map::boot::view_ground_speed(pos, stored);
+        append_house(pos, &mut pool);
         *slot = Slot {
             start,
             len: pool.len() - start,
@@ -306,11 +363,16 @@ fn plan_with<F: MapFacts>(
             scratch.clear();
             view::compose_into(
                 source.overlay.base(),
-                source.overlay.tile(pos),
+                if channel_overlay {
+                    source.overlay.tile(pos)
+                } else {
+                    None
+                },
                 source.facts,
                 pos,
                 &mut scratch,
             )?;
+            append_house(pos, &mut scratch);
             outside.push((pos, RoofFacts::of_entries(&scratch)));
         }
     }
@@ -441,6 +503,40 @@ impl SessionMapView {
         actor: ActorPosition,
     ) -> Result<Option<MapUpdate>, MapViewError> {
         let plan = plan_with(source, actor, std::mem::take(&mut self.buffers))?;
+        self.update_plan(items, source, plan)
+    }
+
+    /// The same tile cutting, ranking, revision and rollback owner for a named
+    /// House. An in-place transformation keeps the instance's existing handle.
+    pub(super) fn update_house<F: MapFacts>(
+        &mut self,
+        items: &mut SessionItemView,
+        source: &MapViewSource<'_, F>,
+        actor: ActorPosition,
+        house: &[HouseMapEntry],
+    ) -> Result<Option<MapUpdate>, MapViewError> {
+        let facts = house::Facts(source.facts);
+        let source = MapViewSource {
+            overlay: source.overlay,
+            facts: &facts,
+            content_generation: source.content_generation,
+            reset_epoch: source.reset_epoch,
+        };
+        let plan = plan_with_house(
+            &source,
+            actor,
+            std::mem::take(&mut self.buffers),
+            Some(house),
+        )?;
+        self.update_plan(items, &source, plan)
+    }
+
+    fn update_plan<F: MapFacts>(
+        &mut self,
+        items: &mut SessionItemView,
+        source: &MapViewSource<'_, F>,
+        plan: MapPlan,
+    ) -> Result<Option<MapUpdate>, MapViewError> {
         let sent = self.sent.as_ref();
         let (planned, tiles) = items.map_view(plan.keys(), |table| {
             let tiles = plan

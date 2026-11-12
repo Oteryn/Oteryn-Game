@@ -52,6 +52,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
         assert_eq!(
             ended.continuity,
             SessionContinuity {
+                analyser_revision: 0,
                 server_message_revision: 0,
                 server_motd_sent: false,
                 gameplay_idle: ended.continuity.gameplay_idle,
@@ -60,6 +61,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 server_sequence: 4,
                 spatial_revision: 2,
                 player_trade_revision: 0, // This peer did not select PLAYER_TRADE_V1.
+                presentation_revision: 0,
                 overlay_revision: 0,
                 vitals_revision: 0,
                 achievement_notice_revision: None,
@@ -397,4 +399,460 @@ fn the_buffer_is_dropped_at_disconnect_and_a_resumed_connection_starts_empty()
         assert!(steps[1].1.duration_since(steps[0].1) < PACE);
         Ok(())
     })
+}
+
+/// A real movement owner beneath command replay, rather than a direction-only stub.
+struct DromeDrunkMovementAuthority {
+    owner: RefCell<(
+        crate::foundation::ChannelRuntimeV1,
+        crate::gameplay_transport::actor_spell::ChannelSpellStates,
+    )>,
+    room: crate::content::QualifiedNativeEntryRoom,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: Cell<u64>,
+    calls: Cell<usize>,
+}
+
+impl DromeDrunkMovementAuthority {
+    fn new() -> Result<Self, Box<dyn Error>> {
+        use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, NodeId};
+        use crate::spell::cast::{CharacterCastFacts, DromeStatus};
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        let world = WorldId::decode(&WORLD)?;
+        let channel = ChannelId::decode(&CHANNEL)?;
+        let session = GameSessionId::decode(&SESSION)?;
+        let room = crate::content::qualify_native_entry_room(world)?;
+        let start = room.entry_start();
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
+            (start.x, start.y, start.floor),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            NodeId::decode(&uuid_v7(7))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )?;
+        let reservation = runtime.reserve_fresh_session(session)?;
+        let actor = runtime.commit_fresh_session(reservation)?;
+        runtime.initialize_first_entry_position(actor)?;
+        runtime.set_tibiadrome(actor, true)?;
+        let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Knight,
+                    level: 100,
+                    magic_level: 10,
+                    max_health: 1000,
+                    max_mana: 500,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("spell state")?;
+        let mut next = states
+            .get(&runtime, actor, session)
+            .ok_or("player")?
+            .clone();
+        next.drome_practice = true;
+        let next = next
+            .try_after_drome_status(DromeStatus::Drunk, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        if !states.commit(&runtime, actor, session, next) {
+            return Err("status commit".into());
+        }
+        // Select a deterministic source-normal roll in North's interval (1..=5).
+        // This is an occurrence fixture; the test assertions drive actual movement.
+        let before = runtime.read_actor_position(actor)?;
+        let now_us = (1_u64..100_000)
+            .find(|now| {
+                use oteryn_simulation_determinism::{
+                    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+                };
+                use sha2::{Digest, Sha256};
+                let digest = Sha256::new()
+                    .chain_update(b"oteryn:drome-drunk-step:v1")
+                    .chain_update(actor.placement_identity())
+                    .chain_update(session.as_bytes())
+                    .chain_update(before.revision().to_be_bytes())
+                    .chain_update(now.to_be_bytes())
+                    .finalize();
+                let mut bytes = [0; 16];
+                bytes.copy_from_slice(&digest[..16]);
+                let root = GameplayDecisionRoot::from_bytes(
+                    runtime.content_pin().server_artifact_digest(),
+                );
+                let Ok(raw) = deterministic_decision_u64(
+                    &root,
+                    DecisionOccurrenceId::from_bytes(bytes),
+                    "movement.drome.drunk",
+                    0,
+                ) else {
+                    return false;
+                };
+                oteryn_gameplay_spell_rules::native_actor_states::normal_draw(
+                    1,
+                    100,
+                    &mut |low, high| crate::spell::uniform_draw(raw, low, high),
+                )
+                .is_ok_and(|roll| roll <= 5)
+            })
+            .ok_or("North occurrence")?;
+        Ok(Self {
+            owner: RefCell::new((runtime, states)),
+            room,
+            actor,
+            session,
+            now_us: Cell::new(now_us),
+            calls: Cell::new(0),
+        })
+    }
+}
+
+impl FreshAdmissionAuthority for DromeDrunkMovementAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+        Some(at(0))
+    }
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<std::time::Duration>) {
+        use crate::movement::CardinalStep;
+        self.calls.set(self.calls.get() + 1);
+        let direction = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
+        };
+        let mut owned = self.owner.borrow_mut();
+        let (runtime, states) = &mut *owned;
+        match states.step_with_creature_field_contact(
+            runtime,
+            self.room.movement_cells(),
+            actor,
+            session,
+            self.now_us.get(),
+            direction,
+            &std::collections::BTreeSet::new(),
+            None,
+            None,
+            None,
+        ) {
+            Ok((_, duration)) => (
+                StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(at(1)),
+                },
+                Some(duration),
+            ),
+            Err(_) => (
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                },
+                None,
+            ),
+        }
+    }
+}
+
+#[test]
+fn drome_drunk_actual_movement_refusal_replay_and_exact_expiry() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                let authority = DromeDrunkMovementAuthority::new()?;
+                let mut admitted = positioned()?;
+                admitted.runtime_actor = Some(authority.actor);
+                let before = authority
+                    .owner
+                    .borrow()
+                    .0
+                    .read_actor_position(authority.actor)?;
+                let player_before = authority
+                    .owner
+                    .borrow()
+                    .1
+                    .get(
+                        &authority.owner.borrow().0,
+                        authority.actor,
+                        authority.session,
+                    )
+                    .ok_or("player")?
+                    .clone();
+                let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                let (ended, _) = drive_session(
+                    &authority,
+                    admitted,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 1, step, StepDirection::East),
+                    ],
+                )
+                .await?;
+                assert!(matches!(
+                    ended,
+                    ConnectionEnd::AdmittedThenClosed(
+                        _,
+                        FoundationProtocolError::CommandOutcomeExpired
+                    )
+                ));
+                assert_eq!(
+                    authority.calls.get(),
+                    1,
+                    "replay never repeats steering or movement"
+                );
+                assert_eq!(
+                    authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?,
+                    before,
+                    "the steered North wall refuses the requested walkable East step"
+                );
+                assert_eq!(
+                    authority.owner.borrow().1.get(
+                        &authority.owner.borrow().0,
+                        authority.actor,
+                        authority.session
+                    ),
+                    Some(&player_before)
+                );
+                authority.now_us.set(10_000_000);
+                let (outcome, _) = authority
+                    .paced_step(authority.actor, authority.session, StepDirection::East)
+                    .await;
+                assert_eq!(
+                    outcome.disposition,
+                    StepDisposition::Moved,
+                    "Drunk ends exactly at 10s"
+                );
+                let after = authority
+                    .owner
+                    .borrow()
+                    .0
+                    .read_actor_position(authority.actor)?;
+                assert_eq!(after.position().x, before.position().x + 1);
+                assert_eq!(after.position().y, before.position().y);
+                assert_eq!(after.revision(), before.revision() + 1);
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome movement test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn drome_drunk_actual_movement_leaves_other_statuses_and_scopes_unchanged()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use oteryn_gameplay_domain::domain::condition::{
+                    ConditionType, ConditionValues, StatusKind,
+                };
+                use oteryn_gameplay_foundation::foundation::condition::{
+                    ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+                };
+                use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+                for mode in [
+                    "not-runtime-drome",
+                    "not-player-practice",
+                    "suppressed",
+                    "foreign-key",
+                ] {
+                    let authority = DromeDrunkMovementAuthority::new()?;
+                    let before = authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?;
+                    {
+                        let mut owned = authority.owner.borrow_mut();
+                        let (runtime, states) = &mut *owned;
+                        if mode == "not-runtime-drome" {
+                            runtime.set_tibiadrome(authority.actor, false)?;
+                        } else {
+                            let mut next = states
+                                .get(runtime, authority.actor, authority.session)
+                                .ok_or("player")?
+                                .clone();
+                            match mode {
+                                "not-player-practice" => next.drome_practice = false,
+                                "suppressed" => {
+                                    next.conditions.set_suppressed(
+                                        [ConditionType::Status(StatusKind::Drunk)]
+                                            .into_iter()
+                                            .collect(),
+                                    );
+                                }
+                                _ => {
+                                    let root = GameplayDecisionRoot::from_bytes([0; 32]);
+                                    let definition = ConditionDefinition::new(
+                                        "foreign.drunk",
+                                        1,
+                                        ConditionValues::TimedStatus {
+                                            kind: StatusKind::Drunk,
+                                            duration_ms: 20_000,
+                                        },
+                                    )
+                                    .ok_or("definition")?;
+                                    next.conditions
+                                        .apply(
+                                            &definition,
+                                            None,
+                                            ConditionSourceKind::Creature,
+                                            &[],
+                                            &ApplicationFacts {
+                                                now: 0,
+                                                base_speed: 1,
+                                                mana_shield_capacity: 0,
+                                                target_reentry_protected: false,
+                                                source_reentry_protected: false,
+                                                target_is_player: true,
+                                                decision_root: &root,
+                                                occurrence: DecisionOccurrenceId::from_bytes(
+                                                    [0; 16],
+                                                ),
+                                            },
+                                        )
+                                        .map_err(|e| format!("{e:?}"))?;
+                                }
+                            }
+                            next.advance_batch_revision()
+                                .map_err(|e| format!("{e:?}"))?;
+                            assert!(states.commit(
+                                runtime,
+                                authority.actor,
+                                authority.session,
+                                next
+                            ));
+                        }
+                    }
+                    let (outcome, _) = authority
+                        .paced_step(authority.actor, authority.session, StepDirection::East)
+                        .await;
+                    assert_eq!(outcome.disposition, StepDisposition::Moved, "{mode}");
+                    let after = authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?;
+                    assert_eq!(after.position().x, before.position().x + 1, "{mode}");
+                    assert_eq!(after.position().y, before.position().y, "{mode}");
+                }
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome movement scope test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn drome_root_and_fear_refuse_actual_movement_until_status_expiry() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use crate::spell::cast::DromeStatus;
+                use oteryn_gameplay_domain::domain::condition::{ConditionType, StatusKind};
+                for (status, expiry) in [
+                    (DromeStatus::Fear, 2_000_000),
+                    (DromeStatus::Root, 3_000_000),
+                ] {
+                    let authority = DromeDrunkMovementAuthority::new()?;
+                    authority.now_us.set(100);
+                    {
+                        let mut owned = authority.owner.borrow_mut();
+                        let (runtime, states) = &mut *owned;
+                        let mut next = states
+                            .get(runtime, authority.actor, authority.session)
+                            .ok_or("player")?
+                            .clone();
+                        next.conditions
+                            .remove_type(ConditionType::Status(StatusKind::Drunk));
+                        let next = next
+                            .try_after_drome_status(status, 0)
+                            .map_err(|e| format!("{e:?}"))?;
+                        assert!(states.commit(runtime, authority.actor, authority.session, next));
+                    }
+                    let before = authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?;
+                    let (outcome, _) = authority
+                        .paced_step(authority.actor, authority.session, StepDirection::East)
+                        .await;
+                    assert_eq!(outcome.disposition, StepDisposition::Blocked, "{status:?}");
+                    assert_eq!(
+                        authority
+                            .owner
+                            .borrow()
+                            .0
+                            .read_actor_position(authority.actor)?,
+                        before
+                    );
+                    authority.now_us.set(expiry);
+                    let (outcome, _) = authority
+                        .paced_step(authority.actor, authority.session, StepDirection::East)
+                        .await;
+                    assert_eq!(
+                        outcome.disposition,
+                        StepDisposition::Moved,
+                        "{status:?} expires"
+                    );
+                    assert_eq!(
+                        authority
+                            .owner
+                            .borrow()
+                            .0
+                            .read_actor_position(authority.actor)?
+                            .revision(),
+                        before.revision() + 1
+                    );
+                }
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome movement control test thread")?
+        .map_err(Into::into)
 }

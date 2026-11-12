@@ -226,6 +226,23 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 {
                     let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
                     assert!(mailbox.wheel.set_points(14, 50));
+                    let path = std::env::temp_dir()
+                        .join(format!("oteryn-wheel-play-{}.json", std::process::id()));
+                    mailbox.wheel.preset_fields[0] = "Hunting".into();
+                    super::super::feature_0148_wheel_allocation::view::presets::submit(
+                        &mut mailbox,
+                        0,
+                        &path,
+                    );
+                    assert!(mailbox.wheel.preset_book.0.contains_key("Hunting"));
+                    assert!(mailbox.wheel.set_points(14, 0));
+                    super::super::feature_0148_wheel_allocation::view::presets::submit(
+                        &mut mailbox,
+                        1,
+                        &path,
+                    );
+                    assert_eq!(mailbox.wheel.points[14], 50);
+                    std::fs::remove_file(path)?;
                     assert!(mailbox.wheel.socket_selected());
                 }
                 link.wheel_request(Intent::Save);
@@ -245,13 +262,22 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 link.wheel_request(Intent::ToggleLock);
                 ready(&link, Some((6, 6))).await?;
                 link.wheel_request(Intent::SwitchDomain);
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
                 ready(&link, Some((6, 7))).await?;
                 assert_eq!(link.wheel_panel().selected_gem().ok_or("gem")?.domain, 1);
                 crate::play::mailbox::lock(&link.mailbox).wheel.modifier = Some((1, 5));
                 link.wheel_request(Intent::GradeUp);
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
                 ready(&link, Some((6, 8))).await?;
                 assert_eq!(link.wheel_panel().grade(1, 5), 1);
                 link.wheel_request(Intent::Reveal);
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
                 ready(&link, Some((6, 9))).await?;
                 assert_eq!(
                     link.wheel_panel()
@@ -263,6 +289,9 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                     2
                 );
                 link.wheel_request(Intent::Dismantle);
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
                 ready(&link, Some((6, 10))).await?;
                 assert_eq!(link.wheel_panel().gem, Some([18; 16]));
                 link.wheel_request(Intent::Reset);
@@ -304,3 +333,30 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
         .join()
         .map_err(|_| "Wheel UI test thread panicked")?
 }
+
+#[test]
+fn wheel_presets_window_handoff_preserves_the_session_owner() {
+    use crate::play::feature_0148_wheel_allocation::view::presets::{open_shared, window_open};
+    let (link, _receiver, _outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.properties.house.model.selected = true;
+    }
+    open_shared(&link.mailbox, &link.commands);
+    {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(window_open(&mailbox));
+        assert!(!mailbox.wheel_shutdown);
+        assert!(!mailbox.depot_shutdown);
+        assert!(mailbox.properties.house.model.selected);
+    }
+    let shared = Arc::clone(&link.mailbox);
+    drop(link);
+    assert!(!window_open(&crate::play::mailbox::lock(&shared)));
+}
+
+#[path = "gem_presentation.rs"]
+mod gem_presentation;
+
+#[path = "wheel_presentation.rs"]
+mod wheel_presentation;

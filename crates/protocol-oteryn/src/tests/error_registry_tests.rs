@@ -62,6 +62,7 @@ fn error_codes_match_the_registry() {
         (E::BootstrapLimitExceeded, "BOOTSTRAP_LIMIT_EXCEEDED"),
         (E::InvalidCapabilitySet, "INVALID_CAPABILITY_SET"),
         (E::AccountDataIntegrity, "ACCOUNT_DATA_INTEGRITY"),
+        (E::SessionJoinUnavailable, "SESSION_JOIN_UNAVAILABLE"),
         (E::NotSupported, "NOT_SUPPORTED"),
         (E::SnapshotExpired, "SNAPSHOT_EXPIRED"),
         (E::AdmissionGrantMalformed, "ADMISSION_GRANT_MALFORMED"),
@@ -150,7 +151,13 @@ fn admission_refusal_classes_match_the_registry() {
         let progression = entry.get("progression").and_then(|value| value.as_str());
         let class = entry.get("public_class").and_then(|value| value.as_str());
         if !ADMISSION_REFUSAL_CODES.contains(&code) {
-            assert_eq!((progression, class), (None, None), "{code}");
+            // The one post-admission row with an explicit progression (FND-04C §4.1).
+            let expected = if code == FoundationProtocolError::SessionJoinUnavailable.code() {
+                (Some("RETRYABLE"), Some("TEMPORARILY_UNAVAILABLE"))
+            } else {
+                (None, None)
+            };
+            assert_eq!((progression, class), expected, "{code}");
             assert_eq!(admission_refusal_class(code), None, "{code}");
             continue;
         }
@@ -255,6 +262,7 @@ fn admission_refusal_frame_carries_only_code_and_disposition() -> Result<(), Fou
             related_command_id: 0,
             expected_command_id: 0,
             expected_server_sequence: 0,
+            connection_trace: None,
         }
     );
     Ok(())

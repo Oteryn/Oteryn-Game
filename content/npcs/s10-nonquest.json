@@ -1,0 +1,857 @@
+{
+  "schema": "OTERYN_S10_NONQUEST/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "wiki": "wiki-pending",
+  "decision": "Use pinned Crystal static ambient lines, excluding explicitly unconfirmed Dragon Ancestor Spirit placeholders. Preserve reviewed stationary Omrabas and Flickering Soul behavior. Banks reuse accepted BANK0 operations and existing dialogue; guild banking and quest bonuses are excluded.",
+  "voices": [
+    {
+      "key": "oteryn:npc.valindara",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"I'm eager for a bath in the lake.\",\"yell\":false},{\"text\":\"I'm interested in shiny precious things, if you have some.\",\"yell\":false},{\"text\":\"No, you can't have this cloak.\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/valindara.lua",
+        "line": 31,
+        "sha256": "8cd64f9b2e7d678e91a07485789f4b08c168b7f52d1c741ecb77cfca3fbeb4fa"
+      }
+    },
+    {
+      "key": "oteryn:npc.tooth_fairy",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"I have to ... No, I don't dare ...\",\"yell\":false},{\"text\":\"This is a very strange part of the world.\",\"yell\":false},{\"text\":\"The children are waiting for their presents.\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/tooth_fairy.lua",
+        "line": 26,
+        "sha256": "b34d60fc82f372b04549482a8fde40c14f8f20a067309e0e17ab152a2633e250"
+      }
+    },
+    {
+      "key": "oteryn:npc.tired_tree",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"*yawn*\",\"yell\":false},{\"text\":\"I just want to sleep.\",\"yell\":false},{\"text\":\"Sooo tired.\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/tired_tree.lua",
+        "line": 21,
+        "sha256": "a0162ecba3b89a4eb215087774bd1929fcf351e8ad62d49881f094d5431794ea"
+      }
+    },
+    {
+      "key": "oteryn:npc.rosemarie",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Flowers are one of the most beautiful gifts that Crunor blessed us with.\",\"yell\":false},{\"text\":\"Celebrate life and nature!\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/rosemarie.lua",
+        "line": 22,
+        "sha256": "e96bd8db17c9fa763a6e38a7dffa1df0f3e02f09110f4b13b32accfecd58aa84"
+      }
+    },
+    {
+      "key": "oteryn:npc.gunther",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"They have to believe me!\",\"yell\":false},{\"text\":\"What a mess.\",\"yell\":false},{\"text\":\"Oh my!\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/gunther.lua",
+        "line": 27,
+        "sha256": "3499c98ecdbcd9fedce939544d608c60c8532daed3ccb7f30bee25df7c249871"
+      }
+    },
+    {
+      "key": "oteryn:npc.grumpy_stone",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"That's annoying!\",\"yell\":false},{\"text\":\"Their backs are itching!\",\"yell\":false},{\"text\":\"Grrr... We would need a pair of hands.\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/grumpy_stone.lua",
+        "line": 21,
+        "sha256": "de0740cf81fed12bbeccabd6ee38c1d649d5c4f0e79c7c4658fbc91826db7b95"
+      }
+    },
+    {
+      "key": "oteryn:npc.enpa_deia_pema",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Peace is the true path.\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/enpa_deia_pema.lua",
+        "line": 26,
+        "sha256": "d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5"
+      }
+    },
+    {
+      "key": "oteryn:npc.allen",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Hey, need some furniture for your house? Come to the Plank and Treasurechest Market!\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/allen.lua",
+        "line": 26,
+        "sha256": "515b0efdd681a6764856f1ec146be1ffe7ccb06912c6c77338214cc038564ce7"
+      }
+    },
+    {
+      "key": "oteryn:npc.maria",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Any time's a good time to buy some furniture!\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-crystal/npc/maria.lua",
+        "line": 26,
+        "sha256": "7395db9bd94c82cef23874532fd633a006bcd007fb7e9ad0eb446a2bdc46ad4b"
+      }
+    }
+  ],
+  "bankers": [
+    {
+      "key": "oteryn:npc.atur",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/atur.lua",
+        "line": 70,
+        "sha256": "f7ca11d75b4f5281b224c5d6e31f128747f5f0ef83bc325d46fd3e075d1323f2"
+      }
+    },
+    {
+      "key": "oteryn:npc.ebenizer",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/ebenizer.lua",
+        "line": 70,
+        "sha256": "370ada2345ca68b79f6ffba7cc4278ecf4aeeeece8e72338c673e1e5c7db9f29"
+      }
+    },
+    {
+      "key": "oteryn:npc.eighty",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/eighty.lua",
+        "line": 65,
+        "sha256": "432514d8a6c365a8240af133cf9c7fbc825b27f69d1d05ed62670a50ff63720f"
+      }
+    },
+    {
+      "key": "oteryn:npc.elgar",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/elgar.lua",
+        "line": 75,
+        "sha256": "844be1ba3a6f1995b5b6f444011be6d03adfbd633bbe955495001dd718c7a3e3"
+      }
+    },
+    {
+      "key": "oteryn:npc.eva",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/eva.lua",
+        "line": 70,
+        "sha256": "6164bbb612615bf2388397e5278ab30ca39996955b20b8608385b5f473e92a15"
+      }
+    },
+    {
+      "key": "oteryn:npc.ferks",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/ferks.lua",
+        "line": 70,
+        "sha256": "76d3cb76b18e73b7283d38405107fed86eb156c20c2b8451153de1603104ebef"
+      }
+    },
+    {
+      "key": "oteryn:npc.finarfin",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/finarfin.lua",
+        "line": 65,
+        "sha256": "87fe5917576dc0d8ff120198dcae5d6b0259f502ee544cdcbd695f032a42150f"
+      }
+    },
+    {
+      "key": "oteryn:npc.gnomillion",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/gnomillion.lua",
+        "line": 70,
+        "sha256": "6c84c846bbf4843446ac68496a4a28d0b75d4eb4c4097f75ac75deb99600bfd6"
+      }
+    },
+    {
+      "key": "oteryn:npc.jefrey",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/jefrey.lua",
+        "line": 70,
+        "sha256": "48142cd635781809706fbf555f5bd9265a3bd94435649dcb63d679251881bb01"
+      }
+    },
+    {
+      "key": "oteryn:npc.jessica",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/jessica.lua",
+        "line": 70,
+        "sha256": "1106dacf55829be55c519237f78aa81eafd5941db4cb2a8d30249f3403790c94"
+      }
+    },
+    {
+      "key": "oteryn:npc.kaya",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/kaya.lua",
+        "line": 70,
+        "sha256": "5ccc9450e641e0f5c0814eef8984d5ed3f2fa6b4ad2ed15fda24ca750072cf16"
+      }
+    },
+    {
+      "key": "oteryn:npc.kepar",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/kepar.lua",
+        "line": 70,
+        "sha256": "e5d3a5cf1abd2ecc1fe66e4b767eb48db90e335d27fdc35e95a9650797c775a1"
+      }
+    },
+    {
+      "key": "oteryn:npc.lokur",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/lokur.lua",
+        "line": 69,
+        "sha256": "ba03c1ad5137b2e807a086b995a2c9cec02cb68bc3290be8644ef78e5e9cbb35"
+      }
+    },
+    {
+      "key": "oteryn:npc.murim",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/murim.lua",
+        "line": 74,
+        "sha256": "3db0e19380b8dd3e9224e51b05c4dc60718f794c9e0285e0607bfab9d325d20a"
+      }
+    },
+    {
+      "key": "oteryn:npc.muzir",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/muzir.lua",
+        "line": 70,
+        "sha256": "52020cc2a5f5ab055db887d94a5627ef520d15ed6bfaf8eaf0e0fdb4cf7f0544"
+      }
+    },
+    {
+      "key": "oteryn:npc.naji",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/naji.lua",
+        "line": 70,
+        "sha256": "79c88509b79575ab7504a2383d21391c20c4f6d13d3ef0344cda3d4ca4f70bf2"
+      }
+    },
+    {
+      "key": "oteryn:npc.raffael",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/raffael.lua",
+        "line": 70,
+        "sha256": "efcacee16fa679e1a19269ffd0edaae1d7368364a19ba89f2b50ba55d687f81b"
+      }
+    },
+    {
+      "key": "oteryn:npc.rokyn",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/rokyn.lua",
+        "line": 69,
+        "sha256": "8e5633880f08a6a782cd8c516c3b5be405597abf5ffc7f9ed18b747d1329f024"
+      }
+    },
+    {
+      "key": "oteryn:npc.siestaar",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/siestaar.lua",
+        "line": 70,
+        "sha256": "dc3cbddc1180bb8e6adafd0fea387801649602d15e8ce4b404d6f64157acbb80"
+      }
+    },
+    {
+      "key": "oteryn:npc.sissek",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/sissek.lua",
+        "line": 65,
+        "sha256": "b61aaf7af78377768724ceba49e22964085a75937d9d51c2fbeaff2ae7d3b657"
+      }
+    },
+    {
+      "key": "oteryn:npc.suzy",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/suzy.lua",
+        "line": 70,
+        "sha256": "40f0b19dbe0c8ff675297f5229f3a881a845fc7e06f80cc3e42e1e0ba96379d6"
+      }
+    },
+    {
+      "key": "oteryn:npc.tesha",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/tesha.lua",
+        "line": 70,
+        "sha256": "d54a88eb8f4eb3111867c27ea2a94de80eaca2af3aad271c34456a6379ec340b"
+      }
+    },
+    {
+      "key": "oteryn:npc.virgil",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/virgil.lua",
+        "line": 70,
+        "sha256": "5faef262d32af645dd33ec2f035bd2c312abe20a20a42e176ad0efffaf1ecc9a"
+      }
+    },
+    {
+      "key": "oteryn:npc.znozel",
+      "evidence": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/npc/znozel.lua",
+        "line": 65,
+        "sha256": "5b8fbddd6628c16900fa9f4824df7ffaff109f1d086ee0efd65a2ffca4790d5a"
+      }
+    },
+    {
+      "key": "oteryn:npc.wentworth",
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/wentworth.lua",
+        "line": 172,
+        "sha256": "ba1e819f83de9f4bef500288ae6b680b03ba10a9ee51c5481bd1e6b330424d4c"
+      }
+    }
+  ],
+  "walkers": [
+    {
+      "key": "oteryn:npc.wyrdins_apprentice",
+      "interval_ms": 2000,
+      "radius_tiles": 2,
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.base_speed",
+          "value": {
+            "type": "Integer",
+            "value": 55
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.floor_change",
+          "value": {
+            "type": "Boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:npc.taya",
+      "interval_ms": 2000,
+      "radius_tiles": 2,
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.base_speed",
+          "value": {
+            "type": "Integer",
+            "value": 55
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.floor_change",
+          "value": {
+            "type": "Boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:npc.fernlor",
+      "interval_ms": 2000,
+      "radius_tiles": 1,
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.base_speed",
+          "value": {
+            "type": "Integer",
+            "value": 55
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.floor_change",
+          "value": {
+            "type": "Boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:npc.captain_coohan",
+      "interval_ms": 2000,
+      "radius_tiles": 1,
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.base_speed",
+          "value": {
+            "type": "Integer",
+            "value": 55
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.floor_change",
+          "value": {
+            "type": "Boolean",
+            "value": false
+          }
+        }
+      ],
+      "evidence": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/captain_coohan.lua",
+        "line": 10
+      }
+    }
+  ],
+  "free_blessings": [
+    {
+      "service": "oteryn:service.blessing.the_spiritual_shielding",
+      "npcs": [
+        "oteryn:npc.norf"
+      ],
+      "evidence": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/norf.lua",
+          "line": 52,
+          "sha256": "81f40f3b23e92face3a072131230636d2ca00779a180ab5d59c7d141c448f239"
+        }
+      ]
+    },
+    {
+      "service": "oteryn:service.blessing.the_embrace_of_tibia",
+      "npcs": [
+        "oteryn:npc.humphrey"
+      ],
+      "evidence": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/humphrey.lua",
+          "line": 57,
+          "sha256": "88460c236b5d2e26da2ea58d90bf257a183beb8ce5c1dbd4c05c25bf23e1d657"
+        }
+      ]
+    },
+    {
+      "service": "oteryn:service.blessing.the_fire_of_the_suns",
+      "npcs": [
+        "oteryn:npc.edala"
+      ],
+      "evidence": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/edala.lua",
+          "line": 81,
+          "sha256": "8cd61297cfff3e4e2fd5962072b546baee47f08f33fd73d80d712712fce69cb0"
+        }
+      ]
+    },
+    {
+      "service": "oteryn:service.blessing.the_spark_of_the_phoenix",
+      "npcs": [
+        "oteryn:npc.pydar"
+      ],
+      "evidence": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/pydar.lua",
+          "line": 57,
+          "sha256": "8803cefb49bbcea2e38c3bcb5f8092a1577f071648a6a243613d5396126adccf"
+        }
+      ]
+    },
+    {
+      "service": "oteryn:service.blessing.twist_of_fate",
+      "npcs": [
+        "oteryn:npc.alia",
+        "oteryn:npc.amanda",
+        "oteryn:npc.azalea",
+        "oteryn:npc.brewster",
+        "oteryn:npc.cedrik",
+        "oteryn:npc.ferus",
+        "oteryn:npc.iptar_sin",
+        "oteryn:npc.kasmir",
+        "oteryn:npc.kjesse",
+        "oteryn:npc.lorietta",
+        "oteryn:npc.maealil",
+        "oteryn:npc.ninev",
+        "oteryn:npc.prezil",
+        "oteryn:npc.quentin",
+        "oteryn:npc.yberius",
+        "oteryn:npc.zedrulon_the_fallen"
+      ],
+      "evidence": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/alia.lua",
+          "line": 65,
+          "sha256": "b31f3b75e0ad4da3e5ad66fd38bbd7ec6d7f9d0df6e6d83ff0b378f245bacc5f"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/amanda.lua",
+          "line": 96,
+          "sha256": "cc3966a55593a16474ae977428c473c4848da915ddfbeda68e899161ce4078e4"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/azalea.lua",
+          "line": 338,
+          "sha256": "8ad920e8a534b8bfb1e11ec988182b2566b07e37a6d879570548660a3be251e3"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/brewster.lua",
+          "line": 80,
+          "sha256": "4cc0aa73b47b6150286d63cd3b029e0ac2e1b4d30bf2070c904b3d7191a94f44"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/cedrik.lua",
+          "line": 65,
+          "sha256": "cf1ae68c911c6177cc97f1f36681d5cbf4180e82ba8fffb7d84ce942f703ae9e"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/ferus.lua",
+          "line": 65,
+          "sha256": "b29dc8b11fc77a5f4e5a8428a3c9db5ed81b1b496bc35b210442a3e01d3e7b6e"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/kasmir.lua",
+          "line": 65,
+          "sha256": "5f611512a3c82d924ba3fb4f88afc605b698bf8b94ec9b6e55e7c9a56cc17379"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/kjesse.lua",
+          "line": 338,
+          "sha256": "45487e7aaac4f0b1201bc32f3642d6bb26eca7cfd7a25a91ad689bf70b433b33"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/lorietta.lua",
+          "line": 65,
+          "sha256": "63b0ae1ed9dc34da04eaddd016534b3a6e0a83a9d4853cc6526599c0fe14dd84"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/maealil.lua",
+          "line": 60,
+          "sha256": "92db5ae85d28f62de5409cbe7ae2a75b7f11714ed187006e09abdd2f1f576a13"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/ninev.lua",
+          "line": 101,
+          "sha256": "1c296cd65e3334bda30eeea60c2b310b8b478d4c33714c32288478b530bd72a9"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/prezil.lua",
+          "line": 60,
+          "sha256": "cd5a6632f1831e7fa1b2b8d47da878d22b0270ee952c88c4059e7fba4d16fb24"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/quentin.lua",
+          "line": 96,
+          "sha256": "3c9d3cd6ebd0da74f92d7bf983eca827355e31854acc54efe0bec13f15804dbf"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/yberius.lua",
+          "line": 64,
+          "sha256": "e43a3b0f3d6d31a3fed05947fc1486145d306d9f4d01c89d5c67a71948048f02"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/zedrulon_the_fallen.lua",
+          "line": 65,
+          "sha256": "7555536190cca88dedb54bd9ac5b1b6f15bb7052dd787cf9dfb98d56b2a4d817"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/npc/iptar-sin.lua",
+          "line": 101,
+          "sha256": "45f2de22c2404d5d118edcc252e43c2d1042cd2af4cf0c59cc49eb308b3f4a19"
+        }
+      ]
+    }
+  ],
+  "phoenix_preparation": {
+    "npc": "oteryn:npc.kawill",
+    "service": "oteryn:service.blessing.phoenix_prerequisite",
+    "source": "opentibiabr/canary@47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/kawill.lua:50-55",
+    "rule": "Free persistent prerequisite only; Pydar consumes it atomically on paid blessing purchase."
+  },
+  "monk_promotions": [
+    "oteryn:npc.ishebad",
+    "oteryn:npc.enpa_rudra",
+    "oteryn:npc.emperor_rehal"
+  ]
+}

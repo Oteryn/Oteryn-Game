@@ -1,0 +1,12 @@
+{
+  "mechanic": "0290-cast-control",
+  "kind": "handlers",
+  "id": "0290-cast-control-moderate",
+  "status": "supported",
+  "commands": [
+    505
+  ],
+  "direction": "client_to_server",
+  "capability": 290,
+  "entry": "mod.rs::moderate"
+}

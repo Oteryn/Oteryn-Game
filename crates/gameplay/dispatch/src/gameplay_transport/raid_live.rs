@@ -196,7 +196,7 @@ fn dead_bosses(
 impl ComposedFreshAdmission<'_, '_, '_> {
     fn raid_bundle_digest(&self) -> Option<[u8; 32]> {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-            self.movement_cells.index()
+            self.movement_cells().index()
         else {
             return None;
         };
@@ -283,6 +283,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         seed: [u8; 32],
         now_ms: i64,
     ) -> Result<(), ()> {
+        // Actual machine step callbacks already parked their native slots.
+        // Resolve only after this wave's successful placement ACK, before death observation.
+        progress.seen_dead.extend(
+            self.extract_cake_machine_subjects(identity.firing_id)
+                .await?,
+        );
         let statuses = {
             let runtime = self.runtime.lock().await;
             if runtime.binding().scope_generation() != identity.generation {

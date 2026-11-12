@@ -1,6 +1,8 @@
 //! P12c: capture the same equipment and live skills that the production combat path consumes.
 //! No observation authorizes combat. Failure to refresh this read model never fails a swing.
 
+#[path = "cyclopedia_augments.rs"]
+mod augments;
 use super::*;
 use crate::durability::cyclopedia_character::combat::{CombatSnapshot, CombatSnapshotReceipt};
 use crate::gameplay_transport::equipment_move::equipment_effects_owner as equipment_owner;
@@ -93,6 +95,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?,
             equipment,
         };
+        let augments;
         {
             // Stats are best-effort. Never await another lock while holding the runtime lock.
             let runtime = self.runtime.lock().await;
@@ -162,6 +165,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             observation.offence(&mut snapshot.offence).map_err(|_| ())?;
             observation.defence(&mut snapshot.defence).map_err(|_| ())?;
             observation.misc(&mut snapshot.misc).map_err(|_| ())?;
+            let stages = if state.hunting_premium_current(now.get()) {
+                self.wheel_stages(
+                    session,
+                    vocation_key(facts.vocation),
+                    facts.level,
+                    state.wheel_promoted(),
+                )
+            } else {
+                Default::default()
+            };
+            augments = self
+                .capture_cyclopedia_augments(
+                    session,
+                    &snapshot.equipment,
+                    content,
+                    wheel.as_ref(),
+                    &stages,
+                )
+                .ok();
+
             snapshot
                 .misc
                 .set(Stat::Amplification, amplification_ppm(offence.boots_tier))
@@ -194,7 +217,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         self.root
-            .record_cyclopedia_combat(self.character, self.holder, fence, snapshot)
+            .record_cyclopedia_combat_with_augments(
+                self.character,
+                self.holder,
+                fence,
+                snapshot,
+                augments,
+            )
             .await
             .map_err(|_| ())
     }
@@ -319,6 +348,7 @@ impl Observation<'_> {
     }
 
     fn weapon(&self, out: &mut CombatStats) -> Result<(), TabWireError> {
+        let flat = level_base_damage_healing(self.state.character_facts().level);
         if let Some(loadout) = self.ranged {
             match loadout.damage {
                 ranged::RangedDamage::Magic { element, .. } => {
@@ -348,6 +378,12 @@ impl Observation<'_> {
                         },
                     )?;
                     if let Some(skill) = self.skill(4) {
+                        // Crystal protocolgame.cpp:5076-5085 reports the donor display formula.
+                        let (total_attack, raw_attack) =
+                            attack_totals(flat, total, skill, self.mode);
+                        out.set(Stat::AttackTotal, total_attack)?;
+                        out.set(Stat::AttackFightMode, total_attack - raw_attack)?;
+                        out.set(Stat::AttackSkill, attack_skill(total, skill))?;
                         for (range, key) in (1..=7).zip([
                             Stat::Accuracy1,
                             Stat::Accuracy2,
@@ -375,8 +411,8 @@ impl Observation<'_> {
             }
         } else {
             let constants = AttackConstants::checked_in().ok_or(TabWireError)?;
-            let (attack, id) = match self.weapon {
-                SwingWeapon::Fists => (constants.fist.attack, 11),
+            let (attack, id, skill_index) = match self.weapon {
+                SwingWeapon::Fists => (constants.fist.attack, 11, 0),
                 SwingWeapon::Melee { attack, skill } => (
                     attack,
                     match skill.index() {
@@ -385,14 +421,20 @@ impl Observation<'_> {
                         3 => 10,
                         _ => 11,
                     },
+                    skill.index(),
                 ),
             };
             out.set(Stat::AttackEquipment, i64::from(attack))?;
             out.set(Stat::AttackSkillId, id)?;
             out.set(Stat::AttackElement, 0)?;
+            if let Some(skill) = self.skill(skill_index) {
+                // Crystal protocolgame.cpp:5114-5126,5142-5154 reports these display values.
+                let (total_attack, raw_attack) = attack_totals(flat, attack, skill, self.mode);
+                out.set(Stat::AttackTotal, total_attack)?;
+                out.set(Stat::AttackFightMode, total_attack - raw_attack)?;
+                out.set(Stat::AttackSkill, attack_skill(attack, skill))?;
+            }
         }
-        // AttackTotal/AttackSkill/FightMode are donor display-formula values. Native bounds
-        // are not the same quantity; leave them unknown rather than mislabeling max damage.
         Ok(())
     }
 
@@ -480,6 +522,27 @@ fn onslaught_ppm(weapon_tier: u8, boots_tier: u8) -> (i64, i64) {
         base,
         base * (1_000_000 + amplification_ppm(boots_tier)) / 1_000_000,
     )
+}
+
+/// Crystal 201189f8 player.cpp:542-576: (attackTotal, attackRawTotal).
+fn attack_totals(flat: i64, equipment: u32, skill: u32, mode: FightMode) -> (i64, i64) {
+    let factor: f32 = match mode {
+        FightMode::Offensive => 1.2,
+        FightMode::Balanced => 1.0,
+        FightMode::Defensive => 0.6,
+    };
+    let fight = f64::from((factor * equipment as f32).floor());
+    let skill_factor = f64::from(skill.saturating_add(4)) / 28.0;
+    (
+        (flat as f64 + fight * skill_factor) as i64,
+        (flat as f64 + f64::from(equipment) * skill_factor) as i64,
+    )
+}
+
+/// Crystal 201189f8 player.cpp:427-431 and :467-469.
+fn attack_skill(weapon_attack: u32, skill: u32) -> i64 {
+    let attack = f64::from(weapon_attack);
+    (attack * (f64::from(skill.saturating_add(4)) / 28.0) - attack) as i64
 }
 
 fn amplification_ppm(boots_tier: u8) -> i64 {

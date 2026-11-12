@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "quest_directory": "thais_lighthouse",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-ladder",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30004,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32276,
+            "floor": -8
+          },
+          "appearance": 351,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "thais_lighthouse",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "Dźwignia drabiny",
+      "patterns": "P01",
+      "trigger": "Use UID30004",
+      "condition": "2772 otwiera; pozostały stan zamyka",
+      "effect": "2772↔2773;351↔7767 na32225,32276,8",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:5"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Dźwignia portali: otwarcie",
+      "patterns": "P01/P03",
+      "trigger": "Use UID30005",
+      "condition": "item2772; gdy brak kompletnej pary1949",
+      "effect": "Tworzy1949 na32232,32276,9 i32225,32276,10;cele32225,32274,10 i32230,32276,9;lever2773",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:15"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Dźwignia portali: usuwanie",
+      "patterns": "P01",
+      "trigger": "Use UID30005",
+      "condition": "Komplet2portalów1949; stan2772 lub2773",
+      "effect": "Usuwa oba;przy2773 ustawia2772, przy2772 pozostawia2772",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:18"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nacisk schodów",
+      "patterns": "P01",
+      "trigger": "StepIn UID25010",
+      "condition": "Dowolne creature; stairs429 istnieje",
+      "effect": "429→7767 na32225,32282,9;trigger→430",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Zwolnienie schodów",
+      "patterns": "P01",
+      "trigger": "StepOut UID25010",
+      "condition": "stairs7767 istnieje",
+      "effect": "7767→429;trigger→431; brakStepOut wcallbackmodel",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

@@ -1,0 +1,10 @@
+name=cast
+commands=502,503,504,505
+transport=pub cast
+composed=cast
+authority=cast
+[route]
+match authority.cast_command(session.admitted, command.command_type, command.payload).await {
+    Some(payload) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload),
+    None => Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new()),
+}

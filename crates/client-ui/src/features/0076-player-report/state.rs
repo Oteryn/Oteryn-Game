@@ -1,0 +1,50 @@
+#[path = "state/reasons.rs"]
+mod reasons;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Intent {
+    Bug,
+    Violation,
+}
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Panel {
+    pub bug: BugDraft,
+    pub violation_reviewed: Option<Vec<u8>>,
+    pub violation_preview: String,
+    pub selected: bool,
+    pub open: bool,
+    pub pending: bool,
+    pub pending_kind: u32,
+    pub fields: [String; 5],
+    pub feedback: String,
+    pub summary: String,
+}
+impl Panel {
+    pub fn begin(&mut self, kind: u32) -> bool {
+        if !self.selected {
+            self.feedback = tr!("Unavailable in this session").into();
+            return false;
+        }
+        if self.pending {
+            self.feedback = tr!("Waiting for the server").into();
+            return false;
+        }
+        self.pending = true;
+        self.pending_kind = kind;
+        self.feedback.clear();
+        true
+    }
+    pub fn failed(&mut self, message: &str) {
+        self.pending = false;
+        self.feedback = message.into();
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct BugDraft {
+    pub open: bool,
+    pub category: u8,
+    pub fields: [String; 3],
+    pub reviewed: Option<Vec<u8>>,
+    pub preview: String,
+}

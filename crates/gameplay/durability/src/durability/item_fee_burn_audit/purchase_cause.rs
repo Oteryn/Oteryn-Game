@@ -11,9 +11,20 @@ pub struct OneItemNpcPurchaseV1 {
     pub atelier_proof: Vec<u8>,
 }
 
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemQuestRewardPaymentV1 {
+    #[prost(message, optional, tag="1")]
+    pub purchase: Option<OneItemNpcPurchaseV1>,
+    #[prost(uint64, tag="2")]
+    pub fee_gold_units: u64,
+    #[prost(bool, tag="3")]
+    pub include_bank: bool,
+}
+
 pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     if let Some(
-        FeeBurnCauseV1::HirelingService(cause)
+        FeeBurnCauseV1::ArenaEntry(cause)
+        | FeeBurnCauseV1::HirelingService(cause)
         | FeeBurnCauseV1::PromotionPurchase(cause)
         | FeeBurnCauseV1::BlessingPurchase(cause)
         | FeeBurnCauseV1::NpcTravel(cause)
@@ -27,6 +38,17 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::QuestRewardPayment(cause))
+            if cause.fee_gold_units == value.fee_gold_units
+                && (1..=1_000_000_000_000).contains(&cause.fee_gold_units)
+                && (cause.include_bank || value.bank_debit.is_none()) => {
+            let purchase = cause.purchase.as_ref().ok_or(AuditError::InvalidInput)?;
+            if !purchase.service_key.starts_with("oteryn:quest-reward/") || purchase.service_key.len() > 128 { return Err(AuditError::InvalidInput); }
+            check_content_key(&purchase.service_key)?;
+            if purchase.atelier_proof.is_empty() { return Err(AuditError::InvalidInput); }
+            super::atelier_cause::check_switch(purchase, value)
+        }
+        Some(FeeBurnCauseV1::ArenaEntry(cause)) if cause.service_key == "oteryn:service.svargrond-arena.entry" && super::super::arena_match::donor::FEES.contains(&value.fee_gold_units) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::BosstiarySlot(cause))
             if cause.service_key == "oteryn:bosstiary.slot_remove"
                 && (100000..=76000000).contains(&value.fee_gold_units)
@@ -62,7 +84,7 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             check_uuid_v7(&cause.occurrence)
         }
         Some(FeeBurnCauseV1::AreaDonation(cause))
-            if cause.area == 1
+            if (1..=1024).contains(&cause.area)
                 && cause.world == value.world_id
                 && (1..=10_000_000).contains(&value.fee_gold_units) =>
         {

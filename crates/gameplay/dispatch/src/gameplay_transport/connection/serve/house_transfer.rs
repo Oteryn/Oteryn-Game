@@ -51,8 +51,16 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     write_frame(stream, &result)
         .await
         .map_err(|_| ServeEnd::Disconnected)?;
+    if next.is_some()
+        && session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        // A House has no Channel cadence: leaving the sound zone must stop its loop now.
+        refresh::ambient_sound(stream, session, 0).await?;
+    }
     match next {
-        Some(next) => Err(ServeEnd::Transferred(Box::new(next))),
+        Some(_) => Err(ServeEnd::Transferred(Box::new(session.admitted))),
         None => Ok(()),
     }
 }
@@ -180,13 +188,17 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 frame,
                 arrived_while_buffered,
                 buffered_original,
+                ..
             } = match event {
                 house_hireling::step::Event::Services => {
                     services.tick(stream, authority, &mut admitted).await?;
+                    house_hireling::step::services_completed(&mut service_cadence);
                     continue;
                 }
                 house_hireling::step::Event::Probe => {
-                    let probe = liveness.tick().map_err(|_| ServeEnd::ControlLost)?;
+                    let probe = liveness
+                        .tick()
+                        .map_err(|_| ServeEnd::ControlLost("house_transfer"))?;
                     let frame = encode_liveness_probe(generation, probe)
                         .map_err(|_| ServeEnd::Disconnected)?;
                     write_frame(stream, &frame)
@@ -253,7 +265,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && selected.command_selected(command.command_type)
                 && matches!(
                     command.command_type,
-                    COMMAND_TYPE_HOUSE_TRANSFER | oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                    COMMAND_TYPE_HOUSE_TRANSFER
+                        | oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                        | oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
                 )
                 && super::super::gameplay_idle::meaningful(command, selected.as_slice());
             let mut effects = None;
@@ -346,7 +360,17 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 admitted.continuity.gameplay_idle.activity(activity_at);
             }
             authority.observe_gameplay_idle(admitted);
-            if matches!(effects, Some(Dispatch::Logout(LogoutResult::Accepted))) {
+            if matches!(
+                effects,
+                Some(
+                    Dispatch::Logout(LogoutResult::Accepted)
+                        | Dispatch::ServerModal(
+                            crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(
+                                _
+                            )
+                        )
+                )
+            ) {
                 // The native release already committed. A failed final write
                 // remains a logout, never a second control-loss transition.
                 if write_frame(stream, &result).await.is_ok()

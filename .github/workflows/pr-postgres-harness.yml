@@ -17,13 +17,15 @@ name: PR PostgreSQL harness
 # PostgreSQL-backed library tests), each on its own runner at the same time
 # (CI-OPT-11: the two use different feature sets, so one job built them one
 # after the other); the partition jobs only download the archives and run
-# them against PostgreSQL, so nothing is compiled twice and the twelve
+# them against PostgreSQL, so nothing is compiled twice and the twenty-four
 # planned partitions together run every test exactly once.
 #
-# OTERYN_SELF_HOSTED_PG=on runs all twelve partitions on Molehill; split runs
-# partitions 1-4 on Molehill and 5-12 on ubuntu-24.04. Off or unset runs all
-# partitions hosted. Molehill uses a throwaway native PostgreSQL 18 cluster
-# per job instead of the hosted service container; turn it off when offline.
+# OTERYN_SELF_HOSTED_PG=on runs all twenty-four partitions on Molehill; split runs
+# partitions 1-4 on Molehill and 5-24 on ubuntu-24.04. Off or unset runs all
+# partitions hosted. auto and auto-split act as on and split only while the
+# Molehill heartbeat (OTERYN_MOLEHILL_SEEN) is fresh, so an offline PC falls
+# back to hosted. Molehill uses a throwaway native PostgreSQL 18 cluster
+# per job instead of the hosted service container.
 # Forks and Dependabot always stay hosted. The build job stays hosted: the
 # test binaries embed its workspace path at compile time, so a Molehill
 # partition exposes a checkout of the same head at that path (one head at a
@@ -71,8 +73,37 @@ jobs:
       lib_sha256: ${{ steps.digest.outputs.lib_sha256 }}
       workspace: ${{ steps.digest.outputs.workspace }}
       empty: ${{ steps.scope.outputs.empty }}
+      pg_runner_mode: ${{ steps.route.outputs.mode }}
     # No database here: this job verifies target custody and compiles once; the partition jobs run the tests.
     steps:
+      # Resolved once (e2e leg only) so every partition sees the same routing. auto and auto-split
+      # behave as on and split while the Molehill heartbeat (OTERYN_MOLEHILL_SEEN, Unix seconds,
+      # written every 5 minutes by the PC while a runner listener is alive) is at most 10 minutes
+      # old, and as off otherwise.
+      - name: Resolve Molehill routing
+        id: route
+        if: matrix.archive == 'e2e'
+        env:
+          MODE: ${{ vars.OTERYN_SELF_HOSTED_PG }}
+          SEEN: ${{ vars.OTERYN_MOLEHILL_SEEN }}
+          MAX_AGE: '600'
+        run: |
+          set -euo pipefail
+          now="$(date +%s)"
+          alive=false
+          if [[ "$SEEN" =~ ^[0-9]{9,11}$ ]] && (( now - SEEN >= -120 && now - SEEN <= MAX_AGE )); then
+            alive=true
+          fi
+          case "$MODE" in
+            on) mode=on ;;
+            split) mode=split ;;
+            auto) if [[ "$alive" == true ]]; then mode=on; else mode=off; fi ;;
+            auto-split) if [[ "$alive" == true ]]; then mode=split; else mode=off; fi ;;
+            *) mode=off ;;
+          esac
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Molehill routing: variable '${MODE:-unset}', heartbeat alive=$alive -> $mode"
+
       - name: Check out exact pull request head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -134,11 +165,19 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
-            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/nextest-bin"
-          tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
+            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          else
+            # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
+            # same pinned version from crates.io with its locked dependency set instead.
+            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
+            rustup toolchain install 1.99.1 --profile minimal --no-self-update
+            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
+          fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
       # mold 2.42.1 (released 2026-09-11), pinned by SHA-256. The archive steps link through its
@@ -152,7 +191,7 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/mold.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
             "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
           echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP"
@@ -339,20 +378,20 @@ jobs:
     name: PR early signal / Durability PostgreSQL harness
     needs: build
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ${{ ((vars.OTERYN_SELF_HOSTED_PG == 'on' || (vars.OTERYN_SELF_HOSTED_PG == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    runs-on: ${{ ((needs.build.outputs.pg_runner_mode == 'on' || (needs.build.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint planned share of both archives; together the twelve run every test once.
+    # Each partition runs a disjoint planned share of both archives; together the twenty-four run every test once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: false
       matrix:
-        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
     # An empty image skips the service container on Molehill, which starts its own cluster below.
     services:
       postgres:
-        image: ${{ !((vars.OTERYN_SELF_HOSTED_PG == 'on' || (vars.OTERYN_SELF_HOSTED_PG == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
+        image: ${{ !((needs.build.outputs.pg_runner_mode == 'on' || (needs.build.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
         env:
           POSTGRES_USER: oteryn_test_admin
           POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -524,7 +563,7 @@ jobs:
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
-          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 40 --retry-delay 15 --retry-all-errors --retry-max-time 600 --connect-timeout 30 -o "$archive" \
             "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
           echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/nextest-bin"
@@ -680,13 +719,82 @@ jobs:
           fi
           exit 0
 
+  node_boot:
+    name: PR heavy / Node boot against the real Platform
+    if: >-
+      github.event.pull_request.draft == false
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
+      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+    runs-on: ubuntu-24.04
+    # W20a's natural day and W20b's light decay run serially for almost two hours.
+    # Include build, the basic seam, World setup and the remaining journeys.
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify exact PR head SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+
+      # The qualification builds game-server in target/debug; protected-main artifacts make
+      # that build incremental. A cache hit never substitutes for running the qualification.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.event.pull_request.head.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/node_boot/run.sh
+          python3 tools/qualification/node_boot/test_diagnostics.py
+          logs="$RUNNER_TEMP/node-boot-failure-logs"
+          mkdir -p "$logs"
+          evidence="$logs/qualification-client.log"
+          NODE_BOOT_FAILURE_LOG_DIR="$logs" bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+
   # A non-heavy event may race with heavy-tests being added: check live labels.
   # If this head already has a passing non-heavy heavy-gate, that stale success
   # stays visible until the real run finishes. Do not enable auto-merge in that
   # window; wait for the real run or push after labelling.
   heavy_gate:
     name: heavy-gate
-    needs: [build, durability_postgres]
+    needs: [build, durability_postgres, node_boot]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -701,6 +809,7 @@ jobs:
           IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
           BUILD_RESULT: ${{ needs.build.result }}
           POSTGRES_RESULT: ${{ needs.durability_postgres.result }}
+          NODE_BOOT_RESULT: ${{ needs.node_boot.result }}
           REPOSITORY: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -721,7 +830,12 @@ jobs:
             exit 0
           fi
           if [[ "$IS_REAL_RUN" == 'true' ]]; then
-            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT"
+            echo "Heavy harness results: build=$BUILD_RESULT durability_postgres=$POSTGRES_RESULT node_boot=$NODE_BOOT_RESULT"
+            # Node boot is informational until NODEBOOT-CONTROL-LOST is fixed (owner decision
+            # 2026-11-09): it still runs and reports, but does not gate the merge.
+            if [[ "$NODE_BOOT_RESULT" != 'success' ]]; then
+              echo "::warning title=node boot (informational)::node_boot=$NODE_BOOT_RESULT"
+            fi
             [[ "$BUILD_RESULT" == 'success' && "$POSTGRES_RESULT" == 'success' ]]
             exit
           fi

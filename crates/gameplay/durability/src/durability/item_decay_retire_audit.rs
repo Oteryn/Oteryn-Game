@@ -586,6 +586,7 @@ mod tests {
             source: Some(OneItemProvenanceV1 {
                 typed_cause: LOOT_MINT_TYPED_CAUSE.into(),
                 death_occurrence: Some(CreatureDeathOccurrenceRefV1 {
+                    instance_id: None,
                     world_id: uuid(1),
                     channel_id: uuid(2),
                     scope_ownership_generation: 1,

@@ -21,6 +21,28 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
     ) -> BossActivityResult {
+        self.boss_activity_action(admitted, id, kind, payload, false)
+            .await
+    }
+
+    pub(super) async fn boss_activity_start(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        payload: &[u8],
+    ) -> BossActivityResult {
+        self.boss_activity_action(admitted, id, wire::COMMAND_TYPE_BOSS_LEVER, payload, true)
+            .await
+    }
+
+    async fn boss_activity_action(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+        difficulty_start: bool,
+    ) -> BossActivityResult {
         let malformed = || Some((CommandStatus::Rejected, Vec::new()));
         if id == 0
             || !admitted
@@ -36,9 +58,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return malformed();
         }
-        let Ok(intent) = wire::decode_boss_key(payload) else {
+        let Ok(mut intent) = wire::decode_boss_key(payload) else {
             return malformed();
         };
+        if let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key) {
+            intent.boss_key = canonical;
+        }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,
             admitted.item_fence,
@@ -71,7 +96,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return self.boss_activity_result(retained);
         }
-        {
+        let origin_pin = {
             let runtime = self.runtime.lock().await;
             if runtime.binding().runtime_scope() != fence.runtime_scope
                 || runtime.binding().scope_generation() != fence.scope_ownership_generation
@@ -82,39 +107,76 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             {
                 return malformed();
             }
-        }
+            ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
-            && oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
-                &intent.boss_key,
-            )
-            .is_some()
+            && super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some()
         {
             use oteryn_gameplay_encounters::bosses::endgame_entry::EntryRefusal;
-            return match self.endgame_boss_entry(admitted, payload).await {
-                Ok(Err(reason)) => refusal(match reason {
-                    EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
-                    EntryRefusal::Level => ActivityRefusal::Level,
-                    EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
-                        ActivityRefusal::AuthorityRejected
-                    }
-                    EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
-                }),
-                Err(CharacterProgressionError::AuthorityRejected) => {
-                    refusal(ActivityRefusal::AuthorityRejected)
+            match self.endgame_boss_entry(admitted, payload).await {
+                Ok(Err(reason)) => {
+                    return refusal(match reason {
+                        EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
+                        EntryRefusal::Level => ActivityRefusal::Level,
+                        EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
+                            ActivityRefusal::AuthorityRejected
+                        }
+                        EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
+                    });
                 }
-                // A successful destination must pass the real scope barrier.
-                // The unqualified endgame consumer cannot publish a handoff.
-                Ok(Ok(())) | Err(_) => None,
+                Err(CharacterProgressionError::AuthorityRejected) => {
+                    return refusal(ActivityRefusal::AuthorityRejected);
+                }
+                Ok(Ok(())) => {}
+                Err(_) => return None,
             };
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let Some(definition) = owner
-            .read_boss_room(self.character, self.holder, fence, &intent.boss_key)
+            .read_boss_room_with_pin(
+                self.character,
+                self.holder,
+                fence,
+                &intent.boss_key,
+                origin_pin,
+            )
             .await
             .ok()?
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !difficulty_start
+            && (oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&definition.boss_key)
+                .is_some()
+                || oteryn_protocol_oteryn::boss_difficulty::boss_maximum(
+                    &definition.boss_creature_key,
+                )
+                .is_some())
+        {
+            use oteryn_protocol_oteryn::boss_difficulty as difficulty;
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(difficulty::CAPABILITY_BOSS_DIFFICULTY_V1)
+            {
+                return refusal(ActivityRefusal::AuthorityRejected);
+            }
+            let request = difficulty::encode_request(&difficulty::Request::OpenWithProgress {
+                boss_key: intent.boss_key,
+            })
+            .ok()?;
+            let reply = self
+                .root
+                .boss_difficulty_command(self.character, self.holder, fence, id, &request)
+                .await
+                .ok()??;
+            return Some((CommandStatus::Accepted, reply));
+        }
         if kind != wire::COMMAND_TYPE_BOSS_LEVER {
             let Some(scope_owner) = self
                 .activity_runtimes
@@ -274,6 +336,21 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .contains(&participants.len())
         {
             return refusal(ActivityRefusal::PartyCount);
+        }
+        // Crystal 201189f boss_lever.lua:183-218 validates the entire lever
+        // roster. Endgame quest gates therefore apply to every participant.
+        if super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some() {
+            for participant in &participants {
+                let member = self
+                    .activity_runtimes
+                    .connection(participant.source.game_session_id)?;
+                match self.endgame_boss_entry(member, payload).await {
+                    Ok(Ok(())) => {}
+                    Ok(Err(_)) | Err(_) => {
+                        return refusal(ActivityRefusal::AuthorityRejected);
+                    }
+                }
+            }
         }
         let destination_content = {
             let runtime = destination.runtime.lock().await;

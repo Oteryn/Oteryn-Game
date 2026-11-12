@@ -304,7 +304,7 @@ pub(super) fn destination(
         .destination());
     }
     let p = origin.position();
-    let (dx, dy) = crate::domain::direction::CARDINAL_DIRECTION_DELTAS[direction as usize];
+    let (dx, dy) = direction.delta();
     Ok(MovementLocalPosition {
         x: p.x
             .checked_add(dx)
@@ -316,6 +316,29 @@ pub(super) fn destination(
     })
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Acquire before taking either Channel guard; only checkout is retryable.
+    pub(in crate::gameplay_transport) async fn acquire_field_step_pass(
+        &self,
+    ) -> Result<
+        crate::durability::IssuedSemanticPass,
+        crate::gameplay_transport::connection::AdmissionRefusal,
+    > {
+        // Retry only RootUnavailable. Keep transaction,
+        // field refusal and reconciliation results outside this retry scope.
+        super::super::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.root
+                    .try_issue_semantic_pass()
+                    .map_err(|error| match error {
+                        crate::durability::DurabilityError::RootUnavailable => {
+                            crate::gameplay_transport::connection::AdmissionRefusal::Unavailable
+                        }
+                        _ => crate::gameplay_transport::connection::AdmissionRefusal::Rejected,
+                    })
+            })
+            .await
+    }
+
     /// Runtime and state locks are held by the real transport caller. Ground
     /// advisory and SQL row locks remain held through the synchronous physical
     /// movement commit. This read-only transaction creates no cast command.
@@ -323,6 +346,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_with_field_ingress(
         &self,
         permit: &mut crate::durability::spell_owner_commit::SpellLanePermit,
+        pass: Result<
+            crate::durability::IssuedSemanticPass,
+            crate::gameplay_transport::connection::AdmissionRefusal,
+        >,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -341,7 +368,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return step_in_channel(
                 runtime,
                 states,
-                self.movement_cells,
+                self.movement_cells(),
                 actor,
                 session,
                 now_us,
@@ -350,7 +377,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 equipment_delta,
             );
         };
-        let Some(_room) = self.rooms.gate_field_step_ingress() else {
+        let Some(_room) = self.rooms().gate_field_step_ingress() else {
             return fail();
         };
         let Ok(origin) = runtime.read_actor_position(actor) else {
@@ -358,10 +385,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Preserve original accepted entry movement without inventing an empty
         // field owner. Field casts cannot qualify against its absent metadata.
-        if !crate::movement::source_floor_change::is_source_profile(self.movement_cells)
+        if !crate::movement::source_floor_change::is_source_profile(self.movement_cells())
             && matches!(
-                self.movement_cells.spell_tiles().lookup(
-                    self.movement_cells.scope(),
+                self.movement_cells().spell_tiles().lookup(
+                    self.movement_cells().scope(),
                     crate::content::LogicalCell {
                         x: origin.position().x,
                         y: origin.position().y,
@@ -374,7 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return step_in_channel(
                 runtime,
                 states,
-                self.movement_cells,
+                self.movement_cells(),
                 actor,
                 session,
                 now_us,
@@ -389,8 +416,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return fail();
         }
         let before = states.get(runtime, actor, session).cloned();
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return fail();
+        let pass = match pass {
+            Ok(pass) => pass,
+            Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable) => {
+                super::super::operator_event("event=step_rejected_holder_busy");
+                return fail();
+            }
+            Err(_) => return fail(),
         };
         // The physical result is retained before rollback/pool-return awaits.
         // Transaction cleanup failure cannot turn an actual movement commit
@@ -407,12 +439,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 game_session_id:session,connection_generation:current.current_connection_generation(),character_lease_generation:current.current_character_lease().generation(),runtime_scope:current.current_runtime_scope(),scope_ownership_generation:current.current_scope_generation(),
             };
             let source=owner.active_generation.and_then(|active|active.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;
-            let room=owner.rooms.gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
+            let room=owner.rooms().gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
             let objects=owner.door.lock().await;
-            let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells) {
+            let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells()) {
                 Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
             } else {None};
-            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells,actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
+            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells(),actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let player_fields_current = if read.items().iter().any(|item| item.field_origin.is_some() && source.item_policy(&item.definition.production_key, &item.definition.revision_ref).is_none_or(|policy| {
@@ -465,7 +497,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,None,None,None).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
                     if let Some(mut pending)=player.take() && outcome.as_ref().is_some_and(Result::is_ok) {
                         pending.retain_step_cooldowns(runtime,states);
                         let mut window=permit.open_commit_window(pending,super::player_field::park);

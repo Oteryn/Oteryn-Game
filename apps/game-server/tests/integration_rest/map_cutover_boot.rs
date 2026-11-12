@@ -32,6 +32,7 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
             kind,
             walkable,
             ground_speed: walkable.map(|_| 150),
+            blocks_projectile: None,
         }),
     };
     let item = |key: &str, id| PaletteEntry {

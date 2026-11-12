@@ -1,0 +1,413 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "formogar_mine_hoist",
+    "frozen_stage1": {
+      "total": 7,
+      "auto": 2,
+      "manual": 5
+    },
+    "authored_callback_definitions": 2,
+    "runtime_catalogue_callback_definitions": 2,
+    "runtime_exclusions": [],
+    "npc_source_files": 0,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Dwa stałe przejazdy zachowują oba warunki instrukcji.",
+    "left_out_summary": "Brak UID3059/3060/3061 i potwierdzonego writera Chest41310; dynamiczny przejazd nie został uproszczony."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 1,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262"
+      ],
+      "disposition": {
+        "row_id": "R8A001",
+        "original_index": 1,
+        "quest": "formogar_mine_hoist",
+        "step": "Brama instrukcji",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Brama instrukcji",
+          "pattern": "P03",
+          "trigger": "UID3059/3060/3061",
+          "condition": "Skeleton41309=1 AND Chest41310=1",
+          "effect": "Odmowa: powrót na fromPosition, komunikat, POFF",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "PARTIAL_CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Oba guardy instrukcji pozostają koniunkcją. Dwa stałe przejazdy są zachowane jako callback inputs; UID3059/3060/3061 nie mają natywnego bindingu. Writer Chest41310 jest nieodnaleziony, więc nie wolno otworzyć dostępu samym Skeleton41309.",
+        "missing_function": "Kwalifikacja rzeczywistych trzech UID oraz źródło nadania Chest41310; dynamiczny wybór środkowego przejazdu i prezentacja są osobnymi brakami, bez osłabienia guardu.",
+        "question_ids": [
+          "formorgar-chest-source",
+          "formogar_mine_hoist-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9"
+        ],
+        "evidence": [
+          "map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 2,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262"
+      ],
+      "disposition": {
+        "row_id": "R8A002",
+        "original_index": 2,
+        "quest": "formogar_mine_hoist",
+        "step": "Przejazd UID3059",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Przejazd UID3059",
+          "pattern": "P03",
+          "trigger": "StepIn UID3059",
+          "condition": "Obie instrukcje=1",
+          "effect": "Teleport32157,31125,10",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny stały teleport i dwa read-only guardy preserve są w source callback oraz bieżącym pliku danych. Pełny indeks native nie zawiera odpowiedniego UID; Chest41310 nadal nie ma odnalezionego producenta.",
+        "missing_function": "Źródłowo potwierdzony binding UID3059/3061 do natywnego map object oraz producent Chest41310; bez dopisywania pozycji lub zmiany wartości guardów.",
+        "question_ids": [
+          "formogar_mine_hoist-native-selectors",
+          "formorgar-chest-source"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-formogar_mine_hoist.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/formogar-hoist-3059",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 3,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262"
+      ],
+      "disposition": {
+        "row_id": "R8A003",
+        "original_index": 3,
+        "quest": "formogar_mine_hoist",
+        "step": "Przejazd UID3061",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Przejazd UID3061",
+          "pattern": "P03",
+          "trigger": "StepIn UID3061",
+          "condition": "Obie instrukcje=1",
+          "effect": "Teleport32157,31125,10",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny stały teleport i dwa read-only guardy preserve są w source callback oraz bieżącym pliku danych. Pełny indeks native nie zawiera odpowiedniego UID; Chest41310 nadal nie ma odnalezionego producenta.",
+        "missing_function": "Źródłowo potwierdzony binding UID3059/3061 do natywnego map object oraz producent Chest41310; bez dopisywania pozycji lub zmiany wartości guardów.",
+        "question_ids": [
+          "formogar_mine_hoist-native-selectors",
+          "formorgar-chest-source"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-formogar_mine_hoist.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/formogar-hoist-3061",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 4,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262"
+      ],
+      "disposition": {
+        "row_id": "R8A004",
+        "original_index": 4,
+        "quest": "formogar_mine_hoist",
+        "step": "Kierunek środkowego pomostu",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Kierunek środkowego pomostu",
+          "pattern": "P03/P01",
+          "trigger": "StepIn UID3060",
+          "condition": "Obie instrukcje=1; tile32156,31125,10 ma2772",
+          "effect": "Z2772:32157,31125,11; bez2772:32157,31125,9",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:18"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Źródło jawnie wybiera z11 lub z9 na podstawie obecności2772 na z10. UID3060 nie jest natywnie obecny; stały teleport nie zastępuje tego odczytu świata.",
+        "missing_function": "Zamknięty read-only odczyt obiektu2772 na32156,31125,10 i atomowy wybór celu w ownerze ruchu po zachowaniu obu guardów instrukcji.",
+        "question_ids": [
+          "formogar_mine_hoist-native-selectors",
+          "formorgar-chest-source"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589315262",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:18"
+        ],
+        "evidence": [
+          "map-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 5,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "row_id": "R8A005",
+        "original_index": 5,
+        "quest": "formogar_mine_hoist",
+        "step": "Prezentacja przejazdu",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Prezentacja przejazdu",
+          "pattern": "P03",
+          "trigger": "Udany przejazd",
+          "condition": "jak wyżej",
+          "effect": "TELEPORT na pozycji po przeniesieniu",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:25"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_PRESENTATION",
+        "reason": "Źródłowy efekt TELEPORT jest znany, ale obecne callback text/state nie deklarują emisji magic effect.",
+        "missing_function": "Emisja źródłowego efektu na pozycji po udanym przeniesieniu przez istniejący owner prezentacji/capability23.",
+        "question_ids": [
+          "batch4-feedback-presentation"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:25"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 6,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777"
+      ],
+      "disposition": {
+        "row_id": "R8A006",
+        "original_index": 6,
+        "quest": "formogar_mine_hoist",
+        "step": "Instrukcja ze szkieletu",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Instrukcja ze szkieletu",
+          "pattern": "P05",
+          "trigger": "Wspólna tabela quest_system2",
+          "condition": "Rekord FormorgarMinesHoistSkeleton",
+          "effect": "Źródło zapisu dostępu poza katalogiem; pełna kwalifikacja chest owner wymagana",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:295"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_MAP_AND_SHARED_OWNER",
+        "reason": "Źródło jest kompletne: config[20003] w quest_system2 daje2822 z pełną instrukcją i zapisuje41309. Handler wybiera config[item.uid] i rejestruje AID2001. Native capture nie przenosi unique; nie jest to nieznany writer Skeleton.",
+        "missing_function": "Kwalifikacja koniunkcji UID20003/AID2001 i istniejącego chest/grant ownera dla tekstowego2822 oraz jednorazowego zapisu Skeleton41309.",
+        "question_ids": [
+          "formorgar-chest-source",
+          "missing-unique-map-bindings"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:295",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:285-295",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:361-362"
+        ],
+        "evidence": [
+          "../Oteryn-Game/tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 7,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777"
+      ],
+      "disposition": {
+        "row_id": "R8A007",
+        "original_index": 7,
+        "quest": "formogar_mine_hoist",
+        "step": "Instrukcja ze skrzyni",
+        "original_row": {
+          "quest": "formogar_mine_hoist",
+          "step": "Instrukcja ze skrzyni",
+          "pattern": "P05",
+          "trigger": "NIEZNANE",
+          "condition": "Brak znalezionego writer FormorgarMinesHoistChest w przeszukanych scripts/startup",
+          "effect": "NIEZNANE; nie zastępować warunku samym Skeleton",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SOURCE_GAP",
+        "reason": "Nie odnaleziono instrukcji/obiektu nadającego FormorgarMinesHoistChest41310 w przypiętym donorze. Jest to rzeczywisty brak źródła producenta, nie brak adaptera.",
+        "missing_function": "Potwierdzone źródło nadania Chest41310 wraz z triggerem, guardem i obiektem; do tego czasu pełny guard pozostaje zamknięty.",
+        "question_ids": [
+          "formorgar-chest-source"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589129777"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          3
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

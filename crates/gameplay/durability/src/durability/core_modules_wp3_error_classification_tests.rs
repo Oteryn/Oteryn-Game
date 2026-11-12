@@ -9,7 +9,7 @@ struct Observations {
     formats: Arc<AtomicUsize>,
 }
 
-struct PayloadProbe(Observations);
+struct PayloadProbe(Observations, Option<&'static str>);
 
 impl Drop for PayloadProbe {
     fn drop(&mut self) {
@@ -33,6 +33,10 @@ impl fmt::Debug for PayloadProbe {
 impl std::error::Error for PayloadProbe {}
 
 impl sqlx::error::DatabaseError for PayloadProbe {
+    fn code(&self) -> Option<std::borrow::Cow<'_, str>> {
+        self.1.map(std::borrow::Cow::Borrowed)
+    }
+
     fn message(&self) -> &str {
         "redacted-test-database-error"
     }
@@ -57,7 +61,7 @@ impl sqlx::error::DatabaseError for PayloadProbe {
 #[test]
 fn sqlx_payload_is_classified_then_destroyed_without_formatting() {
     let seen = Observations::default();
-    let error = DurabilityError::from(sqlx::Error::Tls(Box::new(PayloadProbe(seen.clone()))));
+    let error = DurabilityError::from(sqlx::Error::Tls(Box::new(PayloadProbe(seen.clone(), None))));
 
     assert!(matches!(
         error,
@@ -75,6 +79,7 @@ fn database_commit_rejection_is_definitive_without_payload_retention() {
     let seen = Observations::default();
     let error = DurabilityError::from_commit_error(sqlx::Error::Database(Box::new(PayloadProbe(
         seen.clone(),
+        None,
     ))));
 
     assert!(matches!(error, DurabilityError::CommitRejected));
@@ -85,10 +90,40 @@ fn database_commit_rejection_is_definitive_without_payload_retention() {
 #[test]
 fn non_database_commit_error_stays_ambiguous_without_payload_retention() {
     let seen = Observations::default();
-    let error =
-        DurabilityError::from_commit_error(sqlx::Error::Tls(Box::new(PayloadProbe(seen.clone()))));
+    let error = DurabilityError::from_commit_error(sqlx::Error::Tls(Box::new(PayloadProbe(
+        seen.clone(),
+        None,
+    ))));
 
     assert!(matches!(error, DurabilityError::CommitOutcomeUnknown));
     assert_eq!(seen.drops.load(Ordering::SeqCst), 1);
     assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn bounded_statement_refusals_keep_commit_certainty_and_drop_payloads() {
+    for code in ["55P03", "57014", "25P04", "42501", "23505", "OTN02"] {
+        let seen = Observations::default();
+        let error = DurabilityError::from(sqlx::Error::Database(Box::new(PayloadProbe(
+            seen.clone(),
+            Some(code),
+        ))));
+        if matches!(code, "55P03" | "57014" | "25P04") {
+            assert!(matches!(
+                error,
+                DurabilityError::Database(SqlxFailureClass::RetryableStatement)
+            ));
+        } else {
+            assert!(matches!(
+                error,
+                DurabilityError::Database(SqlxFailureClass::Database(_))
+            ));
+        }
+        let committed = DurabilityError::from_commit_error(sqlx::Error::Database(Box::new(
+            PayloadProbe(seen.clone(), Some(code)),
+        )));
+        assert!(matches!(committed, DurabilityError::CommitRejected));
+        assert_eq!(seen.drops.load(Ordering::SeqCst), 2);
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+    }
 }

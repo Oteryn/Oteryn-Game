@@ -142,11 +142,11 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
 }
 
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {
-    let index = json(
+    let mut index = json(
         &read(&root.join("content/world/placements/index.json"))?,
         "placements index",
     )?;
-    let regions = index
+    let mut regions = index
         .get("shards")
         .and_then(Value::as_array)
         .ok_or_else(|| Error::Format("placements index has no shards".into()))?
@@ -165,6 +165,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
             None => Err(Error::Format("placements shard is not a path".into())),
         })
         .collect::<Result<Vec<_>, _>>()?;
+    crate::authored_props::apply(root, &mut index, &mut regions, selected)?;
     let mut families = Families::default();
     for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
         families.add_teleports(&shard)?;
@@ -185,6 +186,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
     }
     add_npc_families(root, &mut families)?;
     families.subareas = compile::subareas::Source::load(root)?;
+    families.layers = compile::layers::Source::load(root)?;
     Ok(Project {
         index,
         regions,

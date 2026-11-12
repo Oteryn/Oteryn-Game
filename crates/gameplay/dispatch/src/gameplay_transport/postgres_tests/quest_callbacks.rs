@@ -29,16 +29,136 @@ pub(super) fn source_world_choices(
     choices: &[(u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+    )
+}
+
+/// Preserve all source placements of one shared claim, including different rows.
+pub(super) fn source_world_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions_with_door(chest, choices, appearance, None)
+}
+
+pub(super) fn source_world_choices_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_positions_with_door(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+        native,
+    )
+}
+
+pub(super) fn source_world_positions_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let rows: Vec<_> = choices.iter().map(|(_, y, _)| (*y, appearance)).collect();
+    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows, native)
+}
+
+pub(super) fn source_world_rectangle(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix(chest, choices, appearance, height, 2, &[])
+}
+
+/// Preserve native top-level scenery preceding a reward object in its tile stack.
+pub(super) fn source_world_rectangle_with_prefix(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_rectangle_with_prefix_rows(
+        chest,
+        choices,
+        appearance,
+        height,
+        west,
+        prefix,
+        &[(chest.1, appearance)],
+    )
+}
+
+/// Several native cache rows may share the same appearance and column.
+pub(super) fn source_world_rectangle_with_prefix_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let positions: Vec<_> = choices
+        .iter()
+        .flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique)))
+        .collect();
+    source_world_rectangle_positions(
+        chest, &positions, appearance, height, west, prefix, rows, None,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture composes source geometry with the admitted door owner"
+)]
+fn source_world_rectangle_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_position_rows(
+        chest, choices, appearance, height, west, prefix, rows, native,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture composes source geometry with the admitted door owner"
+)]
+fn source_world_position_rows(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
-    data.manifest.world = bundle::Extent {
-        min_x: chest.0 / 32 * 32,
-        min_y: chest.1 / 32 * 32,
-        max_x: (chest.0 / 32 + 1) * 32,
-        max_y: (chest.1 / 32 + 1) * 32,
-        floors: vec![chest.2],
-    };
     // A terrain carrier is legal for a placed chest (the binder also validates
     // Item carriers). Its appearance and unique id must both match the shard.
     data.manifest.palette.truncate(1);
@@ -50,8 +170,69 @@ pub(super) fn source_world_choices(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
+    if let Some(native) = native {
+        let reference = native
+            .item_index()
+            .and_then(|index| {
+                index.definition_ref("Item", "oteryn:item.tibia.i5113", "definition-r1")
+            })
+            .ok_or("native reward door definition")?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:item.tibia.i5113".into(),
+            family: bundle::Family::Item,
+            id: reference.get() - 1,
+            terrain: None,
+        });
+    }
+    for appearance in prefix {
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id: u32::try_from(data.manifest.palette.len()).map_err(debug)?,
+            terrain: Some(bundle::Terrain {
+                blocks_projectile: None,
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
+    let mut row_palettes = Vec::new();
+    for (row, row_appearance) in rows {
+        let key = format!("oteryn:terrain.tibia.i{row_appearance}");
+        let palette = if let Some(index) = data
+            .manifest
+            .palette
+            .iter()
+            .position(|entry| entry.key == key)
+        {
+            u32::try_from(index).map_err(debug)?
+        } else {
+            let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key,
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    blocks_projectile: None,
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+            id
+        };
+        row_palettes.push((*row, palette));
+    }
+    for (_, y, _) in choices {
+        if !row_palettes.iter().any(|(row, _)| row == y) {
+            row_palettes.push((*y, 1));
+        }
+    }
+    let row_palettes = row_palettes.as_slice();
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -59,50 +240,102 @@ pub(super) fn source_world_choices(
     };
     let min_x = choices
         .iter()
-        .map(|(x, _)| *x)
+        .map(|(x, _, _)| x.saturating_sub(2))
         .min()
         .ok_or("source choices")?
-        .min(chest.0 - 2);
+        .min(chest.0 - west);
     let max_x = choices
         .iter()
-        .map(|(x, _)| *x)
+        .map(|(x, _, _)| *x)
         .max()
         .ok_or("source choices")?
         .max(chest.0);
-    let tiles = (min_x..=max_x)
-        .map(|x| sector::Tile {
-            x,
-            y: chest.1,
-            flags: 0,
-            house: 0,
-            zones: Vec::new(),
-            items: if let Some((_, unique)) = choices.iter().find(|(placed, _)| *placed == x) {
-                vec![
-                    ground(),
-                    sector::Item {
-                        palette: 1,
-                        depth: 0,
-                        attrs: sector::Attrs {
-                            unique: Some(*unique),
-                            ..Default::default()
+    let min_y = choices
+        .iter()
+        .map(|(_, y, _)| *y)
+        .min()
+        .ok_or("source choices")?
+        .min(chest.1);
+    let max_y = choices
+        .iter()
+        .map(|(_, y, _)| *y)
+        .max()
+        .ok_or("source choices")?
+        .max(chest.1 + height - 1);
+    data.manifest.world = bundle::Extent {
+        min_x,
+        min_y,
+        max_x: max_x + 1,
+        max_y: (max_y + 1).max(chest.1 + height),
+        floors: vec![chest.2],
+    };
+    let tiles = (min_y..(max_y + 1).max(chest.1 + height))
+        .flat_map(|y| {
+            (min_x..=max_x).map(move |x| sector::Tile {
+                x,
+                y,
+                flags: 0,
+                house: 0,
+                zones: Vec::new(),
+                items: if native.is_some() && x == chest.0 - 1 && y == chest.1 {
+                    vec![
+                        ground(),
+                        sector::Item {
+                            palette: 2,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                action: Some(10102),
+                                ..Default::default()
+                            },
                         },
-                    },
-                ]
-            } else {
-                vec![ground()]
-            },
+                    ]
+                } else if let Some((_, _, unique)) = choices
+                    .iter()
+                    .find(|(placed, py, _)| (*placed, *py) == (x, y))
+                    && let Some((_, row_palette)) = row_palettes.iter().find(|(row, _)| *row == y)
+                {
+                    std::iter::once(ground())
+                        .chain(prefix.iter().enumerate().map(|(index, _)| sector::Item {
+                            palette: u32::try_from(index + 2).expect("bounded fixture prefix"),
+                            depth: 0,
+                            attrs: sector::Attrs::default(),
+                        }))
+                        .chain(std::iter::once(sector::Item {
+                            palette: *row_palette,
+                            depth: 0,
+                            attrs: sector::Attrs {
+                                unique: (*unique != 0).then_some(*unique),
+                                ..Default::default()
+                            },
+                        }))
+                        .collect()
+                } else {
+                    vec![ground()]
+                },
+            })
         })
-        .collect();
-    let bytes = oteryn_world_bundle::writer::write(
-        &data.manifest,
-        &[bundle::Sector {
+        .collect::<Vec<_>>();
+    // The Demon Helmet source chest is one tile from a sector boundary; its
+    // approach tiles belong to the neighbouring sector. Preserve every tile's
+    // actual sector rather than assigning the whole fixture to the chest sector.
+    let mut grouped = std::collections::BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
+    for tile in tiles {
+        grouped
+            .entry((tile.x / 32, tile.y / 32))
+            .or_default()
+            .push(tile);
+    }
+    let mut sectors = grouped
+        .into_iter()
+        .map(|((sx, sy), tiles)| bundle::Sector {
             floor: chest.2,
-            sx: chest.0 / 32,
-            sy: chest.1 / 32,
+            sx,
+            sy,
             tiles,
-        }],
-        &Default::default(),
-    )?;
+        })
+        .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
+    let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
     crate::map::boot::boot(
@@ -111,21 +344,40 @@ pub(super) fn source_world_choices(
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: chest.0 - 1,
+                x: if native.is_some() {
+                    chest.0
+                } else {
+                    chest.0 - 1
+                },
                 y: chest.1,
                 floor: chest.2,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            use crate::content::{ReferenceItemField, ReferenceItemType};
+            let native = native?;
+            let policy = native.item_policy(key, "definition-r1")?.record();
+            Some(crate::map::facts::ItemDefinition {
+                reference: native
+                    .item_index()?
+                    .definition_ref("Item", key, "definition-r1")?,
+                solid: policy.attributes.blocks_movement,
+                blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
+                pickupable: matches!(&policy.semantics.physical, ReferenceItemField::Known(p)
+                    if p.pickupable == ReferenceItemField::Known(true)),
+                door: matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
+                    if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door)),
+            })
+        },
     )
     .map_err(debug)
 }
 
 #[test]
 fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> TestResult {
-    use crate::content::world_reward_claims::bind_embedded_reward_claims;
+    use crate::content::world_reward_claims::{LeftOut, bind_embedded_reward_claims};
     use std::collections::BTreeSet;
     let manifest: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -139,6 +391,28 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         .filter(|chest| chest["status"] != "not_playable")
         .map(|chest| chest["claim"].as_str().ok_or("claim"))
         .collect::<Result<_, _>>()?;
+    // Falcon's repeatable sources use the dedicated native handler, not the
+    // one-shot binder. Keep its closed runtime catalogue in the coverage proof.
+    let dedicated: BTreeSet<_> = oteryn_gameplay_quests::quest::falcon::CHESTS
+        .into_iter()
+        .map(|chest| chest.key())
+        .collect();
+    assert_eq!(dedicated.len(), 6);
+    let dedicated_refs: BTreeSet<_> = dedicated.iter().map(String::as_str).collect();
+    let declared_dedicated: BTreeSet<_> = supported
+        .iter()
+        .copied()
+        .filter(|key| key.starts_with(oteryn_gameplay_quests::quest::falcon::CLAIM_PREFIX))
+        .collect();
+    assert_eq!(declared_dedicated, dedicated_refs);
+    // Timed random chests have their own durable cycle owner; the generic
+    // once-claim binder must never admit them as ordinary once-only rewards.
+    let falcon_keys: Vec<_> = oteryn_gameplay_quests::quest::falcon::CHESTS
+        .into_iter()
+        .map(|chest| chest.key())
+        .collect();
+    let falcon: BTreeSet<_> = falcon_keys.iter().map(String::as_str).collect();
+    assert_eq!(falcon.len(), 6);
     for (unique, appearance, offset, bound) in [
         (6176, 2434, 0, true),
         (6177, 2434, 0, false),
@@ -154,8 +428,8 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
                 .any(|claim| claim.key.as_str() == CLAIM),
             bound
         );
-        // The manifest's supported set must match the actual existing binder,
-        // not a second interpretation of the authoring readiness fields.
+        // Cover both production owners, rather than interpreting readiness
+        // fields or allowing the once binder to bypass a timed cycle.
         let candidates: BTreeSet<_> = report
             .served
             .iter()
@@ -167,7 +441,18 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
                     .map(|placement| placement.claim.as_str()),
             )
             .collect();
-        assert_eq!(supported, candidates);
+        assert!(candidates.is_disjoint(&falcon));
+        for &claim in &falcon {
+            assert!(
+                report
+                    .left_out
+                    .iter()
+                    .any(|(key, reason)| { key == claim && *reason == LeftOut::Variant }),
+                "timed claim must remain excluded from the once binder: {claim}"
+            );
+        }
+        let all_candidates: BTreeSet<_> = candidates.union(&falcon).copied().collect();
+        assert_eq!(supported, all_candidates);
     }
     Ok(())
 }
@@ -188,7 +473,15 @@ pub(super) async fn wire_uses(
 
 pub(super) async fn wire_use_targets(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
+    mut admitted: AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
+    wire_use_targets_retained(owner, &mut admitted, commands).await
+}
+
+pub(super) async fn wire_use_targets_retained(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
     commands: &[(u64, &WorldObjectTarget)],
 ) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
@@ -239,7 +532,7 @@ pub(super) async fn wire_use_targets(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(
             async {
-                let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+                let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
                 drop(server);
                 end
             },
@@ -247,6 +540,12 @@ pub(super) async fn wire_use_targets(
         ),
     )
     .await?;
+    use crate::gameplay_transport::connection::ConnectionEnd;
+    if let ConnectionEnd::AdmittedThenDisconnected(next)
+    | ConnectionEnd::AdmittedThenClosed(next, _) = &end
+    {
+        *admitted = *next;
+    }
     results.map_err(|error| format!("{end:?}: {error}").into())
 }
 
@@ -277,18 +576,51 @@ fn quest_callbacks_bundle_chest_advances_quest_once_after_catalogue_admission() 
 }
 
 fn scenario(quest: bool) -> TestResult {
-    let (claim, chest, unique, appearance, reward, quantity) = if quest {
-        (
-            "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
-            (32582, 31405, -15),
-            6284,
-            2472,
-            "oteryn:item.tibia.i9019",
-            1,
-        )
-    } else {
-        (CLAIM, CHEST, 6176, 2434, "oteryn:item.tibia.i3031", 56)
-    };
+    scenario_with_definition_ready_claim(quest, None)
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum DefinitionReadyClaim {
+    RuneEmblem,
+    BloodHerb,
+}
+
+pub(super) fn scenario_with_definition_ready_claim(
+    quest: bool,
+    ready: Option<DefinitionReadyClaim>,
+) -> TestResult {
+    let definition_ready = ready.is_some();
+    let (claim, chest, unique, appearance, reward, quantity) =
+        if matches!(ready, Some(DefinitionReadyClaim::BloodHerb)) {
+            (
+                "oteryn:reward-claim.kv.bloodherb",
+                (32769, 31968, -7),
+                6111,
+                3634,
+                "oteryn:item.tibia.i3734",
+                1,
+            )
+        } else if definition_ready {
+            (
+                "oteryn:reward-claim.kv.adoreduh",
+                (33136, 31601, -15),
+                6025,
+                2469,
+                "oteryn:item.tibia.i11603",
+                1,
+            )
+        } else if quest {
+            (
+                "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+                (32582, 31405, -15),
+                6284,
+                2472,
+                "oteryn:item.tibia.i9019",
+                1,
+            )
+        } else {
+            (CLAIM, CHEST, 6176, 2434, "oteryn:item.tibia.i3031", 56)
+        };
     let transition =
         "oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest";
     let track = "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots";
@@ -304,6 +636,13 @@ fn scenario(quest: bool) -> TestResult {
             false,
         )
         .await?;
+        if definition_ready {
+            let server: String = sqlx::query_scalar("SELECT version()")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert!(server.starts_with("PostgreSQL "));
+            eprintln!("QENGINE2_DEFINITION_READY_SERVER {server}");
+        }
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -320,7 +659,9 @@ fn scenario(quest: bool) -> TestResult {
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let world = source_world(chest, unique, appearance, 0)?;
-        if quest {
+        // Blood Herb deliberately reaches literal USE without a preflight check:
+        // its regression must expose missing native admission at real dispatch.
+        if quest || matches!(ready, Some(DefinitionReadyClaim::RuneEmblem)) {
             let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
                 native,
                 &TypedDefinitionRef {
@@ -443,6 +784,26 @@ fn scenario(quest: bool) -> TestResult {
             placement,
             expected_revision: 0,
         };
+        if definition_ready {
+            let mut owner = deps.owner(&harness, &authority);
+            owner.active_generation = Some(generation);
+            owner.movement_cells = (&cells).into();
+            owner.admit_progression_session(&mut admitted).await;
+            deps.initialize(&owner).await;
+            let mut attempt = admitted;
+            let mut stale_fence = fence;
+            stale_fence.character_lease_generation += 1;
+            attempt.item_fence = Some(stale_fence);
+            assert_eq!(
+                wire_uses(&owner, attempt, &[1], &target).await?,
+                [UseDisposition::Rejected]
+            );
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(receipts, 0);
+        }
         if quest {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -455,7 +816,7 @@ fn scenario(quest: bool) -> TestResult {
             ] {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.quest_catalogue = catalogue;
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
@@ -494,7 +855,7 @@ fn scenario(quest: bool) -> TestResult {
         ] {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             if quest {

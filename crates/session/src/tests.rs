@@ -1,9 +1,43 @@
+#[path = "tests/account_achievements.rs"]
+mod account_achievements_tests;
+#[path = "tests/activity_handoff.rs"]
+mod activity_handoff_tests;
+#[path = "tests/analyser.rs"]
+mod analyser_tests;
 mod appearance_session_tests;
+#[path = "cast_chat/tests.rs"]
+mod cast_chat_tests;
+#[path = "features/0083-channel-list/tests.rs"]
+mod channel_list_tests;
+#[path = "container_tree_tests.rs"]
+mod container_tree_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;
+#[path = "features/0004-item-view-move/tests.rs"]
+mod item_movement_tests;
+#[path = "tests/property_services.rs"]
+mod property_services_tests;
+#[path = "tests/pvp_expert.rs"]
+mod pvp_expert_tests;
 #[path = "quest_log_transport/tests.rs"]
 mod quest_log_tests;
+#[path = "tests/replacement_snapshot.rs"]
+mod replacement_snapshot_tests;
+#[path = "features/0287-actor-spell-catalog/tests.rs"]
+mod spell_catalog_tests;
+#[path = "tests/status_projection_tests.rs"]
+mod status_projection_tests;
+#[path = "features/0064-target-move/tests.rs"]
+mod target_move_tests;
 include!("tutorial_notices_tests.rs");
+include!("presentation_tests.rs");
+#[path = "features/0011-world-interaction/tests.rs"]
+mod world_context_tests;
+#[path = "features/0019-world-light/tests.rs"]
+mod world_light_tests;
+#[path = "features/0026-world-weather/tests.rs"]
+mod world_weather_tests;
+include!("achievement_notices_tests.rs");
 include!("server_messages_tests.rs");
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
@@ -155,7 +189,24 @@ include!("session_tests_recovery.rs");
 include!("session_tests_combat_logout.rs");
 include!("session_tests_vitals.rs");
 include!("session_tests_capabilities.rs");
+include!("session_tests_market_details.rs");
+include!("session_tests_admission.rs");
+#[path = "property_services/house_transfer_tests.rs"]
+mod pc04_house_transfer;
+include!("session_tests_capability_movement.rs");
+include!("session_tests_capability_native.rs");
 include!("session_tests_push.rs");
 include!("session_tests_entities.rs");
 include!("session_tests_chat.rs");
+include!("session_tests_chat_messages.rs");
 include!("session_tests_items.rs");
+include!("session_tests_refusal_details.rs");
+include!("session_tests_browse_field.rs");
+
+include!("session_tests_player_trade.rs");
+
+#[path = "tests/gem_presentation_gated.rs"]
+mod gem_presentation_gated;
+
+#[path = "tests/wheel_presentation_gated.rs"]
+mod wheel_presentation_gated;

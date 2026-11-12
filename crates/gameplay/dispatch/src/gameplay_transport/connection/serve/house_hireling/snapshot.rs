@@ -17,8 +17,21 @@ impl State {
             && (enabled
                 || selected.contains(
                     oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
-                )) {
+                )
+                || selected.contains(CAPABILITY_ITEM_USE_V1)
+                || selected.contains(CAPABILITY_CONTAINER_TREE_V1)
+                || selected
+                    .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1))
+        {
             let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(
+                oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+            ) {
+                view = view.with_house_container_capacity();
+            }
+            if selected.contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1) {
+                view = view.with_map_view();
+            }
             if selected.contains(CAPABILITY_ITEM_EQUIP_DROP_V1) {
                 view = view.with_equip_drop();
             }
@@ -29,6 +42,9 @@ impl State {
         } else {
             None
         };
+        let mut world_map = selected
+            .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+            .then(|| SessionMapView::starting_after(admitted.continuity.world_map_revision));
         let mut payloads = Vec::new();
         let mut containers = None;
         if let Some(view) = items.as_mut() {
@@ -42,7 +58,20 @@ impl State {
             );
             if selected.contains(CAPABILITY_CONTAINER_TREE_V1) {
                 payloads.push(view.views_snapshot().map_err(|_| ServeEnd::Disconnected)?);
-                containers = Some(ContainerViewState::default());
+                let views = ContainerViewState::default();
+                containers = Some(if selected.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2) { views.with_house_container_capacity() } else { views });
+            }
+            if let Some(map) = world_map.as_mut() {
+                match authority
+                    .observe_house_map(*admitted, map, view)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?
+                    .map_err(|_| ServeEnd::Disconnected)?
+                {
+                    Some(MapUpdate::Snapshot(snapshot)) => payloads.push(snapshot),
+                    _ => return Err(ServeEnd::Disconnected),
+                }
+                admitted.continuity.world_map_revision = map.revision();
             }
             admitted.continuity.item_view = view.continuity();
         }
@@ -50,10 +79,10 @@ impl State {
         let mut visibility = None;
         let mut spatial_revision = admitted.continuity.spatial_revision;
         if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
-            let entities = authority
-                .observe_visible_entities(actor)
-                .await
-                .ok_or(ServeEnd::Disconnected)?;
+            let entities =
+                crate::gameplay_transport::entity_names::observe(authority, actor, selected)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?;
             let mut view = SessionVisibility::with_objects(items.is_some())
                 .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1));
             let (snapshot_type, payload) = appearances
@@ -148,11 +177,20 @@ impl State {
             });
             admitted.continuity.vitals_revision = revision;
         }
+        let spell_catalog = super::super::spell_catalog::SessionCatalog::initial(
+            authority,
+            actor,
+            admitted,
+            &mut payloads,
+        )
+        .await?;
         Ok((
             Self {
+                spell_catalog,
                 actor,
                 enabled,
                 items,
+                world_map,
                 containers,
                 visibility,
                 appearances,

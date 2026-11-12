@@ -281,3 +281,31 @@ fn a_lethal_hit_without_an_occurrence_writes_nothing() {
         Some((3, 3_000_000))
     );
 }
+
+#[test]
+fn pubproj_native_lethal_owner_retains_source_identity_in_death_work() {
+    use crate::durability::character_death::PublicDeathCause;
+    let (runtime, mut states, actor, session, _) = bitten_player(0x39, 5);
+    let cause = PublicDeathCause::creature("oteryn:creature.dragon", "Dragon")
+        .expect("native source identity");
+    let hit = states
+        .apply_creature_damage_kind_from(
+            &runtime,
+            actor,
+            session,
+            5,
+            crate::player_lethal::PlayerHitKind::Physical,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1),
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            Some(cause),
+        )
+        .expect("native lethal owner commit");
+    assert!(hit.death.is_some());
+    assert_eq!(
+        states
+            .player_death(&runtime, actor, session)
+            .expect("retained death")
+            .public_cause,
+        Some(cause)
+    );
+}

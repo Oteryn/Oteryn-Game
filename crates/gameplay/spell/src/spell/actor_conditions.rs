@@ -1,5 +1,8 @@
 //! Mutators of the real PlayerSpellState condition/vitals successor. The owning
 //! Channel transaction qualifies actors and commits its final revision once.
+mod item_actions;
+pub use item_actions::{stage_item_costume, stage_item_health_loss, stage_quest_disguise};
+
 use super::cast::PlayerSpellState;
 use super::combat_batch::OwnerCombatChange;
 use super::executable_catalog::EffectProfile;
@@ -640,6 +643,8 @@ pub fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     }
     state.regen_health_ms = 0;
     state.regen_mana_ms = 0;
+    state.regen_health_carry = 0;
+    state.regen_mana_carry = 0;
     state.regeneration_next_tick_us = None;
     state.soul_window = None;
     if let Some(monk) = state.monk.as_mut() {
@@ -713,7 +718,19 @@ pub fn stage_typed_hit_in_world(
     let magnitude = state
         .after_player_block(magnitude, kind, bonus.shielding, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_preprocessed_player_hit(state, magnitude, now)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        true,
+        None,
+        if kind == crate::player_lethal::PlayerHitKind::Undefined {
+            HitDelivery::Undefined
+        } else {
+            HitDelivery::Ordinary
+        },
+    )
 }
 
 /// Same source block/final pipeline, at the destination already qualified by the
@@ -739,7 +756,19 @@ pub fn stage_typed_hit_at_position(
     let magnitude = state
         .after_player_block(magnitude, kind, bonus.shielding, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_preprocessed_player_hit(state, magnitude, now)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        true,
+        None,
+        if kind == crate::player_lethal::PlayerHitKind::Undefined {
+            HitDelivery::Undefined
+        } else {
+            HitDelivery::Ordinary
+        },
+    )
 }
 
 /// Numerical final HP stage for an independently qualified preprocessed hit. Dispatch
@@ -755,7 +784,15 @@ pub fn stage_preprocessed_player_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, true, true, None)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        true,
+        None,
+        HitDelivery::Ordinary,
+    )
 }
 
 pub(crate) fn stage_preprocessed_player_components(
@@ -773,7 +810,15 @@ pub(crate) fn stage_preprocessed_player_components(
     let total = primary
         .checked_add(secondary)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_hit(state, total, now, true, true, Some((primary, secondary)))
+    stage_hit(
+        state,
+        total,
+        now,
+        true,
+        true,
+        Some((primary, secondary)),
+        HitDelivery::Ordinary,
+    )
 }
 
 /// Crystal creature.cpp:842-845 excludes life drain from base mitigation while keeping
@@ -808,7 +853,15 @@ fn stage_incoming_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, true, false, None)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        true,
+        false,
+        None,
+        HitDelivery::Ordinary,
+    )
 }
 
 /// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
@@ -825,7 +878,22 @@ pub fn stage_agony_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, false, false, None)
+    stage_hit(
+        state,
+        magnitude,
+        now,
+        false,
+        false,
+        None,
+        HitDelivery::Ordinary,
+    )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum HitDelivery {
+    Ordinary,
+    DirectHealth,
+    Undefined,
 }
 
 fn stage_hit(
@@ -835,6 +903,7 @@ fn stage_hit(
     mitigated: bool,
     preprocessed: bool,
     components: Option<(u32, u32)>,
+    delivery: HitDelivery,
 ) -> Result<
     (
         PlayerSpellState,
@@ -851,6 +920,7 @@ fn stage_hit(
         return rejected();
     }
     let mut next = state.clone();
+    let direct_health = delivery == HitDelivery::DirectHealth;
     let mut remaining = magnitude;
     if mitigated
         && !preprocessed
@@ -884,6 +954,18 @@ fn stage_hit(
         } else {
             reduce(remaining)
         };
+        // Manual combat.md:276-278: only a live Drome status amplifies incoming
+        // combat damage. Arena CURRENT-HP effects use their direct successor.
+        remaining = state
+            .after_drome_incoming_bonus(remaining, now)
+            .ok_or(SpellCastDisposition::Rejected)?;
+    }
+    // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
+    // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.
+    // Crystal 201189f src/game/game.cpp:8142 excludes Undefined only from mana
+    // shield, while creature.cpp:842-845 retains baseline mitigation and the
+    // normal HP owner below retains reductions, Gift and the lethal lifecycle.
+    if (mitigated || direct_health) && delivery != HitDelivery::Undefined {
         let capacity = next
             .conditions
             .mana_shield_at(now)
@@ -908,7 +990,7 @@ fn stage_hit(
             next.conditions.remove_type(ConditionType::ManaShield);
         }
     }
-    if mitigated {
+    if mitigated || direct_health {
         next.apply_wheel_gift(remaining, now)?;
     }
     let damage = crate::ability::creature_bite::floor_creature_damage(next.health, remaining);
@@ -924,6 +1006,8 @@ fn stage_hit(
 
 #[cfg(test)]
 mod energy_ring_tests;
+#[cfg(test)]
+mod srvgap_c4_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1340,7 +1424,10 @@ mod tests {
         .unwrap();
         assert_eq!((state.health, state.mana), (120, 107));
         tick(&mut state, 10000, TickFacts::default()).unwrap();
-        assert_eq!((state.health, state.mana), (140, 121));
+        // Crystal201189f src/creatures/combat/condition.cpp:1348-1356,1385-1391:
+        // leaving PZ permits one pulse and resets each accumulator to zero;
+        // suppressed mana time never grants multiple retrospective pulses.
+        assert_eq!((state.health, state.mana), (140, 114));
         assert!(state.conditions.instances().is_empty());
         let revision = state.revision;
         clear_on_lifecycle(&mut state);
@@ -1538,7 +1625,7 @@ impl PlayerSpellState {
         if !self.conditions.accepts_time(now_us) {
             return rejected();
         }
-        Ok(self.conditions.invisible_at(now_us))
+        Ok(self.equipped_invisible || self.conditions.invisible_at(now_us))
     }
 }
 

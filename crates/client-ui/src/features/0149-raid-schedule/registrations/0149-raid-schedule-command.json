@@ -1,0 +1,15 @@
+{
+  "mechanic": "0149-raid-schedule",
+  "kind": "handlers",
+  "id": "0149-raid-schedule-command",
+  "status": "supported",
+  "commands": [
+    171
+  ],
+  "direction": "client_to_server",
+  "capability": 149,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "This panel has no persistent client settings."
+  }
+}

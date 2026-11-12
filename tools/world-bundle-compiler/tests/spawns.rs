@@ -40,6 +40,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(walkable),
             ground_speed: walkable.then_some(150).or(Some(0)),
+            blocks_projectile: None,
         }))
     }
 
@@ -426,7 +427,6 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         json!({"respawn":{"min_s":0,"max_s":1}}),
         json!({"respawn":{"min_s":2,"max_s":1}}),
         json!({"respawn":{"min_s":1,"max_s":0}}),
-        json!({"at_reset":{"chance":{"numerator":0,"denominator":1}}}),
         json!({"at_reset":{"chance":{"numerator":2,"denominator":1}}}),
         json!({"at_reset":{"chance":{"numerator":1,"denominator":0}}}),
         json!({"at_reset":{"chance":0.5}}),
@@ -445,6 +445,7 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
     for policy in [
         json!({"respawn":{"min_s":1,"max_s":2}}),
         json!({"at_reset":{"chance":{"numerator":1,"denominator":2}}}),
+        json!({"at_reset":{"chance":{"numerator":0,"denominator":1}}}),
     ] {
         let mut value: serde_json::Value = serde_json::from_slice(&shard(1, 0))?;
         value["records"][0]["declaration"]["points"][0]["boss_policy"] = policy;
@@ -468,6 +469,71 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         let mut malformed = table.clone();
         malformed.sources[0].points[0].respawn_ms = 1000;
         assert!(spawn::validate(&malformed, &world()).is_err());
+        families
+            .creatures
+            .insert("oteryn:creature.rat".into(), creature("All", true, true));
+        assert!(
+            realize_spawns(&input(&regions, &palette, &families), &Resolver).is_err(),
+            "an explicit policy cannot admit an encounter-bound boss"
+        );
     }
+    Ok(())
+}
+
+#[test]
+fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
+    use oteryn_world_bundle_compiler::source;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut families = Families::default();
+    for shard in source::shards(&root.join("content/world/spawns"), "spawns-")? {
+        families.add_spawns(&shard)?;
+    }
+    let regions: std::collections::BTreeSet<_> = families
+        .spawns
+        .iter()
+        .flat_map(|source| &source.points)
+        .filter(|point| point.boss_policy.is_some())
+        .map(|point| (point.cell.0 / 256, point.cell.1 / 256))
+        .collect();
+    let regions: Vec<_> = regions.into_iter().collect();
+    let project = source::project_regions(&root, &regions)?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let (table, _) = realize_spawns(
+        &Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity: Identity::default(),
+            world: source::world_extent(&root)?,
+            build_class: BuildClass::NonProduction,
+            draft_areas: Vec::new(),
+            families: &project.families,
+        },
+        &registry,
+    )?;
+    let mut checked = 0;
+    for source in &project.families.spawns {
+        for point in source
+            .points
+            .iter()
+            .filter(|point| point.boss_policy.is_some())
+        {
+            let compiled = table
+                .sources
+                .iter()
+                .find(|row| row.key == source.key)
+                .ok_or("boss source dropped")?;
+            assert!(
+                compiled.points.iter().any(|row| row.x == point.cell.0
+                    && row.y == point.cell.1
+                    && i16::from(compiled.floor) == -i16::from(point.cell.2)
+                    && table.creatures[row.creature as usize].key == point.creature
+                    && row.boss_policy == point.boss_policy),
+                "boss point dropped: {}",
+                point.creature
+            );
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 27);
     Ok(())
 }

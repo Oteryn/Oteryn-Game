@@ -12,6 +12,8 @@ pub(super) struct ChannelBoot<'a> {
 }
 
 pub(super) struct PreparedChannel {
+    pub(super) soulpit_template:
+        Option<crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>,
     pub(super) activity_templates:
         Vec<crate::content::bosses::activity_template::QualifiedActivityRoomTemplate>,
     pub(super) active_content: ContentActivationController,
@@ -54,28 +56,7 @@ pub(super) async fn prepare_channel(
     let (active_content, content) =
         activate_content(root, material.world, material.channel, reset_epoch).await?;
     let qualified_room = content.qualified_room().clone();
-    let candidates = crate::content::bosses::activity_template::captured_boss_levers()
-        .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
-    let (activity_templates, activity_diagnostics) = active_content
-        .qualify_initial_activity_template(
-            &qualified_room,
-            &config.readiness.content_revision,
-            &candidates,
-        );
-    for diagnostic in activity_diagnostics {
-        event(&format!(
-            "event=activity_template state=unavailable source={} reason={:?}",
-            diagnostic.path, diagnostic.reason
-        ));
-    }
-    for template in &activity_templates {
-        event(&format!(
-            "event=activity_template state=qualified key={} revision={} source={}",
-            template.template_key(),
-            template.template_revision(),
-            template.source_path()
-        ));
-    }
+
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
@@ -86,8 +67,35 @@ pub(super) async fn prepare_channel(
     // MAP-CUTOVER-1b: a bundle World's Channel moves over the bundle from its configured start,
     // carries its map view in the movement cells and has no entry room: no door, chest, spell
     // or field qualification of the fixture room applies to it (§1.2).
+    // SP02 projects the committed reset day's physical map before any map owner is built.
+    let mut daily = match root
+        .world_changes(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::ContentActivation("durable world changes"))?
+    {
+        Some(day) => day,
+        None if reset_epoch == 0 => bootstrap_world_changes(),
+        None => return Err(BootError::Readiness("current world-change epoch")),
+    };
+    if reset_epoch != 0 {
+        root.world_change_calendar(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("world change calendar"))?;
+        let occurrence = root
+            .world_change_snapshot(material.world, reset_epoch)
+            .await
+            .map_err(|_| BootError::Readiness("world change snapshot"))?;
+        daily.fury_gates = occurrence.fury_gates;
+        daily.grimvale_full_moon = occurrence.grimvale_full_moon;
+        daily.their_masters_voice = occurrence.their_masters_voice;
+    }
     let bundle = bundle
-        .map(|checked| boot_bundle_world(checked, material.world, material.channel, gameplay))
+        .map(|checked| {
+            let checked = daily_world_changes::bind_layers(checked, &daily)
+                .map_err(BootError::WorldBundle)?;
+            let checked = daily_world_changes::prepare_map(checked, material.world, &daily);
+            boot_bundle_world(checked, material.world, material.channel, gameplay)
+        })
         .transpose()?;
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
@@ -125,6 +133,49 @@ pub(super) async fn prepare_channel(
         Some(world) => bundle_combat_room(&qualified_room, world, material.world, &movement_cells),
         None => Some(qualified_room.clone()),
     };
+    let soulpit_template = combat_room.as_ref().and_then(|room| {
+        match active_content
+            .qualify_soulpit_activity_template(room, &config.readiness.content_revision)
+        {
+            Ok(template) => Some(template),
+            Err(reason) => {
+                event(&format!(
+                    "event=soulpit_template state=unavailable reason={reason:?}"
+                ));
+                None
+            }
+        }
+    });
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers()
+        .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
+    let (activity_templates, activity_diagnostics) = if let Some(room) = combat_room.as_ref() {
+        active_content.qualify_initial_activity_template(
+            &qualified_room,
+            room,
+            &config.readiness.content_revision,
+            &candidates,
+        )
+    } else {
+        (Vec::new(), Vec::new())
+    };
+    crate::durability::activity_handoff::ActivityHandoffOwner::new(root.clone())
+        .publish_qualified_boss_rooms(proof, &activity_templates)
+        .await
+        .map_err(|_| BootError::ContentActivation("qualified activity catalogue publication"))?;
+    for diagnostic in activity_diagnostics {
+        event(&format!(
+            "event=activity_template state=unavailable source={} reason={:?} unavailable_source_hooks={:?}",
+            diagnostic.path, diagnostic.reason, diagnostic.unavailable_source_hooks
+        ));
+    }
+    for template in &activity_templates {
+        event(&format!(
+            "event=activity_template state=qualified key={} revision={} source={}",
+            template.template_key(),
+            template.template_revision(),
+            template.source_path()
+        ));
+    }
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
         None => crate::spell::cast::v1_spell_book()
@@ -247,15 +298,45 @@ pub(super) async fn prepare_channel(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    if daily.world_counters {
+        let cycles = oteryn_gameplay_world_change::counter::CounterKind::ALL
+            .into_iter()
+            .map(|kind| {
+                (
+                    kind.key().to_owned(),
+                    daily.counter_generations[kind.index()],
+                )
+            })
+            .collect();
+        channel_runtime
+            .install_world_change_cycles(daily.reset_epoch, cycles)
+            .map_err(|_| BootError::Readiness("world change counter projection"))?;
+    }
+    // W05d: only the reset owner's immutable annual decision activates actors.
+    // A later process restart cannot move the holiday or substitute a new clock.
+    let seasonal = root
+        .active_world_seasonal_events(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::Readiness("seasonal calendar binding"))?;
+    event(&format!(
+        "event=seasonal_calendar reset_epoch={reset_epoch} active={seasonal:?}"
+    ));
     // W05b: the server save's daily world changes, rolled once per reset epoch.
-    let unix_ms = crate::world_clock::now_utc_ms()
-        .and_then(|now| i64::try_from(now).ok())
-        .unwrap_or(0);
-    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
-    let daily_npcs = daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily);
+    let daily_npcs =
+        daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
+    if let Some(world) = &bundle {
+        crate::node::raid_scheduler::world_changes::project_map_parts(
+            world.facts(),
+            world.base(),
+            &daily,
+        )
+        .map_err(|_| BootError::Readiness("world change map projection"))?;
+    }
+    let daily_items = daily_world_changes::apply_items(bundle.as_ref(), &daily);
     event(&format!(
         "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
-         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs}",
+         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs} \
+         items={daily_items}",
         daily.reset_epoch,
         daily.thawing,
         daily.their_masters_voice,
@@ -263,7 +344,33 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon,
         daily.flower_month,
     ));
-    let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
+    let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot).with_seasonal(
+        npc_boot,
+        &seasonal,
+        |position| {
+            bundle.as_ref().is_some_and(|world| {
+                if (position.x, position.y, position.floor) == (33303, 32064, -7) {
+                    // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:470 force=true bypasses collision on
+                    // this exact source tile. A plain captured tile needs no
+                    // floor/teleport redirection; unresolved redirects refuse
+                    // qualification rather than silently placing incorrectly.
+                    world
+                        .base()
+                        .tile(position.x, position.y, position.floor)
+                        .is_some()
+                        && !world.floors().contains(position)
+                        && world.floors().teleport(position).is_none()
+                } else {
+                    world.enterable(position)
+                }
+            })
+        },
+    );
+    timed_npcs.set_brutus_present(
+        root.cake_brutus_present(material.world)
+            .await
+            .map_err(|_| BootError::Readiness("Cake Brutus projection"))?,
+    );
     // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
     // retried by the world tick (`supervision.rs` `timed_npc_loop`).
     if let Some(Err(error)) =
@@ -286,6 +393,8 @@ pub(super) async fn prepare_channel(
             (realized, u64::from(realized > 0))
         }
     };
+    crate::node::raid_scheduler::world_changes::project(&mut channel_runtime, &daily)
+        .map_err(|_| BootError::Readiness("world change spawn projection"))?;
     event(&format!(
         "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
     ));
@@ -297,6 +406,7 @@ pub(super) async fn prepare_channel(
         config.scope.preproduction_actor_capacity
     ));
     Ok(Some(PreparedChannel {
+        soulpit_template,
         activity_templates,
         active_content,
         qualified_room,
@@ -315,4 +425,42 @@ pub(super) async fn prepare_channel(
         timed_npcs,
         required_capabilities,
     }))
+}
+
+// Epoch zero has no committed day. Never manufacture a local activation roll here.
+fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
+    oteryn_gameplay_world_change::daily::DailyWorldChanges {
+        reset_epoch: 0,
+        fury_gates: None,
+        fury_exit: "fury_gates/abdendriel",
+        nightmare_isles: "nightmare_isle/ankrahmun-north",
+        thawing: false,
+        their_masters_voice: false,
+        oriental_trader: None,
+        grimvale_full_moon: false,
+        flower_month: false,
+        stampede: false,
+        fire_from_the_earth: false,
+        world_counters: false,
+        counter_stages: [0; 8],
+        counter_generations: [0; 8],
+        counter_progress: [[0; 3]; 8],
+        shared_used_sources_mask: 0,
+    }
+}
+#[cfg(test)]
+mod worldchg_bootstrap_tests {
+    #[test]
+    fn worldchg_bootstrap_uninitialized_epoch_has_no_activation() {
+        let day = super::bootstrap_world_changes();
+        for key in [
+            "thawing",
+            "their_masters_voice",
+            "oriental_trader",
+            "grimvale",
+            "stampede",
+        ] {
+            assert!(!oteryn_gameplay_world_change::owner::is_active(&day, key));
+        }
+    }
 }

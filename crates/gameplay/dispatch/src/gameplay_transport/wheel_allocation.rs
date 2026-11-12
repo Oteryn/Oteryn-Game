@@ -34,7 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return WheelAllocationReply::Rejected;
         };
-        let at_temple = {
+        {
             let runtime = self.runtime.lock().await;
             let binding = runtime.binding();
             if item_fence.game_session_id != admitted.game_session_id
@@ -73,33 +73,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return WheelAllocationReply::Rejected;
             }
-            self.rooms
-                .gate_source_world()
-                .filter(|room| {
-                    room.compiled().server_digest()
-                        == runtime.content_pin().server_artifact_digest()
-                })
-                .and_then(|room| room.source_world())
-                .is_some_and(|world| {
-                    runtime
-                        .positioned_player_for_session(admitted.game_session_id)
-                        .ok()
-                        .flatten()
-                        .is_some_and(|(_, snapshot)| {
-                            let position = snapshot.position();
-                            world.permits_wheel_removal(
-                                crate::content::LogicalCell {
-                                    x: position.x,
-                                    y: position.y,
-                                    z: i32::from(position.floor),
-                                },
-                                oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_HORIZONTAL_RANGE,
-                                oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_RADIUS,
-                            )
-                        })
-                })
-        };
+        }
         let session = admitted.game_session_id;
+        let Some(actor) = admitted.runtime_actor else {
+            return WheelAllocationReply::Rejected;
+        };
+        // Oteryn owner decision (2026-11-05), diverging from Crystal
+        // player_wheel.cpp:2151: removal/reset is allowed anywhere logout's combat
+        // lock does not hold the actor, including a current protection-zone tile.
+        let removal_permitted = removal_permitted(self, actor, session).await;
         let change = if request.action != 0 {
             let Ok(occurrence) =
                 crate::durability::character_wheel::WheelOccurrence::from_bytes(request.occurrence)
@@ -119,7 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             );
             Some(
-                self.commit_wheel_client(session, command, at_temple, Some(item_fence))
+                self.commit_wheel_client(session, command, removal_permitted, Some(item_fence))
                     .await,
             )
         } else {
@@ -135,7 +117,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(Err(
                 crate::durability::character_progression::CharacterProgressionError::InvalidInput
                 | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
-                | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence,
+                | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence
+                | crate::durability::character_progression::CharacterProgressionError::MissingProgressionState,
             )) => return WheelAllocationReply::Rejected,
             Some(Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
                 crate::durability::DurabilityError::RootUnavailable,
@@ -149,7 +132,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()
             .and_then(|sessions| sessions.get(&session).cloned().flatten());
         let Some(allocation) = allocation else {
-            return WheelAllocationReply::Unavailable;
+            // Admission defers this projection when progression or the root is not ready.
+            // A query has no outcome to reconcile, so refuse it without ending the stream.
+            return if request.action == 0 {
+                WheelAllocationReply::Rejected
+            } else {
+                WheelAllocationReply::Unavailable
+            };
         };
         if let Some(actor) = admitted.runtime_actor {
             self.refresh_wheel_vitals(actor, session).await;
@@ -219,3 +208,22 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+pub(super) async fn removal_permitted(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> bool {
+    let in_protection_zone = owner
+        .logout_zones(actor)
+        .await
+        .and_then(|zones| zones.protection_zone);
+    let fact = owner.combat_lock_fact(actor, session).await;
+    super::logout::in_fight_logout_retry(
+        fact.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked,
+        fact.pve_in_fight_until.map(|until| until.get()),
+        fact.sampled_at().get(),
+        in_protection_zone,
+    )
+    .is_none()
+}

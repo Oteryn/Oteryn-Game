@@ -17,7 +17,8 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
         // SPEED-1 (CONDITIONS-0 §4.3): every player step is paced. An early step waits in the
         // one-step buffer, without a result yet; one that arrived while the buffer was full is
         // refused and nothing moves.
-        match decode_step_intent(command.payload) {
+        match decode_step_intent_selected(session.selected_capabilities.as_slice(), command.payload)
+        {
             Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
             // STEP-PACE-WIRE-1: the receipt is the time left until the pacing clock is due,
             // after the buffered step ran; none when that step did not move.
@@ -101,7 +102,7 @@ where
             outcome.second_logout = session
                 .held
                 .iter()
-                .any(|(frame, _)| is_logout_command(frame, session.generation));
+                .any(|(frame, _, _)| is_logout_command(frame, session.generation));
             let mut logout =
                 std::pin::pin!(authority.logout_command(session.admitted, command.command_id));
             let reply = loop {
@@ -122,7 +123,9 @@ where
                     Ok(reply) => break reply,
                     Err(Ok(frame)) => {
                         outcome.second_logout |= is_logout_command(&frame, session.generation);
-                        session.held.push_back((frame, false));
+                        session
+                            .held
+                            .push_back((frame, false, tokio::time::Instant::now()));
                     }
                     Err(Err(_)) => outcome.lost_while_logging_out = true,
                 }

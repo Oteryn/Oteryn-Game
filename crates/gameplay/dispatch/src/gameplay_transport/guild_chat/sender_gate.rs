@@ -39,7 +39,13 @@ impl ChatRuntime {
         };
         entry
             .limiter
-            .pre_gate(speech_mode(*mode), now)
+            .pre_gate(
+                match speech_mode(*mode) {
+                    Some(mode) => mode,
+                    None => return Some(result(ChatDisposition::Rejected)),
+                },
+                now,
+            )
             .err()
             .map(refusal)
     }

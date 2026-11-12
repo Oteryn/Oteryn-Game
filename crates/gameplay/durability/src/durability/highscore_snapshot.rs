@@ -17,7 +17,6 @@ use super::db::commit_semantic_transaction;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, WorldId};
 use ranking::{RankingRow, ranked_lists};
-use serde::Serialize;
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -46,10 +45,10 @@ pub const CUT_CHARACTERS_MAX: usize = 50_000;
 pub const CUT_SOURCE_PAGE_ROWS: usize = 1_000;
 /// One keyset page of the cut's eligible Characters in CharacterId order. Its World range and
 /// order are an index range scan of `game_character_roots_highscore_world_character` (0129).
-pub const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
+pub const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
 /// One keyset page of the cut's account representatives in AccountId order. Its World range and
 /// order are an index range scan of `game_character_roots_highscore_world_account` (0129).
-pub const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
+pub const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
 
 /// The bounds of one World cut. Production uses [`CutLimits::REGISTERED`]; a fixture may only
 /// tighten them, never pass the registered hard maximums.
@@ -108,14 +107,26 @@ pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
     None
 }
 
-/// The highest category this server publishes and answers: 11 with an activated Charm point
-/// source, otherwise 10.
-pub fn served_categories() -> u8 {
-    if activated_charm_points().is_some() {
-        11
-    } else {
-        10
-    }
+/// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
+pub const BOSS_POINTS_CATEGORY: u8 = 12;
+/// docs/reference/tibia-manual/combat.md:262: cumulative levels and the current two-week rotation.
+pub const TIBIADROME_LIFETIME_CATEGORY: u8 = 14;
+pub const TIBIADROME_ROTATION_CATEGORY: u8 = 17;
+pub const PHOSPHORUS_RECORD_CATEGORY: u8 = 16;
+const DROME_ROTATION_MS: i64 = super::tibiadrome::ROTATION_SECONDS as i64 * 1000;
+
+/// Categories 1-10, 12, 14, 16 and 17 are always served; category 11 requires an activated Charm point
+/// source.
+pub fn served_category(category: u8) -> bool {
+    (1..=10).contains(&category)
+        || category == BOSS_POINTS_CATEGORY
+        || matches!(
+            category,
+            TIBIADROME_LIFETIME_CATEGORY
+                | PHOSPHORUS_RECORD_CATEGORY
+                | TIBIADROME_ROTATION_CATEGORY
+        )
+        || (category == 11 && activated_charm_points().is_some())
 }
 
 /// Actual owning catalogues from the activated content generation, never caller-provided scores.
@@ -157,9 +168,19 @@ impl SnapshotCatalogues {
         })
     }
 
-    /// The categories one publication writes: 1..=11, or 1..=10 without a Charm point source.
-    fn published_categories(&self) -> i32 {
-        if self.charm_points { 11 } else { 10 }
+    /// The categories one publication writes: 1..=10, 12, 14, 16 and 17, plus 11 with a Charm source.
+    fn published_categories(&self) -> Vec<i32> {
+        let mut categories: Vec<i32> = (1..=10).collect();
+        if self.charm_points {
+            categories.push(11);
+        }
+        categories.extend([
+            i32::from(BOSS_POINTS_CATEGORY),
+            i32::from(TIBIADROME_LIFETIME_CATEGORY),
+            i32::from(PHOSPHORUS_RECORD_CATEGORY),
+            i32::from(TIBIADROME_ROTATION_CATEGORY),
+        ]);
+        categories
     }
 }
 
@@ -226,6 +247,7 @@ pub struct SnapshotRow {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SnapshotPage {
+    pub own_page: Option<u32>,
     pub snapshot: SnapshotInfo,
     pub page: u32,
     pub has_more: bool,
@@ -330,7 +352,14 @@ impl DurabilityRoot {
         snapshot_id: u64,
         character: CharacterId,
     ) -> Result<SnapshotPage> {
-        if !(1..=11).contains(&category) {
+        if !(1..=12).contains(&category)
+            && !matches!(
+                category,
+                TIBIADROME_LIFETIME_CATEGORY
+                    | PHOSPHORUS_RECORD_CATEGORY
+                    | TIBIADROME_ROTATION_CATEGORY
+            )
+        {
             return Err(SnapshotError::NotSupported);
         }
         if page == 0 || (page > 1 && snapshot_id == 0) {
@@ -387,7 +416,7 @@ fn uuid_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// The eligible Characters of categories 1-9 and 11 at the cut: keyset pages in CharacterId
+/// The eligible Characters of categories 1-9, 11 and 12 at the cut: keyset pages in CharacterId
 /// order, all inside the caller's repeatable-read cut, so the pages are one consistent set. More
 /// than `limits` eligible Characters refuse the whole cut.
 pub async fn read_source_within(
@@ -584,7 +613,195 @@ async fn read_extra_sources(
     Ok([achievements, charms])
 }
 
-#[derive(Serialize)]
+/// HIGHSCORES0 §3 category 12: Bosstiary boss points, Crystal `game.cpp:9897` `boss_points`;
+/// same eligibility as categories 1-9 and 11.
+async fn read_boss_points(
+    tx: &mut Transaction<'_, Postgres>,
+    characters: &[Source],
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    let mut bosses = Vec::with_capacity(characters.len());
+    for page in characters.chunks(limits.page_rows) {
+        let ids: Vec<String> = page
+            .iter()
+            .map(|source| uuid_hex(source.character_id.as_bytes()))
+            .collect();
+        let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,sum(boss_points)::bigint AS boss_points FROM game_character_bosstiary_progress WHERE character_id=ANY($1::text[]::uuid[]) GROUP BY character_id ORDER BY character_id")
+            .bind(&ids).fetch_all(&mut **tx).await?;
+        let mut earned: BTreeMap<CharacterId, u64> = BTreeMap::new();
+        for row in rows {
+            earned.insert(character(&row)?, nonnegative(&row, "boss_points")?);
+        }
+        for source in page {
+            let mut values = [(0, 0); 9];
+            values[0] = (earned.remove(&source.character_id).unwrap_or(0), 0);
+            bosses.push(Source {
+                character_id: source.character_id,
+                name: source.name.clone(),
+                vocation: source.vocation.clone(),
+                level: source.level,
+                values,
+            });
+        }
+    }
+    Ok(bosses)
+}
+
+/// Only victorious characters enter the Phosphorus Record; no zero-score rows.
+async fn read_phosphorus(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    let mut sources = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let wanted = limits.next_page(sources.len())?;
+        let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation,max(d.highest_defeated)::bigint AS highest FROM game_character_roots r JOIN game_character_boss_difficulty_records d USING(character_id) JOIN game_boss_room_catalogue c ON c.boss_key=d.boss_key LEFT JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND (c.boss_key='oteryn:boss.phosphorus' OR c.boss_creature_key='oteryn:creature.phosphorus') AND ($2::text IS NULL OR r.character_id>$2::text::uuid) GROUP BY r.character_id,r.name,p.level,b.vocation ORDER BY r.character_id LIMIT $3")
+            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted).fetch_all(&mut **tx).await?;
+        let fetched = rows.len();
+        for row in rows {
+            let level = u32::try_from(nonnegative(&row, "level")?).map_err(|_| corrupt())?;
+            if level == 0 {
+                return Err(corrupt());
+            }
+            let mut values = [(0, 0); 9];
+            values[0] = (nonnegative(&row, "highest")?, 0);
+            sources.push(Source {
+                character_id: character(&row)?,
+                name: row.try_get("name")?,
+                vocation: row.try_get("vocation")?,
+                level,
+                values,
+            });
+        }
+        limits.admit(sources.len())?;
+        if i64::try_from(fetched).map_err(|_| corrupt())? < wanted {
+            return Ok(sources);
+        }
+        after = sources
+            .last()
+            .map(|last| uuid_hex(last.character_id.as_bytes()));
+    }
+}
+
+/// HIGHSCORES0 §5's vocation-none exclusion belongs to classic categories 1-9/11.
+/// docs/reference/tibia-manual/combat.md:252,262: the Drome's positive score is its
+/// qualification; current level/vocation are presentation, not new entry prerequisites.
+async fn read_tibiadrome_characters(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    limits: CutLimits,
+    computed_at_ms: i64,
+) -> Result<Vec<Source>> {
+    let mut sources = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let wanted = limits.next_page(sources.len())?;
+        let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r LEFT JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND EXISTS(SELECT 1 FROM game_tibiadrome_scores d WHERE d.character_id=r.character_id AND d.rotation<=$4) AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3")
+            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted)
+            .bind(computed_at_ms / DROME_ROTATION_MS).fetch_all(&mut **tx).await?;
+        let fetched = rows.len();
+        for row in rows {
+            let level = u32::try_from(nonnegative(&row, "level")?).map_err(|_| corrupt())?;
+            if level == 0 {
+                return Err(corrupt());
+            }
+            sources.push(Source {
+                character_id: character(&row)?,
+                name: row.try_get("name")?,
+                vocation: row.try_get("vocation")?,
+                level,
+                values: [(0, 0); 9],
+            });
+        }
+        limits.admit(sources.len())?;
+        if i64::try_from(fetched).map_err(|_| corrupt())? < wanted {
+            return Ok(sources);
+        }
+        after = sources
+            .last()
+            .map(|last| uuid_hex(last.character_id.as_bytes()));
+    }
+}
+
+/// docs/reference/tibia-manual/combat.md:252,262: lifetime cumulative levels follow the Character;
+/// rotation standings use this World and the same clock division as the Drome owner.
+/// Character-id pages bound the aggregated result, inside the existing repeatable-read cut.
+async fn read_tibiadrome(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    characters: &[Source],
+    limits: CutLimits,
+    computed_at_ms: i64,
+) -> Result<[Vec<Source>; 2]> {
+    let mut sources = [Vec::new(), Vec::new()];
+    for page in characters.chunks(limits.page_rows) {
+        let ids: Vec<String> = page
+            .iter()
+            .map(|source| uuid_hex(source.character_id.as_bytes()))
+            .collect();
+        let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,sum(level)::bigint AS lifetime,max(level) FILTER(WHERE world_id=encode($2,'hex')::uuid AND rotation=$3) AS current_level,min(experience) FILTER(WHERE world_id=encode($2,'hex')::uuid AND rotation=$3) AS current_experience FROM game_tibiadrome_scores WHERE character_id=ANY($1::text[]::uuid[]) AND rotation<=$3 GROUP BY character_id ORDER BY character_id")
+            .bind(&ids).bind(world.as_bytes().as_slice()).bind(computed_at_ms / DROME_ROTATION_MS)
+            .fetch_all(&mut **tx).await?;
+        let mut earned = BTreeMap::new();
+        for row in rows {
+            earned.insert(
+                character(&row)?,
+                (
+                    nonnegative(&row, "lifetime")?,
+                    row.try_get::<Option<i64>, _>("current_level")?,
+                    row.try_get::<Option<i64>, _>("current_experience")?,
+                ),
+            );
+        }
+        for source in page {
+            let Some((lifetime, level, experience)) = earned.remove(&source.character_id) else {
+                continue;
+            };
+            let values = [
+                Some((lifetime, 0)),
+                match (level, experience) {
+                    (Some(level), Some(experience)) => Some((
+                        u64::try_from(level).map_err(|_| corrupt())?,
+                        // Drome ranks equal levels by lower captured XP (0973's rank index).
+                        u64::try_from(
+                            i64::MAX
+                                .checked_sub(experience)
+                                .filter(|_| experience >= 0)
+                                .ok_or_else(corrupt)?,
+                        )
+                        .map_err(|_| corrupt())?,
+                    )),
+                    (None, None) => None,
+                    _ => return Err(corrupt()),
+                },
+            ];
+            for (index, value) in values.into_iter().enumerate() {
+                if let Some(value) = value {
+                    let mut values = [(0, 0); 9];
+                    values[0] = value;
+                    sources[index].push(Source {
+                        character_id: source.character_id,
+                        name: source.name.clone(),
+                        vocation: source.vocation.clone(),
+                        level: source.level,
+                        values,
+                    });
+                }
+            }
+        }
+    }
+    Ok(sources)
+}
+
+fn next_refresh_delay(computed_at_ms: i64, interval_ms: i64) -> Result<Duration> {
+    let rotation_remaining = DROME_ROTATION_MS - computed_at_ms.rem_euclid(DROME_ROTATION_MS);
+    Ok(Duration::from_millis(
+        u64::try_from(interval_ms.min(rotation_remaining)).map_err(|_| corrupt())?,
+    ))
+}
+
 struct StoredRow {
     filter: i16,
     position: i32,
@@ -597,6 +814,14 @@ struct StoredRow {
     value_progress: i64,
 }
 fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
+    materialize_ordered(source, category, false)
+}
+
+fn materialize_ordered(
+    source: &[Source],
+    category: usize,
+    drome_order: bool,
+) -> Result<Vec<StoredRow>> {
     let levels: BTreeMap<_, _> = source.iter().map(|r| (r.character_id, r.level)).collect();
     let input: Vec<_> = source
         .iter()
@@ -604,7 +829,12 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
             character_id: r.character_id,
             name: r.name.as_str(),
             vocation: r.vocation.as_str(),
-            value: r.values[category],
+            // Drome's existing standing owner uses row_number by level, lower XP,
+            // then CharacterId; other Highscores retain shared ranks/name ties.
+            value: (
+                r.values[category],
+                drome_order.then_some(std::cmp::Reverse(r.character_id)),
+            ),
         })
         .collect();
     let mut result = Vec::new();
@@ -621,8 +851,8 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
                 name: row.name.to_owned(),
                 vocation: row.vocation.to_owned(),
                 level: i64::from(*levels.get(&row.character_id).ok_or_else(corrupt)?),
-                value_primary: i64::try_from(row.value.0).map_err(|_| corrupt())?,
-                value_progress: i64::try_from(row.value.1).map_err(|_| corrupt())?,
+                value_primary: i64::try_from(row.value.0.0).map_err(|_| corrupt())?,
+                value_progress: i64::try_from(row.value.0.1).map_err(|_| corrupt())?,
             });
         }
     }
@@ -658,15 +888,15 @@ async fn publish_cut(
     sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
         .execute(&mut **tx)
         .await?;
-    let categories: i32 = catalogues.published_categories();
+    let categories: Vec<i32> = catalogues.published_categories();
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
     // concurrent head insertion also conflicts; an invisible head never becomes an empty cut.
-    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category) SELECT encode($1,'hex')::uuid,category FROM generate_series(1,$2) category ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(categories).execute(&mut **tx).await?;
-    let heads = sqlx::query("SELECT category,current_snapshot_id FROM game_world_highscore_heads WHERE world_id=encode($1,'hex')::uuid AND category<=$2 ORDER BY category FOR UPDATE")
-        .bind(world.as_bytes().as_slice()).bind(categories).fetch_all(&mut **tx).await?;
-    if heads.len() != usize::try_from(categories).map_err(|_| corrupt())? {
+    sqlx::query("INSERT INTO game_world_highscore_heads(world_id,category) SELECT encode($1,'hex')::uuid,category FROM unnest($2::int[]) category ON CONFLICT DO NOTHING")
+        .bind(world.as_bytes().as_slice()).bind(&categories).execute(&mut **tx).await?;
+    let heads = sqlx::query("SELECT category,current_snapshot_id FROM game_world_highscore_heads WHERE world_id=encode($1,'hex')::uuid AND category=ANY($2::int[]) ORDER BY category FOR UPDATE")
+        .bind(world.as_bytes().as_slice()).bind(&categories).fetch_all(&mut **tx).await?;
+    if heads.len() != categories.len() {
         return Err(SnapshotError::RetryableConflict);
     }
     let cut = sqlx::query("SELECT pg_current_snapshot()::text AS source_cut,floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS computed_at_ms")
@@ -676,34 +906,43 @@ async fn publish_cut(
     // Read due state while holding the same per-category locks used by publication. A stale
     // concurrent RR cut loses with a typed conflict rather than publishing a second generation.
     if only_if_due {
-        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category<=$2 AND s.computed_at_ms>$3")
-            .bind(world.as_bytes().as_slice()).bind(categories)
-            .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).fetch_one(&mut **tx).await?;
-        if recent.try_get::<i64, _>("recent")? == i64::from(categories) {
+        let recent = sqlx::query("SELECT count(*) AS recent,min(s.computed_at_ms) AS oldest FROM game_world_highscore_heads h JOIN game_world_highscore_snapshots s ON s.snapshot_id=h.current_snapshot_id WHERE h.world_id=encode($1,'hex')::uuid AND h.category=ANY($2::int[]) AND s.computed_at_ms>$3 AND (h.category<>17 OR s.computed_at_ms/$4=$5/$4)")
+            .bind(world.as_bytes().as_slice()).bind(&categories)
+            .bind(computed_at_ms.saturating_sub(SNAPSHOT_INTERVAL_MS)).bind(DROME_ROTATION_MS).bind(computed_at_ms).fetch_one(&mut **tx).await?;
+        if recent.try_get::<i64, _>("recent")?
+            == i64::try_from(categories.len()).map_err(|_| corrupt())?
+        {
             let oldest: i64 = recent.try_get("oldest")?;
             let remaining = oldest
                 .saturating_add(SNAPSHOT_INTERVAL_MS)
                 .saturating_sub(computed_at_ms);
             return Ok(SnapshotRefresh {
                 snapshots: Vec::new(),
-                next_check_after: Duration::from_millis(
-                    u64::try_from(remaining).map_err(|_| corrupt())?,
-                ),
+                next_check_after: next_refresh_delay(computed_at_ms, remaining)?,
             });
         }
     }
     let source = read_source_within(tx, world, limits).await?;
     let extra = read_extra_sources(tx, world, &source, catalogues, limits).await?;
+    let bosses = read_boss_points(tx, &source, limits).await?;
+    let drome_characters = read_tibiadrome_characters(tx, world, limits, computed_at_ms).await?;
+    let drome = read_tibiadrome(tx, world, &drome_characters, limits, computed_at_ms).await?;
+    let phosphorus = read_phosphorus(tx, world, limits).await?;
     let mut published = Vec::new();
     for (index, head) in heads.into_iter().enumerate() {
         let category = u8::try_from(head.try_get::<i32, _>("category")?).map_err(|_| corrupt())?;
-        if usize::from(category) != index + 1 {
+        if i32::from(category) != categories[index] {
             return Err(corrupt());
         }
         let old: Option<i64> = head.try_get("current_snapshot_id")?;
-        let rows = match index {
-            0..=8 => materialize(&source, index)?,
-            9 | 10 => materialize(&extra[index - 9], 0)?,
+        let rows = match category {
+            1..=9 => materialize(&source, usize::from(category) - 1)?,
+            10 => materialize(&extra[0], 0)?,
+            11 => materialize(&extra[1], 0)?,
+            BOSS_POINTS_CATEGORY => materialize(&bosses, 0)?,
+            PHOSPHORUS_RECORD_CATEGORY => materialize(&phosphorus, 0)?,
+            TIBIADROME_LIFETIME_CATEGORY => materialize(&drome[0], 0)?,
+            TIBIADROME_ROTATION_CATEGORY => materialize_ordered(&drome[1], 0, true)?,
             _ => return Err(corrupt()),
         };
         let count = i32::try_from(rows.len()).map_err(|_| corrupt())?;
@@ -711,9 +950,21 @@ async fn publish_cut(
             .bind(world.as_bytes().as_slice()).bind(i32::from(category)).bind(computed_at_ms)
             .bind(&source_cut).bind(count).fetch_one(&mut **tx).await?;
         // At most 6000 rows/category, one bounded bulk statement instead of per-row calls.
-        let json = serde_json::to_string(&rows).map_err(|_| corrupt())?;
-        let inserted = sqlx::query("INSERT INTO game_world_highscore_rows(snapshot_id,filter,position,rank,character_id,name,vocation,level,value_primary,value_progress) SELECT $1,x.filter,x.position,x.rank,x.character_id::uuid,x.name,x.vocation,x.level,x.value_primary,x.value_progress FROM jsonb_to_recordset($2::jsonb) AS x(filter SMALLINT,position INTEGER,rank BIGINT,character_id TEXT,name TEXT,vocation TEXT,level BIGINT,value_primary BIGINT,value_progress BIGINT)")
-            .bind(id).bind(&json).execute(&mut **tx).await?.rows_affected();
+        // Typed arrays avoid serializing and reparsing every field as JSON while the
+        // atomic publication transaction is holding its bounded Root pass.
+        let filters: Vec<_> = rows.iter().map(|r| r.filter).collect();
+        let positions: Vec<_> = rows.iter().map(|r| r.position).collect();
+        let ranks: Vec<_> = rows.iter().map(|r| r.rank).collect();
+        let characters: Vec<_> = rows.iter().map(|r| r.character_id.as_str()).collect();
+        let names: Vec<_> = rows.iter().map(|r| r.name.as_str()).collect();
+        let vocations: Vec<_> = rows.iter().map(|r| r.vocation.as_str()).collect();
+        let levels: Vec<_> = rows.iter().map(|r| r.level).collect();
+        let primary: Vec<_> = rows.iter().map(|r| r.value_primary).collect();
+        let progress: Vec<_> = rows.iter().map(|r| r.value_progress).collect();
+        let inserted = sqlx::query("INSERT INTO game_world_highscore_rows(snapshot_id,filter,position,rank,character_id,name,vocation,level,value_primary,value_progress) SELECT $1,x.filter,x.position,x.rank,x.character_id::uuid,x.name,x.vocation,x.level,x.value_primary,x.value_progress FROM unnest($2::smallint[],$3::integer[],$4::bigint[],$5::text[],$6::text[],$7::text[],$8::bigint[],$9::bigint[],$10::bigint[]) AS x(filter,position,rank,character_id,name,vocation,level,value_primary,value_progress)")
+            .bind(id).bind(&filters).bind(&positions).bind(&ranks).bind(&characters)
+            .bind(&names).bind(&vocations).bind(&levels).bind(&primary).bind(&progress)
+            .execute(&mut **tx).await?.rows_affected();
         if inserted != u64::try_from(count).map_err(|_| corrupt())? {
             return Err(corrupt());
         }
@@ -730,9 +981,7 @@ async fn publish_cut(
     }
     Ok(SnapshotRefresh {
         snapshots: published,
-        next_check_after: Duration::from_millis(
-            u64::try_from(SNAPSHOT_INTERVAL_MS).map_err(|_| corrupt())?,
-        ),
+        next_check_after: next_refresh_delay(computed_at_ms, SNAPSHOT_INTERVAL_MS)?,
     })
 }
 
@@ -778,19 +1027,77 @@ async fn read_in_transaction(
     let start = i64::from(page - 1) * i64::try_from(PAGE_ROWS).map_err(|_| corrupt())?;
     let end = start + i64::try_from(PAGE_ROWS).map_err(|_| corrupt())?;
     let filter = i16::try_from(filter).map_err(|_| corrupt())?;
-    let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
-        .bind(id).bind(filter).bind(start).bind(end).fetch_all(&mut **tx).await?
+    // docs/reference/tibia-manual/combat.md:263: auctioned Characters leave Drome
+    // leaderboards immediately. Like account detachment, this withdraws captured rows;
+    // it never reranks or fills gaps in a retained snapshot, or changes other categories.
+    let drome = matches!(
+        category,
+        TIBIADROME_LIFETIME_CATEGORY | PHOSPHORUS_RECORD_CATEGORY | TIBIADROME_ROTATION_CATEGORY
+    );
+    let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $5::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
+        .bind(id).bind(filter).bind(start).bind(end).bind(drome).fetch_all(&mut **tx).await?
         .into_iter().map(stored_row).collect::<Result<Vec<_>>>()?;
-    let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND position>$3)")
-        .bind(id).bind(filter).bind(end).fetch_one(&mut **tx).await?;
-    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND character_id=encode($3,'hex')::uuid")
-        .bind(id).bind(filter).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
-        .map(stored_row).transpose()?;
+    let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND position>$3)")
+        .bind(id).bind(filter).bind(end).bind(drome).fetch_one(&mut **tx).await?;
+    let own = sqlx::query("SELECT position,uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows hs WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM game_character_roots live WHERE live.character_id=hs.character_id AND live.lifecycle=1)) AND character_id=encode($3,'hex')::uuid")
+        .bind(id).bind(filter).bind(character.as_bytes().as_slice()).bind(drome).fetch_optional(&mut **tx).await?
+        ;
+    let own_page = own
+        .as_ref()
+        .map(|row| {
+            let position: i32 = row.try_get("position")?;
+            if !(1..=1000).contains(&position) {
+                return Err(corrupt());
+            }
+            Ok((position as u32 - 1) / PAGE_ROWS as u32 + 1)
+        })
+        .transpose()?;
+    let own_row = own.map(stored_row).transpose()?;
     Ok(SnapshotPage {
+        own_page,
         snapshot,
         page,
         has_more,
         rows,
         own_row,
     })
+}
+
+#[cfg(test)]
+mod category_set_tests {
+    use super::{
+        BOSS_POINTS_CATEGORY, DROME_ROTATION_MS, SNAPSHOT_INTERVAL_MS, next_refresh_delay,
+        served_category,
+    };
+
+    #[test]
+    fn drome_rotation_boundary_wakes_before_the_highscore_refresh_interval() -> Result<(), String> {
+        assert_eq!(
+            next_refresh_delay(DROME_ROTATION_MS - 5, SNAPSHOT_INTERVAL_MS)
+                .map_err(|e| format!("{e:?}"))?,
+            std::time::Duration::from_millis(5),
+        );
+        assert_eq!(
+            next_refresh_delay(DROME_ROTATION_MS, SNAPSHOT_INTERVAL_MS)
+                .map_err(|e| format!("{e:?}"))?,
+            std::time::Duration::from_secs(30 * 60),
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn served_category_admits_boss_points_and_withholds_unsourced_charm_points() {
+        assert!(served_category(12));
+        assert!(served_category(1));
+        assert!(served_category(10));
+        assert!(!served_category(11));
+        assert!(!served_category(0));
+        assert!(!served_category(13));
+        assert!(served_category(14));
+        assert!(!served_category(15));
+        assert!(served_category(17));
+        assert!(!served_category(18));
+        assert!(served_category(16));
+        assert_eq!(BOSS_POINTS_CATEGORY, 12);
+    }
 }

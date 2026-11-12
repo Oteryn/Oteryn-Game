@@ -1,0 +1,2526 @@
+{
+  "schema": "OTERYN_REWARD_BAG_CATALOGUE/v1",
+  "sources": [
+    {
+      "path": "tools/content-schema/native-gameplay/reward-bag-profiles.json",
+      "sha256": "5ea341b80a22c34746116c2922c8e78871fb57f278f92c1d7223c1002f012b1b"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/event-item-actions.json",
+      "sha256": "05d892cf95917dae958d556dc8c3aeeab0ed7a98f49168e9d1047b5c0cfe22fc"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/qengine-reward-bag-profiles.json",
+      "sha256": "166a12b76da138a9a850bf085550a09718c570884fd8369d2e23fc4a97820a74"
+    }
+  ],
+  "bags": [
+    {
+      "constant": "BAG_YOU_DESIRE",
+      "bag": "oteryn:item.tibia.i34109",
+      "source_line": 2,
+      "crystal_source_line": 2,
+      "playable": true,
+      "excluded_reason": null,
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i34082",
+          "name": "soulcutter",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34083",
+          "name": "soulshredder",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i34084",
+          "name": "soulbiter",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34085",
+          "name": "souleater",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i34086",
+          "name": "soulcrusher",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34087",
+          "name": "soulmaimer",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34097",
+          "name": "pair of soulwalkers",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34099",
+          "name": "soulbastion",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34088",
+          "name": "soulbleeder",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i34089",
+          "name": "soulpiercer",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34094",
+          "name": "soulshell",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34098",
+          "name": "pair of soulstalkers",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34090",
+          "name": "soultainter",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i34092",
+          "name": "soulshanks",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34095",
+          "name": "soulmantle",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34091",
+          "name": "soulhexer",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i34093",
+          "name": "soulstrider",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i34096",
+          "name": "soulshroud",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i50254",
+          "name": "soulgarb",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i50240",
+          "name": "soulsoles",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i50159",
+          "name": "soulkamas",
+          "weight": 1000
+        }
+      ]
+    },
+    {
+      "constant": "PRIMAL_BAG",
+      "bag": "oteryn:item.tibia.i39546",
+      "source_line": 26,
+      "crystal_source_line": 26,
+      "playable": true,
+      "excluded_reason": null,
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i39147",
+          "name": "spiritthorn armor",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i39148",
+          "name": "spiritthorn helmet",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i39177",
+          "name": "charged spiritthorn ring",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39149",
+          "name": "alicorn headguard",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i39150",
+          "name": "alicorn quiver",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39180",
+          "name": "charged alicorn ring",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39151",
+          "name": "arcanomancer regalia",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39152",
+          "name": "arcanomancer folio",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39183",
+          "name": "charged arcanomancer sigil",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39153",
+          "name": "arboreal crown",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39154",
+          "name": "arboreal tome",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i39186",
+          "name": "charged arboreal ring",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i50149",
+          "name": "charged ethereal ring",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i50188",
+          "name": "ethereal coned hat",
+          "weight": 1000
+        }
+      ]
+    },
+    {
+      "constant": "BAG_YOU_COVET",
+      "bag": "oteryn:item.tibia.i43895",
+      "source_line": 43,
+      "crystal_source_line": 43,
+      "playable": true,
+      "excluded_reason": null,
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i43864",
+          "name": "sanguine blade",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43866",
+          "name": "sanguine cudgel",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43868",
+          "name": "sanguine hatchet",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43870",
+          "name": "sanguine razor",
+          "weight": 2000
+        },
+        {
+          "item": "oteryn:item.tibia.i43872",
+          "name": "sanguine bludgeon",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43874",
+          "name": "sanguine battleaxe",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43876",
+          "name": "sanguine legs",
+          "weight": 2000
+        },
+        {
+          "item": "oteryn:item.tibia.i43877",
+          "name": "sanguine bow",
+          "weight": 1000
+        },
+        {
+          "item": "oteryn:item.tibia.i43879",
+          "name": "sanguine crossbow",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43881",
+          "name": "sanguine greaves",
+          "weight": 2000
+        },
+        {
+          "item": "oteryn:item.tibia.i43882",
+          "name": "sanguine coil",
+          "weight": 2000
+        },
+        {
+          "item": "oteryn:item.tibia.i43884",
+          "name": "sanguine boots",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43885",
+          "name": "sanguine rod",
+          "weight": 2000
+        },
+        {
+          "item": "oteryn:item.tibia.i43887",
+          "name": "sanguine galoshes",
+          "weight": 5000
+        },
+        {
+          "item": "oteryn:item.tibia.i43865",
+          "name": "grand sanguine blade",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43867",
+          "name": "grand sanguine cudgel",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43869",
+          "name": "grand sanguine hatchet",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43871",
+          "name": "grand sanguine razor",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43873",
+          "name": "grand sanguine bludgeon",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43875",
+          "name": "grand sanguine battleaxe",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43878",
+          "name": "grand sanguine bow",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43880",
+          "name": "grand sanguine crossbow",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43883",
+          "name": "grand sanguine coil",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i43886",
+          "name": "grand sanguine rod",
+          "weight": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i50146",
+          "name": "sanguine trousers",
+          "weight": 2000
+        },
+        {
+          "item": "oteryn:item.tibia.i50157",
+          "name": "sanguine claws",
+          "weight": 2000
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_6506",
+      "bag": "oteryn:item.tibia.i6506",
+      "playable": true,
+      "selection": "without_replacement",
+      "picks": 7,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/christmas_bundle.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i6569",
+          "name": "",
+          "weight": 1,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i3585",
+          "name": "",
+          "weight": 1,
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i3586",
+          "name": "",
+          "weight": 1,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i3598",
+          "name": "",
+          "weight": 1,
+          "minimum": 20,
+          "maximum": 20
+        },
+        {
+          "item": "oteryn:item.tibia.i3599",
+          "name": "",
+          "weight": 1,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6500",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6501",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6489",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6503",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6387",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_6507",
+      "bag": "oteryn:item.tibia.i6507",
+      "playable": true,
+      "selection": "without_replacement",
+      "picks": 7,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/christmas_bundle.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i6569",
+          "name": "",
+          "weight": 1,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i3585",
+          "name": "",
+          "weight": 1,
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i3586",
+          "name": "",
+          "weight": 1,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i3598",
+          "name": "",
+          "weight": 1,
+          "minimum": 20,
+          "maximum": 20
+        },
+        {
+          "item": "oteryn:item.tibia.i3599",
+          "name": "",
+          "weight": 1,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6500",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6501",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6489",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6505",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6387",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_6508",
+      "bag": "oteryn:item.tibia.i6508",
+      "playable": true,
+      "selection": "without_replacement",
+      "picks": 7,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/christmas_bundle.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i6569",
+          "name": "",
+          "weight": 1,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i3585",
+          "name": "",
+          "weight": 1,
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i3586",
+          "name": "",
+          "weight": 1,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i3598",
+          "name": "",
+          "weight": 1,
+          "minimum": 20,
+          "maximum": 20
+        },
+        {
+          "item": "oteryn:item.tibia.i3599",
+          "name": "",
+          "weight": 1,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6500",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6501",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6489",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6502",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6387",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_6570",
+      "bag": "oteryn:item.tibia.i6570",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i3598",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6393",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6279",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6574",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6578",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6575",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6577",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6569",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6576",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6572",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i2995",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i14027",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i14681",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_6571",
+      "bag": "oteryn:item.tibia.i6571",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i6574",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3079",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6393",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6576",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6578",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i2995",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i14027",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3036",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5944",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3386",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3420",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3039",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5080",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i2993",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3392",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3057",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5791",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_8853",
+      "bag": "oteryn:item.tibia.i8853",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i3031",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i123",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i2995",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i2397",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i651",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3218",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6574",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6393",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7377",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3578",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i8778",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_12045",
+      "bag": "oteryn:item.tibia.i12045",
+      "playable": true,
+      "selection": "weighted",
+      "picks": 1,
+      "roll_max": 100,
+      "donor": "data/scripts/actions/items/surprise_music_box.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i3246",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i10227",
+          "name": "",
+          "weight": 2,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i11588",
+          "name": "",
+          "weight": 3,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3549",
+          "name": "",
+          "weight": 4,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3420",
+          "name": "",
+          "weight": 5,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3043",
+          "name": "",
+          "weight": 10,
+          "minimum": 17,
+          "maximum": 17
+        },
+        {
+          "item": "oteryn:item.tibia.i3031",
+          "name": "",
+          "weight": 20,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3043",
+          "name": "",
+          "weight": 30,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3031",
+          "name": "",
+          "weight": 40,
+          "minimum": 50,
+          "maximum": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i3035",
+          "name": "",
+          "weight": 50,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i3031",
+          "name": "",
+          "weight": 90,
+          "minimum": 80,
+          "maximum": 80
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_14751",
+      "bag": "oteryn:item.tibia.i14751",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i9642",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i3581",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i5917",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3273",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i10302",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9019",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5928",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5926",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5927",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6095",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5918",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6097",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6098",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5461",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5090",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_14759",
+      "bag": "oteryn:item.tibia.i14759",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/surprise_bags.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i6569",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6541",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6542",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6543",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6544",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6545",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i6574",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i4839",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6570",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i6571",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3215",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_21203",
+      "bag": "oteryn:item.tibia.i21203",
+      "playable": true,
+      "selection": "weighted",
+      "picks": 1,
+      "roll_max": 10001,
+      "donor": "data/scripts/actions/items/glooth_bag.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i21158",
+          "name": "",
+          "weight": 1876,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i21183",
+          "name": "",
+          "weight": 1543,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21178",
+          "name": "",
+          "weight": 1515,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21180",
+          "name": "",
+          "weight": 1464,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21179",
+          "name": "",
+          "weight": 1432,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21295",
+          "name": "",
+          "weight": 633,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i21143",
+          "name": "",
+          "weight": 513,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i21144",
+          "name": "",
+          "weight": 494,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i21146",
+          "name": "",
+          "weight": 453,
+          "minimum": 10,
+          "maximum": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i21186",
+          "name": "",
+          "weight": 78,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37457",
+      "bag": "oteryn:item.tibia.i37457",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37572",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37573",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37574",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37575",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37576",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37461",
+      "bag": "oteryn:item.tibia.i37461",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37471",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37472",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37496",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37497",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37498",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37499",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37500",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37501",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37513",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37514",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37515",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37516",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37517",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37518",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37462",
+      "bag": "oteryn:item.tibia.i37462",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37354",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37357",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37358",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37360",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37362",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37364",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37463",
+      "bag": "oteryn:item.tibia.i37463",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37543",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37544",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37545",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37465",
+      "bag": "oteryn:item.tibia.i37465",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37562",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37563",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37564",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37565",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37566",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37567",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37568",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37569",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37570",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37571",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37466",
+      "bag": "oteryn:item.tibia.i37466",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37540",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37541",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37542",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37467",
+      "bag": "oteryn:item.tibia.i37467",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37366",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37374",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37375",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37376",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37377",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37378",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37379",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37380",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37382",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37390",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37391",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37392",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37393",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37394",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37395",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37396",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37468",
+      "bag": "oteryn:item.tibia.i37468",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37448",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37450",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37451",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37452",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37453",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37454",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37455",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37456",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37458",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37459",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37460",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37469",
+      "bag": "oteryn:item.tibia.i37469",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37502",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37503",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37504",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37505",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37506",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37507",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37508",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37509",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37510",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37511",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37512",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_37614",
+      "bag": "oteryn:item.tibia.i37614",
+      "playable": true,
+      "selection": "one",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data-global/scripts/actions/other/special_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37463",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37466",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37496",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37717",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_39704",
+      "bag": "oteryn:item.tibia.i39704",
+      "playable": true,
+      "selection": "all",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37533",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37530",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37531",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37532",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37461",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37463",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37467",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37468",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_39705",
+      "bag": "oteryn:item.tibia.i39705",
+      "playable": true,
+      "selection": "all",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i37530",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37531",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37532",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37533",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37461",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37463",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37467",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37468",
+          "name": "",
+          "weight": 1,
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "item": "oteryn:item.tibia.i37462",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37465",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37457",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37469",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37466",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_39706",
+      "bag": "oteryn:item.tibia.i39706",
+      "playable": true,
+      "selection": "all",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i39671",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39672",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39673",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39674",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39675",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39676",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39677",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39678",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39679",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i39680",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "EVENT_39710",
+      "bag": "oteryn:item.tibia.i39710",
+      "playable": true,
+      "selection": "all",
+      "picks": 1,
+      "roll_max": null,
+      "donor": "data/scripts/actions/items/anniversary_reward_boxes.lua:1",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i39693",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37530",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37531",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37532",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37533",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37461",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37463",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37467",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37468",
+          "name": "",
+          "weight": 1,
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "item": "oteryn:item.tibia.i37462",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37465",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37457",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i37469",
+          "name": "",
+          "weight": 1,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i37466",
+          "name": "",
+          "weight": 1,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "constant": "QENGINE_GNOMISH_SUPPLY",
+      "bag": "oteryn:item.tibia.i15698",
+      "playable": true,
+      "selection": "weighted",
+      "picks": 1,
+      "roll_max": 10001,
+      "donor": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/valuables/random_items.lua:49-80:sha256:14fc3cf10ca10338aa4479a5371bb3dd7b9b0dede3353a4dec92ffdd11c7023b",
+      "rewards": [
+        {
+          "item": "oteryn:item.tibia.i3723",
+          "name": "",
+          "weight": 1440,
+          "minimum": 20,
+          "maximum": 20
+        },
+        {
+          "item": "oteryn:item.tibia.i16103",
+          "name": "",
+          "weight": 994,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16143",
+          "name": "",
+          "weight": 836,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i15793",
+          "name": "",
+          "weight": 815,
+          "minimum": 15,
+          "maximum": 15
+        },
+        {
+          "item": "oteryn:item.tibia.i16167",
+          "name": "",
+          "weight": 751,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i236",
+          "name": "",
+          "weight": 611,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i237",
+          "name": "",
+          "weight": 600,
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i266",
+          "name": "",
+          "weight": 529,
+          "minimum": 4,
+          "maximum": 4
+        },
+        {
+          "item": "oteryn:item.tibia.i268",
+          "name": "",
+          "weight": 518,
+          "minimum": 4,
+          "maximum": 4
+        },
+        {
+          "item": "oteryn:item.tibia.i238",
+          "name": "",
+          "weight": 465,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i239",
+          "name": "",
+          "weight": 404,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7443",
+          "name": "",
+          "weight": 354,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7439",
+          "name": "",
+          "weight": 311,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3035",
+          "name": "",
+          "weight": 304,
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i5911",
+          "name": "",
+          "weight": 300,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7440",
+          "name": "",
+          "weight": 279,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16165",
+          "name": "",
+          "weight": 125,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16257",
+          "name": "",
+          "weight": 111,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16254",
+          "name": "",
+          "weight": 89,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3043",
+          "name": "",
+          "weight": 57,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3039",
+          "name": "",
+          "weight": 36,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i16242",
+          "name": "",
+          "weight": 29,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3037",
+          "name": "",
+          "weight": 29,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3041",
+          "name": "",
+          "weight": 7,
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3038",
+          "name": "",
+          "weight": 7,
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    }
+  ]
+}

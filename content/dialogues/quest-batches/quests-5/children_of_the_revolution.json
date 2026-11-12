@@ -1,0 +1,1319 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1597",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1598",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1599",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1600",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 6,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1601",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1602",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 21,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1596",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building01",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1603",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building02",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1604",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building03",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1605",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1606",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1607",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/offer-help",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Zzo you are offering your help to a lizzard? Hmm, unuzzual. I don't know if I can fully truzzt you yet. ...",
+        "You'll have to work to earn my truzzt. Are you zzure you want to offer me your help?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:70-76"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-2",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 2
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What newzz do you bring? Did you find any cluezz about zzeir whereaboutzz? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:77-88"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-3",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 5,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 3
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Zzurely you have zzeen zze black pondzz and puddlezz all over zze mountain pazz, palezzkin. It izz zze corruption zzat pervadezz zze landzz. It would be wizze not to drink or tazzte from zzem. ... ",
+        "It zzoakzz zze land, itzz people and even zze air itzzelf. But zzere are zztill zzpotzz not tainted by zze darknezz. ... ",
+        "A temple, norzzwezzt of zze barricaded outpozzt wizztood zze evil influenzze. However, I lozzt contact to itzz inhabitantzz when zze lizzardzz tightened zzeir grip. ... ",
+        "No one made it zzrough zze mountainzz for quite zzome time now - exzzept you. Maybe you can find out what happened zzere? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:80-91"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-6",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 6,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 6
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Large partzz of zze empire are tainted. I zzee now zzat zzere izz almozzt nozzing left of our onzze zzo zztrong zzivilizzation. But I zztill don't know which danger our enemy really pozzezz. ... ",
+        "Zzere uzzed to be a remote and quiet zzettlement in zze middle of zze valley. If it hazz not been dezztroyed by zze corruption, I'm zzure zze army of zze emperor will have confizzcated it to gazzer rezzourzzezz. ... ",
+        "If you can get inzzide zze village, find out anyzzing you can about zzeir zzituation. Zze clever hawk hidezz itzz clawzz. ... ",
+        "I'm mozzt interezzted in zzeir weaponzz, food and zze zztrengzz of zzeir forzzezz. ... ",
+        "Are you prepared for zzizz mizzion? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:97-108"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-8",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 7,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 8
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Your lazzt excurzzion revealed a terrifying truzz. Zze enemy'zz forzzezz are overwhelming, zzeir zztrengzz probably unrivaled. We cannot attack an army of zzizz zzize unlezz - unlezz we zzin out zzeir rankzz a little. ... ",
+        "A zzingle individual can be azz zztrong azz an army if he zztrikezz zze army azz a whole. ... ",
+        "Are you ready for your nexzzt tazzk? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:116-127"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-12",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 10,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 12
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Wizz zze enemy'zz forzzezz weakened like zzizz, we will be able to zzneak pazzt zze defenzze and furzzer inzzpect zze norzz. You should travel to zze mountain range furzzer eazzt of zze village. ... ",
+        "Zze old route to zze gate hazz been taken by darknezz. You'll have to find ozzer wayzz. Are you up to zzizz, palezzkin? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:131-142"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-17",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 12,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 17
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You have zzolved zze riddle? Imprezzive, palezzkin. Zze humming you hear in zze chamber mozzt zzertainly comezz from a magic portal zzomewhere in zze temple. ...",
+        "Have you zzearched zze ozzer chamberzz for any magical devizzezz or portalzz?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:137-148"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/mission-18",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 13,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 18
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "If I'm correct, zze portal in zze chamber beyond zze mechanizzm will lead you to zze great gate. It izz perfectly pozzible, however, zzat you will not be tranzzported directly into zze area. ...",
+        "You will razzer be brought to a plazze clozze by your goal. Where exzzactly, I cannot zzay. ...",
+        "Take all your courage and walk zze pazz zzrough zze portal. At leazzt TRY it - after all, I didn't make you my pupil for nozzing, Kohei. Are you prepared?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:143-154"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/complete-5",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 5
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission01",
+          "value": 3
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Zzo you found zze temple... lozzt you zzay. It wazz our lazzt remaining bazztion of hope for help from wizzin zze plainzz. ... ",
+        "Zzat meanzz zze plainzz are now in zze handzz of zze emperor and hizz army. I'm afraid zzat even zze great gate izz zzealed and zze landzz beyond it tainted azz well. ... ",
+        "Dark timezz, and I fear we know nozzing about our enemy yet. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:88-98"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/complete-11",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 11
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 12
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+          "value": 3
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You accomplished an important tazzk in breaking zze defenzze of zze emperor. Not everyzzing might be lozzt yet. ... ",
+        "I've got anozzer mizzion for you which will be even more dangerouzz zzan zze lazzt one. Return to me when you're ready. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:123-133"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/complete-spying",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "mission"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building01",
+          "comparison": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building02",
+          "comparison": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/spy_building03",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission02",
+          "value": 5
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Zzizz izz mozzt unfortunate. Zzo many warriorzz? Large amountzz of food? And how many weaponzz did you zzay? I zzee, hmm. ... ",
+        "Direct confrontation izz futile. We'll have to find ozzer wayzz to approach zze emperor and hizz army. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:106-114"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/symbols",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "symbols"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 11,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Mh, zze zzymbolzz of zze chamber you dezzcribe are very common in our culture, palezzkin. You should have come accrozz zzem in many a plazze already. ...",
+        "Zze zzymbolzz zzeem to be arranged in zzome way you zzay? Were zzere any notizzeable devizzezz? Zzwitchezz or leverzz? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:230-236"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/poison",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "poison",
+        "poizzon"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "comparison": "eq",
+          "value": 9
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Zze emperor of zze dragonzz hazz tranzzformed himzzelf into an undead creature to lazzt for all eternity, to cheat deazz. Hizz corruption flowzz to zzozze he bound, and from zzem to zzozze zzey bound, and from zzem into zze land."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:239-242"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/yes-1",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Zzen indeed, I have a tazzk for you. Lizzten carefully and you might even learn zzomezzing. A wizze being hearzz one zzing and underzztandzz ten. ...",
+        "Zze mountainzz to zze norzz are overrun by corrupted lizzardzz. ...",
+        "Beyond zzem, you'll find a lush valley, zze Muggy Plainzz. Find out about zzeir planzz, zzeir tacticzz. Zze lizzardzz' art of war izz characterizzed by dizzguizze and zzecrezzy. ...",
+        "A traveller told me about a barricaded zzettlement zzey ezztablished. It'zz a weak and in all zzeir arroganzze, poorly guarded outpozzt beyond zze mountainzz. ...",
+        "If you can find any documentzz about zzeir zztrategiezz, zze rezzizztanzze will be very grateful. ...",
+        "Are you interezzted, palezzkin?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:245-261"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/yes-3",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Exzztraordinary. We are mozzt fortunate to have zzezze documentzz in our handzz now. Zzizz would zzertainly help me to build an effective rezzizztanzze. Will you give zzem to me? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:262-272"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/yes-7",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Not far to zze eazzt of zze village, you'll find rizze fieldzz. Zzey uzze zzem to rezztore zzeir food suppliezz. ... ",
+        "In zze zztorage accrozz zzizz room, you'll find a zzpecial poizzon which will zzignificantly weaken zzem if uzzed on zze water and zzoil zze rizze growzz in. ... ",
+        "Are you fully prepared for zzizz?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:293-303"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/accept-2",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission00",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Be warned. Zze mountain pazzezz have been dezzerted for zzeveral weekzz now. No one made it acrozz and I fear you won't meet a zzingle friendly zzoul up zzere."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:257-268"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/accept-8",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission03",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Good. Zze fieldzz should be not far from Xiachai in zze eazzt. Go to zze top terrazze and mix zze poizzon wizz zze water. ... ",
+        "{Poizzon} izz often uzzed by cowardzz, yet it grantzz great power to zze opprezzed. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:300-311"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/accept-11",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/strange_symbols",
+          "value": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "value": 3
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Interezzting. It'zz a riddle, zzoftzzkin. Zzuch gamezz are very popular in our culture. I believe zze leverzz will alter zze arrangement. ... ",
+        "Not too far from zze lever, zzere muzzt be a hint of zzome zzort. An image of how zze zzymbolzz muzzt be arranged. Zzurely zze mechanizzm will trigger a zzecret pazzage, maybe a moving wall or a portal. ... ",
+        "Zzizz should be our pazz to zze great gate. Head to zze zztorage onzze again. Zzere should be zzome extra greazzy oil which should work wizz zzuch a large mechanizzm. Zze leverzz should zzen be movable again. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:318-329"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/accept-13",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 13,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/teleport_access",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 19
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You did well on your quezzt zzo far. I hope you will reach zze great gate in time. If we are lucky, it will zztill be open. ...",
+        "If not, it will already be overrun by enemy zzoldierzz. Direct confrontation will be inevitable in zzat cazze, palezzkin. Now clear your mind and approach zze portal."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:337-348"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/accept-10-first",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "comparison": "le",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 13
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Perhapzz you can find a way to enter zze norzz of zze valley and find a pazzage to zze great gate itzzelf. Zzearch any templezz or zzettlementzz you come accrozz for hidden pazzagezz. ... ",
+        "I wish for a zzafe return wizz good newzz. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:308-317"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/children_of_the_revolution/zalamon/accept-10-preserve",
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mission",
+            "crate",
+            "symbols",
+            "poison",
+            "poizzon"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04",
+          "comparison": "gt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "value": 13
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Perhapzz you can find a way to enter zze norzz of zze valley and find a pazzage to zze great gate itzzelf. Zzearch any templezz or zzettlementzz you come accrozz for hidden pazzagezz. ... ",
+        "I wish for a zzafe return wizz good newzz. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:308-317"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.zalamon",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Not many travellerzz zzezze dayzz. I hope you bring good newzz.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:421"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:421",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "children_of_the_revolution.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "note": "Selected source branches only; complete dispatch/matching/greeting qualification is held."
+      },
+      "preparation": {
+        "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+        "format": "offline_authoring_with_source_dispatch_constraints",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      }
+    }
+  ]
+}

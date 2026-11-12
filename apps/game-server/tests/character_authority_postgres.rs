@@ -2486,6 +2486,7 @@ mod monk_state_postgres_cases {
             };
         }
         Ok(CharacterDeathRequest {
+            public_cause: None,
             pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
             context: context(),

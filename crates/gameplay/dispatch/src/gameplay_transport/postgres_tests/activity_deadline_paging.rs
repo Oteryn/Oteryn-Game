@@ -139,22 +139,30 @@ async fn case(h: &Harness) -> TestResult {
                 format!("pager durability did not settle before room entry {member}").into(),
             );
         }
-        // A ready check above can still lose the race to a holder that takes the root right
-        // after it (seen on CI as a single Unavailable at entry 10). Unavailable means the root
-        // could not be acquired, so retry the same request until a bounded deadline; every
-        // other error, and Unavailable after the deadline, still fails the test.
+        let account: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(request.initiating_character_id.as_bytes().as_slice())
+            .fetch_one(&h.pool).await?;
+        // admit_member publishes synthetic security after its first real floor refresh.
+        // Across a clock-second boundary that floor is older than the guard, so claim
+        // transfer correctly rejects it as stale. Allocation can also age it past 5 s.
+        // Refresh after setup and on every retry; retrying entry alone cannot repair it.
         let retry_until = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
         let outcome = loop {
+            evidence
+                .evidence
+                .refresh_account(&h.root, &h.node, &account)
+                .await
+                .map_err(debug)?;
             match owner
                 .enter_boss_room(&authority, &h.node, request.clone())
                 .await
             {
-                Err(crate::durability::DurabilityError::Unavailable)
-                    if tokio::time::Instant::now() < retry_until =>
-                {
-                    // The refused checkout recorded ready demand. Serve it as the node's
-                    // maintenance loop would; otherwise a retired holder never comes back
-                    // (CI saw Unavailable for the whole 30 s at entry 15).
+                Err(
+                    crate::durability::DurabilityError::Unavailable
+                    | crate::durability::DurabilityError::RootUnavailable,
+                ) if tokio::time::Instant::now() < retry_until => {
+                    // A refused checkout records ready demand. Serve it as the node's
+                    // maintenance loop would; this fixture has no maintenance loop.
                     if !h.root.maintain_ready_once().await.unwrap_or(false) {
                         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                     }
@@ -340,6 +348,18 @@ async fn admit_member(
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     member: u8,
 ) -> TestResult<GameSessionId> {
+    admit_member_with_progression(h, evidence, member, 50, 1000).await
+}
+
+/// Reuse real signed Fresh admission for independent Characters. Only their
+/// initial birth/progression fixture varies; session and ledger rows stay owned.
+async fn admit_member_with_progression(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+    level: u32,
+    experience: i64,
+) -> TestResult<GameSessionId> {
     let character = id(100 + member);
     let account = id(120 + member);
     // Only initial Character/progression input is fixture data, as in Harness.
@@ -351,8 +371,19 @@ async fn admit_member(
     sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1',$4,NULL)")
         .bind(character.as_slice()).bind(account.as_slice()).bind(id(42).as_slice())
         .bind(format!("Fixture Member {}",char::from(b'A' + member))).execute(&h.pool).await?;
-    sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
-        .bind(character.as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,$2,$3,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1')")
+        .bind(character.as_slice()).bind(i64::from(level)).bind(experience).execute(&h.pool).await?;
+    admit_created_member(h, evidence, member, character).await
+}
+
+/// Publish and admit an already-created Character through the same verified
+/// Fresh owner. Native progression tests create its history through bootstrap.
+pub(super) async fn admit_created_member(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+    character: [u8; 16],
+) -> TestResult<GameSessionId> {
     let (account,character_text):(String,String)=sqlx::query_as("SELECT account_id::text,character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(character.as_slice()).fetch_one(&h.pool).await?;
     // A published Account guard does not supply the producer-owned security
@@ -445,10 +476,20 @@ async fn admit_member(
         [170 + member; 32],
         now,
     )?;
-    let outcome = FreshAdmissionStore::from_root(h.root.clone())
-        .commit(&request)
-        .await
-        .map_err(debug)?;
+    let store = FreshAdmissionStore::from_root(h.root.clone());
+    // These direct fixtures have no node maintenance loop. Reconcile the same
+    // immutable admission request after a holder replacement; never reseed or
+    // manufacture a committed membership after an unavailable write.
+    super::maintain_ready(&h.root).await?;
+    let mut result = store.commit(&request).await;
+    for _ in 0..3 {
+        if result.is_ok() || !h.root.has_ready_demand() {
+            break;
+        }
+        super::maintain_ready(&h.root).await?;
+        result = store.commit(&request).await;
+    }
+    let outcome = result.map_err(|error| format!("Fresh member {member} commit: {error:?}"))?;
     assert!(
         matches!(outcome, FreshAdmissionDurableOutcomeV1::Committed(_)),
         "real pager source admission: {outcome:?}"

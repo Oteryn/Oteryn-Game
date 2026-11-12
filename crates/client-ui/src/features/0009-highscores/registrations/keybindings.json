@@ -1,0 +1,9 @@
+{
+  "mechanic": "0009-highscores",
+  "kind": "keybindings",
+  "id": "0009-highscores-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+H",
+  "entry": "input.rs::open_key"
+}

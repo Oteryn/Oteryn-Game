@@ -1,0 +1,33 @@
+# Merge into the existing shipped node config; provision this separate mTLS identity.
+[platform.character_commands]
+source_authority = "oteryn:character-authority:primary"
+client_certificate_file = "/run/oteryn/pki/character-commands.crt.pem"
+client_key_file = "/run/oteryn/pki/character-commands.key.pem"
+
+[platform.character_commands.account_deletion]
+enabled = true
+lifecycle_source = "platform_pull"
+epoch_fence_file = "/var/lib/oteryn/account-closure/epoch-fence"
+house = "vacant_only"
+guild = "vacant_only"
+market = "vacant_only"
+bank = "vacant_only"
+preserve_custody = true
+permit_retirement = true
+name_release_after_seconds = 2592000
+# Optional physical_erasure_after_seconds, proof_retention_seconds and
+# restoration_operator are intentionally absent: unresolved policy stays pending.
+
+# Required existing dependent feeds: each uses a different provisioned key pair.
+[platform.account_characters]
+source_authority = "oteryn:character-authority:primary"
+client_certificate_file = "/run/oteryn/pki/account-characters.crt.pem"
+client_key_file = "/run/oteryn/pki/account-characters.key.pem"
+epoch_fence_file = "/var/lib/oteryn/account-characters/epoch-fence"
+
+[platform.public_projections]
+enabled = true
+source_authority = "oteryn:game-public:primary"
+client_certificate_file = "/run/oteryn/pki/public-projections.crt.pem"
+client_key_file = "/run/oteryn/pki/public-projections.key.pem"
+epoch_fence_file = "/var/lib/oteryn/public-projections/epoch-fence"

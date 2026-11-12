@@ -18,6 +18,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let wake = self.states.spell_states.lock().await.owner_wake.clone();
+        let mut npc_voices = {
+            let runtime = self.runtime.lock().await;
+            self.states
+                .chat
+                .npc_talk()
+                .map(|book| super::npc_voice::NpcVoiceCycle::new(&runtime, book))
+        };
         loop {
             let mut notified = pin!(wake.notified());
             notified.as_mut().enable();
@@ -37,6 +44,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .chain(
                         self.bundle_map()
                             .and_then(|map| map.facts.next_movement_decay_time()),
+                    )
+                    .chain(self.states.quest_callbacks.next_encounter_due_us())
+                    .chain(
+                        npc_voices
+                            .as_ref()
+                            .and_then(super::npc_voice::NpcVoiceCycle::next_due_us),
                     )
                     .min()
                     .map_or(1_000_000, |due| {
@@ -68,6 +81,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .await;
             if stopped {
+                // Cancellation does not prove that player/other autonomous
+                // owners have stopped. Serving performs the terminal source
+                // drain only after that stronger shared quiescence boundary.
                 return;
             }
             // One owner pass is one owner turn: the world-interaction cap starts anew, under
@@ -84,13 +100,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
+            let _ = self.flush_daily_kill_statistics().await;
             self.tick_timed_items().await;
             if !self.ensure_source_map_initialized().await {
                 continue;
             }
             self.drain_source_item_deadlines().await;
+            self.drain_quest_encounter_deadlines().await;
             self.drain_source_party_deadlines_bounded().await;
             let _ = self.drain_native_ai_timers().await;
+            if let Some(cycle) = npc_voices.as_mut() {
+                self.emit_npc_voices(cycle, self.owner_now().get()).await;
+            }
         }
     }
 
@@ -127,7 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         stage("entered");
         let Some(room) = self
-            .rooms
+            .rooms()
             .gate_source_map_initialization()
             .filter(|room| room.source_world().is_some())
         else {

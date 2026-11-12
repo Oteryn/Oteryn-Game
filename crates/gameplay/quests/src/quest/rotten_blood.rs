@@ -8,6 +8,9 @@
 
 use serde::{Deserialize, Serialize};
 
+mod altar_transition;
+pub(crate) use altar_transition::transition as altar_transition;
+
 pub const REQUIRED_LEVEL: u32 = 250;
 pub const ACCESS_TRACK: &str = "oteryn:quest-progress/rotten-blood/access";
 pub const QUEST: &str = "oteryn:quest/rotten-blood";
@@ -30,17 +33,26 @@ pub const CLEANSE_COOLDOWN_SECONDS: u64 = 68 * 60 * 60;
 /// by the existing quest callback consumption owner under the Character lock.
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
-    Callback {
+    Callback { effects: Default::default(), facing: None, world_requirements: Vec::new(),
+use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
+        state_operations: Vec::new(),
+world_change: None,
+        actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
-        selector: Selector { position: None, unique: None, action: None,
+        selector: Selector { position_aliases: Vec::new(),ordinal:None, native: None, position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
-        lever: None, reversible: false, passages: Vec::new(), teleport: None,
-        storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1 }],
+        lever: None, reversible: false, passages: Vec::new(), teleport: None, remote_teleport: None,
+        item_reward: None,
+        reward_bundle: false,
+        achievements: vec![],
+        activation: None, requirements: None,
+        storage: vec![Storage { at_least: false, increment: false, track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, set_if: None, add: None, preserve: false, read_only: false }],
         minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),
         item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,
-            replacement: None, target_replacement: None }),
-        return_on_failure: false,
+            alternatives: Vec::new(), replacement: None, target_replacement: None, reusable: false }),
+        return_on_failure: false, failure_teleport: None,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),
+        success_message: None, native_rule: None,
         sources: vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:4-33".into()],
     }
 }
@@ -130,14 +142,6 @@ pub(super) fn extend(
             )],
         ),
         (
-            SACRIFICE,
-            vec![effect(
-                ACCESS_TRACK,
-                QuestComparison::Between(0, 3),
-                QuestEffectKind::Add(1),
-            )],
-        ),
-        (
             PURCHASE_ACCESS,
             vec![effect(
                 ACCESS_TRACK,
@@ -147,6 +151,7 @@ pub(super) fn extend(
         ),
     ] {
         transitions.push(QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects,
@@ -154,6 +159,7 @@ pub(super) fn extend(
             experience: None,
         });
     }
+    transitions.push(altar_transition());
     super::QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|error| format!("{error:?}"))
 }

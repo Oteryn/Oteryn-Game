@@ -1,6 +1,18 @@
 //! GM-1 real admitted session -> command envelope -> atomic signed audit/effect -> wire result.
 #[path = "staff/evidence_cases.rs"]
 mod evidence_cases;
+#[path = "staff/nx1_ban.rs"]
+mod nx1_ban;
+#[path = "staff/nx1_forced_release.rs"]
+mod nx1_forced_release;
+#[path = "staff/nx1_native.rs"]
+mod nx1_native;
+#[path = "staff/nx1_tools_schema.rs"]
+mod nx1_tools_schema;
+#[path = "staff/nx1_world.rs"]
+mod nx1_world;
+#[path = "staff/refresh.rs"]
+mod refresh;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::staff::{StaffConfig, StaffTrust, rules};
@@ -28,10 +40,10 @@ fn sha(bytes: &[u8]) -> String {
 fn canonical(value: &impl Serialize) -> TestResult<Vec<u8>> {
     Ok(serde_json::to_vec(&serde_json::to_value(value)?)?)
 }
-struct Signing {
+pub(super) struct Signing {
     directory: PathBuf,
     key: PathBuf,
-    config: StaffConfig,
+    pub(super) config: StaffConfig,
     activation: wire::SignedEnvelope,
     fingerprint: String,
 }
@@ -41,7 +53,7 @@ impl Drop for Signing {
     }
 }
 impl Signing {
-    fn new() -> TestResult<Self> {
+    pub(super) fn new() -> TestResult<Self> {
         let suffix = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
@@ -59,7 +71,7 @@ impl Signing {
         let public = std::fs::read_to_string(key.with_extension("pub"))?;
         let parts: Vec<_> = public.split_whitespace().collect();
         let roster = format!(
-            "# oteryn-staff-role operator GM\noperator {} {}\n",
+            "# oteryn-staff-role operator ADMIN\noperator {} {}\n",
             parts[0], parts[1]
         );
         use base64::Engine;
@@ -101,7 +113,7 @@ impl Signing {
         )?;
         Ok(fixture)
     }
-    fn sign(&self, bytes: &[u8], receipt: bool) -> TestResult<wire::SignedEnvelope> {
+    pub(super) fn sign(&self, bytes: &[u8], receipt: bool) -> TestResult<wire::SignedEnvelope> {
         let mut child = Command::new("ssh-keygen")
             .args(["-Y", "sign", "-f"])
             .arg(&self.key)
@@ -126,7 +138,7 @@ impl Signing {
             signature: output.stdout,
         })
     }
-    fn request(
+    pub(super) fn request(
         &self,
         seq: u64,
         previous: &str,
@@ -135,6 +147,7 @@ impl Signing {
         action: rules::Action,
     ) -> rules::Request {
         rules::Request {
+            issuer_character_id: Some(hex(&id(41))),
             action,
             activation_sha256: self.config.newest_activation_sha256.clone(),
             channel_id: hex(&id(43)),
@@ -148,9 +161,9 @@ impl Signing {
             world_id: hex(&id(42)),
         }
     }
-    async fn bootstrap(&self, h: &Harness) -> TestResult {
+    pub(super) async fn bootstrap(&self, h: &Harness) -> TestResult {
         let mut tx = h.pool.begin().await?;
-        sqlx::query("INSERT INTO game_staff_rosters(environment,activation_sha256,roster_sha256,principal,key_fingerprint,role) VALUES($1,$2,$3,'operator',$4,'GM')")
+        sqlx::query("INSERT INTO game_staff_rosters(environment,activation_sha256,roster_sha256,principal,key_fingerprint,role) VALUES($1,$2,$3,'operator',$4,'ADMIN')")
             .bind(&self.config.environment).bind(&self.config.newest_activation_sha256).bind(&self.config.allowed_signers_sha256).bind(&self.fingerprint).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,kind,link_sha256,previous_link_sha256,activation_sha256,roster_sha256,principal,key_fingerprint,canonical,signature) VALUES($1,1,'ACTIVATION',$2,$3,$2,$4,'operator',$5,$6,$7)")
             .bind(&self.config.environment).bind(&self.config.newest_activation_sha256).bind("0".repeat(64)).bind(&self.config.allowed_signers_sha256).bind(&self.fingerprint).bind(&self.activation.canonical).bind(&self.activation.signature).execute(&mut *tx).await?;
@@ -162,6 +175,20 @@ impl Signing {
             .map_err(debug)?;
         Ok(())
     }
+}
+// Match real first-entry lease binding before exercising staff runtime proofs.
+async fn bind_tools_actor(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    let fence=owner.current_quest_fence(session).await.map_err(|_| "tools actor fence")?.ok_or("tools actor missing")?.item_fence();
+    let lease=crate::foundation::CharacterLease::new(
+        crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+        fence.character_lease_generation,
+    ).map_err(debug)?;
+    owner.runtime.lock().await.bind_attacker_lease(actor,session,lease).map_err(debug)?;
+    Ok(())
 }
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
@@ -184,6 +211,17 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         payload: &[u8],
     ) -> crate::gameplay_transport::StaffReply {
         self.0.staff_command(admitted, receipt, payload).await
+    }
+    async fn staff_tools_command(
+        &self,
+        admitted: AdmittedSession,
+        receipt: bool,
+        payload: &[u8],
+    ) -> crate::gameplay_transport::StaffReply {
+        self.0.staff_tools_command(admitted, receipt, payload).await
+    }
+    async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
+        self.0.staff_refresh(admitted).await
     }
     async fn chat_intent(
         &self,
@@ -459,14 +497,18 @@ fn scenario() -> TestResult {
         }
         let mut stale = admitted;
         stale.continuity.connection_generation = 2;
-        assert!(submit(&owner, stale, &signed, false).await?.is_none());
+        // A superseded transport is disconnected by the universal guard before setup.
+        assert!(exchange_raw(&owner, stale, wire::COMMAND_TYPE_STAFF_REQUEST,
+            &wire::encode_envelope(&signed)?).await?.is_none());
         stale
             .item_fence
             .as_mut()
             .ok_or("fence")?
             .connection_generation =
             crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
-        assert!(submit(&owner, stale, &signed, false).await?.is_none());
+        // A superseded transport is disconnected by the universal guard before setup.
+        assert!(exchange_raw(&owner, stale, wire::COMMAND_TYPE_STAFF_REQUEST,
+            &wire::encode_envelope(&signed)?).await?.is_none());
         stale = admitted;
         stale
             .item_fence
@@ -857,13 +899,17 @@ fn scenario() -> TestResult {
             "legitimately expired audit evidence does not break the retained chain"
         );
         assert_eq!(counts(&h).await?, (6, 5, 1));
+        // Keep the signed request carrier alive to store the receipt and test
+        // retained history. Actual forced target termination has its NX-1 cases.
+        h.seed_pvp_target().await?;
+        super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
         let kick = signing.request(
             11,
             &sha(&signed_next.canonical),
             99,
             now,
             rules::Action::Kick {
-                character_id: hex(&id(41)),
+                character_id: hex(&id(101)),
             },
         );
         let signed_kick = signing.sign(&canonical(&kick)?, false)?;

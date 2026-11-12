@@ -1,0 +1,245 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l6/waterskin-of-mead",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32215,
+          "y": 31060,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2523
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 35,
+          "maximum": 44,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission09",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/formorgar_mines_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/waterskin_of_mead",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found a bag with a waterskin of mead.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lurik.lua:118-120",
+        "https://www.tibiawiki.com.br/wiki/Waterskin_of_Mead_Quest",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lurik.lua#L118-L120",
+        "content/quests/authoring/waterskin-of-mead.md"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7343",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i2901",
+              "count": 1,
+              "fluid_subtype": 16
+            },
+            {
+              "item": "oteryn:item.tibia.i7439",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 82
+            }
+          ],
+          "premium": true
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/spirit-will-1",
+      "quest": "oteryn:quest.the_spirit_will_get_you_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33079,
+          "y": 31158,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/spirit/will-1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found a faded last will.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:28483-28487:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "content/quests/authoring/spirit-wills.md"
+      ],
+      "effects": {
+        "item_reward": {
+          "premium": true,
+          "item": "oteryn:item.tibia.i11544",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/spirit-will-2",
+      "quest": "oteryn:quest.the_spirit_will_get_you_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33083,
+          "y": 31158,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2469
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/spirit/will-2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found a faded last will.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:28483-28487:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "content/quests/authoring/spirit-wills.md"
+      ],
+      "effects": {
+        "item_reward": {
+          "premium": true,
+          "item": "oteryn:item.tibia.i11544",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/spirit-will-3",
+      "quest": "oteryn:quest.the_spirit_will_get_you_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33083,
+          "y": 31159,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/spirit/will-3",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found a faded last will.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:28483-28487:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "content/quests/authoring/spirit-wills.md"
+      ],
+      "effects": {
+        "item_reward": {
+          "premium": true,
+          "item": "oteryn:item.tibia.i11544",
+          "count": 1,
+          "contents": []
+        }
+      }
+    }
+  ]
+}

@@ -1,5 +1,11 @@
 //! Reused native activation fixture and LOOP-MONSTER source-profile variants.
 use super::*;
+#[cfg(test)]
+#[path = "source_loot_assertions.rs"]
+mod source_loot_assertions;
+#[cfg(test)]
+#[path = "source_loot_refusals.rs"]
+mod source_loot_refusals;
 
 fn manifest_input() -> NativeGameplayInput {
     let manifest = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
@@ -17,7 +23,28 @@ fn activate(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
-    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied).unwrap();
+    try_activate_input(world, supplied).unwrap()
+}
+
+/// Qualify a fixture once, then use the same sealed activation checks as the node entry path.
+/// Fixture issuance is derived from that qualified room; production issuances remain independent.
+pub fn try_activate_input(
+    world: oteryn_protocol_oteryn::WorldId,
+    supplied: &NativeGameplayInput,
+) -> Result<
+    (
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    ),
+    crate::content::NativeEntryActivationError,
+> {
+    use crate::content::NativeEntryActivationError;
+    supplied
+        .validate_cosmetics_pin()
+        .map_err(crate::content::ProjectError::from)
+        .map_err(NativeEntryActivationError::Qualification)?;
+    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied)
+        .map_err(NativeEntryActivationError::Qualification)?;
     let issuance = NativeEntryActivationIssuance {
         world_id: world,
         activation_sequence: 1,
@@ -26,15 +53,13 @@ fn activate(
         frame_binding_digest: room.frame_binding().digest(),
     };
     let mut controller = ContentActivationController::new();
-    let pin = activate_native_entry_room_with_gameplay(
+    let pin = crate::content::activation::activate_qualified_native_entry_room(
         &mut controller,
         &NodeBootQuiescence::before_channel_runtime(),
-        world,
         &issuance,
-        supplied,
-    )
-    .unwrap();
-    (controller, pin)
+        room,
+    )?;
+    Ok((controller, pin))
 }
 
 pub fn activated_with_loot_tables(
@@ -57,6 +82,18 @@ pub fn activated_reward_boss_fixture(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
+    activated_reward_boss_corpse_capacity_fixture(world, source_world, None)
+}
+
+/// Test-only pinned loot metadata variant; ordinary fixture semantics stay unchanged.
+pub fn activated_reward_boss_corpse_capacity_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+    capacity: Option<u32>,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
     let mut supplied = manifest_input();
     let mut creatures: CreatureProfilesDocument =
         serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
@@ -74,10 +111,125 @@ pub fn activated_reward_boss_fixture(
         .expect("source rat details")
         .system_eligibility
         .reward_boss = true;
+    if let Some(capacity) = capacity {
+        let corpse = profile
+            .details
+            .as_ref()
+            .expect("rat details")
+            .corpse_item
+            .as_ref()
+            .expect("rat corpse");
+        let mut loot: serde_json::Value =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().expect("loot tables").bytes)
+                .unwrap();
+        let facts = loot["items"]
+            .as_array_mut()
+            .expect("loot items")
+            .iter_mut()
+            .find(|facts| facts["item"]["key"] == corpse.key)
+            .expect("rat corpse facts");
+        facts["container_capacity"] = serde_json::json!(capacity);
+        supplied.loot_tables = Some(pinned(&serde_json::to_vec(&loot).unwrap()));
+    }
     refresh_fixture_attack_roots(rat);
     supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
     supplied.source_world = source_world.map(pinned);
     activate(world, &supplied)
+}
+
+/// Native kneebiter fixture with a materializable corpse and deterministic equipment loot.
+pub fn activated_boss_slot_loot_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut supplied = manifest_input();
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+    let rat_corpse = creatures
+        .records
+        .iter()
+        .find(|record| record.profile.target.key == "oteryn:creature.rat")
+        .and_then(|record| match &record.profile.data {
+            ProjectV2AuthoringProfileData::Creature(profile) => profile.details.as_ref(),
+            _ => None,
+        })
+        .and_then(|details| details.corpse_item.clone())
+        .expect("source rat corpse");
+    let kneebiter = creatures
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.foreman_kneebiter")
+        .expect("source kneebiter");
+    let ProjectV2AuthoringProfileData::Creature(profile) = &mut kneebiter.profile.data else {
+        panic!("kneebiter Creature profile");
+    };
+    profile
+        .details
+        .as_mut()
+        .expect("source kneebiter details")
+        .corpse_item = Some(rat_corpse);
+    refresh_fixture_attack_roots(kneebiter);
+    supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
+
+    let mut loot: serde_json::Value = serde_json::from_slice(
+        &supplied
+            .loot_tables
+            .as_ref()
+            .expect("manifest loot tables")
+            .bytes,
+    )
+    .unwrap();
+    let table = loot["tables"]
+        .as_array_mut()
+        .expect("loot tables array")
+        .iter_mut()
+        .find(|table| table["identity"]["key"] == "oteryn:loot.creature.foreman_kneebiter")
+        .expect("kneebiter loot table");
+    table["entries"] = serde_json::json!([
+        {
+            "item": {"family": "Item", "key": "oteryn:item.tibia.i3051", "revision": "definition-r1"},
+            "min_count": 1,
+            "max_count": 1,
+            "probability_ppm": 1_000_000
+        },
+        {
+            "item": {"family": "Item", "key": "oteryn:item.tibia.i3031", "revision": "definition-r1"},
+            "min_count": 1,
+            "max_count": 1,
+            "probability_ppm": 1_000_000
+        }
+    ]);
+    supplied.loot_tables = Some(pinned(&serde_json::to_vec(&loot).unwrap()));
+    supplied.source_world = source_world.map(pinned);
+    activate(world, &supplied)
+}
+
+#[cfg(test)]
+#[test]
+fn boss_slot_loot_fixture_compiles_kneebiter_row() {
+    let world = test_source(1).unwrap().world_id;
+    let (fixture, _) = activated_boss_slot_loot_fixture(world, None);
+    let native = fixture.active().unwrap().native_gameplay().unwrap();
+    let row = native
+        .reward_table()
+        .row("oteryn:creature.foreman_kneebiter")
+        .unwrap();
+    assert_eq!(row.boss.as_ref().unwrap().category, "nemesis");
+    assert!(
+        native
+            .reward_table()
+            .is_daily_boss_equipment("oteryn:item.tibia.i3051")
+    );
+    let policy = native
+        .policies()
+        .policies()
+        .iter()
+        .find(|policy| policy.definition_key == "oteryn:creature.foreman_kneebiter")
+        .unwrap();
+    assert_eq!(policy.reward_boss, Some(false));
 }
 
 #[cfg(test)]
@@ -85,9 +237,7 @@ pub fn activated_reward_boss_fixture(
 fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
 -> Result<(), String> {
     use crate::content::creature_reward::{LootTablesSection, NoSettlementReason};
-    use oteryn_gameplay_domain::domain::loot_data::{
-        GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
-    };
+    use oteryn_gameplay_domain::domain::loot_data::{LootDefinitionRef, LootSelectionAlgorithm};
     let supplied = manifest_input();
     let loot: LootTablesSection = serde_json::from_slice(
         &supplied
@@ -107,14 +257,21 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Quests batch 2 admits corpse 39530: one reward boss is now materializable,
-    // leaving 52 without a corpse and 334 with an inadmissible corpse.
+    // Source-qualified quest corpses also expose these ten named boss bodies.
+    // Their independent private-loot closure remains mandatory: five new aliases
+    // (Monk, Demon, Elf and Rotten Blood bodies) do not acquire private loot.
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
+    let newly_admitted = [
+        "oteryn:creature.the_percht_queen",
+        "oteryn:creature.goshnar_s_spite",
+    ];
     let mut missing = 0;
     let mut inadmissible = 0;
     let mut admitted = Vec::new();
+    let mut shared_body = Vec::new();
+    let mut refreshed_body_loot_refusals = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -135,12 +292,112 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     && facts.item.key == corpse.key
                     && facts.item.revision == corpse.revision
                     && facts.materializable
-                    && facts.container_capacity.is_some_and(|capacity| {
-                        (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u32).contains(&capacity)
-                    })
+                    // Main's private reward owner requires a real container;
+                    // its personal loot plan keeps the independent entry bound.
+                    && facts.container_capacity.is_some_and(|capacity| capacity > 0)
             })
         });
         let expected = if let Some(corpse) = materializable_corpse {
+            if matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.bazir"
+                    | "oteryn:creature.infernatil"
+                    | "oteryn:creature.demodras"
+                    | "oteryn:creature.the_old_widow"
+            ) {
+                // Loot regeneration refreshes their already qualified source body;
+                // The native-goal owner now qualifies these three identities;
+                // the other five still forbid this entire private loot table.
+                for key in [
+                    "oteryn:item.tibia.i3061",
+                    "oteryn:item.tibia.i3072",
+                    "oteryn:item.tibia.i2903",
+                ] {
+                    let facts = loot
+                        .items
+                        .iter()
+                        .find(|facts| facts.item.key == key)
+                        .ok_or("qualified native-goal loot identity")?;
+                    assert!(facts.materializable);
+                    assert_eq!(facts.item.family, "Item");
+                    assert_eq!(facts.item.revision, "definition-r1");
+                }
+                let (body, refused): (&str, &[&str]) = match policy.definition_key.as_str() {
+                    "oteryn:creature.demodras" => {
+                        ("oteryn:item.tibia.i5984", &["oteryn:item.tibia.i5919"])
+                    }
+                    "oteryn:creature.the_old_widow" => (
+                        "oteryn:item.tibia.i5977",
+                        &["oteryn:item.tibia.i7416", "oteryn:item.tibia.i12320"],
+                    ),
+                    _ => (
+                        "oteryn:item.tibia.i4097",
+                        &[
+                            "oteryn:item.tibia.i3002",
+                            "oteryn:item.tibia.i3070",
+                            "oteryn:item.tibia.i3069",
+                            "oteryn:item.tibia.i3116",
+                            "oteryn:item.tibia.i3309",
+                        ],
+                    ),
+                };
+                assert_eq!(corpse.key, body);
+                let binding = loot
+                    .creature_loot
+                    .iter()
+                    .find(|binding| binding.creature.key == policy.definition_key)
+                    .ok_or("source refused boss loot binding")?;
+                let reference = binding.loot.as_ref().ok_or("source refused boss loot")?;
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *reference)
+                    .ok_or("source refused boss table")?;
+                assert_eq!(
+                    source_loot_refusals::items(&table.entries, &loot.items),
+                    refused
+                );
+                assert_eq!(
+                    source.reward_table().row(&policy.definition_key).err(),
+                    Some(NoSettlementReason::LootItemInadmissible)
+                );
+                inadmissible += 1;
+                refreshed_body_loot_refusals.push(policy.definition_key.as_str());
+                continue;
+            }
+            if matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.apprentice_sheng"
+                    | "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.bakragore"
+                    | "oteryn:creature.dharalion"
+                    | "oteryn:creature.grand_mother_foulscale"
+                    | "oteryn:creature.orshabaal"
+                    | "oteryn:creature.the_weakened_count"
+            ) {
+                shared_body.push(policy.definition_key.as_str());
+                match policy.definition_key.as_str() {
+                    "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.grand_mother_foulscale" => {
+                        let row = source
+                            .reward_table()
+                            .row(&policy.definition_key)
+                            .map_err(|reason| format!("{}: {reason:?}", policy.definition_key))?;
+                        assert_eq!(
+                            row.corpse_item,
+                            LootDefinitionRef::new("Item", &corpse.key, &corpse.revision)
+                        );
+                        assert!(!row.loot_table.entries.is_empty());
+                    }
+                    _ => assert_eq!(
+                        source.reward_table().row(&policy.definition_key).err(),
+                        Some(NoSettlementReason::LootItemInadmissible),
+                        "corpse admission cannot bypass independent source loot admission"
+                    ),
+                }
+                continue;
+            }
             admitted.push(policy.definition_key.as_str());
             let row = source
                 .reward_table()
@@ -162,13 +419,89 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .iter()
                 .find(|binding| binding.creature.key == policy.definition_key)
                 .ok_or("source reward-boss loot binding")?;
-            assert!(binding.loot.is_none(), "source boss has no authored loot");
-            assert_eq!(row.loot_table_ref, row.corpse_item);
+            if newly_admitted.contains(&policy.definition_key.as_str()) {
+                let reference = binding.loot.as_ref().ok_or("source Queen loot binding")?;
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|t| t.identity == *reference)
+                    .ok_or("source Queen loot table")?;
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&reference.family, &reference.key, &reference.revision)
+                );
+                assert_eq!(table.algorithm, "IndependentBernoulliPpm");
+                assert!(!table.entries.is_empty());
+                source_loot_assertions::entries(
+                    &row.loot_table.entries,
+                    &table.entries,
+                    &loot.items,
+                );
+            } else if policy.definition_key == "oteryn:creature.sugar_daddy" {
+                // W02's exact source capture admits this body and every Item
+                // of the unchanged canonical loot table, never a fixture table.
+                let bound = binding.loot.as_ref().ok_or("Sugar source loot binding")?;
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&bound.family, &bound.key, &bound.revision)
+                );
+                let original = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *bound)
+                    .ok_or("Sugar original source loot table")?;
+                assert_eq!(row.loot_table.entries.len(), 22);
+                assert_eq!(row.loot_table.entries.len(), original.entries.len());
+                for (actual, expected) in row.loot_table.entries.iter().zip(&original.entries) {
+                    assert_eq!(
+                        actual.item,
+                        LootDefinitionRef::new(
+                            &expected.item.family,
+                            &expected.item.key,
+                            &expected.item.revision
+                        )
+                    );
+                    assert_eq!(
+                        (actual.min_count, actual.max_count, actual.probability_ppm),
+                        (
+                            expected.min_count,
+                            expected.max_count,
+                            expected.probability_ppm
+                        )
+                    );
+                    assert!(actual.details.children.is_empty());
+                    assert!(expected.children.is_empty());
+                }
+            } else if policy.definition_key == "oteryn:creature.the_primal_menace" {
+                // Crystal the_primal_menace.lua:118 is a source-proven empty
+                // Loot table, never the legacy no-binding/corpse-ref fallback.
+                let bound = binding
+                    .loot
+                    .as_ref()
+                    .ok_or("Primal explicit empty source loot binding")?;
+                assert_eq!(bound.family, "Loot");
+                assert_eq!(bound.key, "oteryn:loot.creature.the_primal_menace");
+                assert_eq!(bound.revision, "definition-r1");
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&bound.family, &bound.key, &bound.revision)
+                );
+                let original = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *bound)
+                    .ok_or("Primal original explicit empty source loot table")?;
+                assert!(original.entries.is_empty());
+                assert!(row.loot_table.entries.is_empty());
+            } else {
+                assert!(binding.loot.is_none(), "source boss has no authored loot");
+                assert_eq!(row.loot_table_ref, row.corpse_item);
+                assert!(row.loot_table.entries.is_empty());
+            }
             assert_eq!(
                 row.loot_table.algorithm,
                 LootSelectionAlgorithm::IndependentBernoulliPpm
             );
-            assert!(row.loot_table.entries.is_empty());
             None
         } else if corpse.is_none() {
             missing += 1;
@@ -184,8 +517,45 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 334, 1));
-    assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 323, 4));
+    assert_eq!(
+        missing + inadmissible + admitted.len() + shared_body.len(),
+        bosses.len()
+    );
+    admitted.sort_unstable();
+    assert_eq!(
+        admitted,
+        [
+            "oteryn:creature.goshnar_s_spite",
+            "oteryn:creature.sugar_daddy",
+            "oteryn:creature.the_percht_queen",
+            "oteryn:creature.the_primal_menace"
+        ]
+    );
+    shared_body.sort_unstable();
+    refreshed_body_loot_refusals.sort_unstable();
+    assert_eq!(
+        refreshed_body_loot_refusals,
+        [
+            "oteryn:creature.bazir",
+            "oteryn:creature.demodras",
+            "oteryn:creature.infernatil",
+            "oteryn:creature.the_old_widow"
+        ]
+    );
+    assert_eq!(
+        shared_body,
+        [
+            "oteryn:creature.an_observer_eye",
+            "oteryn:creature.apprentice_sheng",
+            "oteryn:creature.armenius_creature",
+            "oteryn:creature.bakragore",
+            "oteryn:creature.dharalion",
+            "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.orshabaal",
+            "oteryn:creature.the_weakened_count",
+        ]
+    );
     assert_eq!(bosses.len(), 387);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
@@ -295,6 +665,9 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
             .clone();
         attack.interval_ms = 1000;
         attack.chance_ppm = 1_000_000;
+        // The donor body may be uncapped (0); this synthetic schedule qualifies
+        // the explicit seven-tile creature override, independent of record order.
+        attack.range_tiles = Some(7);
         let rat = creatures
             .records
             .iter_mut()

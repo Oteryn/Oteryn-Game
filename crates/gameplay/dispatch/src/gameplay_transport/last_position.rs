@@ -711,11 +711,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         // A retained build may have committed its refill before live installation. Keep
         // the transaction's projection until the actor has the committed pools too.
-        if self
-            .states
-            .npc_conversations
-            .dawnport_choice(session)
-            .is_some_and(|choice| choice.retained.is_some())
+        if self.states.dawnport_departures.held(session)
+            || self
+                .states
+                .npc_conversations
+                .dawnport_choice(session)
+                .is_some_and(|choice| choice.retained.is_some())
             || self
                 .states
                 .dawnport_trials
@@ -827,6 +828,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> Option<FinalLastPosition> {
+        if !self.resume_dawnport_departure(actor, session).await {
+            return None;
+        }
         let track = self.states.last_positions.tracked(session)?;
         if track.actor != actor {
             return None;
@@ -962,7 +966,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (pin.server_artifact_digest(), pin.frame_binding_digest())
         };
         let input = first_entry_input(decided, self.world_id, frame_digest, |cell| {
-            house_cell(self.movement_cells, cell)
+            house_cell(self.movement_cells(), cell)
         });
         // A respawn's fallback is DEATH-2b's; a stored cell's fallback never lands on a house
         // tile either.
@@ -970,13 +974,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let door = self.door.lock().await;
         initialize_first_entry_at(runtime, actor, session, input, |cell| {
             respawn_cell_admissible(
-                self.movement_cells.index(),
-                self.movement_cells.scope(),
+                self.movement_cells().index(),
+                self.movement_cells().scope(),
                 self.world_id,
                 pinned_digest,
                 door.blocking_cells(),
                 cell,
-            ) && !(stored && house_cell(self.movement_cells, cell))
+            ) && !(stored && house_cell(self.movement_cells(), cell))
         })
     }
 

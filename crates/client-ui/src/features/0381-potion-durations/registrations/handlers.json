@@ -1,0 +1,15 @@
+{
+  "mechanic": "0381-potion-durations",
+  "kind": "handlers",
+  "id": "0381-potion-durations-query",
+  "status": "supported",
+  "commands": [
+    662
+  ],
+  "direction": "client_to_server",
+  "capability": 381,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Potion durations are server-owned; there are no local authority settings."
+  }
+}

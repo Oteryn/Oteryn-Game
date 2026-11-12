@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package oteryn.events.v1;
+
+// PLAT3 candidate payloads inside the existing EventEnvelope, never a new envelope.
+// EventEnvelope owns event/operation/transaction/causation identity. Each mutation
+// and its TransactionEventRef, immutable payload and pending outbox commit together.
+// No collection/runtime permission. Canonical JSON byte grammar is owned by the
+// three PLAT3 contracts; hashes are SHA-256 of exact bytes, not parsed protobuf.
+message BazaarAuthorityDecisionV1 {
+  bytes intent_sha256 = 1; // exactly 32 bytes; complete immutable intent
+  bytes receipt_sha256 = 2; // exactly 32 bytes; retained authoritative CC receipt
+  uint64 recovery_generation = 3; // positive, reconciled nonrollback fence
+}
+
+message AccountClosureDecisionV1 {
+  bytes intent_sha256 = 1; // exactly 32 bytes
+  bytes receipt = 2; // exact CC v2 closure/resolution receipt, <=2048 bytes
+  bytes receipt_sha256 = 3; // exactly 32 bytes
+  uint64 recovery_generation = 4; // positive
+}
+
+message WorldEventOutcomeDecidedV1 {
+  bytes record = 1; // exact event body record, <=16384 bytes
+  bytes record_sha256 = 2; // exactly 32 bytes
+  bytes source_evidence_sha256 = 3; // exactly 32 bytes, terminal native evidence
+  uint64 recovery_generation = 4; // positive; no hidden future result
+  bytes subject_event_id = 5; // 16-byte UUIDv7 question identity, not envelope EventId
+}
+
+message GuildSeasonStandingsDecidedV1 {
+  bytes record_sha256 = 1; // exactly 32 bytes; retained complete season record
+  uint64 recovery_generation = 2; // positive
+  bytes season_id = 3; // exactly 16-byte UUIDv7
+}

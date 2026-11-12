@@ -117,6 +117,15 @@ content path on the production resolver. These declarations pass the existing
 per-field promotion and artifact admission boundaries. Missing mappings remain
 unavailable; Store remains unavailable and D61 remains effective.
 
+
+QENGPR merge compatibility retains the NX-5 and QENGINE2 outfit identities.
+A promoted grant mapping may explicitly list up to 16 distinct `outfit_aliases`.
+Each alias must be a different admitted outfit with identical female and male
+source look IDs and record digests, and support the mapped addon. Mount mappings
+cannot declare outfit aliases. Resolution retains the exact grant receipt,
+compatible provenance and optional sex restriction for every listed identity;
+no account grant is created and no alias is inferred from a name or look alone.
+
 ### 4.4 Incompatible world
 
 If the stored selection is not valid on a world (a key missing or incompatible there, or a Store

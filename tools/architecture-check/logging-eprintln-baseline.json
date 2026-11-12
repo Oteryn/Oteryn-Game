@@ -1,0 +1,78 @@
+{
+  "apps/game-server": [
+    "apps/game-server/src/bin/oteryn-game-ops.rs:1600",
+    "apps/game-server/src/bin/oteryn-game-ops.rs:1695",
+    "apps/game-server/src/bin/oteryn-game-ops.rs:179",
+    "apps/game-server/src/main.rs:14",
+    "apps/game-server/src/main.rs:140",
+    "apps/game-server/src/node/raid_scheduler.rs:178",
+    "apps/game-server/src/node/raid_scheduler.rs:196",
+    "apps/game-server/src/node/raid_scheduler.rs:219",
+    "apps/game-server/src/node/raid_scheduler.rs:222",
+    "apps/game-server/src/node/raid_scheduler/world_changes.rs:162",
+    "apps/game-server/src/node/serve.rs:241",
+    "apps/game-server/src/node/serve.rs:290",
+    "apps/game-server/src/node/serve.rs:3412",
+    "apps/game-server/src/node/serve.rs:345",
+    "apps/game-server/src/node/serve.rs:351",
+    "apps/game-server/src/node/serve.rs:386",
+    "apps/game-server/src/node/serve/world_reset.rs:98"
+  ],
+  "crates/error-codes": [
+    "crates/error-codes/build.rs:20",
+    "crates/error-codes/build.rs:25",
+    "crates/error-codes/build.rs:43",
+    "crates/error-codes/build.rs:49",
+    "crates/error-codes/build.rs:51",
+    "crates/error-codes/src/hook.rs:52"
+  ],
+  "crates/gameplay/content": [
+    "crates/gameplay/content/build.rs:3",
+    "crates/gameplay/content/build.rs:4",
+    "crates/gameplay/content/src/bin/oteryn-game-platform-catalog.rs:35"
+  ],
+  "crates/gameplay/content-promotion": [
+    "crates/gameplay/content-promotion/build.rs:3"
+  ],
+  "crates/gameplay/dispatch": [
+    "crates/gameplay/dispatch/build_mechanics.rs:130",
+    "crates/gameplay/dispatch/build_mechanics.rs:138"
+  ],
+  "crates/gameplay/durability": [
+    "crates/gameplay/durability/src/durability/character_equipment.rs:195",
+    "crates/gameplay/durability/src/durability/character_equipment.rs:197",
+    "crates/gameplay/durability/src/durability/character_equipment.rs:202",
+    "crates/gameplay/durability/src/durability/character_equipment.rs:205",
+    "crates/gameplay/durability/src/durability/character_wheel.rs:649",
+    "crates/gameplay/durability/src/durability/guild_chat_fixture/schema.rs:30",
+    "crates/gameplay/durability/src/durability/highscore_snapshot/job.rs:130",
+    "crates/gameplay/durability/src/durability/highscore_snapshot/job.rs:85",
+    "crates/gameplay/durability/src/durability/house_ownership/guildhall.rs:103",
+    "crates/gameplay/durability/src/durability/quest_state.rs:542",
+    "crates/gameplay/durability/src/durability/world_event_outcomes.rs:246",
+    "crates/gameplay/durability/src/durability/world_event_outcomes.rs:360",
+    "crates/gameplay/durability/src/durability/world_event_outcomes/delivery.rs:299"
+  ],
+  "crates/gameplay/monster-ai": [
+    "crates/gameplay/monster-ai/src/monster_lab.rs:411",
+    "crates/gameplay/monster-ai/src/monster_lab.rs:426"
+  ],
+  "crates/gameplay/quests": [
+    "crates/gameplay/quests/build_authored_bindings.rs:10",
+    "crates/gameplay/quests/build_authored_bindings.rs:76",
+    "crates/gameplay/quests/build_batch3_a.rs:26",
+    "crates/gameplay/quests/build_batch3_a.rs:27",
+    "crates/gameplay/quests/build_batch3_a.rs:33",
+    "crates/gameplay/quests/build_batch3_a.rs:7",
+    "crates/gameplay/quests/build_batch3_a.rs:9",
+    "crates/gameplay/quests/build_npc_programs.rs:46",
+    "crates/gameplay/quests/build_npc_programs.rs:64"
+  ],
+  "crates/gameplay/world": [
+    "crates/gameplay/world/src/map/spell_tiles.rs:1079"
+  ],
+  "crates/protocol-oteryn": [
+    "crates/protocol-oteryn/build.rs:318",
+    "crates/protocol-oteryn/build.rs:86"
+  ]
+}

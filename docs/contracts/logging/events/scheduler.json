@@ -1,0 +1,21 @@
+{
+  "module": "scheduler",
+  "owner": "apps/game-server",
+  "events": [
+    {
+      "event": "job",
+      "level": "info",
+      "span": true,
+      "fields": [
+        "name",
+        "advanced",
+        "outcome",
+        "ms"
+      ],
+      "codes": [
+        "E2015"
+      ],
+      "note": "One bounded scheduler or world pass, including retry and cancellation outcomes."
+    }
+  ]
+}

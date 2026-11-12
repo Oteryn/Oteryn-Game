@@ -1,6 +1,79 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Retryable Newhaven kit admission. The durable owner rechecks the current vocation and
+    /// item fence; no cached tutorial transition or historical receipt grants current authority.
+    pub(in crate::gameplay_transport) async fn grant_newhaven_starter(
+        &self,
+        fence: CurrentCharacterItemFence,
+    ) -> std::result::Result<
+        crate::durability::starter_grant::NewhavenStarterOutcome,
+        crate::durability::DurabilityError,
+    > {
+        use crate::durability::starter_grant::NewhavenStarterOutcome;
+        use oteryn_gameplay_items::starter_grant::newhaven_starter_items;
+        let interpretation = self
+            .root
+            .read_character_root_interpretation(self.character, fence.character_id)
+            .await
+            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+        if interpretation.is_none_or(|value| {
+            value.revisions()[3]
+                != oteryn_gameplay_items::starter_grant::NEWHAVEN_STARTER_TEMPLATE_REVISION
+        }) {
+            return Ok(NewhavenStarterOutcome::NotApplicable);
+        }
+        let build = self
+            .root
+            .read_character_build_state(self.character, fence.character_id)
+            .await
+            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+        let Some(kit) = newhaven_starter_items(build.vocation()) else {
+            return Ok(NewhavenStarterOutcome::NotApplicable);
+        };
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return Ok(NewhavenStarterOutcome::NotAdmitted);
+        };
+        let Some(index) = native.item_index() else {
+            return Ok(NewhavenStarterOutcome::NotAdmitted);
+        };
+        let mut definitions = Vec::with_capacity(kit.len());
+        for item in kit {
+            let key = format!("oteryn:item.tibia.i{}", item.tibia_id);
+            let Some(revision) = index.revision(&key).map(str::to_owned) else {
+                return Ok(NewhavenStarterOutcome::NotAdmitted);
+            };
+            definitions.push(crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key,
+                revision_ref: revision,
+            });
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return Err(crate::durability::DurabilityError::Unavailable);
+        };
+        let outcome = self
+            .root
+            .grant_newhaven_starter_items(
+                self.character,
+                self.holder,
+                &fence,
+                &item_ref_admission::NativeItemWeights(native),
+                build.vocation(),
+                definitions,
+            )
+            .await?;
+        if outcome == NewhavenStarterOutcome::Granted {
+            self.states
+                .tutorial_sessions
+                .inventory_changed(fence.game_session_id);
+        }
+        Ok(outcome)
+    }
+
     /// [`Self::initialize_first_entry`], repeated from fresh reads while it is refused before
     /// the Channel-owner write: on a busy holder under `budget` (NODEBOOT-1), on stale authority
     /// for at most [`RECONCILE_ATTEMPTS`] rounds. A refused round wrote no runtime state.
@@ -123,6 +196,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
+        let learned = match self
+            .root
+            .read_character_known_spells(self.character, character_id)
+            .await
+        {
+            Ok(learned) => learned,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         #[cfg(test)]
         stage("character_facts_loaded");
         let Some(monk) = self.load_monk_state(character_id).await else {
@@ -176,21 +257,99 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 stage(&format!("equipment_refused:{_error:?}"));
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
-            // STARTER-1 (CP D1438): the starter grant of the Character's first entry, once per
-            // Character and template; a replay writes nothing.
-            if self
+            let interpretation = self
                 .root
-                .grant_starter_items(
-                    self.character,
-                    self.holder,
-                    &fence,
-                    &item_ref_admission::NativeItemWeights(native),
-                    &crate::durability::starter_grant::StarterTemplate::main(),
-                )
-                .await
-                .is_err()
+                .read_character_root_interpretation(self.character, character_id)
+                .await;
+            let Ok(Some(interpretation)) = interpretation else {
+                return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
+            };
+            if interpretation.revisions()[3]
+                == oteryn_gameplay_items::starter_grant::NEWHAVEN_STARTER_TEMPLATE_REVISION
             {
-                return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                // Newhaven roots use the original plain backpack component, then their own
+                // profession kit. Never also execute the legacy send_first_items loadout.
+                let backpack_result = self
+                    .root
+                    .grant_starter_items(
+                        self.character,
+                        self.holder,
+                        &fence,
+                        &item_ref_admission::NativeItemWeights(native),
+                        &crate::durability::starter_grant::StarterTemplate::main(),
+                    )
+                    .await;
+                #[cfg(test)]
+                stage(&format!("newhaven_backpack:{backpack_result:?}"));
+                if !matches!(
+                    backpack_result,
+                    Ok(
+                        crate::durability::starter_grant::StarterGrantOutcome::Minted(_)
+                            | crate::durability::starter_grant::StarterGrantOutcome::AlreadyGranted
+                            | crate::durability::starter_grant::StarterGrantOutcome::Skipped
+                    )
+                ) {
+                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                }
+                let kit_result = if facts.vocation != crate::spell::Vocation::None {
+                    Some(self.grant_newhaven_starter(fence).await)
+                } else {
+                    None
+                };
+                #[cfg(test)]
+                stage(&format!("newhaven_kit:{kit_result:?}"));
+                if kit_result.is_some_and(|result| {
+                    !matches!(result,
+                    Ok(crate::durability::starter_grant::NewhavenStarterOutcome::Granted
+                        | crate::durability::starter_grant::NewhavenStarterOutcome::AlreadyGranted))
+                }) {
+                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                }
+            } else {
+                let loadout = crate::durability::starter_grant::StartingLoadout::resolve(
+                    build.vocation(),
+                    |id| {
+                        let key = format!("oteryn:item.tibia.i{id}");
+                        let revision = native.item_index()?.revision(&key)?.to_owned();
+                        Some(crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: key,
+                            revision_ref: revision,
+                        })
+                    },
+                );
+                if loadout.is_none()
+                    && oteryn_gameplay_items::starter_grant::starting_loadout::items(
+                        build.vocation(),
+                    )
+                    .is_some()
+                {
+                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                }
+                // Crystal 201189f8 data/scripts/creaturescripts/player/send_first_items.lua:107-109:
+                // unlisted vocations (including promotions) receive no kit.
+                if let Some(loadout) = loadout {
+                    // STARTER-1 (CP D1438): the starter grant of the Character's first entry, once per
+                    // Character and template; a replay writes nothing.
+                    if !matches!(
+                        self.root
+                            .grant_starting_loadout(
+                                self.character,
+                                self.holder,
+                                &fence,
+                                &item_ref_admission::NativeItemWeights(native),
+                                &loadout,
+                            )
+                            .await,
+                        Ok(
+                            crate::durability::starter_grant::StarterGrantOutcome::Minted(_)
+                                | crate::durability::starter_grant::StarterGrantOutcome::AlreadyGranted
+                                | crate::durability::starter_grant::StarterGrantOutcome::Skipped
+                        )
+                    ) {
+                        return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                    }
+                }
             }
             let gameplay =
                 crate::durability::character_progression::CurrentCharacterGameplayFence {
@@ -379,6 +538,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_none()
         {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
+        }
+        if let Some(state) =
+            self.states
+                .spell_states
+                .lock()
+                .await
+                .get_mut(&runtime, actor, game_session_id)
+        {
+            state.install_learned_spells(learned);
         }
         if gourmet_created {
             let mut states = self.states.spell_states.lock().await;
