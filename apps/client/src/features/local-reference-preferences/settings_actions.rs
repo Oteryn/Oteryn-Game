@@ -175,7 +175,7 @@ impl SettingsState {
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),
             control_epoch: std::time::Instant::now(),
-            base_path,
+            base_path: base_path.clone(),
             character: None,
             skills_edit: 0,
             item_hotkeys_edit: 0,
@@ -187,7 +187,14 @@ impl SettingsState {
             archive_edit: 0,
             battle_edit: 0,
             store,
-            preferences: {let mut p=preferences;p.miscellaneous=crate::play::MiscellaneousPreferences::load();p},
+            preferences: {
+                let mut preferences = preferences;
+                preferences.miscellaneous = base_path
+                    .as_ref()
+                    .and_then(|path| super::super::MiscellaneousPreferences::read(&path.with_extension("session-options.json")).ok())
+                    .unwrap_or_default();
+                preferences
+            },
             feedback,
             open: false,
             shutdown: false,

@@ -5,6 +5,8 @@ extern crate oteryn_client_ui;
 pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
+#[cfg(feature = "bevy-shell")]
+pub mod bevy_shell;
 pub mod bulletin;
 pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]

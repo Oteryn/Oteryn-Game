@@ -19,12 +19,22 @@ path = "src/main.rs"
 name = "oteryn-launcher"
 path = "src/bin/oteryn-launcher.rs"
 
+[[bin]]
+name = "oteryn-client-bevy"
+path = "src/bin/oteryn-client-bevy.rs"
+required-features = ["bevy-shell"]
+
+[features]
+bevy-shell = ["dep:bevy", "dep:oteryn-client-ui-bevy"]
+
 [dependencies]
+bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11"] }
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
 oteryn-client-simulation = { version = "=0.1.0", path = "../../crates/client-simulation" }
 oteryn-client-ui = { version = "=0.1.0", path = "../../crates/client-ui" }
+oteryn-client-ui-bevy = { version = "=0.1.0", path = "../../crates/client-ui-bevy", optional = true }
 oteryn-diagnostics = { version = "=0.1.0", path = "../../crates/diagnostics" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-identity = { version = "=0.1.0", path = "../../crates/identity" }

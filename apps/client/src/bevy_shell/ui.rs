@@ -1,0 +1,460 @@
+//! Source-derived primitives only; actions edit the production owner's transient draft.
+use super::owner::{GraphicsDraft, HostOwner};
+use bevy::{
+    input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
+    prelude::*,
+    ui::{Checked, InteractionDisabled},
+    ui_widgets::{Activate, ValueChange},
+};
+use oteryn_client_ui_bevy as source;
+use std::path::Path;
+
+const SKIN: &str = "images/skin/classic/";
+const FILES: [&str; 7] = [
+    "images/skin/classic/button-grey-up.png",
+    "images/skin/classic/button-grey-down.png",
+    "images/skin/classic/checkbox-checked.png",
+    "images/skin/classic/checkbox-unchecked.png",
+    "images/skin/classic/dialog-frame-borderimage.png",
+    "images/1pixel-down-frame.png",
+    "fonts/verdanab.ttf",
+];
+pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
+    for name in FILES {
+        let path = root
+            .join(name)
+            .canonicalize()
+            .map_err(|_| format!("Missing external UI asset: {name}"))?;
+        if !path.starts_with(root) || !path.is_file() {
+            return Err(format!("UI asset leaves --ui-assets directory: {name}"));
+        }
+    }
+    Ok(())
+}
+#[derive(Resource)]
+pub(super) struct Skins {
+    buttons: source::ButtonImages,
+    checked: Handle<Image>,
+    unchecked: Handle<Image>,
+    frame: Handle<Image>,
+    inset: Handle<Image>,
+    font: Handle<Font>,
+}
+#[derive(Component, Clone, Copy, Debug)]
+pub(super) enum Control {
+    Options,
+    Login,
+    CancelLogin,
+    Fullscreen,
+    Vsync,
+    IntegerScaling,
+    Apply,
+    Ok,
+    Cancel,
+}
+impl Control {
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Options => "shell.options",
+            Self::Login => "shell.sign_in",
+            Self::CancelLogin => "shell.cancel_sign_in",
+            Self::Fullscreen => "graphics.fullscreen",
+            Self::Vsync => "graphics.vsync",
+            Self::IntegerScaling => "graphics.integer_scaling",
+            Self::Apply => "graphics.apply",
+            Self::Ok => "graphics.ok",
+            Self::Cancel => "graphics.cancel",
+        }
+    }
+    fn checked(self, draft: GraphicsDraft) -> bool {
+        match self {
+            Self::Fullscreen => draft.fullscreen,
+            Self::Vsync => draft.vsync,
+            Self::IntegerScaling => draft.integer_scaling,
+            _ => false,
+        }
+    }
+}
+#[derive(Component)]
+pub(super) struct Dialog;
+#[derive(Component)]
+pub(super) struct Status;
+#[derive(Component)]
+pub(super) struct Feedback;
+#[derive(Component)]
+pub(super) struct ScopeLabel;
+#[derive(Component)]
+pub(super) struct Indicator(Entity);
+
+pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+    commands.spawn(Camera2d);
+    let skins = Skins {
+        buttons: source::ButtonImages {
+            up: assets.load(format!("{SKIN}button-grey-up.png")),
+            down: assets.load(format!("{SKIN}button-grey-down.png")),
+        },
+        checked: assets.load(format!("{SKIN}checkbox-checked.png")),
+        unchecked: assets.load(format!("{SKIN}checkbox-unchecked.png")),
+        frame: assets.load(format!("{SKIN}dialog-frame-borderimage.png")),
+        inset: assets.load("images/1pixel-down-frame.png"),
+        font: assets.load("fonts/verdanab.ttf"),
+    };
+    let shell = commands
+        .spawn((
+            TabGroup::new(0),
+            Node {
+                position_type: PositionType::Absolute,
+                top: px(8.),
+                left: px(8.),
+                right: px(8.),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(6.),
+                ..default()
+            },
+            GlobalZIndex(10),
+        ))
+        .id();
+    let status = commands
+        .spawn((
+            source::text(
+                "Offline — no admitted character or world.",
+                source::font(skins.font.clone(), false),
+            ),
+            Status,
+        ))
+        .insert(TextLayout::default())
+        .id();
+    let toolbar = commands
+        .spawn(Node {
+            column_gap: px(6.),
+            ..default()
+        })
+        .id();
+    let shell_feedback = commands
+        .spawn((
+            source::text("", source::font(skins.font.clone(), false)),
+            Feedback,
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands
+        .entity(shell)
+        .add_children(&[status, toolbar, shell_feedback]);
+    for (control, caption, width) in [
+        (Control::Login, "Sign in", 80.),
+        (Control::CancelLogin, "Cancel sign-in", 100.),
+        (Control::Options, "Options", 80.),
+    ] {
+        let button = action_button(&mut commands, &skins, control, caption, width);
+        commands.entity(toolbar).add_child(button);
+    }
+    // Full-window modal scrim blocks world pointer input while settings are open.
+    let modal = commands
+        .spawn((
+            Dialog,
+            GlobalZIndex(100),
+            Node {
+                width: percent(100.),
+                height: percent(100.),
+                position_type: PositionType::Absolute,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                display: Display::None,
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0., 0., 0., 0.65)),
+        ))
+        .id();
+    let panel = commands
+        .spawn((
+            TabGroup {
+                order: 1,
+                modal: true,
+            },
+            source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+            Node {
+                width: px(740.),
+                height: px(550.),
+                max_width: percent(98.),
+                max_height: percent(98.),
+                padding: UiRect {
+                    left: px(14.),
+                    right: px(14.),
+                    top: px(27.),
+                    bottom: px(14.),
+                },
+                flex_direction: FlexDirection::Column,
+                row_gap: px(8.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(modal).add_child(panel);
+    source::dialog_caption(&mut commands, panel, "Options", skins.font.clone());
+    let content = commands
+        .spawn((
+            bevy::ui_widgets::ScrollArea,
+            Node {
+                column_gap: px(10.),
+                flex_grow: 1.,
+                flex_basis: px(0.),
+                min_height: px(0.),
+                overflow: Overflow::scroll_y(),
+                ..default()
+            },
+        ))
+        .id();
+    let nav = commands
+        .spawn((
+            source::navigation_outer(),
+            source::frame(skins.inset.clone(), [1.; 4]),
+        ))
+        .id();
+    let graphics = commands
+        .spawn((source::button(skins.buttons.clone(), 115.), Checked))
+        .id();
+    let caption = commands
+        .spawn(source::button_caption("Graphics", skins.font.clone()))
+        .id();
+    commands.entity(graphics).add_child(caption);
+    commands.entity(nav).add_child(graphics);
+    let page = commands
+        .spawn(Node {
+            flex_direction: FlexDirection::Column,
+            min_width: px(0.),
+            flex_grow: 1.,
+            row_gap: px(10.),
+            ..default()
+        })
+        .id();
+    let title = commands
+        .spawn(source::text(
+            "Graphics",
+            source::font(skins.font.clone(), false),
+        ))
+        .id();
+    let scope = commands
+        .spawn((
+            source::text("", source::font(skins.font.clone(), false)),
+            ScopeLabel,
+        ))
+        .id();
+    commands.entity(page).add_children(&[title, scope]);
+    for (control, caption) in [
+        (Control::Fullscreen, "Full Screen"),
+        (
+            Control::IntegerScaling,
+            "Scale Using Only Integral Multiples",
+        ),
+        (Control::Vsync, "Vertical Synchronisation (V-Sync)"),
+    ] {
+        let mut node = source::checkbox_row(true);
+        node.width = percent(100.);
+        let row = commands
+            .spawn((
+                source::checkbox(node),
+                source::frame(skins.inset.clone(), [1.; 4]),
+                control,
+            ))
+            .observe(toggle)
+            .id();
+        let indicator = commands
+            .spawn((
+                source::checkbox_indicator(skins.unchecked.clone()),
+                Indicator(row),
+            ))
+            .id();
+        let label = commands
+            .spawn(source::text(
+                caption,
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
+        commands.entity(row).add_children(&[indicator, label]);
+        commands.entity(page).add_child(row);
+    }
+    let unsupported = commands
+        .spawn((
+            source::text(
+                "Renderer selection, antialiasing and other pages are unavailable in this host.",
+                source::font(skins.font.clone(), false),
+            ),
+            InteractionDisabled,
+        ))
+        .insert((
+            TextLayout::default(),
+            TextColor(source::DISABLED_TEXT_COLOR),
+        ))
+        .id();
+    commands.entity(page).add_child(unsupported);
+    let feedback = commands
+        .spawn((
+            source::text("", source::font(skins.font.clone(), false)),
+            Feedback,
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(page).add_child(feedback);
+    commands.entity(content).add_children(&[nav, page]);
+    let footer = commands
+        .spawn(Node {
+            column_gap: px(8.),
+            justify_content: JustifyContent::End,
+            ..default()
+        })
+        .id();
+    for (control, caption) in [
+        (Control::Ok, "Ok"),
+        (Control::Apply, "Apply"),
+        (Control::Cancel, "Cancel"),
+    ] {
+        let button = action_button(&mut commands, &skins, control, caption, 60.);
+        commands.entity(footer).add_child(button);
+    }
+    commands.entity(panel).add_children(&[content, footer]);
+    commands.insert_resource(skins);
+}
+fn action_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    control: Control,
+    caption: &str,
+    width: f32,
+) -> Entity {
+    let button = commands
+        .spawn((source::button(skins.buttons.clone(), width), control))
+        .observe(activate)
+        .id();
+    let text = commands
+        .spawn(source::button_caption(caption, skins.font.clone()))
+        .id();
+    commands.entity(button).add_child(text);
+    button
+}
+fn activate(event: On<Activate>, controls: Query<&Control>, mut owner: NonSendMut<HostOwner>) {
+    if let Ok(control) = controls.get(event.entity) {
+        if owner.draft().is_some()
+            && matches!(
+                control,
+                Control::Options | Control::Login | Control::CancelLogin
+            )
+        {
+            return;
+        }
+        match control {
+            Control::Options => owner.open_graphics(),
+            Control::Login => owner.request_login(),
+            Control::CancelLogin => owner.cancel_login(),
+            Control::Apply => owner.apply(false),
+            Control::Ok => owner.apply(true),
+            Control::Cancel => owner.cancel(),
+            _ => {}
+        }
+    }
+}
+fn toggle(
+    event: On<ValueChange<bool>>,
+    controls: Query<&Control>,
+    mut owner: NonSendMut<HostOwner>,
+) {
+    if let Ok(control) = controls.get(event.source) {
+        owner.edit(|draft| match control {
+            Control::Fullscreen => draft.fullscreen = event.value,
+            Control::Vsync => draft.vsync = event.value,
+            Control::IntegerScaling => draft.integer_scaling = event.value,
+            _ => {}
+        });
+    }
+}
+pub(super) fn project(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    skins: Res<Skins>,
+    mut dialogs: Query<&mut Node, With<Dialog>>,
+    mut text: Query<(&mut Text, Has<Status>, Has<Feedback>, Has<ScopeLabel>)>,
+    controls: Query<(Entity, &Control, Has<Checked>)>,
+    mut indicators: Query<(&Indicator, &mut ImageNode)>,
+    mut focus: ResMut<InputFocus>,
+    mut shown: Local<bool>,
+) {
+    let open = owner.draft().is_some();
+    if open != *shown {
+        if open {
+            if let Some((entity, _, _)) = controls
+                .iter()
+                .find(|(_, control, _)| matches!(control, Control::Fullscreen))
+            {
+                focus.set(entity, FocusCause::Navigated);
+            }
+        } else {
+            focus.clear();
+        }
+        *shown = open;
+    }
+    for mut node in &mut dialogs {
+        node.display = if owner.draft().is_some() {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+    for (mut text, status, feedback, scope) in &mut text {
+        let next = if status {
+            Some(owner.status.as_str())
+        } else if feedback {
+            Some(owner.settings.feedback.as_str())
+        } else if scope {
+            Some(owner.settings.scope_label())
+        } else {
+            None
+        };
+        if let Some(next) = next {
+            if text.0 != next {
+                text.0 = next.into();
+            }
+        }
+    }
+    if let Some(draft) = owner.draft() {
+        for (entity, control, checked) in &controls {
+            if matches!(
+                control,
+                Control::Fullscreen | Control::Vsync | Control::IntegerScaling
+            ) {
+                if control.checked(draft) && !checked {
+                    commands.entity(entity).insert(Checked);
+                }
+                if !control.checked(draft) && checked {
+                    commands.entity(entity).remove::<Checked>();
+                }
+            }
+        }
+        for (indicator, mut image) in &mut indicators {
+            if let Ok((_, control, _)) = controls.get(indicator.0) {
+                let next = if control.checked(draft) {
+                    &skins.checked
+                } else {
+                    &skins.unchecked
+                };
+                if image.image != *next {
+                    image.image = next.clone();
+                }
+            }
+        }
+    }
+}
+
+/// Escape discards the transient draft on every desktop platform.
+pub(super) fn keyboard(
+    mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    mut owner: NonSendMut<HostOwner>,
+) {
+    for key in keys.read() {
+        if owner.draft().is_some()
+            && key.key_code == KeyCode::Escape
+            && key.state == bevy::input::ButtonState::Pressed
+            && !key.repeat
+        {
+            owner.cancel();
+        }
+    }
+}

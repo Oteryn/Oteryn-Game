@@ -34,6 +34,8 @@ pub struct NativeLoginConfig {
     /// The only trust root the game endpoint's certificate may chain to (PEM or DER).
     pub dev_root: PathBuf,
     pub client_build: String,
+    /// Local preference owner selected by the host, including an explicit isolated path.
+    pub preference_path: Option<PathBuf>,
     pub callback_timeout: Duration,
     /// Backoff unit of every retry; one second in production.
     pub retry_unit: Duration,
@@ -88,6 +90,7 @@ impl NativeLoginConfig {
             character_id: lookup("OTERYN_CHARACTER_ID").unwrap_or_default(),
             dev_root: PathBuf::from(setting("OTERYN_DEV_ROOT")?),
             client_build: CLIENT_BUILD.to_owned(),
+            preference_path: crate::play::PreferenceStore::path(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
             retry_unit: Duration::from_secs(1),
             open_browser: Arc::new(open_system_browser),
