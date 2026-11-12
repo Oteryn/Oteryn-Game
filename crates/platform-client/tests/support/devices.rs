@@ -1,9 +1,7 @@
 //! Real portal process controls and mTLS publication; never a response producer.
-use super::{device_capture::RequestProof, support::*};
+use super::support::*;
 use oteryn_platform_client::{
-    PlatformClientConfig,
-    device_sessions::DeviceSession,
-    native_login::{DeviceRefusal, NativeLoginClient},
+    PlatformClientConfig, device_sessions::DeviceSession, native_login::NativeLoginClient,
 };
 use reqwest::{Client, Url, redirect::Policy};
 use serde_json::{Value, json};
@@ -15,66 +13,6 @@ use std::{
 };
 
 pub const BASE: &str = "/api/v1/game-auth/device-sessions";
-pub fn enrollment_gap(status: u16, body: &Value) -> bool {
-    // M:web/src/surface.rs:244-252 and ui/i18n/en.ftl:9, outside devices_http.
-    status == 400 && *body == json!({"status":400,"error":"Invalid request"})
-}
-pub fn rotation_gap(status: u16, body: &Value) -> bool {
-    status == 401 && *body == json!({"error":"device_authorization_unavailable"})
-}
-// Compare every persisted field, including revocation/consumption, without
-// returning plaintext credentials or rendering secret-derived fingerprints.
-pub fn device_state(t: &Topology) -> TestResult<String> {
-    sql(
-        &t.database,
-        "device_state",
-        "SELECT md5((SELECT coalesce(string_agg(to_jsonb(s)::text,'' ORDER BY id),'') FROM device_sessions s) || (SELECT coalesce(string_agg(to_jsonb(c)::text,'' ORDER BY family_id,sequence),'') FROM device_session_credentials c));",
-    )
-}
-pub fn contract_gap(enrollment: bool, refusal: DeviceRefusal, before: &str, after: &str) -> bool {
-    let body = if enrollment {
-        json!({"status":refusal.status,"error":refusal.error})
-    } else {
-        json!({"error": refusal.error})
-    };
-    before == after
-        && if enrollment {
-            enrollment_gap(refusal.status, &body)
-        } else {
-            rotation_gap(refusal.status, &body)
-        }
-}
-pub fn blocked(
-    t: &Topology,
-    enrollment: bool,
-    refusal: DeviceRefusal,
-    before: &str,
-    proof: &RequestProof,
-) -> TestResult {
-    proof.require(enrollment)?;
-    check(
-        contract_gap(enrollment, refusal, before, &device_state(t)?),
-        "unexpected_device_refusal_or_state_change",
-    )?;
-    // Every protocol blocker shares the same independent zero-admission checks.
-    t.no_admissions()?;
-    gaps(enrollment)
-}
-pub fn gaps(enrollment: bool) -> TestResult {
-    if enrollment {
-        println!(
-            "GAME_PLATFORM_EVIDENCE blocker=portal-rs/crates/gameauth/src/devices_http.rs:224 pending=contract_two_member_enrollment"
-        );
-    }
-    println!(
-        "GAME_PLATFORM_EVIDENCE blocker=portal-rs/crates/gameauth/src/devices_http.rs:199 pending=contract_rotation_without_proof"
-    );
-    record_blocker(if enrollment {
-        "portal-rs/crates/gameauth/src/devices_http.rs:224"
-    } else {
-        "portal-rs/crates/gameauth/src/devices_http.rs:199"
-    })
-}
 pub fn ca(t: &Topology) -> TestResult<Vec<u8>> {
     fs::read(text(&t.report, "caFile")?).map_err(|_| "ca_read_failed".into())
 }

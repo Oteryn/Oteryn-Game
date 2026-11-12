@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sourced only by node_boot's fixed-path lifecycle hook. No Platform boot copy.
 set +x
-readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
+readonly GAME_PLATFORM_SHA=a85b5da4de23f3e8633cfb25a2db1ad7f6133acd
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_retain_test_logs() {
@@ -158,16 +158,11 @@ game_platform_identity() {
     if [[ "$target" == native_ticket_and_gateway_fail_closed ]]; then
       grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0' "$WORK/$target.log" \
         || game_platform_fail "$target" evidence_missing
-    elif grep -q '^GAME_PLATFORM_EVIDENCE blocker=portal-rs/crates/gameauth/src/devices_http.rs:' "$WORK/$target.log"; then
-      grep '^GAME_PLATFORM_EVIDENCE blocker=portal-rs/crates/gameauth/src/devices_http.rs:' "$WORK/$target.log"
-      grep -Eq '^GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=portal-rs/crates/gameauth/src/devices_http.rs:(224|199)$' "$GAME_PLATFORM_RESULT_FILE" \
-        || game_platform_fail "$target" blocker_result_missing
     else
       grep -E '^NODE_BOOT_EVIDENCE flow=native_device_rotation result=pass rotations=[1-9][0-9]* replay_refused=1 signout_offline=1$' "$WORK/$target.log" \
         || game_platform_fail "$target" evidence_missing
     fi
   done
-  evidence "blocker=portal-rs/crates/gameauth/src/admission/grant.rs:24 pending=encrypted_signing_custody"
   # Assignment requires control-owned scope grants. The default node_boot stage
   # inserts them directly; this lane must not invent those authority records.
   printf 'GAME_PLATFORM_EVIDENCE blocker=tools/qualification/node_boot/run.sh:999 pending=control_scope_grant_issuer\n'

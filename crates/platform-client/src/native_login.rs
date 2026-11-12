@@ -259,7 +259,8 @@ impl DeviceRefusal {
             #[serde(borrow)]
             error: &'a str,
         }
-        // ed9b3372 wraps native routes in the site renderer (web/surface.rs:244).
+        // a85b5da4 still wraps native routes in web/src/surface.rs:244-268;
+        // web/src/ratelimit.rs:356-389 also renders API 503 envelopes.
         // With explicit JSON/English negotiation it emits this exact envelope.
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]

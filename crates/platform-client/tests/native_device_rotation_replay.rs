@@ -34,45 +34,33 @@ fn successor(previous: &DeviceSession, next: &DeviceSession) -> TestResult {
         "vault_round_trip_failed",
     )
 }
+fn require_success<T>(result: Result<T, NativeLoginError>, reason: &'static str) -> TestResult<T> {
+    result.map_err(|_| reason.into())
+}
+
 async fn journey(t: Topology) -> TestResult {
     t.no_admissions()?;
     let origin = &t.input.native_origin;
     let (mut capture, client) = device_capture::Capture::start(&t).await?;
     let http = http(&t)?;
     let token = t.oauth(0).await?;
-    let before_enrollment = device_state(&t)?;
     let enrolled = client
         .enroll_device(&token, true, None, CancellationToken::new())
         .await;
     let enrollment_proof = capture.request().await?;
     enrollment_proof.require(true)?;
-    let first = match enrolled {
-        Ok(session) => session,
-        Err(NativeLoginError::DeviceRefused(refusal)) => {
-            blocked(&t, true, refusal, &before_enrollment, &enrollment_proof)?;
-            return Ok(());
-        }
-        Err(_) => return Err("enrollment_transport_or_payload_failed".into()),
-    };
+    let first = require_success(enrolled, "enrollment_must_succeed")?;
     persisted(&t, &first, &t.input.accounts[0].account_id)?;
     // An empty snapshot for a fresh account is published through the real LCFA
     // mTLS handler. No projection, ticket or family rows are inserted by tests.
     empty_projection(&t, &t.input.accounts[0].account_id).await?;
     capture.expect_device(&first.device_credential)?;
-    let before_rotation = device_state(&t)?;
     let rotated = client
         .device_characters(&first, CancellationToken::new())
         .await;
     let rotation_proof = capture.request().await?;
     rotation_proof.require(false)?;
-    let (second, characters) = match rotated {
-        Ok(value) => value,
-        Err(NativeLoginError::DeviceRefused(refusal)) => {
-            blocked(&t, false, refusal, &before_rotation, &rotation_proof)?;
-            return Ok(());
-        }
-        Err(_) => return Err("rotation_transport_or_payload_failed".into()),
-    };
+    let (second, characters) = require_success(rotated, "proofless_rotation_must_succeed")?;
     check(characters.is_empty(), "empty_account_received_characters")?;
     successor(&first, &second)?;
     persisted(&t, &second, &t.input.accounts[0].account_id)?;
@@ -225,7 +213,7 @@ async fn journey(t: Topology) -> TestResult {
     // Real binary, same database/TLS identity, OAuth configuration disabled.
     let disabled = Portal::start(&t, true).await?;
     let disabled_client = native(&t, &disabled.origin, &t.input.client)?;
-    let token = t.oauth(0).await?;
+    let token = t.oauth(1).await?;
     check(
         matches!(
             disabled_client
@@ -280,76 +268,6 @@ async fn journey(t: Topology) -> TestResult {
 fn native_device_rotation_replay() -> TestResult {
     run("native_device_rotation", 120, journey)
 }
-#[test]
-fn blocker_requires_exact_http_status_and_error() -> TestResult {
-    check(
-        enrollment_gap(400, &json!({"status":400,"error":"Invalid request"})),
-        "enrollment_gap_not_detected",
-    )?;
-    check(
-        rotation_gap(401, &json!({"error":"device_authorization_unavailable"})),
-        "rotation_gap_not_detected",
-    )?;
-    for (status, body) in [
-        (503, json!({"error":"invalid_request"})),
-        (400, json!({"error":"unavailable"})),
-        (400, json!({"error":"invalid_request","extra":true})),
-    ] {
-        check(
-            !enrollment_gap(status, &body),
-            "unrelated_failure_marked_blocked",
-        )?;
-    }
-    check(
-        !rotation_gap(503, &json!({"error":"device_authorization_unavailable"})),
-        "disabled_service_marked_protocol_gap",
-    )
-}
-
-#[test]
-fn protocol_blocker_rejects_every_state_change() -> TestResult {
-    for (enrollment, refusal) in [
-        (
-            true,
-            DeviceRefusal {
-                status: 400,
-                error: "Invalid request",
-            },
-        ),
-        (
-            false,
-            DeviceRefusal {
-                status: 401,
-                error: "device_authorization_unavailable",
-            },
-        ),
-    ] {
-        check(
-            contract_gap(enrollment, refusal, "unchanged", "unchanged"),
-            "valid_signature_refused",
-        )?;
-        // Includes the review's case: revoked family, unconsumed credential.
-        check(
-            !contract_gap(enrollment, refusal, "unchanged", "changed"),
-            "mutated_family_marked_blocked",
-        )?;
-        for status in [400, 401, 429, 503] {
-            if status != refusal.status {
-                check(
-                    !contract_gap(
-                        enrollment,
-                        DeviceRefusal { status, ..refusal },
-                        "unchanged",
-                        "unchanged",
-                    ),
-                    "wrong_status_marked_blocked",
-                )?;
-            }
-        }
-    }
-    Ok(())
-}
-
 #[test]
 fn blocker_requires_byte_exact_shipping_request() -> TestResult {
     use device_capture::{RequestMeta, contract_request};
@@ -457,4 +375,51 @@ fn blocker_requires_byte_exact_shipping_request() -> TestResult {
         }
     }
     Ok(())
+}
+
+// Retain the old classifier regressions with the repinned, stronger policy:
+// every refusal is an assertion failure, never a successful BLOCKED exit.
+#[test]
+fn blocker_requires_exact_http_status_and_error() -> TestResult {
+    for (status, error) in [
+        (400, "Invalid request"),
+        (400, "invalid_request"),
+        (503, "Temporarily unavailable"),
+    ] {
+        check(
+            require_success::<()>(
+                Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                    status,
+                    error,
+                })),
+                "enrollment_must_succeed",
+            )
+            .is_err(),
+            "enrollment_refusal_accepted",
+        )?;
+    }
+    check(
+        require_success(Ok(1), "enrollment_must_succeed")? == 1,
+        "enrollment_success_refused",
+    )
+}
+#[test]
+fn protocol_blocker_rejects_every_state_change() -> TestResult {
+    for status in [400, 401, 429, 503] {
+        check(
+            require_success::<()>(
+                Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                    status,
+                    error: "device_authorization_unavailable",
+                })),
+                "proofless_rotation_must_succeed",
+            )
+            .is_err(),
+            "rotation_refusal_accepted",
+        )?;
+    }
+    check(
+        require_success(Ok(1), "proofless_rotation_must_succeed")? == 1,
+        "rotation_success_refused",
+    )
 }

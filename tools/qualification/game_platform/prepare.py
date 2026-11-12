@@ -42,6 +42,8 @@ def main():
     (work / "identity.json").write_text(json.dumps({"accounts": accounts, "callback": callback, "client": client,
         "native_origin": f"https://127.0.0.1:{native_port}", "portal_binary": str(binary)}))
     (work / "oauth.json").write_text(json.dumps({"enabled": True, "clients": [{"client_id": client, "redirect_uris": [callback]}]}))
+    custody = work / "portal" / "secrets" / "admission-custody"
+    custody_args = shlex.quote(json.dumps({"directory": str(custody), "purpose": "fresh_admission"}))
     launcher = work / "portal-exec"
     launcher.write_text("#!/usr/bin/env bash\nset -euo pipefail\nset +x\n"
                         "export OTERYN_ACCOUNT_LOGIN=true OTERYN_ACCOUNT_MFA=true APP_ENV=testing\n"
@@ -51,6 +53,14 @@ def main():
                         'export OTERYN_NATIVE_TLS_CERT_FILE="$OTERYN_INTERNAL_TLS_CERT_FILE"\n'
                         'export OTERYN_NATIVE_TLS_KEY_FILE="$OTERYN_INTERNAL_TLS_KEY_FILE"\n'
                         f"export PORTAL_OAUTH_CONFIG=\"$(cat {shlex.quote(str(work / 'oauth.json'))})\"\n"
+                        'if [[ "${1:-}" == serve ]]; then\n'
+                        f"  {shlex.quote(str(binary))} seed signing-custody {custody_args} > {shlex.quote(str(work / 'custody-result.json'))}\n"
+                        f"  export PORTAL_NATIVE_ADMISSION_KEY_CUSTODY_FILE={shlex.quote(str(custody / 'admission-custody.bin'))}\n"
+                        f"  export PORTAL_NATIVE_ADMISSION_KEY_WRAPPING_KEY_FILE={shlex.quote(str(custody / 'admission-wrapping.key'))}\n"
+                        '  [[ "$(stat -c %s "$PORTAL_NATIVE_ADMISSION_KEY_WRAPPING_KEY_FILE")" == 32 ]]\n'
+                        '  [[ "$(stat -c %a "$PORTAL_NATIVE_ADMISSION_KEY_WRAPPING_KEY_FILE")" == 600 ]]\n'
+                        '  export PORTAL_NATIVE_ADMISSION_GRANTS_ENABLED=true\n'
+                        'fi\n'
                         f"exec {shlex.quote(str(binary))} \"$@\"\n")
     launcher.chmod(0o700)
 

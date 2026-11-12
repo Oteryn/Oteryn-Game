@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 set +x
 umask 077
-readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
+readonly GAME_PLATFORM_SHA=a85b5da4de23f3e8633cfb25a2db1ad7f6133acd
 readonly GAME_SOURCE="$(git rev-parse --show-toplevel)"
 fail() { printf 'GAME_PLATFORM_RESULT=FAIL flow=preflight reason=%s\n' "$1" > "$GAME_PLATFORM_RESULT_FILE"; exit 1; }
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/game-platform.XXXXXX")"
