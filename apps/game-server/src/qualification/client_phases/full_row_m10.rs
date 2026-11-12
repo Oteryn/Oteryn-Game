@@ -1,4 +1,4 @@
-//! E2E M10 — swimming, drowning, traps, and special movement tiles.
+//! E2E M10 — bounded drowning evidence; the full swimming/trap/special-tile row stays incomplete.
 //!
 //! Concrete player scenario, derived from the M10 matrix/re-audit row and the
 //! paced-movement underwater owner:
@@ -40,15 +40,21 @@ impl Row {
     }
 
     fn finish(self) {
-        let pass = self.step == 5 && self.error.is_none();
+        let drowning_proven = self.step == 5 && self.error.is_none();
         if let Some(error) = &self.error {
-            evidence(&format!("M10_CHECK step={} FAIL observed={error}", self.step + 1));
+            evidence(&format!(
+                "M10_CHECK step={} FAIL observed={error}",
+                self.step + 1
+            ));
         }
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=M10.full status={} seconds={:.3} evidence={}",
-            if pass { "PASS" } else { "FAIL" },
+            "SEAM_EVIDENCE e2e_all scenario=M10.full status=FAIL seconds={:.3} evidence={}",
             self.started.elapsed().as_secs_f64(),
-            if pass { "observed-all-five-native-steps" } else { "see-M10_CHECK" },
+            if drowning_proven {
+                "observed-five-native-drowning-steps;needed=unproven-swimming-traps-special-movement"
+            } else {
+                "see-M10_CHECK;needed=unproven-swimming-traps-special-movement"
+            },
         ));
     }
 }
