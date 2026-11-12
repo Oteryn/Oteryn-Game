@@ -4,9 +4,9 @@ use oteryn_foundation::CancellationToken;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicU64, Ordering},
-    mpsc::{self, Receiver, SyncSender, TryRecvError},
+    mpsc::{self, Receiver, SyncSender},
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const POLL: Duration = Duration::from_millis(50);
 const MAX_ROWS: usize = 64;
@@ -18,6 +18,7 @@ pub struct SelectionRequest {
     cancellation: CancellationToken,
     reply: SyncSender<SelectionAction>,
     epoch: u64,
+    expires_at: Instant,
 }
 
 /// Receiver stays on the UI thread. The callback owns no core or mailbox lock.
@@ -29,6 +30,9 @@ pub struct SelectionBridge {
 }
 impl SelectionBridge {
     pub fn new() -> (Self, CharacterSelector) {
+        Self::with_timeout(Duration::from_secs(300))
+    }
+    fn with_timeout(timeout: Duration) -> (Self, CharacterSelector) {
         let (sender, requests) = mpsc::sync_channel(1);
         let closed = Arc::new(AtomicBool::new(false));
         let callback_closed = closed.clone();
@@ -43,6 +47,9 @@ impl SelectionBridge {
                 return SelectionAction::Cancel;
             }
             let current_epoch = callback_epoch.load(Ordering::Acquire);
+            let expires_at = Instant::now()
+                .checked_add(timeout)
+                .unwrap_or_else(Instant::now);
             let id = sequence.fetch_add(1, Ordering::Relaxed);
             if id == 0 || id == u64::MAX {
                 callback_closed.store(true, Ordering::Release);
@@ -56,6 +63,7 @@ impl SelectionBridge {
                 cancellation: cancellation.clone(),
                 reply,
                 epoch: current_epoch,
+                expires_at,
             };
             if sender.try_send(request).is_err() {
                 return SelectionAction::Cancel;
@@ -64,6 +72,7 @@ impl SelectionBridge {
                 if cancellation.is_cancelled()
                     || callback_closed.load(Ordering::Acquire)
                     || callback_epoch.load(Ordering::Acquire) != current_epoch
+                    || Instant::now() >= expires_at
                 {
                     return SelectionAction::Cancel;
                 }
@@ -72,6 +81,7 @@ impl SelectionBridge {
                         return if cancellation.is_cancelled()
                             || callback_closed.load(Ordering::Acquire)
                             || callback_epoch.load(Ordering::Acquire) != current_epoch
+                            || Instant::now() >= expires_at
                         {
                             SelectionAction::Cancel
                         } else {
@@ -97,6 +107,7 @@ impl SelectionBridge {
         self.pending.as_ref().filter(|request| {
             !request.cancellation.is_cancelled()
                 && request.epoch == self.epoch.load(Ordering::Acquire)
+                && Instant::now() < request.expires_at
         })
     }
     /// Returns whether visible request identity changed; canceled rows never enter the UI.
@@ -105,13 +116,14 @@ impl SelectionBridge {
         if self
             .pending
             .as_ref()
-            .is_some_and(|r| r.cancellation.is_cancelled())
+            .is_some_and(|r| r.cancellation.is_cancelled() || Instant::now() >= r.expires_at)
         {
             self.pending = None;
         }
         while let Ok(request) = self.requests.try_recv() {
             if request.cancellation.is_cancelled()
                 || request.epoch != self.epoch.load(Ordering::Acquire)
+                || Instant::now() >= request.expires_at
             {
                 continue;
             }
@@ -139,12 +151,7 @@ impl SelectionBridge {
             self.closed.store(true, Ordering::Release);
         }
         self.pending = None;
-        loop {
-            match self.requests.try_recv() {
-                Ok(_) => {}
-                Err(TryRecvError::Empty | TryRecvError::Disconnected) => break,
-            }
-        }
+        while self.requests.try_recv().is_ok() {}
     }
 }
 impl Drop for SelectionBridge {
@@ -201,6 +208,18 @@ mod tests {
             thread::yield_now();
         }
         Err("selector request did not reach UI")
+    }
+    #[test]
+    fn expired_callback_returns_cancel_without_an_orphan_picker() -> TestResult {
+        let (mut bridge, callback) = SelectionBridge::with_timeout(Duration::ZERO);
+        let worker = thread::spawn(move || callback(&rows(), "", CancellationToken::new()));
+        assert_eq!(
+            worker.join().map_err(|_| "worker")?,
+            SelectionAction::Cancel
+        );
+        bridge.poll();
+        assert!(bridge.pending().is_none());
+        Ok(())
     }
     #[test]
     fn callback_real_rows_and_channel_choice_return_once() -> TestResult {

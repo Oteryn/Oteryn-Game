@@ -14,6 +14,12 @@ use oteryn_client_ui_bevy as source;
 const PAGE_ROWS: usize = 8;
 #[derive(Component)]
 pub(super) struct Picker;
+/// Stable semantic identifiers for native UI audits; no character identity is exported.
+#[derive(Component)]
+pub(super) struct PickerControl {
+    pub request_id: u64,
+    pub id: String,
+}
 #[derive(Component, Clone)]
 enum Choice {
     Row(usize),
@@ -230,13 +236,11 @@ pub(super) fn project(
         );
         commands.entity(panel).add_child(channel);
         let unavailable = commands
-            .spawn((
-                source::text(
-                    "Training and account services are unavailable in this frontend.",
-                    source::font(skin.font.clone(), false),
-                ),
-                TextColor(source::DISABLED_TEXT_COLOR),
+            .spawn(source::text(
+                "Training and account services are unavailable in this frontend.",
+                source::font(skin.font.clone(), false),
             ))
+            .insert(TextColor(source::DISABLED_TEXT_COLOR))
             .id();
         commands.entity(panel).add_child(unavailable);
         let footer = commands
@@ -281,10 +285,24 @@ fn add_button(
     width: f32,
     disabled: bool,
 ) -> Entity {
+    let id = match &choice {
+        Choice::Row(index) => format!("selection.row.{index}"),
+        Choice::Channel => "selection.channel".into(),
+        Choice::Previous => "selection.previous".into(),
+        Choice::Next => "selection.next".into(),
+        Choice::Play => "selection.play".into(),
+        Choice::Refresh => "selection.refresh".into(),
+        Choice::Create => "selection.create".into(),
+        Choice::Cancel => "selection.cancel".into(),
+    };
     let button = commands
         .spawn((
             source::button(skin.buttons.clone(), width),
             Target { request, choice },
+            PickerControl {
+                request_id: request,
+                id,
+            },
         ))
         .observe(activate)
         .id();
