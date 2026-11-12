@@ -193,6 +193,10 @@ pub enum FoundationProtocolError {
     /// key the catalogue lacks): an internal integrity fault. The client learns only that its
     /// account data needs support; the diagnostic stays in the operator event.
     AccountDataIntegrity = 1050,
+    /// The server admitted or resumed the session but could not prepare or send its join; it
+    /// writes this once at the admitted generation, then closes. The client may retry on a new
+    /// connection (FND-04C §4.1).
+    SessionJoinUnavailable = 1051,
     /// HIGHSCORES0 §6 (HS-WIRE-1): the query names a category this server does not offer.
     NotSupported = 1200,
     /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
@@ -248,6 +252,7 @@ impl FoundationProtocolError {
             | Self::FrameTooLarge
             | Self::MalformedEnvelope
             | Self::StaleConnectionGeneration
+            | Self::SessionJoinUnavailable
             | Self::AdmissionGrantMalformed
             | Self::AdmissionGrantAuthenticationFailed
             | Self::AdmissionGrantBindingMismatch
@@ -312,6 +317,7 @@ impl Display for FoundationProtocolError {
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
             Self::AccountDataIntegrity => "account data needs support",
+            Self::SessionJoinUnavailable => "session join is temporarily unavailable",
             Self::NotSupported => "query is not supported",
             Self::SnapshotExpired => "snapshot is no longer retained",
             Self::AdmissionGrantMalformed => "admission grant is malformed",

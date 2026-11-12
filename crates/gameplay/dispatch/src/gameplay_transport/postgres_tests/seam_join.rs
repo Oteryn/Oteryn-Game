@@ -203,11 +203,14 @@ fn seam_input_house_transfer_guard_retries_busy_holder_before_dispatch() -> Test
                 .ok_or("house transfer offer")?;
             assert!(owner.house_transfer_input(admitted).await);
             {
-                let held = h.root.try_issue_semantic_pass()?;
+                let held = h.root.try_issue_background_semantic_pass()?;
                 let mut missing = admitted;
                 missing.item_fence = None;
                 assert!(!owner.house_transfer_input(missing).await);
-                let mut input = std::pin::pin!(owner.house_transfer_input(admitted));
+                let input = crate::durability::DurabilityRoot::with_holder_owner(
+                    owner.house_transfer_input(admitted),
+                );
+                let mut input = std::pin::pin!(input);
                 std::future::poll_fn(|cx| {
                     use std::future::Future;
                     assert!(
@@ -218,8 +221,18 @@ fn seam_input_house_transfer_guard_retries_busy_holder_before_dispatch() -> Test
                 })
                 .await;
                 held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                for _ in 0..16 {
+                    assert!(matches!(
+                        h.root.try_issue_background_semantic_pass(),
+                        Err(crate::durability::DurabilityError::RootUnavailable)
+                    ));
+                }
                 assert!(input.await);
             }
+            h.root
+                .try_issue_background_semantic_pass()?
+                .run(|_, _| Box::pin(async { Ok(()) }))
+                .await?;
             drop(owner);
             drop(seal);
             h.cleanup().await
