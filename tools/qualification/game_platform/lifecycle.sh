@@ -28,6 +28,11 @@ game_platform_cleanup() {
     kill -KILL -- "-$GP_HARNESS_PID" 2>/dev/null || true
     wait "$GP_HARNESS_PID" 2>/dev/null || true
   fi
+  # Preserve private logs before node_boot removes its work directory.
+  if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
+    [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
+    [[ ! -f "$WORK/portal-harness.log" ]] || cp "$WORK/portal-harness.log" "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
+  fi
   [[ -z "$GP_PG_CONTAINER" ]] || docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
 }
 game_platform_start() {
@@ -103,9 +108,10 @@ game_platform_identity() {
   # Compile before the node's bounded assignment wait and journey budget begin.
   cargo test --locked -p oteryn-platform-client --test web_identity_pkce_isolation --no-run \
     > "$WORK/identity-build.log" 2>&1 || game_platform_fail web_identity driver_build_failed
-  operator_setup || game_platform_fail game operator_setup_failed
+  stage operator_setup -- operator_setup
+  [[ ${STATUS[operator_setup]} == PASS ]] || game_platform_fail game operator_setup_failed
   start_node
-  await_log awaiting_assignment 120 || game_platform_fail game assignment_wait_not_reached
+  await_log awaiting_assignment 120
   evidence "game_platform_provenance game=$(git rev-parse HEAD) platform=$GAME_PLATFORM_SHA game_pg=18.6 platform_pg=18.6 bundle=$WORLD_DIGEST"
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
     GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" \

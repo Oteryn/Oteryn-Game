@@ -2,6 +2,7 @@
 //! No HTTP server, identity writer, or token producer is substituted here.
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use oteryn_foundation::CancellationToken;
+use oteryn_identity::{IdentityError, IdentityFlow, StateNonce};
 use oteryn_platform_client::{
     PlatformClientConfig,
     native_login::{NativeLoginClient, NativeLoginError},
@@ -210,27 +211,48 @@ fn session_owner(database: &str, browser: &Browser) -> TestResult<String> {
         ),
     )
 }
-fn callback_code(url: &Url, expected_state: &str, callback: &str) -> TestResult<String> {
+async fn callback_code(url: &Url, expected_state: &str, callback: &str) -> TestResult<String> {
     let expected = Url::parse(callback).map_err(|_| "callback_configuration_invalid")?;
     check(
         url.origin() == expected.origin() && url.path() == expected.path(),
         "callback_destination_mismatch",
     )?;
-    let pairs: Vec<_> = url.query_pairs().collect();
-    check(
-        pairs.len() == 2
-            && pairs
-                .iter()
-                .filter(|(k, v)| k == "state" && v == expected_state)
-                .count()
-                == 1,
-        "callback_state_mismatch",
-    )?;
-    pairs
-        .iter()
-        .find(|(k, _)| k == "code")
-        .map(|(_, v)| v.to_string())
-        .ok_or_else(|| "callback_code_missing".into())
+    check(url.query_pairs().count() == 2, "callback_query_invalid")?;
+    let flow = IdentityFlow::new(StateNonce::new(expected_state)?, Duration::from_secs(5));
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
+    sender
+        .send(url.query().ok_or("callback_query_missing")?.to_owned())
+        .await
+        .map_err(|_| "callback_channel_closed")?;
+    let code = flow
+        .await_callback(&mut receiver, CancellationToken::new())
+        .await?;
+    Ok(code.expose().expose().to_owned())
+}
+#[test]
+fn shipping_callback_rejects_mismatched_state() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let callback = "http://127.0.0.1:18099/callback";
+            let bad = Url::parse(&format!("{callback}?code=qualification-code&state=wrong"))?;
+            let error = callback_code(&bad, "expected", callback)
+                .await
+                .err()
+                .ok_or("state_mismatch_accepted")?;
+            check(
+                error.downcast_ref::<IdentityError>() == Some(&IdentityError::StateMismatch),
+                "wrong_state_refusal",
+            )?;
+            let good = Url::parse(&format!(
+                "{callback}?code=qualification-code&state=expected"
+            ))?;
+            check(
+                callback_code(&good, "expected", callback).await? == "qualification-code",
+                "valid_callback_refused",
+            )
+        })
 }
 async fn authorize(
     browser: &mut Browser,
@@ -265,7 +287,7 @@ async fn authorize(
     check(response.status().is_redirection(), "consent_refused")?;
     let redirect = Url::parse(location(&response)?).map_err(|_| "callback_redirect_invalid")?;
     let mut bad = redirect.clone();
-    let actual_code = callback_code(&redirect, state, &input.callback)?;
+    let actual_code = callback_code(&redirect, state, &input.callback).await?;
     bad.query_pairs_mut()
         .clear()
         .append_pair("code", &actual_code)
@@ -318,7 +340,16 @@ async fn authorize(
                 .map_err(|_| "callback_invalid")?
                 .join(target)
                 .map_err(|_| "callback_target_invalid")?;
-            let code = callback_code(&url, state, &input.callback);
+            let code = callback_code(&url, state, &input.callback).await;
+            if !expect_valid {
+                check(
+                    code.as_ref()
+                        .err()
+                        .and_then(|error| error.downcast_ref::<IdentityError>())
+                        == Some(&IdentityError::StateMismatch),
+                    "wrong_state_refusal",
+                )?;
+            }
             check(
                 code.is_ok() == expect_valid,
                 "callback_state_validation_failed",

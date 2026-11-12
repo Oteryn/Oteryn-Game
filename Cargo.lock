@@ -3526,6 +3526,7 @@ dependencies = [
  "oteryn-diagnostics",
  "oteryn-error-codes",
  "oteryn-foundation",
+ "oteryn-identity",
  "oteryn-platform-contracts",
  "reqwest",
  "rustls",

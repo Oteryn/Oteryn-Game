@@ -881,7 +881,7 @@ refusal belongs first in this phase and runs even while success stays blocked.
 
 | Flow | Status | Blocker owner | Test name |
 |---|---|---|---|
-| Account web login + PKCE | RUNNABLE NOW; driver added, runtime unverified | Missing local sudo; no PASS evidence | `web_identity_pkce_isolation` |
+| Account web login + PKCE | RUNNABLE NOW; GPE2E-2b repairs root-owned state base and fail-fast operator setup; callback state uses shipping IdentityFlow | Live rerun required; no PASS evidence | `web_identity_pkce_isolation` |
 | MFA-protected web login success | BLOCKED until seed; then RUNNABLE | Platform: `seed account-mfa` (TOTP secret); web challenge exists | `web_identity_pkce_isolation` (MFA extension) |
 | Native OAuth for an MFA account | BLOCKED | Platform: OAuth MFA step-up (`oauth.rs:148`) | `native_login_mfa_account` |
 | Ticket + Gateway refusal slice | RUNNABLE NOW | — | `native_ticket_and_gateway_fail_closed` |

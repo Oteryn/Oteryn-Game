@@ -75,8 +75,11 @@ routes, grants, sessions or projections. A missing login/OAuth handler produces
 an exact Platform source blocker. Other assertions produce FAIL and nonzero
 exit. PASS is reserved for a complete run with no pending Platform steps.
 
-All generated inputs, credentials, the JSON report and raw diagnostics remain
-in mode-0700 scratch directories and are removed on exit. Only evidence and a
+Generated inputs, credentials and the JSON report are removed on exit. On failure,
+node-boot.log, node.log and portal-harness.log (when created) are retained in a
+user-owned mode-0700 directory printed as `GAME_PLATFORM_DIAGNOSTICS=<dir>`.
+The node state uses a root-owned disposable `/srv/oteryn-game-platform-<pid>`
+base, created and removed by node_boot through sudo. Only evidence and a
 closed-vocabulary terminal result are printed. The harness process group and
 both disposable database containers are torn down, including on failure.
 Ports can be changed with `GAME_PLATFORM_{GAME_PG,PLATFORM_PG,GAME,HTTP,INTERNAL,ADMISSION,GATEWAY,CALLBACK}_PORT`.
@@ -93,3 +96,16 @@ P checkout; it failed when Docker Compose tried to create
 `/home/agent/.docker/buildx` on a read-only filesystem, and its cleanup also
 reported `sudo: command not found`. These are environment prerequisites, not
 E2E passes. Tools were not reinstalled.
+
+GPE2E-2b routes both callback states through the shipping `oteryn_identity::IdentityFlow`
+and asserts the exact `StateMismatch` refusal. Operator setup runs through node_boot's
+`stage` wrapper; a failed stage stops identity before node startup or success evidence.
+The lifecycle sweep also removed the conditional call context from `await_log`.
+
+Diagnostic audit: shell tracing stays disabled; the journey maps transport/database
+errors to fixed reasons and never prints responses, cookies, codes or token values.
+The pinned portal harness logs lifecycle progress and seed error JSON; seed database
+errors are mapped to `unavailable/database`, and account errors contain fixed reasons,
+not password values. Its report and generated secret inputs are not copied to diagnostics.
+The local preflight diagnostic scan found no password/token/cookie/code/URL output;
+no live node or portal logs were available in this workspace for a runtime audit.
