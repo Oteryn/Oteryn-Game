@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "af19d064fcb78a26399231df50b5b99d9a279864
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "6745809a11b87234b9a50358e42f28d419cf138146cf5d3f455225e0cf000c9b"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ca101ab0e41b7ca661a981d22e9522c5220fc8a8"
 EXPECTED_POST_MERGE_RUST_SHA256 = "1c8c047cd989f6fead273a8a08ca80b846e802fefe2d7f106eae266f903124ce"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -512,8 +512,8 @@ def main() -> int:
                 # codeql.yml analyses every push to main; this copy covers the merge queue only.
                 "    if: github.event_name == 'merge_group'\n",
                 "language: [python, actions]",
-                "github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
-                "github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
+                "github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066",
+                "github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066",
             ),
             "atlas_fullworld": (
                 "    name: Merge Queue / Atlas fullworld source\n",
@@ -718,8 +718,8 @@ def main() -> int:
             ("          - python\n", analyze),
             ("          - actions\n", analyze),
             ("          - rust\n", analyze),
-            ("github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370", analyze),
-            ("github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370", analyze),
+            ("github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066", analyze),
+            ("github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066", analyze),
             ("          category: /language:${{ matrix.language }}\n", analyze),
         ):
             if fragment not in block:
