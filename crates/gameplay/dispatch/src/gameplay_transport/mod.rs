@@ -109,6 +109,7 @@ mod item_spell_augments;
 mod item_transform;
 mod item_use;
 mod item_view;
+mod journal_logout;
 mod kill_reward;
 mod last_position;
 mod level_up_live;

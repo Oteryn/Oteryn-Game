@@ -96,7 +96,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             audit_expiry_loop(root, authority, &loops_stop),
             online_statistics_retention_loop(root, authority, &loops_stop),
         ),
-        coin_worker::run(root, authority, proof, material.world, &loops_stop),
+        both(
+            coin_worker::run(root, authority, proof, material.world, &loops_stop),
+            journal_worker::run(root, authority, config, &loops_stop),
+        ),
     ));
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
@@ -402,6 +405,9 @@ async fn timed_npc_loop(
 
 #[path = "coin_worker.rs"]
 mod coin_worker;
+
+#[path = "journal_worker.rs"]
+mod journal_worker;
 
 #[cfg(test)]
 mod tests {

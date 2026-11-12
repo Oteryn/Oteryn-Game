@@ -22,6 +22,8 @@
 //!   facts and revision in the same per-Channel fact overlay. Snapshots pin both together.
 //!   House tiles and durable/pickupable items are refused; restart restores base orientations.
 
+mod journal;
+
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
 use super::overlay::{AddedItem, EntryId, TilePos, pickup};

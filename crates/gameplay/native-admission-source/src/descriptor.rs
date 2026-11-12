@@ -16,6 +16,8 @@ pub const PEER_CERT_DER_MAX: usize = 4096;
 pub const PEER_CERT_DER_AGGREGATE_MAX: usize = 16384;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
+    PublishGameJournalRecordV1,
+    ReadGameJournalCursorV1,
     ReadAccountSecurityV1,
     ReadFreshSigningTrustV1,
     ReadRecoveryAccountSecurityV2,
@@ -84,6 +86,8 @@ pub enum Operation {
 impl Operation {
     pub const fn path(self) -> &'static str {
         match self {
+            Self::PublishGameJournalRecordV1 => "/internal/v1/playerdata/journal/records",
+            Self::ReadGameJournalCursorV1 => "/internal/v1/playerdata/journal/cursor",
             // The four closed evidence tags share the accepted Platform endpoint.
             // Operation identity remains bound by the existing request/response codec.
             Self::ReadAccountSecurityV1
@@ -151,6 +155,8 @@ impl Operation {
     /// public projections.
     pub const fn request_bytes_max(self) -> usize {
         match self {
+            Self::PublishGameJournalRecordV1 => 65536,
+            Self::ReadGameJournalCursorV1 => 1024,
             Self::ReadPremiumSnapshotV1 => 256,
             Self::ListPendingBazaarCommandsV1
             | Self::ReadBazaarCommandIntentV1
