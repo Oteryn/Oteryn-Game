@@ -2,7 +2,7 @@
 
 First shared native Bevy 0.20.1 presentation package. The comparison harness's
 Options consumer uses the button, checkbox, text, frame and navigation helpers;
-its shell and Task Board reuse the font/frame primitives. `apps/client` remains
+its shell and Task Board reuse the font/frame/dialog-caption primitives. `apps/client` remains
 the product composition root. This package does not integrate real sessions or
 replace `client-ui` models, settings transactions, focus routing or action handlers.
 
@@ -29,6 +29,8 @@ are distributed here. Relevant reference components:
 | Source | Implemented contract |
 | --- | --- |
 | `TibiaStyle`, `TibiaTextBase` | Caller-provided bold face; 11px text/13px line, 8px small text/proportional line; hinting enabled; small text antialiased; dialog `#C0C0C0`, disabled `#707070` |
+| `TibiaDialogFrameWithCaption` | Ordinary 11px Caption `#909090`; centered in the 17px header with 10px horizontal margins, independent of sidebar titles |
+| `RowLayout`, `ColumnLayout` | Full-width row children share remaining width with shrink/min-width constraints; literal widths stay intact; fill-height containers bound native table viewports |
 | `TibiaButton` | Native button; 20px height; centered small caption; 1px fixed-width cropped/tiled skin; pressed **or** checked selects down; centered caption shifts 1px from source 2px left/top padding; image shifts 1px; no hover texture or brightness multiplier |
 | `TibiaCheckBox`, `TibiaMenuOptionCheckBox` | Native checkbox; 12px indicator, 4px caption gap; optional 22px framed row with 5px indicator inset |
 | `TibiaFrame1PixelDown`, `TibiaFrame2PixelUpFilled` | Caller-selected images; fixed source-pixel insets via cropped native tiled children; repeating sides and center; unscaled corners |
@@ -62,3 +64,8 @@ cargo clippy --locked -p oteryn-client-ui-bevy --all-targets -- -D warnings
 cargo test --locked -p oteryn-client-ui-bevy
 cargo run --locked -p oteryn-architecture-check -- workspace .
 ```
+
+The Options adapter uses source `properties.text` to distinguish rendered captions
+from associated inspection labels. It keeps native runtime control IDs and emits
+actions to the existing OptionsRuntime. Generic layout mapping supports only the
+source subset needed by these consumers; it does not evaluate arbitrary QML.

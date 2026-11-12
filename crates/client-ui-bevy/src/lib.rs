@@ -11,6 +11,8 @@ use bevy::{
 
 mod frames;
 pub use frames::{Frame, frame};
+mod presentation;
+pub use presentation::{DialogCaption, dialog_caption, layout_child};
 
 pub const TEXT_COLOR: Color = Color::srgb_u8(192, 192, 192);
 pub const DISABLED_TEXT_COLOR: Color = Color::srgb_u8(112, 112, 112);
