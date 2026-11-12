@@ -14,12 +14,25 @@ pub(super) async fn exercise(
     let map = crate::map::overlay::map_revision(
         owner.bundle_map().ok_or("energy reset map")?.overlay.base(),
     );
+    let activation_frame: Vec<u8> = sqlx::query_scalar(
+        "SELECT frame_binding_digest FROM game_content_activations \
+         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid \
+         ORDER BY activation_sequence DESC LIMIT 1",
+    )
+    .bind(owner.world_id.as_bytes().as_slice())
+    .bind(owner.channel_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_ne!(
+        activation_frame.as_slice(),
+        pin.frame_binding_digest().as_slice()
+    );
     // The fixture Control publishes through the real SQL seam. Expected pins
     // are current qualified content; the Root independently resolves the job,
     // current registration, assignment, closed readiness and terminal sessions.
     assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_initialize(encode($1,'hex')::uuid,$2,$3,$2,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1)")
         .bind(owner.world_id.as_bytes().as_slice()).bind(pin.server_artifact_digest().as_slice())
-        .bind(&map).bind(pin.client_artifact_digest().as_slice()).bind(pin.frame_binding_digest().as_slice())
+        .bind(&map).bind(pin.client_artifact_digest().as_slice()).bind(activation_frame.as_slice())
         .fetch_one(&h.pool).await?);
     assert!(
         sqlx::query_scalar::<_, bool>(
@@ -29,7 +42,7 @@ pub(super) async fn exercise(
         .bind(pin.server_artifact_digest().as_slice())
         .bind(&map)
         .bind(pin.client_artifact_digest().as_slice())
-        .bind(pin.frame_binding_digest().as_slice())
+        .bind(activation_frame.as_slice())
         .fetch_one(&h.pool)
         .await?
     );

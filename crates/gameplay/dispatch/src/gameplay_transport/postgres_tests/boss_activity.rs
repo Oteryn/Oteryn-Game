@@ -602,6 +602,8 @@ fn scenario(case: Case) -> TestResult {
             })
             .ok_or("a second actual qualified walkable cell")?;
         if endgame_creature.is_some() {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+
             // Native bosses require their source health/death callbacks as well
             // as the base policy; a one-row fixture drops that admission proof.
             owner

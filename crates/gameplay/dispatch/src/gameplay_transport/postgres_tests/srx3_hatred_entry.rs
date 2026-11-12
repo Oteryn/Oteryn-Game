@@ -49,6 +49,8 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
                 .ok_or("actual Hatred source candidate")?;
             let template = scene
                 .controller
+                .active()
+                .ok_or("active Hatred generation")?
                 .qualify_soul_war_activity_template(&scene.room, "content-1", source)
                 .map_err(|error| format!("actual Hatred source template: {error:?}"))?;
             assert_eq!(
