@@ -8,6 +8,7 @@ Usage:
   python3 tools/content-schema/item-authoring/elemental_balance.py --output /tmp/elemental-report.json
   python3 -m unittest discover -s tools/content-schema/item-authoring -p test_elemental_balance.py
 """
+
 from __future__ import annotations
 
 import argparse
@@ -83,9 +84,17 @@ def load_items() -> tuple[dict[str, dict], dict]:
             stats["indexed"] += 1
             semantics = definition.get("semantics", {})
             presentation = known(semantics.get("presentation"))
-            name = known(presentation.get("name")) if isinstance(presentation, dict) else None
+            name = (
+                known(presentation.get("name"))
+                if isinstance(presentation, dict)
+                else None
+            )
             protection = known(semantics.get("protection"))
-            rows = known(protection.get("resistances")) if isinstance(protection, dict) else None
+            rows = (
+                known(protection.get("resistances"))
+                if isinstance(protection, dict)
+                else None
+            )
             if rows is not None:
                 stats["known_resistances"] += 1
             items[key] = {
@@ -125,29 +134,47 @@ def report() -> dict:
         result = propose(item["resistances"])
         if result is None:
             continue
-        candidates.append({
-            "item_key": key,
-            "name": item["name"],
-            "source": item["source"],
-            "old_direct": {kind: str(item["resistances"].get(kind, 0)) for kind in ELEMENTS},
-            **result,
-        })
+        candidates.append(
+            {
+                "item_key": key,
+                "name": item["name"],
+                "source": item["source"],
+                "old_direct": {
+                    kind: str(item["resistances"].get(kind, 0)) for kind in ELEMENTS
+                },
+                **result,
+            }
+        )
     return {
         "schema": "OTERYN_ELEMENTAL_BALANCE_PROPOSAL/v1",
-        "source_scope": ["content/items/index.json shards", str(PINNED.relative_to(ROOT))],
-        "not_included": ["runtime content overlays", "imbuements", "other equipment slots",
-                         "monster damage distribution", "player builds", "source-held conflicts"],
+        "source_scope": [
+            "content/items/index.json shards",
+            str(PINNED.relative_to(ROOT)),
+        ],
+        "not_included": [
+            "runtime content overlays",
+            "imbuements",
+            "other equipment slots",
+            "monster damage distribution",
+            "player builds",
+            "source-held conflicts",
+        ],
         "formula": "floor(0.9 * sum(fire,ice,earth,energy)/4); exact for four equal",
-        "stats": {**stats, "proposals": len(candidates),
-                  "exact": sum(c["mode"] == "exact" for c in candidates),
-                  "needs_review": sum(c["mode"] == "review" for c in candidates)},
+        "stats": {
+            **stats,
+            "proposals": len(candidates),
+            "exact": sum(c["mode"] == "exact" for c in candidates),
+            "needs_review": sum(c["mode"] == "review" for c in candidates),
+        },
         "candidates": candidates,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, help="write JSON proposal; never changes Item sources")
+    parser.add_argument(
+        "--output", type=Path, help="write JSON proposal; never changes Item sources"
+    )
     args = parser.parse_args()
     text = json.dumps(report(), ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     if args.output:
