@@ -371,15 +371,66 @@ async fn client_cast(
             .await?
         }
         Case::StaleSession => {
-            sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,current_generation=current_generation+1 WHERE game_session_id=encode($2,'hex')::uuid")
+            let (before, _) = FreshAdmissionStore::from_root(harness.root.clone())
+                .current_session_at(session)
+                .await?;
+            let before = item_fence_of(before).ok_or("current item fence before invalidation")?;
+            let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,current_generation=current_generation+1 WHERE game_session_id=encode($2,'hex')::uuid")
                 .bind([11_u8;16].as_slice()).bind(id(50).as_slice()).execute(&harness.pool).await?;
-            send_use(
-                client,
-                first_id,
-                &intent,
-                Expected::Result(UseDisposition::Rejected),
-            )
-            .await?;
+            assert_eq!(changed.rows_affected(), 1);
+            let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
+                .current_session_at(session)
+                .await?;
+            let current = item_fence_of(current).ok_or("current item fence after invalidation")?;
+            assert_ne!(current, before);
+            assert_eq!(
+                current.connection_generation.get(),
+                before.connection_generation.get() + 1
+            );
+            // Capability 6's existing visibility timer wakes the idle serve loop.
+            // Its security refresh retires this transport without any USE input.
+            loop {
+                match read_frame(client).await {
+                    Ok(frame) => {
+                        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                        assert_ne!(envelope.message_type(), MessageType::CommandResult);
+                        assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+                        if envelope.message_type() == MessageType::LivenessProbe {
+                            // Do not let missed-probe retirement substitute for the
+                            // stale transport proof. This peer applies no state deltas.
+                            let probe =
+                                oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                                    .map_err(debug)?;
+                            let ack = oteryn_protocol_oteryn::encode_liveness_ack(
+                                envelope.connection_generation(),
+                                probe,
+                                0,
+                            )
+                            .map_err(debug)?;
+                            let length = u32::try_from(ack.len())?;
+                            let written = async {
+                                client.write_u32(length).await?;
+                                client.write_all(&ack).await
+                            }
+                            .await;
+                            if let Err(error) = written {
+                                // A concurrent security retirement may close the peer
+                                // before its ACK. Still require the actual EOF below.
+                                assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        assert_eq!(
+                            error
+                                .downcast_ref::<std::io::Error>()
+                                .map(std::io::Error::kind),
+                            Some(std::io::ErrorKind::UnexpectedEof)
+                        );
+                        break;
+                    }
+                }
+            }
         }
         Case::LostContent => {
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1,$3,$4,$5)")
@@ -763,6 +814,52 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         serve_cast(&owner, &harness, admitted, victim, case, None),
     )
     .await??;
+    if case == Case::StaleSession {
+        assert_eq!(
+            resumed.continuity.next_command_id,
+            admitted.continuity.next_command_id
+        );
+        assert_eq!(
+            resumed.continuity.server_sequence,
+            admitted.continuity.server_sequence
+        );
+        let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
+            .current_session_at(session)
+            .await?;
+        assert_eq!(
+            current.session_state(),
+            crate::foundation::GameSessionState::Active
+        );
+        let current = item_fence_of(current).ok_or("current stale-session item fence")?;
+        let old = admitted.item_fence.ok_or("original admitted item fence")?;
+        assert_eq!(
+            current.connection_generation.get(),
+            old.connection_generation.get() + 1
+        );
+        assert_ne!(current, old);
+        // Independently exercise the real rune owner with the stale admitted fence.
+        // A valid persisted source key prevents a malformed-key refusal standing in
+        // for use_legacy_rune's first, current-session fence check.
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: session,
+            command_id: admitted.continuity.next_command_id,
+            item_fence: admitted.item_fence,
+        };
+        let refused = owner
+            .use_rune(
+                actor,
+                command,
+                original.clone(),
+                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                    71,
+                ))),
+                true,
+                false,
+            )
+            .await
+            .ok_or("stale rune owner returns a deterministic refusal")?;
+        assert_eq!(refused.disposition, UseDisposition::Rejected);
+    }
     if case == Case::LostContent {
         assert_eq!(
             resumed.continuity.next_command_id,
