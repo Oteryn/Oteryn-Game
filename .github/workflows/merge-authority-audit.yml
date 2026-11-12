@@ -26,7 +26,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "7b7f36b197a72a4317d6318b1cc4ec4ab9b602f6"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "ca101ab0e41b7ca661a981d22e9522c5220fc8a8"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
       EXPECTED_MERGE_GATE_BLOB: "f574c67416ff8323327cfc6ac0e5829a1c9cba92"
     steps:
@@ -131,23 +131,89 @@ jobs:
               raise SystemExit('audit accepts only pull requests targeting main')
 
           changed_files = pull.get('changed_files')
-          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
-              raise SystemExit('invalid or over-cap changed-files count')
+          if not isinstance(changed_files, int) or changed_files < 0:
+              raise SystemExit('invalid changed-files count')
 
-          changed = []
-          page = 1
-          while True:
-              batch = api(f'/pulls/{number}/files?per_page=100&page={page}')
-              for item in batch:
-                  changed.append(item.get('filename', ''))
-                  previous = item.get('previous_filename')
-                  if isinstance(previous, str) and previous:
-                      changed.append(previous)
-              if len(batch) < 100:
-                  break
-              page += 1
-          if len([path for path in changed if path]) < changed_files:
-              raise SystemExit('changed-files enumeration is incomplete')
+          control_plane_roots = ('.github/repository-policy.json', '.github/workflows', 'tools/repository')
+
+          def control_plane_entries(commit_sha: str) -> dict:
+              # Every blob below the control-plane roots, keyed by path, from complete trees.
+              commit = api(f'/git/commits/{commit_sha}')
+              root_sha = commit.get('tree', {}).get('sha', '')
+              if re.fullmatch(r'[0-9a-f]{40}', root_sha) is None:
+                  raise SystemExit(f'commit {commit_sha} has invalid root tree')
+              found = {}
+              for root in control_plane_roots:
+                  tree_sha = root_sha
+                  segments = root.split('/')
+                  entry = None
+                  for index, segment in enumerate(segments):
+                      tree = api(f'/git/trees/{tree_sha}')
+                      entries = tree.get('tree')
+                      if not isinstance(entries, list) or tree.get('truncated'):
+                          raise SystemExit(f'unable to read complete tree for {root}')
+                      matches = [item for item in entries if item.get('path') == segment]
+                      if len(matches) > 1:
+                          raise SystemExit(f'path {root} is ambiguous at segment {segment}')
+                      entry = matches[0] if matches else None
+                      if entry is None or index == len(segments) - 1:
+                          break
+                      if entry.get('type') != 'tree':
+                          found[root] = ('non-tree-parent', entry.get('mode'), entry.get('sha'))
+                          entry = None
+                          break
+                      tree_sha = entry.get('sha', '')
+                  if entry is None:
+                      continue
+                  if entry.get('type') != 'tree':
+                      found[root] = (entry.get('type'), entry.get('mode'), entry.get('sha'))
+                      continue
+                  subtree = api(f"/git/trees/{entry.get('sha', '')}?recursive=1")
+                  items = subtree.get('tree')
+                  if not isinstance(items, list) or subtree.get('truncated'):
+                      raise SystemExit(f'unable to read complete recursive tree for {root}')
+                  for item in items:
+                      if item.get('type') != 'tree':
+                          found[f"{root}/{item.get('path', '')}"] = (
+                              item.get('type'),
+                              item.get('mode'),
+                              item.get('sha'),
+                          )
+              return found
+
+          if changed_files > 3000:
+              # The pull request files listing stops at 3000 entries. Above that cap the
+              # control-plane paths are enumerated from complete merge-base and head trees;
+              # every check below then applies to them unchanged.
+              compare = api(f'/compare/main...{expected_head}')
+              merge_base = compare.get('merge_base_commit', {}).get('sha', '').lower()
+              if re.fullmatch(r'[0-9a-f]{40}', merge_base) is None:
+                  raise SystemExit('unable to resolve the over-cap candidate merge base')
+              base_entries = control_plane_entries(merge_base)
+              head_entries = control_plane_entries(expected_head)
+              changed = sorted(
+                  path
+                  for path in set(base_entries) | set(head_entries)
+                  if base_entries.get(path) != head_entries.get(path)
+              )
+              live = api(f'/pulls/{number}')
+              if live.get('head', {}).get('sha', '').lower() != expected_head:
+                  raise SystemExit('pull request head moved during the over-cap enumeration')
+          else:
+              changed = []
+              page = 1
+              while True:
+                  batch = api(f'/pulls/{number}/files?per_page=100&page={page}')
+                  for item in batch:
+                      changed.append(item.get('filename', ''))
+                      previous = item.get('previous_filename')
+                      if isinstance(previous, str) and previous:
+                          changed.append(previous)
+                  if len(batch) < 100:
+                      break
+                  page += 1
+              if len([path for path in changed if path]) < changed_files:
+                  raise SystemExit('changed-files enumeration is incomplete')
 
           touches_control_plane = any(
               path == '.github/repository-policy.json'

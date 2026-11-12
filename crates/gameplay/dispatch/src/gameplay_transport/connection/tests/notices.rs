@@ -229,18 +229,31 @@ fn a_reconnect_sends_only_the_snapshot_and_the_revision_stays_monotonic()
         assert_eq!(frames, expected);
         assert_eq!(ended_continuity(end)?.achievement_notice_revision, Some(2));
 
-        // Unreadable watermark, or no controller account: no snapshot, nothing sent.
+        // Unreadable watermark, or no controller account: no snapshot, only
+        // SESSION_JOIN_UNAVAILABLE.
         let unreadable = notice_authority(None, EarnedNotice::NoneEarned);
-        let (end, frames) =
-            drive_session(&unreadable, controlled(with_notices(0))?, &[]).await?;
-        assert!(frames.is_empty());
+        let session = controlled(with_notices(0))?;
+        let (end, frames) = drive_session(&unreadable, session, &[]).await?;
+        assert_eq!(
+            frames,
+            [error_frame(
+                FoundationProtocolError::SessionJoinUnavailable,
+                session.continuity.connection_generation,
+            )]
+        );
         assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
         let uncontrolled = AdmittedSession {
             continuity: with_notices(0),
             ..positioned()?
         };
         let (_, frames) = drive_session(&authority, uncontrolled, &[]).await?;
-        assert!(frames.is_empty());
+        assert_eq!(
+            frames,
+            [error_frame(
+                FoundationProtocolError::SessionJoinUnavailable,
+                uncontrolled.continuity.connection_generation,
+            )]
+        );
         Ok(())
     })
 }

@@ -192,6 +192,7 @@ fn pc03_character_info_scenario() -> Result<(), Error> {
                     // An unexpected transport end while a request is in flight resets every session field.
                     link.character_info_request(intent);
                     assert!(link.character_info_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.character_info_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);

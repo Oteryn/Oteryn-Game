@@ -160,6 +160,7 @@ fn pc01_appearance_scenario() -> Result<(), Error> {
                     link.appearance_edit(0, outfit.key.clone());
                     link.appearance_request(Intent::Apply);
                     assert!(link.appearance_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.appearance_panel();
                     assert!(!ended.pending);

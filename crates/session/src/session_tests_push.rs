@@ -100,6 +100,66 @@ fn idle_protocol_error_preserves_code_and_optional_trace() -> Result<(), BoxErro
     })?
 }
 
+/// A server that refuses the join after `ServerAccepted` sends `ProtocolError` where
+/// `SnapshotBegin` belongs; the client surfaces its code and trace, not an unexpected message.
+#[test]
+fn join_protocol_error_preserves_code_and_optional_trace() -> Result<(), BoxError> {
+    block_on(async {
+        for trace in [None, Some([1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16])] {
+            let (client, mut server) = tokio::io::duplex(256 * 1024);
+            let peer = tokio::spawn(async move {
+                read_frame(&mut server).await?;
+                write_frame(
+                    &mut server,
+                    &encode_server_accepted(&ServerAcceptedValue {
+                        game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                        world_id: WorldId::decode(&uuid_v7(2))?,
+                        channel_id: ChannelId::decode(&uuid_v7(3))?,
+                        connection_generation: 1,
+                        current_server_sequence: 0,
+                        next_command_id: 7,
+                        schema_revision: 1,
+                        selected_capabilities: &[
+                            oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
+                        ],
+                    })?,
+                )
+                .await?;
+                let frame = match trace {
+                    Some(trace) => oteryn_protocol_oteryn::encode_protocol_error_with_trace(
+                        FoundationProtocolError::MalformedFrame,
+                        1,
+                        &trace,
+                    )?,
+                    None => oteryn_protocol_oteryn::encode_protocol_error(
+                        FoundationProtocolError::MalformedFrame,
+                        1,
+                    )?,
+                };
+                write_frame(&mut server, &frame).await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut admission = admission()?;
+            admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+            let result = Session::admit(client, admission).await;
+            assert!(
+                matches!(
+                    &result,
+                    Err(SessionError::ServerProtocolError {
+                        code,
+                        connection_trace,
+                    }) if *code == FoundationProtocolError::MalformedFrame.code()
+                        && *connection_trace == trace
+                ),
+                "{:?}",
+                result.err()
+            );
+            peer.await??;
+        }
+        Ok(())
+    })?
+}
+
 enum Step {
     Send(Vec<u8>),
     /// Frames written in one `write_all`, so the client can never read the first frame

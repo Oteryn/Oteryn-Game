@@ -1,3 +1,4 @@
+use super::release_deferred::{DeferReason, ExpiredGrace, report_release_deferred};
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -59,6 +60,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // starts, retain it across the existing attempts and their backoff.
         let mut foreground = None;
         let mut attempts = 0;
+        // LOGDBG-C: the expired grace this loop releases, once observed; reports only.
+        let mut expired: Option<ExpiredGrace> = None;
+        let deferred = report_release_deferred;
         while attempts < EXPIRY_ATTEMPTS {
             // Timeout/defeat may return an offline actor while its original
             // grace timer sleeps. Retry through the shared registry, retaining
@@ -72,6 +76,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 *held = None;
                 pending("activity_successor");
+                deferred(DeferReason::SessionMoved, expired, attempts);
                 return GraceExpiryResult::Unknown;
             }
             // Poll captured staff decisions while the original grace is held.
@@ -103,6 +108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         GraceExpiryResult::Released => GraceExpiryResult::Released,
                         _ => {
                             pending("terminal_session");
+                            deferred(DeferReason::FactsUnavailable, expired, attempts);
                             GraceExpiryResult::Unknown
                         }
                     };
@@ -152,6 +158,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Observing the same fixed grace is not a semantic release attempt.
             // Keep the existing bounded retry budget for actual expiry work.
             attempts += 1;
+            expired = Some(ExpiredGrace {
+                grace_deadline: deadline,
+                control_loss_epoch: epoch,
+                connection_generation: admitted.continuity.connection_generation,
+            });
             // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
             // Each hold step runs the melee pass; the whole hold counts as one attempt.
             if self
@@ -159,6 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 pending("combat_hold");
+                deferred(DeferReason::InFight, expired, attempts);
                 while self.hold_while_in_fight(actor, session).await {}
                 continue;
             }
@@ -174,6 +186,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 pending("death_save");
+                deferred(DeferReason::DeathSettlement, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -183,6 +196,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // a frozen release cannot also reserve a native transfer.
                 if hold.held {
                     pending("activity_return");
+                    deferred(DeferReason::ActivityHeld, expired, attempts);
                     return GraceExpiryResult::Unknown;
                 }
                 match self
@@ -199,6 +213,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         self.states.fence_holders.release(hold);
                         *held = None;
+                        deferred(DeferReason::ActivityHandoff, expired, attempts);
                         // The outer lifecycle resolves the real fresh origin
                         // owner. It retains the original expired loss deadline.
                         pending("activity_successor");
@@ -207,6 +222,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Ok(super::super::native_activity::NativeActivityOutcome::Refused(_))
                     | Err(()) => {
                         pending("activity_return");
+                        deferred(DeferReason::ActivityReturn, expired, attempts);
                         tokio::time::sleep(next_backoff()).await;
                         continue;
                     }
@@ -215,6 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // The local release fence closes the live lease used to install a successor.
             if !self.reconcile_pending_item_effects(actor, session).await {
                 pending("item_effects");
+                deferred(DeferReason::ItemEffects, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -222,6 +239,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
                     pending("release_fence");
+                    deferred(DeferReason::FenceWait, expired, attempts);
                     tokio::time::sleep(next_backoff()).await;
                     continue;
                 }
@@ -232,6 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 FenceStep::Refused(_) => {
                     pending("release_fence");
+                    deferred(DeferReason::FenceRefused, expired, attempts);
                     return GraceExpiryResult::Unknown;
                 }
             }
@@ -239,6 +258,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 == actor_spell::FamiliarLogoutSave::Unknown
             {
                 pending("familiar_save");
+                deferred(DeferReason::SpellSave, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -246,6 +266,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 == actor_spell::TrainingSave::Unknown
             {
                 pending("training_save");
+                deferred(DeferReason::SpellSave, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -253,22 +274,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // before the release can end the Character lease.
             if !self.save_wheel_gift(actor, session, true).await {
                 pending("wheel_gift");
+                deferred(DeferReason::MonkSave, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
                 pending("monk_save");
+                deferred(DeferReason::MonkSave, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             if !super::super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
             {
                 pending("gourmet_checkpoint");
+                deferred(DeferReason::GourmetCheckpoint, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             if !self.save_conditions_at_actor_end(actor, session).await {
                 pending("condition_save");
+                deferred(DeferReason::ConditionsSave, expired, attempts);
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
@@ -278,6 +303,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 KillRelease::Send(mark) => mark,
                 KillRelease::Deferred => {
                     pending("kill_rewards");
+                    deferred(DeferReason::KillsDeferred, expired, attempts);
                     return GraceExpiryResult::Unknown;
                 }
             };
@@ -306,6 +332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         UnendedSettle::Unknown => {
                             pending("release_not_applicable");
                             self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            deferred(DeferReason::UnendedUnknown, expired, attempts);
                             next_backoff()
                         }
                     }
@@ -317,6 +344,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
                             self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                            deferred(DeferReason::NotExpired, expired, attempts);
                             Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                                 .saturating_add(EXPIRY_SLACK)
                         }
@@ -332,6 +360,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         UnendedSettle::Unknown => {
                             pending("release_settle");
                             self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            deferred(DeferReason::UnendedUnknown, expired, attempts);
                             next_backoff()
                         }
                     }
@@ -352,11 +381,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => {
                     pending("release_commit");
                     self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    deferred(DeferReason::ReleaseUnknown, expired, attempts);
                     next_backoff()
                 }
             };
             tokio::time::sleep(pause).await;
         }
+        deferred(DeferReason::AttemptsExhausted, expired, attempts);
         GraceExpiryResult::Unknown
     }
 

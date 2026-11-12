@@ -27,16 +27,22 @@ impl<S: SessionStream> Session<S> {
         // snapshot transfer-control frames carry no `server_sequence`) and a nonzero envelope
         // `connection_generation` are checked before this frame's payload is consumed.
         begin_envelope.validate(Direction::ServerToClient, true)?;
-        if begin_envelope.message_type() != MessageType::SnapshotBegin {
-            return Err(SessionError::UnexpectedMessage {
-                expected: MessageType::SnapshotBegin,
-                actual: begin_envelope.message_type(),
-            });
-        }
         if begin_envelope.connection_generation() != session_generation {
             return Err(SessionError::ConnectionGenerationMismatch {
                 expected: session_generation,
                 actual: begin_envelope.connection_generation(),
+            });
+        }
+        // A join the server refuses ends with its `ProtocolError`: keep its code and trace.
+        if let Some(error) =
+            session_exchange::terminal_protocol_error(&begin_envelope, &selected_capabilities)?
+        {
+            return Err(error);
+        }
+        if begin_envelope.message_type() != MessageType::SnapshotBegin {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::SnapshotBegin,
+                actual: begin_envelope.message_type(),
             });
         }
         let begin = decode_snapshot_begin(begin_envelope.payload())?;

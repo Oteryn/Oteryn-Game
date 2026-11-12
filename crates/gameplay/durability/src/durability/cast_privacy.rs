@@ -43,6 +43,37 @@ impl CastConsentBatch {
     }
 }
 impl DurabilityRoot {
+    // Refresh and ACK share the worker's existing media lease. Keep a FIFO
+    // ticket while its holder is busy, without extending that lease or retrying
+    // storage/authority failures. An expired worker retains only the original
+    // immediate recovery attempt; its caller has already purged live media.
+    async fn cast_privacy_worker_pass(
+        &self,
+        until: Instant,
+    ) -> Result<super::db::IssuedSemanticPass, DurabilityError> {
+        if until <= Instant::now() {
+            return self.try_issue_semantic_pass();
+        }
+        let mut waiter = None;
+        loop {
+            match self.try_issue_semantic_pass_by(until) {
+                Ok(pass) => return Ok(pass),
+                Err(DurabilityError::RootUnavailable) if Instant::now() < until => {
+                    if waiter.is_none() {
+                        waiter = self.holder_waiter();
+                    }
+                    let now = tokio::time::Instant::now();
+                    let latest = (now + Duration::from_millis(50))
+                        .min(tokio::time::Instant::from_std(until));
+                    if !self.wait_holder_turn(now, latest).await {
+                        tokio::time::sleep_until(latest).await;
+                    }
+                }
+                Err(error) => return Err(error),
+            }
+        }
+    }
+
     /// Called exactly once on a new empty worker, before accepting any operation.
     /// Root reads deny pending floors, so a new worker needs no historic media replay.
     pub async fn register_cast_consent_worker(
@@ -77,11 +108,40 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         worker: &mut CastConsentWorker,
     ) -> Result<CastConsentBatch, DurabilityError> {
+        self.refresh_cast_consent_worker_with_wait(node, worker, true)
+            .await
+    }
+
+    /// The cast service must keep polling its pending observer command's existing
+    /// rejection boundary while that command's caller may hold the busy holder.
+    /// Try this same refresh without waiting; media still requires the current lease.
+    pub async fn try_refresh_cast_consent_worker(
+        &self,
+        node: &NodeIncarnationProof,
+        worker: &mut CastConsentWorker,
+    ) -> Result<CastConsentBatch, DurabilityError> {
+        self.refresh_cast_consent_worker_with_wait(node, worker, false)
+            .await
+    }
+
+    async fn refresh_cast_consent_worker_with_wait(
+        &self,
+        node: &NodeIncarnationProof,
+        worker: &mut CastConsentWorker,
+        wait_for_holder: bool,
+    ) -> Result<CastConsentBatch, DurabilityError> {
         let started = Instant::now();
+        let pass = if wait_for_holder {
+            self.cast_privacy_worker_pass(worker.valid_until()).await?
+        } else if worker.valid() {
+            self.try_issue_semantic_pass_by(worker.valid_until())?
+        } else {
+            self.try_issue_semantic_pass()?
+        };
         let instance = worker.instance;
         let from = worker.cursor;
         let node = node.clone();
-        let (through,events,renewed)=self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+        let (through,events,renewed)=pass.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             current(&mut tx,&node).await?;
             let latest=control(&mut tx).await?;
@@ -130,7 +190,7 @@ impl DurabilityRoot {
         let instance = worker.instance;
         let from = batch.from;
         let through = batch.through;
-        let renewed=self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+        let renewed=self.cast_privacy_worker_pass(worker.valid_until()).await?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             current(&mut tx,&node).await?;
             let latest=control(&mut tx).await?;

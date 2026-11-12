@@ -10,7 +10,7 @@ use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
     serve_admitted,
 };
-use crate::gameplay_transport::{AutoWalkTarget, ComposedFreshAdmission};
+use crate::gameplay_transport::{AdmissionRetryBudget, AutoWalkTarget, ComposedFreshAdmission};
 use crate::map::boot::{BootPins, boot};
 use crate::map::facts::ItemDefinition;
 use crate::map::overlay::TilePos;
@@ -483,7 +483,13 @@ fn scenario(target_move: bool) -> TestResult {
             result
         };
         let server_flow = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
-        let (end, result) = join_two(server_flow, client_flow).await;
+        // The wire owner and the independent pickup are different holder retry owners,
+        // even though this fixture polls both futures on one task.
+        let (end, result) = join_two(
+            crate::durability::DurabilityRoot::with_holder_owner(server_flow),
+            crate::durability::DurabilityRoot::with_holder_owner(client_flow),
+        )
+        .await;
         drop(independent_pickup);
         result?;
         assert!(
@@ -1069,18 +1075,42 @@ async fn pick_origin(
     // The independent pickup shares the non-blocking durability holder with
     // served movement. Serialize its reservation preflight under the same lane.
     let permit = owner.spell_lane_permit().await.ok_or("lane")?;
-    let mut candidate = root
-        .freeze_map_item_mint(authority, owner.holder, fence, request)
+    // Movement's gating reads do not take the item lane. Retry their busy holder
+    // under one existing command budget, retaining the same request and candidate.
+    let retry = AdmissionRetryBudget::for_command(root);
+    let mut candidate = retry
+        .retry_unavailable(async || {
+            root.freeze_map_item_mint(authority, owner.holder, fence, request.clone())
+                .await
+                .map_err(pickup_refusal)
+        })
         .await
         .map_err(|error| format!("independent pickup freeze: {error:?}"))?;
-    assert!(matches!(
-        root.commit_map_item_mint(&permit, authority, owner.holder, fence, &mut candidate)
-            .await
-            .map_err(|error| format!("independent pickup commit: {error:?}"))?,
-        MapItemMintOutcome::Committed(_)
-    ));
+    let committed = retry
+        .retry_unavailable(async || {
+            root.commit_map_item_mint(&permit, authority, owner.holder, fence, &mut candidate)
+                .await
+                .map_err(pickup_refusal)
+        })
+        .await
+        .map_err(|error| format!("independent pickup commit: {error:?}"))?;
+    assert!(matches!(committed, MapItemMintOutcome::Committed(_)));
+
     owner.states.loop_ground.invalidate();
     Ok(())
+}
+
+fn pickup_refusal(
+    error: crate::durability::map_item_mint::MapItemMintError,
+) -> crate::gameplay_transport::connection::AdmissionRefusal {
+    use crate::durability::{DurabilityError, map_item_mint::MapItemMintError};
+    use crate::gameplay_transport::connection::AdmissionRefusal;
+    match error {
+        MapItemMintError::Unavailable(DurabilityError::RootUnavailable) => {
+            AdmissionRefusal::Unavailable
+        }
+        _ => AdmissionRefusal::Rejected,
+    }
 }
 
 async fn result_at_rest(
