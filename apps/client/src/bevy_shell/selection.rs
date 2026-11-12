@@ -3,7 +3,7 @@ mod bridge;
 use super::owner::HostOwner;
 use crate::character_selection::SelectionAction;
 use bevy::{
-    input_focus::tab_navigation::TabGroup,
+    input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
     ui::{Checked, InteractionDisabled},
     ui_widgets::Activate,
@@ -87,8 +87,16 @@ pub(super) fn project(
     skin: Res<Skin>,
     mut state: ResMut<PickerState>,
     mut roots: Query<(Entity, &mut Node), With<Picker>>,
+    mut focus: ResMut<InputFocus>,
+    controls: Query<&PickerControl>,
 ) {
     let Some(request) = owner.selection.pending() else {
+        if focus
+            .get()
+            .is_some_and(|entity| controls.get(entity).is_ok())
+        {
+            focus.clear();
+        }
         for (root, mut node) in &mut roots {
             node.display = Display::None;
             if state.request.is_some() {
@@ -261,6 +269,8 @@ pub(super) fn project(
             ),
             (Choice::Cancel, "Cancel", 43., false),
         ] {
+            let initial_focus = matches!(choice, Choice::Play) && !disabled
+                || matches!(choice, Choice::Cancel) && row.is_none_or(|row| !row.available);
             let button = add_button(
                 &mut commands,
                 &skin,
@@ -270,6 +280,9 @@ pub(super) fn project(
                 width,
                 disabled,
             );
+            if initial_focus {
+                focus.set(button, FocusCause::Navigated);
+            }
             commands.entity(footer).add_child(button);
         }
         commands.entity(panel).add_child(footer);
@@ -416,6 +429,7 @@ mod tests {
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Image>()
             .init_asset::<Font>()
+            .init_resource::<InputFocus>()
             .insert_non_send(owner)
             .add_systems(Startup, setup)
             .add_systems(Update, (poll, project).chain());
@@ -464,10 +478,16 @@ mod tests {
                 .map(|(entity, _)| entity)
                 .ok_or("picker button missing")
         };
+        let initial_play = find(&mut app, false)?;
+        assert_eq!(
+            app.world().resource::<InputFocus>().get(),
+            Some(initial_play)
+        );
         let channel = find(&mut app, true)?;
         app.world_mut().trigger(Activate { entity: channel });
         app.update();
         let play = find(&mut app, false)?;
+        assert_eq!(app.world().resource::<InputFocus>().get(), Some(play));
         app.world_mut().trigger(Activate { entity: play });
         app.update();
         assert_eq!(
@@ -484,6 +504,7 @@ mod tests {
                 .pending()
                 .is_none()
         );
+        assert_eq!(app.world().resource::<InputFocus>().get(), None);
         Ok(())
     }
 }
