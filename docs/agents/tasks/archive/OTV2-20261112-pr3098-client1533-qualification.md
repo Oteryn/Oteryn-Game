@@ -134,3 +134,29 @@ before this repair; both corrected caller contracts passed afterward. This probe
 does not execute the real Session/chat loop and is not a new native runtime pass.
 The full chat-loop regression's runner result remains unconfirmed here; final
 composition requires its own native/Windows, PostgreSQL and Node CI evidence.
+
+## Reviewed offer repair composed with the utility fixture batch
+
+Independent grouped review completed with zero P0/P1/P2 on server `ecbcd3898`
+and client fixture repair `146acc758`. Both were merged forward normally into
+this candidate. The server now offers optional Atelier v2 only in bundle Worlds,
+requiring capability 148 and client support for 483; all temporary diagnostic
+markers are removed. Legacy and non-bundle selection guards remain.
+
+All 390 client-owned source blobs or intentional deletions match reviewed
+`146acc758` after composition. Compared with the original reviewed `6544f20a`,
+only the two documented test repairs differ: runtime error propagation in the
+chat regression and the utility caller fixture. Production client repairs remain
+unchanged. The incoming server paths merge without conflicts.
+
+Subsequent inspection of the completed prior-head logs confirms the real
+`clear_oldest_utility_survives_session_publish_and_new_chat` regression passed
+in native job `131117755736` on `5f117b87` (0.092 seconds). That partition passed
+3,798 tests; the second passed 3,855, and the third passed 3,780 of 3,781 with the
+single old utility fixture failure described above. This strengthens the earlier
+owner-effect evidence but does not qualify this new composition.
+
+Formatting, locked metadata, governance validation and its 129 tests, source
+preservation and whitespace checks pass. Final native/PostgreSQL/Node evidence
+must bind the new published head. Merge order remains #3115 before #3098,
+with accepted-main composition and the full post-merge gate required.
