@@ -2,6 +2,8 @@
 mod bazaar;
 #[path = "challenge_tests.rs"]
 mod challenge;
+#[path = "platform_fixture_tests.rs"]
+mod platform_fixtures;
 
 use super::*;
 use std::sync::{Arc, Mutex};
@@ -169,6 +171,19 @@ struct MockServer {
 fn spawn_server(
     runtime: &tokio::runtime::Runtime,
     responses: Vec<(u16, &'static str, String)>,
+) -> Result<MockServer, Box<dyn std::error::Error>> {
+    spawn_server_with_headers(
+        runtime,
+        responses
+            .into_iter()
+            .map(|(status, headers, body)| (status, headers.to_owned(), body))
+            .collect(),
+    )
+}
+
+fn spawn_server_with_headers(
+    runtime: &tokio::runtime::Runtime,
+    responses: Vec<(u16, String, String)>,
 ) -> Result<MockServer, Box<dyn std::error::Error>> {
     let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0"))?;
     let base = format!("http://127.0.0.1:{}/", listener.local_addr()?.port());

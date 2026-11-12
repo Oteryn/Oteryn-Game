@@ -10,6 +10,7 @@ mod account_services;
 pub mod bazaar;
 mod challenge;
 pub mod coin_purchase;
+mod gateway_request;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
 pub mod premium;
@@ -608,21 +609,12 @@ impl NativeLoginClient {
         {
             return Err(PlatformClientError::InvalidPayload.into());
         }
-        let body = serde_json::to_vec(&serde_json::json!({
-            "protocol_version": GATEWAY_PROTOCOL_VERSION,
-            "game_login_ticket": ticket.secret.expose(),
-            "attempt_ref": login.attempt_ref.as_str(),
-            "character_id": login.character_id,
-            "channel_id": login.channel_id,
-            "offer": {
-                "client_build": login.client_build,
-                "client_platform": "windows",
-                "transports": [
-                    { "protocol_major": 1, "transport_profile": 1, "alpn": GAME_ALPN }
-                ],
-            },
-        }))
-        .map_err(|_error| PlatformClientError::InvalidPayload)?;
+        let body = gateway_request::body(
+            ticket.secret.expose(),
+            login,
+            GATEWAY_PROTOCOL_VERSION,
+            GAME_ALPN,
+        )?;
         if body.len() > MAX_LOGIN_REQUEST_BYTES {
             return Err(PlatformClientError::InvalidPayload.into());
         }
