@@ -14,7 +14,7 @@
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
-    encode_item_use_intent, CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT,
+    encode_item_use_intent,
 };
 
 const DOUGH: u32 = 3604;
