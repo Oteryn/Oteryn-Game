@@ -1,6 +1,6 @@
 # GPE2E-1 — Game ↔ Platform end-to-end qualification plan
 
-Documentation snapshot: 2026-11-12. Game base: `aee3f57a5697eea525cd8109b3ae8cc93691216e`.
+Documentation snapshot: 2026-11-12. Platform main verified: `732505d37ae65d0da4f66ab506964d11c0eeb8b0` (#1828; includes #1827 and #1826). Game base: `aee3f57a5697eea525cd8109b3ae8cc93691216e`.
 No implementation, schema, flag, pin or deployment change is part of this task.
 
 ## Evidence coordinates and interpretation
@@ -8,7 +8,8 @@ No implementation, schema, flag, pin or deployment change is part of this task.
 - `G:path:line` means Oteryn/Oteryn-Game at the base above.
 - `P:path:line` means Oteryn/Oteryn-Platform at node-boot's pin,
   `3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05` (#1665).
-- `M:path:line` means Platform main as inspected,
+- `N:path:line` means the newly verified Platform main in the snapshot line; cloned read-only for source inspection. The lane pin remains unchanged.
+- `M:path:line` means the earlier Platform main as inspected,
   `24bdde3f1fd727d51a3d61a32e85d80b45757c52` (#1817).
   Throughout, proposed `client_phases/<file>.rs` means
   `apps/game-server/src/qualification/client_phases/<file>.rs`.
@@ -133,14 +134,19 @@ ordinary login. Web MFA has challenge creation and completion at
 `M:portal-rs/crates/identity/src/mfa.rs:341`, `:432`; its web adapter rewrites
 login at `M:portal-rs/crates/identity/src/mfa_http.rs:90` and completes it at `:459`.
 The old password-only adapter comment is stale for this composed web flow.
-The web MFA extension is **BLOCKED until Platform `seed account-mfa` lands**
-(testing, returns a TOTP secret); then RUNNABLE. M's seed dispatch has no such
-entity (`M:portal-rs/bin/oteryn-portal/src/seed.rs:141`).
+The web MFA extension is **RUNNABLE NOW against N**: testing-only
+`oteryn-portal seed account-mfa` returns `totpSecret` and `recoveryCodes`
+(`N:portal-rs/bin/oteryn-portal/src/seed.rs:116`, `:160`, `:578`, `:582`; #1828).
+Use those private outputs to complete the real web TOTP challenge; never log them.
 
-**Separate native MFA test — `native_login_mfa_account`: BLOCKED — Platform
-OAuth MFA step-up.** `M:portal-rs/crates/gameauth/src/oauth.rs:148` rejects
-`login_mfa_required` accounts during authorization/token issuance. Web TOTP
-success does not establish native OAuth support.
+**Separate native MFA test — `native_login_mfa_account`: RUNNABLE NOW against N.**
+The requested BLOCKED status is superseded by merged Platform #1826: the code
+now refuses only when MFA is required and the browser has not proven it
+(`N:portal-rs/crates/gameauth/src/oauth.rs:230`). The HTTP adapter checks a live
+account-bound `MfaSession` (`N:portal-rs/crates/gameauth/src/oauth/oauth_http.rs:162`)
+and passes its proof to approval (`:261`); proven MFA can issue a code (`:264`).
+Test missing/expired proof refusal and successful web TOTP → consent → native
+PKCE exchange. This is current-main readiness, not evidence at the unchanged lane pin.
 `G:docs/contracts/OTERYN_NATIVE_LOGIN_CHALLENGE_V1.md:48` lists the additional
 Platform obligations for a challenge-specific successor.
 
@@ -473,11 +479,19 @@ its separate producer flags differ from the exchange flags. M bootstrap HTTP is 
 The governing producer contract is
 `M:docs/contracts/OTERYN_V2_CHARACTER_BOOTSTRAP_INTENT_PRODUCER_CONTRACT.md:5`
 (contract version 3; the test name need not encode its version).
-M has testing-only `oteryn-portal seed bootstrap-intent`
-(`M:portal-rs/bin/oteryn-portal/src/seed.rs:147`, `:546`), not a production
-operator issuer. Platform plans `oteryn-portal bootstrap-intent issue` (PR to
-follow); this command is absent from M's binary dispatch. Status remains
-BLOCKED — Platform (operator issuer).
+N supplies the production `oteryn-portal bootstrap-intent issue [--input file]`
+command (#1828), dispatched at `N:portal-rs/bin/oteryn-portal/src/main.rs:32`.
+Input is JSON (stdin by default) with `identityId` and the other required intent
+fields (`N:portal-rs/bin/oteryn-portal/src/bootstrap_intent.rs:93`, `:159`).
+`GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_ENABLED` is default off; enable it only
+inside the lane's disposable harness, with explicit
+`GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS` in 1..=300 (`:105`, `:127`).
+Canonical intent bytes go to stdout, structured errors to stderr (`:210`).
+**RUNNABLE NOW against N**: `operator_bootstrap_replay` must cover exit 2 bad input,
+3 conflict, 4 unavailable (`:49`–`:51`), exact issuance replay returning the same
+canonical bytes, and Game consumption/receipt replay without duplicate effects.
+This is planned harness enablement against N; this documentation change does not
+enable the flag or alter the lane pin.
 
 **Coverage today.** Real P bootstrap is covered: node_boot `character_bootstrap`
 prints `NODE_BOOT_EVIDENCE characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent`
@@ -487,7 +501,7 @@ prints `NODE_BOOT_EVIDENCE characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_
 CreateCharacter nor M bootstrap issuance.
 
 **Statuses.** **RUNNABLE NOW**: bounded CreateCharacter exchange in `testing`.
-**BLOCKED — Platform**: M operator-bootstrap E2E until a real issuer is supplied;
+**RUNNABLE NOW against N**: operator-bootstrap E2E through the production issuer;
 never insert a canned `intent_json` row as its replacement.
 
 **Tests to add.** `character_create_receipt_idempotency` in
@@ -722,10 +736,17 @@ provenance, stale/conflict suppression and no monetary/reward mutation. Budget
 ## 6. Private journal T72 (G-9 / G-10 / G-11)
 
 **Game / contracts.** Platform journal sessions/items/progress contracts are all
-**ACCEPTED revision 3** at line 1 of
+**ACCEPTED revision 3** for sessions/items and **ACCEPTED revision 4** for
+progress at line 1 of
 `M:docs/contracts/OTERYN_V2_GAME_JOURNAL_SESSIONS_CONTRACT_PROPOSAL.md`,
 `M:docs/contracts/OTERYN_V2_GAME_JOURNAL_ITEMS_CONTRACT_PROPOSAL.md`, and
-`M:docs/contracts/OTERYN_V2_GAME_JOURNAL_PROGRESS_CONTRACT_PROPOSAL.md`.
+`N:docs/contracts/OTERYN_V2_GAME_JOURNAL_PROGRESS_CONTRACT_PROPOSAL.md`.
+N verifies the progress revision 4 dependency (Platform #1827): `result` is
+`accepted|refused`, with sole terminal refusal reason `CHARACTER_SCOPE_DELETED`
+(`N:docs/contracts/OTERYN_V2_GAME_JOURNAL_PROGRESS_CONTRACT_PROPOSAL.md:15`;
+`N:portal-rs/crates/playerdata/src/store.rs:232`, `:934`). Exact accepted replay
+keeps its stored result; terminal refusal consumes its revision. Sessions/items
+remain revision 3.
 Their filenames saying PROPOSAL do not undo acceptance; acceptance explicitly does
 not start Game producers. Game's existing quest source is
 `G:crates/gameplay/quests/src/quest/log/journal_source.rs:1`; the real dev-client
@@ -848,11 +869,16 @@ refusal belongs first in this phase and runs even while success stays blocked.
    product handler; never fall back to P for an M success claim. Implementation
    added in GPE2E-2, runtime unverified: `GAME_PLATFORM_RESULT=FAIL flow=preflight
    reason=missing_binary_sudo`. Platform lifecycle delegates to `portal-rs/e2e/start.sh`.
-2. `web_identity_pkce_isolation`, then runnable
+2. `web_identity_pkce_isolation`, including web MFA using testing-only
+   `seed account-mfa` private TOTP/recovery outputs; add `native_login_mfa_account`
+   against N (#1826 proven-session step-up), then runnable
    `native_ticket_and_gateway_fail_closed` and `native_device_rotation_replay`.
    These establish identity and honest
    current Gateway failure before any downstream success assertion.
-3. `runtime_reports_owner_fences`, then `character_create_receipt_idempotency` →
+3. `operator_bootstrap_replay` against N production `bootstrap-intent issue`:
+   disposable-harness-only enable flag, explicit TTL 1..=300, JSON `identityId`,
+   canonical stdout, exit 2/3/4 and exact replay assertions; then
+   `runtime_reports_owner_fences`, then `character_create_receipt_idempotency` →
    `lcfa_owner_freshness_and_routes` in
    testing, then isolated preprod owner-list qualification. These produce real
    Character data needed by the later native-login success test.
@@ -872,18 +898,20 @@ refusal belongs first in this phase and runs even while success stays blocked.
    `platform_reauth_recovery` and `game_fast_reconnect_rotation`.
 7. Accept/authorize Game security-stream consumption and add
    `security_revocation_terminal`. This remains ahead of lower-risk blocked feeds.
-8. Resolve real operator-bootstrap issuer, closure/Bazaar contracts and loyalty
+8. Resolve closure/Bazaar contracts and loyalty
    source/consumer, then build their tests. Resolve public extension acceptance,
    T94 authoritative-source qualification and populated catalogue producer separately.
-9. Complete T72 Game producers and Platform assembly; add its privacy/replay test.
+9. Complete T72 Game producers and Platform assembly against progress rev 4
+   (#1827, `result: accepted|refused`, sole refusal `CHARACTER_SCOPE_DELETED`);
+   add its privacy/replay test.
 10. Accept Store delivery on an exact reviewed contract revision, then implement
     `store_purchase_delivery_replay`; retain default-off until separate enablement.
 
 | Flow | Status | Blocker owner | Test name |
 |---|---|---|---|
 | Account web login + PKCE | RUNNABLE NOW; GPE2E-2b repairs root-owned state base and fail-fast operator setup; callback state uses shipping IdentityFlow | Live rerun required; no PASS evidence | `web_identity_pkce_isolation` |
-| MFA-protected web login success | BLOCKED until seed; then RUNNABLE | Platform: `seed account-mfa` (TOTP secret); web challenge exists | `web_identity_pkce_isolation` (MFA extension) |
-| Native OAuth for an MFA account | BLOCKED | Platform: OAuth MFA step-up (`oauth.rs:148`) | `native_login_mfa_account` |
+| MFA-protected web login success | RUNNABLE NOW | N #1828: testing-only `seed account-mfa` returns `totpSecret` + recovery codes; web TOTP exists | `web_identity_pkce_isolation` (MFA extension) |
+| Native OAuth for an MFA account | RUNNABLE NOW | N #1826: proven web MFA accepted; unproven required MFA refused (`oauth.rs:230`); older lane pin unchanged | `native_login_mfa_account` |
 | Ticket + Gateway refusal slice | RUNNABLE NOW | — | `native_ticket_and_gateway_fail_closed` |
 | Remembered native-device session | RUNNABLE NOW | —; U23 recovery excluded | `native_device_rotation_replay` |
 | Native Gateway mode 34a preprod success | BLOCKED | Platform: T19c code reported ready, PR pending; route/channel seeds after merge; environment gates | `native_login_34a_preprod` |
@@ -895,7 +923,7 @@ refusal belongs first in this phase and runs even while success stays blocked.
 | Security revocation/staff kick → Game | BLOCKED | Contract decision + Game server consumer | `security_revocation_terminal` |
 | LCFA owner list/internal isolation | RUNNABLE NOW | —; full preproduction gate discrepancy separate | `lcfa_owner_freshness_and_routes` |
 | Browser Character command/receipt | RUNNABLE NOW | — (testing slice) | `character_create_receipt_idempotency` |
-| Operator bootstrap on portal-rs | BLOCKED | Platform: production `bootstrap-intent issue` PR to follow; testing-only seed exists | `operator_bootstrap_replay` |
+| Operator bootstrap on portal-rs | RUNNABLE NOW | N #1828: production issuer; disposable harness enables default-off gate; TTL 1..=300; exit 2/3/4 + replay | `operator_bootstrap_replay` |
 | Restore notice/reopened receipts | RUNNABLE NOW | — | `restore_reopens_exact_receipts` |
 | Account closure saga | BLOCKED | Contract decision | `closure_cancel_finalize_race` |
 | Bazaar custody/settlement saga | BLOCKED | Contract decision | `bazaar_custody_settlement_replay` |
@@ -909,7 +937,7 @@ refusal belongs first in this phase and runs even while success stays blocked.
 | Public live death/online-session assertions | BLOCKED | Platform: admission | `public_projection_privacy_floor` (gameplay extension) |
 | Public online/daily/totals extensions | BLOCKED | Contract decision: acceptance UNKNOWN | `public_online_daily_totals` |
 | T94 event/season feed | BLOCKED | Contract decision; source qualification UNKNOWN | `league_outcome_correction_fences` |
-| Private journal T72 | BLOCKED | Game server + Platform | `journal_t72_owner_replay_privacy` |
+| Private journal T72 | BLOCKED | Game server + Platform; depends on T72 rev 4 (Platform #1827): `result: accepted\|refused`, sole refusal reason `CHARACTER_SCOPE_DELETED` | `journal_t72_owner_replay_privacy` |
 | Catalogue unsupported-artifact fidelity | RUNNABLE NOW | —; populated content needs Game producer | `catalog_real_export_cache_fidelity` |
 | Store default-off refusal | RUNNABLE NOW | — | `store_default_off_no_effect` |
 | Store positive purchase/delivery | BLOCKED | Contract decision | `store_purchase_delivery_replay` |
