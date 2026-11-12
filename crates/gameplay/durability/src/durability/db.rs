@@ -1314,51 +1314,68 @@ impl DurabilityRoot {
     /// Classifies scheduled work, including its ordinary semantic passes, as background.
     /// Its independent owner key survives awaits and is inherited by `spawn_task`.
     /// Shared helpers cannot promote it to foreground or keep a retry ticket.
-    pub async fn with_background_holder<F: Future>(future: F) -> F::Output {
+    pub fn with_background_holder<F: Future>(future: F) -> impl Future<Output = F::Output> {
         static NEXT_BACKGROUND: AtomicU64 = AtomicU64::new(0);
-        holder_queue::spawned_for(
-            holder_queue::OwnerKey::Background(NEXT_BACKGROUND.fetch_add(1, Ordering::Relaxed)),
-            future,
-        )
-        .await
+        // Boxed before the async body: an async fn stores its argument in its own layout.
+        let future = Box::pin(future);
+        async move {
+            holder_queue::spawned_for(
+                holder_queue::OwnerKey::Background(NEXT_BACKGROUND.fetch_add(1, Ordering::Relaxed)),
+                future,
+            )
+            .await
+        }
     }
 
     /// Keeps one background fairness grant across all passes of a bounded operation.
     /// The holder is still checked out non-blockingly for each pass; completion or
     /// cancellation drops the grant, including when the caller is a long-lived scheduler.
-    pub async fn with_background_operation<F: Future>(&self, future: F) -> F::Output {
-        // Bound layout depth when scheduler units nest task-local grant scopes.
+    pub fn with_background_operation<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = F::Output> {
+        // Bound layout depth when scheduler units nest task-local grant scopes. Boxed
+        // before the async body: an async fn stores its argument in its own layout.
         let future = Box::pin(future);
-        if holder_queue::is_background() {
-            foreground::operation(&self.holder_priority, future).await
-        } else {
-            future.await
+        async move {
+            if holder_queue::is_background() {
+                foreground::operation(&self.holder_priority, future).await
+            } else {
+                future.await
+            }
         }
     }
 
     /// Runs one bounded scheduler unit and reports whether it consumed a grant.
     /// Schedulers use acquisition (including empty reads) to resume past completed
     /// units, while a refused unit retains its place. Do not wrap a sweep.
-    pub async fn with_background_operation_progress<F: Future>(
+    pub fn with_background_operation_progress<F: Future>(
         &self,
         future: F,
-    ) -> (F::Output, bool) {
+    ) -> impl Future<Output = (F::Output, bool)> {
         let future = Box::pin(future);
-        if holder_queue::is_background() {
-            foreground::operation_progress(&self.holder_priority, future).await
-        } else {
-            (future.await, true)
+        async move {
+            if holder_queue::is_background() {
+                foreground::operation_progress(&self.holder_priority, future).await
+            } else {
+                (future.await, true)
+            }
         }
     }
 
     /// Observe progress in a sweep without granting it access. Excludes any
     /// caller grant for this scope; each item establishes its own operation.
-    pub async fn with_background_sweep_progress<F: Future>(&self, future: F) -> (F::Output, bool) {
+    pub fn with_background_sweep_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = (F::Output, bool)> {
         let future = Box::pin(future);
-        if holder_queue::is_background() {
-            foreground::sweep_progress(&self.holder_priority, future).await
-        } else {
-            (future.await, true)
+        async move {
+            if holder_queue::is_background() {
+                foreground::sweep_progress(&self.holder_priority, future).await
+            } else {
+                (future.await, true)
+            }
         }
     }
 
