@@ -92,8 +92,8 @@ impl NativeLoginClient {
                 ("grant_type", "authorization_code"),
                 ("client_id", self.oauth_client_id.as_str()),
                 ("redirect_uri", redirect_uri),
-                ("code_verifier", code_verifier),
                 ("code", code),
+                ("code_verifier", code_verifier),
             ];
             if let Some(proof) = proof {
                 fields.push(("challenge_id", &proof.challenge.id));

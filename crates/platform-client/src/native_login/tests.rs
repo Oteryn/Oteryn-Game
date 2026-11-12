@@ -1,3 +1,5 @@
+#[path = "account_fixture_tests.rs"]
+mod account_fixtures;
 #[path = "bazaar_tests.rs"]
 mod bazaar;
 #[path = "challenge_tests.rs"]
@@ -534,6 +536,22 @@ fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
 
 #[path = "coin_purchase_tests.rs"]
 mod coin_purchase_tests;
+
+// Opt-in current-thread fixture tests record waits without consuming wall time.
+thread_local! {
+    static TICKET_DELAY: std::cell::Cell<Option<Duration>> = const {
+        std::cell::Cell::new(None)
+    };
+}
+pub(super) fn ticket_delay(duration: Duration) -> Duration {
+    TICKET_DELAY.with(|clock| match clock.get() {
+        Some(elapsed) => {
+            clock.set(Some(elapsed + duration));
+            Duration::ZERO
+        }
+        None => duration,
+    })
+}
 
 // Thread-local controlled time affects only opt-in current-thread fixture tests.
 // Other tests and every production build retain real sleeps.
