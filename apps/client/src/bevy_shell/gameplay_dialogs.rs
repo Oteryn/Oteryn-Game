@@ -191,6 +191,7 @@ fn project(
     };
     let window = commands
         .spawn((
+            bevy::ui_widgets::ScrollArea,
             source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
             TabGroup {
                 order: 3,
