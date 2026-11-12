@@ -20,6 +20,12 @@ def validate_inventory(root, rows, native, schedules):
         raise ValueError('Thaian source authoring revision')
     profiles = {row['target']['family']: row for row in packet['profiles']}
     records = {row['identity']['family']: row for row in packet['records']}
+    authoring = profiles['Creature']['data']
+    canonical_authoring = {**authoring, 'profile': dict(authoring['profile'])}
+    # The native World writer omits an empty immunity list. The successor still
+    # requires its explicit reference_level and every other pinned source field.
+    if canonical_authoring['profile'].get('immunities') == []:
+        del canonical_authoring['profile']['immunities']
     key = 'oteryn:creature.thaian'
     canonical = [row for row in rows if row['definition']['identity']['key'] == key]
     active = [row for row in native if row['profile']['target']['key'] == key]
@@ -30,8 +36,7 @@ def validate_inventory(root, rows, native, schedules):
     canonical_authoring['profile']['details'].setdefault('reference_level', None)
     if (len(canonical) != 1 or len(active) != 1
             or canonical[0]['definition'] != records['Creature']
-            or canonical[0]['authoring'] not in (
-                profiles['Creature']['data'], canonical_authoring)
+            or canonical[0]['authoring'] not in (authoring, canonical_authoring)
             or active[0]['profile'] != profiles['Creature']
             or active[0]['behavior'] != profiles['Behavior']):
         raise ValueError('Thaian source authoring closure: ' + json.dumps({

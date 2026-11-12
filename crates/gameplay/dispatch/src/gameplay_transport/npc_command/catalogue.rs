@@ -54,6 +54,54 @@ pub(super) struct CommitStep {
     magic: usize,
 }
 
+pub(super) async fn inventory(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+) -> Option<npc_program::NpcProgramInventory> {
+    let npc = {
+        let runtime = admission.runtime.lock().await;
+        let npc =
+            service_context::live_npc(&runtime, actor, command.game_session_id, intent.npc_actor)?;
+        let source = NpcRuleCatalog::runtime()
+            .ok()?
+            .admitted_for_npc(&npc.key, admission.quest_catalogue.as_ref()?)
+            .ok()??;
+        if !npc_program::inventory_prefetch_required(&npc.key, &source) {
+            return None;
+        }
+        npc.key.clone()
+    };
+    let expected = command.item_fence?;
+    let fence = admission
+        .current_quest_fence(command.game_session_id)
+        .await
+        .ok()??;
+    if fence.item_fence() != expected {
+        return None;
+    }
+    let catalogue = admission.quest_catalogue.as_ref()?;
+    let native = admission.active_generation?.native_gameplay()?;
+    admission
+        .root
+        .read_current_npc_program_inventory(
+            admission.character,
+            admission.holder,
+            fence,
+            CommandRef::new(
+                command.game_session_id,
+                CommandId::new(command.command_id).ok()?,
+            ),
+            &npc,
+            catalogue,
+            &super::super::item_ref_admission::NativeItemWeights(native)
+                .with_wheel(admission.premium_coordinator),
+        )
+        .await
+        .ok()
+}
+
 pub(super) async fn appearance(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -127,6 +175,7 @@ pub(super) fn prepare(
     ordinary: &NpcTalkOutcome,
     stag_beaks: Option<&crate::durability::stag_beaks::StagBeakPreview>,
     appearance: Option<&(std::collections::BTreeMap<u16, u8>, u8)>,
+    inventory: Option<&npc_program::NpcProgramInventory>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -135,7 +184,11 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
-    let source = NpcRuleCatalog::runtime().ok()?;
+    let catalogue = admission.quest_catalogue.as_ref()?;
+    let source = NpcRuleCatalog::runtime()
+        .ok()?
+        .admitted_for_npc(&context.2, catalogue)
+        .ok()??;
     if !source
         .programs()
         .iter()
@@ -143,7 +196,6 @@ pub(super) fn prepare(
     {
         return None;
     }
-    let catalogue = admission.quest_catalogue.as_ref()?;
     let mut tracks = {
         let sessions = admission.states.quest_sessions.lock().ok()?;
         let copy = sessions.get(&command.game_session_id)?.copy.as_ref()?;
@@ -271,6 +323,19 @@ pub(super) fn prepare(
     let Some(appearance) = appearance else {
         return Some(Step::Refused);
     };
+    let needs_inventory = npc_program::requires_current_inventory(&request, &source);
+    let inventory = if needs_inventory {
+        let Some(snapshot) =
+            inventory.and_then(|snapshot| snapshot.for_fence(&request.npc, command.item_fence?))
+        else {
+            // A failed or stale read cannot be replaced by optimistic counts,
+            // nor may it fall through to a speculative reply/topic.
+            return Some(Step::Refused);
+        };
+        Some(snapshot)
+    } else {
+        None
+    };
     let teleport =
         npc_program::teleport::preview_teleport(&request, &tracks, catalogue, now, &eligibility)
             .ok()
@@ -287,15 +352,28 @@ pub(super) fn prepare(
         .as_ref()
         .map(|p| Ok(Some(p.source.clone())))
         .unwrap_or_else(|| {
-            npc_program::preview_with_appearance(
-                &request,
-                &tracks,
-                catalogue,
-                now,
-                &eligibility,
-                player_name.as_deref(),
-                (&appearance.0, appearance.1),
-            )
+            if let Some(inventory) = inventory {
+                npc_program::preview_with_inventory(
+                    &request,
+                    &tracks,
+                    catalogue,
+                    now,
+                    &eligibility,
+                    player_name.as_deref(),
+                    (&appearance.0, appearance.1),
+                    inventory,
+                )
+            } else {
+                npc_program::preview_with_appearance(
+                    &request,
+                    &tracks,
+                    catalogue,
+                    now,
+                    &eligibility,
+                    player_name.as_deref(),
+                    (&appearance.0, appearance.1),
+                )
+            }
         }) {
         Ok(Some(plan)) => plan,
         Ok(None) => {
@@ -331,6 +409,7 @@ pub(super) fn prepare(
         && !has_track_mutation
         && !plan.completes
         && request.npc != "oteryn:npc.pemaret"
+        && !needs_inventory
     {
         let end = plan
             .effects
@@ -848,5 +927,19 @@ pub(super) fn follow_end(
         && chat.npc_conversation_generation(session) == Some(end.generation)
     {
         chat.end_engagement(session, end.npc_actor);
+    }
+}
+
+// Test-only observation of the topic produced by the normal command path.
+#[cfg(test)]
+impl NpcConversations {
+    pub(in crate::gameplay_transport) fn catalogue_topic_for_test(
+        &self,
+        session: GameSessionId,
+    ) -> Option<i32> {
+        match &self.sessions.lock().ok()?.get(&session)?.catalogue {
+            Some(Pending::Topic(conversation)) => Some(conversation.topic),
+            _ => None,
+        }
     }
 }

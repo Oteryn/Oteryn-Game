@@ -30,4 +30,7 @@ impl MiscellaneousPreferences {
 impl super::SettingsState {
     pub fn request_native_sign_out(&mut self){self.native_sign_out=true;}
     pub fn take_native_sign_out(&mut self)->bool{std::mem::take(&mut self.native_sign_out)}
+    /// Queues a Platform web page (support tickets, cookie policy) for the system browser.
+    pub fn request_web_link(&mut self,link:crate::web_links::WebLink){self.web_link=Some(link);}
+    pub fn take_web_link(&mut self)->Option<crate::web_links::WebLink>{self.web_link.take()}
 }

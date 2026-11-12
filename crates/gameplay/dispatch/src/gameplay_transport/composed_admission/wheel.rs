@@ -276,6 +276,6 @@ mod tests {
             .expect("dispatch projection");
         assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3));
         assert!(effects.life_leech_hundredths_percent > 0);
-        assert!(!effects.sockets.resonance_stages.is_empty());
+        assert!(effects.sockets.gem_vessel_nodes > 0);
     }
 }

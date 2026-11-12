@@ -119,6 +119,7 @@ impl Stepper for Fake {
         Ok(match command {
             CombatCommand::Cast(_)
             | CombatCommand::CastAt { .. }
+            | CombatCommand::CastCursor { .. }
             | CombatCommand::CastFacing { .. } => {
                 CombatReport::Cast(SpellCastDisposition::NotEnoughMana)
             }

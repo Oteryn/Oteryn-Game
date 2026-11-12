@@ -1,4 +1,4 @@
-//! The server-owned 30-day one-click daily reward catalogue.
+//! The server-owned seven-day one-click daily reward catalogue (Winter Update 2026, WU26-07).
 use super::native_gameplay::NativeGameplayState;
 use serde::Deserialize;
 
@@ -51,7 +51,7 @@ impl DailyRewardContent {
         ))
         .ok()?;
         (content.schema == "OTERYN_DAILY_REWARDS/v2"
-            && content.days.len() == 30
+            && content.days.len() == 7
             && content.days.iter().enumerate().all(|(index, day)| {
                 day.day == u8::try_from(index + 1).unwrap_or_default()
                     && [&day.free, &day.premium].iter().all(|tier| {

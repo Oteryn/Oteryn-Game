@@ -178,6 +178,8 @@ pub async fn serve_gameplay(
             .chat
             .install_relay(std::sync::Arc::new(relay));
     }
+    // N009/N014: the Platform stream pullers run until this seam ends; dropping them aborts them.
+    let _platform_streams = platform_stream_pullers(owners.root);
     // Check every initial boss clock before accepting connections; confirmed claims may wait for a free tile.
     let mut boss_timers = std::collections::BTreeMap::new();
     loop {

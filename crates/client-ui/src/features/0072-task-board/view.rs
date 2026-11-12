@@ -1,6 +1,82 @@
 use super::task_board;
 use std::fmt::Write;
 
+/// Bounty Reroll Tokens are stored up to this many (Tibia 15.33 client text).
+pub const REROLL_TOKEN_CAP: u64 = 10;
+
+pub const DIFFICULTIES: [(&str, &str); 4] = [
+    ("Beginner", "Beginner tasks pick easy creatures."),
+    ("Adept", "Adept tasks pick easy and medium creatures."),
+    ("Expert", "Expert tasks pick medium and hard creatures."),
+    (
+        "Master",
+        "Master tasks pick hard and challenging creatures.",
+    ),
+];
+
+/// Tooltip text of one bounty difficulty; unknown levels have none.
+#[must_use]
+pub fn difficulty_tooltip(level: u8) -> &'static str {
+    DIFFICULTIES
+        .get(usize::from(level))
+        .map_or("", |(_, tooltip)| tooltip)
+}
+
+#[must_use]
+pub fn difficulty_name(level: u8) -> &'static str {
+    DIFFICULTIES
+        .get(usize::from(level))
+        .map_or("Unknown", |(name, _)| name)
+}
+
+/// Task rarity shown for an offer's grade: Ordinary, Silver, Gold, Platinum.
+#[must_use]
+pub fn rarity_name(grade: u8) -> &'static str {
+    match grade {
+        0 => "Ordinary",
+        1 => "Silver",
+        2 => "Gold",
+        _ => "Platinum",
+    }
+}
+
+fn bounty_header_text(bounty: &task_board::full::Bounty) -> String {
+    let mut text = format!(
+        "Bounty: state {}, Task Difficulty: {}\n",
+        bounty.state,
+        difficulty_name(bounty.difficulty)
+    );
+    text.push_str(difficulty_tooltip(bounty.difficulty));
+    text.push('\n');
+    for (name, tooltip) in DIFFICULTIES {
+        let _ = writeln!(text, "  {name}: {tooltip}");
+    }
+    let _ = writeln!(
+        text,
+        "Bounty Reroll Token: {} / {}{}",
+        bounty.rerolls,
+        REROLL_TOKEN_CAP,
+        if bounty.rerolls >= REROLL_TOKEN_CAP {
+            " (maximum)"
+        } else {
+            ""
+        }
+    );
+    text.push_str(
+        "Tasks can be re-rolled using Reroll Tokens. One token can be claimed for free each day from the Daily Reward Wall. You can store up to 10 Reroll Tokens at a time.\n",
+    );
+    text.push_str(
+        "Elite: monsters deal 100% more damage to you and take 50% less damage from you. Completing an Elite task gives 100% more XP and additional dust based on difficulty. Dust is only awarded to Premium accounts. Difficulty and Elite changes only apply to your next task.\n",
+    );
+    if bounty.elite || bounty.active.as_ref().is_some_and(|task| task.elite) {
+        text.push_str("Elite tasks are active.\n");
+    }
+    text.push_str(
+        "Each time a creature is offered and not selected, its chance to appear as a Silver (up to 75%), Gold (up to 20%) or Platinum (up to 5%) task grows. A creature must be rerolled at least once before it can appear as Platinum.\n",
+    );
+    text
+}
+
 pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>) -> String {
     let mut text = lfmt!(
         "Task Board — week {}\nPoints: {}  Bounty points: {}  Soulseals: {}\n",
@@ -53,18 +129,7 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
         );
     }
     let bounty = &reply.bounty;
-    let _ = lwriteln!(
-        text,
-        "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
-        bounty.state,
-        bounty.difficulty,
-        bounty.rerolls
-    );
-    if bounty.elite || bounty.active.as_ref().is_some_and(|task| task.elite) {
-        text.push_str(tr!(
-            "Elite tasks: monsters deal +100% damage and take -50% damage.\n"
-        ));
-    }
+    text.push_str(&bounty_header_text(bounty));
     for (slot, offer) in bounty.offers.iter().enumerate().chain(
         bounty
             .active
@@ -79,12 +144,7 @@ pub(super) fn panel_text(reply: &task_board::full::Reply, feedback: Option<&str>
             offer.required,
             offer.experience,
             offer.points,
-            match offer.grade {
-                0 => tr!("Ordinary"),
-                1 => tr!("Silver"),
-                2 => tr!("Gold"),
-                _ => tr!("Platinum"),
-            }
+            rarity_name(offer.grade)
         );
         if offer.elite {
             let _ = writeln!(
@@ -190,6 +250,81 @@ pub fn shop_offer_choice(offer: &task_board::full::ShopOffer, points: u64) -> St
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn reply(difficulty: u8, rerolls: u64, elite: bool, grade: u8) -> task_board::full::Reply {
+        task_board::full::Reply {
+            refusal: 0,
+            period: 1,
+            points: 0,
+            bounty_points: 0,
+            soulseals: 0,
+            weekly: task_board::full::Weekly {
+                started: false,
+                difficulty: 0,
+                expanded: false,
+                multiplier: 1,
+                kill_experience: 0,
+                delivery_experience: 0,
+                pending_points: 0,
+                pending_soulseals: 0,
+                kills: vec![],
+                deliveries: vec![],
+            },
+            weekly_results: None,
+            bounty: task_board::full::Bounty {
+                elite,
+                state: 1,
+                difficulty,
+                selected: 0,
+                current: 0,
+                rerolls,
+                daily_reroll_at: 0,
+                offers: vec![task_board::full::BountyOffer {
+                    elite,
+                    dust: 560,
+                    race: "oteryn:creature.rat".into(),
+                    required: 10,
+                    experience: 100,
+                    points: 5,
+                    grade,
+                }],
+                active: None,
+                lists: vec![],
+            },
+            talisman: Default::default(),
+            shop: vec![],
+        }
+    }
+    #[test]
+    fn difficulty_names_and_tooltips_follow_the_test_client() {
+        let names: Vec<_> = (0..4).map(difficulty_name).collect();
+        assert_eq!(names, ["Beginner", "Adept", "Expert", "Master"]);
+        assert!(difficulty_tooltip(1).contains("easy and medium"));
+        assert!(difficulty_tooltip(2).contains("medium and hard"));
+        assert!(difficulty_tooltip(3).contains("hard and challenging"));
+        assert_eq!(difficulty_tooltip(9), "");
+        let text = panel_text(&reply(2, 4, false, 0), None);
+        assert!(text.contains("Task Difficulty: Expert"));
+        assert!(text.contains("Master: Master tasks pick hard and challenging creatures."));
+    }
+    #[test]
+    fn elite_text_rarity_and_reroll_token_cap_are_shown_without_daily_claim() {
+        let text = panel_text(&reply(0, 10, true, 3), None);
+        assert!(
+            text.contains(
+                "monsters deal 100% more damage to you and take 50% less damage from you"
+            )
+        );
+        assert!(text.contains("100% more XP and additional dust"));
+        assert!(text.contains("Dust is only awarded to Premium accounts"));
+        assert!(text.contains("Silver (up to 75%), Gold (up to 20%) or Platinum (up to 5%)"));
+        assert!(text.contains("grade Platinum"));
+        assert!(text.contains("Bounty Reroll Token: 10 / 10 (maximum)"));
+        assert!(text.contains("You can store up to 10 Reroll Tokens at a time."));
+        assert!(!text.contains("Claim Daily"));
+        assert!(!text.contains("each reroll costs"));
+        assert!(panel_text(&reply(0, 3, false, 1), None).contains("Bounty Reroll Token: 3 / 10\n"));
+        assert!(panel_text(&reply(0, 3, false, 1), None).contains("grade Silver"));
+    }
     #[test]
     fn shop_cards_name_rewards_and_show_affordability_and_ownership() {
         let mut offer = task_board::full::ShopOffer {

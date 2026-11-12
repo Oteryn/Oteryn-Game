@@ -36,3 +36,13 @@ fn miscellaneous_sign_out_and_confirmation_defaults_reach_the_settings_owner() {
     assert!(!state.preferences.miscellaneous.remember_device);
     state.request_native_sign_out();assert!(state.take_native_sign_out());assert!(!state.take_native_sign_out());
 }
+
+#[test]
+fn miscellaneous_web_link_requests_reach_the_settings_owner_once() {
+    use crate::web_links::WebLink;
+    let mut state=crate::play::SettingsState::new(None);
+    assert_eq!(state.take_web_link(),None);
+    state.request_web_link(WebLink::SupportTickets);
+    assert_eq!(state.take_web_link(),Some(WebLink::SupportTickets));
+    assert_eq!(state.take_web_link(),None);
+}

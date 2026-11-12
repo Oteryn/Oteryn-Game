@@ -1,4 +1,5 @@
-//! RESTING-AREA-0: session-local daily-streak projection and owner cadence.
+//! RESTING-AREA-0: session-local resting projection and owner cadence. Since Winter Update
+//! 2026 the projected daily streak no longer selects the bonus tier.
 
 use crate::foundation::{ExactActorRef, GameSessionId};
 use std::{collections::BTreeMap, sync::Mutex};
@@ -22,6 +23,12 @@ pub(super) fn soul_interval(vocation: crate::spell::Vocation, premium: bool) -> 
     .gate();
     oteryn_gameplay_characters::soul::soul_schedule(promoted, gate).interval_seconds as u16
 }
+
+/// Winter Update 2026 (thread 565): resting-area bonuses no longer depend on the daily
+/// reward streak. Inside an area every Character gets the full tier its account allows:
+/// Free HP and mana regeneration, Premium doubled HP and mana plus stamina and soul (the
+/// spell owner caps a Free account at tier 3).
+pub(super) const RESTING_TIER: u32 = 7;
 
 #[derive(Debug, Clone, Copy)]
 struct Projection {
@@ -105,6 +112,15 @@ impl RestingAreaSessions {
             .filter(|p| p.actor == actor)
             .map(|p| p.streak)
     }
+    /// The regeneration tier credited this second; a session without its admitted
+    /// projection gets none.
+    pub(super) fn tier(&self, session: GameSessionId, actor: ExactActorRef, inside: bool) -> u32 {
+        if inside && self.streak(session, actor).is_some() {
+            RESTING_TIER
+        } else {
+            0
+        }
+    }
     pub(super) fn cadence(
         &self,
         session: GameSessionId,
@@ -125,10 +141,10 @@ impl RestingAreaSessions {
             p.soul_seconds = 0;
             return (false, false);
         }
-        // Global unlocks tiers four through seven only for Premium characters.  Keep the
-        // streak projection independent of Premium so an expiry immediately closes these
-        // cadences without weakening the durable daily-reward owner.
-        let stamina_due = if premium && p.streak >= 4 && stamina < 2520 {
+        // Winter Update 2026: stamina and soul regenerate for every Premium character
+        // inside, whatever its streak. Premium is read per second so an expiry
+        // immediately closes these cadences.
+        let stamina_due = if premium && stamina < 2520 {
             p.stamina_seconds = p.stamina_seconds.saturating_add(1);
             // Match characters::stamina: the top three hours start at minute 2340.
             let interval = if stamina >= 2340 { 360 } else { 180 };
@@ -141,7 +157,7 @@ impl RestingAreaSessions {
         } else {
             false
         };
-        let soul_due = if premium && p.streak >= 7 {
+        let soul_due = if premium {
             p.soul_seconds = p.soul_seconds.saturating_add(1);
             if p.soul_seconds >= soul_interval {
                 p.soul_seconds = 0;
@@ -228,18 +244,9 @@ mod tests {
                                 );
                             }
                         }
-                        assert_eq!(
-                            gains.0,
-                            u32::from(inside && premium && streak >= 4 && stamina < 2520)
-                        );
-                        assert_eq!(
-                            gains.1,
-                            if inside && premium && streak >= 7 {
-                                interval / 120
-                            } else {
-                                0
-                            }
-                        );
+                        // Winter Update 2026: the streak no longer gates either cadence.
+                        assert_eq!(gains.0, u32::from(inside && premium && stamina < 2520));
+                        assert_eq!(gains.1, if inside && premium { interval / 120 } else { 0 });
                     }
                 }
             }
@@ -308,5 +315,39 @@ mod tests {
             owner.cadence(session(), actor(), true, true, 1000, 1),
             (false, true)
         );
+    }
+
+    #[test]
+    fn resting_free_account_gets_hp_and_mana_without_streak() {
+        // Winter Update 2026: the area grants its bonus tier without any reward streak;
+        // the spell owner caps a Free account at HP and mana regeneration.
+        let owner = RestingAreaSessions::default();
+        owner.install(session(), actor(), 0);
+        assert_eq!(owner.tier(session(), actor(), true), RESTING_TIER);
+        assert_eq!(owner.tier(session(), actor(), false), 0);
+        assert_eq!(
+            RestingAreaSessions::default().tier(session(), actor(), true),
+            0
+        );
+        for _ in 0..360 {
+            assert_eq!(
+                owner.cadence(session(), actor(), true, false, 1000, 1),
+                (false, false)
+            );
+        }
+    }
+
+    #[test]
+    fn resting_premium_gets_double_and_stamina_soul_without_streak() {
+        let owner = RestingAreaSessions::default();
+        owner.install(session(), actor(), 0);
+        assert_eq!(owner.tier(session(), actor(), true), RESTING_TIER);
+        let mut gains = (0, 0);
+        for _ in 0..180 {
+            let (stamina, soul) = owner.cadence(session(), actor(), true, true, 1000, 120);
+            gains.0 += u32::from(stamina);
+            gains.1 += u32::from(soul);
+        }
+        assert_eq!(gains, (1, 1));
     }
 }

@@ -366,11 +366,14 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
             magnitude,
             crate::player_lethal::PlayerHitKind::Physical,
             now,
-            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(
-                self.charm
-                    .as_ref()
-                    .and_then(|charm| super::super::analyser::race(charm.race)),
-            ),
+            super::super::analyser::HitSource {
+                source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(
+                    self.charm
+                        .as_ref()
+                        .and_then(|charm| super::super::analyser::race(charm.race)),
+                ),
+                attacker: self.charm.as_ref().map(|charm| charm.source),
+            },
             self.charm.as_ref().and_then(|charm| {
                 crate::gameplay_transport::actor_spell::native_public_death_cause(
                     runtime,

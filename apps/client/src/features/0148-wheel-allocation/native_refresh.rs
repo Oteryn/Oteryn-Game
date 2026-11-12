@@ -9,7 +9,7 @@ impl layout::Controls {
                 gems,
                 modifiers,
                 quality,
-                domain,
+                vessel,
                 lock_button,
                 description,
                 ..
@@ -53,7 +53,11 @@ impl layout::Controls {
                 }
             }
             SendMessageW(quality, CB_SETCURSEL, usize::from(panel.quality), 0);
-            SendMessageW(domain, CB_SETCURSEL, usize::from(panel.domain), 0);
+            SendMessageW(vessel, CB_RESETCONTENT, 0, 0);
+            for name in super::super::vessel_choices(panel) {
+                SendMessageW(vessel, CB_ADDSTRING, 0, wide(&name).as_ptr() as isize);
+            }
+            SendMessageW(vessel, CB_SETCURSEL, usize::from(panel.vessel_slot), 0);
             SetWindowTextW(
                 lock_button,
                 wide(if panel.selected_gem().is_some_and(|gem| gem.locked) {
@@ -62,6 +66,10 @@ impl layout::Controls {
                     tr!("Lock gem")
                 })
                 .as_ptr(),
+            );
+            windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(
+                GetDlgItem(GetParent(description), RESHAPE as i32),
+                i32::from(panel.can_reshape()),
             );
             SetWindowTextW(description, wide(&panel_text(panel)).as_ptr());
         }

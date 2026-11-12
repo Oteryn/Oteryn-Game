@@ -27,6 +27,22 @@ impl DurabilityRoot {
         command_id: u64,
         payload: &[u8],
     ) -> Result<Option<Vec<u8>>> {
+        self.boss_difficulty_command_with_pity(authority, node, fence, command_id, payload, false)
+            .await
+    }
+
+    /// [`Self::boss_difficulty_command`] for a session that selected capability 492 when
+    /// `pity` is set: a progress window of a pity boss also carries the character's tracker,
+    /// read in the same transaction. The receipt stores those bytes, so a replay repeats them.
+    pub async fn boss_difficulty_command_with_pity(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command_id: u64,
+        payload: &[u8],
+        pity: bool,
+    ) -> Result<Option<Vec<u8>>> {
         let Ok(request) = wire::decode_request(payload) else {
             return Ok(None);
         };
@@ -83,7 +99,13 @@ impl DurabilityRoot {
                 Request::OpenWithProgress { boss_key } => open(&mut tx, fence, boss_key, true).await?,
                 _ => act(&mut tx, fence, command_id, &request).await?,
             };
-            let reply = encode(&reply)?;
+            let tracker = match &reply {
+                Reply::Window { boss_key, boss_creature_key, unlocked_max, .. } if pity && *unlocked_max != 0 => {
+                    super::boss_pity::window_tracker(&mut tx, *fence.character_id.as_bytes(), boss_key, boss_creature_key).await?
+                }
+                _ => None,
+            };
+            let reply = wire::encode_reply_with_pity(&reply, tracker.as_ref()).map_err(|_| DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_boss_difficulty_receipts(character_id,game_session_id,connection_generation,command_id,request,reply) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
                 .bind(fence.connection_generation.get().to_string()).bind(command_id.to_string())

@@ -33,6 +33,7 @@ pub(super) fn load_snapshot(
         guild,
         private_channels: None,
         lines: VecDeque::new(),
+        ..ChatLog::default()
     })
 }
 
@@ -69,20 +70,20 @@ pub(super) fn check_intent(intent: &ChatIntent, selected: &[u32]) -> Result<(), 
 }
 
 pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, SessionError> {
-    validate_line(chat::decode_chat_line(payload)?, selected)
+    check_line(chat::decode_chat_line(payload)?, selected)
 }
 
 pub(super) fn decode_native_line(
     payload: &[u8],
     selected: &[u32],
 ) -> Result<ChatLine, SessionError> {
-    validate_line(
+    check_line(
         oteryn_protocol_oteryn::native_map_cues::decode_native_map_chat_line(payload)?,
         selected,
     )
 }
 
-fn validate_line(line: ChatLine, selected: &[u32]) -> Result<ChatLine, SessionError> {
+pub(super) fn check_line(line: ChatLine, selected: &[u32]) -> Result<ChatLine, SessionError> {
     if matches!(
         line,
         ChatLine::Local {
@@ -149,6 +150,13 @@ pub(super) fn check_selection(selected: &[u32]) -> Result<(), SessionError> {
             if !selected.contains(&capability) {
                 return Err(SessionError::CapabilityNotSelected { capability });
             }
+        }
+    }
+    for (capability, requires) in crate::chat_extended::REQUIRES {
+        if selected.contains(&capability) && !selected.contains(&requires) {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: requires,
+            });
         }
     }
     if selected.contains(&CAPABILITY_CHAT_GUILD_ROOM_V1) && !selected.contains(&CAPABILITY_CHAT_V1)

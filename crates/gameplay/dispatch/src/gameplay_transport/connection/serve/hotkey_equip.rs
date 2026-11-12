@@ -2,7 +2,9 @@
 //! pending ordinary action. Keep CommandIds ordered: a superseded press receives
 //! the existing rejection result before its successor enters command ingress.
 use super::*;
-use oteryn_protocol_oteryn::hotkey_equip::{COMMAND_TYPE_HOTKEY_EQUIP, Request};
+use oteryn_protocol_oteryn::hotkey_equip::{
+    CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1, COMMAND_TYPE_HOTKEY_EQUIP, TieredRequest,
+};
 
 pub(super) async fn replaced<S, A>(
     stream: &mut S,
@@ -23,7 +25,12 @@ where
     {
         return Ok(false);
     }
-    let Some(request) = Request::decode(command.payload) else {
+    let tiered = session
+        .selected_capabilities
+        .contains(CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1);
+    let Some(TieredRequest { request, .. }) =
+        TieredRequest::decode_selected(tiered, command.payload)
+    else {
         return Ok(false);
     };
     let Some(delay) = authority
@@ -147,7 +154,12 @@ async fn is_replacement<A: FreshAdmissionAuthority>(
     {
         return false;
     }
-    let Some(request) = Request::decode(command.payload) else {
+    let tiered = session
+        .selected_capabilities
+        .contains(CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1);
+    let Some(TieredRequest { request, .. }) =
+        TieredRequest::decode_selected(tiered, command.payload)
+    else {
         return false;
     };
     authority

@@ -7,3 +7,5 @@ pub mod protocol;
 mod state;
 pub mod view;
 pub use state::ContainerPanel;
+#[cfg(test)]
+mod tests;

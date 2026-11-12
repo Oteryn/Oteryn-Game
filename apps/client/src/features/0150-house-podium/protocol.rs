@@ -46,10 +46,10 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
                     .map_err(|_| tr!("Choose direction 0, 1, 2 or 3"))?,
                 key: panel.fields[3].trim().into(),
             };
-            let payload = request
-                .encode()
+            let payload = oteryn_client_ui::house_podium_flags::set_payload(panel, &request)
                 .ok_or(tr!("Enter a display content key of at most 160 bytes"))?;
-            wire::SetRequest::decode(&payload).ok_or(tr!("Invalid display kind or direction"))?;
+            wire::SetRequest::decode_selected(panel.flagged, &payload)
+                .ok_or(tr!("Invalid display kind or direction"))?;
             (wire::COMMAND_SET, payload)
         }
     };
@@ -109,8 +109,13 @@ pub(in crate::play) fn apply(
         }
         return;
     }
-    match wire::Projection::decode(&result.payload) {
+    match oteryn_client_ui::house_podium_flags::decode_projection(panel, &result.payload) {
         Some(projection) => {
+            let flags = projection.as_ref().and_then(|(_, flags)| *flags);
+            let projection = projection.map(|(p, _)| p);
+            if let Some(flags) = flags {
+                panel.flags = flags;
+            }
             panel.loaded_item = panel.fields[0].clone();
             panel.revision = Some(projection.as_ref().map_or(0, |p| p.revision));
             if let Some(p) = &projection {

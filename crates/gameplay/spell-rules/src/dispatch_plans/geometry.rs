@@ -34,6 +34,18 @@ pub fn facing_to(from: TilePosition, to: TilePosition) -> Direction {
         _ => (-1, -1),
     }
 }
+/// WU26-14 (Winter Update 2026 test server): the cardinal direction of a wave or beam aimed from
+/// `from` at `to`. `|dx| >= |dy|` picks east or west, otherwise north or south, so east and west
+/// win a tie. `None` when both name the same column and row.
+pub fn aimed_cardinal(from: TilePosition, to: TilePosition) -> Option<Direction> {
+    let dx = i64::from(to.0) - i64::from(from.0);
+    let dy = i64::from(to.1) - i64::from(from.1);
+    match (dx.signum(), dy.signum()) {
+        (0, 0) => None,
+        (x, _) if dx.abs() >= dy.abs() => Some((if x > 0 { 1 } else { -1 }, 0)),
+        (_, y) => Some((0, if y > 0 { 1 } else { -1 })),
+    }
+}
 /// SPELL-TARGET-1: the geometry origin and facing of a held-target cast. A directional or aimed
 /// spell keeps the caster as origin (the tile in front of it) and takes only its facing from the
 /// target; a single-target spell is centred on the target tile.

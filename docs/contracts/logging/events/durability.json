@@ -6,15 +6,34 @@
       "event": "character_authority_check_failed",
       "level": "warn",
       "span": false,
-      "fields": ["stage"],
+      "fields": [
+        "stage"
+      ],
       "codes": [],
       "note": "Closed integrity or recovery-fence check name; no identities or stored payloads."
+    },
+    {
+      "event": "character_revision_chain_violation",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "family",
+        "violation",
+        "before",
+        "after"
+      ],
+      "codes": [],
+      "note": "First row the character revision-chain integrity check finds in violation (LOGDBG-C): receipt family table or receipt_chain, violation gap|fork|latest_mismatch|missing_typed_state|orphan_state, revision numbers (gap/fork over receipt_chain: receipts counted, root revision); no identities."
     },
     {
       "event": "db_pool",
       "level": "info",
       "span": false,
-      "fields": ["size", "idle", "max"],
+      "fields": [
+        "size",
+        "idle",
+        "max"
+      ],
       "codes": [],
       "note": "Bounded PostgreSQL pool capacity snapshot after connection."
     },
@@ -22,8 +41,16 @@
       "event": "db_tx",
       "level": "debug",
       "span": true,
-      "fields": ["operation", "outcome", "ms", "attempts", "slow"],
-      "codes": ["E3012"],
+      "fields": [
+        "operation",
+        "outcome",
+        "ms",
+        "attempts",
+        "slow"
+      ],
+      "codes": [
+        "E3012"
+      ],
       "note": "Semantic transaction lifecycle; successful slow operations are promoted to warn."
     },
     {
@@ -35,12 +62,36 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "holder_stuck",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "caller",
+        "held_ms"
+      ],
+      "codes": [],
+      "note": "A semantic pass kept the single holder through a whole recovery window (LOGDBG-C; the DURABILITY_HOLDER_STUCK text line stays meanwhile). Call sites only; trace when the owner had a connection trace."
+    },
+    {
       "event": "holder_usage",
       "level": "info",
       "span": false,
       "fields": [],
       "codes": [],
       "note": "Durability holder usage diagnostics (NBDIAG-4, #3057)."
+    },
+    {
+      "event": "holder_wait",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "waiter",
+        "waited_ms",
+        "attempts",
+        "dominant_owner"
+      ],
+      "codes": [],
+      "note": "A call site got the single holder after at least 500 ms of refused checkouts (LOGDBG-C): attempts and the owner site that refused it most; trace when the waiter had a connection trace."
     },
     {
       "event": "holder_window",
@@ -57,6 +108,18 @@
       "fields": [],
       "codes": [],
       "note": "Durability holder usage diagnostics (NBDIAG-4, #3057)."
+    },
+    {
+      "event": "pass_slow",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "caller",
+        "held_ms",
+        "deadline_exceeded"
+      ],
+      "codes": [],
+      "note": "A semantic pass held the single holder at least 1 s or ran past its deadline (LOGDBG-C; the DURABILITY_PASS_SLOW text line stays meanwhile); trace when the pass had a connection trace."
     },
     {
       "event": "quest_experience_refused",

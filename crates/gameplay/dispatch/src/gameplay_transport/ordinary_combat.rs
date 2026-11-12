@@ -314,6 +314,7 @@ pub(super) async fn prepare_named(
 #[path = "ordinary_combat/prepare.rs"]
 mod preparation;
 use preparation::prepare_inner;
+pub(in crate::gameplay_transport) use preparation::{Aim, aim, aim_point, aimed_origin};
 
 struct Output {
     batch: OwnerCombatBatch,

@@ -98,7 +98,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Durable reads run after dropping the runtime guard. The existing chat name is
         // already an admitted Character name; clients need not select chat to receive names.
-        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
         for (entity, source) in sources {
             let name = match source {
                 Source::Name(name) => name,

@@ -164,7 +164,7 @@ impl DurabilityRoot {
                     };
                     // Freeze all historical killer names before any public
                     // revision/head lock is acquired by progression/root triggers.
-                    let public_players=public_cause::prepare_names(&mut tx,contributors,request.public_cause).await?;
+                    let public_players=public_cause::prepare_names(&mut tx,fence.character_id,contributors,request.public_cause).await?;
                     let adventurer_applied = adventurer::applies(
                         &mut tx, &durability, fence, level, !contributors.is_empty(),
                     ).await?;

@@ -18,7 +18,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "a31824337d2b080eb99f3298ec4a32e28827f883765461010f99b747ff1aa45b",
+        "9e5bb7abadb9180d22d3f62d95ab8eca5c3fa78f6450bd1a93bd5610c78ffdc2",
     ),
     (
         "definitions/declarations.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "29ddeb76ccf178b1f095646bae8cf2e202bc085e32c027f5f68775548391c4f2",
+        "4635779fdd76332e0cf9c5d7bf5612a577dbf58f2b67544c3c000b0259cd3948",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "d619a71462550e3cc70a538295f0358c599ff856fe2da790909a575a38ef8599",
+        "92c5c31b01fda091f2fa29f587a28df98d103a60924798497e5781a30dbc5223",
     ),
     (
         "provenance/imports.json",
         6_774_564,
-        "501a58bce8cf0913fa728e7dd1b33fa85ad6bfa94fbeaf8dbc5a78bd4f7377ae",
+        "7508a9a8e95446cdd6681f8f1163e18c15c6118ff95347e16013e0b8f84c4583",
     ),
     (
         "provenance/sources.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "d786f8ac03d267259e1c0a53288cb4c0dfeb1a25a42633a795c7254590226403";
+const TREE_SHA256: &str = "5151b792183edb8f0165d82bbc328b68b0a12c5c3dfeac771a6fdb22bbca8969";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -405,7 +405,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         project.project_revision(),
         "seasonal-cake-creature-20261107-r1"
     );
-    // E06 adds its client market mint batch; Cake adds one separate qualified batch.
+    // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
     assert_eq!(project.imports().len(), 37);
     let legacy_imports: Vec<_> = project
         .imports()
@@ -450,6 +450,37 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .find(|i| i.batch_id == batch)
             .expect("exact import batch")
     };
+    let thaian = import_for("questpc7-thaian-wiki-chosen-r1");
+    assert_eq!(thaian.source_repository, "tibiawiki.com.br");
+    assert_eq!(
+        thaian.source_revision,
+        "questpc7-thaian-wiki-445240-chosen-r1"
+    );
+    assert_eq!(thaian.importer, "OTERYN_QUESTPC7_THAIAN_AUTHORING/v1");
+    assert_eq!(thaian.mapper, "OTERYN_CREATURE_ADMISSION_STAGE/v1");
+    assert_eq!(thaian.mapper_revision, "creature-admission-r1");
+    for (actual, source) in [
+        (
+            &thaian.source_artifact_sha256,
+            include_bytes!(
+                "../../../tools/content-schema/quest-authoring/questpc7-thaian-authoring.json"
+            )
+            .as_slice(),
+        ),
+        (
+            &thaian.mapper_sha256,
+            include_bytes!("../../../tools/content-migration/creature_admission_stage.py")
+                .as_slice(),
+        ),
+    ] {
+        let expected = Sha256::digest(source)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(actual, &expected);
+    }
+    assert!(thaian.candidates.is_empty());
+    assert!(thaian.reimport_states.is_empty());
     let thaian = import_for("questpc7-thaian-wiki-chosen-r1");
     assert_eq!(thaian.source_repository, "tibiawiki.com.br");
     assert_eq!(
@@ -1472,6 +1503,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         wiki_creature_source.evidence,
         ProjectV2EvidenceClass::Derived
     );
+    let thaian_source = source_for(&thaian.batch_id);
+    assert_eq!(thaian_source.key, "oteryn:source.tibiawiki");
+    assert_eq!(thaian_source.import_batch_id, thaian.batch_id);
+    assert_eq!(thaian_source.revision, thaian.source_revision);
+    assert_eq!(thaian_source.sha256, thaian.source_artifact_sha256);
+    assert_eq!(thaian_source.evidence, ProjectV2EvidenceClass::Derived);
     let summer_import = import_for("g4-npc-summer-definition-overlay-fandom-r13");
     assert_eq!(
         summer_import.batch_id,
@@ -1594,6 +1631,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
     let mut creature_files = BTreeSet::new();
+    let mut d44_wiki_bindings = 0;
+    let mut thaian_wiki_bindings = 0;
     let mut npc_bindings = 0;
     let mut crystal_creatures = 0;
     let mut encounter_bindings = 0;
@@ -1627,6 +1666,23 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             binding.disposition,
             ProjectV2SourceIdentityDisposition::Exact
         );
+        if binding.source_key == thaian_source.key
+            && binding.source_revision == thaian_source.revision
+        {
+            assert_eq!(binding.source_key, "oteryn:source.tibiawiki");
+            assert_eq!(binding.source_revision, thaian.source_revision);
+            assert_eq!(binding.identity_namespace, "mediawiki/page_id");
+            assert_eq!(binding.external_id, "48123");
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.key, "oteryn:creature.thaian");
+            assert_eq!(binding.target.revision, "definition-r1");
+            assert_eq!(
+                binding.disposition,
+                ProjectV2SourceIdentityDisposition::Exact
+            );
+            thaian_wiki_bindings += 1;
+            continue;
+        }
         if cake_bindings.contains(binding) {
             assert_eq!(binding.target.family, ProjectV2Family::Creature);
             assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
@@ -1638,6 +1694,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 // D44 wiki-authored creature, checked above.
                 assert_eq!(binding.source_revision, wiki_creature_source.revision);
                 assert!(binding.target.key.starts_with("oteryn:creature."));
+                d44_wiki_bindings += 1;
                 continue;
             }
             if binding.source_key == "oteryn:source.crystalserver" {
@@ -1772,7 +1829,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             _ => panic!("only Item, Outfit, Mount and Creature source bindings are populated"),
         }
     }
-    assert_eq!(creature_files.len(), CREATURES - 1);
+    assert_eq!(d44_wiki_bindings, 1);
+    assert_eq!(thaian_wiki_bindings, 1);
+    assert_eq!(
+        creature_files.len(),
+        CREATURES - d44_wiki_bindings - thaian_wiki_bindings
+    );
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
     assert_eq!(crystal_encounter_count, 4);

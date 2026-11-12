@@ -24,7 +24,7 @@ pub fn panel_text(panel: &Panel) -> String {
         }
         _ => tr!("Preview: choose a display, direction and content key").into(),
     };
-    lfmt!(
+    let text = lfmt!(
         "House podium\r\n{preview}\r\n{}\r\n{}",
         panel.summary,
         if panel.pending {
@@ -35,5 +35,9 @@ pub fn panel_text(panel: &Panel) -> String {
             &panel.feedback
         },
         preview = preview
-    )
+    );
+    match crate::house_podium_flags::flags_line(panel) {
+        Some(line) => format!("{text}\r\n{line}"),
+        None => text,
+    }
 }

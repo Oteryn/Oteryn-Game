@@ -225,7 +225,9 @@ DO $$ DECLARE body TEXT; actual INTEGER[]; constraint_name TEXT; BEGIN
     'cause_kind[[:space:]]*=[[:space:]]*([0-9]+)','g') AS found(value)
   ) values_of_cause
  ) distinct_causes;
- IF actual IS DISTINCT FROM ARRAY[1,2,3,328,470,471,494,495,527,578] OR left(body,6)<>'CHECK ' THEN
+ -- Support the exact fresh predecessor and accepted-main Temple Scroll extension.
+ IF (actual IS DISTINCT FROM ARRAY[1,2,3,328,470,471,494,495,527,578]
+     AND actual IS DISTINCT FROM ARRAY[1,2,3,328,470,471,481,494,495,527,578]) OR left(body,6)<>'CHECK ' THEN
   RAISE EXCEPTION 'SRX-3 ItemUse cause registry differs: %',actual; END IF;
  EXECUTE format('ALTER TABLE game_item_use_records DROP CONSTRAINT %I',constraint_name);
  -- Preserve every old cause/shape conjunction verbatim. In particular the

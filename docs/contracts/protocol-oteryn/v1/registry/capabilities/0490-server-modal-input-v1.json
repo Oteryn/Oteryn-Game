@@ -1,0 +1,13 @@
+{
+  "id": 490,
+  "name": "SERVER_MODAL_INPUT_V1",
+  "owner_decision": "WU26 native-client mechanics batch package 2 (client PR #3098); parity rule: Crystal 201189f8 and current Tibia",
+  "owner": "Game connection-owned server modal hub and its rule owners",
+  "requires": [
+    450
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with SERVER_MODAL_V1. Dialog descriptors append an input block (kind none/amount/text/edit, u32 limits, optional initial u64 or text of at most 1024 bytes); command 737 answers append the entered value and dont_show_again:u8, checked against the pending dialog before the owner receives them (command 737 bound 1035 bytes). Without selection payloads are unchanged."
+}

@@ -155,3 +155,55 @@ fn recovery_retains_unacknowledged_step_id_after_flushing_command() -> Result<()
         .join()
         .map_err(|_| "pending recovery thread failed")?
 }
+
+/// A server that takes the resume but cannot join it sends `SESSION_JOIN_UNAVAILABLE` where
+/// `ServerResumeAccepted` belongs; the client surfaces the code, not an unexpected message.
+#[test]
+fn resume_protocol_error_preserves_session_join_unavailable() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, mut server) = tokio::io::duplex(16384);
+        let peer = tokio::spawn(async move {
+            read_frame(&mut server).await?;
+            write_frame(
+                &mut server,
+                &oteryn_protocol_oteryn::encode_protocol_error(
+                    FoundationProtocolError::SessionJoinUnavailable,
+                    0,
+                )?,
+            )
+            .await?;
+            Ok::<(), BoxError>(())
+        });
+        let result = Session::resume(
+            client,
+            RecoveryState {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                connection_generation: 1,
+                next_command_id: 7,
+                last_server_sequence: 40,
+                selected_capabilities: vec![],
+            },
+            Recovery {
+                reconnect_material: b"recovery",
+                schema_revision: 1,
+                client_build_id: "recovery-test",
+                deadline: DEADLINE,
+                appearance_items: None,
+            },
+        )
+        .await;
+        assert!(
+            matches!(
+                &result,
+                Err(SessionError::ServerProtocolError {
+                    code: 1051,
+                    connection_trace: None,
+                })
+            ),
+            "{:?}",
+            result.err()
+        );
+        peer.await??;
+        Ok(())
+    })?
+}

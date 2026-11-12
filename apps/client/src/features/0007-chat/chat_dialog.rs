@@ -152,6 +152,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut private = PrivateControls::new(hwnd);
         let mut font = console_font::ConsoleFont::default();
         let mut console = console_controls::Controls::new(hwnd);
+        let mut channels = channel_dialog::Controls::default();
         // Reserve an independent strip above the console's existing controls.
         let mut child = GetWindow(hwnd, GW_CHILD);
         while !child.is_null() {
@@ -175,10 +176,14 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let mut cooldown = cooldown_bar::CooldownBar::new(hwnd);
         let mut mirror = mirror::Mirror::new(hwnd);
         let mut held = String::new();
+        let mut held_labels = Vec::new();
         let mut msg: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 mirror.input(&msg, tabs, &weak);
+                if keyboard(&msg, &weak, &commands, &mut actions.keyboard_input) {
+                    continue;
+                }
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
@@ -210,18 +215,22 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 mailbox.chat.guild_open = false;
             }
             let guild_mode = SendMessageW(rooms, LB_GETCURSEL, 0, 0) == 4;
-            let enabled =
-                !guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
+            let enabled = crate::play::feature_0007_chat::input::composer_enabled(
+                &mailbox.chat,
+                if guild_mode { Mode::Guild } else { Mode::Say },
+            );
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
-            for action in std::mem::take(&mut actions.0) {
+            for action in std::mem::take(&mut actions.pending) {
                 if console.action(action, &mut mailbox, &commands, transcript) {
                     continue;
                 }
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
                 }
-                use oteryn_client_ui::chat::ConsoleTab;
+                if channels.action(action, &mut mailbox, &commands) {
+                    continue;
+                }
                 match action {
                     IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
                         use oteryn_client_ui::chat::CommunicationList;
@@ -255,14 +264,8 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                         continue;
                     }
                     TAB => {
-                        console::select(
-                            &mut mailbox,
-                            match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
-                                1 => ConsoleTab::Local,
-                                2 => ConsoleTab::Private,
-                                3 => ConsoleTab::Guild,
-                                _ => ConsoleTab::All,
-                            },
+                        mailbox.chat.console.select_index(
+                            usize::try_from(SendMessageW(tabs, LB_GETCURSEL, 0, 0)).unwrap_or(0),
                         );
                         continue;
                     }
@@ -297,7 +300,17 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
+            // Opened channel tabs follow the console state after the fixed tabs.
+            let labels = mailbox.chat.console.tab_labels();
+            if console::update_tab_labels(&mut held_labels, &labels) {
+                SendMessageW(tabs, LB_RESETCONTENT, 0, 0);
+                for label in &labels {
+                    SendMessageW(tabs, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+                }
+            }
+            SendMessageW(tabs, LB_SETCURSEL, mailbox.chat.console.tab_index(), 0);
             console.tick(&mut mailbox, &commands, transcript);
+            channels.tick(&mut mailbox, hwnd);
             font.update(transcript, mailbox.chat.console.display.font_px);
             private.render(&mailbox.chat_private);
             mirror.render(&mailbox.chat, transcript);

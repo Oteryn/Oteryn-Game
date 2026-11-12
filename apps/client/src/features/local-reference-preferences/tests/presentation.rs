@@ -6,7 +6,7 @@ fn moved_logout_suppresses_all_original_modifier_variants() -> Result<(), Box<dy
     use crate::play::ReferencePreferences;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let mut preferences = ReferencePreferences::default();
-    preferences.rebind("0021-logout-logout-l", "ALT+L")?;
+    preferences.rebind("0021-logout-logout-l", "ALT+SHIFT+L")?;
     for bits in 0..16 {
         let modifiers = Modifiers::from_bits(bits)?;
         if !modifiers.contains(Modifier::Control) {

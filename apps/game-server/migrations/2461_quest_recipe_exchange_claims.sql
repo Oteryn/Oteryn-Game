@@ -1,13 +1,24 @@
 -- Compose the native authored-claim owner and the carried-recipe extension
 -- with main's counter, fee-repeatable, timed and per-occurrence identities.
--- The nested counter CASE is the exact anchor used by main's later 2701;
--- native claims retain their original higher-priority identity.
+-- Retain main2701's exact world-counter branch in fresh and already-upgraded
+-- histories. Its marker makes the later fresh-install patch idempotent; native
+-- claims retain their original higher-priority identity.
 CREATE OR REPLACE FUNCTION game_quest_reward_mint_claim_key(v_character UUID,v_cause UUID,v_ordinal NUMERIC,
     v_transition TEXT,v_plan JSONB) RETURNS TEXT LANGUAGE SQL IMMUTABLE AS $function$
     SELECT CASE WHEN game_quest_native_claim_plan(v_plan)
     THEN v_plan #>> '{world_claim,key}'
     ELSE (
-    SELECT CASE WHEN v_plan ? 'counter' THEN
+    SELECT CASE WHEN
+            -- world-counter-use-v1: the complete original callback remains in the proof.
+            v_plan #>> '{world_callback,trigger}'='use'
+            AND v_plan #>> '{world_callback,key}'=v_transition
+            AND v_plan #> '{world_callback,storage}'=v_plan->'storage'
+            AND EXISTS(SELECT 1 FROM jsonb_array_elements(v_plan->'storage') s WHERE s ? 'add')
+        THEN 'oteryn:quest-exchange/'||encode(sha256(
+            convert_to('oteryn:quest-exchange:v1','UTF8')||decode('00','hex')
+            ||uuid_send(v_character)||uuid_send(v_cause)
+            ||convert_to(v_ordinal::text||':'||v_transition,'UTF8')),'hex')
+        WHEN v_plan ? 'counter' THEN
         v_transition || '/occurrence/' || replace(v_cause::text,'-','') || '/' || v_ordinal::text
     WHEN (
         v_plan->'repeatable'='true'::jsonb

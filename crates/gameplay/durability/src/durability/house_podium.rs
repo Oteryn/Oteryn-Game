@@ -14,6 +14,7 @@ use crate::domain::appearance::{AppearanceContent, EarnedCosmetic};
 use oteryn_gameplay_housing::house_podium::{
     Display, DisplayKind, PodiumContent, PodiumKind, Refusal, admit_kind,
 };
+use oteryn_protocol_oteryn::house_podium::DisplayFlags;
 use sqlx::Row;
 
 /// Displays per House read in one bounded query (0339 `LIMIT 2000`).
@@ -27,6 +28,8 @@ pub struct HousePodiumDisplay {
     pub display_key: String,
     pub direction: u8,
     pub revision: u64,
+    /// Capability 489 visibility flags; a display stored without them shows every part.
+    pub flags: DisplayFlags,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -118,6 +121,15 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<HousePodiumDisplay, DurabilityE
             .filter(|d| *d <= 3)
             .ok_or_else(invalid)?,
     };
+    let flag = |key: &str| match variant.get(key) {
+        None => Ok(true),
+        Some(value) => value.as_bool().ok_or_else(invalid),
+    };
+    let flags = DisplayFlags {
+        show_platform: flag("show_platform")?,
+        show_outfit: flag("show_outfit")?,
+        show_mount: flag("show_mount")?,
+    };
     Ok(HousePodiumDisplay {
         item_instance_id: item.try_into().map_err(|_| invalid())?,
         podium_kind: u8::try_from(row.try_get::<i16, _>("podium_kind")?).map_err(|_| invalid())?,
@@ -129,6 +141,26 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<HousePodiumDisplay, DurabilityE
             .try_get::<String, _>("revision")?
             .parse()
             .map_err(|_| invalid())?,
+        flags,
+    })
+}
+
+/// The visibility of a podium's first display when the set carries no flags: Crystal's
+/// new podium shows only its platform (`Item::podiumVisible` defaults). A display stored
+/// before capability 489 has no flags and keeps showing every part.
+pub const NEW_PODIUM_FLAGS: DisplayFlags = DisplayFlags {
+    show_platform: true,
+    show_outfit: false,
+    show_mount: false,
+};
+
+/// The stored display variant: the direction and the visibility flags.
+fn variant(direction: u8, flags: DisplayFlags) -> serde_json::Value {
+    serde_json::json!({
+        "direction": direction,
+        "show_platform": flags.show_platform,
+        "show_outfit": flags.show_outfit,
+        "show_mount": flags.show_mount,
     })
 }
 
@@ -142,6 +174,25 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         house: HouseId,
         request: HousePodiumSet,
+        content: C,
+    ) -> Result<Result<u64, HousePodiumRefusal>, DurabilityError>
+    where
+        C: AppearanceContent<String> + PodiumContent + Send + Sync + 'static,
+    {
+        self.set_house_podium_flagged(node, fence, house, request, None, content)
+            .await
+    }
+
+    /// [`Self::set_house_podium`] that also stores the capability 489 visibility flags. A
+    /// set without flags keeps the podium's stored flags, or gives its first display
+    /// [`NEW_PODIUM_FLAGS`].
+    pub async fn set_house_podium_flagged<C>(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+        request: HousePodiumSet,
+        flags: Option<DisplayFlags>,
         content: C,
     ) -> Result<Result<u64, HousePodiumRefusal>, DurabilityError>
     where
@@ -204,11 +255,39 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(HousePodiumRefusal::NotOwned));
                     }
+                    let flags = match flags {
+                        Some(flags) => flags,
+                        None => {
+                            let rows = match fenced(LOAD, &node, &fence, &house)
+                                .fetch_all(&mut *tx)
+                                .await
+                            {
+                                Ok(rows) => rows,
+                                Err(error) => {
+                                    return match HousePodiumRefusal::of(&error) {
+                                        Some(refusal) => Ok(Err(refusal)),
+                                        None => Err(error.into()),
+                                    };
+                                }
+                            };
+                            if rows.len() > HOUSE_PODIUM_DISPLAYS_MAX {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            let mut stored = NEW_PODIUM_FLAGS;
+                            for row in &rows {
+                                let item: Vec<u8> = row.try_get("item_instance_id")?;
+                                if item == request.item_instance_id {
+                                    stored = decode(row)?.flags;
+                                }
+                            }
+                            stored
+                        }
+                    };
                     let result = fenced(SET, &node, &fence, &house)
                         .bind(request.item_instance_id.to_vec())
                         .bind(i16::from(request.display_kind))
                         .bind(request.display_key.clone())
-                        .bind(serde_json::json!({ "direction": request.direction }))
+                        .bind(variant(request.direction, flags))
                         .bind(request.expected_revision.to_string())
                         .fetch_one(&mut *tx)
                         .await;

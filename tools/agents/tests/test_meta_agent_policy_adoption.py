@@ -191,6 +191,45 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         }
         return responses
 
+    def test_pull_files_last_api_page_completes_without_page_31(self):
+        for count in (2999, 3000):
+            with self.subTest(changed_files=count):
+                pull = self.live_scope_pull()
+                pull["changed_files"] = count
+                selected = adoption.ACTIVE_TASK_PREFIX + "OTV2-last-page.md"
+                files = [{"filename": f"src/file-{index}.rs"} for index in range(count - 1)]
+                files.append({"filename": selected})
+                pages = [files[index:index + 100] for index in range(0, count, 100)]
+                with mock.patch.object(
+                    adoption, "_request", side_effect=[pull, *pages, copy.deepcopy(pull)]
+                ) as request:
+                    self.assertEqual(adoption._pull_request_active_task_paths(82, SHA), {selected})
+                self.assertEqual(request.call_count, 32)
+                self.assertTrue(request.call_args_list[-2].args[0].endswith("page=30"))
+                self.assertTrue(request.call_args_list[-1].args[0].endswith("/pulls/82"))
+
+    def test_full_api_limit_retains_completeness_and_snapshot_checks(self):
+        pull = self.live_scope_pull()
+        pull["changed_files"] = 3000
+        files = [{"filename": f"src/file-{index}.rs"} for index in range(3000)]
+        pages = [files[index:index + 100] for index in range(0, 3000, 100)]
+        with mock.patch.object(adoption, "_request", side_effect=[pull, *pages[:-1], pages[-1][:-1]]):
+            with self.assertRaisesRegex(ValueError, "enumeration is incomplete"):
+                adoption._pull_request_active_task_paths(82, SHA)
+        moved = copy.deepcopy(pull)
+        moved["head"]["sha"] = "c" * 40
+        with mock.patch.object(adoption, "_request", side_effect=[pull, *pages, moved]):
+            with self.assertRaisesRegex(ValueError, "moved during live-state"):
+                adoption._pull_request_active_task_paths(82, SHA)
+        for bad, message in (("../outside.md", "invalid pull request filename"),
+                             (files[0]["filename"], "duplicate pull request filename")):
+            with self.subTest(filename=bad):
+                malformed = copy.deepcopy(pages)
+                malformed[-1][-1]["filename"] = bad
+                with mock.patch.object(adoption, "_request", side_effect=[pull, *malformed, pull]):
+                    with self.assertRaisesRegex(ValueError, message):
+                        adoption._pull_request_active_task_paths(82, SHA)
+
     def test_large_pull_request_mode_only_task_change_is_selected(self):
         pull = self.live_scope_pull()
         pull["changed_files"] = 3001

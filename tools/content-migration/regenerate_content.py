@@ -38,6 +38,8 @@ The native catalogue source budgets and World/NPC cohort fixtures are refreshed 
 normal canonical package by refresh_source_cohort_extent. The NPC service model count pins
 are captured from the final production catalogue by refresh_npc_service_counts.py.
 Other derived count pins require their corresponding source authoring tool.
+Thaian completion always runs the native WorldProject writer before source measurement and pins;
+its standalone entry point and the G4 fresh-output comparison use that same completed producer.
 """
 
 from __future__ import annotations
@@ -824,6 +826,7 @@ def main() -> int:
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py", "--items-only"])
     materialize_world()
     import questpc7_thaian_authoring
+    # install completes authoring through the native writer; no pins name staged Python bytes.
     questpc7_thaian_authoring.install(ROOT)
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])

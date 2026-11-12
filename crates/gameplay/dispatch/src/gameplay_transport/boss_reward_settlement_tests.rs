@@ -268,5 +268,74 @@ fn boss_reward_settlement_same_scope_bytes_cannot_alias_channel_and_instance_dea
     assert_eq!(first, scoped_death_id(channel, 1, 1, 1));
 }
 
+fn moonsilver_entry(probability_ppm: u32) -> LootTableEntry {
+    LootTableEntry {
+        item: LootDefinitionRef::new("Item", "oteryn:item.tibia.i53229", "definition-r1"),
+        min_count: 1,
+        max_count: 1,
+        probability_ppm: Some(probability_ppm),
+        details: LootEntryDetails::default(),
+    }
+}
+
+#[test]
+fn pity_raises_only_moonsilver_entries_of_the_recipient_table() {
+    let mut table = frozen().reward.loot_table.clone();
+    assert_eq!(pity_loot_table(&table, 2_000), None, "no Moonsilver entry");
+    table.entries.push(moonsilver_entry(3_000));
+    assert_eq!(
+        pity_loot_table(&table, 0),
+        None,
+        "no bonus keeps the base table"
+    );
+    for (bonus, expected) in [(100, 3_300), (1_000, 6_000), (2_000, 9_000)] {
+        let boosted = pity_loot_table(&table, bonus).expect("boosted table");
+        assert_eq!(boosted.entries[1].probability_ppm, Some(expected));
+        assert_eq!(
+            boosted.entries[0], table.entries[0],
+            "gold keeps its chance"
+        );
+    }
+}
+
+#[test]
+fn pity_bonus_reaches_the_personal_roll_and_only_adds_drops() {
+    let mut frozen = frozen();
+    frozen.participants = vec![participant(10, 100, 0, 0)];
+    let reward = Arc::make_mut(&mut frozen.reward);
+    reward.loot_table.entries = vec![moonsilver_entry(300_000)];
+    let character = *frozen.participants[0].character.as_bytes();
+    let plan = |death: [u8; 16], pity: &[([u8; 16], u16)]| {
+        plan_personal_death_with_slots(
+            death,
+            "oteryn:boss.mimar_haffar",
+            &frozen,
+            |definition| Some(facts(definition, ItemStackClass::NonStackable)),
+            &[],
+            pity,
+            |_| false,
+        )
+        .expect("plan")
+        .chests[0]
+            .items
+            .len()
+    };
+    let (mut base_drops, mut pity_drops) = (0, 0);
+    for seed in 0..64 {
+        let death = id(100 + seed);
+        let base = plan(death, &[]);
+        let boosted = plan(death, &[(character, 2_000)]);
+        assert!(boosted >= base, "the same draw never loses a base drop");
+        assert_eq!(
+            plan(death, &[(id(99), 2_000)]),
+            base,
+            "another recipient's pity"
+        );
+        base_drops += base;
+        pity_drops += boosted;
+    }
+    assert!(pity_drops > base_drops, "{pity_drops} > {base_drops}");
+}
+
 #[path = "boss_reward_settlement_tests/soul_war_literal.rs"]
 mod soul_war_literal;

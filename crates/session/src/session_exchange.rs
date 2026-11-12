@@ -6,21 +6,7 @@ impl<S: SessionStream> Session<S> {
         &self,
         envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
     ) -> Result<Option<SessionError>, SessionError> {
-        if envelope.message_type() != MessageType::ProtocolError {
-            return Ok(None);
-        }
-        let error = decode_protocol_error(envelope.payload())?;
-        if error.connection_trace.is_some()
-            && !self
-                .selected_capabilities
-                .contains(&oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
-        {
-            return Err(FoundationProtocolError::MalformedEnvelope.into());
-        }
-        Ok(Some(SessionError::ServerProtocolError {
-            code: error.error_code,
-            connection_trace: error.connection_trace,
-        }))
+        terminal_protocol_error(envelope, &self.selected_capabilities)
     }
 
     pub(super) fn ensure_usable(&self) -> Result<(), SessionError> {
@@ -382,4 +368,26 @@ impl<S: SessionStream> Session<S> {
             self.answer_probe(envelope.payload()).await?;
         }
     }
+}
+
+/// A post-admission `ProtocolError` as the terminal `ServerProtocolError`; `None` for any other
+/// message. A trace without the selected trace capability fails closed.
+pub(super) fn terminal_protocol_error(
+    envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    selected_capabilities: &[u32],
+) -> Result<Option<SessionError>, SessionError> {
+    if envelope.message_type() != MessageType::ProtocolError {
+        return Ok(None);
+    }
+    let error = decode_protocol_error(envelope.payload())?;
+    if error.connection_trace.is_some()
+        && !selected_capabilities
+            .contains(&oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope.into());
+    }
+    Ok(Some(SessionError::ServerProtocolError {
+        code: error.error_code,
+        connection_trace: error.connection_trace,
+    }))
 }

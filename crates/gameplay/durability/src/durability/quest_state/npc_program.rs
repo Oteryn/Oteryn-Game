@@ -9,10 +9,12 @@ mod fathers_burden;
 pub(in crate::durability) mod hot_cuisine_m42;
 #[cfg(test)]
 mod hot_cuisine_m42_tests;
+mod inventory;
 mod items;
 mod marlin_trophy;
 mod rewards;
 pub mod teleport;
+pub use inventory::{NpcProgramInventory, inventory_prefetch_required, requires_current_inventory};
 
 /// Advisory for preview; the receipt owner reloads every fact under the Character fence.
 #[derive(Clone, Debug, Default)]
@@ -196,6 +198,26 @@ pub fn preview_with_appearance(
         },
         result => result,
     }
+}
+
+/// Classify against a real fenced snapshot. Unlike an optimistic route preview,
+/// this never substitutes synthetic counts when the actual branch is absent.
+#[allow(clippy::too_many_arguments, reason = "the actual snapshot shares the existing source preview facts")]
+pub fn preview_with_inventory(
+    request: &NpcProgramRequest,
+    tracks: &BTreeMap<String, i64>,
+    catalogue: &QuestStateCatalogue,
+    now: i64,
+    eligibility: &NpcEligibility,
+    player_name: Option<&str>,
+    appearance: (&BTreeMap<u16, u8>, u8),
+    inventory: &NpcInventorySnapshot,
+) -> std::result::Result<Option<NpcRulePlan>, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+    let Some(source) = NpcRuleCatalog::runtime()?.admitted_for_npc(&request.npc, catalogue)? else {
+        return Ok(None);
+    };
+    evaluate_source(&source, request, tracks, catalogue, now,
+        NpcEvaluationFacts { eligibility, player_name, appearance }, Some(inventory))
 }
 
 #[derive(Clone, Copy)]
@@ -521,7 +543,7 @@ impl DurabilityRoot {
                 }
             }
             let evaluated = match teleport_plan { Some(plan) => Ok(Some(plan.source)), None => evaluate_source(&source,&request,&effective_tracks,&catalogue,now,facts,inventory.as_ref()) };
-            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !plan.completes && !rewards::has_experience(&plan.effects) && !plan.effects.iter().any(|effect| matches!(effect, oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.iter().all(|change| change.before == change.after) && !items::changes_items(plan) && !plan.completes && !rewards::has_experience(&plan.effects) && !plan.effects.iter().any(|effect| matches!(effect, oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::Outfit { .. } | oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect::OutfitAddon { .. })) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan), magic_effects: Vec::new() };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));

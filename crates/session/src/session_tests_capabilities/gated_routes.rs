@@ -9,7 +9,8 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (3, &[7, 8], &[7, 8]),
         (7, &[13, 6117], &[12]),
         (17, &[11, 12, 740], &[10]),
-        (182, &[354, 355, 738, 6122, 6123, 6124, 6125], &[]),
+        // WU26 retires picker commands 6122/6123; their numbers remain reserved.
+        (182, &[354, 355, 738, 6124, 6125], &[]),
         (49, &[56, 57, 6129], &[]),
         (51, &[60, 61], &[]),
         // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.
@@ -85,6 +86,8 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (147, &[170], &[]),
         // Wheel and Atelier are playable through the selected capability 148.
         (148, &[161, 308, 309, 424, 6119, 6121], &[]),
+        (483, &[6210, 6211, 6212, 6213, 6214], &[]),
+        (497, &[6240], &[]),
         (150, &[174, 175, 176, 739], &[]),
         // Live balances use their own selected capability without changing Atelier V1.
         (272, &[484], &[]),

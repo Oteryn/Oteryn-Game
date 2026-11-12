@@ -1246,6 +1246,8 @@ fn wheel_grove_healing_critical_is_after_flat_and_never_rolls_fatal() {
         effects.revelation_value_milli("blessing_of_the_grove", "healing_bonus"),
         7_500
     );
+    assert_eq!(effects.sockets.gem_vessel_nodes, 1);
+    assert_eq!(effects.flat_healing_bonus(), Some(10));
     let mut f = fixture();
     f.state.conditions.clear_on_death();
     f.attributes.wheel_flat_healing =
@@ -1263,7 +1265,9 @@ fn wheel_grove_healing_critical_is_after_flat_and_never_rolls_fatal() {
     combat.hits[0].bonus_percent = 0;
     combat.hits[0].side_percent = None;
     let hit = combat.hits[0].clone();
-    for (roll, expected) in [(12, 163), (13, 109)] {
+    // WU26 adds one Gem Vessel point to the nine revelation flat points.
+    // This healthy target gets 100 + 10 = 110, then the 50% critical gives 165.
+    for (roll, expected) in [(12, 165), (13, 110)] {
         let mut owner = qualify(&f, &p).expect("current owner");
         owner
             .select_item_spell(&wheel_healing_spell())

@@ -3,4 +3,4 @@ mod view;
 pub use view::*;
 
 mod input;
-pub use input::editor_key;
+pub use input::{create_mark_key, editor_key};

@@ -188,3 +188,26 @@ fn daily_boost_shell_input_queries_selected_session() {
         "Daily spotlight\nReset epoch: 42\nBoosted creature: Rat\nrat\nBoosted boss: Boss\nboss\n"
     );
 }
+
+#[test]
+fn daily_boost_open_requests_potion_durations_for_the_xp_boost_lines()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{combat_input::PlayCommand, play::play_channel};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.daily_boost_initialize(true);
+    outbox.potion_durations_initialize(true);
+    let code = KeyCode::new(5)?;
+    assert!(link.daily_boost_input(&[NormalizedInputEvent::Key {
+        code,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false,
+    }]));
+    let mut capabilities = Vec::new();
+    while let Ok(PlayCommand::Feature(command)) = incoming.try_recv() {
+        capabilities.push(command.capability);
+    }
+    assert_eq!(capabilities, [151, 381]);
+    Ok(())
+}

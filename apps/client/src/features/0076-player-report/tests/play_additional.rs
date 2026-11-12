@@ -191,6 +191,7 @@ fn pc02_player_report_scenario() -> Result<(), Error> {
                     // An unexpected transport end while a request is in flight resets every session field.
                     link.player_report_request(intent);
                     assert!(link.player_report_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.player_report_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);

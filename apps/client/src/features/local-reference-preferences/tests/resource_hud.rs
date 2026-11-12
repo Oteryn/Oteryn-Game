@@ -217,3 +217,146 @@ fn t175_t176_confirmed_conditions_reach_independent_hud_and_status_displays()
         .join()
         .map_err(|_| "HUD test thread failed")?
 }
+
+#[test]
+fn t011_server_resources_reach_configurable_hud_without_opening_windows()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    server_resources_reach_hud(false)
+}
+
+#[test]
+fn stamina_hud_with_vocation_extension_reaches_tick()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    server_resources_reach_hud(true)
+}
+
+fn server_resources_reach_hud(
+    vocation: bool,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    type Error = Box<dyn std::error::Error + Send + Sync>;
+    use crate::play::{Stepper, run_session};
+    use oteryn_session::{GatedCommandResult, SessionError};
+    struct Resources(bool);
+    impl Stepper for Resources {
+        fn feature_selected(&self, capability: u32) -> bool {
+            matches!(capability, 199 | 276 | 277) || (capability == 487 && self.0)
+        }
+        async fn feature(
+            &mut self,
+            command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        ) -> Result<GatedCommandResult, SessionError> {
+            let payload = match command.capability {
+                199 => oteryn_session::cyclopedia_character::TabView::GeneralStats(
+                    oteryn_session::cyclopedia_character::GeneralStats {
+                        stamina_minutes: 2460,
+                        ..Default::default()
+                    },
+                )
+                .encode_extended(&oteryn_session::cyclopedia_character::TabExtension {
+                    vocation_id: self.0.then_some(3),
+                    deaths: None,
+                })
+                .map_err(|_| SessionError::SessionUnusable)?,
+                276 => oteryn_session::condition_status::ConditionStatus {
+                    conditions: vec![oteryn_session::condition_status::ActiveCondition {
+                        icon: 1,
+                        sub_id: 0,
+                        remaining_ms: 5000,
+                    }],
+                }
+                .encode()
+                .ok_or(SessionError::SessionUnusable)?,
+                277 => oteryn_session::rest_status::RestStatus {
+                    inside_resting_area: true,
+                    streak: 7,
+                    food_remaining_ms: 60000,
+                    health_multiplier: 2,
+                    mana_multiplier: 2,
+                    stamina: true,
+                    soul: true,
+                }
+                .encode()
+                .ok_or(SessionError::SessionUnusable)?,
+                _ => return Err(SessionError::SessionUnusable),
+            };
+            Ok(GatedCommandResult {
+                command_id: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                server_sequence: 1,
+                payload,
+            })
+        }
+        async fn serve(&mut self, duration: std::time::Duration) -> Result<(), SessionError> {
+            tokio::time::sleep(duration).await;
+            Ok(())
+        }
+        fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
+            vec![]
+        }
+        async fn step(
+            &mut self,
+            _: oteryn_session::StepDirection,
+        ) -> Result<oteryn_session::StepOutcome, SessionError> {
+            Err(SessionError::SessionUnusable)
+        }
+        async fn combat(
+            &mut self,
+            _: crate::combat_input::CombatCommand,
+        ) -> Result<crate::combat_input::CombatReport, SessionError> {
+            Err(SessionError::SessionUnusable)
+        }
+        async fn logout(&mut self) -> Result<Option<oteryn_session::LogoutResult>, SessionError> {
+            Ok(Some(oteryn_session::LogoutResult::Accepted))
+        }
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), Error> {
+            oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
+                let (link, commands, outbox) = crate::play::play_channel();
+                let task = tokio::spawn(run_session(Resources(vocation), commands, outbox));
+                let mut play = view()?;
+                play.enable_resource_hud(true);
+                // The HUD feed is driven by the real tick caller: it queries the conditions,
+                // rest and stamina wires on its own and never opens their windows.
+                tokio::time::timeout(std::time::Duration::from_secs(3), async {
+                    loop {
+                        play.tick(&link).map_err(|_| "session ended")?;
+                        let status = play.resource_status();
+                        if status.contains("Stamina: 41:00")
+                            && status.contains("Poison")
+                            && status.contains("Rest active")
+                        {
+                            break Ok::<_, Box<dyn std::error::Error + Send + Sync>>(());
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await??;
+                let status = play.resource_status();
+                assert!(status.contains("Food: 60s"), "{status}");
+                assert!(!link.condition_status_panel().open);
+                assert!(!link.rest_status_panel().open);
+                assert!(!link.cyclopedia_character_panel().open);
+                let mut preferences = play.preferences().clone();
+                preferences.resource_hud.stamina = false;
+                play.set_preferences(preferences.clone())?;
+                let status = play.resource_status();
+                assert!(!status.contains("Stamina:"), "{status}");
+                assert!(status.contains("Rest active") && status.contains("Poison"));
+                preferences.resource_hud.rest = false;
+                play.set_preferences(preferences.clone())?;
+                let status = play.resource_status();
+                assert!(!status.contains("Rest active"), "{status}");
+                assert!(status.contains("Poison"), "{status}");
+                preferences.resource_hud.conditions = false;
+                play.set_preferences(preferences)?;
+                assert!(!play.resource_status().contains("Poison"));
+                drop(link);
+                task.await?;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "HUD test thread failed")?
+}

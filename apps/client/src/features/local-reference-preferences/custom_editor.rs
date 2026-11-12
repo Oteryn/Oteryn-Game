@@ -43,7 +43,9 @@ fn kind(action: &CustomAction) -> usize {
             ObjectTarget::CurrentTarget => 5,
             ObjectTarget::Equip => 6,
         },
-        CustomAction::Passive { .. } | CustomAction::PassiveStatus { .. } => 7,
+        CustomAction::Passive { .. }
+        | CustomAction::PassiveStatus { .. }
+        | CustomAction::Utility { .. } => 7,
     }
 }
 fn source_matches(left: &CustomAction, right: &CustomAction) -> bool {
@@ -93,6 +95,7 @@ fn action_from(kind: usize, text: String, source: Option<&CustomAction>) -> Opti
         (7, CustomAction::PassiveStatus { ability }) => {
             Some(CustomAction::PassiveStatus { ability: *ability })
         }
+        (7, CustomAction::Utility { action }) => Some(CustomAction::Utility { action: *action }),
         (7, CustomAction::Passive { cast_index }) => Some(CustomAction::Passive {
             cast_index: *cast_index,
         }),

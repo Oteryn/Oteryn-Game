@@ -151,6 +151,7 @@ impl Outbox {
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.sanctions = Default::default();
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
@@ -208,6 +209,7 @@ impl Outbox {
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
+        mailbox.sanctions = Default::default();
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;

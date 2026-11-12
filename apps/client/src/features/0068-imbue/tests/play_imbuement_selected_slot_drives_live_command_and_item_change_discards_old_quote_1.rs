@@ -7,6 +7,7 @@ fn imbuement_selected_slot_drives_live_command_and_item_change_discards_old_quot
     link.imbue_item(item);
     outbox.imbue_result(&ImbueResponse {
         status: CommandStatus::Accepted,
+        success: Vec::new(),
         reply: Some(imbuement::ImbuementReply {
             result: imbuement::ImbuementResult::Ok,
             window: Some(imbuement::ImbuementWindow {
@@ -112,6 +113,7 @@ fn imbuement_selected_slot_drives_live_command_and_item_change_discards_old_quot
     assert!(!link.imbue_slot(0));
     outbox.imbue_result(&ImbueResponse {
         status: CommandStatus::Accepted,
+        success: Vec::new(),
         reply: Some(imbuement::ImbuementReply {
             result: imbuement::ImbuementResult::Ok,
             window: None,
@@ -126,6 +128,7 @@ fn imbuement_selected_slot_drives_live_command_and_item_change_discards_old_quot
     assert_eq!(refresh.0.action, imbuement::ImbuementAction::Query);
     outbox.imbue_result(&ImbueResponse {
         status: CommandStatus::Accepted,
+        success: Vec::new(),
         reply: Some(imbuement::ImbuementReply {
             result: imbuement::ImbuementResult::Ok,
             window: Some(loaded),

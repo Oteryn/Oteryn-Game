@@ -172,17 +172,36 @@ impl WheelOccurrence {
     }
 }
 
-/// Green, red, purple, blue; at most one revealed gem per domain.
-pub type WheelVessels = [Option<[u8; 16]>; 4];
+/// The ordered Gem Vessel slots (`atelier::vessels`); migration 2770 converted the former
+/// four domain cells.
+pub type WheelVessels = oteryn_gameplay_progression::atelier::vessels::GemVessels;
+
+/// A receipt's vessel vector as recorded: four domain cells before migration 2770, the
+/// ordered slots after it.
+pub type RecordedWheelVessels = Vec<Option<[u8; 16]>>;
+
+/// The vessel change a client asked for, bound exactly as sent (§4). The writer resolves it
+/// against the stored slots only after the receipt lookup, so a retry of a committed
+/// occurrence replays its receipt whatever has changed since.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WheelVesselIntent {
+    /// Every slot, replaced atomically.
+    Slots(WheelVessels),
+    /// A capability 148 client's four legacy cells; bound like the pre-2770 four-cell vector.
+    LegacyCells([Option<[u8; 16]>; 4]),
+    /// Replace Vessel: one slot changes and the allocation is kept.
+    Place { slot: u8, gem: Option<[u8; 16]> },
+}
 
 /// `WHEEL_INTENT set_allocation` (§7.1): a full replacement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WheelChangeRequest {
     pub occurrence: WheelOccurrence,
     pub expected_wheel_revision: u64,
+    /// Ignored for [`WheelVesselIntent::Place`], which keeps the stored allocation.
     pub slots: WheelSlots,
-    /// None preserves the current vessels; Some replaces all four atomically.
-    pub vessels: Option<WheelVessels>,
+    /// None preserves the current vessels.
+    pub vessels: Option<WheelVesselIntent>,
 }
 
 /// Runtime removal permission; permanent promotion is read under the writer's own fence.
@@ -228,8 +247,8 @@ pub struct CommittedWheelChange {
     pub committed_character_revision: CharacterRevision,
     pub before_wheel_revision: u64,
     pub after_wheel_revision: u64,
-    pub vessels_before: WheelVessels,
-    pub vessels_after: WheelVessels,
+    pub vessels_before: RecordedWheelVessels,
+    pub vessels_after: RecordedWheelVessels,
     pub before: WheelSlots,
     pub after: WheelSlots,
     pub before_wheel_ruleset_revision: String,
@@ -409,29 +428,68 @@ impl DurabilityRoot {
                         return refuse(WheelRefusal::StaleRevision);
                     }
                     let vessels_before = read_vessels(&mut tx, fence.character_id).await?;
-                    let vessels_after = request.vessels.unwrap_or(vessels_before);
-                    if request.slots == before && vessels_after == vessels_before {
-                        return refuse(WheelRefusal::NoChange);
-                    }
-                    let vocation = read_vocation(&mut tx, fence.character_id).await?;
-                    if let Err(reason) = eligibility(
-                        &ruleset,
-                        &vocation,
-                        level,
-                        super::character_promotion::read_durable_promotion(
-                            &mut tx,
-                            fence.character_id,
-                        )
-                        .await?,
-                        premium_permitted,
-                    ) {
-                        return refuse(WheelRefusal::NotEligible(reason));
-                    }
                     let atelier =
                         super::character_atelier::load_in_transaction(&mut tx, fence.character_id)
                             .await?;
-                    if let Some(vessels) = request.vessels
-                        && !valid_vessels(&vessels, atelier.as_ref(), ruleset.revision())
+                    let slots = match request.vessels {
+                        Some(WheelVesselIntent::Place { .. }) => before,
+                        _ => request.slots,
+                    };
+                    let requested = match request.vessels {
+                        None => None,
+                        Some(WheelVesselIntent::Slots(vessels)) => Some(vessels),
+                        Some(WheelVesselIntent::Place { slot, gem }) => {
+                            match oteryn_gameplay_progression::atelier::vessels::place(
+                                &vessels_before,
+                                usize::from(slot),
+                                gem,
+                            ) {
+                                Some(vessels) => Some(vessels),
+                                None => return Ok(Err(CharacterProgressionError::InvalidInput)),
+                            }
+                        }
+                        // A vector that cannot be placed into the ordered slots is a rule
+                        // refusal, like an invalid slot vector, and writes nothing.
+                        Some(WheelVesselIntent::LegacyCells(cells)) => {
+                            match oteryn_gameplay_progression::atelier::vessels::from_legacy_cells(
+                                &vessels_before,
+                                &cells,
+                                |id| {
+                                    atelier
+                                        .as_ref()?
+                                        .gems
+                                        .get(&u128::from_be_bytes(id))
+                                        .map(|gem| gem.quality)
+                                },
+                            ) {
+                                Some(vessels) => Some(vessels),
+                                None => return refuse(WheelRefusal::RulesetNotCurrent),
+                            }
+                        }
+                    };
+                    let vessels_after = requested.unwrap_or(vessels_before);
+                    if slots == before && vessels_after == vessels_before {
+                        return refuse(WheelRefusal::NoChange);
+                    }
+                    let vocation = read_vocation(&mut tx, fence.character_id).await?;
+                    let promoted = super::character_promotion::read_durable_promotion(
+                        &mut tx,
+                        fence.character_id,
+                    )
+                    .await?;
+                    if let Err(reason) =
+                        eligibility(&ruleset, &vocation, level, promoted, premium_permitted)
+                    {
+                        return refuse(WheelRefusal::NotEligible(reason));
+                    }
+                    if let Some(vessels) = requested
+                        && !valid_vessels(
+                            &vessels_before,
+                            &vessels,
+                            atelier.as_ref(),
+                            &ruleset,
+                            (&slots, &vocation, level, promoted),
+                        )
                     {
                         return refuse(WheelRefusal::RulesetNotCurrent);
                     }
@@ -449,7 +507,7 @@ impl DurabilityRoot {
                     .await?;
                     if let Err(refusal) = ruleset.validate_with_unlock_points(
                         &before,
-                        &request.slots,
+                        &slots,
                         available,
                         unlock_points,
                         facts.at_temple,
@@ -468,11 +526,11 @@ impl DurabilityRoot {
                         original: root.revision,
                         before_wheel_revision: before_revision,
                         before,
-                        after: request.slots,
+                        after: slots,
                         before_ruleset: pinned.clone(),
                         after_ruleset: pinned,
                         first: stored.is_none(),
-                        vessels: request.vessels,
+                        vessels: requested,
                     };
                     let committed = write_change(&mut tx, fence.character_id, &change).await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -926,7 +984,7 @@ async fn write_change(
            wheel_ruleset_revision, original_character_revision, committed_character_revision, \
            level_before, level_after, experience_before, experience_after, profile_revision, \
            ruleset_revision, content_revision, simulation_revision, evidence_revision, \
-           declaration_revision, policy_revision, reward_revision, committed_at, vessels_before, vessels_after) \
+           declaration_revision, policy_revision, reward_revision, committed_at, gem_vessels_before, gem_vessels_after) \
          SELECT s.character_id, encode($2,'hex')::uuid, $3, $4, $5::text::numeric(20,0), \
            $6::text::numeric(20,0), $7, $8, $9, $10, $11::text::numeric(20,0), \
            $12::text::numeric(20,0), s.level, s.level, s.total_experience, \
@@ -1021,8 +1079,8 @@ async fn write_change(
         |value| CharacterRevision::new(value).map_err(|_| DurabilityError::InvalidStoredState);
     Ok(CommittedWheelChange {
         occurrence: change.occurrence,
-        vessels_before,
-        vessels_after,
+        vessels_before: vessels_before.to_vec(),
+        vessels_after: vessels_after.to_vec(),
         kind: change.kind,
         character_id,
         original_character_revision: revision(change.original)?,
@@ -1054,16 +1112,43 @@ fn request_binding(character: CharacterId, request: &WheelChangeRequest) -> Vec<
     for points in *request.slots.points() {
         semantic.extend_from_slice(&points.to_be_bytes());
     }
-    if let Some(vessels) = request.vessels {
-        semantic.extend_from_slice(b"vessels");
-        for vessel in vessels {
-            semantic.push(u8::from(vessel.is_some()));
-            if let Some(id) = vessel {
-                semantic.extend_from_slice(&id);
-            }
+    // Legacy cells keep the pre-2770 encoding of the four-cell vector, so a committed
+    // occurrence from before the upgrade still replays.
+    let (tag, vessels): (&[u8], &[Option<[u8; 16]>]) = match &request.vessels {
+        None => return bound(&semantic),
+        Some(WheelVesselIntent::LegacyCells(cells)) => (b"vessels".as_slice(), cells.as_slice()),
+        Some(WheelVesselIntent::Slots(slots)) => (b"gem_vessels".as_slice(), slots.as_slice()),
+        Some(WheelVesselIntent::Place { slot, gem }) => {
+            return bound(&place_semantic(character, request, *slot, *gem));
+        }
+    };
+    semantic.extend_from_slice(tag);
+    for vessel in vessels {
+        semantic.push(u8::from(vessel.is_some()));
+        if let Some(id) = vessel {
+            semantic.extend_from_slice(id);
         }
     }
     bound(&semantic)
+}
+
+/// Replace Vessel binds the slot and gem it names, never the allocation it keeps.
+fn place_semantic(
+    character: CharacterId,
+    request: &WheelChangeRequest,
+    slot: u8,
+    gem: Option<[u8; 16]>,
+) -> Vec<u8> {
+    let mut semantic = vec![BINDING_VERSION, b'P'];
+    semantic.extend_from_slice(&request.occurrence.0);
+    semantic.extend_from_slice(character.as_bytes());
+    semantic.extend_from_slice(&request.expected_wheel_revision.to_be_bytes());
+    semantic.push(slot);
+    semantic.push(u8::from(gem.is_some()));
+    if let Some(id) = gem {
+        semantic.extend_from_slice(&id);
+    }
+    semantic
 }
 
 fn reset_semantic(character: CharacterId, source: &str, destination: &str) -> Vec<u8> {
@@ -1101,7 +1186,9 @@ async fn load_receipt(
         "SELECT wheel_occurrence_id::text, kind, request_binding, character_id::text, \
                 original_character_revision::text, committed_character_revision::text, \
                 before_wheel_revision::text, after_wheel_revision::text, slots_before, \
-                slots_after, vessels_before, vessels_after, before_wheel_ruleset_revision, wheel_ruleset_revision \
+                slots_after, coalesce(gem_vessels_before, vessels_before) AS vessels_before, \
+                coalesce(gem_vessels_after, vessels_after) AS vessels_after, \
+                before_wheel_ruleset_revision, wheel_ruleset_revision \
            FROM game_character_wheel_receipts \
           WHERE character_id = encode($1,'hex')::uuid \
             AND wheel_occurrence_id = encode($2,'hex')::uuid",
@@ -1158,26 +1245,20 @@ pub(super) async fn read_vessels(
     value
         .map(|json| serde_json::from_value(json).map_err(|_| DurabilityError::InvalidStoredState))
         .transpose()
-        .map(|v| v.unwrap_or([None; 4]))
+        .map(|v| v.unwrap_or(oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS))
 }
-fn valid_vessels(
-    vessels: &WheelVessels,
+/// A replacement slot vector is valid when every filled slot holds a distinct current gem of the
+/// slot's quality and every slot changed to a gem is open under the requested allocation.
+pub(super) fn valid_vessels(
+    before: &WheelVessels,
+    after: &WheelVessels,
     state: Option<&oteryn_gameplay_progression::atelier::AtelierState>,
-    revision: &str,
+    ruleset: &WheelRuleset,
+    (slots, vocation, level, promoted): (&WheelSlots, &str, u32, bool),
 ) -> bool {
-    let domains = [
-        WheelDomain::Green,
-        WheelDomain::Red,
-        WheelDomain::Purple,
-        WheelDomain::Blue,
-    ];
-    vessels.iter().zip(domains).all(|(id, domain)| {
-        id.is_none_or(|id| {
-            state
-                .and_then(|s| s.gems.get(&u128::from_be_bytes(id)))
-                .is_some_and(|gem| gem.domain == domain && gem.ruleset_revision == revision)
-        })
-    })
+    use oteryn_gameplay_progression::atelier::vessels;
+    let open = vessels::open_slots_for(ruleset, slots, vocation, level, promoted);
+    vessels::valid_change(before, after, state, ruleset.revision(), open)
 }
 
 fn slot_columns(slots: &WheelSlots) -> Vec<i16> {
@@ -1223,6 +1304,58 @@ mod tests {
     }
 
     #[test]
+    fn valid_vessels_accepts_a_gem_in_every_open_slot_of_its_quality_without_a_domain() {
+        use oteryn_gameplay_progression::atelier::{
+            AtelierState, Gem, GemQuality,
+            vessels::{GEM_VESSEL_SLOT_QUALITIES, NO_GEM_VESSELS},
+        };
+        let ruleset = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
+            .expect("embedded data")
+            .wheel_ruleset()
+            .expect("ruleset");
+        let full = WheelSlots::new(ruleset.capacities()).expect("full Wheel");
+        let gems = [
+            (1, GemQuality::Lesser),
+            (2, GemQuality::Regular),
+            (3, GemQuality::Greater),
+        ];
+        let mut state = AtelierState::default();
+        for (seed, quality) in gems {
+            let id = u128::from_be_bytes([seed; 16]);
+            state.gems.insert(
+                id,
+                Gem {
+                    id,
+                    quality,
+                    mods: Vec::new(),
+                    locked: false,
+                    vessel: false,
+                    slot: None,
+                    ruleset_revision: ruleset.revision().into(),
+                },
+            );
+        }
+        // The twelve slots span the four former domains; no slot is tied to one any more.
+        let mut accepted = 0;
+        for (seed, quality) in gems {
+            for (slot, slot_quality) in GEM_VESSEL_SLOT_QUALITIES.iter().enumerate() {
+                let mut after = NO_GEM_VESSELS;
+                after[slot] = Some([seed; 16]);
+                let valid = valid_vessels(
+                    &NO_GEM_VESSELS,
+                    &after,
+                    Some(&state),
+                    &ruleset,
+                    (&full, "knight", 2_000, true),
+                );
+                assert_eq!(valid, *slot_quality == quality, "gem {seed} slot {slot}");
+                accepted += usize::from(valid);
+            }
+        }
+        assert_eq!(accepted, 12);
+    }
+
+    #[test]
     fn a_reset_occurrence_is_derived_from_the_character_and_both_revisions() {
         let id = |seed: u8| {
             let mut bytes = [seed; 16];
@@ -1239,5 +1372,77 @@ mod tests {
         assert_eq!(occurrence[6] >> 4, 8);
         assert_eq!(occurrence[8] & 0xc0, 0x80);
         assert_eq!(reset_binding(character, "r1", "r2").len(), 33);
+    }
+
+    #[test]
+    fn vessel_intents_bind_what_the_client_sent() {
+        let mut bytes = [5; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        let character = CharacterId::from_bytes(bytes).expect("character");
+        let occurrence = WheelOccurrence::from_bytes(bytes).expect("occurrence");
+        let request = |slots: WheelSlots, vessels| WheelChangeRequest {
+            occurrence,
+            expected_wheel_revision: 7,
+            slots,
+            vessels,
+        };
+        // A legacy four-cell save binds exactly as it did before migration 2770, so a
+        // pre-upgrade receipt still replays; an empty vector included.
+        let cells = [None, Some([9; 16]), None, None];
+        let mut legacy = vec![BINDING_VERSION, b'A'];
+        legacy.extend_from_slice(&bytes);
+        legacy.extend_from_slice(&bytes);
+        legacy.extend_from_slice(&7_u64.to_be_bytes());
+        for points in *WheelSlots::ZERO.points() {
+            legacy.extend_from_slice(&points.to_be_bytes());
+        }
+        let mut empty = legacy.clone();
+        legacy.extend_from_slice(b"vessels");
+        empty.extend_from_slice(b"vessels");
+        for cell in cells {
+            legacy.push(u8::from(cell.is_some()));
+            if let Some(id) = cell {
+                legacy.extend_from_slice(&id);
+            }
+        }
+        empty.extend_from_slice(&[0; 4]);
+        let legacy_cells = request(WheelSlots::ZERO, Some(WheelVesselIntent::LegacyCells(cells)));
+        assert_eq!(request_binding(character, &legacy_cells), bound(&legacy));
+        let no_cells = request(WheelSlots::ZERO, Some(WheelVesselIntent::LegacyCells([None; 4])));
+        assert_eq!(request_binding(character, &no_cells), bound(&empty));
+        // Twelve empty slots are another intent than four empty cells.
+        let no_slots = request(
+            WheelSlots::ZERO,
+            Some(WheelVesselIntent::Slots(
+                oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS,
+            )),
+        );
+        assert_ne!(
+            request_binding(character, &no_slots),
+            request_binding(character, &no_cells)
+        );
+        // Replace Vessel binds its slot and gem, never the allocation it keeps.
+        let mut points = [0_u16; WHEEL_SLOTS];
+        points[0] = 1;
+        let moved = WheelSlots::new(points).expect("points");
+        let place = Some(WheelVesselIntent::Place {
+            slot: 2,
+            gem: Some([9; 16]),
+        });
+        assert_eq!(
+            request_binding(character, &request(WheelSlots::ZERO, place)),
+            request_binding(character, &request(moved, place))
+        );
+        assert_ne!(
+            request_binding(character, &request(WheelSlots::ZERO, place)),
+            request_binding(
+                character,
+                &request(
+                    WheelSlots::ZERO,
+                    Some(WheelVesselIntent::Place { slot: 2, gem: None })
+                )
+            )
+        );
     }
 }

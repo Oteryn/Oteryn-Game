@@ -413,6 +413,37 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.private_channel_list(admitted).await
     }
 
+    async fn chat_channel_list_extended_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> (
+        Option<(
+            oteryn_protocol_oteryn::chat::private_channel::ChatChannelList,
+            oteryn_protocol_oteryn::chat::private_channel_extended::ChannelListExtension,
+        )>,
+        Vec<oteryn_protocol_oteryn::chat::line_extended::ChannelNotice>,
+    ) {
+        self.private_channel_list_extended(admitted).await
+    }
+
+    async fn chat_private_echo(
+        &self,
+        admitted: AdmittedSession,
+        recipient_name: String,
+        text: String,
+    ) {
+        self.states
+            .chat
+            .push_private_echo(admitted.game_session_id, &recipient_name, &text);
+    }
+
+    async fn chat_private_echo_next(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho> {
+        self.states.chat.next_private_echo(admitted.game_session_id)
+    }
+
     async fn chat_private_intent(
         &self,
         admitted: AdmittedSession,

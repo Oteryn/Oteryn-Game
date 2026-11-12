@@ -24,12 +24,13 @@ pub(super) fn choices(panel: &ItemForgePanel, containers: bool) -> Vec<(u64, Str
             .preview
             .live
             .iter()
-            .map(|i| {
+            .enumerate()
+            .map(|(index, i)| {
                 (
                     i.handle.get(),
                     format!(
                         "Carried item {} — name unavailable on this server",
-                        i.handle.get()
+                        index + 1
                     ),
                 )
             })

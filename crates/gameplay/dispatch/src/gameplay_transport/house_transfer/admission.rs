@@ -40,15 +40,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
             && actor.runtime_scope() == fence.runtime_scope
         {
-            let Ok((current, _)) =
-                crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
-                    .retry_unavailable(async || {
-                        FreshAdmissionStore::from_root(self.root.clone())
-                            .current_session_at(admitted.game_session_id)
-                            .await
-                            .map_err(classify)
-                    })
-                    .await
+            let Ok(budget) =
+                crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
+            else {
+                return false;
+            };
+            let Ok((current, _)) = budget
+                .retry_unavailable(async || {
+                    FreshAdmissionStore::from_root(self.root.clone())
+                        .current_session_at(admitted.game_session_id)
+                        .await
+                        .map_err(classify)
+                })
+                .await
             else {
                 return false;
             };
@@ -69,7 +73,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Background projections share this holder with mandatory pre-dispatch input.
         // Re-prove the same fences/transport on each idempotent attempt; all non-busy
         // failures and budget exhaustion still refuse before any command effect.
-        crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+        let Ok(budget) =
+            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
+        else {
+            return false;
+        };
+        budget
             .retry_unavailable(async || {
                 self.root
                     .note_house_transfer_input(self.holder, fence, controller.transport)

@@ -44,7 +44,8 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model.npcs().len(), 1_282);
     assert_eq!(model.held_npcs().len(), 0);
     // NPC-ECON-1 Bank, PREM-5's services, BANK-3's Henricus blessing offer, and #2810's
-    // Grizzly Adams rank shop, S10 services, and exact NPC-TRADE-3 subtype restoration.
+    // Grizzly Adams rank shop, S10 services, exact NPC-TRADE-3 subtype restoration,
+    // and the four source-owned Djinn shops (126 offers, four held below).
     assert_eq!(model.services().len(), 404);
     assert_eq!(model.admitted_offer_count(), 12_687);
     assert_eq!(model.admitted_route_count(), 195);
@@ -52,6 +53,7 @@ fn pinned_catalogue_service_model_counts() {
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
         // Exact subtype qualification preserves the existing arbitrage protection.
         ("ArbitragePaying", 0),
+        // The Djinn i3284 offers lack a native subtype; i3083 lacks full-charge proof.
         ("ChargedOrFluidPending", 2),
         ("CountOutOfRange", 0),
         ("NonGoldCurrency", 31),

@@ -246,8 +246,10 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         let Some(inventory) =
             item_move::observe_inventory(authority, actor, admitted.game_session_id, &view).await
         else {
-            crate::gameplay_transport::operator_event("event=join_prepare_failed phase=inventory");
-            return Err(ServeEnd::Disconnected);
+            return Err(super::setup::failed(
+                "event=join_prepare_failed phase=inventory",
+                ServeEnd::Disconnected,
+            ));
         };
         let reopen = match view.carried_open_corpse() {
             Some(key) => authority.observe_item_target(actor, key).await,
@@ -282,8 +284,10 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         )
         .await
         else {
-            crate::gameplay_transport::operator_event("event=join_prepare_failed phase=visibility");
-            return Err(ServeEnd::Disconnected);
+            return Err(super::setup::failed(
+                "event=join_prepare_failed phase=visibility",
+                ServeEnd::Disconnected,
+            ));
         };
         let mut view = SessionVisibility::with_objects(item_view.is_some())
             .lit(selected_capabilities.contains(CAPABILITY_WORLD_LIGHT_V1));
@@ -298,10 +302,10 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
             )
             .await
         else {
-            crate::gameplay_transport::operator_event(
+            return Err(super::setup::failed(
                 "event=join_prepare_failed phase=appearances",
-            );
-            return Err(ServeEnd::Disconnected);
+                ServeEnd::Disconnected,
+            ));
         };
         if let Some(item_view) = &item_view {
             admitted.continuity.item_view = item_view.continuity();

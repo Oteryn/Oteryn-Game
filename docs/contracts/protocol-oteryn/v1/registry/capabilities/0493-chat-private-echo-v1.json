@@ -1,0 +1,13 @@
+{
+  "id": 493,
+  "name": "CHAT_PRIVATE_ECHO_V1",
+  "owner_decision": "WU26 chat channels as in Tibia Global; parity rule: current Tibia, then Crystal 201189f8",
+  "owner": "Game chat egress of a session's accepted private messages (command 6 private intent, domain 12 delta 1)",
+  "requires": [
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with CHAT_V1. After the World relay accepts a private line (disposition Ok), its sender receives it back as line kind 2 with field 12 recipient_name; nobody else receives the echo. Without selection no echo is sent and payloads are unchanged."
+}

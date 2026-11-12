@@ -209,6 +209,8 @@ include!("session_tests_player_trade.rs");
 
 #[path = "tests/gem_presentation_gated.rs"]
 mod gem_presentation_gated;
+#[path = "tests/spell_aim_mode.rs"]
+mod spell_aim_mode;
 
 #[path = "tests/wheel_presentation_gated.rs"]
 mod wheel_presentation_gated;

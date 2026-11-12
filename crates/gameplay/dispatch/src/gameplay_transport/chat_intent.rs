@@ -11,6 +11,7 @@
 
 mod cake_speech;
 mod item_actions;
+mod private_echo;
 mod source_speech;
 
 use std::collections::{BTreeMap, HashMap};
@@ -80,6 +81,8 @@ struct ChatSession {
     #[cfg(test)]
     channels: private_channel::PrivateChannels,
     public_rooms: public_channels::PublicRoomState,
+    /// Capability 493: the echoes of its own accepted private lines, oldest first.
+    echoes: std::collections::VecDeque<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho>,
 }
 
 /// The chat state of the admitted sessions of one Channel. The lock is never held across an
@@ -153,6 +156,7 @@ impl ChatRuntime {
         }
         if let Some(mut held) = sessions.remove(&source) {
             held.egress.clear();
+            held.echoes.clear();
             held.engaged = None;
             held.joined = 0;
             held.walked_away.clear();
@@ -207,11 +211,13 @@ impl ChatRuntime {
                 #[cfg(test)]
                 channels: private_channel::PrivateChannels::default(),
                 public_rooms: public_channels::PublicRoomState::default(),
+                echoes: std::collections::VecDeque::new(),
             });
             entry.name = name.to_owned();
             entry.mount_sounds = false;
             entry.character = character;
             entry.egress.clear();
+            entry.echoes.clear();
             entry.engaged = None;
             entry.walked_away.clear();
             entry.npc_service = false;
@@ -354,6 +360,7 @@ impl ChatRuntime {
             && let Some(entry) = sessions.get_mut(&session)
         {
             entry.egress.clear();
+            entry.echoes.clear();
             entry.engaged = None;
             entry.walked_away.clear();
             entry.npc_service = false;
@@ -1012,7 +1019,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
-        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
         self.chat_speaker_name_with_budget(session, &retry).await
     }
 

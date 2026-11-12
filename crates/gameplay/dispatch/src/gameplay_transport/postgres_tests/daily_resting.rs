@@ -14,19 +14,29 @@ fn daily_resting_premium_streak_feeds_vitals_and_soul_owner() -> TestResult {
     scenario(true)
 }
 
+/// Winter Update 2026: the resting bonus does not depend on the reward streak.
+#[test]
+fn daily_resting_zero_streak_premium_regenerates_soul() -> TestResult {
+    scenario_with(true, true)
+}
+
 fn scenario(premium: bool) -> TestResult {
+    scenario_with(premium, false)
+}
+
+fn scenario_with(premium: bool, zero_streak: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || resting_scenario(premium).map_err(|error| error.to_string()))?
+        .spawn(move || resting_scenario(premium, zero_streak).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "daily resting PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn resting_scenario(premium: bool) -> TestResult {
+fn resting_scenario(premium: bool, zero_streak: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "daily_resting", false, false).await?;
         prepare_current_session(&h).await?;
@@ -87,7 +97,8 @@ fn resting_scenario(premium: bool) -> TestResult {
                 .await
                 .map_err(debug)?;
             assert_eq!(streak, 7);
-            owner.states.resting_areas.install(session, actor, streak);
+            let projected = if zero_streak { 0 } else { streak };
+            owner.states.resting_areas.install(session, actor, projected);
             {
                 let mut runtime = deps.runtime.lock().await;
                 assert_eq!(
@@ -124,7 +135,7 @@ fn resting_scenario(premium: bool) -> TestResult {
                 .get(&runtime, actor, session)
                 .ok_or("actor")?
                 .vitals();
-            // Free accounts retain the day-2/day-3 rates, even with a persisted streak of 7.
+            // Free accounts retain the day-2/day-3 rates, with or without a streak.
             // Crystal 201189f8 src/creatures/combat/condition.cpp:1348-1356,1385-1391
             // unlocks resting credits and doubles them, rather than adding a flat bonus
             // (data/libs/systems/daily_reward.lua:1-6). This unfed level-8 Monk has
@@ -140,11 +151,11 @@ fn resting_scenario(premium: bool) -> TestResult {
                     (111, 40)
                 }
             );
-            // Free soul stays at the seeded 5: resting_area.rs:95 gates the streak-seven
-            // point on Premium, matching docs/reference/tibia-manual/characters.md:58.
+            // Free soul stays at the seeded 5: resting_area.rs gates the soul point on
+            // Premium, matching docs/reference/tibia-manual/characters.md:58.
             assert_eq!(vitals.soul, if premium && inside { 6 } else { 5 });
             eprintln!(
-                "PG_MARKER daily-resting-real-tick-soul premium={premium} inside={inside} soul={}",
+                "PG_MARKER daily-resting-real-tick-soul premium={premium} zero_streak={zero_streak} inside={inside} soul={}",
                 vitals.soul
             );
         }

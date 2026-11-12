@@ -298,6 +298,7 @@ fn scenario_case(
                 | "m05-gnomus"
                 | "m16-marker"
                 | "catalogue-npc"
+                | "catalogue-npc-inventory"
                 | "catalogue-npc-end"
                 | "catalogue-npc-calendar"
                 | "catalogue-npc-xp"
@@ -920,7 +921,7 @@ fn scenario_case(
         let h = if shared_rewards
             || qengine_reward
             || outfit_world
-            || name == "catalogue-npc"
+            || matches!(name, "catalogue-npc" | "catalogue-npc-inventory")
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -1558,6 +1559,7 @@ fn scenario_case(
                 Some(h.root.clone()),
             );
         let eligibility_premium = if feaster
+            || name == "catalogue-npc-inventory"
             || name == "qengine-rewards-forgotten-story"
             || name == "qengine-rewards-heart-story"
             || name == "qengine-rewards-grimvale-story"
@@ -2396,6 +2398,13 @@ fn scenario_case(
             Box::pin(super::super::npc_program::exercise_end(
                 &mut owner,
                 &mut admitted,
+            ))
+            .await?;
+        } else if name == "catalogue-npc-inventory" {
+            Box::pin(super::super::npc_program_inventory::exercise(
+                &mut owner,
+                &mut admitted,
+                &authority,
             ))
             .await?;
         } else if name == "catalogue-npc" {

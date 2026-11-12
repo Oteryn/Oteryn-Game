@@ -56,6 +56,7 @@ pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
+pub mod temple_scroll;
 pub mod rotten_essence;
 pub mod soul_war_source;
 mod tibiadrome;
@@ -97,6 +98,8 @@ pub enum ItemUseKind {
         wire_binding: [u8; 32],
         percentile: u8,
     },
+    /// WU26-06: one Temple Teleport Scroll composed with its `game_temple_scroll_uses` row.
+    TempleScroll,
 }
 
 impl ItemUseKind {
@@ -114,6 +117,7 @@ impl ItemUseKind {
             Self::HirelingLamp { .. } => super::house_hireling::LAMP_USE_CAUSE,
             Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
+            Self::TempleScroll => temple_scroll::TEMPLE_SCROLL_CAUSE,
         }
     }
 }
@@ -252,7 +256,8 @@ impl ItemUseRequest {
                 | ItemUseKind::RottenEssence
                 | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
-                | ItemUseKind::HirelingFood { .. },
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::TempleScroll,
             ) => true,
             (
                 _,
@@ -264,7 +269,8 @@ impl ItemUseRequest {
                 | ItemUseKind::RottenEssence
                 | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
-                | ItemUseKind::HirelingFood { .. },
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::TempleScroll,
             ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
@@ -435,6 +441,7 @@ impl DurabilityRoot {
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::TempleScroll
                 | ItemUseKind::RottenEssence
                 | ItemUseKind::SoulWarSourceUse { .. }
         ) || oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
@@ -622,7 +629,8 @@ impl DurabilityRoot {
                                 | ItemUseKind::Concoction
                                 | ItemUseKind::HirelingLamp { .. }
                                 | ItemUseKind::HirelingFood { .. }
-                                | ItemUseKind::DromeCube { .. } => None,
+                                | ItemUseKind::DromeCube { .. }
+                                | ItemUseKind::TempleScroll => None,
                             };
                             if let Some(counted) = counted {
                                 add_progress(

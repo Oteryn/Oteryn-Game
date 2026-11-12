@@ -40,7 +40,8 @@ Write it as one self-contained file. Include, in this order:
    coordinator.
 7. **Review:** for a Claude lane or child session that owns its branch,
    "you run the Codex review of your head and fix confirmed findings
-   (`oteryn-review` §5)"; for a Codex lane, "no review, the coordinator
+   (`oteryn-review` §5 and its `references/batch-review.md`: parallel lens runs,
+   every finding with no cap, pattern sweep, one batch fix)"; for a Codex lane, "no review, the coordinator
    reviews".
 8. **Report:** at most 15 lines: result, head SHA or diff name, commands run
    with pass/fail counts, open questions with options and a recommendation,
@@ -70,6 +71,18 @@ same setting. Codex review runs `gpt-6.1-sol` at reasoning effort `high`
 run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision 2026-11-11, replacing the 2026-11-05
 `high` for code-writing Codex. Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition.
+
+Submit a Codex Cloud task with `scripts/codex-cloud.mjs` (2026-11-12: the old
+`codex cloud exec --env "Oteryn/Oteryn-Game"` route answers "environment not
+found"). It needs an existing `codex login` and the environment variable
+`OTERYN_CODEX_ENV_CONFIG_ID` (set in the cloud environment; ask the
+coordinator if it is missing). It reads the login file itself; never open that
+file. Commands: `node .claude/skills/oteryn-waves/scripts/codex-cloud.mjs`
+`check` (environment ready), `submit --prompt-file <packet> --branch <ref>
+--title <tag>` (prints the thread id), `poll <thread>`, `status <thread>`,
+`send <thread> --prompt-file <follow-up>`, `list`. It calls the desktop
+client's internal RPC, not an official API: if it fails, report the error
+verbatim and do not retry a submit blindly.
 
 ## Limits to paste into every packet
 

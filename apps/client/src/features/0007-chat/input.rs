@@ -14,6 +14,16 @@ impl PlayLink {
         enqueue(&mut lock(&self.mailbox), &self.commands, mode, recipient);
     }
     pub fn chat_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::chat::default_channel_key(events) {
+            self.chat_console_tab(oteryn_client_ui::chat::ConsoleTab::All);
+            self.open_chat();
+            return true;
+        }
+        if oteryn_client_ui::chat::temporary_mode_key(events) {
+            lock(&self.mailbox).chat.console.mode = oteryn_client_ui::chat::ComposerMode::Temporary;
+            self.open_chat();
+            return true;
+        }
         if !oteryn_client_ui::chat::open_key(events) {
             return false;
         }
@@ -46,7 +56,13 @@ pub(in crate::play) fn enqueue(
     mode: Mode,
     recipient: &str,
 ) {
-    if let Some(intent) = request(&mut mailbox.chat, mode, recipient) {
+    // A selected channel tab receives the composer text; the fixed tabs use the speech modes.
+    let intent = if mailbox.chat.console.current.is_some() {
+        oteryn_client_ui::chat::channel_request(&mut mailbox.chat)
+    } else {
+        request(&mut mailbox.chat, mode, recipient)
+    };
+    if let Some(intent) = intent {
         super::super::feature_0233_player_typing::input::composer(mailbox, commands, false);
         if commands.send(PlayCommand::ChatPublic(intent)).is_err() {
             mailbox.chat.pending = false;
@@ -55,4 +71,15 @@ pub(in crate::play) fn enqueue(
             mailbox.chat.console.sent();
         }
     }
+}
+
+/// The native composer uses the same destination precedence as `enqueue`.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn composer_enabled(
+    panel: &oteryn_client_ui::chat::ChatPanel,
+    mode: Mode,
+) -> bool {
+    panel.console.current.is_some()
+        || mode != Mode::Guild
+        || oteryn_client_ui::chat_guild_room::available(panel)
 }

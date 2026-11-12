@@ -37,7 +37,10 @@ pub(super) fn initialize<T: Stepper>(
     outbox.world_weather_initialize(session.feature_snapshot(22));
     outbox.map_initialize(session.feature_snapshot(17));
     outbox.animus_initialize(session.animus_selected());
-    outbox.wheel_initialize(session.wheel_selected());
+    outbox.wheel_initialize(
+        session.wheel_selected(),
+        session.feature_selected(oteryn_session::atelier::v2::CAPABILITY_GEM_ATELIER_V2),
+    );
     outbox.gem_presentation_initialize(session.feature_selected(148));
     outbox.wheel_presentation_initialize(session.feature_selected(148));
     outbox.exiva_initialize(session.exiva_selected());
@@ -76,11 +79,13 @@ pub(super) fn initialize<T: Stepper>(
     outbox.hireling_management_initialize(session.feature_selected(250));
     outbox.market_initialize(session.market_selected());
     outbox.chat_with_movement_initialize(session);
+    outbox.chat_extras_reset();
     outbox.chat_private_publish(session);
+    outbox.chat_extras_publish(session);
     outbox.player_typing_initialize(session.player_typing_selected());
     outbox.arena_initialize(session.feature_selected(170));
     outbox.boss_encounter_initialize(session.feature_selected(117));
-    outbox.boss_difficulty_initialize(session.feature_selected(225));
+    outbox.boss_difficulty_initialize(session.feature_selected(225), session.feature_selected(492));
     outbox.cast_control_initialize(session.server_mechanic_selected(290));
     outbox.cast_consent_initialize(session.server_mechanic_selected(292));
     outbox.cast_chat_initialize(
@@ -97,15 +102,32 @@ pub(super) fn initialize<T: Stepper>(
     outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
+    outbox.cyclopedia_character_extensions(
+        session.feature_selected(
+            oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+        ),
+        session.feature_selected(
+            oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
+        ),
+    );
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
     outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
-    outbox.highscores_initialize(session.server_mechanic_selected(9));
+    outbox.highscores_initialize(
+        session.server_mechanic_selected(9),
+        session.feature_selected(498),
+    );
+    outbox.sanction_initialize(session.feature_selected(497));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.target_move_initialize(session.feature_selected(64));
     outbox.creature_push_initialize(session.feature_selected(82));
     outbox.hotkey_equip_initialize(session.server_mechanic_selected(179));
     outbox.hotkey_equip_smart_mode(session.server_mechanic_selected(180));
+    outbox.hotkey_equip_tiered(
+        session.feature_selected(
+            oteryn_session::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1,
+        ),
+    );
     outbox.hotkey_equip_items(session.hotkey_equip_items());
     outbox.hotkey_own_actor(session.hotkey_own_actor());
     outbox.item_forge_initialize(session.server_mechanic_selected(152));

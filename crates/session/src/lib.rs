@@ -67,6 +67,8 @@ mod gated_command;
 pub use gated_command::world_context;
 /// Server-owned highscores query and result codecs.
 pub use oteryn_protocol_oteryn::highscores;
+/// The own Platform sanction record (capability 497).
+pub use oteryn_protocol_oteryn::sanction_record;
 pub mod container_tree;
 mod hotkey_equip_transport;
 #[path = "features/0004-item-view-move/protocol.rs"]
@@ -129,16 +131,24 @@ pub use oteryn_protocol_oteryn::{creature_push, target_move};
 /// Player-trade wire values for the selected native-client feature.
 pub use oteryn_protocol_oteryn::{player_trade, player_typing};
 pub use recovery::{Recovery, RecoveryState, check_resume_selection};
+mod chat_extended;
 mod guild_chat;
 mod private_channels;
 pub use appearance_state::{
     AppearanceItemDictionary, AppearanceUpdate, EntityDisplayName, Look, VisibleAppearance,
 };
-use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
+pub use chat_extended::{
+    ChannelListExtension, ChannelNotice, ChannelNoticeKind, ChannelParticipants, LineExtra,
+    NoticeEntry,
+};
+use oteryn_protocol_oteryn::actor_spell::{
+    self, AimedSpellCastIntent, SpellAimMode, SpellCastIntent,
+};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::actor_spell::{
-    ActorVitals, SpellCastDisposition, SpellTarget, SpellTargetPosition,
+    ActorVitals, CAPABILITY_SPELL_AIM_MODE_V1, SpellCastDisposition, SpellTarget,
+    SpellTargetPosition,
 };
 use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 /// The capability-17 attack types a client sends and draws from, re-exported so it needs no

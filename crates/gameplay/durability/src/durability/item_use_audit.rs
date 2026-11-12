@@ -316,7 +316,14 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
                 return Err(AuditError::InvalidInput);
             }
         }
-    } else if value.house_key.is_some() {
+    } else if value.house_key.is_some()
+        || (cause.kind == super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE
+            && before.definition.as_ref().is_none_or(|definition| {
+                definition.family != "Item"
+                    || definition.production_key
+                        != super::item_use::temple_scroll::TEMPLE_SCROLL_KEY
+            }))
+    {
         return Err(AuditError::InvalidInput);
     }
     match (entry, value.source_inbox_ordinal) {
@@ -394,6 +401,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::drome_cube::DROME_CUBE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
             | super::item_use::gourmet::GOURMET_CAUSE
+            | super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
         || value.expected_session_generation == 0
@@ -430,7 +438,8 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::rotten_essence::ESSENCE_CAUSE
             | super::item_use::soul_war_source::SOURCE_USE_CAUSE
             | super::house_hireling::LAMP_USE_CAUSE
-            | super::item_use::gourmet::GOURMET_CAUSE,
+            | super::item_use::gourmet::GOURMET_CAUSE
+            | super::item_use::temple_scroll::TEMPLE_SCROLL_CAUSE,
             None,
             false,
         ) => ItemUseShape::Burn,

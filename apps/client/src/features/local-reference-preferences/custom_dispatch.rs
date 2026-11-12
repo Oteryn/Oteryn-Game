@@ -1,5 +1,6 @@
 //! Custom actions use the same live session callers as inventory, chat and cooldown panels.
 use super::{CustomAction, ObjectTarget};
+use crate::combat_input::PlayCommand;
 use crate::play::feature_local_spell_action_bar::view::{item_source, item_target, visible_items};
 use crate::play::{PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
@@ -68,7 +69,73 @@ impl PlayLink {
                 ));
             }
         }
+        choices.extend(
+            super::UtilityAction::ALL
+                .into_iter()
+                .map(|action| (action.label().into(), CustomAction::Utility { action })),
+        );
         choices
+    }
+
+    /// Session-level utility actions; preference actions run in `SettingsState::run_utility`.
+    pub fn utility_action(&self, action: super::UtilityAction) -> bool {
+        use super::UtilityAction;
+        match action {
+            UtilityAction::ClearOldestMessage => {
+                if lock(&self.mailbox).chat.lines.is_empty() {
+                    return false;
+                }
+                self.commands.send(PlayCommand::ChatClearOldest).is_ok()
+            }
+            UtilityAction::ShowIgnoreList => {
+                self.chat_show_lists();
+                true
+            }
+            UtilityAction::ToggleServerMessages => {
+                let mut mailbox = lock(&self.mailbox);
+                mailbox.chat.console.show_server_messages =
+                    !mailbox.chat.console.show_server_messages;
+                true
+            }
+            UtilityAction::ChangeCharacter => {
+                self.request_logout();
+                true
+            }
+            UtilityAction::BugReport => {
+                self.bug_report_open();
+                true
+            }
+            UtilityAction::QuickLootArea => {
+                self.quick_loot_action(oteryn_client_ui::quick_loot::Action::LootAll)
+            }
+            UtilityAction::CloseCurrentChannel => {
+                self.chat_close_current();
+                true
+            }
+            UtilityAction::NextChannel | UtilityAction::PreviousChannel => {
+                self.chat_channel_cycle(action == UtilityAction::NextChannel);
+                true
+            }
+            UtilityAction::OpenChannelList => {
+                self.chat_channel_dialog_open();
+                true
+            }
+            UtilityAction::ToggleLensHelp => {
+                let active = self.lens_toggle();
+                lock(&self.mailbox).chat.feedback =
+                    Some(oteryn_client_ui::lens_help::mode_text(active).into());
+                self.open_chat();
+                true
+            }
+            UtilityAction::OpenHelpChannel => {
+                self.chat_open_help();
+                self.open_chat();
+                true
+            }
+            UtilityAction::ToggleCreatureHuds
+            | UtilityAction::ToggleFpsLagIndicator
+            | UtilityAction::NextHotkeyPreset => false,
+        }
     }
 
     pub fn custom_hotkey_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
@@ -108,6 +175,7 @@ impl PlayLink {
                 self.cast_spell_slot(slot);
                 true
             }
+            CustomAction::Utility { action } => self.utility_action(*action),
             CustomAction::Text { text, send } => {
                 use oteryn_client_ui::chat::{ComposerMode, Mode};
                 let mut mailbox = lock(&self.mailbox);

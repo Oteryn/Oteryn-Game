@@ -171,6 +171,8 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             if cause.service_key == "oteryn:atelier.switch_domain" && [125_000, 250_000, 500_000].contains(&value.fee_gold_units) => atelier_cause::check_switch(cause,value),
         Some(FeeBurnCauseV1::GemGradeUp(cause))
             if cause.service_key == "oteryn:atelier.grade_up" && [2_000_000, 5_000_000, 30_000_000, 12_000_000, 75_000_000].contains(&value.fee_gold_units) => atelier_cause::check(cause,value,"GradeUp"),
+        Some(FeeBurnCauseV1::GemReshape(cause))
+            if cause.service_key == "oteryn:atelier.reshape" && [125_000, 1_000_000, 5_000_000].contains(&value.fee_gold_units) => atelier_cause::check(cause,value,"Reshape"),
         _ => Err(AuditError::InvalidInput),
     }
 }

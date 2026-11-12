@@ -487,6 +487,77 @@ mod main_native_contract {
 
     #[test]
     fn explicit_empty_native_bindings_preserve_the_legacy_catalogue() -> Result<(), String> {
+        use crate::quest::{QuestTrack, arena_completion, completion_sets, native_kills};
+
+        // Derive the native track inventory from its source documents, rather
+        // than treating omission of all common admission owners as a baseline.
+        #[derive(serde::Deserialize)]
+        struct Objective {
+            quest: String,
+            gate: String,
+            track: String,
+            maximum: i64,
+        }
+        #[derive(serde::Deserialize)]
+        struct Objectives {
+            objectives: Vec<Objective>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Arena {
+            quest: String,
+            stages: Vec<arena_completion::Stage>,
+        }
+        let claims: std::collections::BTreeMap<String, completion_sets::CompletionSet> =
+            serde_json::from_str(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/quests/claim-sets.json"
+            )))
+            .map_err(|error| error.to_string())?;
+        let objectives: Objectives = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/quests/native-death-objectives.json"
+        )))
+        .map_err(|error| error.to_string())?;
+        let arena: Arena = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/quests/arena-completion.json"
+        )))
+        .map_err(|error| error.to_string())?;
+        let mut additions = std::collections::BTreeMap::new();
+        let mut track = |key: &str, quest: &str, max: i64| -> Result<(), String> {
+            let value = QuestTrack {
+                key: key.into(),
+                quest: quest.into(),
+                initial: 0,
+                min: 0,
+                max,
+            };
+            if additions.insert(key.to_owned(), value).is_some() {
+                return Err(format!("duplicate expected native track: {key}"));
+            }
+            Ok(())
+        };
+        for (stage, max) in [(4, 2), (5, 1), (6, 1)] {
+            track(
+                &format!("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s{stage}"),
+                "oteryn:quest.the_first_dragon_quest",
+                max,
+            )?;
+        }
+        for objective in objectives.objectives {
+            track(&objective.gate, &objective.quest, 1)?;
+            track(&objective.track, &objective.quest, objective.maximum)?;
+        }
+        for (quest, rule) in &claims {
+            for marker in rule.groups.iter().flatten() {
+                track(&format!("oteryn:quest-progress/{marker}/claimed"), quest, 1)?;
+            }
+        }
+        for stage in arena.stages {
+            track(&stage.track, &arena.quest, stage.goal)?;
+        }
+        assert_eq!(additions.len(), 66);
+
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
         let empty = Bindings::parse_documents(&[])?;
@@ -498,9 +569,47 @@ mod main_native_contract {
         assert_eq!(baseline.counts(), explicit.counts());
         let before = baseline.catalogue();
         let after = explicit.catalogue();
-        assert_eq!(before.tracks, after.tracks);
-        assert_eq!(before.transitions, after.transitions);
-        assert_eq!(before.hashes, after.hashes);
+        assert_eq!(before.tracks.len(), 2122);
+        for (key, value) in &before.tracks {
+            assert_eq!(after.tracks.get(key), Some(value), "legacy track {key}");
+        }
+        let admitted_additions: std::collections::BTreeMap<_, _> = after
+            .tracks
+            .iter()
+            .filter(|(key, _)| !before.tracks.contains_key(*key))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        assert_eq!(admitted_additions, additions);
+        for (key, value) in &before.transitions {
+            assert_eq!(
+                after.transitions.get(key),
+                Some(value),
+                "legacy transition {key}"
+            );
+        }
+        // Empty imported bindings must preserve the complete native admission
+        // result, including rule-bound hashes, rather than the raw lowerer's hashes.
+        let expected = arena_completion::extend(completion_sets::extend(native_kills::extend(
+            before.clone(),
+        )?)?)?;
+        assert_eq!(expected.tracks, after.tracks);
+        assert_eq!(expected.transitions, after.transitions);
+        assert_eq!(expected.hashes, after.hashes);
+        assert_eq!(expected.completion_sets, after.completion_sets);
+        let owned: std::collections::BTreeSet<_> = additions
+            .values()
+            .map(|track| track.quest.clone())
+            .chain(native_kills::registered_counters()?.map(|counter| counter.quest.to_owned()))
+            .collect();
+        for (quest, hash) in &before.hashes {
+            if !owned.contains(quest) {
+                assert_eq!(
+                    after.hashes.get(quest),
+                    Some(hash),
+                    "unextended owner {quest}"
+                );
+            }
+        }
         assert_eq!(before.npc_legacy, after.npc_legacy);
         assert_eq!(before.predecessors, after.predecessors);
         assert_eq!(before.authored_bindings, after.authored_bindings);

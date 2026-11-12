@@ -26,6 +26,24 @@ struct PaidPreparation {
     presentation: crate::gameplay_transport::spell_presentations::PreparedPresentation,
 }
 
+/// WU26-14: the TARGET or CURSOR option of a native wave or beam, by the ordinary path's rule. A
+/// delayed strike keeps its own target and `aim_at_target` handling.
+fn native_aim(
+    key: &str,
+    spell: &SpellDefinition,
+    intent: &SpellCastIntent,
+) -> Result<Option<super::ordinary_combat::Aim>, SpellCastDisposition> {
+    if key == "delayed_strike" {
+        Ok(None)
+    } else {
+        super::ordinary_combat::aim(spell, intent)
+    }
+}
+
+#[cfg(test)]
+#[path = "aim_tests.rs"]
+mod aim_tests;
+
 #[allow(clippy::too_many_arguments)]
 pub async fn prepare_from_owners(
     tx: &mut Transaction<'_, Postgres>,
@@ -55,7 +73,9 @@ pub async fn prepare_from_owners(
     let key = recipe["key"]
         .as_str()
         .ok_or(SpellCastDisposition::Rejected)?;
-    if matches!(intent.target, SpellTarget::Position(_))
+    let aim = native_aim(key, spell, intent)?;
+    if aim.is_none()
+        && matches!(intent.target, SpellTarget::Position(_))
         && !spell
             .authored
             .as_ref()
@@ -72,6 +92,7 @@ pub async fn prepare_from_owners(
             | "mana_shield_capacity"
             | "delayed_strike"
     ) || (key != "delayed_strike"
+        && aim.is_none()
         && (intent.aim_at_target || intent.target != SpellTarget::None))
         || book.indexed(intent.spell) != Some(spell)
         || content.spell_book().indexed(intent.spell) != Some(spell)
@@ -189,6 +210,7 @@ pub async fn prepare_from_owners(
         objects,
         spell,
         intent,
+        aim,
         parameters,
         actor,
         stage,
@@ -309,6 +331,7 @@ async fn prepare_spatial(
     objects: &LocalObjectRuntime,
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
+    aim: Option<super::ordinary_combat::Aim>,
     parameters: &Value,
     actor: ExactActorRef,
     stage: u8,
@@ -335,16 +358,39 @@ async fn prepare_spatial(
         .is_some_and(|p| p.header.targeting.needs_direction)
         || parameters["area"]["directional"] == true;
     let facing = current.facing();
-    if needs_direction && facing.is_none() {
+    // WU26-14: an aimed wave or beam turns toward its target or cursor tile from the
+    // caster-adjacent origin, as on the ordinary path; without one it keeps the facing.
+    let aimed = match aim {
+        Some(aim) => Some(super::ordinary_combat::aimed_origin(
+            position,
+            facing.map(direction),
+            super::ordinary_combat::aim_point(
+                runtime,
+                states,
+                actor,
+                current.position(),
+                aim,
+                attack_target,
+                now,
+            )?,
+        )?),
+        None => None,
+    };
+    if needs_direction && facing.is_none() && aimed.is_none() {
         return reject();
     }
-    let facing_direction = facing.map(direction).unwrap_or(Direction::North); // unused by symmetric/self recipes
+    let facing_direction = match aimed {
+        Some((_, d)) => d,
+        None => facing.map(direction).unwrap_or(Direction::North), // unused by symmetric/self recipes
+    };
     let is_delayed = parameters.get("delay_ms").is_some();
     let held = is_delayed
         .then(|| delayed_strikes::held_target(runtime, attack_target))
         .flatten();
     let origin = if let Some(saved) = saved {
         saved.scheduled.position
+    } else if let Some((origin, _)) = aimed {
+        origin
     } else {
         match intent.target {
             SpellTarget::Position(p) => TilePosition {
@@ -484,6 +530,7 @@ async fn prepare_spatial(
         );
     }
     let target_position = match intent.target {
+        _ if aimed.is_some() => None,
         _ if is_delayed
             && spell
                 .authored
@@ -501,7 +548,7 @@ async fn prepare_spatial(
         target: None,
         line_of_sight_clear: target_position
             .map(|p| p == position || clear_sight.contains(&(position, p))),
-        direction_available: facing.is_some(),
+        direction_available: facing.is_some() || aimed.is_some(),
         wheel_unlocked: (parameters.get("wheel").is_some()
             || spell
                 .authored
@@ -1204,6 +1251,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         objects,
         spell,
         &intent,
+        None,
         parameters,
         saved.binding.caster,
         stage,

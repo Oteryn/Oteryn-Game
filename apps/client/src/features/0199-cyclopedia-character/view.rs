@@ -14,3 +14,5 @@ pub(in crate::play) use native::open_window;
 
 #[path = "view/blessings.rs"]
 pub(super) mod blessings;
+#[path = "view/sanctions.rs"]
+pub(super) mod sanctions;

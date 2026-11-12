@@ -148,14 +148,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let inside =
                 actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
                     == Some(true);
-            let streak = if inside {
-                self.states
-                    .resting_areas
-                    .streak(game_session_id, actor)
-                    .unwrap_or(0)
-            } else {
-                0
-            };
+            // Winter Update 2026: the area's tier no longer depends on the streak.
+            let streak = self
+                .states
+                .resting_areas
+                .tier(game_session_id, actor, inside);
             if let Some(state) =
                 self.states
                     .spell_states

@@ -123,6 +123,9 @@ pub struct PendingKillSettlement {
     >,
     pub bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
     pub(super) boss_slot_bonuses: Arc<OnceLock<BossSlotBonuses>>,
+    /// Capability 492: each reward recipient's Moonsilver pity bonus (permille of base),
+    /// read once before the personal roll so a settlement retry re-plans the same items.
+    pub(super) boss_pity: Arc<OnceLock<BossSlotBonuses>>,
     pub ground: DeathGroundContext,
     /// The killed actor whose committed corpse projection the minted corpse
     /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
@@ -246,6 +249,7 @@ impl PendingKillSettlement {
             encounter_experience: None,
             bosstiary_only,
             boss_slot_bonuses: Arc::new(OnceLock::new()),
+            boss_pity: Arc::new(OnceLock::new()),
             ground,
             target,
             activity_observed_at: observed_at,
@@ -2168,6 +2172,7 @@ pub fn record_creature_kill(
                             encounter_experience: None,
                             bosstiary_only: None,
                             boss_slot_bonuses: Arc::new(OnceLock::new()),
+                            boss_pity: Arc::new(OnceLock::new()),
                             ground,
                             target,
                             activity_observed_at: observed_at,
@@ -2584,6 +2589,7 @@ pub fn record_creature_kill(
         encounter_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: Arc::new(OnceLock::new()),
+        boss_pity: Arc::new(OnceLock::new()),
         ground,
         target,
         source_death_pending: false,

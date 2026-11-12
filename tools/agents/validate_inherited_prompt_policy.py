@@ -302,7 +302,7 @@ def _pull_request_active_task_paths(
         if not isinstance(batch, list) or not all(isinstance(item, dict) for item in batch):
             raise ValueError("invalid GitHub pull-files response")
         items.extend(batch)
-        if len(batch) < 100:
+        if len(batch) < 100 or len(items) >= changed_files:
             break
         page += 1
         if page > 30:
