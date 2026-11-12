@@ -313,7 +313,11 @@ pub(super) fn project(
     if visible && *revision != Some(owner.login.revision) {
         for (entity, field, mut text) in &mut fields {
             if let Some(value) = owner.login.form.settings.values().get(field.0) {
-                *text = EditableText::new(value);
+                // Replacing EditableText would discard the font styles already synced by Bevy.
+                text.pending_edits.clear();
+                text.pending_paste = None;
+                text.editor_mut().set_text(value);
+                text.queue_edit(bevy::text::TextEdit::TextEnd(false));
                 text.max_characters = Some(4096);
             }
             if field.0 == 0 {
