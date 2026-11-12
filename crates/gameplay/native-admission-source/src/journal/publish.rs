@@ -385,6 +385,16 @@ mod publish_tests {
         }
         assert!(canonical::<T>(bytes));
         let text = std::str::from_utf8(bytes)?;
+        let first = text.find(',').ok_or("first member")?;
+        let second = first + 1 + text[first + 1..].find(',').ok_or("second member")?;
+        let reordered = format!(
+            "{{{},{},{}",
+            &text[first + 1..second],
+            &text[1..first],
+            &text[second + 1..]
+        );
+        assert!(!canonical::<T>(reordered.as_bytes()));
+
         assert!(!canonical::<T>(
             text.replacen("{", "{\"extra\":0,", 1).as_bytes()
         ));
@@ -419,4 +429,12 @@ mod publish_tests {
         assert!(PublishGameJournalRecordV1::decode(&[b' '; 65537]).is_err());
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn journal_items_negative_golden_vectors() {
+    assert!(serde_json::from_slice::<BankEntry>(br#"{"event_id":"019a0000-0000-7000-8000-00000000000c","offer_id":"019a0000-0000-7000-8000-00000000000d","side":"SELL","state":"FILLED","end_state":null,"definition_family":"ITEM","definition_production_key":"oteryn:content.item.gold_coin","definition_revision_ref":"rev-1","amount":10,"remaining":0,"piece_price":"2","fee_gold":"0","held_credit_gold":"0"}"#).is_err());
+    assert!(ReadGameJournalCursorV1::decode(br#"{"contract_version":1,"operation":"ReadGameJournalCursorV1","source_authority":"OTERYN_GAME_JOURNAL","account_id":"019a0000-0000-7000-8000-000000000001","world_id":"019a0000-0000-7000-8000-000000000002","character_id":"019a0000-0000-7000-8000-000000000003","character_revision":"1","from_projection_revision":"1","to_projection_revision":"1","projection_epoch":"1","family":"BANK","recovery_generation":"1"}"#).is_err());
+    assert!(serde_json::from_slice::<BankEntry>(br#"{"operation_occurrence_id":"019a0000-0000-7000-8000-000000000008","event_id":"019a0000-0000-7000-8000-000000000009","entry_id":"019a0000-0000-7000-8000-00000000000a","previous_entry_id":null,"kind":"DEPOSIT","direction":"CREDIT","amount":100,"balance_before":"0","balance_after":"99"}"#).is_err());
 }

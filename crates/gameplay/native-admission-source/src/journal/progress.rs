@@ -140,9 +140,12 @@ fn valid_fields(v: &serde_json::Value) -> bool {
                 if k == "value" {
                     return s.parse::<i64>().is_ok_and(|n| n.to_string() == s);
                 }
+                if k == "kill_count" {
+                    return natural(s);
+                }
                 if matches!(
                     k.as_str(),
-                    "kill_count" | "progress_before" | "progress_after" | "experience_lost"
+                    "progress_before" | "progress_after" | "experience_lost"
                 ) {
                     return natural(s) && s.parse::<u64>().is_ok_and(|n| n <= i64::MAX as u64);
                 }
@@ -308,7 +311,12 @@ impl ProgressPayload {
                     && p.level_after <= p.level_before
                     && p.blessings_before.len() <= 32
                     && p.blessings_before.windows(2).all(|v| v[0] < v[1])
-                    && p.blessings_before.iter().all(|v| v.len() <= 128)
+                    && p.blessings_before.iter().all(|v| {
+                        v.len() <= 128
+                            && v.as_bytes().first().is_some_and(u8::is_ascii_alphanumeric)
+                            && v.bytes()
+                                .all(|b| b.is_ascii_alphanumeric() || b"._:/-".contains(&b))
+                    })
                     && p.blessings_after.windows(2).all(|v| v[0] < v[1])
                     && p.blessings_after
                         .iter()
@@ -358,53 +366,106 @@ impl ProgressPayload {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn mutations(bytes: &[u8]) -> Result<Vec<Vec<u8>>, Box<dyn std::error::Error>> {
+        let text = std::str::from_utf8(bytes)?;
+        let first = text.find(',').ok_or("first member")?;
+        let second = first + 1 + text[first + 1..].find(',').ok_or("second member")?;
+        Ok(vec![
+            text.replacen("{", "{\"extra\":0,", 1).into_bytes(),
+            format!("{{{}", &text[first + 1..]).into_bytes(),
+            format!(
+                "{{{},{},{}",
+                &text[first + 1..second],
+                &text[1..first],
+                &text[second + 1..]
+            )
+            .into_bytes(),
+            vec![b' '; 262145],
+        ])
+    }
     #[test]
     fn journal_progress_payload_goldens() -> Result<(), Box<dyn std::error::Error>> {
         let bytes=br#"{"race_key":"rat","race_definition_revision":"r1","kill_count":100,"final_kill_threshold":100,"charm_points_awarded":5}"#;
         assert_eq!(ProgressPayload::decode("bestiary", bytes)?.encode()?, bytes);
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("bestiary", &invalid).is_err());
+        }
         let bytes=br#"{"boss_key":"boss/example","definition_revision":"r1","kill_count":"2","available_at_unix_ms":"1790086400000","last_death_occurrence_id":"01934f10-7c04-7001-805b-3b1122334410"}"#;
         assert_eq!(
             ProgressPayload::decode("boss_cooldown", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("boss_cooldown", &invalid).is_err());
+        }
         let bytes=br#"{"quest_key":"quest/example","pinned_content_revision":"r1","definition_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","completed":false,"tracks":[{"track_key":"quest/example/progress","value":"2"}]}"#;
         assert_eq!(ProgressPayload::decode("quest", bytes)?.encode()?, bytes);
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("quest", &invalid).is_err());
+        }
         let bytes=br#"{"achievement_key":"oteryn:achievement/example","definition_revision":"r1","progress":2,"target":10,"granted_at_unix_ms":null}"#;
         assert_eq!(
             ProgressPayload::decode("achievement", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("achievement", &invalid).is_err());
+        }
         let bytes=br#"{"achievement_key":"oteryn:achievement/example","definition_revision":"r1","progress":null,"target":null,"granted_at_unix_ms":"1790000000000"}"#;
         assert_eq!(
             ProgressPayload::decode("achievement", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("achievement", &invalid).is_err());
+        }
         let bytes=br#"{"build_occurrence_id":"01934f10-7c04-7001-805b-3b1122334411","cause":"training","policy_revision":"r1","skills":[{"skill":"sword","level_before":10,"progress_before":"9","level_after":11,"progress_after":"0"}]}"#;
         assert_eq!(
             ProgressPayload::decode("skill_history", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("skill_history", &invalid).is_err());
+        }
         let bytes=br#"{"death_occurrence_id":"01934f10-7c04-7001-805b-3b1122334412","level_before":20,"level_after":19,"experience_lost":"1000","blessings_before":["blessing/example"],"blessings_after":[],"lost_items":[{"loss_index":0,"item_key":"item/example","quantity":1}],"recap_state":"UNAVAILABLE","window_ms":0,"actions":[]}"#;
         assert_eq!(
             ProgressPayload::decode("death_recap", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("death_recap", &invalid).is_err());
+        }
         let bytes=br#"{"death_occurrence_id":"01934f10-7c04-7001-805b-3b1122334412","role":"VICTIM","counterpart_character_id":null,"justification":"UNKNOWN","points_milli":null}"#;
         assert_eq!(ProgressPayload::decode("pvp", bytes)?.encode()?, bytes);
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("pvp", &invalid).is_err());
+        }
         let bytes=br#"{"skull":"RED","skull_until_unix_ms":"1790086400000","kill_block_until_unix_ms":null}"#;
         assert_eq!(ProgressPayload::decode("skull", bytes)?.encode()?, bytes);
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("skull", &invalid).is_err());
+        }
         let bytes=br#"{"stamina_minutes":2400,"content_revision":"9","build_occurrence_id":"01934f10-7c04-7001-805b-3b1122334411"}"#;
         assert_eq!(ProgressPayload::decode("stamina", bytes)?.encode()?, bytes);
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("stamina", &invalid).is_err());
+        }
         let bytes=br#"{"observed_state":"ACTIVE","effective_until_unix_us":"1790086400000000","authority_revision":"4"}"#;
         assert_eq!(
             ProgressPayload::decode("premium_end", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("premium_end", &invalid).is_err());
+        }
         let bytes=br#"{"login_event_id":"01934f10-7c04-7001-805b-3b1122334413","entered_at":"1790000000000","left_at":null,"end_reason":null}"#;
         assert_eq!(
             ProgressPayload::decode("game_login", bytes)?.encode()?,
             bytes
         );
+        for invalid in mutations(bytes)? {
+            assert!(ProgressPayload::decode("game_login", &invalid).is_err());
+        }
         let bytes=br#"{"stamina_minutes":2521,"content_revision":"9","build_occurrence_id":"01934f10-7c04-7001-805b-3b1122334411"}"#;
         assert!(ProgressPayload::decode("stamina", bytes).is_err());
         let bytes =
