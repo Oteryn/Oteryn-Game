@@ -97,7 +97,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     .map_err(|error| format!("M07 rope intent: {error:?}"))?;
     let result = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+        .world_context_use(&payload)
         .await?;
     if result.status != CommandStatus::Accepted
         || decode_use_result(&result.payload)

@@ -170,9 +170,7 @@ async fn sleep(
     payload.extend([0x10, 6]);
     let reply = client
         .session_mut()
-        .gated_command(
-            CAPABILITY_ITEM_USE_V1,
-            COMMAND_TYPE_BED_SLEEP_INTENT,
+        .gated_command(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_BED_SLEEP_INTENT,
             &payload,
         )
         .await?;

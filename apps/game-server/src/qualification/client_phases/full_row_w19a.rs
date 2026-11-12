@@ -129,11 +129,7 @@ async fn use_intent(
         .map_err(|error| format!("W19a USE encode: {error:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(
-            use_wire::CAPABILITY_ITEM_USE_V1,
-            use_wire::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     let (payload, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&reply.payload)
         .map_err(|error| format!("W19a refusal detail: {error:?}"))?;

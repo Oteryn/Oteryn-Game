@@ -330,7 +330,7 @@ async fn use_tool(
     let payload = encode_item_use_intent(&intent).map_err(|e| format!("tool-intent:{e:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+        .world_context_use(&payload)
         .await?;
     let disposition =
         decode_use_result(&reply.payload).map_err(|e| format!("tool-result:{e:?}"))?;

@@ -176,7 +176,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let intent = oteryn_protocol_oteryn::world_object::UseIntent { target: oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(missing), use_with: None, use_with_map_item: None, use_with_position: None };
     let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).map_err(|error| format!("variant encoder: {error:?}"))?;
     let before_missing = quantities(&client)?;
-    let reply = client.session_mut().gated_command(4, 2, &payload).await?;
+    let reply = client.session_mut().world_context_use(&payload).await?;
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload).map_err(|error| format!("variant reply decode status={:?}: {error:?}", reply.status))?;
     if disposition != UseDisposition::NothingToUse || quantities(&client)? != before_missing { return Err(format!("missing variant USE status={:?} reply={disposition:?}", reply.status).into()); }
     row.pass("missing-variant-refusal", format!("status={:?} reply={disposition:?} no-delta", reply.status));

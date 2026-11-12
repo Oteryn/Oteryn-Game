@@ -92,7 +92,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .map_err(|error| format!("use-with encode: {error:?}"))?;
     let refused = client
         .session_mut()
-        .gated_command(use_wire::CAPABILITY_ITEM_USE_V1, use_wire::COMMAND_TYPE_USE_INTENT, &payload)
+        .world_context_use(&payload)
         .await?;
     let (detail, _) = oteryn_protocol_oteryn::refusal_detail::split_refusal_detail(&refused.payload)
         .map_err(|error| format!("step=use-with refusal detail: {error:?}"))?;

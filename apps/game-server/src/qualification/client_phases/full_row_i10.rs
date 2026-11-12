@@ -91,11 +91,7 @@ async fn use_with_self(
     let payload = item_use::use_with_payload(handle, &Target::Item(handle))?;
     let reply = client
         .session_mut()
-        .gated_command(
-            world_object::CAPABILITY_ITEM_USE_V1,
-            world_object::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     let disposition = world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("step={step} observed=reply-decode-{error:?}"))?;

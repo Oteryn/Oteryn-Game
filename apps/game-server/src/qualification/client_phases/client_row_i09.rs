@@ -102,7 +102,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &intent(0)?)
+        .world_context_use(&intent(0)?)
         .await?;
     if reply.status != CommandStatus::Accepted
         || decode_use_result(&reply.payload)
@@ -158,7 +158,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
     let stale = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &intent(0)?)
+        .world_context_use(&intent(0)?)
         .await?;
     if decode_use_result(&stale.payload).map_err(|error| format!("I09 stale decode: {error:?}"))?
         != UseDisposition::StaleState

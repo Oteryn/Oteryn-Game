@@ -351,7 +351,7 @@ async fn use_tool(
     let payload = encode_item_use_intent(&intent).map_err(|e| format!("tool-intent:{e:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+        .world_context_use(&payload)
         .await?;
     let disposition =
         decode_use_result(&reply.payload).map_err(|e| format!("tool-result:{e:?}"))?;
@@ -422,11 +422,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let reply = client
         .session_mut()
-        .gated_command(
-            CAPABILITY_ITEM_USE_V1,
-            COMMAND_TYPE_USE_INTENT,
-            &encode_item_use_intent(&stale).map_err(|e| format!("stale-intent:{e:?}"))?,
-        )
+        .world_context_use(&encode_item_use_intent(&stale).map_err(|e| format!("stale-intent:{e:?}"))?)
         .await?;
     let refusal = decode_use_result(&reply.payload).map_err(|e| format!("stale-result:{e:?}"))?;
     if reply.status != CommandStatus::Accepted || refusal == UseDisposition::Committed {

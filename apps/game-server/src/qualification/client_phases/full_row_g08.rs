@@ -77,11 +77,7 @@ async fn use_by_definition(
     .map_err(|error| format!("step=encode observed={error:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(
-            world_object::CAPABILITY_ITEM_USE_V1,
-            world_object::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     let disposition = world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("step=use observed=reply-decode:{error:?}"))?;

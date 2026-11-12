@@ -115,11 +115,7 @@ async fn use_carried_on_door(
         .map_err(|error| format!("M06 USE-WITH encode: {error:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(
-            oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
-            oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("M06 USE-WITH reply {:?}: {error:?}", reply.status))?;

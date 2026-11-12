@@ -122,7 +122,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let reply = client
         .session_mut()
-        .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
+        .world_context_use(&payload)
         .await?;
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
@@ -184,11 +184,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let after_bake = client.inventory().cloned();
     let refusal = client
         .session_mut()
-        .gated_command(
-            CAPABILITY_ITEM_USE_V1,
-            COMMAND_TYPE_USE_INTENT,
-            &refusal_payload,
-        )
+        .world_context_use(&refusal_payload)
         .await?;
     let refusal_disposition = decode_use_result(&refusal.payload)
         .map_err(|error| format!("step-3_observed=reply-decode-{error:?}"))?;

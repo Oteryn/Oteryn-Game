@@ -95,11 +95,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let payload = encode_item_use_intent(&intent).map_err(|error| format!("{error:?}"))?;
     let result = client
         .session_mut()
-        .gated_command(
-            oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
-            oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&result.payload)
         .map_err(|error| format!("{error:?}"))?;

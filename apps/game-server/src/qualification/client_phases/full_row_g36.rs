@@ -125,11 +125,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .map_err(|error| format!("step=encode;observed={error:?}"))?;
     let response = client
         .session_mut()
-        .gated_command(
-            world_object::CAPABILITY_ITEM_USE_V1,
-            world_object::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     let disposition = world_object::decode_use_result(&response.payload)
         .map_err(|error| format!("step=use;observed=decode:{error:?}"))?;

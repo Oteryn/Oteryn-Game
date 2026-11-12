@@ -81,11 +81,7 @@ async fn use_by_definition(
     .map_err(|error| format!("step=use observed=encode-{error:?}"))?;
     let reply = client
         .session_mut()
-        .gated_command(
-            use_wire::CAPABILITY_ITEM_USE_V1,
-            use_wire::COMMAND_TYPE_USE_INTENT,
-            &payload,
-        )
+        .world_context_use(&payload)
         .await?;
     Ok((reply.status, describe(reply.status, &reply.payload)))
 }
