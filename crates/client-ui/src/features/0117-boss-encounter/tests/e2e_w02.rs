@@ -111,7 +111,13 @@ fn e2e_w02_replays_cooldowns_and_lever_reply() -> Result<(), Error> {
     let activity = value(&expected, "activity")?;
     match activity.split_once(':') {
         Some(("refused", reason)) => {
-            assert_eq!(panel.summary, format!("Boss request refused: {reason}"));
+            let summary = match reason {
+                "Level" => "A party member does not meet the level requirement.".into(),
+                "PartyCount" => "The party does not meet this encounter's size requirement.".into(),
+                "Position" => "A party member is not on a required entry tile.".into(),
+                _ => format!("Boss request refused: {reason}"),
+            };
+            assert_eq!(panel.summary, summary);
             assert_eq!(panel.feedback, Some("The server refused the boss request"));
         }
         Some(("accepted", "None")) => assert_eq!(panel.summary, "Boss return accepted"),
