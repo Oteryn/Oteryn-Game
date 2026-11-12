@@ -13,13 +13,9 @@ use std::time::Duration;
 fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("first-entry-busy-holder", || {
         run(async |admin| {
-            let h = Harness::create_with_admission_seed(
-                admin,
-                "first_entry_busy_holder",
-                false,
-                false,
-            )
-            .await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "first_entry_busy_holder", false, false)
+                    .await?;
             let request = prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
@@ -58,14 +54,75 @@ fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestRe
     })
 }
 
+#[test]
+fn trade_open_retains_foreground_demand_until_its_name_reads_complete_postgres() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("trade-open-busy-holder", || {
+        run(async |admin| {
+            let h =
+                Harness::create_with_admission_seed(admin, "trade_open_busy_holder", true, false)
+                    .await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let dependencies = Dependencies::new()?;
+            let owner = dependencies.owner(&h, &authority);
+            dependencies.initialize(&owner).await;
+            owner
+                .runtime
+                .lock()
+                .await
+                .initialize_first_entry_position(dependencies.actor)
+                .map_err(debug)?;
+            let held = h.root.try_issue_background_semantic_pass().map_err(debug)?;
+            {
+                let opening = crate::durability::DurabilityRoot::with_holder_owner(
+                    owner.trade_open(dependencies.admitted),
+                );
+                let mut opening = std::pin::pin!(opening);
+                let first = std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(opening.as_mut(), cx))
+                })
+                .await;
+                assert!(
+                    first.is_pending(),
+                    "trade open must wait for the busy holder"
+                );
+                held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                // Reproduce the scheduler retaking the holder before the waiting name
+                // reader is polled again. Its FIFO ticket alone does not stop background passes.
+                for _ in 0..16 {
+                    assert!(matches!(
+                        h.root.try_issue_background_semantic_pass(),
+                        Err(crate::durability::DurabilityError::RootUnavailable)
+                    ));
+                }
+                assert_eq!(opening.await, Some(()));
+            }
+            // A completed admission must release its preference for ordinary scheduled work.
+            h.root
+                .try_issue_background_semantic_pass()?
+                .run(|_, _| Box::pin(async { Ok(()) }))
+                .await?;
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
 /// Every step refreshes the session's PvP locks from durable state first; a step that met a
 /// background pass on the holder was rejected (the node-boot use-wire `step_blocked` stage).
 #[test]
 fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("pvp-refresh-busy-holder", || {
         run(async |admin| {
-            let h = Harness::create_with_admission_seed(admin, "pvp_refresh_busy_holder", true, false)
-                .await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "pvp_refresh_busy_holder", true, false)
+                    .await?;
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
