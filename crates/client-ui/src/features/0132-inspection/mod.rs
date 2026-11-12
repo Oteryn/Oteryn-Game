@@ -84,5 +84,8 @@ mod catalogue_tests {
 }
 
 #[cfg(test)]
+#[path = "tests/e2e_i16.rs"]
+mod e2e_i16;
+#[cfg(test)]
 #[path = "tests/catalogue.rs"]
 mod page_tests;

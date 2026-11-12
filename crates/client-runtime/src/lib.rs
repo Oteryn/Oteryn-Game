@@ -191,6 +191,9 @@ pub mod analyser;
 pub mod attack;
 /// Session-owned combat command vocabulary and routing.
 pub mod combat;
+#[cfg(test)]
+#[path = "features/0287-actor-spell-catalog/tests/e2e_c14.rs"]
+mod e2e_c14;
 /// Quest log state and selected-capability command construction.
 #[path = "features/0016-quest-log/mod.rs"]
 pub mod quest_log;
@@ -254,6 +257,9 @@ pub mod prey;
 #[path = "features/0148-wheel-allocation/protocol.rs"]
 pub mod wheel_allocation;
 
+#[cfg(test)]
+#[path = "features/0064-target-move/tests/e2e_m01.rs"]
+mod e2e_m01;
 /// Server target-cell walking through the admitted session.
 #[path = "features/0064-target-move/protocol.rs"]
 pub mod target_move;

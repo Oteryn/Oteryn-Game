@@ -361,3 +361,7 @@ mod transfer_tests;
 #[cfg(test)]
 #[path = "tests/play_persistence.rs"]
 mod play_persistence;
+
+#[cfg(test)]
+#[path = "tests/e2e_n07d.rs"]
+mod e2e_n07d;

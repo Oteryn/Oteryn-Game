@@ -882,6 +882,10 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
+      echo "--- session close events behind failed e2e rows"
+      grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
+    fi
   else
     STATUS[$name]="FAIL(exit $rc)"
     # Later probes start new server incarnations and truncate node_log. Preserve

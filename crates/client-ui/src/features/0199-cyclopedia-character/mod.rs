@@ -46,6 +46,26 @@ mod tests;
 mod combat_modifier_tests;
 
 #[cfg(test)]
+#[path = "tests/e2e_c03.rs"]
+mod e2e_c03;
+
+#[cfg(test)]
+#[path = "tests/e2e_c20a.rs"]
+mod e2e_c20a;
+
+#[cfg(test)]
+#[path = "tests/e2e_c15.rs"]
+mod e2e_c15;
+
+#[cfg(test)]
+#[path = "tests/e2e_s16b.rs"]
+mod e2e_s16b;
+
+#[cfg(test)]
+#[path = "tests/general_stats_selection.rs"]
+mod general_stats_selection;
+
+#[cfg(test)]
 #[path = "tests/stamina.rs"]
 mod stamina_tests;
 

@@ -37,3 +37,7 @@ pub fn category_for_selection(index: usize) -> Option<u32> {
 pub fn category_selection(category: u32) -> Option<usize> {
     CATEGORY_IDS.iter().position(|id| *id == category)
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_s11.rs"]
+mod e2e_s11;

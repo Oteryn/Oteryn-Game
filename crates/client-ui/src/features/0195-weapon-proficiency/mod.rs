@@ -13,3 +13,7 @@ pub use view::{HudView, hud_view, panel_text};
 #[cfg(test)]
 #[path = "view/selection_tests.rs"]
 mod selection_tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_p08.rs"]
+mod e2e_p08;

@@ -10,6 +10,10 @@ pub use state::BattleInstinctStatusPanel;
 pub use view::panel_text;
 
 #[cfg(test)]
+#[path = "tests/e2e_c11.rs"]
+mod e2e_c11;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
