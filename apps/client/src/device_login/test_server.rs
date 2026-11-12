@@ -14,6 +14,17 @@ pub(super) struct Server {
 }
 impl Server {
     pub async fn start(replies: Vec<(u16, Vec<u8>)>) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_inner(replies, false).await
+    }
+    pub async fn start_with_delayed_ticket(
+        replies: Vec<(u16, Vec<u8>)>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_inner(replies, true).await
+    }
+    async fn start_inner(
+        replies: Vec<(u16, Vec<u8>)>,
+        delayed_ticket: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let certificate = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
         let root = certificate.cert.der().clone();
         let tls = rustls::ServerConfig::builder_with_provider(Arc::new(
@@ -37,7 +48,7 @@ impl Server {
         let log = requests.clone();
         let task = tokio::spawn(async move {
             let acceptor = TlsAcceptor::from(Arc::new(tls));
-            for (status, body) in replies {
+            for (status, mut body) in replies {
                 let (socket, _) = listener.accept().await.map_err(|_| "accept")?;
                 let mut stream = acceptor.accept(socket).await.map_err(|_| "TLS")?;
                 let mut request = Vec::new();
@@ -66,6 +77,15 @@ impl Server {
                 log.lock()
                     .map_err(|_| "log")?
                     .push(String::from_utf8_lossy(&request).into_owned());
+                if delayed_ticket
+                    && request.starts_with(b"POST /api/v1/game-auth/device-sessions/tickets ")
+                {
+                    let issued_at = next_utc_second().await?;
+                    let mut reply: serde_json::Value =
+                        serde_json::from_slice(&body).map_err(|_| "ticket fixture")?;
+                    reply["expires_at"] = (issued_at + 60).into();
+                    body = serde_json::to_vec(&reply).map_err(|_| "ticket fixture")?;
+                }
                 let header = format!(
                     "HTTP/1.1 {status} fixture\r\nContent-Type: application/json\r\nContent-Length: {}\r\nCache-Control: no-store, private\r\nPragma: no-cache\r\nConnection: close\r\n\r\n",
                     body.len()
@@ -89,6 +109,25 @@ impl Server {
         self.task.await?.map_err(|e| e.into())
     }
 }
+
+async fn next_utc_second() -> Result<u64, String> {
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    let boundary = Duration::from_secs(now().map_err(|_| "clock")? + 1);
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let utc = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| "clock")?;
+            if utc >= boundary {
+                return Ok(utc.as_secs());
+            }
+            tokio::time::sleep(boundary - utc).await;
+        }
+    })
+    .await
+    .map_err(|_| "clock boundary timeout")?
+}
+
 pub(super) fn fixture(name: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     Ok(std::fs::read(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

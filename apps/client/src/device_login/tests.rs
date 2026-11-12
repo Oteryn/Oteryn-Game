@@ -50,6 +50,14 @@ fn options() -> MiscellaneousPreferences {
 fn credential(last: char) -> String {
     format!("otd1.{}{last}", "A".repeat(42))
 }
+fn on_large_stack(test: fn() -> TestResult) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || test().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "device login fixture thread failed")?
+        .map_err(Into::into)
+}
 #[test]
 fn remembered_login_enrolls_restarts_rotates_before_results_and_revokes_over_https() -> TestResult {
     tokio::runtime::Runtime::new()?.block_on(async {
@@ -88,6 +96,77 @@ fn remembered_login_enrolls_restarts_rotates_before_results_and_revokes_over_htt
   server.finish().await?;std::fs::remove_dir_all(path)?;Ok(())
  })
 }
+#[test]
+fn ticket_issued_after_request_clock_boundary_retains_the_rotated_session() -> TestResult {
+    on_large_stack(|| {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            let successor = credential('A');
+            let server =
+                Server::start_with_delayed_ticket(vec![(200, changed_response(&successor, true)?)])
+                    .await?;
+            let path = folder("ticket-boundary")?;
+            let vault = Arc::new(MemoryVault::default());
+            vault::Vault::write(vault.as_ref(), &enrollment_response()?)
+                .map_err(std::io::Error::other)?;
+            let login = manager(vault.clone(), path.clone());
+            {
+                let mut attempt = login
+                    .begin(&server.client, options(), CancellationToken::new())
+                    .await?
+                    .ok_or("attempt")?;
+                let ticket = attempt
+                    .ticket(&server.client, CancellationToken::new())
+                    .await?;
+                assert!(ticket.usable_until() > std::time::Instant::now());
+                assert!(
+                    ticket.usable_until()
+                        <= std::time::Instant::now() + std::time::Duration::from_secs(60)
+                );
+                assert!(attempt.has_session());
+                let saved = DeviceSession::from_vault(
+                    &vault::Vault::read(vault.as_ref())
+                        .map_err(std::io::Error::other)?
+                        .ok_or("ticket rotation saved")?,
+                    now()?,
+                )?;
+                assert_eq!(saved.device_credential.expose(), successor);
+            }
+            assert_eq!(server.requests.lock().map_err(|_| "requests")?.len(), 1);
+            server.finish().await?;
+            std::fs::remove_dir_all(path)?;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn device_tickets_reject_expired_or_oversized_lifetimes() -> TestResult {
+    on_large_stack(|| {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            for (lifetime, remaining) in [(0, 30), (61, 30), (60, 0), (60, 120)] {
+                let session = DeviceSession::from_vault(&enrollment_response()?, now()?)?;
+                let mut reply: serde_json::Value =
+                    serde_json::from_slice(&changed_response(&credential('A'), true)?)?;
+                reply["expires_in"] = lifetime.into();
+                reply["expires_at"] = (now()? + remaining).into();
+                let server = Server::start(vec![(200, serde_json::to_vec(&reply)?)]).await?;
+                assert_eq!(
+                    server
+                        .client
+                        .device_ticket(&session, CancellationToken::new())
+                        .await
+                        .err(),
+                    Some(NativeLoginError::Platform(
+                        oteryn_platform_client::PlatformClientError::InvalidPayload
+                    ))
+                );
+                server.finish().await?;
+            }
+            Ok(())
+        })
+    })
+}
+
 #[test]
 fn failed_rotation_forgets_predecessor_without_retry_and_session_options_are_not_exported()
 -> TestResult {

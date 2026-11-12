@@ -1,6 +1,8 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
 #[path = "depot_dispatch/depot_list.rs"]
 mod depot_list;
+#[path = "depot_dispatch/mail_capacity.rs"]
+mod mail_capacity;
 #[path = "depot_dispatch/mail_cases.rs"]
 mod mail_cases;
 #[path = "depot_dispatch/retrieve_cases.rs"]
@@ -94,6 +96,19 @@ fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
         })?
         .join()
         .map_err(|_| "mail e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn depot_search_inbox_parcel_checks_whole_tree_weight_and_exact_capacity() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::MailCapacity)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Inbox parcel capacity e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -195,6 +210,7 @@ enum Mode {
     Plain,
     List,
     Mail,
+    MailCapacity,
     Retrieve,
 }
 
@@ -225,7 +241,7 @@ fn scenario_with_premium(
     stash_premium: Option<EntitlementState>,
     mode: Mode,
 ) -> TestResult {
-    let mail = matches!(mode, Mode::Mail | Mode::List);
+    let mail = matches!(mode, Mode::Mail | Mode::MailCapacity | Mode::List);
     let retrieve = mode == Mode::Retrieve;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -748,7 +764,7 @@ fn scenario_with_premium(
                 letter,
                 parcel,
                 label,
-                mode == Mode::List,
+                mode,
             )
             .await?;
             drop(owner);

@@ -400,7 +400,7 @@ pub(super) async fn observe_character_inventory(
     game_session_id: GameSessionId,
 ) -> Option<InventoryItems> {
     use super::connection::AdmissionRefusal::{Rejected, Unavailable};
-    use crate::durability::DurabilityError;
+    use crate::durability::{DurabilityError, item_use::ItemUseError};
     // These reads share the root's single holder with the node cadence. A busy
     // holder must not turn a valid join/resume into a missing inventory snapshot.
     let backpack = super::AdmissionRetryBudget::for_command(admission.root)
@@ -413,20 +413,49 @@ pub(super) async fn observe_character_inventory(
                     _ => Rejected,
                 })?
                 .0;
-            if current.session_state() != GameSessionState::Active {
+            if current.session_state() != GameSessionState::Active
+                || current.current_game_session_id() != game_session_id
+            {
                 return Err(Rejected);
             }
-            let character_id =
-                crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                    .map_err(|_| Rejected)?;
-            admission
-                .root
-                .read_character_backpack(admission.character, character_id)
+            let fence = super::item_fence_of(current).ok_or(Rejected)?;
+            let in_house = admission
+                .runtime
+                .lock()
                 .await
-                .map_err(|error| match error {
-                    ItemTransferError::Unavailable(DurabilityError::RootUnavailable) => Unavailable,
-                    _ => Rejected,
-                })
+                .house_player_for_session(game_session_id)
+                .map_err(|_| Rejected)?
+                .is_some();
+            if in_house {
+                // Character-carried custody uses the existing current House
+                // custody fence without adding a service ACL requirement.
+                admission
+                    .root
+                    .read_house_carried_inventory(
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        *admission.channel_id.as_bytes(),
+                    )
+                    .await
+                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
+                    .map_err(|error| match error {
+                        DurabilityError::RootUnavailable => Unavailable,
+                        _ => Rejected,
+                    })
+            } else {
+                // Ordinary Channel and activity snapshots cross the current actor
+                // fence before publishing inventory, including closed death bags.
+                admission
+                    .root
+                    .read_item_use_inventory(admission.character, admission.holder, fence)
+                    .await
+                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
+                    .map_err(|error| match error {
+                        ItemUseError::Unavailable(DurabilityError::RootUnavailable) => Unavailable,
+                        _ => Rejected,
+                    })
+            }
         })
         .await
         .ok()?;

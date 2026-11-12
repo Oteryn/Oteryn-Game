@@ -1,4 +1,4 @@
-//! A declaration correction must preserve immutable XP receipts and allow the next award.
+//! A declaration correction must preserve immutable XP receipts, recovery and the next award.
 use super::TestResult;
 use super::fixture::{Harness, debug, fence, id, run};
 use crate::domain::progression::{
@@ -7,7 +7,8 @@ use crate::domain::progression::{
 use crate::durability::DurabilityError;
 use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_progression::{
-    ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    CharacterProgressionError, ExperienceAwardRequest, ExperienceCommitOutcome,
+    ExperienceRewardOccurrence,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
@@ -100,6 +101,13 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
             sqlx::raw_sql(MIGRATION).execute(&mut *tx).await?;
             sqlx::raw_sql(MIGRATION).execute(&mut *tx).await?;
             tx.commit().await?;
+            // Recover while the latest immutable receipt still has the old declaration.
+            drop(authority);
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
             let current: serde_json::Value = serde_json::from_str(include_str!(
                 "../../../../../../rulesets/character/experience/declared-differences.json"
             ))?;
@@ -139,14 +147,37 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
                 return Err("first award was replayed".into());
             };
             assert_eq!(replay, ExperienceCommitOutcome::AlreadyCommitted(committed));
-            assert!(
-                h.root
-                    .commit_character_experience(&authority, &h.node, fence(2)?, award(92, OLD)?)
-                    .await
-                    .is_err()
-            );
-            h.root
+            for declaration in [OLD, "unregistered-declaration"] {
+                assert!(matches!(
+                    h.root
+                        .commit_character_experience(
+                            &authority,
+                            &h.node,
+                            fence(2)?,
+                            award(92, declaration)?,
+                        )
+                        .await,
+                    Err(CharacterProgressionError::ProgressionContextMismatch)
+                ));
+            }
+            let next = h
+                .root
                 .commit_character_experience(&authority, &h.node, fence(2)?, award(92, expected)?)
+                .await
+                .map_err(debug)?;
+            assert!(matches!(next, ExperienceCommitOutcome::Committed(_)));
+            let declarations: Vec<String> = sqlx::query_scalar(
+                "SELECT declaration_revision FROM game_character_xp_receipts ORDER BY committed_character_revision",
+            )
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(declarations, vec![OLD.to_owned(), expected.to_owned()]);
+            // The current receipt now matches exactly; recovery must still accept the
+            // authorized historical declaration earlier in the same immutable chain.
+            drop(authority);
+            let authority = h
+                .root
+                .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
             // After a current award, the legacy declaration remains in the historical chain.
@@ -191,7 +222,7 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
                 );
             }
             eprintln!(
-                "PKG3 declaration migration: stored revision, unchanged receipt, replay, stale refusal and next award executed"
+                "PKG3 declaration migration: stored revision, unchanged receipt, replay, strict write refusals, next award and both recovery points executed"
             );
             drop(authority);
             drop(seal);

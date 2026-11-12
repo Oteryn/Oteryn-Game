@@ -113,7 +113,7 @@ fn check(
     mint::check_definition(before.definition.as_ref())?;
     let slot = u8::try_from(value.source_slot).map_err(|_| AuditError::InvalidInput)?;
     let (quantity, lifecycle) =
-        plan(burn, slot, before.quantity, 0).map_err(|_| AuditError::InvalidInput)?;
+        plan(burn, slot, before.quantity, false).map_err(|_| AuditError::InvalidInput)?;
     if before.item_instance_id != value.item_instance
         || before.lifecycle != 1
         || before.key_number > 65535

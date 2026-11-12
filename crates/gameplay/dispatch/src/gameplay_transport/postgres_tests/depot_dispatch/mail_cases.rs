@@ -34,8 +34,9 @@ pub(super) async fn exercise(
     letter: [u8; 16],
     parcel: [u8; 16],
     label: [u8; 16],
-    list: bool,
+    mode: Mode,
 ) -> TestResult {
+    let list = mode == Mode::List;
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 115, 153])
             .ok_or("mail capability")?;
@@ -202,7 +203,19 @@ pub(super) async fn exercise(
     if list {
         super::depot_list::exercise(owner, admitted).await?;
     }
-    retrieve_from_inbox(owner, actor, admitted, pool, [letter,parcel,label],charge_item).await?;
+    if mode == Mode::MailCapacity {
+        super::mail_capacity::exercise(
+            owner,
+            admitted,
+            pool,
+            parcel,
+            label,
+            charge_item.ok_or("capacity fixture keg")?,
+        )
+        .await?;
+    } else {
+        retrieve_from_inbox(owner, actor, admitted, pool, [letter,parcel,label],charge_item).await?;
+    }
     if let Some(item)=charge_item {
         assert_eq!(Some(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(pool).await?),frozen);
         assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(pool).await?,0);
