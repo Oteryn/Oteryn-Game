@@ -128,9 +128,9 @@ GPE2E-3 adds two integration targets immediately after `web_identity`:
   ticket unused and `native_admissions` and Game admission receipts empty.
 - `native_device_rotation_replay` (120 s) uses the direct TLS device listener,
   the existing harness CA/server identity, and Game's `NativeLoginClient`.
-  Enrollment refusal is checked with a second real OAuth bearer because the
-  shipping transport deliberately hides HTTP refusal bodies. Only exact HTTP
-  400 / `{"error":"invalid_request"}`, with no persisted family, identifies the
+  The shipping transport preserves each actual request's exact HTTP status and
+  closed-set contract error value. Only exact HTTP 400 /
+  `{"error":"invalid_request"}`, with unchanged family/credential state, identifies the
   pinned handler's rejection of the contract's original two-member enrollment.
   Other failures are assertions, not protocol blockers. A later successful
   enrollment proceeds into character/ticket rotation, real LCFA mTLS publication
@@ -146,17 +146,24 @@ The native TLS port defaults to 18100 (`GAME_PLATFORM_NATIVE_PORT`). The private
 launcher supplies `APP_ENV=testing`, the explicit remembered-device flag and
 projection authority; the existing real seed supplies the native OAuth client
 allowlist. The disabled-OAuth and offline cases launch additional instances of
-that same real binary with isolated listeners and stop/reap them on every exit.
+that same real binary with isolated public, native TLS and admission listeners,
+require HTTP 200 readiness from all three, and stop/reap them on every exit.
+OAuth exchanges reuse authenticated browser sessions (one password login per
+account in the device journey); an unused disabled-OAuth token is reused for
+session enrollment. No limiter window is slept out or limit increased.
 
 At ed9b3372, Platform requires four-member enrollment (`devices_http.rs:224`) and
 rotation proof (`:199`), contrary to the ACCEPTED Game contract lines 15–16,
 65–66 and its HTTP request table. An observed enrollment gap emits both pending
 coordinates; it does not claim to have reached rotation. If enrollment becomes
 available while proofless rotation remains refused, only the rotation coordinate
-is recorded. Neither blocked path prints the device success evidence.
+is recorded. Both blocked paths compare all persisted family/credential fields
+before/after the shipping request and run the same zero-admission observers.
+Neither blocked path prints the device success evidence.
 
-The lane preserves first-recorded terminal outcomes: a live Platform blocker is
-not overwritten by the final Game assignment blocker. Both existing downstream
+Result precedence is FAIL > BLOCKED > PASS: a later assertion, timeout or node
+exit overwrites a recorded blocker with one FAIL line. The final Game assignment
+blocker does not overwrite an earlier Platform blocker. Both existing downstream
 blocker lines are still emitted, custody before assignment. All successful live
 assertions are required before these success lines can appear:
 

@@ -244,12 +244,41 @@ impl GatewayErrorCode {
     }
 }
 
+/// Exact, bounded device-route refusal. Only contract error values are retained;
+/// arbitrary server response text and credentials can never enter diagnostics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeviceRefusal {
+    pub status: u16,
+    pub error: &'static str,
+}
+impl DeviceRefusal {
+    fn decode(status: u16, bytes: &[u8]) -> Result<Self, PlatformClientError> {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Body<'a> {
+            #[serde(borrow)]
+            error: &'a str,
+        }
+        let body: Body<'_> =
+            serde_json::from_slice(bytes).map_err(|_| PlatformClientError::InvalidPayload)?;
+        let error = match body.error {
+            "invalid_request" => "invalid_request",
+            "device_authorization_unavailable" => "device_authorization_unavailable",
+            "too_many_requests" => "too_many_requests",
+            _ => return Err(PlatformClientError::InvalidPayload),
+        };
+        Ok(Self { status, error })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NativeLoginError {
     /// A transport, configuration or payload failure; fails closed.
     Platform(PlatformClientError),
     /// The OAuth token exchange was refused.
     TokenRefused,
+    /// Device HTTP refusal with the exact contract status and error value.
+    DeviceRefused(DeviceRefusal),
     /// Platform refused to issue a native ticket for the bearer.
     TicketRefused(PublicClass),
     /// The Gateway answered one of its N4-P §11 codes and no retry applies or remains.
@@ -265,7 +294,7 @@ impl NativeLoginError {
     pub fn public_class(self) -> PublicClass {
         match self {
             Self::Platform(_) => PublicClass::TemporarilyUnavailable,
-            Self::TokenRefused => PublicClass::RetryLogin,
+            Self::TokenRefused | Self::DeviceRefused(_) => PublicClass::RetryLogin,
             Self::TicketRefused(class) => class,
             Self::Gateway(code) => code.public_class(),
             Self::TicketSpent => PublicClass::RetryLogin,
@@ -278,6 +307,11 @@ impl Display for NativeLoginError {
         match self {
             Self::Platform(error) => Display::fmt(error, formatter),
             Self::TokenRefused => formatter.write_str("OAuth token exchange was refused"),
+            Self::DeviceRefused(refusal) => write!(
+                formatter,
+                "device request refused ({} {})",
+                refusal.status, refusal.error
+            ),
             Self::TicketRefused(class) => write!(formatter, "native ticket refused ({class:?})"),
             Self::Gateway(code) => write!(formatter, "Gateway login refused: {}", code.wire_code()),
             Self::TicketSpent => {

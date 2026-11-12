@@ -7,7 +7,7 @@ use oteryn_client::{device_login::DeviceLogin, play::MiscellaneousPreferences};
 use oteryn_foundation::CancellationToken;
 use oteryn_platform_client::{
     device_sessions::{DeviceSession, now},
-    native_login::NativeLoginError,
+    native_login::{DeviceRefusal, NativeLoginError},
 };
 use serde_json::json;
 use support::*;
@@ -38,37 +38,14 @@ async fn journey(t: Topology) -> TestResult {
     let client = native(&t, origin, &t.input.client)?;
     let http = http(&t)?;
     let token = t.oauth(0).await?;
+    let before_enrollment = device_state(&t)?;
     let enrolled = client
         .enroll_device(&token, true, None, CancellationToken::new())
         .await;
     let first = match enrolled {
         Ok(session) => session,
-        Err(NativeLoginError::TokenRefused) => {
-            // This is a second real OAuth journey, not a manufactured token or
-            // injected success response. Only exact live HTTP refusal is BLOCKED.
-            let bearer = t.bearer(0).await?;
-            let (status, body) = post(
-                &http,
-                origin,
-                "",
-                &format!("Bearer {bearer}"),
-                json!({"protocol_version":1,"remember_device":true}),
-            )
-            .await?;
-            check(
-                enrollment_gap(status, &body),
-                "unexpected_enrollment_refusal",
-            )?;
-            check(
-                sql(
-                    &t.database,
-                    "no_enrolled_families",
-                    "SELECT count(*) FROM device_sessions;",
-                )? == "0",
-                "refused_enrollment_created_family",
-            )?;
-            t.no_admissions()?;
-            gaps(true)?;
+        Err(NativeLoginError::DeviceRefused(refusal)) => {
+            blocked(&t, true, refusal, &before_enrollment)?;
             return Ok(());
         }
         Err(_) => return Err("enrollment_transport_or_payload_failed".into()),
@@ -77,33 +54,14 @@ async fn journey(t: Topology) -> TestResult {
     // An empty snapshot for a fresh account is published through the real LCFA
     // mTLS handler. No projection, ticket or family rows are inserted by tests.
     empty_projection(&t, &t.input.accounts[0].account_id).await?;
+    let before_rotation = device_state(&t)?;
     let rotated = client
         .device_characters(&first, CancellationToken::new())
         .await;
     let (second, characters) = match rotated {
         Ok(value) => value,
-        Err(NativeLoginError::TokenRefused) => {
-            let (status, body) = post(
-                &http,
-                origin,
-                "/native-characters",
-                &format!("OterynDevice {}", first.device_credential.expose()),
-                json!({"protocol_version":1,"client_id":t.input.client}),
-            )
-            .await?;
-            check(rotation_gap(status, &body), "unexpected_rotation_refusal")?;
-            check(
-                sql(
-                    &t.database,
-                    "rotation_not_consumed",
-                    &format!(
-                        "SELECT count(*) FROM device_session_credentials WHERE family_id='{}' AND consumed_at IS NULL;",
-                        first.family_id
-                    ),
-                )? == "1",
-                "refused_rotation_consumed_credential",
-            )?;
-            gaps(false)?;
+        Err(NativeLoginError::DeviceRefused(refusal)) => {
+            blocked(&t, false, refusal, &before_rotation)?;
             return Ok(());
         }
         Err(_) => return Err("rotation_transport_or_payload_failed".into()),
@@ -148,7 +106,10 @@ async fn journey(t: Topology) -> TestResult {
             wrong
                 .device_characters(&third, CancellationToken::new())
                 .await,
-            Err(NativeLoginError::TokenRefused)
+            Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                status: 401,
+                error: "device_authorization_unavailable"
+            }))
         ),
         "wrong_client_accepted",
     )?;
@@ -172,7 +133,10 @@ async fn journey(t: Topology) -> TestResult {
             client
                 .device_characters(&first, CancellationToken::new())
                 .await,
-            Err(NativeLoginError::TokenRefused)
+            Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                status: 401,
+                error: "device_authorization_unavailable"
+            }))
         ),
         "old_credential_replayed",
     )?;
@@ -182,7 +146,10 @@ async fn journey(t: Topology) -> TestResult {
             client
                 .device_ticket(&fourth, CancellationToken::new())
                 .await,
-            Err(NativeLoginError::TokenRefused)
+            Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                status: 401,
+                error: "device_authorization_unavailable"
+            }))
         ),
         "replay_left_successor_usable",
     )?;
@@ -220,7 +187,10 @@ async fn journey(t: Topology) -> TestResult {
             client
                 .device_characters(&b_next, CancellationToken::new())
                 .await,
-            Err(NativeLoginError::TokenRefused)
+            Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                status: 401,
+                error: "device_authorization_unavailable"
+            }))
         ),
         "revoked_credential_accepted",
     )?;
@@ -236,7 +206,10 @@ async fn journey(t: Topology) -> TestResult {
             client
                 .device_characters(&generation, CancellationToken::new())
                 .await,
-            Err(NativeLoginError::TokenRefused)
+            Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                status: 401,
+                error: "device_authorization_unavailable"
+            }))
         ),
         "generation_change_accepted",
     )?;
@@ -251,22 +224,12 @@ async fn journey(t: Topology) -> TestResult {
             disabled_client
                 .enroll_device(&token, true, None, CancellationToken::new())
                 .await,
-            Err(NativeLoginError::TokenRefused)
+            Err(NativeLoginError::DeviceRefused(DeviceRefusal {
+                status: 503,
+                error: "device_authorization_unavailable"
+            }))
         ),
         "disabled_oauth_accepted",
-    )?;
-    let bearer = t.bearer(0).await?;
-    let (status, body) = post(
-        &http,
-        &disabled.origin,
-        "",
-        &format!("Bearer {bearer}"),
-        json!({"protocol_version":1,"remember_device":true}),
-    )
-    .await?;
-    check(
-        status == 503 && body == json!({"error":"device_authorization_unavailable"}),
-        "disabled_oauth_wrong_refusal",
     )?;
     drop(disabled);
 
@@ -286,7 +249,6 @@ async fn journey(t: Topology) -> TestResult {
         .await
         .map_err(|_| "lifecycle_begin_failed")?
         .ok_or("lifecycle_disabled")?;
-    let token = t.oauth(0).await?;
     attempt
         .enroll(&offline_client, &token, CancellationToken::new())
         .await
@@ -335,4 +297,48 @@ fn blocker_requires_exact_http_status_and_error() -> TestResult {
         !rotation_gap(503, &json!({"error":"device_authorization_unavailable"})),
         "disabled_service_marked_protocol_gap",
     )
+}
+
+#[test]
+fn protocol_blocker_rejects_every_state_change() -> TestResult {
+    for (enrollment, refusal) in [
+        (
+            true,
+            DeviceRefusal {
+                status: 400,
+                error: "invalid_request",
+            },
+        ),
+        (
+            false,
+            DeviceRefusal {
+                status: 401,
+                error: "device_authorization_unavailable",
+            },
+        ),
+    ] {
+        check(
+            contract_gap(enrollment, refusal, "unchanged", "unchanged"),
+            "valid_signature_refused",
+        )?;
+        // Includes the review's case: revoked family, unconsumed credential.
+        check(
+            !contract_gap(enrollment, refusal, "unchanged", "changed"),
+            "mutated_family_marked_blocked",
+        )?;
+        for status in [400, 401, 429, 503] {
+            if status != refusal.status {
+                check(
+                    !contract_gap(
+                        enrollment,
+                        DeviceRefusal { status, ..refusal },
+                        "unchanged",
+                        "unchanged",
+                    ),
+                    "wrong_status_marked_blocked",
+                )?;
+            }
+        }
+    }
+    Ok(())
 }

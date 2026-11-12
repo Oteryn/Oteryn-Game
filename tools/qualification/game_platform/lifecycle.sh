@@ -5,7 +5,6 @@ readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_fail() {
-  if [[ -f "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then exit 1; fi
   if [[ -n "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then
     printf 'GAME_PLATFORM_RESULT=FAIL flow=%s reason=%s\n' "$1" "$2" > "$GAME_PLATFORM_RESULT_FILE"
   else
@@ -152,8 +151,8 @@ game_platform_identity() {
   # Assignment requires control-owned scope grants. The default node_boot stage
   # inserts them directly; this lane must not invent those authority records.
   printf 'GAME_PLATFORM_EVIDENCE blocker=tools/qualification/node_boot/run.sh:999 pending=control_scope_grant_issuer\n'
-  # Preserve the first terminal outcome, including a live Platform device gap.
-  if [[ ! -f "$GAME_PLATFORM_RESULT_FILE" ]]; then
+  # Keep FAIL or an earlier Platform BLOCKED; BLOCKED supersedes PASS.
+  if [[ ! -f "$GAME_PLATFORM_RESULT_FILE" ]] || grep -Fxq 'GAME_PLATFORM_RESULT=PASS' "$GAME_PLATFORM_RESULT_FILE"; then
     printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Game what=tools/qualification/node_boot/run.sh:999\n' > "$GAME_PLATFORM_RESULT_FILE"
   fi
   exit 2

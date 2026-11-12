@@ -527,6 +527,7 @@ pub struct Topology {
     pub report: Value,
     pub database: String,
     pub game_database: String,
+    browsers: tokio::sync::Mutex<BTreeMap<usize, Browser>>,
 }
 impl Topology {
     pub fn load() -> TestResult<Self> {
@@ -552,6 +553,7 @@ impl Topology {
                 .map_err(|_| "game_database_missing")?,
             input,
             report,
+            browsers: Default::default(),
         })
     }
     pub fn native(&self, origin: &str) -> TestResult<NativeLoginClient> {
@@ -569,18 +571,25 @@ impl Topology {
         let public = text(&self.report["baseUrls"], "public")?;
         let native = self.native(public)?;
         let account = &self.input.accounts[index];
-        let mut browser = Browser::new(public)?;
-        let csrf = browser.csrf("/en/login").await?;
+        // One password login per account in this journey. Subsequent OAuth
+        // codes use the authenticated session, not the five-per-minute limiter.
+        let mut browsers = self.browsers.lock().await;
+        if let std::collections::btree_map::Entry::Vacant(entry) = browsers.entry(index) {
+            let mut browser = Browser::new(public)?;
+            let csrf = browser.csrf("/en/login").await?;
+            check(
+                browser
+                    .login(account, &account.password, Some(&csrf))
+                    .await?
+                    .status()
+                    .is_redirection(),
+                "oauth_login_refused",
+            )?;
+            entry.insert(browser);
+        }
+        let browser = browsers.get_mut(&index).ok_or("oauth_browser_missing")?;
         check(
-            browser
-                .login(account, &account.password, Some(&csrf))
-                .await?
-                .status()
-                .is_redirection(),
-            "oauth_login_refused",
-        )?;
-        check(
-            session_owner(&self.database, &browser)? == account.account_id,
+            session_owner(&self.database, browser)? == account.account_id,
             "oauth_account_mismatch",
         )?;
         let url = Url::parse(&self.input.callback).map_err(|_| "callback_invalid")?;
@@ -589,7 +598,7 @@ impl Topology {
             .map_err(|_| "callback_bind_failed")?;
         let verifier = random()?;
         let code = authorize(
-            &mut browser,
+            browser,
             &native,
             &self.input,
             &listener,
@@ -614,31 +623,6 @@ impl Topology {
             .await
             .map_err(|_| "oauth_exchange_refused".into())
     }
-    // A second, independently obtained real OAuth bearer allows inspection of
-    // HTTP status/body: NativeLoginClient intentionally hides refusal bodies.
-    pub async fn bearer(&self, index: usize) -> TestResult<String> {
-        let (code, verifier) = self.code(index).await?;
-        let url = Url::parse(text(&self.report["baseUrls"], "public")?)
-            .map_err(|_| "public_origin_invalid")?
-            .join("/oauth/token")
-            .map_err(|_| "token_url_invalid")?;
-        let response = Browser::new(text(&self.report["baseUrls"], "public")?)?
-            .client
-            .post(url)
-            .form(&[
-                ("grant_type", "authorization_code"),
-                ("code", &code),
-                ("code_verifier", &verifier),
-                ("redirect_uri", &self.input.callback),
-                ("client_id", &self.input.client),
-            ])
-            .send()
-            .await
-            .map_err(|_| "oauth_probe_transport_failed")?;
-        check(response.status() == 200, "oauth_probe_refused")?;
-        let value: Value = response.json().await.map_err(|_| "oauth_probe_invalid")?;
-        Ok(text(&value, "access_token")?.into())
-    }
     pub fn no_admissions(&self) -> TestResult {
         check(
             sql(
@@ -661,8 +645,15 @@ impl Topology {
 
 pub fn record_blocker(source: &'static str) -> TestResult {
     if let Ok(path) = std::env::var("GAME_PLATFORM_RESULT_FILE") {
-        // The lane's first recorded terminal outcome wins.
-        if !std::path::Path::new(&path).exists() {
+        // FAIL > BLOCKED > PASS. Preserve existing failures/blockers; an
+        // explicitly recorded PASS cannot suppress this later blocker.
+        let replace = if std::path::Path::new(&path).exists() {
+            fs::read_to_string(&path).map_err(|_| "result_read_failed")?
+                == "GAME_PLATFORM_RESULT=PASS\n"
+        } else {
+            true
+        };
+        if replace {
             fs::write(
                 path,
                 format!("GAME_PLATFORM_RESULT=BLOCKED owner=Platform what={source}\n"),
@@ -708,9 +699,7 @@ where
         } else {
             "journey_assertion_failed"
         };
-        if let Ok(path) = std::env::var("GAME_PLATFORM_RESULT_FILE")
-            && !std::path::Path::new(&path).exists()
-        {
+        if let Ok(path) = std::env::var("GAME_PLATFORM_RESULT_FILE") {
             fs::write(
                 path,
                 format!("GAME_PLATFORM_RESULT=FAIL flow={flow} reason={reason}\n"),

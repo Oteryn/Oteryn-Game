@@ -1,7 +1,9 @@
 //! Real portal process controls and mTLS publication; never a response producer.
 use super::support::*;
 use oteryn_platform_client::{
-    PlatformClientConfig, device_sessions::DeviceSession, native_login::NativeLoginClient,
+    PlatformClientConfig,
+    device_sessions::DeviceSession,
+    native_login::{DeviceRefusal, NativeLoginClient},
 };
 use reqwest::{Client, Url, redirect::Policy};
 use serde_json::{Value, json};
@@ -18,6 +20,33 @@ pub fn enrollment_gap(status: u16, body: &Value) -> bool {
 }
 pub fn rotation_gap(status: u16, body: &Value) -> bool {
     status == 401 && *body == json!({"error":"device_authorization_unavailable"})
+}
+// Compare every persisted field, including revocation/consumption, without
+// returning plaintext credentials or rendering secret-derived fingerprints.
+pub fn device_state(t: &Topology) -> TestResult<String> {
+    sql(
+        &t.database,
+        "device_state",
+        "SELECT md5((SELECT coalesce(string_agg(to_jsonb(s)::text,'' ORDER BY id),'') FROM device_sessions s) || (SELECT coalesce(string_agg(to_jsonb(c)::text,'' ORDER BY family_id,sequence),'') FROM device_session_credentials c));",
+    )
+}
+pub fn contract_gap(enrollment: bool, refusal: DeviceRefusal, before: &str, after: &str) -> bool {
+    let body = json!({"error": refusal.error});
+    before == after
+        && if enrollment {
+            enrollment_gap(refusal.status, &body)
+        } else {
+            rotation_gap(refusal.status, &body)
+        }
+}
+pub fn blocked(t: &Topology, enrollment: bool, refusal: DeviceRefusal, before: &str) -> TestResult {
+    check(
+        contract_gap(enrollment, refusal, before, &device_state(t)?),
+        "unexpected_device_refusal_or_state_change",
+    )?;
+    // Every protocol blocker shares the same independent zero-admission checks.
+    t.no_admissions()?;
+    gaps(enrollment)
 }
 pub fn gaps(enrollment: bool) -> TestResult {
     if enrollment {
@@ -92,10 +121,6 @@ pub async fn post(
         .await
         .map_err(|_| "device_probe_transport_failed")?;
     let status = response.status().as_u16();
-    if status == 404 {
-        record_blocker("portal-rs/crates/gameauth/src/devices_http.rs:53")?;
-        return Err("device_handler_missing".into());
-    }
     check(
         response.content_length().is_none_or(|n| n <= 16384),
         "device_probe_oversize",
@@ -207,12 +232,8 @@ pub struct Portal {
     child: Child,
     pub origin: String,
 }
-fn free_port() -> TestResult<u16> {
-    std::net::TcpListener::bind(("127.0.0.1", 0))
-        .map_err(|_| "port_allocation_failed")?
-        .local_addr()
-        .map(|a| a.port())
-        .map_err(|_| "port_allocation_failed".into())
+fn reserve_listener() -> TestResult<std::net::TcpListener> {
+    std::net::TcpListener::bind(("127.0.0.1", 0)).map_err(|_| "port_allocation_failed".into())
 }
 impl Portal {
     pub async fn start(t: &Topology, disabled_oauth: bool) -> TestResult<Self> {
@@ -224,8 +245,19 @@ impl Portal {
         for (key, value) in env.as_object().ok_or("portal_environment_invalid")? {
             command.env(key, value.as_str().ok_or("portal_environment_invalid")?);
         }
-        let port = free_port()?;
-        let origin = format!("https://127.0.0.1:{port}");
+        let native_listener = reserve_listener()?;
+        let public_listener = reserve_listener()?;
+        let admission_listener = reserve_listener()?;
+        let native_address = native_listener
+            .local_addr()
+            .map_err(|_| "port_allocation_failed")?;
+        let public_address = public_listener
+            .local_addr()
+            .map_err(|_| "port_allocation_failed")?;
+        let admission_address = admission_listener
+            .local_addr()
+            .map_err(|_| "port_allocation_failed")?;
+        let origin = format!("https://{native_address}");
         let oauth = json!({"enabled":!disabled_oauth,"clients":[{"client_id":t.input.client,"redirect_uris":[t.input.callback]}]});
         command
             .arg("serve")
@@ -237,8 +269,12 @@ impl Portal {
                 "oteryn-game-e2e",
             )
             .env("APP_ENV", "testing")
-            .env("OTERYN_BIND", format!("127.0.0.1:{}", free_port()?))
-            .env("OTERYN_NATIVE_TLS_BIND", format!("127.0.0.1:{port}"))
+            .env("OTERYN_BIND", public_address.to_string())
+            .env(
+                "PORTAL_NATIVE_ADMISSION_BIND",
+                admission_address.to_string(),
+            )
+            .env("OTERYN_NATIVE_TLS_BIND", native_address.to_string())
             .env(
                 "OTERYN_NATIVE_TLS_CERT_FILE",
                 text(&env, "OTERYN_INTERNAL_TLS_CERT_FILE")?,
@@ -253,6 +289,7 @@ impl Portal {
             .env_remove("OTERYN_INTERNAL_TLS_CLIENT_CA_FILE")
             .stdout(Stdio::null())
             .stderr(Stdio::null());
+        drop((native_listener, public_listener, admission_listener));
         let mut portal = Self {
             child: command.spawn().map_err(|_| "portal_spawn_failed")?,
             origin,
@@ -268,12 +305,22 @@ impl Portal {
                     .is_none(),
                 "portal_exited",
             )?;
-            if client
-                .get(format!("{}/health", portal.origin))
+            let native_ready = client
+                .get(format!("{}/healthz", portal.origin))
                 .send()
                 .await
-                .is_ok()
-            {
+                .is_ok_and(|r| r.status() == 200);
+            let admission_ready = client
+                .get(format!("http://{admission_address}/health"))
+                .send()
+                .await
+                .is_ok_and(|r| r.status() == 200);
+            let public_ready = client
+                .get(format!("http://{public_address}/healthz"))
+                .send()
+                .await
+                .is_ok_and(|r| r.status() == 200);
+            if native_ready && admission_ready && public_ready {
                 break;
             }
             check(

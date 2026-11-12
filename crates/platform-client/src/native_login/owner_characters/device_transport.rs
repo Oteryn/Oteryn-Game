@@ -77,10 +77,15 @@ impl NativeLoginClient {
                 .send()
                 .await
                 .map_err(|_| PlatformClientError::Request)?;
-            if response.status() != StatusCode::OK {
-                return Err(NativeLoginError::TokenRefused);
+            let status = response.status();
+            let bytes = read_bounded(response, 16_384).await?;
+            if status != StatusCode::OK {
+                return Err(NativeLoginError::DeviceRefused(DeviceRefusal::decode(
+                    status.as_u16(),
+                    &bytes,
+                )?));
             }
-            Ok(read_bounded(response, 16_384).await?)
+            Ok(bytes)
         })
         .await
     }
@@ -245,6 +250,34 @@ impl NativeLoginClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn refusal_retains_exact_status_and_only_contract_error_values()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for status in [400, 401, 429, 503] {
+            for error in [
+                "invalid_request",
+                "device_authorization_unavailable",
+                "too_many_requests",
+            ] {
+                let bytes = serde_json::to_vec(&serde_json::json!({"error":error}))?;
+                assert_eq!(
+                    DeviceRefusal::decode(status, &bytes)?,
+                    DeviceRefusal { status, error }
+                );
+            }
+        }
+        for bytes in [
+            br#"{"error":"unrecognized"}"#.as_slice(),
+            br#"{"error":"invalid_request","extra":true}"#,
+            br#"{"error":"invalid_request","error":"invalid_request"}"#,
+        ] {
+            assert_eq!(
+                DeviceRefusal::decode(401, bytes),
+                Err(PlatformClientError::InvalidPayload)
+            );
+        }
+        Ok(())
+    }
     #[test]
     fn exact_device_response_shapes_reject_null_extras_and_duplicate_members()
     -> Result<(), Box<dyn std::error::Error>> {
