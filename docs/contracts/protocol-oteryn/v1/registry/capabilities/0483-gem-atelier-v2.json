@@ -15,5 +15,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Offered only by bundle Worlds to clients supporting Gem Vessel slots and capability 148; every request requires a current admitted Character session and the Wheel allocation capability. Entry-room and item-view fixture profiles do not offer this capability."
+  "offer_gate": "Offered only by bundle Worlds through BUNDLE_WORLD_OFFERED_CAPABILITIES to clients supporting Gem Vessel slots and capability 148; every request requires a current admitted Character session and the Wheel allocation capability. Entry-room and item-view fixture profiles do not offer this capability."
 }
