@@ -70,6 +70,7 @@ impl NativeLoginClient {
             let feed: OwnerCharacters =
                 serde_json::from_slice(&body).map_err(|_| PlatformClientError::InvalidPayload)?;
             if feed.protocol_version != 2
+                || feed.characters.len() > 64
                 || feed.characters.iter().any(|character| {
                     parse_uuid_v7(&character.character_id).is_none()
                         || parse_uuid_v7(&character.world_id).is_none()

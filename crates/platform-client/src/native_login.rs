@@ -14,6 +14,7 @@ mod gateway_request;
 pub use challenge::{ChallengeProof, LoginChallenge, TokenExchange};
 mod owner_characters;
 pub mod premium;
+mod ticket;
 pub use owner_characters::{CharacterAvailability, GatewayLogin, OwnerCharacter};
 
 use crate::{PlatformClientConfig, PlatformClientError};
@@ -535,57 +536,7 @@ impl NativeLoginClient {
         access_token: AccessToken,
         cancellation: CancellationToken,
     ) -> Result<NativeTicket, NativeLoginError> {
-        let endpoint = self
-            .platform
-            .join("/api/v1/game-auth/tickets")
-            .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        let request = async {
-            let response = self
-                .client
-                .post(endpoint)
-                .bearer_auth(access_token.0.expose())
-                .json(&serde_json::json!({ "protocol_version": 1 }))
-                .send()
-                .await
-                .map_err(|_error| PlatformClientError::Request)?;
-            let received = Instant::now();
-            match response.status() {
-                status if status.is_success() => {}
-                StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
-                    return Err(NativeLoginError::TicketRefused(
-                        PublicClass::AuthenticationRequired,
-                    ));
-                }
-                _ => {
-                    return Err(NativeLoginError::TicketRefused(
-                        PublicClass::TemporarilyUnavailable,
-                    ));
-                }
-            }
-            let body = read_bounded(response, MAX_TICKET_RESPONSE_BYTES).await?;
-            #[derive(Deserialize)]
-            #[serde(deny_unknown_fields)]
-            struct TicketResponse {
-                protocol_version: u64,
-                ticket: String,
-                expires_in: u64,
-            }
-            let ticket: TicketResponse = serde_json::from_slice(&body)
-                .map_err(|_error| PlatformClientError::InvalidPayload)?;
-            if ticket.protocol_version != 1
-                || ticket.expires_in == 0
-                || !is_visible_ascii(&ticket.ticket, MAX_TICKET_BYTES)
-            {
-                return Err(PlatformClientError::InvalidPayload.into());
-            }
-            let lifetime = Duration::from_secs(ticket.expires_in).min(MAX_TICKET_LIFETIME);
-            Ok(NativeTicket {
-                secret: SecretText(ticket.ticket),
-                usable_until: received + lifetime,
-                requests_sent: AtomicU32::new(0),
-            })
-        };
-        run(cancellation, request).await
+        ticket::issue(self, access_token, cancellation).await
     }
 
     /// Gateway `POST /v1/login` (protocol 2). Retries the byte-identical request (same

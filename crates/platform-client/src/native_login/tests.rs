@@ -1,3 +1,5 @@
+#[path = "account_fixture_tests.rs"]
+mod account_fixtures;
 #[path = "bazaar_tests.rs"]
 mod bazaar;
 #[path = "challenge_tests.rs"]
@@ -166,6 +168,7 @@ fn secrets_are_redacted() {
 struct MockServer {
     base: String,
     requests: Arc<Mutex<Vec<String>>>,
+    request_times: Arc<Mutex<Vec<tokio::time::Instant>>>,
 }
 
 fn spawn_server(
@@ -185,10 +188,24 @@ fn spawn_server_with_headers(
     runtime: &tokio::runtime::Runtime,
     responses: Vec<(u16, String, String)>,
 ) -> Result<MockServer, Box<dyn std::error::Error>> {
+    let responses = responses.into_iter().map(|(status, headers, body)| {
+        (status, format!("content-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n{headers}", body.len()), body)
+    }).collect();
+    spawn_fixture_server(runtime, responses)
+}
+
+// Fixture responses are close-delimited: shutdown supplies framing, without
+// injecting Content-Type, Content-Length, Connection, or any other header.
+fn spawn_fixture_server(
+    runtime: &tokio::runtime::Runtime,
+    responses: Vec<(u16, String, String)>,
+) -> Result<MockServer, Box<dyn std::error::Error>> {
     let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0"))?;
     let base = format!("http://127.0.0.1:{}/", listener.local_addr()?.port());
     let requests = Arc::new(Mutex::new(Vec::new()));
     let recorded = Arc::clone(&requests);
+    let request_times = Arc::new(Mutex::new(Vec::new()));
+    let times = Arc::clone(&request_times);
     runtime.spawn(async move {
         for (status, extra_headers, body) in responses {
             let Ok((mut stream, _)) = listener.accept().await else {
@@ -220,18 +237,22 @@ fn spawn_server_with_headers(
                     }
                 }
             };
+            if let Ok(mut log) = times.lock() {
+                log.push(tokio::time::Instant::now());
+            }
             if let Ok(mut log) = recorded.lock() {
                 log.push(request);
             }
-            let response = format!(
-                "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n{extra_headers}\r\n{body}",
-                body.len()
-            );
+            let response = format!("HTTP/1.1 {status} X\r\n{extra_headers}\r\n{body}");
             let _ = stream.write_all(response.as_bytes()).await;
             let _ = stream.shutdown().await;
         }
     });
-    Ok(MockServer { base, requests })
+    Ok(MockServer {
+        base,
+        requests,
+        request_times,
+    })
 }
 
 fn client_for(server: &MockServer) -> Result<NativeLoginClient, PlatformClientError> {
@@ -534,6 +555,20 @@ fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
 
 #[path = "coin_purchase_tests.rs"]
 mod coin_purchase_tests;
+
+// Observe entry/exit of the real Tokio sleep; never replace its duration.
+thread_local! {
+    static TICKET_WAIT: std::cell::Cell<(Option<tokio::time::Instant>, Option<tokio::time::Instant>)> = const {
+        std::cell::Cell::new((None, None))
+    };
+}
+pub(super) fn ticket_wait(finished: bool) {
+    TICKET_WAIT.with(|clock| {
+        let (start, end) = clock.get();
+        let now = Some(tokio::time::Instant::now());
+        clock.set(if finished { (start, now) } else { (now, end) });
+    });
+}
 
 // Thread-local controlled time affects only opt-in current-thread fixture tests.
 // Other tests and every production build retain real sleeps.

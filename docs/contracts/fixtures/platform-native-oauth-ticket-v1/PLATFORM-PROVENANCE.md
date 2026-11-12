@@ -1,0 +1,1 @@
+Public synthetic fixtures copied byte-for-byte from Oteryn/Oteryn-Platform merged main commit 217db40459ea9f40947b5a722dabb96f1a3f2092, directory `docs/contracts/fixtures/native-oauth-ticket-v1/` (Platform PR #1823). Verified every Git blob against that commit. No production trust keys or credentials; CSPRNG tokens are placeholders listed in manifest.json.
