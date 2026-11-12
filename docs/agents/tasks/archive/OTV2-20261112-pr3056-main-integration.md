@@ -165,12 +165,25 @@ requires the new guard before the late bridge.
 
 Static checkpoint checks compare all450 accepted migration bytes to exact main3ce,
 verify all four earlier repair hashes, and bind the six deferred files in
-`/workspace/scratch/pr3056-forward-deferral-checkpoint.json`. The required
-post2811 guard equality to accepted5cfab2ac and the late2815 fresh/upgrade result
-remain executable SQL qualification, pending the separately owned bridge commit.
-This checkpoint is deliberately incomplete until that ordinary child merge,
-current-main540 fresh/upgrade proof, generated-input provenance inspection,
-independent material review and full GitHub qualification. No deadline or proof
+`/workspace/scratch/pr3056-forward-deferral-checkpoint.json`. The separately owned2815 bridge is now normal-merged from exact child
+4706ffd7c9b74c8a89d25b510645238804d072ef, whose only changed path is the new
+migration and whose parent is accepted main3ce. Its SHA384 is
+7376ad7017bf0fecf2bec0160d2080fc8ed411af97f58f82f1ac5f10a226412b65c628b428978affc9507ea6dbeb22e7.
+The complete Item guard predecessor must equal accepted5cfab2ac; four uniquely
+contextual replacements add four conservative receipt selectors, the five owner
+blocks after cached initialization/terminal handling, the captured ingredient
+debit and its accurate refusal text. Static source proof binds the successor to
+7980797b9d2a45234462062c4bd59e1f184cdbdc626f26713c4eacc1f8ca7bb0,
+retains the complete old fallback and checks function OID/owner/security/config/
+ACL after replacement. This is source-level evidence, not execution.
+
+The540 SQL files have unique versions; the new highest version2815 is reserved
+by coordinator comment6832114090. All540 SHA384 values are held in
+`/workspace/scratch/pr3056-forward-540-author-checkpoint.json`. Both post2811
+predecessor equality and the complete current-main540 fresh/upgrade proof remain
+pending actual SQL execution and independent SQL review. Generated-input
+provenance, the remaining qualified floor-consumer contract, independent material
+review and full GitHub qualification also remain pending. No deadline or proof
 budget changes are made.
 
 ## Validation
@@ -187,4 +200,6 @@ budget changes are made.
   non-Instance byte parity for all six files and negative identity checks rejecting
   both unaccepted audit optimizer overlays. This is static source evidence.
 - `git diff --check`: PASS; no unresolved index stages or conflict markers.
+- Forward bridge child: only new2815 file; exact bytes/SHA384;540 unique versions
+  and held complete SQL manifest. No fresh/current-main upgrade execution claim.
 - Full successor qualification and generator completion remain pending.
