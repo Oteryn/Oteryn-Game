@@ -4,6 +4,7 @@ pub mod account_characters;
 pub mod character_commands;
 pub mod descriptor;
 pub mod http1_mtls;
+pub mod journal;
 pub mod public_projections;
 pub mod runtime_status;
 pub mod scope_assignment;
