@@ -62,6 +62,25 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
 esac
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+# The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
+# A fixed repository path prevents an environment variable from sourcing arbitrary code.
+case "${NODE_BOOT_LIFECYCLE:-}" in
+  '') ;;
+  game_platform)
+    # shellcheck source=tools/qualification/game_platform/lifecycle.sh
+    source "$GAME_SOURCE/tools/qualification/game_platform/lifecycle.sh"
+    game_platform_validate
+    ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=unknown_lifecycle'; exit 2 ;;
+esac
+NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
+NODE_BOOT_TOPOLOGY="$TOPOLOGY_REVISION"
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  # portal-rs pin is owned by game_platform/lifecycle.sh (includes Platform #1833).
+  NODE_BOOT_PLATFORM_PIN="$GAME_PLATFORM_SHA"
+  NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
+fi
+readonly NODE_BOOT_PLATFORM_PIN NODE_BOOT_TOPOLOGY
 export NODE_BOOT_PROFILE="${NODE_BOOT_PROFILE:-sorcerer}"
 case "$NODE_BOOT_PROFILE" in
   explorer|knight|paladin|sorcerer|druid|monk) ;;
@@ -77,7 +96,9 @@ esac
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
+# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
+  && -z "${NODE_BOOT_LIFECYCLE:-}" \
   && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
@@ -112,7 +133,7 @@ elif [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   NODE_REQUIRED_CAPABILITIES='[]'
 fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
-if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SHA" ]]; then
+if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_PLATFORM_PIN" ]]; then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
 fi
@@ -188,7 +209,14 @@ stop_runtime_diagnostics() {
 pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
 start_pg_sampler() {
   mkdir -p "$PG_OBS"
-  pg_observe sample --out "$PG_OBS/activity.log" &
+  # Start python3 itself in the background, not a subshell running pg_observe:
+  # $! must be the sampler so stop_pg_sampler's SIGTERM reaches it. A shell
+  # wrapper died on SIGTERM and left the sampler polling forever with the run's
+  # stdout open, so the caller's `run.sh | tee` never saw EOF and the step hung
+  # after NODE_BOOT_RESULT until the job timeout. Its stdout is not the run's pipe.
+  python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" sample --out "$PG_OBS/activity.log" \
+    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot \
+    < /dev/null > /dev/null 2>> "$PG_OBS/sampler.err" &
   PG_SAMPLER_PID=$!
 }
 stop_pg_sampler() {
@@ -232,7 +260,11 @@ cleanup() {
   else
     [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
     sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
-    compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+    if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+      game_platform_cleanup
+    else
+      compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
+    fi
     docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
     sudo rm -rf "$BASE" || true
     [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
@@ -305,7 +337,7 @@ openssl genpkey -algorithm ed25519 -out "$WP5_PKI/recovery-signing.pem" >/dev/nu
 RECOVERY_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -pubout -outform DER | raw_hex)"
 RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform DER | raw_hex)"
 [[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
-evidence "pins platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION game=$(git rev-parse HEAD)"
+evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY game=$(git rev-parse HEAD)"
 
 # TLS-verified PostgreSQL 18.6 for the Game durability root. It always logs lock waits
 # (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
@@ -333,6 +365,9 @@ echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
 ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
 
 # The Platform topology.
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  game_platform_start
+else
 compose config --quiet
 compose build --pull platform
 compose up --detach --wait db platform nginx
@@ -343,6 +378,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$PACKET_ACCOUNT_ID"'","nb-three@example.invalid"],["'"$SECOND_PACKET_ACCOUNT_ID"'","nb-four@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); }'
 fi
 evidence "platform_seed=synthetic_accounts=${#BOOTSTRAP_ACCOUNTS[@]} fresh_trust=published_public_key_only client_identities=1"
+fi # Platform lifecycle
 
 # The accelerated build is disposable: production binaries omit its file input.
 # Real-clock qualification deliberately builds the ordinary shipping binary.
@@ -557,6 +593,9 @@ start_x = 32369
 start_y = 32238
 start_floor = -7''')
 PY_WORLD
+  fi
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+    game_platform_config "$WORK/node.toml"
   fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
@@ -1148,6 +1187,11 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
+
+if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  game_platform_identity
+  exit "$?"
+fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
