@@ -10,9 +10,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: Intent,
         item: Option<ItemKey>,
     ) -> Option<ResultCode> {
+        let label = match intent {
+            Intent::Offer { .. } => Some("offer"),
+            Intent::Accept { .. } => Some("accept"),
+            Intent::Look { .. } => Some("look"),
+            Intent::Cancel => None,
+        };
+        let outcome = self
+            .trade_command_outcome(admitted, id, intent, item)
+            .await?;
+        if outcome.code == ResultCode::Rejected
+            && let Some(intent) = label
+        {
+            super::super::operator_event(&format!(
+                "player_trade_refused intent={intent} code=rejected cause={}",
+                outcome.cause
+            ));
+        }
+        Some(outcome.code)
+    }
+
+    async fn trade_command_outcome(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        intent: Intent,
+        item: Option<ItemKey>,
+    ) -> Option<CommandOutcome> {
         let command = CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?);
         if !self.states.command_ingress.pending(command) {
-            return Some(ResultCode::Rejected);
+            return Some(ResultCode::Rejected.into());
         }
         let arrival_ms = self.owner_now().get() / 1000;
         {
@@ -22,10 +49,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || live.admitted.continuity.connection_generation
                     != admitted.continuity.connection_generation
             {
-                return Some(ResultCode::Stale);
+                return Some(ResultCode::Stale.into());
             }
             if !live.rate.admit(arrival_ms) {
-                return Some(ResultCode::Rejected);
+                return Some(ResultCode::Rejected.into());
             }
             // Refuse conflicts against the retained frozen request before waiting for its
             // lane. In particular a cancel never reconciles and then claims cancellation.
@@ -33,7 +60,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .record(admitted.game_session_id)
                 .is_some_and(|record| record.request.is_some())
             {
-                return Some(ResultCode::PartnerBusy);
+                return Some(ResultCode::PartnerBusy.into());
             }
         }
         let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
@@ -77,14 +104,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .lock()
                     .ok()?
                     .close(&current, ResultCode::Cancelled)?;
-                return Some(ResultCode::Stale);
+                return Some(ResultCode::Stale.into());
             }
         }
         match intent {
             Intent::Cancel => {
                 if let Some(record) = record {
                     if record.request.is_some() {
-                        return Some(ResultCode::PartnerBusy);
+                        return Some(ResultCode::PartnerBusy.into());
                     }
                     self.states
                         .player_trades
@@ -93,13 +120,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .ok()?
                         .close(&record, ResultCode::Cancelled)?;
                 }
-                Some(ResultCode::Cancelled)
+                Some(ResultCode::Cancelled.into())
             }
             Intent::Offer { partner, .. } => {
                 let Some(ItemKey::Instance(item)) = item else {
-                    return Some(ResultCode::NotTradeable);
+                    return Some(ResultCode::NotTradeable.into());
                 };
-                let code = super::preflight::read_retry(self.root, async || {
+                let code = super::preflight::read_retry_detailed(self.root, async || {
                     self.trade_offer(
                         &permit,
                         &runtime,
@@ -113,8 +140,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                 })
                 .await
+                .map(CommandOutcome::from)
                 .unwrap_or_else(|r| r);
-                if code == ResultCode::TooFar {
+                if code.code == ResultCode::TooFar {
                     let mut book = self.states.player_trades.0.lock().ok()?;
                     let name = book
                         .live
@@ -130,10 +158,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Intent::Accept { trade_id } => {
                 let Some(record) = record else {
-                    return Some(ResultCode::Stale);
+                    return Some(ResultCode::Stale.into());
                 };
                 if record.id != Some(trade_id) {
-                    return Some(ResultCode::Stale);
+                    return Some(ResultCode::Stale.into());
                 }
                 self.trade_accept(&permit, &runtime, admitted, command, record, now)
                     .await
@@ -143,28 +171,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 counter_offer,
             } => {
                 let Some(record) = record else {
-                    return Some(ResultCode::Stale);
+                    return Some(ResultCode::Stale.into());
                 };
                 if record.id != Some(trade_id) || record.request.is_some() {
-                    return Some(ResultCode::Stale);
+                    return Some(ResultCode::Stale.into());
                 }
                 let lives = self.trade_lives(&record)?;
-                let check = super::preflight::read_retry(self.root, async || {
+                let check = super::preflight::read_retry_detailed(self.root, async || {
                     match self.trade_pair(&permit, &runtime, &lives, command).await {
                         Ok(()) => {}
                         Err(CheckError::Unavailable) => return Err(CheckError::Unavailable),
-                        Err(CheckError::Refused(reason)) => return Ok(Some(Err(reason))),
+                        Err(CheckError::Refused(reason)) => {
+                            return Ok(Some(Err(CommandOutcome::from(reason))));
+                        }
+                        Err(CheckError::Caused(outcome)) => return Ok(Some(Err(outcome))),
                     }
                     let fences = match self.trade_fences(&lives).await {
                         Ok(fences) => fences,
                         Err(CheckError::Unavailable) => return Err(CheckError::Unavailable),
                         // Preserve the existing terminal failure of an unreadable fence.
-                        Err(CheckError::Refused(_)) => return Ok(None),
+                        Err(CheckError::Refused(_) | CheckError::Caused(_)) => return Ok(None),
                     };
                     match self.trade_unchanged(&record, fences).await {
                         Ok(()) => Ok(Some(Ok(()))),
                         Err(CheckError::Unavailable) => Err(CheckError::Unavailable),
-                        Err(CheckError::Refused(_)) => Ok(Some(Err(ResultCode::Stale))),
+                        Err(CheckError::Refused(_) | CheckError::Caused(_)) => {
+                            Ok(Some(Err(ResultCode::Stale.into())))
+                        }
                     }
                 })
                 .await;
@@ -179,7 +212,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .0
                         .lock()
                         .ok()?
-                        .close(&record, reason)?;
+                        .close(&record, reason.code)?;
                     return Some(reason);
                 }
                 let side = usize::from(record.sessions[1] == admitted.game_session_id);
@@ -191,7 +224,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map(|p| p.position())
                     });
                     let [Ok(a), Ok(b)] = positions else {
-                        return Some(ResultCode::Stale);
+                        return Some(ResultCode::Stale.into());
                     };
                     i32::try_from(a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))).unwrap_or(i32::MAX)
                 } else {
@@ -209,13 +242,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         look_distance,
                     )
                 }) else {
-                    return Some(ResultCode::Rejected);
+                    return Some(ResultCode::Rejected.into());
                 };
                 let mut book = self.states.player_trades.0.lock().ok()?;
                 let live = book.live.get_mut(&admitted.game_session_id)?;
                 live.revision = live.revision.checked_add(1)?;
                 live.state.look = text;
-                Some(ResultCode::Offered)
+                Some(ResultCode::Offered.into())
             }
         }
     }
@@ -232,50 +265,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         prior: Option<Record>,
         now: u64,
     ) -> Result<ResultCode, CheckError> {
-        let lives = {
-            let book = self
-                .states
-                .player_trades
-                .0
-                .lock()
-                .map_err(|_| ResultCode::Rejected)?;
-            let own = book
-                .live
-                .get(&admitted.game_session_id)
-                .ok_or(ResultCode::Rejected)?
-                .clone();
-            let other = book
-                .live
-                .values()
-                .find(|l| entity(l.actor) == partner)
-                .ok_or_else(|| {
-                    if runtime
-                        .visible_entities()
-                        .players
-                        .iter()
-                        .any(|p| entity(p.actor) == partner)
-                    {
-                        ResultCode::NotSupported
-                    } else {
-                        ResultCode::Rejected
-                    }
-                })?
-                .clone();
-            if own.actor == other.actor {
-                return Err(ResultCode::Rejected.into());
-            }
-            if book.index.contains_key(&other.admitted.game_session_id)
-                && prior
-                    .as_ref()
-                    .is_none_or(|r| !r.sessions.contains(&other.admitted.game_session_id))
+        let lives =
             {
-                return Err(ResultCode::PartnerBusy.into());
-            }
-            if !has_capacity(book.records.len(), prior.is_some()) {
-                return Err(ResultCode::PartnerBusy.into());
-            }
-            [own, other]
-        };
+                let book =
+                    self.states.player_trades.0.lock().map_err(|_| {
+                        CheckError::Caused(CommandOutcome::rejected("book_poisoned"))
+                    })?;
+                let own = book
+                    .live
+                    .get(&admitted.game_session_id)
+                    .ok_or(ResultCode::Rejected)?
+                    .clone();
+                let other = book
+                    .live
+                    .values()
+                    .find(|l| entity(l.actor) == partner)
+                    .ok_or_else(|| {
+                        if runtime
+                            .visible_entities()
+                            .players
+                            .iter()
+                            .any(|p| entity(p.actor) == partner)
+                        {
+                            ResultCode::NotSupported
+                        } else {
+                            ResultCode::Rejected
+                        }
+                    })?
+                    .clone();
+                if own.actor == other.actor {
+                    return Err(ResultCode::Rejected.into());
+                }
+                if book.index.contains_key(&other.admitted.game_session_id)
+                    && prior
+                        .as_ref()
+                        .is_none_or(|r| !r.sessions.contains(&other.admitted.game_session_id))
+                {
+                    return Err(ResultCode::PartnerBusy.into());
+                }
+                if !has_capacity(book.records.len(), prior.is_some()) {
+                    return Err(ResultCode::PartnerBusy.into());
+                }
+                [own, other]
+            };
         self.trade_pair(permit, runtime, &lives, command).await?;
         let fences = self.trade_fences(&lives).await?;
         // A new offer after READY retires the old pair and both accepts. Its id can
@@ -291,7 +323,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .player_trades
                     .0
                     .lock()
-                    .map_err(|_| ResultCode::Rejected)?
+                    .map_err(|_| CheckError::Caused(CommandOutcome::rejected("book_poisoned")))?
                     .close(old, ResultCode::Stale)
                     .ok_or(ResultCode::Rejected)?;
                 return Err(ResultCode::Stale.into());
@@ -318,7 +350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(CheckError::from)?
-            .map_err(result)?;
+            .map_err(CheckError::from)?;
         let projection = self.trade_projection(runtime, &leaf)?;
         let mut backpacks = Vec::new();
         for fence in fences {
@@ -339,7 +371,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.trade_unchanged(&old, [fences[1], fences[0]]).await?;
             old.lifecycle
                 .counter_offer(command, command, now)
-                .map_err(result)?;
+                .map_err(CheckError::from)?;
             old.offers[1] = Some(leaf);
             old.items[1] = Some(item);
             old.projections[1] = Some(projection);
@@ -379,7 +411,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .player_trades
             .0
             .lock()
-            .map_err(|_| ResultCode::Rejected)?;
+            .map_err(|_| CheckError::Caused(CommandOutcome::rejected("book_poisoned")))?;
         book.publish(&record).ok_or(ResultCode::Rejected)?;
         Ok(ResultCode::Offered)
     }
@@ -392,16 +424,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: CommandRef,
         mut record: Record,
         now: u64,
-    ) -> Option<ResultCode> {
+    ) -> Option<CommandOutcome> {
         if record.request.is_some() {
-            return Some(ResultCode::PartnerBusy);
+            return Some(ResultCode::PartnerBusy.into());
         }
         let lives = self.trade_lives(&record)?;
         let side = usize::from(record.sessions[1] == admitted.game_session_id);
         let may_transfer = record.accepts[side].is_none()
             && record.accepts[1 - side].is_some()
             && record.staged.is_none();
-        let preflight = super::preflight::read_retry(self.root, async || {
+        let preflight = super::preflight::read_retry_detailed(self.root, async || {
             if record.binding != runtime.binding()
                 || record.digest != runtime.content_pin().server_artifact_digest()
             {
@@ -414,7 +446,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let native = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())
-                .ok_or(ResultCode::Rejected)?;
+                .ok_or_else(|| {
+                    CheckError::Caused(CommandOutcome::rejected("native_gameplay_missing"))
+                })?;
             let leaves = self
                 .root
                 .preflight_player_trade(
@@ -431,13 +465,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(CheckError::from)?
-                .map_err(result)?;
+                .map_err(CheckError::from)?;
             if record.offers != leaves.clone().map(Some) {
                 return Err(ResultCode::Stale.into());
             }
             // This is still read-only preparation. Retain the same command budget
             // through the transfer's final read, before accepting or freezing anything.
-            // Only holder contention retries; other errors/missing progression retain
+            // Transient read contention retries; other errors/missing progression retain
             // their existing fail-closed outcome after this preflight returns.
             let progression = if may_transfer {
                 use crate::durability::character_progression::CharacterProgressionError;
@@ -447,10 +481,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .read_character_progression(self.character, fences[side].character_id)
                         .await
                     {
-                        Err(CharacterProgressionError::Unavailable(
-                            crate::durability::DurabilityError::RootUnavailable,
-                        )) => {
-                            return Err(CheckError::Unavailable);
+                        Err(CharacterProgressionError::Unavailable(error))
+                            if matches!(
+                                error,
+                                crate::durability::DurabilityError::RootUnavailable
+                                    | crate::durability::DurabilityError::RootPassDeadlineExceeded
+                                    | crate::durability::DurabilityError::Database(
+                                        crate::durability::SqlxFailureClass::RetryableStatement
+                                    )
+                            ) =>
+                        {
+                            return Err(CheckError::from(error));
                         }
                         result => result,
                     },
@@ -469,15 +510,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .0
                     .lock()
                     .ok()?
-                    .close(&record, reason)?;
+                    .close(&record, reason.code)?;
                 return Some(reason);
             }
         };
         if record.accepts[side].is_some() {
-            return Some(ResultCode::Accepted);
+            return Some(ResultCode::Accepted.into());
         }
         if record.staged.is_some() {
-            return Some(ResultCode::PartnerBusy);
+            return Some(ResultCode::PartnerBusy.into());
         }
         let participant = TradeParticipant {
             accepted: fences[side],
@@ -490,9 +531,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Installed only in CommandIngress::terminalize's mutation closure.
                 record.staged = Some((side, participant));
                 self.states.player_trades.0.lock().ok()?.publish(&record)?;
-                Some(ResultCode::Accepted)
+                Some(ResultCode::Accepted.into())
             }
-            Accept::Repeated => Some(ResultCode::Accepted),
+            Accept::Repeated => Some(ResultCode::Accepted.into()),
             Accept::Transfer => {
                 let first = record.accepts[1 - side].clone()?;
                 let occurred_at_unix_ms = std::time::SystemTime::now()
@@ -538,7 +579,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         request,
                     )
                     .await;
-                self.trade_verdict(&record, verdict.ok()?)
+                let verdict = verdict.ok()?;
+                let outcome = match &verdict {
+                    Err(reason) => CommandOutcome::from(*reason),
+                    Ok(_) => ResultCode::Completed.into(),
+                };
+                self.trade_verdict(&record, verdict)?;
+                Some(outcome)
             }
         }
     }
