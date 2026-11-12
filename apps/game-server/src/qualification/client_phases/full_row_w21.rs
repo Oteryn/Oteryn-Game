@@ -31,7 +31,8 @@ enum Verdict {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(Verdict::Fail(detail))) => ("FAIL", detail),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -114,6 +115,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let mut panel = BossDifficultyPanel {
         selected: true,
+        pity_selected: client
+            .selected_capabilities()
+            .contains(&oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_PITY_V1),
         boss_key: boss.clone(),
         ..Default::default()
     };

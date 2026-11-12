@@ -20,7 +20,9 @@ const COMMENT: &str = "G32 bug report: the depot chest closed by itself";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -186,8 +188,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .await?;
     let observed = if response.status == CommandStatus::Accepted {
-        let reply = imbue::decode_imbuement_reply(&response.payload)
-            .map_err(|error| format!("step=shrine-decode observed={error:?}"))?;
+        let reply = if client
+            .selected_capabilities()
+            .contains(&imbue::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1)
+        {
+            imbue::decode_imbuement_reply_with_success(&response.payload).map(|(reply, _)| reply)
+        } else {
+            imbue::decode_imbuement_reply(&response.payload)
+        }
+        .map_err(|error| format!("step=shrine-decode observed={error:?}"))?;
         format!(
             "{:?}-offers:{}",
             reply.result,

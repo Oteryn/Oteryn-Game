@@ -1,7 +1,8 @@
 //! N07c client capture: a real rat kill whose ANALYSER facts (state domain 15) the live session
-//! applies through `analyser_transport::apply` and delivers as `SessionEvent::AnalyserFacts`.
+//! applies through `analyser_transport::apply` as legacy or attributed typed events.
 //! The dev client decodes those deltas and retains no raw payload, so this row records the
-//! server-observed facts (one line per fact) and totals, not `.bin` bytes. The consumer is the
+//! complete canonical typed events (including attacker identities), selection and totals,
+//! not original `.bin` bytes. Flash behavior is outside this bounded replay. The consumer is the
 //! analyser reducer in `apps/client/src/features/0010-analyser/protocol.rs`.
 use super::*;
 use oteryn_dev_client::client_runtime::analyser::{AnalyserFact, AnalyserImpact};
@@ -12,20 +13,86 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N07C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "N07C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
-fn collect(client: &mut DevClientSession, facts: &mut Vec<AnalyserFact>) {
+/// Canonical re-encoding of complete typed events, not the discarded raw state-delta bytes.
+fn collect(
+    client: &mut DevClientSession,
+    selected: bool,
+    facts: &mut Vec<AnalyserFact>,
+    events: &mut Vec<String>,
+) -> TestResult {
+    use oteryn_protocol_oteryn::analyser::{encode_analyser_fact, encode_attributed_analyser_fact};
+    let hex = |bytes: Vec<u8>| {
+        bytes
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
     for event in client.take_events() {
-        if let SessionEvent::AnalyserFacts(delta) = event {
-            facts.extend(delta.value);
-        }
+        let (kind, sequence, base, revision, encoded) = match event {
+            SessionEvent::AnalyserFacts(delta) => {
+                if selected {
+                    return Err("selected attribution session emitted legacy analyser event".into());
+                }
+                let encoded = delta
+                    .value
+                    .iter()
+                    .map(|fact| encode_analyser_fact(fact).map(&hex))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|error| format!("analyser capture codec: {error:?}"))?;
+                facts.extend(delta.value);
+                (
+                    "legacy",
+                    delta.server_sequence,
+                    delta.base_revision,
+                    delta.new_revision,
+                    encoded,
+                )
+            }
+            SessionEvent::AnalyserAttributedFacts(delta) => {
+                if !selected {
+                    return Err(
+                        "unselected attribution session emitted attributed analyser event".into(),
+                    );
+                }
+                let encoded = delta
+                    .value
+                    .iter()
+                    .map(|fact| {
+                        encode_attributed_analyser_fact(&fact.fact, fact.attacker.as_ref())
+                            .map(&hex)
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|error| format!("analyser capture codec: {error:?}"))?;
+                facts.extend(delta.value.into_iter().map(|fact| fact.fact));
+                (
+                    "attributed",
+                    delta.server_sequence,
+                    delta.base_revision,
+                    delta.new_revision,
+                    encoded,
+                )
+            }
+            _ => continue,
+        };
+        events.push(format!(
+            "{kind} {sequence} {base} {revision} {}",
+            encoded.join(",")
+        ));
     }
+    Ok(())
 }
 
 /// Fight the adjacent creature and collect every analyser fact the server pushes for the kill.
-async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
+async fn fight(
+    client: &mut DevClientSession,
+    selected: bool,
+) -> TestResult<(Vec<AnalyserFact>, Vec<String>)> {
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()
@@ -33,7 +100,12 @@ async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
                     && entry.position.floor == here.floor
-                    && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(here.x)
+                        .max(entry.position.y.abs_diff(here.y))
+                        <= 1
             })
         })
         .copied()
@@ -46,11 +118,15 @@ async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
         return Err(format!("attack refused: {attack:?}").into());
     }
     let mut facts = Vec::new();
+    let mut events = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while !facts.iter().any(|fact| matches!(fact, AnalyserFact::Kill { .. })) {
+    while !facts
+        .iter()
+        .any(|fact| matches!(fact, AnalyserFact::Kill { .. }))
+    {
         client.service_liveness(Duration::from_millis(100)).await?;
-        collect(client, &mut facts);
+        collect(client, selected, &mut facts, &mut events)?;
         if tokio::time::Instant::now() >= deadline {
             return Err("no analyser Kill fact before the deadline".into());
         }
@@ -58,9 +134,9 @@ async fn fight(client: &mut DevClientSession) -> TestResult<Vec<AnalyserFact>> {
     // The loot and experience facts of the same settlement may follow in another batch.
     for _ in 0..8 {
         client.service_liveness(Duration::from_millis(100)).await?;
-        collect(client, &mut facts);
+        collect(client, selected, &mut facts, &mut events)?;
     }
-    Ok(facts)
+    Ok((facts, events))
 }
 
 fn line(fact: &AnalyserFact) -> String {
@@ -71,7 +147,10 @@ fn line(fact: &AnalyserFact) -> String {
             corpse_items, gold, ..
         } => format!(
             "loot {gold} {}",
-            corpse_items.iter().map(|item| u64::from(item.count.get())).sum::<u64>()
+            corpse_items
+                .iter()
+                .map(|item| u64::from(item.count.get()))
+                .sum::<u64>()
         ),
         AnalyserFact::SupplyUsed(item) => format!("supply {}", item.count.get()),
         AnalyserFact::Impact(AnalyserImpact::Damage { value, .. }) => format!("damage {value}"),
@@ -96,7 +175,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("analyser capability 10 not selected".into());
     }
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let facts = fight(&mut client).await?;
+    let attribution_selected = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1);
+    let (facts, events) = fight(&mut client, attribution_selected).await?;
     let kills = facts
         .iter()
         .filter(|fact| matches!(fact, AnalyserFact::Kill { .. }))
@@ -114,22 +196,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 ..
             } => {
                 gold += g;
-                items += corpse_items.iter().map(|item| u64::from(item.count.get())).sum::<u64>();
+                items += corpse_items
+                    .iter()
+                    .map(|item| u64::from(item.count.get()))
+                    .sum::<u64>();
             }
             _ => {}
         }
     }
     let lines: Vec<String> = facts.iter().map(line).collect();
-    let expected = format!(
-        "kills={kills}\nraw_xp={raw}\ngained_xp={gained}\ngold={gold}\nloot_items={items}\nfacts={}\n",
+    let mut expected = format!(
+        "capture_kind=typed-events-v1\nattribution_selected={attribution_selected}\ncoverage=totals-and-typed-events;flash-not-exercised\nevent_count={}\nkills={kills}\nraw_xp={raw}\ngained_xp={gained}\ngold={gold}\nloot_items={items}\nfacts={}\n",
+        events.len(),
         lines.join("|")
     );
+    for (index, event) in events.iter().enumerate() {
+        expected.push_str(&format!("event_{index}={event}\n"));
+    }
     capture("n07c-expected.txt", expected.as_bytes());
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N07c.client status=CAPTURED evidence=raw-delta-not-retained-by-dev-client;{observed}"
         )),

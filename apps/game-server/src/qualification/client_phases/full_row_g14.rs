@@ -15,7 +15,8 @@ use oteryn_protocol_oteryn::server_modal as wire;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
@@ -95,18 +96,46 @@ async fn query(client: &mut DevClientSession) -> TestResult<wire::Reply> {
         &[],
     )
     .await?;
-    let reply = wire::Reply::decode(&payload)
-        .map_err(|error| format!("step=query observed=decode-{error}"))?;
+    decode_reply(input_selected(client), &payload)
+}
+
+fn input_selected(client: &DevClientSession) -> bool {
+    client
+        .selected_capabilities()
+        .contains(&wire::input::CAPABILITY_SERVER_MODAL_INPUT_V1)
+}
+
+fn decode_reply(selected: bool, payload: &[u8]) -> TestResult<wire::Reply> {
+    let (reply, input) = if selected {
+        wire::input::decode_reply_with_input(payload)
+    } else {
+        wire::Reply::decode(payload).map(|reply| (reply, None))
+    }
+    .map_err(|error| format!("step=query observed=decode-{error}"))?;
+    if input.is_some() {
+        return Err(
+            "step=query observed=dialog-requires-input needed=real-input-value-prerequisite".into(),
+        );
+    }
     Ok(reply)
 }
 
-fn answer(dialog_id: u32, button_id: u8) -> TestResult<Vec<u8>> {
-    Ok(wire::Answer {
+fn answer(selected: bool, dialog_id: u32, button_id: u8) -> TestResult<Vec<u8>> {
+    let answer = wire::Answer {
         dialog_id,
         button_id,
         choice_id: None,
+    };
+    if selected {
+        Ok(wire::input::InputAnswer {
+            answer,
+            value: None,
+            dont_show_again: false,
+        }
+        .encode()?)
+    } else {
+        Ok(answer.encode()?)
     }
-    .encode()?)
 }
 
 async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> TestResult {
@@ -120,7 +149,9 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         wire::Reply::Dialog(again) if format!("{again:?}") == format!("{dialog:?}") => {}
         other => return Err(format!("step=repeat observed={other:?}").into()),
     }
-    let wrong = answer(dialog.id.wrapping_add(7), button)?;
+    let selected = input_selected(client);
+    let wrong_id = dialog.id.checked_add(1).unwrap_or(1);
+    let wrong = answer(selected, wrong_id, button)?;
     let (status, payload) = send(
         client,
         CAPABILITY,
@@ -129,7 +160,10 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
     )
     .await?;
     if status == CommandStatus::Accepted
-        && matches!(wire::Reply::decode(&payload), Ok(wire::Reply::Answered(_)))
+        && matches!(
+            decode_reply(selected, &payload),
+            Ok(wire::Reply::Answered(_))
+        )
     {
         return Err("step=wrong-answer observed=accepted-for-unknown-dialog".into());
     }
@@ -137,7 +171,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         wire::Reply::Dialog(still) if still.id == dialog.id => {}
         other => return Err(format!("step=wrong-answer observed=dialog-changed:{other:?}").into()),
     }
-    let right = answer(dialog.id, button)?;
+    let right = answer(selected, dialog.id, button)?;
     let payload = accepted(
         client,
         CAPABILITY,
@@ -145,7 +179,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         &right,
     )
     .await?;
-    match wire::Reply::decode(&payload) {
+    match decode_reply(selected, &payload) {
         Ok(wire::Reply::Answered(given))
             if given.dialog_id == dialog.id && given.button_id == button => {}
         other => return Err(format!("step=answer observed={other:?}").into()),
@@ -160,7 +194,7 @@ async fn body(client: &mut DevClientSession, _clients: &SeamClients<'_>) -> Test
         &right,
     )
     .await?;
-    match wire::Reply::decode(&payload) {
+    match decode_reply(selected, &payload) {
         Ok(wire::Reply::Answered(_)) => {}
         other => return Err(format!("step=replay observed={other:?}").into()),
     }
@@ -190,5 +224,37 @@ mod tests {
         );
         assert!(!compact(&"x ".repeat(500)).contains(' '));
         assert!(compact(&"y".repeat(900)).len() <= 400);
+    }
+    #[test]
+    fn selected_modal_roundtrip_and_wrong_identity_are_well_formed() -> TestResult {
+        let dialog = wire::Dialog {
+            id: 7,
+            title: "Notice".into(),
+            message: "Real modal codec regression".into(),
+            choices: Vec::new(),
+            buttons: vec![(1, "OK".into())],
+            cancel_button: None,
+            image: None,
+        };
+        let bytes = wire::input::encode_dialog_with_input(&dialog, None)?;
+        assert_eq!(
+            decode_reply(true, &bytes)?,
+            wire::Reply::Dialog(dialog.clone())
+        );
+        assert!(decode_reply(false, &bytes).is_err());
+        let legacy = wire::Reply::Dialog(dialog.clone()).encode()?;
+        assert_eq!(decode_reply(false, &legacy)?, wire::Reply::Dialog(dialog));
+        assert!(decode_reply(true, &legacy).is_err());
+        for selected in [false, true] {
+            let right = answer(selected, 7, 1)?;
+            let wrong = answer(selected, 8, 1)?;
+            let right = wire::input::decode_answer_selected(selected, &right)?;
+            let wrong = wire::input::decode_answer_selected(selected, &wrong)?;
+            assert_eq!((right.answer.dialog_id, wrong.answer.dialog_id), (7, 8));
+            assert_eq!(right.answer.button_id, wrong.answer.button_id);
+            assert_eq!(right.value, wrong.value);
+            assert_eq!(right.dont_show_again, wrong.dont_show_again);
+        }
+        Ok(())
     }
 }
