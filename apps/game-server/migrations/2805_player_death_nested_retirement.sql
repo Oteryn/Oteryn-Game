@@ -277,8 +277,15 @@ CREATE TRIGGER game_player_death_reset_nested_capture BEFORE DELETE ON game_item
 -- makes partial subtree removal insufficient.
 CREATE FUNCTION game_player_death_retirement_entry_proven(p_item UUID) RETURNS BOOLEAN
 LANGUAGE sql VOLATILE SECURITY DEFINER AS $proof$
+ -- Select the one current edge before joining its shared root. Without this
+ -- boundary, the planner can scan every sibling through the root index for
+ -- each deferred callback, despite the edge's primary-key Item binding.
+ WITH edge AS MATERIALIZED (
+  SELECT * FROM game_player_death_retirement_edges
+  WHERE item_instance_id=p_item AND created_xact_id=pg_current_xact_id()
+ )
  SELECT EXISTS(
-  SELECT 1 FROM game_player_death_retirement_edges e
+  SELECT 1 FROM edge e
   JOIN game_item_decay_retire_receipts r ON r.item_instance_id=e.item_instance_id
   JOIN game_item_decay_retire_receipts parent ON parent.item_instance_id=e.parent_item_instance_id
   JOIN game_item_decay_retire_receipts root ON root.item_instance_id=e.ground_root_item_instance_id
