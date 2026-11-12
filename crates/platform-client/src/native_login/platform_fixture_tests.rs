@@ -32,7 +32,10 @@ impl Vector {
 fn on_fixture_thread(test: fn() -> TestResult) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(move || test().map_err(|e| e.to_string()))?
+        .spawn(move || {
+            pause_clock();
+            test().map_err(|e| e.to_string())
+        })?
         .join()
         .map_err(|_| "fixture thread panicked")?
         .map_err(Into::into)
@@ -80,8 +83,6 @@ fn assert_grant(grant: &NativeLoginGrant) -> TestResult {
             .ok_or("token")?
             .as_bytes()
     );
-    assert!(grant.usable_until > Instant::now());
-    assert!(grant.usable_until <= Instant::now() + Duration::from_secs(30));
     Ok(())
 }
 
@@ -142,15 +143,17 @@ fn gateway_login_maps_every_platform_error_vector() -> TestResult {
                 .block_on(client.login_once(&endpoint, REQUEST.as_bytes(), &attempt()))
                 .err()
                 .ok_or("expected gateway error")?;
-            let NativeLoginError::Gateway(code) = error else {
-                return Err(format!("unexpected error for {}: {error:?}", vector.body).into());
+            let code = expected_error(expected["error"]["code"].as_str().ok_or("wire code")?)?;
+            assert_eq!(error, NativeLoginError::Gateway(code));
+            let public_class = match error.public_class() {
+                PublicClass::RetryLogin => "RETRY_LOGIN",
+                PublicClass::AuthenticationRequired => "AUTHENTICATION_REQUIRED",
+                PublicClass::TemporarilyUnavailable => "TEMPORARILY_UNAVAILABLE",
+                PublicClass::SessionUnavailable => "SESSION_UNAVAILABLE",
+                PublicClass::ClientUpdateRequired => "CLIENT_UPDATE_REQUIRED",
+                PublicClass::CharacterAlreadyActive => "CHARACTER_ALREADY_ACTIVE",
             };
-            assert_eq!(code.wire_code(), expected["error"]["code"]);
-            assert_eq!(
-                error.public_class(),
-                PublicClass::parse(expected["error"]["public_class"].as_str().ok_or("class")?)
-                    .ok_or("known class")?
-            );
+            assert_eq!(public_class, expected["error"]["public_class"]);
             assert_eq!(code.http_status(), vector.status);
             assert_eq!(
                 format!("{:?}", code.progression()),
@@ -158,12 +161,84 @@ fn gateway_login_maps_every_platform_error_vector() -> TestResult {
             );
             assert_eq!(retry_after, None);
         }
-        // Boundary checks use the Platform rate-limited response with HTTP headers.
+        Ok(())
+    })
+}
+
+// Independent enum oracle: intentionally does not consult GATEWAY_ERROR_ROWS.
+fn expected_error(wire: &str) -> Result<GatewayErrorCode, Box<dyn std::error::Error>> {
+    use GatewayErrorCode::*;
+    const EXPECTED: &[(&str, GatewayErrorCode)] = &[
+        ("NATIVE_LOGIN_REQUEST_MALFORMED", RequestMalformed),
+        ("NATIVE_LOGIN_UNSUPPORTED_VERSION", UnsupportedVersion),
+        ("NATIVE_LOGIN_OFFER_UNSUPPORTED", OfferUnsupported),
+        (
+            "NATIVE_LOGIN_AUTHENTICATION_REQUIRED",
+            AuthenticationRequired,
+        ),
+        ("NATIVE_LOGIN_ATTEMPT_CONFLICT", AttemptConflict),
+        ("NATIVE_LOGIN_CHARACTER_CONFLICT", CharacterConflict),
+        ("NATIVE_LOGIN_ROUTE_UNAVAILABLE", RouteUnavailable),
+        ("NATIVE_LOGIN_RATE_LIMITED", RateLimited),
+        (
+            "ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED",
+            AttemptReconciliationRequired,
+        ),
+        ("NATIVE_LOGIN_GRANT_EXPIRED", GrantExpired),
+        ("NATIVE_LOGIN_UNAVAILABLE", Unavailable),
+    ];
+    EXPECTED
+        .iter()
+        .find(|(key, _)| *key == wire)
+        .map(|(_, code)| *code)
+        .ok_or_else(|| format!("missing enum oracle for {wire}").into())
+}
+
+#[test]
+fn gateway_login_stops_or_retries_every_platform_error_vector() -> TestResult {
+    on_fixture_thread(|| {
+        let runtime = fixture_runtime()?;
+        let vectors: Vec<Vector> = serde_json::from_str(ERRORS)?;
+        for vector in &vectors {
+            let expected: serde_json::Value = serde_json::from_str(&vector.body)?;
+            let code = expected_error(expected["error"]["code"].as_str().ok_or("wire code")?)?;
+            let server = spawn_server_with_headers(
+                &runtime,
+                vec![vector.response(), (200, String::new(), SUCCESS.to_owned())],
+            )?;
+            let result = runtime.block_on(client_for(&server)?.gateway_login(
+                &ticket(),
+                &fixture_login(&attempt()),
+                CancellationToken::new(),
+            ));
+            if vector.progression.as_deref() == Some("Retryable") {
+                assert_grant(&result?)?;
+                assert_requests(&server, 2)?;
+            } else {
+                assert_eq!(
+                    result.map(|_| ()),
+                    Err(NativeLoginError::Gateway(code)),
+                    "{}",
+                    vector.body
+                );
+                assert_requests(&server, 1)?;
+            }
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn gateway_login_honors_platform_retry_after_boundary() -> TestResult {
+    on_fixture_thread(|| {
+        let runtime = fixture_runtime()?;
+        let vectors: Vec<Vector> = serde_json::from_str(ERRORS)?;
         let limited = vectors
             .iter()
             .find(|v| v.status == 429)
             .ok_or("rate limit vector")?;
         for (seconds, expected_requests) in [(30, 2), (31, 1)] {
+            pause_clock();
             let server = spawn_server_with_headers(
                 &runtime,
                 vec![
@@ -176,7 +251,6 @@ fn gateway_login_maps_every_platform_error_vector() -> TestResult {
                 ],
             )?;
             let client = client_for(&server)?.with_pacing(RetryPacing::CONTRACT);
-            let started = Instant::now();
             let result = runtime.block_on(client.gateway_login(
                 &ticket(),
                 &fixture_login(&attempt()),
@@ -184,18 +258,37 @@ fn gateway_login_maps_every_platform_error_vector() -> TestResult {
             ));
             if seconds == 30 {
                 assert_grant(&result?)?;
-                assert!(started.elapsed() >= Duration::from_secs(30));
+                assert_eq!(clock_elapsed(), Duration::from_secs(30));
             } else {
                 assert_eq!(
                     result.map(|_| ()),
                     Err(NativeLoginError::Gateway(GatewayErrorCode::RateLimited))
                 );
+                assert_eq!(clock_elapsed(), Duration::ZERO);
             }
-            assert_eq!(
-                server.requests.lock().map_err(|_| "request lock")?.len(),
-                expected_requests
-            );
+            assert_requests(&server, expected_requests)?;
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn gateway_login_preserves_platform_grant_lifetime() -> TestResult {
+    on_fixture_thread(|| {
+        pause_clock();
+        let received = clock_now()?;
+        let grant = parse_login_success(SUCCESS.as_bytes(), &attempt(), received)?;
+        let expected: serde_json::Value = serde_json::from_str(SUCCESS)?;
+        let lifetime = Duration::from_secs(
+            expected["grant"]["valid_for_seconds"]
+                .as_u64()
+                .ok_or("lifetime")?,
+        );
+        // Inspection happens later on the controlled clock; expiry stays receipt-relative.
+        delay(Duration::from_secs(10));
+        assert_eq!(clock_now()?, received + Duration::from_secs(10));
+        assert_eq!(grant.usable_until.duration_since(received), lifetime);
+        assert_grant(&grant)?;
         Ok(())
     })
 }
@@ -233,6 +326,38 @@ fn gateway_login_rejects_every_platform_rejected_vector() -> TestResult {
         }
         Ok(())
     })
+}
+
+fn reject_derived_success(member: &str, value: serde_json::Value) -> TestResult {
+    let runtime = fixture_runtime()?;
+    let mut success: serde_json::Value = serde_json::from_str(SUCCESS)?;
+    success[member] = value;
+    let server = spawn_server_with_headers(
+        &runtime,
+        vec![(200, String::new(), serde_json::to_string(&success)?)],
+    )?;
+    let result = runtime.block_on(client_for(&server)?.gateway_login(
+        &ticket(),
+        &fixture_login(&attempt()),
+        CancellationToken::new(),
+    ));
+    assert_eq!(
+        result.map(|_| ()),
+        Err(NativeLoginError::Platform(
+            PlatformClientError::InvalidPayload
+        ))
+    );
+    assert_requests(&server, 1)
+}
+
+#[test]
+fn gateway_login_rejects_null_channel_without_unknown_fields() -> TestResult {
+    on_fixture_thread(|| reject_derived_success("channel_id", serde_json::Value::Null))
+}
+
+#[test]
+fn gateway_login_rejects_unknown_field_with_valid_channel() -> TestResult {
+    on_fixture_thread(|| reject_derived_success("x", serde_json::json!(1)))
 }
 
 #[test]
