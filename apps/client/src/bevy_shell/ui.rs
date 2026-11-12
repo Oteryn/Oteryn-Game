@@ -366,6 +366,8 @@ fn toggle(
         });
     }
 }
+// Bevy injects the independent ECS queries/resources in this system signature.
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub(super) fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -408,10 +410,10 @@ pub(super) fn project(
         } else {
             None
         };
-        if let Some(next) = next {
-            if text.0 != next {
-                text.0 = next.into();
-            }
+        if let Some(next) = next
+            && text.0 != next
+        {
+            text.0 = next.into();
         }
     }
     if let Some(draft) = owner.draft() {
