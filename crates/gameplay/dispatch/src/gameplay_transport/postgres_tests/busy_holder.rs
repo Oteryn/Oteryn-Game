@@ -145,6 +145,12 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
             let busy = hold_holder(&h.root, Duration::from_millis(300))?;
             let refreshed = owner.refresh_pvp_locks(dependencies.actor, session).await;
             busy.await??;
+            assert!(refreshed, "the timed refresh refused on a busy holder");
+            let refreshed = priority_handoff(
+                &h.root,
+                owner.refresh_pvp_locks(dependencies.actor, session),
+            )
+            .await?;
             assert!(refreshed, "the refresh refused on a busy holder");
             drop(owner);
             drop(seal);
@@ -195,6 +201,12 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
             busy.await??;
             assert!(
                 accepted,
+                "the timed activity input refused on a busy holder"
+            );
+            let accepted =
+                priority_handoff(&h.root, owner.activity_transfer_input(admitted)).await?;
+            assert!(
+                accepted,
                 "a background pass must not close ordinary activity-capable input"
             );
             // A persistently unavailable root still authorizes no input.
@@ -206,6 +218,32 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
             h.cleanup().await
         })
     })
+}
+
+// The caller is the real fenced read/input guard. Keep its holder identity independent
+// from the fixture returning the pass, then reproduce immediate scheduler reacquisition.
+async fn priority_handoff(
+    root: &crate::durability::DurabilityRoot,
+    operation: impl std::future::Future<Output = bool>,
+) -> TestResult<bool> {
+    use std::{future::Future, task::Poll};
+    let held = root.try_issue_background_semantic_pass().map_err(debug)?;
+    let operation = crate::durability::DurabilityRoot::with_holder_owner(operation);
+    let mut operation = std::pin::pin!(operation);
+    let first = std::future::poll_fn(|cx| Poll::Ready(operation.as_mut().poll(cx))).await;
+    assert!(first.is_pending(), "a busy guard must await the holder");
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    for _ in 0..16 {
+        assert!(matches!(
+            root.try_issue_background_semantic_pass(),
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ));
+    }
+    let result = operation.await;
+    root.try_issue_background_semantic_pass()?
+        .run(|_, _| Box::pin(async { Ok(()) }))
+        .await?;
+    Ok(result)
 }
 
 fn hold_holder(
