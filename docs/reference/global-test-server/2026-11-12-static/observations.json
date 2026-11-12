@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task_id": "OTV2-20261112-global-test-server-static",
+  "session": {
+    "session_id": "global-test-server-2026-11-12-static-01",
+    "source_kind": "CONTROLLED_GLOBAL_OBSERVATION",
+    "environment": "TEST_SERVER",
+    "client_build": null,
+    "server_name": null,
+    "client_language": null,
+    "observed_at": null,
+    "character_context": null,
+    "accepted_target_reference": null,
+    "baseline_continuity": "UNKNOWN"
+  },
+  "evidence": [],
+  "observations": []
+}
