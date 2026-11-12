@@ -2,7 +2,7 @@
 //! RESHAPE receipt and its lesser fragment BURN commit in one transaction.
 use super::*;
 use crate::durability::character_atelier::AtelierResources;
-use crate::durability::item_fee_burn::test_support::{definition, request as fee_request};
+use crate::durability::item_fee_burn::test_support::request as fee_request;
 use crate::gameplay_transport::atelier::{GemBuildCommand, GemBuildOutcome};
 
 async fn lesser_fragments(h: &Harness) -> TestResult<i64> {
@@ -49,7 +49,7 @@ pub(super) async fn exercise(
     let resources = Box::new(AtelierResources {
         content: &content,
         coins: fee_request(2, 1)?.change,
-        fragment: definition("oteryn:item.tibia.i46625"),
+        fragment: fixture::fragment_definition("oteryn:item.tibia.i46625"),
         supply_stash: false,
     });
     let session = crate::bestiary_postgres_harness::fence(1)?.game_session_id;
@@ -75,7 +75,7 @@ pub(super) async fn exercise(
         resources: Some(Box::new(AtelierResources {
             content: &content,
             coins: fee_request(2, 1)?.change,
-            fragment: definition("oteryn:item.tibia.i46626"),
+            fragment: fixture::fragment_definition("oteryn:item.tibia.i46626"),
             supply_stash: false,
         })),
     };
@@ -232,8 +232,7 @@ pub(super) async fn exercise(
     // depot with the Supply Stash open, carried fragments go first and the stash
     // pays the remainder. Move every carried lesser fragment into the stash.
     let carried = lesser_fragments(h).await?;
-    super::wire_paid::stow_asset_command(owner, admitted, 229, u32::try_from(carried)?, 160)
-        .await?;
+    stow_fragments(owner, h, admitted, u32::try_from(carried)?).await?;
     assert_eq!(stashed_lesser(h).await?, carried);
     let still_carried: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
@@ -360,5 +359,58 @@ pub(super) async fn exercise(
     assert_eq!(stored(h).await?, locked);
     assert_eq!(footprint(h).await?, fp);
     assert_eq!(lesser_fragments(h).await?, fragments);
+    Ok(())
+}
+
+/// The legacy Atelier scenario retains its mechanic content. Stow independently
+/// qualifies the canonical fragments against a real published native registry.
+async fn stow_fragments(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    quantity: u32,
+) -> TestResult {
+    use crate::durability::character_stash::StashRequest;
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+    use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
+    let (generation, pin) =
+        super::super::death_ml_loss_composed::production_generation_with_pin(
+            owner.world_id,
+            "content-1",
+        )?;
+    super::super::tutorial_vitals_fixture::publish_native_activation(h, &pin).await?;
+    let active = generation.active().ok_or("stash native generation")?;
+    let native = active.native_gameplay().ok_or("stash native registry")?;
+    let permit = owner.spell_lane_permit().await.ok_or("stash lane")?;
+    let receipt = owner
+        .root
+        .stash_conversion(
+            &permit,
+            owner.character,
+            owner.holder,
+            admitted.item_fence.ok_or("stash item fence")?,
+            StashRequest {
+                command: CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(160).map_err(debug)?,
+                ),
+                intent: StashIntent {
+                    page: 0,
+                    action: StashAction::Stow(std::num::NonZeroU64::new(1).ok_or("stash handle")?),
+                },
+                source: Some(id(229)),
+                row_open: true,
+                access_refusal: None,
+            },
+            native,
+            &NativeItemWeights(native),
+            false,
+        )
+        .await
+        .map_err(debug)?
+        .ok_or("stash receipt")?;
+    assert_eq!(receipt.outcome, StashOutcome::Committed);
+    assert_eq!(receipt.stowed_quantity, quantity);
     Ok(())
 }
