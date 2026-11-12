@@ -569,4 +569,68 @@ mod tests {
         );
         Ok(())
     }
+    #[test]
+    fn opening_and_reopening_form_preserves_upstream_editor_styles() -> TestResult {
+        use bevy::{
+            asset::AssetPlugin,
+            text::{FontSource, RemSize},
+        };
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            oteryn_client_ui_bevy::GlobalUiPlugin,
+        ))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .init_resource::<RemSize>()
+        .insert_non_send(HostOwner::new(None)?)
+        .add_systems(Startup, (super::super::ui::setup, setup).chain())
+        .add_systems(Update, project)
+        .add_systems(PostUpdate, bevy::ui::widget::update_editable_text_styles);
+        app.update();
+        let input = app
+            .world_mut()
+            .query::<(Entity, &LoginField)>()
+            .iter(app.world())
+            .find_map(|(entity, field)| (field.0 == 0).then_some(entity))
+            .ok_or("platform input")?;
+        app.world_mut()
+            .entity_mut(input)
+            .get_mut::<TextFont>()
+            .ok_or("font")?
+            .font = FontSource::Family("OterynRegressionFamily".into());
+        app.update();
+        let configured = app
+            .world()
+            .entity(input)
+            .get::<EditableText>()
+            .ok_or("editor")?
+            .editor()
+            .get_styles()
+            .inner()
+            .clone();
+        assert!(
+            configured.len() > 3,
+            "upstream styled editor before form opened"
+        );
+        for value in ["http://127.0.0.1:18564", "https://example.invalid"] {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.login.form.settings.platform_url = value.into();
+            owner.request_login();
+            app.update();
+            let entity = app.world().entity(input);
+            let text = entity.get::<EditableText>().ok_or("editor")?;
+            assert_eq!(text.value().to_string(), value);
+            assert_eq!(
+                text.editor().get_styles().inner(),
+                &configured,
+                "form open retains upstream family, size and shaping styles"
+            );
+            app.world_mut().non_send_mut::<HostOwner>().login.visible = false;
+            app.update();
+        }
+        Ok(())
+    }
 }
