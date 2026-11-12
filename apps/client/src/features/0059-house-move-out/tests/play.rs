@@ -27,6 +27,13 @@ impl Stepper for Peer {
         &mut self,
         command: &FeatureCommand,
     ) -> Result<GatedCommandResult, SessionError> {
+        // The test releases the transport result only after observing pending.
+        self.exchanges
+            .release
+            .acquire()
+            .await
+            .map_err(|_| SessionError::SessionUnusable)?
+            .forget();
         let (kind, payload, status, reply) = self
             .exchanges
             .entries
@@ -37,12 +44,6 @@ impl Stepper for Peer {
         assert_eq!(command.capability, 59);
         assert_eq!(command.kind, kind);
         assert_eq!(command.payload, payload);
-        self.exchanges
-            .release
-            .acquire()
-            .await
-            .map_err(|_| SessionError::SessionUnusable)?
-            .forget();
         Ok(GatedCommandResult {
             command_id: 1,
             server_sequence: 1,
@@ -229,6 +230,7 @@ fn pc04_house_move_out_scenario() -> Result<(), Error> {
                     link.house_move_out_edit(0, fields[0].into());
                     link.house_move_out_request(intent);
                     assert!(link.house_move_out_panel().pending);
+                    exchanges.release.add_permits(1);
                     task.await.checked()?;
                     let ended = link.house_move_out_panel();
                     assert!(!ended.pending && !ended.selected && !ended.open);
