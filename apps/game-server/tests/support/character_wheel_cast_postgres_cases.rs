@@ -574,14 +574,17 @@ fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() ->
                     Gem {
                         id: gem_id,
                         quality: GemQuality::Greater,
-                        domain: WheelDomain::Green,
                         mods: vec![31, 0, 5],
                         locked: false,
                         vessel: false,
+                        slot: None,
                         ruleset_revision: data.revision().into(),
                     },
                 );
-                Some([Some(id(105)), None, None, None])
+                // Slot 2 is the first Greater Gem Vessel; the full green slice opens it.
+                let mut vessels = oteryn_gameplay_progression::atelier::vessels::NO_GEM_VESSELS;
+                vessels[2] = Some(id(105));
+                Some(crate::durability::character_wheel::WheelVesselIntent::Slots(vessels))
             };
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -639,8 +642,10 @@ fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() ->
                 assert_eq!(stages.value["avatar_of_storm"], 1);
                 assert_eq!(stages.value["Avatar of Storm"], 1);
                 assert_eq!(stages.value["avatar of storm"], 1);
-                assert_eq!(effects.flat_damage_bonus(), Some(16));
-                assert_eq!(effects.flat_healing_bonus(), Some(16));
+                // Four unlocked Gem Vessel nodes each add one flat point in WU26.
+                assert_eq!(effects.sockets.gem_vessel_nodes, 4);
+                assert_eq!(effects.flat_damage_bonus(), Some(20));
+                assert_eq!(effects.flat_healing_bonus(), Some(20));
             } else {
                 assert_eq!(read.allocation().slots.total(), 850);
                 assert!(
@@ -659,8 +664,9 @@ fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() ->
                 );
                 assert_eq!(stages.value["beam_mastery"], 0);
                 assert_eq!(stages.value["Beam Mastery"], 0);
-                assert_eq!(effects.flat_damage_bonus(), Some(20));
-                assert_eq!(effects.flat_healing_bonus(), Some(20));
+                assert_eq!(effects.sockets.gem_vessel_nodes, 3);
+                assert_eq!(effects.flat_damage_bonus(), Some(23));
+                assert_eq!(effects.flat_healing_bonus(), Some(23));
             }
             let expired = project(&read, &raw, &rules, &current, 100)?;
             assert!(expired.wheel.is_none() && expired.wheel_effects.is_none());

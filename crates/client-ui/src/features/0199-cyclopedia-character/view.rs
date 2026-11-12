@@ -36,7 +36,14 @@ pub fn overview_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String
     }) else {
         return Vec::new();
     };
-    general_cards(stats)
+    let mut cards = general_cards(stats);
+    if let Some(title) = p
+        .vocation_id
+        .and_then(crate::cyclopedia_character_vocation::vocation_title)
+    {
+        cards.push(("Vocation", title.into()));
+    }
+    cards
 }
 fn general_cards(
     stats: oteryn_client_runtime::cyclopedia_character::GeneralStats,

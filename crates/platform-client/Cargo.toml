@@ -31,10 +31,6 @@ tough = { version = "=0.24.0", default-features = false }
 url = "=2.5.8"
 
 [dev-dependencies]
-oteryn-client = { version = "=0.1.0", path = "../../apps/client" }
-oteryn-identity = { version = "=0.1.0", path = "../identity" }
-rcgen.workspace = true
-tokio-rustls.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
 
 [lints]

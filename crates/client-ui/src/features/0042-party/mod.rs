@@ -1,4 +1,7 @@
 //! Server-confirmed party membership and invitations.
+#[cfg(test)]
+#[path = "tests/e2e_s01.rs"]
+mod e2e_s01;
 mod input;
 mod protocol;
 mod state;

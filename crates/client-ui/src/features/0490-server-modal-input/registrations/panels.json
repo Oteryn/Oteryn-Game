@@ -1,0 +1,7 @@
+{
+  "mechanic": "0490-server-modal-input",
+  "kind": "panels",
+  "id": "0490-server-modal-input-panel",
+  "status": "supported",
+  "entry": "protocol.rs::prompt"
+}

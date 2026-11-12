@@ -13,7 +13,8 @@ fn custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters()
     assert!(link.assign_bar_action(
         0,
         BarAction::Text {
-            text: "A saved greeting".into()
+            text: "A saved greeting".into(),
+            send_automatically: true
         }
     ));
     assert!(link.bind_action_key(0, "SUPER+ALT+F12"));
@@ -53,12 +54,12 @@ fn custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters()
     );
     let original = crate::play::preference_bindings()?
         .into_iter()
-        .find(|binding| binding.id == "0009-highscores-open")
+        .find(|binding| binding.id == "0072-task-board-soulseals")
         .ok_or("binding")?
         .default_chord;
     settings
         .preferences
-        .rebind("0009-highscores-open", "SUPER+ALT+F10")?;
+        .rebind("0072-task-board-soulseals", "SUPER+ALT+F10")?;
     settings.sync_bar_actions(&link);
     assert!(
         !link.bind_action_key(2, original),

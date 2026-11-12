@@ -182,8 +182,10 @@ impl NativeLoginClient {
         cancel: CancellationToken,
     ) -> Result<(DeviceSession, NativeTicket), NativeLoginError> {
         let started = Instant::now();
-        let utc = now()?;
         let reply = self.rotate_device(session, "/tickets", cancel).await?;
+        // The issuer's lifetime starts during rotation; qualify its absolute
+        // expiry at receipt while keeping the request-start monotonic budget.
+        let utc = now()?;
         if reply.characters.is_some() {
             return Err(PlatformClientError::InvalidPayload.into());
         }
@@ -196,7 +198,7 @@ impl NativeLoginClient {
             .expires_at
             .ok_or(PlatformClientError::InvalidPayload)?;
         if !(1..=60).contains(&lifetime)
-            || expiry <= now()?
+            || expiry <= utc
             || expiry > utc + 60
             || !is_visible_ascii(&ticket, MAX_TICKET_BYTES)
         {

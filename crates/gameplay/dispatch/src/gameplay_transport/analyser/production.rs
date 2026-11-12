@@ -20,7 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut spells = self.states.spell_states.lock().await;
         spells.analyser = Arc::clone(&self.states.analyser);
-        self.states.analyser.snapshot(
+        self.states.analyser.snapshot_attributed(
             actor,
             admitted.game_session_id,
             admitted.continuity.connection_generation,
@@ -28,6 +28,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|g| g.native_gameplay())
                 .and_then(|n| n.item_index())
                 .cloned(),
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1),
         )
     }
 
@@ -213,7 +217,10 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
                         *session,
                         value,
                         element,
-                        oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Player,
+                        super::HitSource {
+                            source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Player,
+                            attacker: Some(batch.caster),
+                        },
                     );
                 }
             }

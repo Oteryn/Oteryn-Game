@@ -3,6 +3,7 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 pub(crate) struct MiscellaneousControls {
     checks: [HWND; 5],
     buttons: [HWND; 3],
+    web: [HWND; 2],
     hint: HWND,
 }
 impl MiscellaneousControls {
@@ -39,6 +40,19 @@ impl MiscellaneousControls {
                     0,
                 )
             });
+            let web = std::array::from_fn(|i| {
+                control(
+                    hwnd,
+                    "BUTTON",
+                    [
+                        "Support tickets (opens the browser)",
+                        "Cookie policy (opens the browser)",
+                    ][i],
+                    9109 + i,
+                    [10, 395 + i as i32 * 35, 710, 28],
+                    0,
+                )
+            });
             let hint = control(
                 hwnd,
                 "STATIC",
@@ -47,12 +61,19 @@ impl MiscellaneousControls {
                 [10, 55, 710, 42],
                 0,
             );
-            if checks.iter().chain(&buttons).any(|h| h.is_null()) || hint.is_null() {
+            if checks
+                .iter()
+                .chain(&buttons)
+                .chain(&web)
+                .any(|h| h.is_null())
+                || hint.is_null()
+            {
                 None
             } else {
                 Some(Self {
                     checks,
                     buttons,
+                    web,
                     hint,
                 })
             }
@@ -64,6 +85,7 @@ impl MiscellaneousControls {
                 .checks
                 .iter()
                 .chain(&self.buttons)
+                .chain(&self.web)
                 .chain(std::iter::once(&self.hint))
             {
                 ShowWindow(*h, if visible { SW_SHOW } else { SW_HIDE });
@@ -134,6 +156,14 @@ impl MiscellaneousControls {
                     }
                     state.request_native_sign_out();
                     state.feedback = "Signing out and clearing the OS credential vault.".into();
+                    true
+                }
+                9109 => {
+                    state.request_web_link(oteryn_client::web_links::WebLink::SupportTickets);
+                    true
+                }
+                9110 => {
+                    state.request_web_link(oteryn_client::web_links::WebLink::CookiePolicy);
                     true
                 }
                 _ => false,

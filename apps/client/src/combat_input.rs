@@ -51,6 +51,8 @@ pub enum PlayCommand {
     Party(oteryn_client_runtime::party::PartyCommand),
     Hireling(oteryn_client_runtime::hireling::HirelingCommand),
     Market(oteryn_client_runtime::market::MarketCommand),
+    /// Dismiss the oldest retained line at the local Session owner, without a wire command.
+    ChatClearOldest,
     ChatPublic(oteryn_session::ChatIntent),
     MovementSpeech(oteryn_session::ChatIntent),
 }

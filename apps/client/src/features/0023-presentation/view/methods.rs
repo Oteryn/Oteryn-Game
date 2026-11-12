@@ -15,9 +15,13 @@ impl PlayView {
     }
 
     pub(in crate::play) fn advance_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
-        if self.visuals.is_empty() && !self.tutorial_overlay.enabled {
+        if self.visuals.is_empty() && !self.tutorial_overlay.enabled && self.hit_flash.is_none() {
             return Ok(());
         }
+        self.hit_flash = self.hit_flash.filter(|received| {
+            now.saturating_duration_since(*received)
+                < oteryn_client_ui::analyser_hit_attribution::HIT_FLASH_LIFETIME
+        });
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
         self.project_presentation(now)
@@ -48,6 +52,7 @@ impl PlayView {
         });
         let age = now.saturating_duration_since(self.party_icon_epoch);
         let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref, age);
+        let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
         batch.lighting.opacity.clear();
         resources::draw(
@@ -67,6 +72,19 @@ impl PlayView {
             &self.party_icons,
             actor_options,
         )?;
+        if let Some(received) = hit_flash
+            && oteryn_client_ui::analyser_hit_attribution::hit_flash_visible(
+                now.saturating_duration_since(received),
+            )
+        {
+            batch.push_frame(
+                view,
+                atlas,
+                self.own,
+                crate::map::BLACK_CELL,
+                (view.tile_px() as f32 / 12.0).max(2.0),
+            )?;
+        }
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         crate::play::feature_0233_touch_controls::view::draw(batch, view, atlas, &self.touch)?;
         if !effects {

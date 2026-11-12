@@ -130,7 +130,13 @@ impl WheelPresentationRead {
         removal: bool,
     ) -> std::result::Result<(), WheelRefusal> {
         if !self.allocation.current
-            || !valid_vessels(vessels, self.atelier.as_ref(), ruleset.revision())
+            || !valid_vessels(
+                &self.vessels,
+                vessels,
+                self.atelier.as_ref(),
+                ruleset,
+                (slots, &self.vocation, self.level, self.promoted),
+            )
         {
             return Err(WheelRefusal::RulesetNotCurrent);
         }

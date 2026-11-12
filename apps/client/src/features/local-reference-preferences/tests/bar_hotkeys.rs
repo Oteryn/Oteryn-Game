@@ -165,3 +165,51 @@ fn rebound_spell_releases_after_modifier_and_preference_changes()
     assert_eq!(spells.route(&press).len(), 1);
     Ok(())
 }
+
+#[test]
+fn t048_every_action_bar_slot_of_all_rows_has_an_editable_hotkey()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, SettingsState};
+    let slots = oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
+    assert_eq!(slots, 150);
+    let path = std::env::temp_dir().join(format!("t048-all-rows-{}.json", std::process::id()));
+    let mut settings = SettingsState::new(Some(path.clone()));
+    let mut preferences = settings.preferences.clone();
+    let modifiers = [
+        "SUPER",
+        "CTRL+SUPER",
+        "ALT+SUPER",
+        "SHIFT+SUPER",
+        "CTRL+ALT+SUPER",
+        "CTRL+SHIFT+SUPER",
+        "ALT+SHIFT+SUPER",
+    ];
+    let keys: Vec<String> = (1..=12)
+        .map(|n| format!("F{n}"))
+        .chain(('A'..='L').map(String::from))
+        .collect();
+    for slot in 0..slots {
+        preferences.rebind(
+            &format!("local-spell-action-bar-spell-{}", slot + 1),
+            &format!("{}+{}", modifiers[slot / 24], keys[slot % 24]),
+        )?;
+    }
+    settings.apply(preferences);
+    assert_eq!(
+        PreferenceStore::load(path.clone())?.preferences(),
+        &settings.preferences
+    );
+    let bindings = crate::play::preference_bindings()?;
+    let rows: std::collections::BTreeSet<_> = bindings
+        .iter()
+        .filter(|binding| binding.id.starts_with("local-spell-action-bar-spell-"))
+        .map(|binding| binding.label())
+        .filter(|label| label.starts_with("Action bar row"))
+        .map(|label| label.split(" / ").next().unwrap_or_default().to_owned())
+        .collect();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(settings.preferences.action_keys.0.len(), slots - 4);
+    let _ = std::fs::remove_file(path.with_extension("backup.json"));
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}

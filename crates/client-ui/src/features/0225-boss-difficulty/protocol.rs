@@ -62,7 +62,9 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
         panel.feedback = Some(tr!("The server refused the difficulty action"));
         return false;
     }
-    let Some(reply) = decode_reply(&result.payload) else {
+    let Some((reply, pity)) =
+        crate::boss_difficulty_pity::decode(panel.pity_selected, &result.payload)
+    else {
         panel.feedback = Some(tr!("The server returned an invalid difficulty reply"));
         return false;
     };
@@ -85,9 +87,7 @@ pub fn apply_result(panel: &mut BossDifficultyPanel, result: &GatedCommandResult
     } else {
         None
     };
+    panel.pity = pity;
     panel.reply = Some(reply);
     true
-}
-fn decode_reply(bytes: &[u8]) -> Option<Reply> {
-    boss_difficulty::decode_reply(bytes).ok()
 }

@@ -10,7 +10,7 @@ struct Fingerprint {
     gem: Option<[u8; 16]>,
     modifier: Option<(u8, u16)>,
     quality: u8,
-    domain: u8,
+    vessel_slot: u8,
 }
 fn fingerprint(p: &WheelPanel) -> Option<Fingerprint> {
     Some(Fingerprint {
@@ -22,7 +22,7 @@ fn fingerprint(p: &WheelPanel) -> Option<Fingerprint> {
         gem: p.gem,
         modifier: p.modifier,
         quality: p.quality,
-        domain: p.domain,
+        vessel_slot: p.vessel_slot,
     })
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,7 +53,7 @@ pub fn stage(p: &mut WheelPanel, intent: Intent, occurrence: [u8; 16]) -> bool {
     let text=match intent {
   Intent::Reveal=>a.quality_quotes.iter().find(|q|q.quality==p.quality).map(|q|format!("Reveal one quality {} gem?\nCost: {} gold and one unrevealed gem. The result is decided by the server.",p.quality+1,q.reveal_gold)),
   Intent::Dismantle=>p.selected_gem().and_then(|gem|a.quality_quotes.iter().find(|q|q.quality==gem.quality)).map(|q|format!("Dismantle the selected gem permanently?\nReturn: {}–{} {} fragments (server draw).",q.fragment_min,q.fragment_max,if q.fragment_kind==0{"basic"}else{"supreme"})),
-  Intent::SwitchDomain=>p.selected_gem().and_then(|gem|a.quality_quotes.iter().find(|q|q.quality==gem.quality)).map(|q|format!("Switch the selected gem's domain?\nCost: {} gold. The server decides its new domain.",q.switch_gold)),
+  Intent::Reshape=>p.selected_gem().and_then(|gem|super::super::reshape_position(p,gem)).map(|n|{let (gold,fragments,kind)=super::super::reshape_cost(n);lfmt!("Reshape mod {} of the selected gem?\nCost: {} gold and {} {} fragments. The server rerolls the mod.",n,gold,fragments,kind)}),
   Intent::GradeUp=>p.modifier.and_then(|(kind,id)|a.grade_quotes.iter().find(|q|q.kind==kind&&q.grade==p.grade(kind,id)+1).map(|q|format!("Upgrade {}?\nCost: {} gold and {} {} fragments. This changes every matching modifier.",super::super::modifier_label(p,kind,id),q.gold,q.fragments,if kind==0{"basic"}else{"supreme"}))),
   _=>None,
  };

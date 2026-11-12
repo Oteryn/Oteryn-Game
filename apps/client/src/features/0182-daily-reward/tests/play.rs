@@ -130,11 +130,12 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                 }]));
                 assert!(link.daily_reward_panel().open);
                 ready(&link, true).await?;
-                assert!(panel_text(&link.daily_reward_panel()).contains("Day 12 of 30"));
+                assert!(panel_text(&link.daily_reward_panel()).contains("Day 5 of 7"));
                 let text = panel_text(&link.daily_reward_panel());
-                assert!(text.contains("Weapon proficiency XP: 7% chance to gain double XP"));
-                assert!(text.contains("Each eligible weapon proficiency XP award"));
-                assert!(text.contains("Refresh after claiming to update the bonus"));
+                assert!(text.contains(
+                    "Your reward streak currently grants you a 7% chance to gain double weapon proficiency XP."
+                ));
+                assert!(text.contains("Claim your daily reward once between two regular server saves"));
                 link.daily_reward_request(Intent::Claim);
                 tokio::time::timeout(Duration::from_secs(3), async {
                     while link.daily_reward_panel().pending {
@@ -167,7 +168,7 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
                         .is_some_and(|wall| wall.claimed && !wall.claim_enabled)
                 );
                 assert!(panel_text(&link.daily_reward_panel())
-                    .contains("Weapon proficiency XP: 8% chance to gain double XP"));
+                    .contains("grants you a 7% chance to gain double weapon proficiency XP"));
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())
@@ -178,9 +179,6 @@ fn daily_reward_query_and_claim_drive_the_panel() -> Result<(), Error> {
 }
 #[path = "details.rs"]
 mod details;
-
-#[path = "picker.rs"]
-mod picker;
 
 #[path = "returner.rs"]
 mod returner;

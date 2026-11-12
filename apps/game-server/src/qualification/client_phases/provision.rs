@@ -65,19 +65,14 @@ pub(super) async fn provision(
         }
     }
     let reference = item_reference(&definitions, 3276)?;
-    let payload = oteryn_protocol_oteryn::hotkey_equip::Request {
-        definition: reference,
-    }
-    .encode();
+    // Fenced provisioning installs an unforged copy; the session owns selected 485 encoding.
     let response = client
         .session_mut()
-        .gated_command(
-            oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
-            oteryn_protocol_oteryn::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP,
-            &payload,
-        )
+        .equip_item_definition(reference)
         .await?;
-    if response.status != CommandStatus::Accepted {
+    if response.status != CommandStatus::Accepted
+        || response.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+    {
         return Err("provisioned axe equip refused".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);

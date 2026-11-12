@@ -16,9 +16,9 @@ pub(super) fn kind(mutation: &AtelierMutation) -> &'static str {
         AtelierMutation::Initialize => "GEM_INIT",
         AtelierMutation::SetLock { .. } => "SET_LOCK",
         AtelierMutation::Reveal { .. } => "REVEAL",
-        AtelierMutation::SwitchDomain { .. } => "SWITCH_DOMAIN",
         AtelierMutation::Dismantle { .. } => "DISMANTLE",
         AtelierMutation::GradeUp { .. } => "GRADE_UP",
+        AtelierMutation::Reshape { .. } => "RESHAPE",
     }
 }
 
@@ -91,9 +91,7 @@ pub(super) async fn apply(
         [base_vocation(&state.vocation).ok_or(DurabilityError::InvalidStoredState)?];
     let mut preview = state.clone();
     let vessels = super::super::character_wheel::read_vessels(tx, fence.character_id).await?;
-    for gem in preview.gems.values_mut() {
-        gem.vessel = vessels.contains(&Some(gem.id.to_be_bytes()));
-    }
+    oteryn_gameplay_progression::atelier::vessels::project(&mut preview, &vessels);
     // These are transition inputs only. Durable assets remain exclusively in item/bank custody.
     if preview.gold != 0 || !preview.unrevealed.is_empty() || !preview.fragments.is_empty() {
         return Err(DurabilityError::InvalidStoredState);
@@ -107,13 +105,6 @@ pub(super) async fn apply(
             id: u128::from_be_bytes(gem),
             locked,
         },
-        AtelierMutation::SwitchDomain { gem } => {
-            let Some(gem) = state.gems.get(&u128::from_be_bytes(gem)) else {
-                return Ok(false);
-            };
-            fee = number(&catalogue["atelier"]["fees"]["switch_domain"][quality_key(gem.quality)])?;
-            AtelierAction::SwitchDomain { id: gem.id }
-        }
         AtelierMutation::GradeUp { kind, mod_id } => {
             let grade = state.grades.get(&(kind, mod_id)).copied().unwrap_or(0);
             if grade >= 3 {
@@ -131,6 +122,43 @@ pub(super) async fn apply(
             burn = Some((fragment_key(kind).into(), count));
             preview.fragments.insert(kind, count);
             AtelierAction::GradeUp { kind, mod_id }
+        }
+        AtelierMutation::Reshape { gem, position } => {
+            let Some(current) = state.gems.get(&u128::from_be_bytes(gem)) else {
+                return Ok(false);
+            };
+            let Some((gold, kind, count)) =
+                oteryn_gameplay_progression::atelier::reshape::cost(position)
+            else {
+                return Ok(false);
+            };
+            let Some(choices) =
+                oteryn_gameplay_progression::atelier::reshape::choices(family, &current.mods, position)
+            else {
+                return Ok(false);
+            };
+            // The choices exclude the modifier the position holds now. Every pool has
+            // another modifier, so an empty list is invalid content (the bound-0 draw
+            // fails the transaction), never a player refusal.
+            let root = draw_root(tx, fence, "gem_reshape", data.revision()).await?;
+            let index = draw(
+                &root,
+                request.occurrence,
+                "gem_reshape",
+                u64::from(position),
+                choices.len() as u64,
+            )?;
+            let mod_id = *choices
+                .get(usize::try_from(index).map_err(|_| DurabilityError::InvalidStoredState)?)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            fee = gold;
+            burn = Some((fragment_key(kind).into(), count));
+            preview.fragments.insert(kind, count);
+            AtelierAction::Reshape {
+                id: current.id,
+                position,
+                mod_id,
+            }
         }
         AtelierMutation::Dismantle { gem } => {
             let Some(gem) = state.gems.get(&u128::from_be_bytes(gem)) else {
@@ -164,14 +192,9 @@ pub(super) async fn apply(
             }
         }
         AtelierMutation::Reveal { quality } => {
+            // Gems have no domain (Winter Update 2026); draw index 0 is no longer consumed
+            // and the modifier draws keep their indices.
             let root = draw_root(tx, fence, "gem_reveal", data.revision()).await?;
-            let domains = [
-                WheelDomain::Green,
-                WheelDomain::Red,
-                WheelDomain::Purple,
-                WheelDomain::Blue,
-            ];
-            let domain = domains[draw(&root, request.occurrence, "gem_reveal", 0, 4)? as usize];
             let count = match quality {
                 GemQuality::Lesser => 1,
                 GemQuality::Regular => 2,
@@ -212,7 +235,6 @@ pub(super) async fn apply(
             AtelierAction::Reveal {
                 id: u128::from_be_bytes(request.occurrence),
                 quality,
-                domain,
                 mods,
             }
         }
@@ -260,10 +282,11 @@ pub(super) async fn apply(
                     occurrence: request.occurrence,
                     proof,
                 },
-                AtelierMutation::SwitchDomain { .. } => FeeBurnCause::GemSwitchDomain {
-                    occurrence: request.occurrence,
-                },
                 AtelierMutation::GradeUp { .. } => FeeBurnCause::GemGradeUp {
+                    occurrence: request.occurrence,
+                    proof,
+                },
+                AtelierMutation::Reshape { .. } => FeeBurnCause::GemReshape {
                     occurrence: request.occurrence,
                     proof,
                 },
@@ -290,6 +313,7 @@ pub(super) async fn apply(
     }
     for gem in preview.gems.values_mut() {
         gem.vessel = false;
+        gem.slot = None;
     }
     preview.gold = 0;
     preview.fragments.clear();

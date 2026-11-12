@@ -96,8 +96,10 @@ esac
 NODE_BOOT_WORLD="${NODE_BOOT_WORLD:-1}"
 case "$NODE_BOOT_WORLD" in 0|1) ;; *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_world_mode'; exit 2 ;; esac
 # A kept or reused stack is one topology, so it never runs the separate basic pass.
+# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
-  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 && -z "${NODE_BOOT_LIFECYCLE:-}" ]]; then
+  && -z "${NODE_BOOT_LIFECYCLE:-}" \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
@@ -207,7 +209,14 @@ stop_runtime_diagnostics() {
 pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
 start_pg_sampler() {
   mkdir -p "$PG_OBS"
-  pg_observe sample --out "$PG_OBS/activity.log" &
+  # Start python3 itself in the background, not a subshell running pg_observe:
+  # $! must be the sampler so stop_pg_sampler's SIGTERM reaches it. A shell
+  # wrapper died on SIGTERM and left the sampler polling forever with the run's
+  # stdout open, so the caller's `run.sh | tee` never saw EOF and the step hung
+  # after NODE_BOOT_RESULT until the job timeout. Its stdout is not the run's pipe.
+  python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" sample --out "$PG_OBS/activity.log" \
+    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot \
+    < /dev/null > /dev/null 2>> "$PG_OBS/sampler.err" &
   PG_SAMPLER_PID=$!
 }
 stop_pg_sampler() {
@@ -873,6 +882,10 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
+    if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
+      echo "--- session close events behind failed e2e rows"
+      grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
+    fi
   else
     STATUS[$name]="FAIL(exit $rc)"
     # Later probes start new server incarnations and truncate node_log. Preserve

@@ -21,6 +21,12 @@ message ImbuementOfferV1 {
   uint32 tier = 2;
   uint32 gold = 3;
   bool requires_premium = 4;
+  // Capability 491 IMBUEMENT_SUCCESS_CHANCE_V1 (requires 68), selected sessions only:
+  // the application success chance in percent (0..=100), from the tier rule that apply
+  // enforces. Ruling R2 (IMBUE-FORGE0 section 3): every tier always succeeds, so the
+  // value is currently 100. Unselected sessions receive the four-field row unchanged; a
+  // selected reply without a window (any non-OK result) is byte-identical to V1.
+  optional uint32 success_percent = 5;
 }
 message ImbuementReplyV1 {
   // 1 OK, 2 REQUIREMENT_NOT_MET, 3 MATERIALS_MISSING, 4 INSUFFICIENT_FUNDS, 5 SLOT_OCCUPIED,

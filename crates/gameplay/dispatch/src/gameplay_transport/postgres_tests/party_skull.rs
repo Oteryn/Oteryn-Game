@@ -7,7 +7,7 @@ use crate::gameplay_transport::{
     connection::{
         AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
     },
-    tcp_tls::{read_frame, write_frame},
+    tcp_tls::write_frame,
 };
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
@@ -44,6 +44,126 @@ pub(super) async fn aggression(
     Ok(())
 }
 
+const ICON_CAPABILITIES: &[u32] = &[6, 42, 134];
+
+pub(super) async fn icon_snapshot_revision(
+    client: &mut tokio::io::DuplexStream,
+    generation: u64,
+) -> TestResult<u64> {
+    let mut revision = None;
+    loop {
+        let frame = super::party_membership::read_live_frame(client, generation).await?;
+        let env = decode_wire_envelope(&frame).map_err(debug)?;
+        if env.connection_generation() != generation {
+            return Err("party snapshot has wrong connection generation".into());
+        }
+        if env.message_type() == MessageType::SnapshotChunk {
+            // This fixed-room fixture's three actors fit its existing single chunk.
+            let (_, domains) =
+                oteryn_protocol_oteryn::decode_snapshot_chunk(env.payload()).map_err(debug)?;
+            for domain in domains {
+                if domain.domain_id == 1 {
+                    oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_snapshot_view(
+                        ICON_CAPABILITIES, domain.snapshot_type, domain.payload,
+                    ).map_err(debug)?;
+                    revision = Some(domain.revision);
+                }
+            }
+        }
+        if env.message_type() == MessageType::SnapshotCommit {
+            return revision.ok_or_else(|| "party snapshot lacks visibility baseline".into());
+        }
+    }
+}
+
+fn assert_icons(
+    icons: &[PartyIcon],
+    targets: &[EntityRef],
+    shields: &[u8],
+    skulls: &[u8],
+) -> TestResult {
+    assert_eq!(icons.len(), targets.len());
+    assert_eq!(targets.len(), shields.len());
+    assert_eq!(targets.len(), skulls.len());
+    for ((target, shield), skull) in targets.iter().zip(shields).zip(skulls) {
+        let icon = icons
+            .iter()
+            .find(|icon| icon.entity == *target)
+            .ok_or("visible icon")?;
+        assert_eq!(
+            (icon.shield, icon.skull),
+            (*shield, *skull),
+            "party icon values"
+        );
+    }
+    Ok(())
+}
+
+pub(super) async fn read_icons(
+    client: &mut tokio::io::DuplexStream,
+    generation: u64,
+    command_id: u64,
+    baseline: u64,
+    targets: &[EntityRef],
+    shields: &[u8],
+    skulls: &[u8],
+) -> TestResult {
+    // Retain only one fully checked observation of each kind, never a frame history.
+    let (mut received, mut pushed) = (false, false);
+    while !received || !pushed {
+        let frame = super::party_membership::read_live_frame(client, generation).await?;
+        let env = decode_wire_envelope(&frame).map_err(debug)?;
+        if env.connection_generation() != generation {
+            return Err("party observation has wrong connection generation".into());
+        }
+        match env.message_type() {
+            MessageType::CommandResult => {
+                let result = decode_command_result(env.payload()).map_err(debug)?;
+                if result.command_id != command_id {
+                    return Err("party observation has wrong command id".into());
+                }
+                assert_eq!(result.status, CommandStatus::Accepted);
+                let icons = decode_party_icons(result.payload).map_err(debug)?;
+                assert_icons(&icons, targets, shields, skulls)?;
+                received = true;
+            }
+            MessageType::StateDelta => {
+                let delta =
+                    oteryn_protocol_oteryn::decode_state_delta(env.payload()).map_err(debug)?;
+                if delta.domain_id != 1 || delta.delta_type != 2 {
+                    continue;
+                }
+                if delta.base_revision < baseline || delta.new_revision <= baseline {
+                    return Err("party icon delta predates the snapshot baseline".into());
+                }
+                use oteryn_protocol_oteryn::world_spatial_entities as spatial;
+                // Retain the selected decoder and old-client counterfactual checks.
+                spatial::decode_world_spatial_delta_view(ICON_CAPABILITIES, 2, delta.payload)
+                    .map_err(debug)?;
+                let (_, _, icons) = spatial::decode_world_spatial_entities_delta_with_icons(
+                    delta.payload,
+                    spatial::EntityFields::selected(ICON_CAPABILITIES),
+                )
+                .map_err(debug)?;
+                let Some(icons) = icons else {
+                    continue;
+                };
+                assert!(
+                    spatial::decode_world_spatial_delta_view(&[6, 42], 2, delta.payload).is_err(),
+                    "counterfactual: icons cannot reach an old client"
+                );
+                assert_icons(&icons, targets, shields, skulls)?;
+                pushed = true;
+            }
+            MessageType::ProtocolError => {
+                return Err("party observation received a protocol error".into());
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
 pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -58,16 +178,14 @@ pub(super) async fn check(
             .ok_or("selection")?;
     let current = *admitted;
     let (mut server, mut client) = tokio::io::duplex(32_768);
-    let serving = async { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await };
-    let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
+    let serving = async move {
+        let ended = serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async move {
+        let baseline =
+            icon_snapshot_revision(&mut client, current.continuity.connection_generation).await?;
         let request = encode_client_command(
             current.continuity.connection_generation,
             &ClientCommandValue {
@@ -78,35 +196,16 @@ pub(super) async fn check(
         )
         .map_err(debug)?;
         write_frame(&mut client, &request).await?;
-        let mut received = false;
-        loop {
-            let frame = read_frame(&mut client).await?;
-            let env = decode_wire_envelope(&frame).map_err(debug)?;
-            if env.message_type() == MessageType::CommandResult {
-                let result = decode_command_result(env.payload()).map_err(debug)?;
-                assert_eq!(result.status, CommandStatus::Accepted);
-                let icons = decode_party_icons(result.payload).map_err(debug)?;
-                assert_eq!(icons.len(), targets.len());
-                for ((target, shield), skull) in targets.iter().zip(shields).zip(skulls) {
-                    let icon = icons
-                        .iter()
-                        .find(|i| i.entity == *target)
-                        .ok_or("visible icon")?;
-                    assert_eq!((icon.shield, icon.skull), (*shield, *skull));
-                }
-                received = true;
-            }
-            if received && env.message_type() == MessageType::StateDelta {
-                let delta =
-                    oteryn_protocol_oteryn::decode_state_delta(env.payload()).map_err(debug)?;
-                if delta.domain_id == 1 && delta.delta_type == 2 {
-                    // The base visibility decoder validates optional field 6 only with capability 134.
-                    oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_delta_view(&[6,42,134],2,delta.payload).map_err(debug)?;
-                    assert!(oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_delta_view(&[6,42],2,delta.payload).is_err(),"counterfactual: icons cannot reach an old client");
-                    break;
-                }
-            }
-        }
+        read_icons(
+            &mut client,
+            current.continuity.connection_generation,
+            current.continuity.next_command_id,
+            baseline,
+            targets,
+            shields,
+            skulls,
+        )
+        .await?;
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
@@ -146,16 +245,13 @@ pub(super) async fn logout(
             .ok_or("logout selection")?;
     let current = *admitted;
     let (mut server, mut client) = tokio::io::duplex(32_768);
-    let serving = async { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await };
-    let driving = async {
-        loop {
-            let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
-                break;
-            }
-        }
+    let serving = async move {
+        let ended = serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async move {
+        icon_snapshot_revision(&mut client, current.continuity.connection_generation).await?;
         let request = encode_client_command(
             current.continuity.connection_generation,
             &ClientCommandValue {
@@ -167,10 +263,19 @@ pub(super) async fn logout(
         .map_err(debug)?;
         write_frame(&mut client, &request).await?;
         loop {
-            let frame = read_frame(&mut client).await?;
+            let frame = super::party_membership::read_live_frame(
+                &mut client,
+                current.continuity.connection_generation,
+            )
+            .await?;
             let env = decode_wire_envelope(&frame).map_err(debug)?;
             if env.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(env.payload()).map_err(debug)?;
+                assert_eq!(
+                    env.connection_generation(),
+                    current.continuity.connection_generation
+                );
+                assert_eq!(result.command_id, current.continuity.next_command_id);
                 assert_eq!(result.status, CommandStatus::Accepted);
                 assert_eq!(
                     oteryn_protocol_oteryn::logout::decode_logout_result(result.payload)

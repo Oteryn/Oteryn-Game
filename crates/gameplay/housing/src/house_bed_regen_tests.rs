@@ -1,6 +1,30 @@
 use super::settle;
 
 #[test]
+fn gr_soul_001_bed_soul_preserves_saved_value_until_a_positive_gain() {
+    for sleep in [0, 1, 899] {
+        assert_eq!(
+            settle([50, 10, 150], [100, 100, 100], 0, sleep),
+            Some(([50, 10, 150], 0)),
+            "zero soul gain after {sleep} seconds must preserve saved Soul"
+        );
+    }
+    for (saved, maximum, expected) in [
+        (99, 100, 100),
+        (150, 100, 100),
+        (150, 200, 151),
+        (199, 200, 200),
+        (200, 200, 200),
+    ] {
+        assert_eq!(
+            settle([50, 10, saved], [100, 100, maximum], 0, 900),
+            Some(([50, 10, expected], 0)),
+            "a positive gain must use the current Soul maximum"
+        );
+    }
+}
+
+#[test]
 fn house_bed_regen_food_boundaries_caps_and_remainders() {
     for food in [0, 29, 30, 31, 1199, 1200] {
         for sleep in [0, 29, 30, 31, 899, 900, 1_814_400, 1_814_401, u64::MAX] {

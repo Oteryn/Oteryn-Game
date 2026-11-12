@@ -1,5 +1,5 @@
 use super::HotkeyEquipPanel;
-use oteryn_client_runtime::cui3::hotkey_equip::{self, Request};
+use oteryn_client_runtime::cui3::hotkey_equip;
 use oteryn_client_runtime::server_mechanic::{
     CommandStatus, ServerMechanicCommand, ServerMechanicResponse,
 };
@@ -16,7 +16,13 @@ pub fn control_request(p: &mut HotkeyEquipPanel) -> Option<ServerMechanicCommand
         p.feedback = Some(tr!("Select an item").into());
         None
     })?;
-    request(p, command(Request { definition }.encode().to_vec()))
+    let tier = std::mem::take(&mut p.upgrade_tier);
+    let Some(payload) = crate::hotkey_equip_upgrade_tier::equip_payload(definition, p.tiered, tier)
+    else {
+        p.feedback = Some(tr!("Select an item").into());
+        return None;
+    };
+    request(p, command(payload))
 }
 pub fn request(
     p: &mut HotkeyEquipPanel,

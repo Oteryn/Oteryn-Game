@@ -11,6 +11,10 @@ pub struct Panel {
     pub graphic_worker: bool,
     pub preview_requested: bool,
     pub selected: bool,
+    /// Capability 489 is selected: requests and projections carry the display flags.
+    pub flagged: bool,
+    /// The platform, outfit and mount switches of the draft display.
+    pub flags: oteryn_client_runtime::cui3::house_podium::DisplayFlags,
     pub open: bool,
     pub pending: bool,
     pub pending_kind: u32,
@@ -34,6 +38,20 @@ impl Panel {
         self.pending = true;
         self.pending_kind = kind;
         self.feedback.clear();
+        true
+    }
+    /// Switch the draft between outfit, mount and creature displays and its facing.
+    /// The committed projection is untouched; only the unsaved preview changes.
+    pub fn choose_display(&mut self, kind: u8, direction: u8) -> bool {
+        if !(1..=3).contains(&kind) || direction > 3 || self.pending {
+            return false;
+        }
+        let (kind, direction) = (kind.to_string(), direction.to_string());
+        if self.fields[1] != kind || self.fields[2] != direction {
+            self.fields[1] = kind;
+            self.fields[2] = direction;
+            self.artwork = None;
+        }
         true
     }
     pub fn failed(&mut self, message: &str) {

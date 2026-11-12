@@ -19,7 +19,10 @@ pub use oteryn_client_runtime::task_board::{
     CommandStatus, TaskBoardCommand, TaskBoardResponse, task_board,
 };
 pub use protocol::{FullIntent, apply_full_result, full_request};
-pub use view::{shop_offer_choice, shop_offer_text};
+pub use view::{
+    DIFFICULTIES, REROLL_TOKEN_CAP, difficulty_name, difficulty_tooltip, rarity_name,
+    shop_offer_choice, shop_offer_text,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -219,3 +222,13 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p04.rs"]
+mod e2e_p04;
+#[cfg(test)]
+#[path = "tests/e2e_p05.rs"]
+mod e2e_p05;
+#[cfg(test)]
+#[path = "tests/e2e_p23c.rs"]
+mod e2e_p23c;

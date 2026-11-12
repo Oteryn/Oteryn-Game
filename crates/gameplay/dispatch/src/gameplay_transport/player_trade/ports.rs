@@ -192,7 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 )
                                 .await
                                 .map_err(CheckError::from)?
-                                .map_err(result)?;
+                                .map_err(CheckError::from)?;
                             if record.offers[side].as_ref() != Some(&leaf) {
                                 return Err(ResultCode::Stale.into());
                             }
@@ -208,6 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // let that fence cancel the trade with the contracted logout reason.
                     Ok(()) | Err(CheckError::Unavailable) => None,
                     Err(CheckError::Refused(reason)) => Some(reason),
+                    Err(CheckError::Caused(outcome)) => Some(outcome.code),
                 }
             };
             if let Some(reason) = reason {

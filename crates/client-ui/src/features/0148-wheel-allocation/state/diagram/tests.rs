@@ -151,3 +151,19 @@ fn wheel_reset_draft_requires_a_new_valid_preview_and_uses_original_reset()
     );
     Ok(())
 }
+#[test]
+fn vessel_node_shows_the_gem_vessel_perk_text_and_no_domain_name() -> Result<(), &'static str> {
+    let mut p = model();
+    p.diagram.reply.as_mut().ok_or("reply")?.nodes[14].name = "Gem Vessel".into();
+    assert!(slot(&mut p, 1, 14));
+    let text = view::text(&p);
+    assert!(
+        text.contains(
+            "Each node grants +1 Damage / Healing and unlocks a vessel in the Gem Atelier."
+        )
+    );
+    assert!(!text.contains("Green"));
+    assert!(slot(&mut p, 1, 13));
+    assert!(!view::text(&p).contains("unlocks a vessel"));
+    Ok(())
+}

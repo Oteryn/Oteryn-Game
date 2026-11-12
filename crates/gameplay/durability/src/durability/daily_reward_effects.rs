@@ -12,7 +12,6 @@ pub(super) async fn grant(
     request: DailyRewardClaimRequest,
     day: u8,
     premium: bool,
-    selection: Option<&oteryn_protocol_oteryn::daily_reward::picker::Claim>,
 ) -> Result<(), DurabilityError> {
     let character = fence.character_id.as_bytes().as_slice();
     let world = fence.runtime_scope.world_id();
@@ -25,7 +24,6 @@ pub(super) async fn grant(
         request,
         day,
         reward.temple_teleport_scrolls,
-        selection,
     )
     .await?;
     let mut line: i16 = 0;
@@ -44,8 +42,18 @@ pub(super) async fn grant(
             None
         };
         sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,$3,CASE WHEN $3='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid)")
-            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item)
+            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item.as_deref())
             .execute(&mut ***tx).await?;
+        // WU26-06: the delivered scroll vanishes seven days later through the existing Item
+        // deadline owner (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
+        if let Some(item) = &item {
+            super::item_use::temple_scroll::schedule_delivered_scroll(
+                tx,
+                item,
+                &request.transaction_id,
+            )
+            .await?;
+        }
         line += 1;
     }
     if reward.prey_wildcards > 0 {
@@ -71,10 +79,12 @@ pub(super) async fn grant(
     }
     if reward.xp_boost_percent > 0 {
         let minutes = i32::from(reward.xp_boost_minutes);
-        // Crystal 201189f: data/modules/scripts/daily_reward/daily_reward.lua:518-527
-        // appends the daily duration to the Store timer instead of replacing it.
-        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at), endpoint AS (SELECT greatest(instant.at,coalesce((SELECT max(expires_at) FROM public.game_character_store_xp_boosts WHERE character_id=encode($5,'hex')::uuid AND world_id=encode($6,'hex')::uuid),instant.at),coalesce((SELECT max(effect_expires_at) FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($5,'hex')::uuid AND c.world_id=encode($6,'hex')::uuid AND l.kind='XP_BOOST'),instant.at)) AS at FROM instant) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM endpoint")
-            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).bind(character).bind(world.as_bytes().as_slice()).execute(&mut ***tx).await?;
+        // Winter Update 2026 (thread 565): the daily boost starts now as its own line. It
+        // adds to a Store boost instead of extending it, and replaces the remainder of an
+        // earlier daily boost (readers count only the newest claim's line; lines stay
+        // immutable). Replaces Crystal 201189f daily_reward.lua:518-527 timer appending.
+        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM instant")
+            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).execute(&mut ***tx).await?;
     }
     Ok(())
 }
@@ -107,13 +117,41 @@ async fn grant_balance(
         Some(row) => (row.try_get("balance")?, Some(row.try_get("last_claim_id")?)),
         None => (0, None),
     };
+    let credited = if kind == "BOUNTY_REROLL" {
+        capped_reroll_credit(before, quantity)
+    } else {
+        i64::from(quantity)
+    };
     let after = before
-        .checked_add(i64::from(quantity))
+        .checked_add(credited)
         .ok_or(DurabilityError::InvalidStoredState)?;
     sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO public.{entries_table}(claim_id,character_id,world_id,previous_claim_id,amount,balance_before,balance_after) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::uuid,$5,$6,$7)")))
         .bind(request.transaction_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
-        .bind(last).bind(i16::from(quantity)).bind(before).bind(after).execute(&mut **tx).await?;
+        .bind(last).bind(i16::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?).bind(before).bind(after).execute(&mut **tx).await?;
     sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO public.{balance_table}(character_id,world_id,balance,last_claim_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid) ON CONFLICT(character_id,world_id) DO UPDATE SET balance=EXCLUDED.balance,last_claim_id=EXCLUDED.last_claim_id")))
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(after).bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
     Ok(())
+}
+
+/// Winter Update 2026: at most 10 stored Bounty Reroll Tokens. A daily credit adds
+/// `min(requested, 10 - balance)`; a balance already above 10 is kept and gets 0.
+fn capped_reroll_credit(before: i64, requested: u8) -> i64 {
+    let cap = i64::try_from(oteryn_gameplay_quests::quest::task_board::full::MAX_REROLL_TOKENS)
+        .unwrap_or(i64::MAX);
+    i64::from(requested).min(cap.saturating_sub(before).max(0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::capped_reroll_credit;
+
+    #[test]
+    fn bounty_reroll_tokens_never_exceed_ten_on_daily_claim() {
+        for (before, requested, credited) in
+            [(0, 1, 1), (9, 1, 1), (9, 3, 1), (10, 1, 0), (25, 1, 0)]
+        {
+            assert_eq!(capped_reroll_credit(before, requested), credited);
+            assert!(before + credited <= before.max(10));
+        }
+    }
 }

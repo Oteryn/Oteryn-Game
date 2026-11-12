@@ -19,8 +19,8 @@ NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 \
     bash tools/qualification/node_boot/run.sh 2>&1 | tee "$RUN/node.log" || node_status=$?
 
 # Missing captures are an error. A failed boot cannot silently use unit fixtures.
-"$CARGO" test --offline --locked -p oteryn-client-runtime -p oteryn-client-domain \
-    -p oteryn-client --lib --quiet 2>&1 | tee "$RUN/client.log" || client_status=$?
+"$CARGO" test --offline --locked -p oteryn-client-runtime -p oteryn-client-domain -p oteryn-client-ui \
+    -p oteryn-client -p oteryn-session -p oteryn-dev-client --lib --quiet 2>&1 | tee "$RUN/client.log" || client_status=$?
 
 python3 tools/qualification/e2e_all/report.py \
     --matrix apps/game-server/src/qualification/SCENARIO_MATRIX.md \

@@ -87,7 +87,145 @@ fn required(name: &str) -> Result<String, io::Error> {
 }
 
 fn evidence(line: &str) {
-    println!("SEAM_EVIDENCE {line}");
+    if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
+        println!("SEAM_EVIDENCE {line}");
+    }
+}
+
+/// Row reporters write `e2e_all` lines in several shapes. `report.py` accepts
+/// one: `e2e_all scenario=<id> status=<verdict> seconds=<n>[ evidence=<token>]`
+/// followed by the harness's optional typed failure suffix.
+/// A capture line is not a verdict and becomes `e2e_capture`; a failed capture
+/// write, or a line without a verdict, is a FAIL. Other lines pass unchanged.
+fn e2e_result_line(line: &str) -> String {
+    let line = line.trim_start_matches("SEAM_EVIDENCE ").trim();
+    let Some(rest) = line.strip_prefix("e2e_all ") else {
+        return line.to_owned();
+    };
+    // Keep the harness suffix out of free-text evidence, including when that
+    // evidence has spaces. Preserve malformed suffixes for report.py to reject.
+    let (rest, cause) = rest
+        .rsplit_once(" cause=")
+        .map_or((rest, None), |(rest, cause)| (rest, Some(cause)));
+    let suffix = cause.map_or_else(String::new, |cause| format!(" cause={cause}"));
+    let mut scenario = None;
+    let mut status = None;
+    let mut seconds = None;
+    let mut detail: Vec<String> = Vec::new();
+    // The evidence value runs to the end of the line: its words join with '_'.
+    let mut evidence_value: Option<String> = None;
+    for token in rest.split_whitespace() {
+        if let Some(value) = evidence_value.as_mut() {
+            value.push('_');
+            value.push_str(token);
+        } else if let Some(value) = token.strip_prefix("evidence=") {
+            evidence_value = Some(value.to_owned());
+        } else if let Some(value) = token.strip_prefix("scenario=") {
+            scenario = Some(value);
+        } else if let Some(value) = token.strip_prefix("status=").filter(|_| status.is_none()) {
+            status = Some(value);
+        } else if let Some(value) = token
+            .strip_prefix("seconds=")
+            .filter(|value| seconds.is_none() && value.parse::<f64>().is_ok_and(f64::is_finite))
+        {
+            seconds = Some(value);
+        } else {
+            detail.push(token.to_owned());
+        }
+    }
+    detail.extend(evidence_value);
+    let Some(scenario) = scenario else {
+        return line.to_owned();
+    };
+    let verdict = match status {
+        Some("CAPTURED") => return format!("e2e_capture {rest}"),
+        Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
+        Some(other) => {
+            detail.insert(0, other.to_owned());
+            "FAIL"
+        }
+        None => {
+            detail.insert(0, "no-verdict".to_owned());
+            "FAIL"
+        }
+    };
+    // A reporter that did not time its row reports zero seconds, not a guess.
+    let seconds = seconds.unwrap_or("0.000");
+    let detail: String = detail
+        .join(";")
+        .chars()
+        .map(|character| {
+            if character.is_whitespace() {
+                '_'
+            } else {
+                character
+            }
+        })
+        .collect();
+    if detail.is_empty() {
+        format!("e2e_all scenario={scenario} status={verdict} seconds={seconds}{suffix}")
+    } else {
+        format!(
+            "e2e_all scenario={scenario} status={verdict} seconds={seconds} evidence={detail}{suffix}"
+        )
+    }
+}
+
+#[cfg(test)]
+mod e2e_result_line_tests {
+    use super::e2e_result_line;
+
+    #[test]
+    fn row_results_preserve_typed_failure_suffix_after_evidence() {
+        for detail in ["", " evidence=timed out"] {
+            let input = format!(
+                "e2e_all scenario=M01.full status=FAIL seconds=3{detail} cause=transport root=M01/admission"
+            );
+            let expected_detail = if detail.is_empty() {
+                ""
+            } else {
+                " evidence=timed_out"
+            };
+            assert_eq!(
+                e2e_result_line(&input),
+                format!(
+                    "e2e_all scenario=M01.full status=FAIL seconds=3{expected_detail} cause=transport root=M01/admission"
+                ),
+            );
+        }
+    }
+
+    #[test]
+    fn row_results_take_the_one_shape_report_py_accepts() {
+        assert_eq!(
+            e2e_result_line("SEAM_EVIDENCE e2e_all scenario=C06.full status=PASS seconds=3.982"),
+            "e2e_all scenario=C06.full status=PASS seconds=3.982"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C01.client status=FAIL evidence=timed out"),
+            "e2e_all scenario=C01.client status=FAIL seconds=0.000 evidence=timed_out"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C03.client status=PASS payload=pages"),
+            "e2e_all scenario=C03.client status=PASS seconds=0.000 evidence=payload=pages"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C02.client status=CAPTURED attack=1"),
+            "e2e_capture scenario=C02.client status=CAPTURED attack=1"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence=x"),
+            "e2e_all scenario=C14.client status=FAIL seconds=0.000 evidence=CAPTURE-WRITE-ERROR;x"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C02.client capture=a.bin error=disk"),
+            "e2e_all scenario=C02.client status=FAIL seconds=0.000 evidence=no-verdict;capture=a.bin;error=disk"
+        );
+        assert_eq!(
+            e2e_result_line("world_loader state=booted"),
+            "world_loader state=booted"
+        );
+    }
 }
 
 fn pem_der(path: &str, label: &str) -> TestResult<Vec<u8>> {

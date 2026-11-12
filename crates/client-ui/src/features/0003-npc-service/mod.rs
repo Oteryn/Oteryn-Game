@@ -85,6 +85,12 @@ impl DialoguePanel {
     }
 }
 #[cfg(test)]
+#[path = "tests/e2e_p16.rs"]
+mod e2e_p16;
+#[cfg(test)]
+#[path = "tests/e2e_p20.rs"]
+mod e2e_p20;
+#[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
 

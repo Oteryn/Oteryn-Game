@@ -154,7 +154,8 @@ fn pending_item_read_cannot_execute_an_edited_assignment() -> Result<(), Box<dyn
     assert!(link.assign_bar_action(
         0,
         BarAction::Text {
-            text: "changed".into()
+            text: "changed".into(),
+            send_automatically: true
         }
     ));
     outbox.bar_item_cooldowns_result(&result(0)?);

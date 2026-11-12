@@ -1,0 +1,13 @@
+{
+  "id": 488,
+  "name": "CYCLOPEDIA_DEATH_DETAILS_V1",
+  "owner_decision": "WU26 native-client mechanics batch package 2 (client PR #3098); parity rule: Crystal 201189f8 and current Tibia",
+  "owner": "Game death receipt, public death projection and unjustified point owners through the PAR-P12c Cyclopedia character tab projection",
+  "requires": [
+    199
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with CYCLOPEDIA_CHARACTER_V1. Command 388 Recent Deaths rows (tab 2) append level:u32, killer name, most-damage killer name (each len:u8 at most 64 bytes) and unjustified:u8 after the unchanged timestamp and cause. The most-damage name is the dealer the fenced death transaction captured (migration 2780): the killer cohort player with the largest PvP harm total of the last five minutes, else the final blow; it is empty when neither is known and for deaths captured before migration 2780. Without selection the rows are unchanged; replies stay within MAX_EXTENDED_TAB_RESULT_BYTES 32768."
+}

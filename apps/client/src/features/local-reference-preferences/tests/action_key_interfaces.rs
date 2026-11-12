@@ -21,7 +21,8 @@ fn options_key_edit_uses_action_keys_and_executes_the_live_mixed_slot()
     assert!(link.assign_bar_action(
         35,
         BarAction::Text {
-            text: "Last row greeting".into()
+            text: "Last row greeting".into(),
+            send_automatically: true
         }
     ));
     settings.sync_bar_actions(&link);

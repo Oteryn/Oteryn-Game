@@ -142,10 +142,19 @@ pub(in crate::play) fn edit_slot(
             3 => fields
                 .get(2)
                 .and_then(|text| text.trim().parse().ok())
-                .map(|definition| BarAction::Equip { definition }),
-            4 => fields
-                .get(3)
-                .map(|text| BarAction::Text { text: text.clone() }),
+                .map(|definition| BarAction::Equip {
+                    definition,
+                    upgrade_tier: fields
+                        .get(6)
+                        .and_then(|text| text.trim().parse().ok())
+                        .unwrap_or(0),
+                }),
+            4 => fields.get(3).map(|text| BarAction::Text {
+                text: text.clone(),
+                send_automatically: fields
+                    .get(7)
+                    .is_none_or(|text| !matches!(text.trim(), "no" | "false" | "0")),
+            }),
             5 => Some(BarAction::Passive {
                 ability: PassiveAbility::BattleInstinct,
             }),

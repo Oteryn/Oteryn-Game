@@ -34,11 +34,14 @@ pub enum CustomAction {
     Passive {
         cast_index: u32,
     },
+    Utility {
+        action: super::UtilityAction,
+    },
 }
 impl CustomAction {
     pub(super) fn valid(&self) -> bool {
         match self {
-            Self::PassiveStatus { .. } => true,
+            Self::PassiveStatus { .. } | Self::Utility { .. } => true,
             Self::ActionBar { slot } => usize::try_from(*slot).is_ok_and(|slot| {
                 (1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS).contains(&slot)
             }),
@@ -80,4 +83,24 @@ impl ReferencePreferences {
     ) -> Result<(), PreferenceError> {
         super::bindings::validate_custom(self, primary, secondary)
     }
+}
+
+/// The chat and help chords of Tibia Global, bound on a fresh profile. The features that held
+/// Ctrl+E, Ctrl+O, Ctrl+T and Ctrl+H before have no default key now; Global gives them none.
+pub fn default_custom_hotkeys() -> std::collections::BTreeMap<String, CustomAction> {
+    use super::UtilityAction::{
+        CloseCurrentChannel, NextChannel, OpenChannelList, OpenHelpChannel, PreviousChannel,
+        ToggleLensHelp,
+    };
+    [
+        ("CTRL+E", CloseCurrentChannel),
+        ("TAB", NextChannel),
+        ("SHIFT+TAB", PreviousChannel),
+        ("CTRL+O", OpenChannelList),
+        ("CTRL+T", OpenHelpChannel),
+        ("CTRL+H", ToggleLensHelp),
+    ]
+    .into_iter()
+    .map(|(chord, action)| (chord.to_owned(), CustomAction::Utility { action }))
+    .collect()
 }

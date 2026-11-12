@@ -162,7 +162,7 @@ PKCE exchange. This is current-main readiness, not evidence at the unchanged lan
 Platform obligations for a challenge-specific successor.
 
 **Driver added, runtime unverified — `web_identity_pkce_isolation`.**
-`G:crates/platform-client/tests/web_identity_pkce_isolation.rs` is invoked by
+`G:tests/security/auth/tests/web_identity_pkce_isolation.rs` is invoked by
 `tools/qualification/game_platform/run.sh` before the dev-client phase. Drive a real
 cookie-jar HTTP browser journey: GET form/CSRF, wrong password, real password,
 authorize/consent, loopback callback and Game's `NativeLoginClient` token exchange.
@@ -254,7 +254,7 @@ flag plus APP_ENV and OAuth allowlist; the old PHP flag does not activate it
 (`G:docs/contracts/OTERYN_V2_NATIVE_REMEMBERED_DEVICE_SESSION_CONTRACT.md:20`).
 
 **Current lane driver — native_device_rotation_replay.**
-`crates/platform-client/tests/native_device_rotation_replay.rs` runs after real
+`tests/security/auth/tests/native_device_rotation_replay.rs` runs after real
 browser OAuth and ticket/Gateway refusal. At a85b5da4, enrollment and proofless
 rotation must succeed; old schema-refusal BLOCKED outcomes are no longer accepted.
 Byte-exact transport capture, account-bound tickets, four credential rotations,

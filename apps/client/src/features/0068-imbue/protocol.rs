@@ -16,9 +16,11 @@ impl Outbox {
     pub(in crate::play) fn imbue_initialize(&self, selected: bool) {
         let mut mailbox = lock(&self.0);
         let details_selected = mailbox.imbue.details_selected;
+        let success_selected = mailbox.imbue.success_selected;
         mailbox.imbue = oteryn_client_ui::imbue::ImbuePanel {
             selected,
             details_selected,
+            success_selected,
             ..Default::default()
         };
         mailbox.imbue_shutdown = false;

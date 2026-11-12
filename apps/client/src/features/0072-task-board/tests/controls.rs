@@ -201,7 +201,7 @@ fn elite_checkbox_uses_the_real_play_queue() -> Result<(), &'static str> {
     let text = oteryn_client_ui::task_board::panel_text(&panel);
     assert!(text.contains("Platinum"));
     assert!(text.contains("Dust (Premium): 8"));
-    assert!(text.contains("+100% damage"));
+    assert!(text.contains("100% more damage"));
     link.task_board_full_request(oteryn_client_ui::task_board::FullIntent::Elite(false));
     assert!(
         matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(command))

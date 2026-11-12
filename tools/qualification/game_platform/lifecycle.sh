@@ -128,7 +128,7 @@ game_platform_identity() {
   result=NODE_BOOT_IDENTITY_ONLY
   ACTIVE_STAGE=web_identity
   # Compile before the node's bounded assignment wait and journey budget begin.
-  cargo test --locked -p oteryn-platform-client --test web_identity_pkce_isolation \
+  cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
     --test native_ticket_and_gateway_fail_closed --test native_device_rotation_replay --no-run \
     > "$WORK/identity-build.log" 2>&1 || game_platform_fail web_identity driver_build_failed
   stage operator_setup -- operator_setup
@@ -138,7 +138,7 @@ game_platform_identity() {
   evidence "game_platform_provenance game=$(git rev-parse HEAD) platform=$GAME_PLATFORM_SHA game_pg=18.6 platform_pg=18.6 bundle=$WORLD_DIGEST"
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
     GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" \
-    timeout --kill-after=1s 60s cargo test --locked -p oteryn-platform-client --test web_identity_pkce_isolation \
+    timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
       web_identity_pkce_isolation -- --exact --nocapture > "$WORK/identity.log" 2>&1 \
     || game_platform_fail web_identity journey_assertion_failed
   kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_identity
@@ -151,7 +151,7 @@ game_platform_identity() {
     [[ "$target" != native_device_rotation_replay ]] || budget=120
     GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
       GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
-      timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-platform-client --test "$target" \
+      timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
         "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
       || game_platform_fail "$target" journey_assertion_failed
     kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_native

@@ -88,15 +88,18 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
         payload,
     })
 }
-pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
+/// Apply a server answer. Returns whether it confirmed a loot run (loot all or one corpse),
+/// whose result line belongs in the Loot tab.
+pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> bool {
     let Some(action) = panel.pending.take() else {
-        return;
+        return false;
     };
     if matches!(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && let Ok(result) = decode_quick_loot_result(&response.payload)
     {
+        let looted = matches!(action, Action::LootAll | Action::Corpse(_));
         if !matches!(action, Action::LootAll | Action::Corpse(_)) {
             if panel.confirmed.len() == 100 {
                 panel.confirmed.remove(0);
@@ -138,7 +141,8 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
         }
         panel.result = Some(result);
         panel.feedback = tr!("Confirmed by the server").into();
-        return;
+        return looted;
     }
     panel.feedback = tr!("Loot request refused or invalid reply; try again").into();
+    false
 }

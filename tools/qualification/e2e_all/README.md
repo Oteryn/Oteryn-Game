@@ -20,12 +20,21 @@ captures; missing captures fail. Its ordinary unit mode uses an explicit
 synthetic fixture and does not claim node qualification.
 
 The summary has every DONE/PARTIAL mechanic from `SCENARIO_MATRIX.md`, plus
-bounded scenario results. A full mechanic requires its own `<row>.full`
+the later full journeys registered in `supplemental_rows.json` and bounded
+scenario results. The supplemental registry keeps the original re-audit matrix
+unchanged. Its `client` entries register only `<row>.client` capture results;
+they never qualify a full journey. Unknown row IDs are rejected. A full mechanic
+requires its own `<row>.full`
 evidence. The current suite implements no full mechanic row, so the command
 **exits nonzero**, even when its existing journeys and new slices succeed.
 Legacy `skipped=` messages are not interpreted as missing content or a pass.
 Unimplemented scenarios are FAIL, not MISSING-SERVER. SKIPPED and MISSING-SERVER
 require explicit content/source evidence and also leave the suite incomplete.
+
+`NODE_BOOT_E2E_ONLY=rows` selects the indexed journeys and client captures;
+`OTERYN_E2E_ROW_BATCH=start:len` still selects their batch. The existing `core`
+and F4–F7 groups run without those indexed rows when selected explicitly.
+Leaving `NODE_BOOT_E2E_ONLY` unset runs every group as before.
 
 MAPBOT-1 adds `client_phases/map_journey.rs` to the real-world journey. Its
 MapModel uses `world::load_world` (the production boot loader), the existing

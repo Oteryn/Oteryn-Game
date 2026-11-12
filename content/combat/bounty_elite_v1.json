@@ -1,12 +1,12 @@
 {
   "schema": "OTERYN_BOUNTY_ELITE/v1",
   "parity": "PARITY_PENDING",
-  "decision": "Owner decision T201 2026-11-09; news 9004 qualitative rules; provisional numeric profile",
+  "decision": "Owner decision T201 2026-11-09; Winter Update 2026 test server (thread 560): caps 75/20/5%, Elite dust Beginner 5, Adept 15, Master 70; Expert dust and per-miss increments unpublished (provisional)",
   "dust_by_difficulty": [
-    1,
-    2,
+    5,
+    15,
     3,
-    4
+    70
   ],
   "base_basis_points": [
     500,
@@ -19,8 +19,8 @@
     10
   ],
   "cap_basis_points": [
-    2500,
-    1000,
-    200
+    7500,
+    2000,
+    500
   ]
 }

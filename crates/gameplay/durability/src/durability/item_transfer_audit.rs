@@ -143,7 +143,8 @@ fn source_ground(value: &OneItemTransferV1) -> Result<&OneItemGroundV1, AuditErr
 /// Closed TRANSFER shapes (B3 §4.4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransferShape {
-    /// An empty container moves into the empty CharacterEquipment `container` slot.
+    /// A container moves into the empty CharacterEquipment `container` slot.
+    /// Canonical tree admission is bounded separately; child Items do not change.
     ContainerSlot,
     /// A new entry (new placement ordinal) of the main backpack.
     NewEntry,

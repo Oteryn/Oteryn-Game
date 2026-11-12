@@ -170,3 +170,7 @@ fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n04.rs"]
+mod e2e_n04;

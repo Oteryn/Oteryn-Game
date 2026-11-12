@@ -98,12 +98,12 @@ fn panel_displays_server_quotes_and_the_matching_modifier_grade() {
             "Removing points or resetting is blocked while you are in a fight (PZ lock)."
         )
     );
-    assert!(text.contains("654321 gold"));
+    assert!(!text.contains("654321 gold"), "no domain switch price");
     assert!(text.contains("9–11 supreme fragments"));
     assert!(text.contains("222222 gold and 777 supreme fragments"));
     assert!(modifier_label(&panel, 1, 5).contains("Grade II"));
-    assert!(slot_label(&panel, 14).contains("Green"));
-    assert!(slot_label(&panel, 20).contains("Blue"));
+    assert!(!slot_label(&panel, 14).contains("Green"));
+    assert!(!slot_label(&panel, 20).contains("Blue"));
 }
 
 #[test]
@@ -205,5 +205,26 @@ fn wheel_named_presets_roundtrip_and_reject_corrupt_storage() -> Result<(), Erro
     std::fs::write(&path, br#"{"version":99,"presets":{}}"#)?;
     assert!(PresetBook::load(&path).is_err());
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn t120_named_presets_load_into_the_wheel_by_code_and_by_url() -> Result<(), Error> {
+    use super::super::presets::PresetBook;
+    let mut source = panel();
+    source.points[0] = 12;
+    let mut book = PresetBook::default();
+    book.insert("  Hunting ", &source.build_code())?;
+    book.insert("Boss", &panel().build_code())?;
+    let saved = book.0.get("Hunting").ok_or("trimmed preset name")?.clone();
+    assert_eq!(book.0.len(), 2);
+    let mut target = panel();
+    target.import_build(&saved)?;
+    assert_eq!(target.points[0], 12);
+    let mut by_url = panel();
+    by_url.import_build(&saved.replacen("OW1:", "oteryn://wheel/v1/", 1))?;
+    assert_eq!(by_url.points, target.points);
+    assert!(book.0.remove("Boss").is_some());
+    assert!(!book.0.contains_key("Boss"));
     Ok(())
 }

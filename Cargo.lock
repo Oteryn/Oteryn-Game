@@ -3523,20 +3523,16 @@ dependencies = [
  "bytes",
  "ed25519-dalek",
  "futures",
- "oteryn-client",
  "oteryn-diagnostics",
  "oteryn-error-codes",
  "oteryn-foundation",
- "oteryn-identity",
  "oteryn-platform-contracts",
- "rcgen",
  "reqwest",
  "rustls",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "tokio",
- "tokio-rustls",
  "tough",
  "url",
 ]
@@ -3592,12 +3588,22 @@ dependencies = [
 name = "oteryn-security-auth-tests"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "futures",
+ "oteryn-client",
  "oteryn-client-runtime",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
  "oteryn-platform-client",
+ "rcgen",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
  "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

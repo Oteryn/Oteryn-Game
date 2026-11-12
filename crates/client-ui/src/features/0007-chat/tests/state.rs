@@ -301,3 +301,558 @@ fn identical_messages_at_log_capacity_keep_new_receipt_times() {
     assert_eq!(metadata.prefix(display, 0), "[00:00:10 UTC] ");
     assert_eq!(metadata.prefix(display, max - 1), "[00:00:20 UTC] ");
 }
+
+#[test]
+fn n021_default_channel_and_temporary_mode_keys() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let key =
+        |code: u16, modifiers| -> Result<[NormalizedInputEvent; 1], Box<dyn std::error::Error>> {
+            Ok([NormalizedInputEvent::Key {
+                code: KeyCode::new(code)?,
+                state: ButtonState::Pressed,
+                modifiers,
+                repeat: false,
+            }])
+        };
+    assert!(crate::chat::default_channel_key(&key(
+        7,
+        Modifiers::one(Modifier::Alt)
+    )?));
+    assert!(!crate::chat::default_channel_key(&key(7, Modifiers::NONE)?));
+    assert!(crate::chat::temporary_mode_key(&key(88, Modifiers::NONE)?));
+    assert!(!crate::chat::temporary_mode_key(&key(
+        88,
+        Modifiers::one(Modifier::Alt)
+    )?));
+    Ok(())
+}
+
+mod channels {
+    use super::*;
+    use crate::chat_private_channel::{ChatPanel as PrivatePanel, Intent as PrivateIntent};
+    use oteryn_client_runtime::chat_private_channel::{
+        ChatChannelList, ChatDisposition, ChatOutcome, InvitedChannel, PrivateChannelIntent,
+        PrivateChannelLine,
+    };
+    use oteryn_client_runtime::chat_public_channels::{ChatRoom, ChatRoomSet};
+
+    fn selected() -> (ChatPanel, ChatPanel, PrivatePanel) {
+        let chat = ChatPanel {
+            selected: true,
+            ..ChatPanel::default()
+        };
+        let public = ChatPanel {
+            selected: true,
+            ..ChatPanel::default()
+        };
+        let private = PrivatePanel {
+            selected: true,
+            ..PrivatePanel::default()
+        };
+        (chat, public, private)
+    }
+    fn rooms(open: &[ChatRoom]) -> ChatRoomSet {
+        let mut set = ChatRoomSet::default();
+        for room in open {
+            set.insert(*room);
+        }
+        set
+    }
+    fn outcome(disposition: ChatDisposition) -> ChatOutcome {
+        ChatOutcome {
+            command_id: 1,
+            status: oteryn_client_runtime::CommandStatus::Accepted,
+            disposition,
+            wait_seconds: 0,
+            result_server_sequence: 1,
+        }
+    }
+    fn list(own: Option<u16>, invited: &[(u16, &str)]) -> ChatChannelList {
+        ChatChannelList {
+            public_rooms: rooms(&[ChatRoom::World, ChatRoom::Help]),
+            own_channel: own,
+            invited: invited
+                .iter()
+                .map(|(channel_id, owner)| InvitedChannel {
+                    channel_id: *channel_id,
+                    owner_name: (*owner).into(),
+                })
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn chat_channels_help_tab_opens_when_the_server_opens_the_room() {
+        let (mut chat, mut public, _) = selected();
+        assert_eq!(
+            open_help(&mut chat, &mut public),
+            Some(ChatIntent::OpenRoom(ChatRoom::Help))
+        );
+        assert_eq!(chat.console.current, None);
+        public.rooms = rooms(&[ChatRoom::Help]);
+        chat.console.sync_rooms(public.rooms);
+        assert_eq!(chat.console.current, Some(ChannelTab::Room(ChatRoom::Help)));
+        assert_eq!(
+            chat.console.tab_labels().last().map(String::as_str),
+            Some("Help")
+        );
+        // Already open: no wire call, the tab is only selected again.
+        chat.console.select(ConsoleTab::All);
+        assert_eq!(open_help(&mut chat, &mut public), None);
+        assert_eq!(chat.console.current, Some(ChannelTab::Room(ChatRoom::Help)));
+    }
+
+    #[test]
+    fn chat_channels_close_current_asks_the_server_and_keeps_fixed_tabs() {
+        let (mut chat, mut public, mut private) = selected();
+        // The default (fixed) tabs cannot be closed.
+        assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
+        assert_eq!(chat.console.tab_count(), 4);
+        public.rooms = rooms(&[ChatRoom::World, ChatRoom::Help]);
+        chat.console.sync_rooms(public.rooms);
+        chat.console.select_index(5);
+        assert_eq!(chat.console.current, Some(ChannelTab::Room(ChatRoom::Help)));
+        assert_eq!(
+            close_current(&mut chat, &mut public, &mut private),
+            Some(ChatIntent::CloseRoom(ChatRoom::Help))
+        );
+        public.rooms = rooms(&[ChatRoom::World]);
+        chat.console.sync_rooms(public.rooms);
+        assert_eq!(
+            chat.console.current,
+            Some(ChannelTab::Room(ChatRoom::World))
+        );
+        assert_eq!(chat.console.tab_count(), 5);
+    }
+
+    #[test]
+    fn chat_channels_cycle_wraps_across_fixed_and_opened_tabs() {
+        let mut console = Console::default();
+        console.open_channel(ChannelTab::Conversation("Bryn".into()));
+        console.open_channel(ChannelTab::Private(101));
+        console.select(ConsoleTab::Guild);
+        console.cycle(true);
+        assert_eq!(
+            console.current,
+            Some(ChannelTab::Conversation("Bryn".into()))
+        );
+        console.cycle(true);
+        assert_eq!(console.current, Some(ChannelTab::Private(101)));
+        console.cycle(true);
+        assert_eq!(
+            (console.current.clone(), console.tab),
+            (None, ConsoleTab::All)
+        );
+        console.cycle(false);
+        assert_eq!(console.current, Some(ChannelTab::Private(101)));
+        assert_eq!(
+            console.tab_labels(),
+            ["All", "Local", "Private", "Guild", "Bryn", "Channel 101"]
+        );
+        // Closing the left-most opened tab falls back to the fixed tab.
+        console.select_index(4);
+        assert_eq!(
+            console.close_current(),
+            Some(ChannelTab::Conversation("Bryn".into()))
+        );
+        assert_eq!(console.current, None);
+    }
+
+    #[test]
+    fn chat_channels_list_offers_rooms_own_channel_and_invitations() {
+        let (mut chat, mut public, mut private) = selected();
+        let channels = list(None, &[(205, "Ana")]);
+        let entries = channel_entries(Some(&channels), ChatRoomSet::default());
+        assert_eq!(
+            entries,
+            [
+                ChannelEntry::Room(ChatRoom::World),
+                ChannelEntry::Room(ChatRoom::Help),
+                ChannelEntry::CreateOwn,
+                ChannelEntry::Invitation {
+                    channel_id: 205,
+                    owner_name: "Ana".into()
+                },
+            ]
+        );
+        let text = channel_list_text(&entries, &chat.console);
+        assert!(text.contains("World: closed") && text.contains("Invitation: Ana (205)"));
+        // Joining an invitation opens its tab only after the server accepted the join.
+        assert_eq!(
+            open_entry(&mut chat, &mut public, &mut private, &entries[3]),
+            Some(ChatIntent::PrivateChannel(PrivateChannelIntent::Join {
+                channel_id: 205
+            }))
+        );
+        assert!(chat.console.channels.is_empty());
+        private_result(
+            &mut chat,
+            private.pending_intent,
+            private.channel,
+            &outcome(ChatDisposition::Ok),
+        );
+        assert_eq!(chat.console.current, Some(ChannelTab::Private(205)));
+        assert!(channel_list_text(&entries, &chat.console).contains("World: closed"));
+        // The invitation withdrawn: the tab goes away with the list.
+        chat.console.sync_private(Some(&list(None, &[])));
+        assert_eq!(chat.console.current, None);
+        assert!(chat.console.channels.is_empty());
+    }
+
+    #[test]
+    fn chat_channels_create_own_channel_selects_it_when_the_list_arrives() {
+        let (mut chat, mut public, mut private) = selected();
+        assert_eq!(
+            open_entry(
+                &mut chat,
+                &mut public,
+                &mut private,
+                &ChannelEntry::CreateOwn
+            ),
+            Some(ChatIntent::PrivateChannel(PrivateChannelIntent::Create))
+        );
+        private_result(
+            &mut chat,
+            private.pending_intent,
+            private.channel,
+            &outcome(ChatDisposition::Ok),
+        );
+        chat.console.sync_private(Some(&list(Some(100), &[])));
+        assert_eq!(chat.console.current, Some(ChannelTab::Private(100)));
+        // Refusal (no Premium): no tab, no stale focus.
+        let (mut chat, mut public, mut private) = selected();
+        assert!(
+            open_entry(
+                &mut chat,
+                &mut public,
+                &mut private,
+                &ChannelEntry::CreateOwn
+            )
+            .is_some()
+        );
+        private_result(
+            &mut chat,
+            private.pending_intent,
+            private.channel,
+            &outcome(ChatDisposition::NotAllowed),
+        );
+        chat.console.sync_private(Some(&list(Some(100), &[])));
+        assert_eq!(chat.console.current, None);
+        // Closing the own channel leaves it on the wire.
+        chat.console.open_channel(ChannelTab::Private(100));
+        private.pending = false;
+        assert_eq!(
+            close_current(&mut chat, &mut public, &mut private),
+            Some(ChatIntent::PrivateChannel(PrivateChannelIntent::Leave {
+                channel_id: 100
+            }))
+        );
+        private_result(
+            &mut chat,
+            Some(PrivateIntent::Leave),
+            Some(100),
+            &outcome(ChatDisposition::Ok),
+        );
+        assert!(chat.console.channels.is_empty());
+    }
+
+    #[test]
+    fn chat_channels_each_tab_shows_only_its_own_lines_and_sends_to_it() {
+        let (mut chat, _, _) = selected();
+        chat.lines = vec![
+            ChatLine::Room {
+                room: ChatRoom::Help,
+                speaker_name: "Tutor".into(),
+                text: "welcome".into(),
+            },
+            ChatLine::Room {
+                room: ChatRoom::World,
+                speaker_name: "Ana".into(),
+                text: "worldline".into(),
+            },
+            ChatLine::PrivateChannel(PrivateChannelLine {
+                channel_id: 100,
+                speaker_name: "Cleo".into(),
+                text: "secret".into(),
+            }),
+            ChatLine::Private {
+                speaker_name: "Bryn".into(),
+                text: "psst".into(),
+            },
+        ];
+        let mut shown = |tab: ChannelTab| {
+            chat.console.open_channel(tab);
+            panel_text(&chat)
+        };
+        let help = shown(ChannelTab::Room(ChatRoom::Help));
+        assert!(help.contains("welcome") && !help.contains("worldline") && !help.contains("psst"));
+        let channel = shown(ChannelTab::Private(100));
+        assert!(channel.contains("secret") && !channel.contains("welcome"));
+        let pm = shown(ChannelTab::Conversation("bryn".into()));
+        assert!(pm.contains("psst") && !pm.contains("secret"));
+        assert!(!pm.contains("Tutor"));
+
+        chat.text = "hello".into();
+        assert_eq!(
+            channel_request(&mut chat),
+            Some(ChatIntent::Private {
+                recipient_name: "bryn".into(),
+                text: "hello".into()
+            })
+        );
+        chat.pending = false;
+        chat.console.open_channel(ChannelTab::Private(100));
+        assert_eq!(
+            channel_request(&mut chat),
+            Some(ChatIntent::PrivateChannel(PrivateChannelIntent::Say {
+                channel_id: 100,
+                text: "hello".into()
+            }))
+        );
+        chat.pending = false;
+        chat.console.open_channel(ChannelTab::Room(ChatRoom::Help));
+        assert_eq!(
+            channel_request(&mut chat),
+            Some(ChatIntent::Room {
+                room: ChatRoom::Help,
+                text: "hello".into()
+            })
+        );
+        chat.pending = false;
+        chat.console.select(ConsoleTab::All);
+        assert_eq!(channel_request(&mut chat), None);
+    }
+
+    #[test]
+    fn chat_conversation_reopens_select_the_original_tab_and_preserve_other_tabs() {
+        let (mut chat, mut public, mut private) = selected();
+        assert!(open_conversation(&mut chat, "Bryn"));
+        assert!(open_conversation(&mut chat, "Ana"));
+        for name in ["bryn", "BRYN", "Bryn"] {
+            assert!(open_conversation(&mut chat, name));
+            assert_eq!(
+                chat.console.channels,
+                [
+                    ChannelTab::Conversation("Bryn".into()),
+                    ChannelTab::Conversation("Ana".into()),
+                ]
+            );
+            assert_eq!(chat.console.current, Some(chat.console.channels[0].clone()));
+            assert_eq!(chat.console.tab_index(), 4);
+        }
+        assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
+        assert_eq!(
+            chat.console.channels,
+            [ChannelTab::Conversation("Ana".into())]
+        );
+        assert_eq!(chat.console.current, None);
+    }
+
+    #[test]
+    fn chat_channels_conversation_tab_opens_locally_and_closes_without_wire() {
+        let (mut chat, mut public, mut private) = selected();
+        assert!(!open_conversation(&mut chat, "  "));
+        assert!(open_conversation(&mut chat, " Bryn "));
+        assert_eq!(
+            chat.console.current,
+            Some(ChannelTab::Conversation("Bryn".into()))
+        );
+        assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
+        assert!(chat.console.channels.is_empty());
+    }
+
+    #[test]
+    fn chat_local_tabs_open_from_the_dialog_rows_and_close_without_wire() {
+        let (mut chat, mut public, mut private) = selected();
+        let entries = dialog_entries(Some(&list(None, &[])), ChatRoomSet::default());
+        let local: Vec<_> = entries
+            .iter()
+            .filter(|entry| matches!(entry, ChannelEntry::Local(_)))
+            .cloned()
+            .collect();
+        assert_eq!(
+            local,
+            [
+                ChannelEntry::Local(ChannelTab::Loot),
+                ChannelEntry::Local(ChannelTab::ServerLog),
+                ChannelEntry::Local(ChannelTab::Npc),
+            ]
+        );
+        for entry in &local {
+            assert_eq!(
+                open_entry(&mut chat, &mut public, &mut private, entry),
+                None
+            );
+        }
+        assert_eq!(
+            chat.console.tab_labels()[4..],
+            ["Loot", "Server Log", "NPC"]
+        );
+        assert_eq!(chat.console.current, Some(ChannelTab::Npc));
+        // Typing in a local tab speaks locally; nothing is sent to a channel.
+        chat.text = "hi".into();
+        assert!(matches!(
+            channel_request(&mut chat),
+            Some(ChatIntent::Say { .. })
+        ));
+        assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
+        assert_eq!(chat.console.channels.len(), 2);
+        assert!(dialog_rows(&entries, &chat.console)[entries.len() - 1].contains("closed"));
+    }
+
+    #[test]
+    fn chat_loot_tab_takes_loot_notices_out_of_the_server_log_and_all_tabs() {
+        let mut chat = ChatPanel::default();
+        chat.console
+            .notices
+            .push(NoticeClass::Loot, "Looted 2 of 3 items", 1);
+        chat.console
+            .notices
+            .push(NoticeClass::Status, "Server is saving", 2);
+        let log = |chat: &ChatPanel| {
+            let mut shown = chat.clone();
+            shown.console.current = Some(ChannelTab::ServerLog);
+            panel_text(&shown)
+        };
+        // Without a Loot tab the loot line stays in the combined log.
+        chat.console.open_channel(ChannelTab::ServerLog);
+        assert!(log(&chat).contains("Looted 2 of 3 items") && log(&chat).contains("saving"));
+        chat.console.open_channel(ChannelTab::Loot);
+        let loot = panel_text(&chat);
+        assert!(loot.contains("Looted 2 of 3 items") && !loot.contains("saving"));
+        let log = log(&chat);
+        assert!(!log.contains("Looted") && log.contains("Server is saving"));
+        chat.console.select(ConsoleTab::All);
+        assert!(!panel_text(&chat).contains("Looted"));
+    }
+
+    #[test]
+    fn chat_npc_tab_keeps_the_last_conversation_lines() {
+        let mut chat = ChatPanel::default();
+        chat.console.open_channel(ChannelTab::Npc);
+        chat.console
+            .sync_npc(&["Hello, traveller.".into(), "Buy?".into()]);
+        assert_eq!(panel_text(&chat), "Hello, traveller.\nBuy?\n");
+        chat.console.sync_npc(&[]);
+        assert!(panel_text(&chat).contains("Buy?"));
+        chat.console.sync_npc(&["Farewell.".into()]);
+        assert_eq!(panel_text(&chat), "Farewell.\n");
+    }
+
+    #[test]
+    fn chat_dialog_selects_steps_and_confirms_rows_or_a_typed_name() {
+        let channels = list(Some(100), &[(205, "Ana")]);
+        let entries = dialog_entries(Some(&channels), ChatRoomSet::default());
+        let console = Console::default();
+        let rows = dialog_rows(&entries, &console);
+        assert_eq!(rows.len(), entries.len());
+        assert!(rows[0].starts_with("World") && rows.iter().any(|row| row.contains("Ana")));
+        let mut dialog = ChannelDialog::default();
+        dialog.show();
+        assert!(dialog.open && dialog.selected == 0);
+        assert!(!dialog.select(entries.len(), entries.len()));
+        dialog.step(false, entries.len());
+        assert_eq!(dialog.selected, entries.len() - 1);
+        dialog.step(true, entries.len());
+        assert_eq!(dialog.selected, 0);
+        dialog.step(true, 0);
+        assert!(dialog.select(1, entries.len()));
+        assert_eq!(
+            dialog.confirm(&entries),
+            Some(DialogAction::Entry(ChannelEntry::Room(ChatRoom::Help)))
+        );
+        assert!(!dialog.open);
+        // A typed name wins over the selection and opens a conversation.
+        dialog.show();
+        dialog.set_name("  Bryn ");
+        assert_eq!(
+            dialog.confirm(&entries),
+            Some(DialogAction::Conversation("Bryn".into()))
+        );
+        // A hidden dialog confirms nothing; no rows and no name: nothing to confirm either.
+        assert_eq!(dialog.confirm(&entries), None);
+        dialog.show();
+        assert_eq!(dialog.confirm(&[]), None);
+        // The create row is captioned as the owner asked.
+        let create = dialog_rows(&[ChannelEntry::CreateOwn], &console);
+        assert_eq!(create, ["Create own private channel"]);
+    }
+}
+
+#[test]
+fn server_notice_switch_covers_combined_local_and_private_channel_views() {
+    use crate::chat_channel_participants::{NoticeKind, NoticeLine};
+    let mut panel = ChatPanel::default();
+    panel
+        .console
+        .notices
+        .push(NoticeClass::Status, "safe area", 1);
+    panel
+        .console
+        .notices
+        .push(NoticeClass::Loot, "gold coin", 2);
+    panel.console.channel_notices.push(NoticeLine {
+        serial: 1,
+        channel_id: 7,
+        kind: NoticeKind::Joined,
+        name: "Bryn".into(),
+    });
+    panel.lines = vec![ChatLine::Private {
+        speaker_name: "Bryn".into(),
+        text: "player line".into(),
+    }];
+    assert!(panel_text(&panel).contains("safe area"));
+    panel.console.show_server_messages = false;
+    assert!(panel_text(&panel).contains("player line"));
+    assert!(!panel_text(&panel).contains("safe area"));
+    for tab in [ChannelTab::ServerLog, ChannelTab::Loot] {
+        panel.console.current = Some(tab);
+        assert!(!panel_text(&panel).contains("safe area"));
+        assert!(!panel_text(&panel).contains("gold coin"));
+        panel.console.show_server_messages = true;
+        assert!(panel_text(&panel).contains("gold coin"));
+        panel.console.show_server_messages = false;
+    }
+    panel.console.current = Some(ChannelTab::Private(7));
+    assert!(!panel_text(&panel).contains("Bryn"));
+    panel.console.show_server_messages = true;
+    assert!(panel_text(&panel).contains("Bryn"));
+}
+
+#[test]
+fn dismissed_oldest_line_preserves_remaining_receipt_metadata_after_publish() {
+    let old = ChatLine::Private {
+        speaker_name: "Bryn".into(),
+        text: "old".into(),
+    };
+    let retained = ChatLine::Private {
+        speaker_name: "Cy".into(),
+        text: "retained".into(),
+    };
+    let incoming = ChatLine::Private {
+        speaker_name: "Dana".into(),
+        text: "new".into(),
+    };
+    let mut metadata = Metadata::default();
+    let display = ConsoleDisplay {
+        time: true,
+        seconds: true,
+        ..Default::default()
+    };
+    metadata.observe(&[old], 1);
+    metadata.observe(
+        &[
+            ChatLine::Private {
+                speaker_name: "Bryn".into(),
+                text: "old".into(),
+            },
+            retained.clone(),
+        ],
+        2,
+    );
+    metadata.observe(std::slice::from_ref(&retained), 3);
+    assert_eq!(metadata.prefix(display, 0), "[00:00:02 UTC] ");
+    metadata.observe(&[retained, incoming], 4);
+    assert_eq!(metadata.prefix(display, 0), "[00:00:02 UTC] ");
+    assert_eq!(metadata.prefix(display, 1), "[00:00:04 UTC] ");
+}

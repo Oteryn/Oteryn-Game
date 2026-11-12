@@ -20,8 +20,12 @@ pub async fn run_session<T: Stepper>(
     commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
-    let modal =
-        super::feature_0450_server_modal::protocol::Driver::new(session.feature_selected(450));
+    let modal = super::feature_0450_server_modal::protocol::Driver::new(
+        session.feature_selected(450),
+    )
+    .with_input(session.feature_selected(
+        oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
+    ));
     run_session_with_modal(session, commands, outbox, modal).await;
 }
 
@@ -99,7 +103,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         182 => match command.kind {
                             738=>outbox.daily_reward_details_result(&result),
                             oteryn_session::daily_reward::returner::QUERY | oteryn_session::daily_reward::returner::CLAIM =>outbox.daily_reward_returner_result(command.kind,&result),
-                            _=>outbox.daily_reward_picker_result(command.kind,&result),
+                            _ => {}
                         },
                         170 => outbox.arena_result(&result),
                         195 | 448 => outbox.weapon_proficiency_result(&result),
@@ -108,6 +112,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
+                        497 => outbox.sanction_record_result(&result),
                         250 => outbox.hireling_management_result(&result),
                         276 => outbox.condition_status_result(&result),
                         384 => outbox.mechanics_status_result(&result),
@@ -387,12 +392,17 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             Ok(PlayCommand::MovementSpeech(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
-                    outbox.chat_public_result(&outcome);
+                    outbox.chat_public_result(&intent, &outcome);
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }
                 Err(error) => error,
             },
+            Ok(PlayCommand::ChatClearOldest) => {
+                session.chat_clear_oldest();
+                publish(&mut session, &outbox, &mut held);
+                continue;
+            }
             Ok(PlayCommand::ChatPublic(intent)) => match session.chat_public(&intent).await {
                 Ok(outcome) => {
                     outbox.chat_result(&intent, &outcome);

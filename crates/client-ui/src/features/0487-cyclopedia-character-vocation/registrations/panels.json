@@ -1,0 +1,7 @@
+{
+  "mechanic": "0487-cyclopedia-character-vocation",
+  "kind": "panels",
+  "id": "0487-cyclopedia-character-vocation-panel",
+  "status": "supported",
+  "entry": "protocol.rs::vocation_title"
+}

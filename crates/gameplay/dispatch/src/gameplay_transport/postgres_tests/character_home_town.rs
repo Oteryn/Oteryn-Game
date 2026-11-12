@@ -290,8 +290,15 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
                 .position(),
             temple
         );
-        // Recreate the dispatch owner, as on reconnect; citizenship is loaded from PostgreSQL.
+        // Reconcile a new authority before reconnect: the native citizenship and death
+        // receipts must both explain the retained global Character revision.
         drop(owner);
+        drop(authority);
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         let mut reconnected = deps.owner(&h, &authority);
         reconnected.active_generation = Some(active);
         reconnected.movement_cells = (&cells).into();

@@ -55,13 +55,7 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
     }
     DECAY_RETIRE_USAGE.check()?;
     if let Some(entry) = &value.ground_container_entry {
-        check_uuid_v7(&entry.parent_item_instance_id)?;
-        if entry.parent_item_instance_id == before.item_instance_id
-            || !(1..=mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX)
-                .contains(&entry.placement_ordinal)
-        {
-            return Err(AuditError::InvalidInput);
-        }
+        super::world_reset::check_entry(entry, &before.item_instance_id)?;
         Ok(DecayRetireShape::GroundContainerEntry)
     } else {
         Ok(DecayRetireShape::Ground)
@@ -188,11 +182,39 @@ mod tests {
             parent_item_instance_id: id(8),
             placement_ordinal: 1,
             parent_ground: entry.ground.take(),
+            tree_root_item_instance_id: None,
         });
         assert_eq!(
             check_decay_retire(&entry),
             Ok(DecayRetireShape::GroundContainerEntry)
         );
+    }
+
+    #[test]
+    fn activity_death_tree_entry_keeps_its_exact_instance_scope() {
+        let mut value = sample();
+        value.ground_container_entry = Some(OneItemGroundContainerEntryV1 {
+            parent_item_instance_id: id(8),
+            placement_ordinal: u64::MAX,
+            parent_ground: value.ground.take(),
+            tree_root_item_instance_id: Some(id(10)),
+        });
+        let wire = encode_decay_retire_event(
+            DecayRetireEventIdentity {
+                event_id: id(30).try_into().unwrap(),
+                transaction_id: id(40).try_into().unwrap(),
+                occurred_at_unix_ms: 1_790_000_060_000,
+                server_build_id: "oteryn-game-server/test",
+            },
+            value.clone(),
+            mint::Type2EventTuple::V2,
+        )
+        .unwrap();
+        let (envelope, decoded) = decode_decay_retire_envelope(&wire).unwrap();
+        assert_eq!(decoded, value);
+        assert_eq!(envelope.instance_id, Some(id(2)));
+        value.activity_retirement.as_mut().unwrap().instance_id = id(11);
+        assert!(check_decay_retire(&value).is_err());
     }
 
     #[test]

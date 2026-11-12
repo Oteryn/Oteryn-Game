@@ -99,7 +99,7 @@ pub(super) async fn pair(
     .ok_or("trade offer")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
     if reply.result != ui::player_trade::ResultCode::Offered {
-        return Err(format!("trade offer: {:?}", reply.result).into());
+        return Err(format!("trade offer: {:?} reply={reply:?}", reply.result).into());
     }
     ui::apply_result(&mut panel, &reply);
     // Each peer consumes the other writer's unsolicited state before sending its next command.
@@ -114,7 +114,7 @@ pub(super) async fn pair(
     .ok_or("trade counter offer")?;
     let reply = runtime::send(partner.session_mut(), &command).await?;
     if reply.result != ui::player_trade::ResultCode::Offered {
-        return Err(format!("trade counter: {:?}", reply.result).into());
+        return Err(format!("trade counter: {:?} reply={reply:?}", reply.result).into());
     }
     ui::apply_result(&mut other_panel, &reply);
     let delta = client.session_mut().read_gated_delta(26, 1).await?;
@@ -125,7 +125,7 @@ pub(super) async fn pair(
     let command = ui::request(&mut panel, ui::Intent::Accept).ok_or("trade accept")?;
     let reply = runtime::send(client.session_mut(), &command).await?;
     if reply.result != ui::player_trade::ResultCode::Accepted {
-        return Err(format!("trade accept: {:?}", reply.result).into());
+        return Err(format!("trade accept: {:?} reply={reply:?}", reply.result).into());
     }
     ui::apply_result(&mut panel, &reply);
     let delta = partner.session_mut().read_gated_delta(26, 1).await?;
@@ -137,7 +137,7 @@ pub(super) async fn pair(
         ui::request(&mut other_panel, ui::Intent::Accept).ok_or("trade counter accept")?;
     let reply = runtime::send(partner.session_mut(), &command).await?;
     if reply.result != ui::player_trade::ResultCode::Completed {
-        return Err(format!("trade complete: {:?}", reply.result).into());
+        return Err(format!("trade complete: {:?} reply={reply:?}", reply.result).into());
     }
     ui::apply_result(&mut other_panel, &reply);
     // The initiator receives the completion state and both receive inventory deltas.

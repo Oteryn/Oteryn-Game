@@ -13,7 +13,15 @@ pub fn text(p: &WheelPanel) -> String {
     };
     out.push_str(&format!("Available points: {} · ring-unlock points: {}\nDraft allocation: {spent} · {}\nRemoving points/reset: {}\nAllocation eligibility: {}\n",r.available,r.unlock_points,if spent<=r.available{format!("{} remaining",r.available-spent)}else{format!("{} over budget",spent-r.available)},if r.removal_permitted{"currently permitted by combat-lock owner"}else{"currently blocked by combat-lock owner"},if r.eligible{"eligible"}else{"not eligible under current server rules"}));
     if let Some(n) = r.nodes.get(p.slot) {
-        out.push_str(&format!("\nSlot {} · {} · {} / {}\n{}\nMinimum ring-unlock budget: {}\nUnlock from a full open slot: {}\nOne point configured contribution:\n{}\nAt full slot:\n{}\n",p.slot+1,super::super::domain_name(n.domain),p.points[p.slot],n.capacity,n.name,n.minimum_points,if n.unlock_from.is_empty(){"centre slot".into()}else{n.unlock_from.iter().map(|i|(u16::from(*i)+1).to_string()).collect::<Vec<_>>().join(", ")},n.per_point.join("\n"),n.full_slot.join("\n")));
+        out.push_str(&format!("\nSlot {} · {} / {}\n{}\nMinimum ring-unlock budget: {}\nUnlock from a full open slot: {}\nOne point configured contribution:\n{}\nAt full slot:\n{}\n",p.slot+1,p.points[p.slot],n.capacity,n.name,n.minimum_points,if n.unlock_from.is_empty(){"centre slot".into()}else{n.unlock_from.iter().map(|i|(u16::from(*i)+1).to_string()).collect::<Vec<_>>().join(", ")},n.per_point.join("\n"),n.full_slot.join("\n")));
+        if super::super::is_vessel_node(&n.name) {
+            out.push_str(&format!(
+                "{}\n",
+                super::super::vessel_node_perk(
+                    p.vessel_board.as_ref().map_or(1, |board| board.node_bonus)
+                )
+            ));
+        }
         if let Some(perk) = r.revelations.get(usize::from(n.domain)) {
             out.push_str(&format!("\n{} · domain revelations\n", perk.name));
             for (stage, s) in perk.stages.iter().enumerate() {
