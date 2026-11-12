@@ -1,7 +1,11 @@
+#[path = "account_fixture_tests.rs"]
+mod account_fixtures;
 #[path = "bazaar_tests.rs"]
 mod bazaar;
 #[path = "challenge_tests.rs"]
 mod challenge;
+#[path = "platform_fixture_tests.rs"]
+mod platform_fixtures;
 
 use super::*;
 use std::sync::{Arc, Mutex};
@@ -169,6 +173,19 @@ struct MockServer {
 fn spawn_server(
     runtime: &tokio::runtime::Runtime,
     responses: Vec<(u16, &'static str, String)>,
+) -> Result<MockServer, Box<dyn std::error::Error>> {
+    spawn_server_with_headers(
+        runtime,
+        responses
+            .into_iter()
+            .map(|(status, headers, body)| (status, headers.to_owned(), body))
+            .collect(),
+    )
+}
+
+fn spawn_server_with_headers(
+    runtime: &tokio::runtime::Runtime,
+    responses: Vec<(u16, String, String)>,
 ) -> Result<MockServer, Box<dyn std::error::Error>> {
     let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0"))?;
     let base = format!("http://127.0.0.1:{}/", listener.local_addr()?.port());
@@ -519,3 +536,61 @@ fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
 
 #[path = "coin_purchase_tests.rs"]
 mod coin_purchase_tests;
+
+// Opt-in current-thread fixture tests record waits without consuming wall time.
+thread_local! {
+    static TICKET_DELAY: std::cell::Cell<Option<Duration>> = const {
+        std::cell::Cell::new(None)
+    };
+}
+pub(super) fn ticket_delay(duration: Duration) -> Duration {
+    TICKET_DELAY.with(|clock| match clock.get() {
+        Some(elapsed) => {
+            clock.set(Some(elapsed + duration));
+            Duration::ZERO
+        }
+        None => duration,
+    })
+}
+
+// Thread-local controlled time affects only opt-in current-thread fixture tests.
+// Other tests and every production build retain real sleeps.
+thread_local! {
+    static CLOCK: std::cell::RefCell<Option<(Instant, Duration)>> = const {
+        std::cell::RefCell::new(None)
+    };
+}
+
+fn pause_clock() {
+    let received = Instant::now();
+    CLOCK.with(|clock| *clock.borrow_mut() = Some((received, Duration::ZERO)));
+}
+
+fn clock_now() -> Result<Instant, Box<dyn std::error::Error>> {
+    CLOCK.with(|clock| {
+        clock
+            .borrow()
+            .as_ref()
+            .map(|(base, elapsed)| *base + *elapsed)
+            .ok_or_else(|| "fixture clock is not paused".into())
+    })
+}
+
+fn clock_elapsed() -> Duration {
+    CLOCK.with(|clock| {
+        clock
+            .borrow()
+            .as_ref()
+            .map_or(Duration::ZERO, |(_, elapsed)| *elapsed)
+    })
+}
+
+pub(super) fn delay(duration: Duration) -> Duration {
+    CLOCK.with(|clock| match clock.borrow_mut().as_mut() {
+        Some((_, elapsed)) => {
+            *elapsed += duration;
+            Duration::ZERO
+        }
+        None => duration,
+    })
+}

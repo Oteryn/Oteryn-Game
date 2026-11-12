@@ -72,6 +72,18 @@ run (`codex-review.sh ... --fix-confirmed`, `oteryn-review` §5). Owner decision
 `high` for code-writing Codex. Repository subagents use the model and effort
 set in their own `.claude/agents/*.md` definition.
 
+Submit a Codex Cloud task with `scripts/codex-cloud.mjs` (2026-11-12: the old
+`codex cloud exec --env "Oteryn/Oteryn-Game"` route answers "environment not
+found"). It needs an existing `codex login` and the environment variable
+`OTERYN_CODEX_ENV_CONFIG_ID` (set in the cloud environment; ask the
+coordinator if it is missing). It reads the login file itself; never open that
+file. Commands: `node .claude/skills/oteryn-waves/scripts/codex-cloud.mjs`
+`check` (environment ready), `submit --prompt-file <packet> --branch <ref>
+--title <tag>` (prints the thread id), `poll <thread>`, `status <thread>`,
+`send <thread> --prompt-file <follow-up>`, `list`. It calls the desktop
+client's internal RPC, not an official API: if it fails, report the error
+verbatim and do not retry a submit blindly.
+
 ## Limits to paste into every packet
 
 The receiving agent cannot see this skill, so paste these lines verbatim:
