@@ -8,8 +8,10 @@ any open slot of its own quality.
 Commands 6210 (`ATELIER_V2_QUERY`), 6211 (`ATELIER_V2_SET_LOCK`), 6212 (`ATELIER_V2_MUTATE`),
 6213 (`ATELIER_V2_REPLACE_VESSEL`) and 6214 (`ATELIER_V2_RESHAPE`) require selected capability
 483 (`GEM_ATELIER_V2`),
-which requires capability 148. Capability 483 is not offered until the client implements the
-slots. Capability 148 and its commands stay for old clients (see [Gem Atelier v1](atelier-v1.md)).
+which requires capability 148. Bundle Worlds offer capability 483 for clients implementing the
+slots; selection requires support for both 148 and 483. Entry-room and item-view fixture
+profiles do not offer 483. Capability 148 and its commands stay for old clients
+(see [Gem Atelier v1](atelier-v1.md)).
 
 The canonical codec is `crates/protocol-oteryn/src/atelier/v2.rs`. Requests are at most 64
 bytes; replies at most 16,384 bytes.

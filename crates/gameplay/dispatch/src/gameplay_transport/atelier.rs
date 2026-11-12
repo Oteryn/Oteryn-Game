@@ -39,12 +39,6 @@ pub enum AtelierWireReply {
     Unavailable,
 }
 
-// Temporary test-only branch attribution for the strict command-6214 regression.
-#[cfg(test)]
-pub(in crate::gameplay_transport) fn trace_reshape_qualification(detail: &str) {
-    eprintln!("[DBG-PR3115-6214] {detail}");
-}
-
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn atelier_wire(
         &self,
@@ -176,11 +170,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let mut recorded = None;
         let replay_only = refused;
         if let Some(request) = request {
-            #[cfg(test)]
-            let trace_reshape = matches!(
-                &request.mutation,
-                crate::durability::character_atelier::AtelierMutation::Reshape { .. }
-            );
             // Rebuilt so the resources may borrow this call's pinned content.
             let mut request = crate::durability::character_atelier::AtelierRequest {
                 occurrence: request.occurrence,
@@ -197,10 +186,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     states.is_dead(actor)
                         || states.has_pending_spell_commit(actor, admitted.game_session_id)
                 }) {
-                    #[cfg(test)]
-                    if trace_reshape {
-                        trace_reshape_qualification("common_apply=dead_or_pending_actor");
-                    }
                     return AtelierWireReply::Rejected;
                 }
             }
@@ -237,28 +222,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             {
                 let mut runtime = self.runtime.lock().await;
                 let binding = runtime.binding();
-                #[cfg(test)]
-                if trace_reshape {
-                    trace_reshape_qualification(&format!(
-                        "common_runtime world={} channel={} scope={} generation={} owner={} actor={:?}",
-                        admitted.world_id == binding.world_id(),
-                        binding.channel_id() == Some(admitted.channel_id),
-                        expected.runtime_scope == binding.runtime_scope(),
-                        expected.scope_ownership_generation == binding.scope_generation(),
-                        runtime.owner_fence().is_ok(),
-                        admitted.runtime_actor.map(|actor| (
-                            runtime
-                                .player_control_facts(actor, admitted.game_session_id)
-                                .is_ok_and(|facts| facts.control_loss.is_none()),
-                            runtime
-                                .bound_attacker_lease(actor, admitted.game_session_id)
-                                .is_ok_and(|lease| lease.character_id().as_bytes()
-                                    == expected.character_id.as_bytes()
-                                    && lease.generation() == expected.character_lease_generation),
-                            runtime.assert_actor_spell_unreserved(actor).is_ok(),
-                        )),
-                    ));
-                }
                 if admitted.world_id != binding.world_id()
                     || binding.channel_id() != Some(admitted.channel_id)
                     || expected.runtime_scope != binding.runtime_scope()
@@ -317,15 +280,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     Some(expected),
                 )
                 .await;
-            #[cfg(test)]
-            if trace_reshape {
-                match &result {
-                    Ok(_) => trace_reshape_qualification("commit_wheel_client=ok"),
-                    Err(error) => {
-                        trace_reshape_qualification(&format!("commit_wheel_client={error:?}"))
-                    }
-                }
-            }
             match result {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Refused,
