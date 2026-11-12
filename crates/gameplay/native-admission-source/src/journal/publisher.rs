@@ -83,17 +83,22 @@ impl JournalPeer for MtlsJournalPeer {
             http1_mtls::exchange_store(&self.descriptor.0, operation, body, &mut permit)
                 .await
                 .map_err(|error| match error {
-                    SourceError::InvalidInput
-                    | SourceError::CapacityExceeded
-                    | SourceError::OversizedOk => Failure::Quarantine,
+                    SourceError::InvalidDescriptor => Failure::Quarantine,
                     _ => Failure::Retry(None),
                 })?;
-        match status {
-            200 => Ok(body),
-            409 => Err(Failure::Conflict),
-            429 | 503 => Err(Failure::Retry(retry)),
-            _ => Err(Failure::Quarantine),
-        }
+        classify_response(status, body, retry)
+    }
+}
+fn classify_response(
+    status: u16,
+    body: Vec<u8>,
+    retry: Option<Duration>,
+) -> Result<Vec<u8>, Failure> {
+    match status {
+        200 => Ok(body),
+        409 => Err(Failure::Conflict),
+        400 | 401 | 413 => Err(Failure::Quarantine),
+        _ => Err(Failure::Retry(retry)),
     }
 }
 #[derive(Debug, Clone)]
@@ -140,6 +145,8 @@ pub struct Publisher<P> {
     peer: P,
     authority: String,
     attempt: u64,
+    last_progress: tokio::time::Instant,
+    last_diagnostic: tokio::time::Instant,
 }
 impl<P: JournalPeer> Publisher<P> {
     pub fn new(
@@ -155,20 +162,38 @@ impl<P: JournalPeer> Publisher<P> {
             peer,
             authority,
             attempt: 0,
+            last_progress: tokio::time::Instant::now(),
+            last_diagnostic: tokio::time::Instant::now(),
         })
+    }
+    /// Restore the durable per-stream retry sequence after selection/restart.
+    pub fn restore_retry_attempt(&mut self, attempt: u64) {
+        self.attempt = attempt;
+    }
+    pub fn retry_attempt(&self) -> u64 {
+        self.attempt
     }
     fn retry(&mut self, key: &[u8], specified: Option<Duration>) -> Step {
         self.attempt = self.attempt.wrapping_add(1);
         let mut hash = Sha256::new();
         hash.update(key);
         hash.update(self.attempt.to_be_bytes());
-        let jitter = Duration::from_secs(1 + u64::from(hash.finalize()[0] % 10));
-        Step::RetryAfter(
-            specified
-                .unwrap_or(jitter)
-                .clamp(Duration::from_secs(1), Duration::from_secs(10)),
-        )
+        let ceiling = (1_u64 << self.attempt.saturating_sub(1).min(4)).min(10);
+        // Equal jitter preserves exponential growth while remaining within 1-10s.
+        let floor = ceiling.div_ceil(2);
+        let jitter = Duration::from_millis(
+            floor * 1000 + u64::from(hash.finalize()[0]) * (ceiling - floor) * 1000 / 255,
+        );
+        let now = tokio::time::Instant::now();
+        if now.duration_since(self.last_progress) >= Duration::from_secs(60)
+            && now.duration_since(self.last_diagnostic) >= Duration::from_secs(60)
+        {
+            eprintln!("event=game_journal_stalled reason=no_progress");
+            self.last_diagnostic = now;
+        }
+        Step::RetryAfter(specified.map_or(jitter, |delay| delay.max(jitter)))
     }
+
     pub async fn step(
         &mut self,
         stream: &ReadGameJournalCursorV1,
@@ -197,7 +222,7 @@ impl<P: JournalPeer> Publisher<P> {
         {
             Ok(bytes) => match ReadGameJournalCursorV1Response::decode(&bytes) {
                 Ok(value) => Some(value),
-                Err(_) => return Step::Quarantined,
+                Err(_) => return self.retry(&key, None),
             },
             Err(Failure::Retry(delay)) => return self.retry(&key, delay),
             Err(Failure::Conflict) => None,
@@ -214,6 +239,8 @@ impl<P: JournalPeer> Publisher<P> {
                 return if bootstrapping {
                     Step::Quarantined
                 } else {
+                    self.attempt = 0;
+                    self.last_progress = tokio::time::Instant::now();
                     Step::Idle
                 };
             }
@@ -253,12 +280,13 @@ impl<P: JournalPeer> Publisher<P> {
         {
             Ok(bytes) => {
                 if PublishGameJournalRecordV1Response::decode(&bytes).is_err() {
-                    return Step::Quarantined;
+                    return self.retry(&key, None);
                 }
                 if store.acknowledge(stream, &record).await.is_err() {
                     return self.retry(&key, None);
                 }
                 self.attempt = 0;
+                self.last_progress = tokio::time::Instant::now();
                 Step::Accepted
             }
             // The next step always rereads the cursor, including after a lost ACK or gap.

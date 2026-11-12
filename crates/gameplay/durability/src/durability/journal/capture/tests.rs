@@ -19,8 +19,13 @@ fn journal_snapshot_pages_hash_exact_golden_payload()
     };
     let golden=br#"{"snapshot_id":"019a0000-0000-7000-8000-000000000005","page_index":0,"items":[{"item_instance_id":"019a0000-0000-7000-8000-00000000000b","definition_family":"ITEM","definition_production_key":"oteryn:content.item.backpack","definition_revision_ref":"rev-1","quantity":1,"root":"EQUIPMENT","town_id":null,"depot_box":null,"house_id":null,"spatial_position_hex":null,"equipment_slot":3,"parent_item_instance_id":null,"placement_ordinal":"1"}]}"#;
     let page: ItemsPage = serde_json::from_slice(golden)?;
-    let result = payloads(&stream, &page.snapshot_id, page.items.clone(), &[])?
-        .ok_or("representable page")?;
+    let result = payloads(
+        stream.character_revision.as_deref().ok_or("cut")?,
+        &page.snapshot_id,
+        page.items.clone(),
+        &[],
+    )?
+    .ok_or("representable page")?;
     assert_eq!(result.len(), 3);
     let ItemsPayload::Page(actual) = &result[1] else {
         return Err("page family".into());
@@ -36,6 +41,14 @@ fn journal_snapshot_pages_hash_exact_golden_payload()
     assert_eq!((end.page_count, end.item_count), (1, 1));
     let mut items = page.items;
     items.first_mut().ok_or("row")?.definition_production_key = "x".repeat(65537);
-    assert!(payloads(&stream, &page.snapshot_id, items, &[])?.is_none());
+    assert!(
+        payloads(
+            stream.character_revision.as_deref().ok_or("cut")?,
+            &page.snapshot_id,
+            items,
+            &[]
+        )?
+        .is_none()
+    );
     Ok(())
 }

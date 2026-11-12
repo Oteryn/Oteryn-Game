@@ -304,6 +304,8 @@ impl ProgressPayload {
                             .contains(&v.level_before)
                             && (if v.skill == "magic" { 0 } else { 10 }..=1000)
                                 .contains(&v.level_after)
+                            && (v.level_before != v.level_after
+                                || v.progress_before != v.progress_after)
                     })
             }
             Self::DeathRecap(p) => {
@@ -540,6 +542,7 @@ impl PublishGameJournalProgressV1 {
                     .bytes()
                     .all(|b| b.is_ascii_alphanumeric() || b"._:/-".contains(&b))
                 && self.scope_valid()
+                && self.entity_valid()
                 && match (self.record_kind.as_str(), &self.payload) {
                     ("REMOVE", None) => true,
                     ("UPSERT", Some(p)) => {
@@ -709,6 +712,29 @@ impl PublishGameJournalProgressV1 {
             _ => character,
         }
     }
+    fn entity_valid(&self) -> bool {
+        match self.family.as_str() {
+            "skull" => self.entity_key == "skull",
+            "stamina" => self.entity_key == "stamina",
+            "premium_end" => self.entity_key == "premium",
+            "skill_history" | "death_recap" | "pvp" | "game_login" => uuid_v7(&self.entity_key),
+            "achievement" => {
+                self.entity_key.len() <= 160
+                    && self
+                        .entity_key
+                        .strip_prefix("oteryn:achievement/")
+                        .is_some_and(|v| {
+                            !v.is_empty()
+                                && v.split('_').all(|p| {
+                                    !p.is_empty()
+                                        && p.bytes()
+                                            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+                                })
+                        })
+            }
+            _ => true,
+        }
+    }
     fn entity_matches(&self, p: &ProgressPayload) -> bool {
         match p {
             ProgressPayload::Bestiary(p) => self.entity_key == p.race_key,
@@ -825,4 +851,64 @@ mod envelope_tests {
         assert!(PublishGameJournalProgressV1::decode(&vec![b' '; 262145]).is_err());
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn journal_progress_remove_identity_and_changed_skills() -> Result<(), Box<dyn std::error::Error>> {
+    let mut r=PublishGameJournalProgressV1::decode(br#"{"contract_version":1,"operation":"PublishGameJournalProgressV1","source_authority":"oteryn:journal:primary","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","character_id":"01934f10-7c04-7001-805b-3b1122334401","world_id":"01934f10-7c04-7001-805b-3b1122334402","projection_revision":"12","projection_epoch":"1","recovery_generation":"3","family":"stamina","source_revision":"1","record_id":"01934f10-7c04-7001-805b-3b1122334403","entity_key":"stamina","character_revision":"9","occurred_at_unix_ms":"1790000000000","record_kind":"UPSERT","payload":{"stamina_minutes":2400,"content_revision":"9","build_occurrence_id":"01934f10-7c04-7001-805b-3b1122334411"}}"#)?;
+    r.record_kind = "REMOVE".into();
+    r.payload = None;
+    for (family, key) in [
+        ("stamina", "stamina"),
+        ("skull", "skull"),
+        ("skill_history", "01934f10-7c04-7001-805b-3b1122334403"),
+        ("death_recap", "01934f10-7c04-7001-805b-3b1122334403"),
+        ("pvp", "01934f10-7c04-7001-805b-3b1122334403"),
+        ("game_login", "01934f10-7c04-7001-805b-3b1122334403"),
+        ("achievement", "oteryn:achievement/example"),
+    ] {
+        r.family = family.into();
+        r.entity_key = key.into();
+        assert!(r.encode().is_ok(), "{family}");
+        r.entity_key = "other".into();
+        assert!(r.encode().is_err(), "{family}");
+        assert!(PublishGameJournalProgressV1::decode(&serde_json::to_vec(&r)?).is_err());
+    }
+    r.family = "premium_end".into();
+    r.character_id = None;
+    r.world_id = None;
+    r.character_revision = None;
+    r.projection_revision = Some("1".into());
+    r.entity_key = "premium".into();
+    assert!(r.encode().is_ok());
+    r.entity_key = "other".into();
+    assert!(r.encode().is_err());
+    let p = ProgressPayload::SkillHistory(SkillHistory {
+        build_occurrence_id: "01934f10-7c04-7001-805b-3b1122334403".into(),
+        cause: "training".into(),
+        policy_revision: "1".into(),
+        skills: vec![SkillChange {
+            skill: "fist".into(),
+            level_before: 10,
+            level_after: 10,
+            progress_before: "1".into(),
+            progress_after: "1".into(),
+        }],
+    });
+    for cause in [
+        "training",
+        "vocation_choice",
+        "promotion",
+        "offline_settlement",
+        "logout",
+        "death",
+    ] {
+        let ProgressPayload::SkillHistory(mut history) = p.clone() else {
+            return Err("history".into());
+        };
+        history.cause = cause.into();
+        assert!(ProgressPayload::SkillHistory(history).encode().is_err());
+    }
+    Ok(())
 }

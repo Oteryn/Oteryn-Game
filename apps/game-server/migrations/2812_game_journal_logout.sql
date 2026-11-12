@@ -6,6 +6,11 @@ CREATE TABLE game_journal_streams (
  source_authority TEXT NOT NULL CHECK(octet_length(source_authority) BETWEEN 1 AND 128),
  account_id UUID NOT NULL,
  recovery_generation NUMERIC(20,0) NOT NULL CHECK(recovery_generation BETWEEN 1 AND 18446744073709551615),
+ retained_floor NUMERIC(20,0) NOT NULL DEFAULT 0 CHECK(retained_floor>=0),
+ next_delivery_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+ retry_attempt BIGINT NOT NULL DEFAULT 0 CHECK(retry_attempt>=0),
+ last_progress_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+ last_diagnostic_at TIMESTAMPTZ,
  next_revision NUMERIC(20,0) NOT NULL DEFAULT 1 CHECK(next_revision BETWEEN 1 AND 18446744073709551616),
  acknowledged_revision NUMERIC(20,0) NOT NULL DEFAULT 0 CHECK(acknowledged_revision>=0 AND acknowledged_revision<next_revision),
  active BOOLEAN NOT NULL DEFAULT true,
@@ -18,8 +23,12 @@ CREATE TABLE game_journal_outbox (
  recovery_generation NUMERIC(20,0) NOT NULL,
  source_revision NUMERIC(20,0) NOT NULL CHECK(source_revision BETWEEN 1 AND 18446744073709551615),
  record_id UUID NOT NULL,
- export_bytes BYTEA NOT NULL CHECK(octet_length(export_bytes) BETWEEN 1 AND 65536),
- export_sha256 BYTEA GENERATED ALWAYS AS (sha256(export_bytes)) STORED,
+ export_bytes BYTEA CHECK(octet_length(export_bytes) BETWEEN 1 AND 65536),
+ export_sha256 BYTEA NOT NULL CHECK(octet_length(export_sha256)=32),
+ payload_expires_at TIMESTAMPTZ NOT NULL,
+ retain_until TIMESTAMPTZ NOT NULL,
+ erased_at TIMESTAMPTZ,
+ CHECK((export_bytes IS NULL)=(erased_at IS NOT NULL)),
  created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
  acknowledged_at TIMESTAMPTZ,
  PRIMARY KEY(stream_key,source_revision),
@@ -27,6 +36,8 @@ CREATE TABLE game_journal_outbox (
  FOREIGN KEY(stream_key,source_authority,recovery_generation)
    REFERENCES game_journal_streams(stream_key,source_authority,recovery_generation)
 );
+CREATE INDEX game_journal_expiry ON game_journal_outbox(retain_until) WHERE export_bytes IS NOT NULL;
+CREATE INDEX game_journal_due ON game_journal_streams(next_delivery_at) WHERE active;
 -- The primary key covers stream FK lookups, ordered replay and bounded publication.
 REVOKE ALL ON game_journal_streams,game_journal_outbox FROM PUBLIC;
 GRANT SELECT ON game_journal_streams,game_journal_outbox TO oteryn_game_runtime;
@@ -114,12 +125,13 @@ DECLARE next NUMERIC(20,0);
 BEGIN
  next:=public.game_journal_lock_stream(p_stream)::numeric;
  IF p_after IS NULL OR p_after<0 OR p_after>=next OR p_after<>trunc(p_after)
+ OR p_after<(SELECT retained_floor FROM public.game_journal_streams WHERE stream_key=p_stream)
  OR (p_after=0 AND p_id IS NOT NULL)
  OR (p_after>0 AND NOT EXISTS(SELECT 1 FROM public.game_journal_outbox
        WHERE stream_key=p_stream AND source_revision=p_after AND record_id=p_id)) THEN
   RAISE EXCEPTION 'journal cursor lacks retained evidence' USING ERRCODE='23514';
  END IF;
- UPDATE public.game_journal_outbox SET acknowledged_at=coalesce(acknowledged_at,clock_timestamp())
+ UPDATE public.game_journal_outbox SET retain_until=CASE WHEN acknowledged_at IS NULL THEN statement_timestamp()+interval '30 days' ELSE retain_until END,acknowledged_at=coalesce(acknowledged_at,statement_timestamp())
  WHERE stream_key=p_stream AND source_revision<=p_after AND acknowledged_at IS NULL;
  UPDATE public.game_journal_streams SET acknowledged_revision=greatest(acknowledged_revision,p_after)
  WHERE stream_key=p_stream;

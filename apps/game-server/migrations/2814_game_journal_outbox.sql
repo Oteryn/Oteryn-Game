@@ -23,14 +23,14 @@ BEGIN
  n:=(b->>'source_revision')::numeric; rid:=(b->>'record_id')::uuid;
  SELECT export_bytes INTO previous FROM public.game_journal_outbox WHERE stream_key=p_stream AND source_revision=n;
  IF FOUND THEN
-  IF previous<>p_bytes THEN RAISE EXCEPTION 'journal conflicting replay' USING ERRCODE='23514'; END IF;
+  IF previous IS NULL OR previous<>p_bytes THEN RAISE EXCEPTION 'journal conflicting replay' USING ERRCODE='23514'; END IF;
   RETURN false;
  END IF;
  IF n IS DISTINCT FROM s.next_revision THEN
   RAISE EXCEPTION 'journal noncontiguous revision' USING ERRCODE='23514';
  END IF;
- INSERT INTO public.game_journal_outbox(stream_key,source_authority,recovery_generation,source_revision,record_id,export_bytes)
- VALUES(p_stream,s.source_authority,s.recovery_generation,n,rid,p_bytes);
+ INSERT INTO public.game_journal_outbox(stream_key,source_authority,recovery_generation,source_revision,record_id,export_bytes,export_sha256,payload_expires_at,retain_until)
+ VALUES(p_stream,s.source_authority,s.recovery_generation,n,rid,p_bytes,sha256(p_bytes),to_timestamp((b->>'occurred_at')::double precision)+interval '30 days',to_timestamp((b->>'occurred_at')::double precision)+interval '30 days');
  UPDATE public.game_journal_streams SET next_revision=n+1 WHERE stream_key=p_stream;
  RETURN true;
 END $$;
@@ -52,9 +52,10 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.game_journal_outbox WHERE stream_key=p_stream AND source_revision=p_revision AND record_id=p_id) THEN
   RAISE EXCEPTION 'journal unknown acknowledgement' USING ERRCODE='23514';
  END IF;
+ IF EXISTS(SELECT 1 FROM public.game_journal_outbox WHERE stream_key=p_stream AND source_revision=p_revision AND (export_bytes IS NULL OR payload_expires_at<=clock_timestamp())) THEN RAISE EXCEPTION 'journal expired acknowledgement' USING ERRCODE='23514'; END IF;
  IF p_revision<=s.acknowledged_revision THEN RETURN false; END IF;
  IF p_revision<>s.acknowledged_revision+1 THEN RAISE EXCEPTION 'journal acknowledgement gap' USING ERRCODE='23514'; END IF;
- UPDATE public.game_journal_outbox SET acknowledged_at=clock_timestamp() WHERE stream_key=p_stream AND source_revision=p_revision;
+ UPDATE public.game_journal_outbox SET retain_until=CASE WHEN acknowledged_at IS NULL THEN statement_timestamp()+interval '30 days' ELSE retain_until END,acknowledged_at=coalesce(acknowledged_at,statement_timestamp()) WHERE stream_key=p_stream AND source_revision=p_revision;
  UPDATE public.game_journal_streams SET acknowledged_revision=p_revision WHERE stream_key=p_stream;
  RETURN true;
 END $$;

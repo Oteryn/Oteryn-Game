@@ -38,8 +38,11 @@ pub(in crate::durability) async fn capture(
     }
     // Access/ownership or reclaim provenance alone is not an accepted house export
     // right. Until that mapping is qualified, withhold the entire affected snapshot.
-    let unknown_house:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_ownership WHERE owner_character_id=$1::text::uuid) OR EXISTS(SELECT 1 FROM game_item_house_reclaim_provenance WHERE reclaim_subject_character_id=$1::text::uuid)")
-  .bind(&character).fetch_one(&mut **tx).await?;
+    let unknown_house: bool =
+        sqlx::query_scalar("SELECT game_journal_unknown_house($1::text::uuid)")
+            .bind(&character)
+            .fetch_one(&mut **tx)
+            .await?;
     if unknown_house {
         return Ok(Capture::Unavailable);
     }
@@ -125,7 +128,7 @@ pub(in crate::durability) async fn capture(
     let snapshot: String = sqlx::query_scalar("SELECT uuidv7()::text")
         .fetch_one(&mut **tx)
         .await?;
-    let Some(payloads) = payloads(&stream, &snapshot, items, &catalogue.depots)? else {
+    let Some(payloads) = payloads(&revision, &snapshot, items, &catalogue.depots)? else {
         return Ok(Capture::Unavailable);
     };
     let count = payloads.len();
@@ -186,7 +189,7 @@ pub(in crate::durability) async fn capture(
     Ok(Capture::Queued)
 }
 fn payloads(
-    s: &ReadGameJournalCursorV1,
+    revision: &str,
     id: &str,
     items: Vec<ItemRow>,
     depots: &[u16],
@@ -236,10 +239,7 @@ fn payloads(
     let mut result = Vec::with_capacity(pages.len() + 2);
     result.push(ItemsPayload::Begin(ItemsBegin {
         snapshot_id: id.into(),
-        character_revision: s
-            .character_revision
-            .clone()
-            .ok_or(DurabilityError::InvalidStoredState)?,
+        character_revision: revision.into(),
         page_count,
         item_count,
         depots: depots.to_vec(),

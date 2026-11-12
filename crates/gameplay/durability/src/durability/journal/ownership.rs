@@ -9,7 +9,9 @@ pub(super) async fn approved_cut(
     let Some(character) = &s.character_id else {
         return Ok(true);
     };
-    let epoch:Option<String>=sqlx::query_scalar("SELECT projection_epoch::text FROM game_character_account_projection_epoch WHERE epoch_scope=1 FOR SHARE").fetch_optional(&mut **tx).await?;
+    let epoch: Option<String> = sqlx::query_scalar("SELECT game_journal_projection_epoch()")
+        .fetch_one(&mut **tx)
+        .await?;
     if epoch.as_ref() != s.projection_epoch.as_ref() {
         return Ok(false);
     }
@@ -47,7 +49,11 @@ pub(super) async fn approved_cut(
     if !accepted {
         return Ok(false);
     }
-    let projection:Option<String>=sqlx::query_scalar("SELECT projection_revision::text FROM game_character_account_projections WHERE account_id=$1::text::uuid FOR SHARE").bind(&s.account_id).fetch_optional(&mut **tx).await?;
+    let projection: Option<String> =
+        sqlx::query_scalar("SELECT game_journal_account_projection($1::text::uuid)")
+            .bind(&s.account_id)
+            .fetch_one(&mut **tx)
+            .await?;
     let expected = s
         .to_projection_revision
         .as_deref()

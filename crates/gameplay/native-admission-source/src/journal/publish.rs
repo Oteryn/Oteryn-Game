@@ -144,7 +144,12 @@ impl PublishGameJournalRecordV1 {
                 self.family == ItemsFamily::Items
                     && self.kind == "ITEMS_BEGIN"
                     && uuid_v7(&p.snapshot_id)
-                    && Some(&p.character_revision) == self.character_revision.as_ref()
+                    && counter(&p.character_revision).is_some_and(|cut| {
+                        self.character_revision
+                            .as_deref()
+                            .and_then(counter)
+                            .is_some_and(|ownership| cut >= ownership)
+                    })
                     && counts(p.page_count, p.item_count)
                     && p.depots.len() <= 256
                     && p.houses.len() <= 256
@@ -380,10 +385,42 @@ mod publish_tests {
         T: serde::de::DeserializeOwned + Serialize,
     {
         fn canonical<T: serde::de::DeserializeOwned + Serialize>(b: &[u8]) -> bool {
-            serde_json::from_slice::<T>(b)
-                .is_ok_and(|v| serde_json::to_vec(&v).is_ok_and(|encoded| encoded == b))
+            let name = std::any::type_name::<T>();
+            let wrapped = if name.ends_with("PublishGameJournalRecordV1") {
+                b.to_vec()
+            } else {
+                let Ok(mut r) =
+                    PublishGameJournalRecordV1::decode(include_bytes!("publisher_fixture.json"))
+                else {
+                    return false;
+                };
+                let (family, kind) = if name.ends_with("ItemsPage") {
+                    (ItemsFamily::Items, "ITEMS_PAGE")
+                } else if name.ends_with("MarketEvent") {
+                    (ItemsFamily::Market, "MARKET_EVENT")
+                } else {
+                    (ItemsFamily::PlayerTrade, "PLAYER_TRADE_EVENT")
+                };
+                r.family = family;
+                r.kind = kind.into();
+                r.character_id = Some("019a0000-0000-7000-8000-000000000003".into());
+                r.character_revision = Some("1".into());
+                r.from_projection_revision = Some("1".into());
+                r.to_projection_revision = Some("1".into());
+                r.projection_epoch = Some("1".into());
+                let Ok(text) = serde_json::to_string(&r) else {
+                    return false;
+                };
+                let Some(at) = text.rfind("\"payload\":") else {
+                    return false;
+                };
+                [&text.as_bytes()[..at + 10], b, b"}"].concat()
+            };
+            PublishGameJournalRecordV1::decode(&wrapped).is_ok()
         }
         assert!(canonical::<T>(bytes));
+        let value: T = serde_json::from_slice(bytes)?;
+        assert_eq!(serde_json::to_vec(&value)?, bytes);
         let text = std::str::from_utf8(bytes)?;
         let first = text.find(',').ok_or("first member")?;
         let second = first + 1 + text[first + 1..].find(',').ok_or("second member")?;
@@ -437,4 +474,29 @@ fn journal_items_negative_golden_vectors() {
     assert!(serde_json::from_slice::<BankEntry>(br#"{"event_id":"019a0000-0000-7000-8000-00000000000c","offer_id":"019a0000-0000-7000-8000-00000000000d","side":"SELL","state":"FILLED","end_state":null,"definition_family":"ITEM","definition_production_key":"oteryn:content.item.gold_coin","definition_revision_ref":"rev-1","amount":10,"remaining":0,"piece_price":"2","fee_gold":"0","held_credit_gold":"0"}"#).is_err());
     assert!(ReadGameJournalCursorV1::decode(br#"{"contract_version":1,"operation":"ReadGameJournalCursorV1","source_authority":"OTERYN_GAME_JOURNAL","account_id":"019a0000-0000-7000-8000-000000000001","world_id":"019a0000-0000-7000-8000-000000000002","character_id":"019a0000-0000-7000-8000-000000000003","character_revision":"1","from_projection_revision":"1","to_projection_revision":"1","projection_epoch":"1","family":"BANK","recovery_generation":"1"}"#).is_err());
     assert!(serde_json::from_slice::<BankEntry>(br#"{"operation_occurrence_id":"019a0000-0000-7000-8000-000000000008","event_id":"019a0000-0000-7000-8000-000000000009","entry_id":"019a0000-0000-7000-8000-00000000000a","previous_entry_id":null,"kind":"DEPOSIT","direction":"CREDIT","amount":100,"balance_before":"0","balance_after":"99"}"#).is_err());
+}
+
+#[cfg(test)]
+#[test]
+fn journal_bank_arithmetic_and_numeric_amount_are_independent()
+-> Result<(), Box<dyn std::error::Error>> {
+    let golden = std::str::from_utf8(include_bytes!("publisher_fixture.json"))?;
+    assert!(PublishGameJournalRecordV1::decode(golden.as_bytes()).is_ok());
+    assert!(
+        PublishGameJournalRecordV1::decode(
+            golden
+                .replace("\"amount\":\"100\"", "\"amount\":100")
+                .as_bytes()
+        )
+        .is_err()
+    );
+    assert!(
+        PublishGameJournalRecordV1::decode(
+            golden
+                .replace("\"balance_after\":\"100\"", "\"balance_after\":\"99\"")
+                .as_bytes()
+        )
+        .is_err()
+    );
+    Ok(())
 }
