@@ -265,6 +265,7 @@ mod tests {
     fn list_requires_a_real_nonempty_list_view() {
         assert!(listed(&wire::QuestLog::default()).is_err());
         let log = wire::QuestLog {
+            map_marks: Vec::new(),
             view: Some(wire::QuestLogView::List(vec![wire::QuestListEntry { quest_index: 7, completed: false }])),
             tracked: Vec::new(),
         };

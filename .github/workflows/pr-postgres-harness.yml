@@ -71,7 +71,6 @@ jobs:
     outputs:
       e2e_sha256: ${{ steps.digest.outputs.e2e_sha256 }}
       lib_sha256: ${{ steps.digest.outputs.lib_sha256 }}
-      client_replay_sha256: ${{ steps.client_archive.outputs.sha256 }}
       workspace: ${{ steps.digest.outputs.workspace }}
       empty: ${{ steps.scope.outputs.empty }}
       pg_runner_mode: ${{ steps.route.outputs.mode }}
@@ -330,24 +329,6 @@ jobs:
           cargo +1.99.1 nextest archive --locked "${args[@]}" --lib \
             --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 
-      # Reuse this build/cache; the PostgreSQL archives and their custody stay unchanged.
-      - name: Archive actual native client replay consumers
-        id: client_archive
-        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib' && contains(fromJSON(steps.scope.outputs.lib_packages), 'oteryn-gameplay-dispatch')
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
-        run: |
-          set -euo pipefail
-          python3 -B -m unittest discover -s tools/ci -p 'test_pg_client_capture_replays.py' -v
-          mkdir -p "$RUNNER_TEMP/client-replay-archive"
-          cargo +1.99.1 nextest archive --locked -p oteryn-client --lib \
-            --archive-file "$RUNNER_TEMP/client-replay-archive/client-replay.tar.zst"
-          cd "$RUNNER_TEMP/client-replay-archive"
-          printf '%s\n' "$HEAD_SHA" > head-sha
-          sha256sum head-sha client-replay.tar.zst > SHA256SUMS
-          echo "sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-
       # Fail closed if mold did not link: every test binary relinked in this job must carry its tag.
       - name: Confirm mold linked the test binaries
         if: steps.scope.outputs.empty != 'true'
@@ -388,17 +369,6 @@ jobs:
         with:
           name: pr-postgres-test-archives-${{ matrix.archive }}
           path: ${{ runner.temp }}/pg-archives/
-          if-no-files-found: error
-          retention-days: 1
-          compression-level: 0
-          overwrite: true
-
-      - name: Upload actual native client replay archive
-        if: steps.client_archive.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: pr-native-client-replay-archive
-          path: ${{ runner.temp }}/client-replay-archive/
           if-no-files-found: error
           retention-days: 1
           compression-level: 0
@@ -726,48 +696,15 @@ jobs:
             --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
             --no-fail-fast "${filters[@]}"
 
-      - name: Select assigned real native client replays
-        id: client_replay
-        if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
-        run: |
-          python3 tools/ci/pg_client_capture_replays.py plan \
-            --filters "$RUNNER_TEMP/pg-plan/pg-lib.filters" \
-            --listing "$RUNNER_TEMP/pg-plan/pg-lib.json"
-
-      - name: Download actual native client replay archive
-        if: ${{ !cancelled() && steps.client_replay.outputs.required == 'true' }}
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: pr-native-client-replay-archive
-          path: ${{ runner.temp }}/client-replay-archive/
-
       - name: Run PostgreSQL-backed library tests
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-          CLIENT_MANIFEST_SHA: ${{ needs.build.outputs.client_replay_sha256 }}
-          PG_MANIFEST_SHA: ${{ needs.build.outputs.lib_sha256 }}
-          REPLAY_PARTITION: ${{ matrix.partition }}
         run: |
           set -euo pipefail
-          python3 tools/ci/pg_client_capture_replays.py run \
-            --filters "$RUNNER_TEMP/pg-plan/pg-lib.filters" \
-            --listing "$RUNNER_TEMP/pg-plan/pg-lib.json" \
-            --archive "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
-            --priority "$RUNNER_TEMP/pg-plan/priority.toml" \
-            --client-directory "$RUNNER_TEMP/client-replay-archive" \
-            --client-manifest "$CLIENT_MANIFEST_SHA" --pg-manifest "$PG_MANIFEST_SHA" \
-            --head "$EXPECTED_SHA" --partition "$REPLAY_PARTITION" \
-            --evidence "$RUNNER_TEMP/native-client-replay-evidence"
-
-      - name: Retain actual native client replay evidence
-        if: ${{ !cancelled() && steps.client_replay.outputs.required == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: native-client-replays-${{ github.event.pull_request.head.sha }}-${{ matrix.partition }}
-          path: ${{ runner.temp }}/native-client-replay-evidence/
-          if-no-files-found: error
-          retention-days: 7
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
+            --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
 
       - name: Stop ephemeral PostgreSQL 18
         if: always() && runner.environment == 'self-hosted'

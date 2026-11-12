@@ -2,7 +2,6 @@ name: G4 canonical WorldProject package seed
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
     paths:
       - content/world/**
       - apps/game-server/examples/materialize_content_world_project_v2.rs
@@ -86,15 +85,6 @@ jobs:
           test "$(find "$RUNNER_TEMP/world-a" -type f | wc -l)" -eq 11
           test -z "$(find "$RUNNER_TEMP/world-a" -type l -print -quit)"
 
-      - name: Upload canonical package candidate
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: g4-canonical-worldproject-package-seed-${{ github.event.pull_request.head.sha }}
-          path: ${{ runner.temp }}/world-a
-          if-no-files-found: error
-          compression-level: 9
-          retention-days: 7
-
       - name: Validate the spawn family
         if: ${{ hashFiles('content/world/spawns/index.json') != '' }}
         run: |
@@ -140,3 +130,12 @@ jobs:
           cargo +1.99.1 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
           cargo +1.99.1 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
           cargo +1.99.1 fmt --all -- --check
+
+      - name: Upload canonical package candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-canonical-worldproject-package-seed-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/world-a
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 7

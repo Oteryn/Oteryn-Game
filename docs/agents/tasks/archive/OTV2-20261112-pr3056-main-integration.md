@@ -50,16 +50,34 @@ Their old values are provisional inputs for the approved GitHub generator,
 never manufactured replacement digests. World declarations preserve the four
 source-owned NPC display-name fields from the quest producer. The existing
 Python World resealer and byte-inventory generator derive consistent package
-metadata and test pins from the merged documents. No native generation runs.
+metadata and test pins from the merged documents. No native generation runs locally.
 
-Remaining generation includes native providers and their manifests/indexes,
-Prey simulation input/output receipts and reports, quest binding/candidate
-receipts, and final World identity/bundle/deployment pins. The approved existing
-`content-tree-migration.yml` generate-candidate job produces a provenance-bound
-patch for this exact source input. Its artifact must be inspected and applied
-before final qualification. The old cached native compiler is not current and
-was not used to invent a bundle digest. A source-input checkpoint may therefore
-have stale derived pins; it must not be treated as mergeable or runtime green.
+The authorized auxiliary generator job on immutable3dda completed the canonical
+Quest/native/World producer sequence and current native compiler pin-refresh.
+Its original base SHA is3dda7fea780ee12359c138c6d4933acee4d3187e,
+original staged-input tree isdfb419fa8d6dd36fc4a355cb1ccd373b2b12fed2,
+and candidate.patch SHA256 is
+58d5ccf041d133616f22528694442e45826813c5ec582e52f30d8f5e77019f3c.
+The original provenance metadata is preserved; it is not relabeled as the later
+candidate's tree. Scoped compiler/generator/provider/Quest production inputs
+were unchanged between3dda and10daa. The six touched preimages also matched
+exactly before application, and all six final artifact blobs matched afterward.
+
+The patch refreshes World package/provenance bindings and two Rust tree pins.
+Its imports document changes only six mapper revision/hash scalars. Package
+manifest/lock/project links, provenance framing, every document length/hash,
+all eleven Rust document pins and their shared tree digest pass lightweight
+identity checks. Existing tracked native identity already binds the generated
+lock/provenance; no invented pin or extra native regeneration is needed. The
+independent generated-only R5 review reports zero confirmed P0/P1/P2 findings.
+No local heavy generator or build was used.
+
+Coordinator instructions6832884855/6833092733 require all workflow files to equal
+accepted main3ce. The three differing workflow files are restored exactly,
+including removal of the15→30-minute timeout change and pending candidate-only
+workflow additions. All workflow paths and bytes now match3ce. The auxiliary
+artifact's original operation remains historical provenance; no workflow waiver,
+owner approval exception or replacement final-tree identity is claimed.
 
 Two actual cb17 CI source roots are repaired together:
 
@@ -218,10 +236,38 @@ floor zero, Native→House→Native current markers, absent/unknown/mismatched e
 codec projection and the strict town negative. It does not typecheck or execute
 the complete game server or WORLD scenario.
 
-Generated-input provenance, independent whole material-delta review and full
-GitHub qualification remain pending. Auxiliary generator PR3145 now binds3dda;
-its candidate artifact requires consumed-input identity verification before reuse
-on the later source head. No deadline or proof budget changes are made.
+Independent material source R4 at10daa reports zero confirmed P0/P1/P2. Generated
+artifact R5 subsequently reviews all six applied artifact paths with zero findings.
+The final small adapter/mock batch still requires its allocated independent
+review and exact-head GitHub qualification.
+
+Actual auxiliary-head CI exposed one coherent stale-fixture API family plus a
+canonical writer mock. Six QuestLog literals across client W15a/W15d, Session
+W15b and the qualification W15a unit fixture now explicitly supply empty
+map_marks. The Soul War reward fixture supplies the new sixth empty pity slice
+without changing the production planner signature, reward facts or assertions.
+The complete constructor/caller census covers48 QuestLog construction/pattern
+sites and all four planner calls. The actual current codec and extracted exact
+fixture source reproduce six E0063 errors before repair, then compile and
+round-trip nine payloads with empty marks plus the qualification literal after
+repair. The extra planner slice is source-arity checked; full Dispatch typing
+remains CI.
+
+The canonical writer ordering test previously mocked run() without producing
+any files, so the strict production writer rejected[] versus eleven documents.
+The repaired mock emulates the real writer command/output contract in its owned
+temporary package, emits exactly the managed documents, preserves the unmanaged
+sibling and checks that both native completion stages occur before pin refresh.
+Its actual focused RED reproduces that failure; all seven module tests then pass.
+The production strict output-set assertion and every prior test assertion remain.
+
+The current owner instruction explicitly drops Node boot from this task's
+acceptance goal. Node is NOT claimed PASS, and no protection or configured check
+is bypassed. Required native checks, all24 PostgreSQL partitions and game-gate
+qualification remain pending on the final published head. The approved final
+delivery is one3056 candidate containing3023 as an ordinary ancestor; the
+coordinator owns publication, qualification and closing3023 as delivered. No
+deadline or proof budget changes are made.
 
 ## Validation
 
@@ -242,4 +288,9 @@ on the later source head. No deadline or proof budget changes are made.
 - Floor overlay: exact preimages and seven final blobs; all assertions/evidence
   retained; one private helper/mount. `basis_probe.py`: Clippy PASS,7/7 tests.
   Full game-server typing/runtime remains GitHub qualification.
-- Full successor qualification and generator completion remain pending.
+- Actual fixture API probe: six E0063 RED, then current-source codec GREEN;
+  constructor/caller census48/4 PASS. No full crate compile claimed.
+- Canonical writer mock: actual focused RED, then7/7 module tests PASS.
+- Generated artifact: original metadata/hash, six preimages/postimages, World
+  package/Rust inventory identities PASS. All workflow bytes equal accepted3ce.
+- Exact-head successor qualification and final adapter review remain pending.
