@@ -3442,7 +3442,8 @@ async fn enter_carried_test_house(
     let request = HouseEntryRequest {
         direction: HouseHandoffDirection::Entry,
         handoff_id: id(221),
-        character_id: f.character_id,
+        character_id: crate::foundation::CharacterId::decode(f.character_id.as_bytes())
+            .map_err(debug)?,
         source_game_session_id: f.game_session_id,
         source_connection_generation: f.connection_generation.get(),
         source_character_lease_generation: f.character_lease_generation,
