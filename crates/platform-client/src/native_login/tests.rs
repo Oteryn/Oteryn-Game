@@ -534,3 +534,45 @@ fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
 
 #[path = "coin_purchase_tests.rs"]
 mod coin_purchase_tests;
+
+// Thread-local controlled time affects only opt-in current-thread fixture tests.
+// Other tests and every production build retain real sleeps.
+thread_local! {
+    static CLOCK: std::cell::RefCell<Option<(Instant, Duration)>> = const {
+        std::cell::RefCell::new(None)
+    };
+}
+
+fn pause_clock() {
+    let received = Instant::now();
+    CLOCK.with(|clock| *clock.borrow_mut() = Some((received, Duration::ZERO)));
+}
+
+fn clock_now() -> Result<Instant, Box<dyn std::error::Error>> {
+    CLOCK.with(|clock| {
+        clock
+            .borrow()
+            .as_ref()
+            .map(|(base, elapsed)| *base + *elapsed)
+            .ok_or_else(|| "fixture clock is not paused".into())
+    })
+}
+
+fn clock_elapsed() -> Duration {
+    CLOCK.with(|clock| {
+        clock
+            .borrow()
+            .as_ref()
+            .map_or(Duration::ZERO, |(_, elapsed)| *elapsed)
+    })
+}
+
+pub(super) fn delay(duration: Duration) -> Duration {
+    CLOCK.with(|clock| match clock.borrow_mut().as_mut() {
+        Some((_, elapsed)) => {
+            *elapsed += duration;
+            Duration::ZERO
+        }
+        None => duration,
+    })
+}
