@@ -19,7 +19,7 @@ use crate::{PlatformClientConfig, PlatformClientError};
 use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
 use reqwest::header::{CONTENT_TYPE, RETRY_AFTER};
 use reqwest::{Client, Response, StatusCode, Url, redirect::Policy};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::net::IpAddr;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -452,6 +452,32 @@ pub struct NativeLoginClient {
     pacing: RetryPacing,
 }
 
+// Struct field order preserves the Platform golden request bytes. Serializing
+// through serde_json::Value would sort members and lose that order.
+#[derive(Serialize)]
+struct GatewayLoginRequest<'a> {
+    protocol_version: u64,
+    game_login_ticket: &'a str,
+    attempt_ref: &'a str,
+    character_id: &'a str,
+    channel_id: Option<&'a str>,
+    offer: GatewayOffer<'a>,
+}
+
+#[derive(Serialize)]
+struct GatewayOffer<'a> {
+    client_build: &'a str,
+    client_platform: &'a str,
+    transports: [GatewayTransport<'a>; 1],
+}
+
+#[derive(Serialize)]
+struct GatewayTransport<'a> {
+    protocol_major: u64,
+    transport_profile: u64,
+    alpn: &'a str,
+}
+
 impl NativeLoginClient {
     pub fn new(
         platform: &PlatformClientConfig,
@@ -608,20 +634,22 @@ impl NativeLoginClient {
         {
             return Err(PlatformClientError::InvalidPayload.into());
         }
-        let body = serde_json::to_vec(&serde_json::json!({
-            "protocol_version": GATEWAY_PROTOCOL_VERSION,
-            "game_login_ticket": ticket.secret.expose(),
-            "attempt_ref": login.attempt_ref.as_str(),
-            "character_id": login.character_id,
-            "channel_id": login.channel_id,
-            "offer": {
-                "client_build": login.client_build,
-                "client_platform": "windows",
-                "transports": [
-                    { "protocol_major": 1, "transport_profile": 1, "alpn": GAME_ALPN }
-                ],
+        let body = serde_json::to_vec(&GatewayLoginRequest {
+            protocol_version: GATEWAY_PROTOCOL_VERSION,
+            game_login_ticket: ticket.secret.expose(),
+            attempt_ref: login.attempt_ref.as_str(),
+            character_id: login.character_id,
+            channel_id: login.channel_id,
+            offer: GatewayOffer {
+                client_build: login.client_build,
+                client_platform: "windows",
+                transports: [GatewayTransport {
+                    protocol_major: 1,
+                    transport_profile: 1,
+                    alpn: GAME_ALPN,
+                }],
             },
-        }))
+        })
         .map_err(|_error| PlatformClientError::InvalidPayload)?;
         if body.len() > MAX_LOGIN_REQUEST_BYTES {
             return Err(PlatformClientError::InvalidPayload.into());
