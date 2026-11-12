@@ -190,7 +190,7 @@ fn channel_dialog_opens_a_private_message_tab_by_name_and_cancels_cleanly() {
 fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Error> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| {
+        .spawn(|| -> Result<(), Error> {
             oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
                 let peer = Peer {
                     commands: Arc::new(Mutex::new(Vec::new())),
@@ -236,7 +236,7 @@ fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Er
                 drop(link);
                 task.await?;
                 Ok::<(), Error>(())
-            })
+            })?
         })?
         .join()
         .map_err(|_| "chat clear test thread panicked")?

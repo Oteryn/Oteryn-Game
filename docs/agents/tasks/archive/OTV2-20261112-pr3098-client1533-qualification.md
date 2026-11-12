@@ -69,3 +69,25 @@ Authoring is complete; final qualification and merge remain pending. The freeze
 comment binds the exact head. Integration result: squash merge of #3098 after
 #3115, followed by the full main gate. No test weakening, workflow edit,
 protection bypass, force push or red-Node waiver is authorized by this record.
+
+## Native CI compile repair after the first composed freeze
+
+The first composed head fb0538c095baf2bf26eeba19f219e313e2333a8f failed the
+native Clippy/test leaves with the same E0308 in the new chat-loop regression.
+`ClientRuntime::block_on` returns `Result<F::Output, RuntimeError>`; the async
+scenario already returns `Result<(), Error>`. The worker closure had retained
+both layers, unlike the neighboring regression. It now explicitly returns
+`Result<(), Error>` and propagates the runtime layer inside the worker. The
+scenario assertions, async failure, thread-join handling and 64 MiB stack remain.
+The newly added Session regression already unwraps its runtime layer correctly;
+the other new tests have no runtime/thread wrapper.
+
+A lightweight harness using the actual outer test wrapper and matching runtime
+method signatures reproduced E0308 before the change. Afterward it compiled and
+passed four checks: success, constructor error, runtime error and async scenario
+error; each error retained its type. This is compile/type-propagation evidence,
+not execution of the real chat scenario. Full native compilation and runtime
+regressions still require the new composed head's CI. The earlier 424 quest-test
+result belongs to the inherited server qualification; it is not new client
+validation. The prior 390-path identity check above describes the first composed
+freeze; this compile repair deliberately changes its chat test source.
