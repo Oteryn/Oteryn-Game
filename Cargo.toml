@@ -36,6 +36,7 @@ members = [
     "crates/ntp-clock",
     "crates/client-runtime",
     "crates/client-ui",
+    "crates/client-ui-bevy",
     "crates/platform-contracts",
     "crates/platform-client",
     "crates/protocol-oteryn",
