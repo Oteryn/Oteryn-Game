@@ -35,7 +35,7 @@ fn open_gift(link: &PlayLink) {
         link,
         Form {
             title: "In-game coin gift",
-            labels: &["Recipient name", "Transferable coins"],
+            labels: &["Recipient name", "Coins"],
             buttons: &[
                 "Review recipient and amount",
                 "Confirm reviewed gift",

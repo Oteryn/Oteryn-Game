@@ -67,6 +67,29 @@ pub(super) async fn exercise(
         amount: 25,
         ..Default::default()
     };
+    let whole_balance = call(
+        owner,
+        admitted,
+        Gift {
+            amount: 300,
+            ..review.clone()
+        },
+    )
+    .await?;
+    assert_eq!(
+        whole_balance["result"], "ok",
+        "legacy balance must all be giftable"
+    );
+    let too_large = call(
+        owner,
+        admitted,
+        Gift {
+            amount: 325,
+            ..review.clone()
+        },
+    )
+    .await?;
+    assert_eq!(too_large["result"], "insufficient_transferable");
     let quote = call(owner, admitted, review.clone()).await?;
     assert_eq!(quote["result"], "ok");
     assert_eq!(quote["non_transferable"], "200");
