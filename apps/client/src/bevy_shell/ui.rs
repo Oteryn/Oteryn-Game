@@ -33,12 +33,12 @@ pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
 }
 #[derive(Resource)]
 pub(super) struct Skins {
-    buttons: source::ButtonImages,
+    pub(super) buttons: source::ButtonImages,
     checked: Handle<Image>,
     unchecked: Handle<Image>,
-    frame: Handle<Image>,
-    inset: Handle<Image>,
-    font: Handle<Font>,
+    pub(super) frame: Handle<Image>,
+    pub(super) inset: Handle<Image>,
+    pub(super) font: Handle<Font>,
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
@@ -333,7 +333,7 @@ fn action_button(
 }
 fn activate(event: On<Activate>, controls: Query<&Control>, mut owner: NonSendMut<HostOwner>) {
     if let Ok(control) = controls.get(event.entity) {
-        if owner.draft().is_some()
+        if owner.modal_active()
             && matches!(
                 control,
                 Control::Options | Control::Login | Control::CancelLogin

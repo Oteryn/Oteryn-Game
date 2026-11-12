@@ -12,8 +12,6 @@ use std::path::PathBuf;
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
     Offline,
-    // Native character selection deliberately gates admission on other platforms.
-    #[cfg_attr(not(windows), allow(dead_code))]
     Entering,
     Playing,
     Closed,
@@ -53,29 +51,28 @@ pub(super) struct ActivePlay {
 /// Dropping this owner first drops active play, then consumes its one runtime exactly once.
 pub(super) struct HostOwner {
     entry: Option<Reentry>,
-    #[cfg(any(windows, test))]
     pub(super) controls: super::controls::Controls,
     pub play: Option<ActivePlay>,
     pub settings: SettingsState,
-    #[cfg(windows)]
     preferences_path: Option<PathBuf>,
     draft: Option<Draft>,
     scope: Scope,
     pub phase: Phase,
     pub status: String,
-    #[cfg(windows)]
-    login: Option<crate::native_login::LoginWindow>,
+    pub(super) login: super::login::LoginState,
+    pub(super) selection: super::selection::SelectionBridge,
+    selector: crate::character_selection::CharacterSelector,
+    pub(super) dialogs: super::gameplay_dialogs::Dialogs,
 }
 impl HostOwner {
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
         let client = ClientBootstrap::new()?;
+        let (selection, selector) = super::selection::SelectionBridge::new();
         Ok(Self {
             entry: Some(Reentry::new(client)),
-            #[cfg(any(windows, test))]
             controls: super::controls::Controls::new()?,
             play: None,
             settings: SettingsState::new(path.clone()),
-            #[cfg(windows)]
             preferences_path: path,
             draft: None,
             scope: Scope {
@@ -84,8 +81,10 @@ impl HostOwner {
             },
             phase: Phase::Offline,
             status: offline_message().into(),
-            #[cfg(windows)]
-            login: None,
+            login: Default::default(),
+            selection,
+            selector,
+            dialogs: Default::default(),
         })
     }
     pub fn accepted(&self) -> GraphicsDraft {
@@ -99,6 +98,9 @@ impl HostOwner {
     }
     pub fn open_graphics(&mut self) {
         if self.phase == Phase::Closed {
+            return;
+        }
+        if self.modal_active() {
             return;
         }
         self.reset_input();
@@ -140,6 +142,8 @@ impl HostOwner {
     }
     fn change_scope(&mut self, character: Option<[u8; 16]>) {
         self.cancel();
+        self.selection.cancel();
+        self.dialogs.clear();
         self.scope = Scope {
             character,
             generation: self.scope.generation.saturating_add(1),
@@ -168,34 +172,62 @@ impl HostOwner {
         if let Some(entry) = &mut self.entry {
             entry.leave_play();
         }
-        #[cfg(windows)]
-        if let Some(login) = &self.login {
-            login.offline(self.status.clone());
-        }
+        self.login.form.offline();
+        self.login.form.feedback(self.status.clone());
+    }
+    pub fn configure_login(
+        &mut self,
+        path: Option<PathBuf>,
+        lookup: impl Fn(&str) -> Option<String>,
+    ) {
+        self.login.load(path, lookup);
+    }
+    pub fn modal_active(&self) -> bool {
+        self.draft.is_some()
+            || self.login.visible
+            || self.selection.pending().is_some()
+            || self.dialogs.active()
     }
     pub fn request_login(&mut self) {
         if self.phase != Phase::Offline {
             return;
         }
-        #[cfg(windows)]
-        {
-            if let Some(login) = &self.login {
-                login.show("Review connection settings, then choose Save and sign in.".into());
-            } else {
-                match crate::native_login::LoginWindow::open() {
-                    Ok(login) => self.login = Some(login),
-                    Err(_) => {
-                        self.status = "Offline — native login window could not be opened.".into()
-                    }
-                }
-            }
+        self.cancel();
+        self.login.show();
+    }
+    pub fn submit_login(&mut self) {
+        if self.phase != Phase::Offline || !self.login.visible {
+            return;
         }
-        #[cfg(not(windows))]
+        let mut config = match self.login.submit() {
+            Ok(config) => config,
+            Err(_) => return,
+        };
+        config.preference_path.clone_from(&self.preferences_path);
+        config.select_character = self.selector.clone();
+        // These account presenters have not migrated; the picker exposes no such actions.
+        config.account_services = std::sync::Arc::new(|_, _| crate::account_services::Action::Back);
+        config.coin_shop = std::sync::Arc::new(|_, _| crate::coin_shop::Action::Back);
+        config.premium = std::sync::Arc::new(|_, _| crate::premium::Action::Back);
+        self.selection.cancel();
+        if self
+            .entry
+            .as_mut()
+            .is_some_and(|entry| entry.configure(config) && entry.request())
         {
-            self.status = offline_message().into();
+            self.cancel();
+            self.phase = Phase::Entering;
+            self.status = "Signing in — waiting for native admission.".into();
+        } else {
+            self.login
+                .form
+                .finish(Err(crate::GameplayEntryError::Rejected(
+                    oteryn_platform_client::native_login::PublicClass::SessionUnavailable,
+                )));
         }
     }
     pub fn cancel_login(&mut self) {
+        self.selection.cancel();
         if let Some(entry) = &mut self.entry {
             entry.cancel_entry();
         }
@@ -204,8 +236,6 @@ impl HostOwner {
         if self.phase == Phase::Closed {
             return;
         }
-        #[cfg(windows)]
-        self.poll_login();
         if self.entry.as_ref().is_some_and(Reentry::is_entering) {
             self.phase = Phase::Entering;
         }
@@ -215,19 +245,17 @@ impl HostOwner {
             .and_then(|e| e.poll_wait(std::time::Instant::now()))
         {
             self.status.clone_from(&message);
-            #[cfg(windows)]
-            if let Some(login) = &self.login {
-                login.progress(message);
-            }
+            self.login.form.feedback(message);
         }
         if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
-            #[cfg(windows)]
-            if let Some(login) = &self.login {
-                if let Some(document) = self.entry.as_mut().and_then(Reentry::take_bulletin) {
-                    login.bulletin(document);
-                }
-                login.finish(result.as_ref().map(|_| ()).map_err(|e| *e));
+            self.login
+                .form
+                .finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+            if result.is_ok() {
+                self.login.visible = false;
             }
+            // Bulletin remains owned by Reentry; rich bulletin presentation is a later module.
+            let _ = self.entry.as_mut().and_then(Reentry::take_bulletin);
             match result {
                 Ok((view, link)) => {
                     self.install_play(view, link);
@@ -253,38 +281,7 @@ impl HostOwner {
             self.leave(message);
         }
     }
-    #[cfg(windows)]
-    fn poll_login(&mut self) {
-        if self
-            .login
-            .as_ref()
-            .is_some_and(crate::native_login::LoginWindow::cancel_requested)
-        {
-            self.cancel_login();
-        }
-        if let Some(mut config) = self
-            .login
-            .as_ref()
-            .and_then(crate::native_login::LoginWindow::poll)
-        {
-            config.preference_path.clone_from(&self.preferences_path);
-            let started = self
-                .entry
-                .as_mut()
-                .is_some_and(|e| e.configure(config) && e.request());
-            if started {
-                self.cancel();
-                self.phase = Phase::Entering;
-                self.status = "Signing in — waiting for native admission.".into();
-            } else if let Some(login) = &self.login {
-                login.finish(Err(crate::GameplayEntryError::Rejected(
-                    oteryn_platform_client::native_login::PublicClass::SessionUnavailable,
-                )));
-            }
-        }
-    }
     fn reset_input(&mut self) {
-        #[cfg(any(windows, test))]
         self.route_input(
             &[oteryn_input_actions::NormalizedInputEvent::DeviceLost],
             true,
@@ -295,6 +292,9 @@ impl HostOwner {
             return;
         }
         self.cancel();
+        self.selection.cancel();
+        self.dialogs.clear();
+        self.login.visible = false;
         drop(self.play.take());
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();
@@ -309,11 +309,7 @@ impl Drop for HostOwner {
     }
 }
 fn offline_message() -> &'static str {
-    if cfg!(windows) {
-        "Offline — no admitted character or world. Use Sign in for native connection settings and character selection."
-    } else {
-        "Offline — no admitted character or world. Linux/macOS native character selection is not implemented; admission is unavailable on this host."
-    }
+    "Offline — no admitted character or world. Use Sign in for connection settings and character selection."
 }
 
 #[cfg(test)]

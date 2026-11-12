@@ -25,10 +25,10 @@ path = "src/bin/oteryn-client-bevy.rs"
 required-features = ["bevy-shell"]
 
 [features]
-bevy-shell = ["dep:bevy", "dep:oteryn-client-ui-bevy"]
+bevy-shell = ["dep:bevy", "dep:oteryn-client-ui-bevy", "oteryn-input-platform/native-winit"]
 
 [dependencies]
-bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11"] }
+bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard"] }
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }

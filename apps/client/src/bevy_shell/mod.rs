@@ -1,11 +1,12 @@
 //! Opt-in Bevy desktop host over the production client owners.
 mod audit;
-#[cfg(any(windows, test))]
 mod controls;
-#[cfg(windows)]
+mod gameplay_dialogs;
 mod input;
+mod login;
 mod owner;
 mod scene;
+mod selection;
 mod ui;
 
 use bevy::{
@@ -21,6 +22,7 @@ pub struct Options {
     pub ui_assets: PathBuf,
     pub preferences: Option<PathBuf>,
     pub ui_audit: Option<PathBuf>,
+    pub login_settings: Option<PathBuf>,
 }
 impl Options {
     pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Self, String> {
@@ -28,14 +30,16 @@ impl Options {
         let mut ui_assets = None;
         let mut preferences = crate::play::PreferenceStore::path();
         let mut ui_audit = None;
+        let mut login_settings = crate::native_login::settings_path().ok();
         while let Some(argument) = args.next() {
             let target =
                 match argument.to_str() {
                     Some("--ui-assets") => &mut ui_assets,
                     Some("--preferences") => &mut preferences,
                     Some("--ui-audit") => &mut ui_audit,
+                    Some("--login-settings") => &mut login_settings,
                     _ => return Err(
-                        "Use --ui-assets <directory> [--preferences <path>] [--ui-audit <path>]"
+                        "Use --ui-assets <directory> [--preferences <path>] [--ui-audit <path>] [--login-settings <path>]"
                             .into(),
                     ),
                 };
@@ -54,6 +58,7 @@ impl Options {
             ui_assets,
             preferences,
             ui_audit,
+            login_settings,
         })
     }
 }
@@ -61,7 +66,8 @@ impl Options {
 /// Called only by the executable. Headless tests never install WinitPlugin or run this loop.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::error::Error>> {
     let options = Options::parse(args)?;
-    let owner = HostOwner::new(options.preferences)?;
+    let mut owner = HostOwner::new(options.preferences)?;
+    owner.configure_login(options.login_settings, |name| std::env::var(name).ok());
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
@@ -87,16 +93,33 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     .insert_non_send(owner)
     .insert_resource(audit::AuditOutput::new(options.ui_audit))
     .init_resource::<scene::SceneCache>()
-    .add_systems(Startup, ui::setup)
+    .add_systems(Startup, (ui::setup, login::setup, selection::setup).chain())
+    .add_systems(PreUpdate, selection::poll.before(poll_owner))
     .add_systems(PreUpdate, poll_owner)
     .add_systems(
         Update,
-        (ui::keyboard, ui::project, project_window, scene::project).chain(),
+        (
+            login::keyboard,
+            login::project,
+            selection::keyboard,
+            selection::project,
+            ui::keyboard,
+            ui::project,
+            project_window,
+            scene::project,
+        )
+            .chain(),
     )
     .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout));
-    #[cfg(windows)]
-    app.init_non_send::<input::NativeInput>()
-        .add_systems(Update, input::route.before(ui::project));
+    app.init_non_send::<input::NativeInput>().add_systems(
+        Update,
+        input::route
+            .before(login::keyboard)
+            .before(selection::keyboard)
+            .before(ui::keyboard)
+            .before(ui::project),
+    );
+    gameplay_dialogs::install(&mut app);
     // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
     match app.run() {
         AppExit::Success => Ok(()),

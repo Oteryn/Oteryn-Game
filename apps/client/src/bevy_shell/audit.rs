@@ -1,6 +1,8 @@
 //! Opt-in, bounded public UI observation for OS-driven acceptance checks.
 use super::{
+    login::{LoginControl, LoginField},
     owner::{GraphicsDraft, HostOwner, Phase},
+    selection::PickerControl,
     ui::Control,
 };
 use bevy::{prelude::*, window::PrimaryWindow};
@@ -23,7 +25,7 @@ impl AuditOutput {
 }
 #[derive(Serialize)]
 struct Bounds {
-    id: &'static str,
+    id: String,
     bounds_physical: [f32; 4],
     bounds_logical: [f32; 4],
     enabled: bool,
@@ -33,6 +35,9 @@ struct Snapshot<'a> {
     schema: &'static str,
     lifecycle: Phase,
     generation: u64,
+    login_visible: bool,
+    login_pending: bool,
+    selection_pending: bool,
     character_scoped: bool,
     accepted: GraphicsDraft,
     draft: Option<GraphicsDraft>,
@@ -44,12 +49,30 @@ struct Snapshot<'a> {
     scale_factor: f32,
     controls: Vec<Bounds>,
 }
+// ECS component queries expose bounds only, never connection-field contents.
+#[allow(clippy::type_complexity)]
 pub(super) fn write(
     owner: NonSend<HostOwner>,
     mut output: ResMut<AuditOutput>,
     window: Query<&Window, With<PrimaryWindow>>,
     controls: Query<(
         &Control,
+        &ComputedNode,
+        &UiGlobalTransform,
+        Has<bevy::ui::InteractionDisabled>,
+    )>,
+    login_controls: Query<
+        (
+            Option<&LoginField>,
+            Option<&LoginControl>,
+            &ComputedNode,
+            &UiGlobalTransform,
+            Has<bevy::ui::InteractionDisabled>,
+        ),
+        Or<(With<LoginField>, With<LoginControl>)>,
+    >,
+    picker_controls: Query<(
+        &PickerControl,
         &ComputedNode,
         &UiGlobalTransform,
         Has<bevy::ui::InteractionDisabled>,
@@ -78,17 +101,53 @@ pub(super) fn write(
         let min = transform.translation - node.size() / 2.;
         let physical = [min.x, min.y, node.size().x, node.size().y];
         bounds.push(Bounds {
-            id: control.id(),
+            id: control.id().into(),
             bounds_physical: physical,
             bounds_logical: physical.map(|v| v / window.scale_factor()),
             enabled: !disabled,
         });
     }
-    bounds.sort_by_key(|b| b.id);
+    if owner.login.visible && owner.selection.pending().is_none() {
+        for (field, control, node, transform, disabled) in &login_controls {
+            let id = field
+                .map(LoginField::id)
+                .or_else(|| control.map(|control| control.id()));
+            if let Some(id) = id
+                && node.size().min_element() > 0.
+            {
+                let min = transform.translation - node.size() / 2.;
+                let physical = [min.x, min.y, node.size().x, node.size().y];
+                bounds.push(Bounds {
+                    id: id.into(),
+                    bounds_physical: physical,
+                    bounds_logical: physical.map(|v| v / window.scale_factor()),
+                    enabled: !disabled,
+                });
+            }
+        }
+    }
+    if let Some(request) = owner.selection.pending() {
+        for (control, node, transform, disabled) in &picker_controls {
+            if control.request_id == request.id && node.size().min_element() > 0. {
+                let min = transform.translation - node.size() / 2.;
+                let physical = [min.x, min.y, node.size().x, node.size().y];
+                bounds.push(Bounds {
+                    id: control.id.clone(),
+                    bounds_physical: physical,
+                    bounds_logical: physical.map(|v| v / window.scale_factor()),
+                    enabled: !disabled,
+                });
+            }
+        }
+    }
+    bounds.sort_by(|a, b| a.id.cmp(&b.id));
     let snapshot = Snapshot {
         schema: "oteryn.bevy-ui-audit.v1",
         lifecycle: owner.phase,
         generation: owner.generation(),
+        login_visible: owner.login.visible,
+        login_pending: owner.login.form.pending(),
+        selection_pending: owner.selection.pending().is_some(),
         character_scoped: owner.settings.character_scope().is_some(),
         accepted: owner.accepted(),
         draft: owner.draft(),
