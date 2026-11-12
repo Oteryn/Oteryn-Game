@@ -7,10 +7,11 @@ use std::collections::{BTreeMap, BTreeSet};
 mod gems;
 pub use gems::{SupremeEffect, basic_milli, supreme_effect};
 
-/// Socket-facing resonance unlocked by full Wheel slices. Gems remain owned by Gem Atelier.
+/// Socket-facing Gem Vessel nodes unlocked by full Wheel slices. Gems remain owned by Gem
+/// Atelier; each unlocked node opens one vessel slot (`atelier::vessels`).
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WheelSocketSeam {
-    pub resonance_stages: BTreeMap<String, u8>,
+    pub gem_vessel_nodes: u32,
     /// Active positions at their own shared modifier grade (Crystal player_wheel.cpp:2735-2752).
     pub effective_grades: BTreeMap<u128, Vec<u8>>,
     pub grade_iv_points: u32,
@@ -266,6 +267,7 @@ impl WheelRuntimeEffects {
     }
 
     /// Crystal player_wheel.cpp:2767-2775: every active domain contributes its flat stats.
+    /// Winter Update 2026: every unlocked Gem Vessel node adds its own flat damage.
     pub fn flat_damage_bonus(&self) -> Option<u32> {
         self.flat_bonus("flat_damage_bonus")
     }
@@ -275,9 +277,13 @@ impl WheelRuntimeEffects {
     }
 
     fn flat_bonus(&self, kind: &str) -> Option<u32> {
+        let vessels = self
+            .sockets
+            .gem_vessel_nodes
+            .checked_mul(crate::atelier::vessels::GEM_VESSEL_FLAT_DAMAGE_HEALING)?;
         self.revelation_numeric_effects
             .values()
-            .try_fold(0_u32, |total, effects| {
+            .try_fold(vessels, |total, effects| {
                 total.checked_add(u32::try_from(effects.get(kind)?.whole()).ok()?)
             })
     }
@@ -313,31 +319,20 @@ impl WheelRuntimeEffects {
             let points = domain_points.entry(domain).or_default();
             *points = points.checked_add(self.sockets.grade_iv_points)?;
         }
-        for gem in state
-            .gems
-            .values()
-            .filter(|gem| gem.vessel && gem.ruleset_revision == current)
-        {
-            let resonance_key = match gem.domain {
-                crate::wheel::WheelDomain::Green => "vessel_resonance_top_left",
-                crate::wheel::WheelDomain::Red => "vessel_resonance_top_right",
-                crate::wheel::WheelDomain::Purple => "vessel_resonance_bottom_right",
-                crate::wheel::WheelDomain::Blue => "vessel_resonance_bottom_left",
-            };
+        // Winter Update 2026: there is no Vessel Resonance. A gem in an open vessel slot has
+        // every modifier its quality carries active.
+        let open = crate::atelier::vessels::open_slots(self.sockets.gem_vessel_nodes);
+        for gem in state.gems.values().filter(|gem| {
+            gem.vessel
+                && gem.ruleset_revision == current
+                && gem.slot.is_some_and(|slot| usize::from(slot) < open)
+        }) {
             let positions = match gem.quality {
                 crate::atelier::GemQuality::Lesser => 1,
                 crate::atelier::GemQuality::Regular => 2,
                 crate::atelier::GemQuality::Greater => 3,
             };
-            let active = usize::from(
-                *self
-                    .sockets
-                    .resonance_stages
-                    .get(resonance_key)
-                    .unwrap_or(&0),
-            )
-            .min(gem.mods.len())
-            .min(positions);
+            let active = gem.mods.len().min(positions);
             let mut effective = Vec::new();
             for (position, id) in gem.mods.iter().copied().take(active).enumerate() {
                 let kind = if position == 2 {
@@ -482,14 +477,9 @@ fn project_conviction(conviction: &Value, out: &mut WheelRuntimeEffects) -> Opti
         "unique" => {
             out.active_unique_perks.insert(key.to_owned());
         }
-        "vessel_resonance" => {
-            let value = u8::try_from(conviction["native_value"].as_u64()?).ok()?;
-            let entry = out
-                .sockets
-                .resonance_stages
-                .entry(key.to_owned())
-                .or_default();
-            *entry = entry.checked_add(value)?;
+        // The former Vessel Resonance nodes are Gem Vessel nodes: each opens one slot.
+        "vessel_resonance" if crate::atelier::vessels::is_gem_vessel_node(key) => {
+            out.sockets.gem_vessel_nodes = out.sockets.gem_vessel_nodes.checked_add(1)?;
         }
         // Augment convictions are already applied by WheelStages in the spell owner.
         "augmentation" => {}
@@ -800,7 +790,7 @@ mod tests {
             20
         );
         assert!(effects.life_leech_hundredths_percent > 0);
-        assert!(!effects.sockets.resonance_stages.is_empty());
+        assert!(effects.sockets.gem_vessel_nodes > 0);
         assert!(effects.max_health > 0);
         assert_eq!(
             derive_runtime_effects(
@@ -820,12 +810,13 @@ mod tests {
 #[allow(clippy::expect_used)]
 mod atelier_tests {
     use super::*;
+    use crate::atelier::vessels::{GEM_VESSEL_SLOT_QUALITIES, GEM_VESSEL_SLOTS};
     use crate::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
-    use crate::wheel::{WheelDomain, WheelSlots};
+    use crate::wheel::WheelSlots;
     use crate::wheel_gem_data::WheelGemData;
 
     #[test]
-    fn atelier_resonance_uses_independent_shared_grades_and_revelation_mastery() {
+    fn atelier_vessel_uses_independent_shared_grades_and_revelation_mastery() {
         let data = WheelGemData::embedded().expect("catalogue");
         let mut points = [0; 36];
         let mut reduced = false;
@@ -860,10 +851,10 @@ mod atelier_tests {
             Gem {
                 id: 1,
                 quality: GemQuality::Greater,
-                domain: WheelDomain::Green,
                 mods: vec![31, 0, 5],
                 locked: false,
                 vessel: true,
+                slot: Some(2),
                 ruleset_revision: data.revision().into(),
             },
         );
@@ -878,6 +869,7 @@ mod atelier_tests {
             derive_runtime_effects(data.wheel(), &allocation, "knight", 2000, true, true)
                 .expect("effects");
         assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&2));
+        assert!(effects.sockets.gem_vessel_nodes >= 3, "green opens slot 2");
         effects
             .contribute_gems(&state, &data, &allocation)
             .expect("contribution");
@@ -960,7 +952,7 @@ mod atelier_tests {
     }
 
     #[test]
-    fn resonance_count_and_gem_quality_bound_the_active_modifier_positions() {
+    fn all_mods_active_without_resonance() {
         let data = WheelGemData::embedded().expect("catalogue");
         let allocation = allocation_with_domain_points(&data, 0);
         for (quality, mods) in [
@@ -968,6 +960,9 @@ mod atelier_tests {
             (GemQuality::Regular, vec![31, 0]),
             (GemQuality::Greater, vec![31, 0, 5]),
         ] {
+            let slot = (0..GEM_VESSEL_SLOTS)
+                .find(|slot| GEM_VESSEL_SLOT_QUALITIES[*slot] == quality)
+                .expect("a slot of every quality");
             let mut state = AtelierState {
                 vocation: "knight".into(),
                 grade_ruleset_revision: Some(data.revision().into()),
@@ -978,27 +973,24 @@ mod atelier_tests {
                 Gem {
                     id: 1,
                     quality,
-                    domain: WheelDomain::Green,
                     mods: mods.clone(),
                     locked: true,
                     vessel: true,
+                    slot: u8::try_from(slot).ok(),
                     ruleset_revision: data.revision().into(),
                 },
             );
-            for count in 0..=3_u8 {
+            for nodes in 0..=3_u32 {
                 let mut effects = WheelRuntimeEffects::default();
-                effects
-                    .sockets
-                    .resonance_stages
-                    .insert("vessel_resonance_top_left".into(), count);
+                effects.sockets.gem_vessel_nodes = nodes;
                 effects
                     .contribute_gems(&state, &data, &allocation)
                     .expect("contribution");
-                assert_eq!(
-                    effects.sockets.effective_grades[&1].len(),
-                    usize::from(count).min(mods.len())
-                );
-                if count == 0 {
+                if usize::try_from(nodes).expect("small") > slot {
+                    // Every modifier of the gem is active: no resonance stage limits it.
+                    assert_eq!(effects.sockets.effective_grades[&1].len(), mods.len());
+                } else {
+                    assert!(effects.sockets.effective_grades.is_empty());
                     assert!(effects.sockets.gem_values_milli.is_empty());
                     assert_eq!(effects.max_health, 0);
                     assert_eq!(effects.max_mana, 0);
@@ -1006,15 +998,57 @@ mod atelier_tests {
             }
             state.gems.get_mut(&1).expect("gem").vessel = false;
             let mut effects = WheelRuntimeEffects::default();
-            effects
-                .sockets
-                .resonance_stages
-                .insert("vessel_resonance_top_left".into(), 3);
+            effects.sockets.gem_vessel_nodes = 12;
             effects
                 .contribute_gems(&state, &data, &allocation)
                 .expect("unsocketed");
             assert!(effects.sockets.effective_grades.is_empty());
             assert!(effects.sockets.gem_values_milli.is_empty());
         }
+    }
+
+    #[test]
+    fn gem_vessel_node_opens_slot_and_adds_one_damage_and_healing() {
+        let data = WheelGemData::embedded().expect("catalogue");
+        let topology = data.wheel()["topology"].as_array().expect("topology");
+        let slots = data.wheel()["vocations"]["knight"]["slots"]
+            .as_array()
+            .expect("slots");
+        let mut points = [0; 36];
+        let mut vessel_nodes = 0;
+        for (index, (node, slot)) in topology.iter().zip(slots).enumerate() {
+            if node["domain"] == "green" {
+                points[index] =
+                    u16::try_from(node["capacity"].as_u64().expect("capacity")).expect("bounded");
+                if slot["conviction"]["category"] == "vessel_resonance" {
+                    vessel_nodes += 1;
+                }
+            }
+        }
+        assert!(vessel_nodes > 0);
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::new(points).expect("slots"),
+            current: true,
+        };
+        let effects = derive_runtime_effects(data.wheel(), &allocation, "knight", 2000, true, true)
+            .expect("effects");
+        assert_eq!(effects.sockets.gem_vessel_nodes, vessel_nodes);
+        let mut without = effects.clone();
+        without.sockets.gem_vessel_nodes = 0;
+        for (with, base) in [
+            (effects.flat_damage_bonus(), without.flat_damage_bonus()),
+            (effects.flat_healing_bonus(), without.flat_healing_bonus()),
+        ] {
+            assert_eq!(
+                with.expect("bounded").checked_sub(base.expect("bounded")),
+                Some(vessel_nodes)
+            );
+        }
+        assert_eq!(
+            crate::atelier::vessels::open_slots(effects.sockets.gem_vessel_nodes),
+            usize::try_from(vessel_nodes).expect("small")
+        );
     }
 }

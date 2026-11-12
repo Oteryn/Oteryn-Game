@@ -233,6 +233,7 @@ fn character_history_rejects_complete_reply_exceeding_requested_page()
 }
 
 mod achievements;
+mod cmech_e;
 mod history_tables;
 mod misc;
 mod overview;

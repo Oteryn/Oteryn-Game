@@ -49,6 +49,22 @@ pub(in crate::play) fn reduce(
             SessionEvent::AnalyserFacts(delta) => {
                 oteryn_client_ui::analyser::protocol::apply(&mut mailbox.analyser, &delta.value)
             }
+            SessionEvent::AnalyserAttributedFacts(delta) => {
+                oteryn_client_ui::analyser::protocol::apply(
+                    &mut mailbox.analyser,
+                    &oteryn_client_ui::analyser_hit_attribution::plain_facts(&delta.value),
+                );
+                let attacking = mailbox
+                    .battle
+                    .combat
+                    .is_some_and(|combat| combat.target.is_some());
+                if oteryn_client_ui::analyser_hit_attribution::own_hit_flash(
+                    &delta.value,
+                    attacking,
+                ) {
+                    mailbox.pushed.own_hit_flash = true;
+                }
+            }
             SessionEvent::GatedSnapshotReplaced(delta) if delta.value.domain_id == 15 => {
                 // oteryn-choice: recovery cannot replay facts. Start a fresh measurement interval.
                 oteryn_client_ui::analyser::protocol::recover(&mut mailbox.analyser);

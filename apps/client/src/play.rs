@@ -41,6 +41,8 @@ pub struct PlayView {
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
+    /// When the own character last took a hit from an attacker while attacking (N006).
+    hit_flash: Option<std::time::Instant>,
     spell_words: std::collections::BTreeMap<u32, String>,
     pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
     own: TileCoord,
@@ -108,8 +110,9 @@ pub use feature_local_reference_preferences::settings::{
     HoverTooltip, MiscellaneousPreferences, MousePreset, MovementKeys, ObjectTarget,
     PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
     ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
-    SettingsState, ShortcutEdit, TooltipTarget, WINDOW_ACTIONS, fit_ui_scale, help, help_text,
-    preference_bindings, rescale_ui_rect, scale_ui_rect, screenshot,
+    SettingsState, ShortcutEdit, TooltipTarget, UtilityAction, WINDOW_ACTIONS,
+    default_custom_hotkeys, fit_ui_scale, help, help_text, preference_bindings, rescale_ui_rect,
+    scale_ui_rect, screenshot,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

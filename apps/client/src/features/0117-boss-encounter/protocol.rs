@@ -10,8 +10,9 @@ impl Outbox {
         mailbox.boss_encounter_shutdown = false;
     }
     pub(in crate::play) fn boss_encounter_result(&self, response: &GatedCommandResult) {
-        if let Ok(oteryn_client_runtime::boss_difficulty::Reply::Window { .. }) =
-            oteryn_client_runtime::boss_difficulty::decode_reply(&response.payload)
+        let pity_selected = lock(&self.0).boss_difficulty.pity_selected;
+        if let Some((oteryn_client_runtime::boss_difficulty::Reply::Window { .. }, _)) =
+            oteryn_client_ui::boss_difficulty_pity::decode(pity_selected, &response.payload)
         {
             self.boss_difficulty_result(response);
             let mut mailbox = lock(&self.0);

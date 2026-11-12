@@ -437,6 +437,7 @@ enum MoveRequest {
     Hotkey {
         definition: crate::durability::item_mint::TypedDefinitionRef,
         slot: u8,
+        upgrade_tier: Option<u8>,
     },
 }
 
@@ -446,12 +447,17 @@ pub(super) async fn move_hotkey_carried(
     command: UseCommand,
     definition: crate::durability::item_mint::TypedDefinitionRef,
     slot: u8,
+    upgrade_tier: Option<u8>,
 ) -> EquipmentMoveResult {
     move_equipment_inner(
         admission,
         actor,
         command,
-        MoveRequest::Hotkey { definition, slot },
+        MoveRequest::Hotkey {
+            definition,
+            slot,
+            upgrade_tier,
+        },
         true,
     )
     .await
@@ -537,16 +543,21 @@ async fn move_equipment_inner(
         return refused;
     };
     let committed = match request {
-        MoveRequest::Hotkey { definition, slot } => {
+        MoveRequest::Hotkey {
+            definition,
+            slot,
+            upgrade_tier,
+        } => {
             admission
                 .root
-                .commit_hotkey_equipment(
+                .commit_hotkey_equipment_tiered(
                     admission.character,
                     admission.holder,
                     &fence,
                     CommandRef::new(command.game_session_id, command_id),
                     &NativeItemWeights(native),
                     (definition, slot),
+                    upgrade_tier,
                 )
                 .await
         }

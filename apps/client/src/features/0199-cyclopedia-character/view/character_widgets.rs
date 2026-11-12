@@ -9,6 +9,7 @@ pub(super) struct Widgets {
     pub(super) history: HWND,
     pub(super) detail: HWND,
     pub(super) achievement_browser: HWND,
+    pub(super) sanction_browser: HWND,
     pub(super) status_label: HWND,
     pub(super) cards: Vec<HWND>,
     pub(super) stamina_bar: HWND,
@@ -104,6 +105,14 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             [545, 155, 165, 28],
             WS_TABSTOP,
         );
+        let sanction_browser = control(
+            hwnd,
+            "BUTTON",
+            tr!("Rule violation record"),
+            141,
+            [545, 190, 165, 28],
+            WS_TABSTOP,
+        );
         let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
         let history = control(
             hwnd,
@@ -130,7 +139,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             dwICC: ICC_PROGRESS_CLASS,
         };
         InitCommonControlsEx(&common);
-        let cards: Vec<_> = (0..14)
+        let cards: Vec<_> = (0..super::super::OVERVIEW_CARD_COUNT)
             .map(|i| {
                 control(
                     hwnd,
@@ -159,6 +168,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             history,
             detail,
             achievement_browser,
+            sanction_browser,
             status_label,
             cards,
             stamina_bar,

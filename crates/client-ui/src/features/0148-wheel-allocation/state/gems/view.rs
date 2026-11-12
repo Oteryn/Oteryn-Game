@@ -20,19 +20,20 @@ pub fn modifier(p: &WheelPanel, kind: u8, id: u16) -> String {
             super::super::modifier_label(p, kind, id)
         );
     };
-    let mut text = format!(
-        "{} · stored shared grade {}\n",
-        row.name,
-        p.grade(kind, id) + 1
-    );
+    let mut text = format!("{} · Workshop grade {}\n", row.name, p.grade(kind, id) + 1);
     let qualified = current(p).is_some_and(|r| r.grades_current);
     if !qualified {
         text.push_str("Stored grades belong to an earlier catalogue; current rules use Grade I.\n");
     }
     for e in &row.effects {
+        let mastery = is_mastery_increase(&e.name);
         text.push_str(&format!(
             "{}{}\n",
-            e.name.replace('_', " "),
+            if mastery {
+                "Revelation Mastery".to_owned()
+            } else {
+                e.name.replace('_', " ")
+            },
             if e.target.is_empty() {
                 String::new()
             } else {
@@ -58,13 +59,25 @@ pub fn modifier(p: &WheelPanel, kind: u8, id: u16) -> String {
             ));
         }
     }
+    if row.effects.iter().any(|e| is_mastery_increase(&e.name)) {
+        text.push_str(
+            "Gain additional promotion points towards unlocking the related Revelation perk\n",
+        );
+    }
     text
+}
+fn is_mastery_increase(name: &str) -> bool {
+    name.eq_ignore_ascii_case("MasteryIncrease") || name.eq_ignore_ascii_case("mastery_increase")
 }
 pub fn details(p: &WheelPanel) -> String {
     if let Some(review) = &p.gems.review {
         return review.text.clone();
     }
     let mut text = balances(p);
+    for line in super::super::workshop_lines(p) {
+        text.push('\n');
+        text.push_str(&line);
+    }
     if let Some(gem) = p.selected_gem() {
         if current(p).is_some_and(|r| !r.qualified_gems.contains(&gem.id)) {
             text.push_str("\nThis gem belongs to an earlier catalogue; the values below are current comparisons, not active gem effects.\n");
@@ -72,7 +85,7 @@ pub fn details(p: &WheelPanel) -> String {
         text.push_str(&format!("\n\n{}\n", super::super::gem_label(gem)));
         for (position, id) in gem.modifiers.iter().enumerate() {
             text.push_str(&format!(
-                "\nModifier position {} (activation depends on current vessel resonance):\n{}",
+                "\nModifier position {}:\n{}",
                 position + 1,
                 modifier(p, u8::from(position == 2), *id)
             ));
@@ -85,7 +98,7 @@ pub fn details(p: &WheelPanel) -> String {
         ));
     }
     if let Some(reply) = current(p) {
-        text.push_str(&format!("\nServer values for {}\nValues describe a modifier at each shared grade; only active socket positions contribute to combat.",reply.vocation));
+        text.push_str(&format!("\nServer values for {}\nValues describe a modifier at each shared grade; every mod of a socketed gem is active at its own Workshop grade.",reply.vocation));
     }
     if let Some(feedback) = &p.gems.feedback {
         text.push_str(&format!("\n{feedback}"));

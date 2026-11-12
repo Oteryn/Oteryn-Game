@@ -1,4 +1,6 @@
+use super::super::state::TabExtensions;
 use super::stamina;
+use crate::cyclopedia_character_vocation::vocation_title;
 use oteryn_client_runtime::cyclopedia_character;
 pub(super) fn decode_badges(b: &[u8]) -> Option<String> {
     let (&count, ids) = b.split_first()?;
@@ -23,13 +25,13 @@ pub(super) fn decode_tab(
     b: &[u8],
     requested: cyclopedia_character::CharacterTab,
     limit: u8,
+    ext: TabExtensions,
 ) -> Option<String> {
     use cyclopedia_character::{
         CharacterTab as Tab,
         combat::{CombatStat, CombatStatUnit, CombatStats},
     };
-    if b.len() > cyclopedia_character::MAX_TAB_RESULT_BYTES || b.first() != Some(&(requested as u8))
-    {
+    if b.len() > max_reply_bytes(ext) || b.first() != Some(&(requested as u8)) {
         return None;
     }
     let mut r = Reader(&b[1..]);
@@ -71,6 +73,9 @@ pub(super) fn decode_tab(
                 ),
                 _ => return None,
             });
+            if ext.vocation {
+                rows.push(format!("Vocation: {}", vocation_title(r.u8()?)?));
+            }
         }
         Tab::RecentDeaths | Tab::RecentPvpKills => {
             let count = r.count(limit)?;
@@ -85,7 +90,17 @@ pub(super) fn decode_tab(
                 } else {
                     ""
                 };
-                rows.push(format!("{at}: {status}{}", r.text()?));
+                let text = r.text()?;
+                match death_details(&mut r, requested, ext)? {
+                    Some(d) => rows.push(format!(
+                        "{at}: {text} (level {}, killed by {}, most damage {}{})",
+                        d.level,
+                        name_or_unknown(&d.killer),
+                        name_or_unknown(&d.most_damage),
+                        if d.unjustified { ", unjustified" } else { "" }
+                    )),
+                    None => rows.push(format!("{at}: {status}{text}")),
+                }
             }
         }
         Tab::Achievements | Tab::Appearances => {
@@ -170,6 +185,44 @@ pub(super) fn decode_tab(
     r.0.is_empty().then(|| rows.join("\n"))
 }
 
+/// A reply that carries a selected extension may use the extended bound.
+fn max_reply_bytes(ext: TabExtensions) -> usize {
+    if ext.vocation || ext.death_details {
+        cyclopedia_character::MAX_EXTENDED_TAB_RESULT_BYTES
+    } else {
+        cyclopedia_character::MAX_TAB_RESULT_BYTES
+    }
+}
+
+/// Capability 488: `level:u32, killer, most_damage, unjustified:u8` after a Recent Deaths cause.
+fn death_details(
+    r: &mut Reader<'_>,
+    tab: cyclopedia_character::CharacterTab,
+    ext: TabExtensions,
+) -> Option<Option<cyclopedia_character::DeathDetails>> {
+    if !ext.death_details || tab != cyclopedia_character::CharacterTab::RecentDeaths {
+        return Some(None);
+    }
+    let level = r.u32()?;
+    let killer = r.text()?.into();
+    let most_damage = r.text()?.into();
+    let unjustified = match r.u8()? {
+        0 => false,
+        1 => true,
+        _ => return None,
+    };
+    Some(Some(cyclopedia_character::DeathDetails {
+        level,
+        killer,
+        most_damage,
+        unjustified,
+    }))
+}
+
+fn name_or_unknown(name: &str) -> &str {
+    if name.is_empty() { "unknown" } else { name }
+}
+
 struct Reader<'a>(&'a [u8]);
 impl<'a> Reader<'a> {
     fn bytes<const N: usize>(&mut self) -> Option<[u8; N]> {
@@ -208,9 +261,10 @@ pub(super) fn decode_history(
     b: &[u8],
     tab: cyclopedia_character::CharacterTab,
     limit: u8,
+    ext: TabExtensions,
 ) -> Option<Vec<super::super::HistoryRow>> {
     use cyclopedia_character::{CharacterTab, KillStatus};
-    if b.first() != Some(&(tab as u8)) {
+    if b.len() > max_reply_bytes(ext) || b.first() != Some(&(tab as u8)) {
         return None;
     }
     let mut r = Reader(&b[1..]);
@@ -227,17 +281,24 @@ pub(super) fn decode_history(
         } else {
             None
         };
+        let description = r.text()?.into();
         rows.push(super::super::HistoryRow {
             at,
             status,
-            description: r.text()?.into(),
+            description,
+            death: death_details(&mut r, tab, ext)?,
         });
     }
     r.0.is_empty().then_some(rows)
 }
 
-pub(super) fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralStats> {
-    if b.first() != Some(&(cyclopedia_character::CharacterTab::GeneralStats as u8)) {
+pub(super) fn decode_general(
+    b: &[u8],
+    ext: TabExtensions,
+) -> Option<(cyclopedia_character::GeneralStats, Option<u8>)> {
+    if b.len() > max_reply_bytes(ext)
+        || b.first() != Some(&(cyclopedia_character::CharacterTab::GeneralStats as u8))
+    {
         return None;
     }
     let mut r = Reader(&b[1..]);
@@ -257,8 +318,12 @@ pub(super) fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralSt
         1 => Some((health, mana)),
         _ => return None,
     };
-    r.0.is_empty()
-        .then_some(cyclopedia_character::GeneralStats {
+    let vocation = ext.vocation.then(|| r.u8()).flatten();
+    if ext.vocation && vocation.is_none_or(|id| vocation_title(id).is_none()) {
+        return None;
+    }
+    r.0.is_empty().then_some((
+        cyclopedia_character::GeneralStats {
             experience,
             level,
             magic_level,
@@ -266,7 +331,9 @@ pub(super) fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralSt
             stamina_minutes,
             offline_training_minutes,
             last_vitals,
-        })
+        },
+        vocation,
+    ))
 }
 
 pub(super) fn decode_store(b: &[u8]) -> Option<cyclopedia_character::StoreSummary> {

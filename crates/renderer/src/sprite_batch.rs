@@ -88,6 +88,40 @@ impl SpriteBatch {
         Ok(true)
     }
 
+    /// Adds a frame of four bars, `thickness_px` screen pixels wide, along the inside edges of a
+    /// tile, all textured with `cell` (a solid builtin cell gives a solid frame). Returns
+    /// `Ok(false)` when the tile is outside the view; a full batch is an error and adds nothing.
+    pub fn push_frame(
+        &mut self,
+        view: &TileView,
+        atlas: &AtlasImage,
+        tile: TileCoord,
+        cell: u16,
+        thickness_px: f32,
+    ) -> Result<bool, BatchError> {
+        let uv = atlas.uv_rect(cell)?;
+        if !view.contains(tile) {
+            return Ok(false);
+        }
+        if self.instances.len() + 4 > MAX_BATCH_QUADS {
+            return Err(BatchError::CapacityExceeded {
+                max: MAX_BATCH_QUADS,
+            });
+        }
+        let side = view.tile_px() as f32;
+        let bar = thickness_px.clamp(0.0, side / 2.0);
+        let [x, y] = view.tile_to_screen(tile);
+        for (position, size) in [
+            ([x, y], [side, bar]),
+            ([x, y + side - bar], [side, bar]),
+            ([x, y + bar], [bar, side - 2.0 * bar]),
+            ([x + side - bar, y + bar], [bar, side - 2.0 * bar]),
+        ] {
+            self.instances.push(QuadInstance { position, size, uv });
+        }
+        Ok(true)
+    }
+
     /// Appends an already projected quad, preserving the batch capacity bound.
     pub fn push_quad(&mut self, quad: QuadInstance) -> Result<(), BatchError> {
         if self.instances.len() >= MAX_BATCH_QUADS {

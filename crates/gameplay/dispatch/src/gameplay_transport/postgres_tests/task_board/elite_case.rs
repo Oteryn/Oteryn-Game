@@ -115,7 +115,7 @@ pub(super) async fn run_case(
             platinum.dust,
             platinum.points
         ),
-        ("oteryn:creature.rat", 3, 8, 24)
+        ("oteryn:creature.rat", 3, 40, 24)
     );
     save(harness, &data).await?;
     let selected = full_board(owner, admitted, 8, 0, "").await?;
@@ -189,7 +189,7 @@ pub(super) async fn run_case(
 
     // Premium is an input authenticated by the existing kill owner. Exercise both frozen decisions
     // through that owner's actual transaction and forge ledger, with independent death receipts.
-    for (premium, serial, expected_dust) in [(false, 64001_u16, 0_u32), (true, 64002, 8)] {
+    for (premium, serial, expected_dust) in [(false, 64001_u16, 0_u32), (true, 64002, 40)] {
         let mut current = fixture_board_data(harness).await?;
         current.bounty.selection_serial += 1;
         current.bounty.state = rules::BountyStatus::Active;

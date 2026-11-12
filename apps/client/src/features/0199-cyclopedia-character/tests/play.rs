@@ -187,6 +187,8 @@ mod misc;
 mod navigation;
 #[path = "protection.rs"]
 mod protection;
+#[path = "sanctions.rs"]
+mod sanctions;
 
 #[test]
 fn blessings_dialog_requests_self_and_reduces_the_real_server_reply()
@@ -272,3 +274,38 @@ mod history;
 mod augments;
 #[path = "offence.rs"]
 mod offence;
+
+#[test]
+fn native_general_stats_controls_include_confirmed_vocation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::play_channel;
+    use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.cyclopedia_character_initialize(true);
+    outbox.cyclopedia_character_extensions(true, false);
+    link.cyclopedia_character_request(Intent::Tab);
+    assert!(
+        matches!(incoming.try_recv()?, crate::combat_input::PlayCommand::Feature(c) if c.kind == 388)
+    );
+    outbox.cyclopedia_character_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: TabView::GeneralStats(GeneralStats::default())
+            .encode_extended(&TabExtension {
+                vocation_id: Some(7),
+                deaths: None,
+            })
+            .map_err(|e| format!("{e:?}"))?,
+    });
+    let panel = link.cyclopedia_character_panel();
+    let cards = oteryn_client_ui::cyclopedia_character::overview_cards(&panel);
+    let native_cards: Vec<_> = (0
+        ..crate::play::feature_0199_cyclopedia_character::view::native::OVERVIEW_CARD_COUNT)
+        .zip(cards)
+        .map(|(_, card)| card)
+        .collect();
+    assert!(native_cards.contains(&("Vocation", "Elite Knight".into())));
+    assert_eq!(native_cards.len(), 15);
+    Ok(())
+}

@@ -1,0 +1,14 @@
+{
+  "id": 486,
+  "name": "ANALYSER_HIT_ATTRIBUTION_V1",
+  "owner_decision": "WU26 native-client mechanics batch package 2 (client PR #3098); parity rule: Crystal 201189f8 and current Tibia",
+  "owner": "Game ChannelRuntime damage owners through the ANALYSER-EMIT-1 advisory stream",
+  "requires": [
+    6,
+    10
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with ANALYSER_V1 and WORLD_SPATIAL_ENTITIES. State domain 15 damage_input facts gain field 5 attacker (EntityRefV1, nonzero generation) for creature or player hits the own character took on the committed damage path (creature melee, creature and player spells); condition ticks and sourceless damage carry none. Without selection field 5 is never emitted and fact bytes are unchanged. Fact and batch byte bounds unchanged."
+}

@@ -149,6 +149,28 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     imbuement::CAPABILITY_IMBUEMENT_SCROLL_CATALOGUE_V1,
     oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
     oteryn_protocol_oteryn::store::cosmetic_tokens::CAPABILITY,
+    // WU26-14 spell aim mode and WU26-10 Gem Atelier v2 (requires 148).
+    actor_spell::CAPABILITY_SPELL_AIM_MODE_V1,
+    atelier::v2::CAPABILITY_GEM_ATELIER_V2,
+    // WU26 package 2: tiered hotkey equip, hit attribution, promotion title, death details,
+    // podium flags, server modal input and imbuement success chance.
+    hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1,
+    analyser_transport::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1,
+    cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
+    cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
+    property_services::house_podium::CAPABILITY_HOUSE_PODIUM_FLAGS_V1,
+    oteryn_protocol_oteryn::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
+    imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
+    // WU26 boss pity tracker in the boss difficulty window (requires 225).
+    oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_PITY_V1,
+    // WU26 chat channels as in Tibia Global (493, 495 and 496 require 7 or 80, 494 requires 80),
+    // the own sanction record (497) and the Loyalty highscores category (498, requires 9).
+    oteryn_protocol_oteryn::chat::line_extended::CAPABILITY_CHAT_PRIVATE_ECHO_V1,
+    oteryn_protocol_oteryn::chat::private_channel_extended::CAPABILITY_CHAT_JOINED_CHANNELS_V1,
+    oteryn_protocol_oteryn::chat::private_channel_extended::CAPABILITY_CHAT_CHANNEL_PARTICIPANTS_V1,
+    oteryn_protocol_oteryn::chat::line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1,
+    oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -260,6 +282,9 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     party::CAPABILITY_PARTY_LIST_V1,
     oteryn_protocol_oteryn::support_intake::CAPABILITY_SUPPORT_INTAKE_V1,
     oteryn_protocol_oteryn::task_board::full::CAPABILITY_WEEKLY_RESULTS_V1,
+    atelier::v2::CAPABILITY_GEM_ATELIER_V2,
+    // WU26 own sanction record, command 6240.
+    oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

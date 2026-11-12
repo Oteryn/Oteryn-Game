@@ -740,6 +740,7 @@ fn scenario_options_impl(
                             definition: reference
                         },
                         true,
+                        None,
                     )
                     .await,
                     Some(ItemMoveOutcome::Moved),

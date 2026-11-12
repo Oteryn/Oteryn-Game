@@ -131,3 +131,29 @@ fn scene_batch_propagates_visitor_and_invalid_cell_errors() -> Result<(), BatchE
     assert_eq!(result.err(), Some(BatchError::CellOutOfRange { cell: 4 }));
     Ok(())
 }
+
+#[test]
+fn frame_is_four_bars_inside_the_tile_and_culled_outside_the_view() -> Result<(), BatchError> {
+    let view = TileView::new(TileCoord::new(0, 0), 48, 2, 2)?;
+    let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
+    let mut batch = SpriteBatch::new();
+    assert!(batch.push_frame(&view, &atlas, TileCoord::new(1, 1), BLACK_CELL, 3.0)?);
+    let quads = batch.instances();
+    assert_eq!(quads.len(), 4);
+    let sizes = [[48.0, 3.0], [48.0, 3.0], [3.0, 42.0], [3.0, 42.0]];
+    let positions = [[48.0, 48.0], [48.0, 93.0], [48.0, 51.0], [93.0, 51.0]];
+    for (index, quad) in quads.iter().enumerate() {
+        assert_eq!(quad.size, sizes[index]);
+        assert_eq!(quad.position, positions[index]);
+        assert_eq!(quad.uv, atlas.uv_rect(BLACK_CELL)?);
+    }
+    assert!(!batch.push_frame(&view, &atlas, TileCoord::new(5, 5), BLACK_CELL, 3.0)?);
+    assert_eq!(batch.len(), 4);
+    assert_eq!(
+        batch
+            .push_frame(&view, &atlas, TileCoord::new(0, 0), 99, 3.0)
+            .err(),
+        atlas.uv_rect(99).err()
+    );
+    Ok(())
+}

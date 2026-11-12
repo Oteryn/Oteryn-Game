@@ -145,6 +145,55 @@ fn imbuement_offers_every_tier_of_each_admitted_family_at_current_global_prices(
 }
 
 #[test]
+fn imbuement_query_carries_offer_success_chance_only_when_491_is_selected() {
+    fn payload(encoded: ImbuementReply) -> Option<Vec<u8>> {
+        match encoded {
+            ImbuementReply::Payload(bytes) => Some(bytes),
+            _ => None,
+        }
+    }
+    let allowance = two_slots();
+    let query = match decide(ImbuementAction::Query, Some(&allowance), &[]) {
+        Decision::Reply(query) => Some(query),
+        _ => None,
+    }
+    .expect("a query is answered at once");
+    // Ruling R2: every tier always succeeds, so each offer reports 100.
+    let success = offer_success_percents(&query).expect("every offer tier has a rule");
+    assert_eq!(success, vec![100; allowance.offers.len()]);
+    let plain = payload(encode_selected(&query, false)).expect("V1 window encodes");
+    assert_eq!(
+        plain,
+        wire::encode_imbuement_reply(&query).expect("V1 reply encodes")
+    );
+    let extended = payload(encode_selected(&query, true)).expect("491 window encodes");
+    assert_ne!(extended, plain);
+    let decoded = wire::decode_imbuement_reply_with_success(&extended).expect("491 reply decodes");
+    assert_eq!(decoded, (query.clone(), success));
+    // A refusal has no window and is the same bytes either way.
+    let refused = reply(ImbuementResult::NotAllowed);
+    assert_eq!(offer_success_percents(&refused), Some(Vec::new()));
+    assert_eq!(
+        payload(encode_selected(&refused, true)),
+        payload(encode_selected(&refused, false))
+    );
+    // An offer tier without a rule fails closed instead of inventing a percentage.
+    let mut unknown = query;
+    if let Some(offer) = unknown
+        .window
+        .as_mut()
+        .and_then(|window| window.offers.first_mut())
+    {
+        offer.tier = 4;
+    }
+    assert_eq!(offer_success_percents(&unknown), None);
+    assert!(matches!(
+        encode_selected(&unknown, true),
+        ImbuementReply::Unavailable
+    ));
+}
+
+#[test]
 fn imbuement_apply_gates_slot_offer_occupancy_category_then_access() {
     let allowance = two_slots();
     let apply = |slot, imbuement, applied: &[StoredImbuement]| {

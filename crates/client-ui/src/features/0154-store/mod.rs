@@ -12,7 +12,7 @@ pub use protocol::{
     request,
 };
 pub use state::{GiftDraft, StorePage, StorePanel, StoreSort};
-pub use view::{offer_preview, panel_text, visible_offers};
+pub use view::{offer_preview, panel_text, token_purchase_disabled_reason, visible_offers};
 
 #[path = "state/browser.rs"]
 mod browser;

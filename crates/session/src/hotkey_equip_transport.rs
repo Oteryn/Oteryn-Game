@@ -6,11 +6,22 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         definition: std::num::NonZeroU32,
     ) -> Result<ItemMoveOutcomeResult, SessionError> {
+        let payload = hotkey_equip::TieredRequest {
+            request: hotkey_equip::Request { definition },
+            // This definition-only helper targets an unforged copy on tiered sessions.
+            upgrade_tier: self
+                .is_selected(hotkey_equip::CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1)
+                .then_some(0),
+        }
+        .encode()
+        .ok_or(SessionError::Protocol(
+            FoundationProtocolError::MalformedFrame,
+        ))?;
         let result = self
             .gated_command(
                 hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
                 hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP,
-                &hotkey_equip::Request { definition }.encode(),
+                &payload,
             )
             .await?;
         let decoded = if result.status != CommandStatus::Accepted {

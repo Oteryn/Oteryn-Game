@@ -6,7 +6,7 @@ mod view;
 pub use input::open_key;
 pub use protocol::{Action, apply_result, request};
 pub use state::{Discovery, Panel};
-pub use view::panel_text;
+pub use view::{panel_text, result_notice};
 #[cfg(test)]
 #[path = "tests/e2e_i07.rs"]
 mod e2e_i07;

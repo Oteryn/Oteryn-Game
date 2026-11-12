@@ -2,6 +2,15 @@
   {
     "mechanic": "local-minimap",
     "kind": "keybindings",
+    "id": "local-minimap-create-mark",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "ALT+SHIFT+M",
+    "entry": "input.rs::create_mark_key"
+  },
+  {
+    "mechanic": "local-minimap",
+    "kind": "keybindings",
     "id": "local-minimap-editor-open",
     "status": "supported",
     "context": "gameplay",

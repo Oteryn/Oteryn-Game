@@ -220,16 +220,29 @@ impl<S: SessionStream> Session<S> {
                 // one stored revision and decoded before anything is stored.
                 let delta_type = delta.delta_type;
                 check_delta(&delta, delta_type, self.chat_revision)?;
+                let (mut line_extra, mut list_extension) = (None, None);
                 let event = match delta_type {
                     chat::DELTA_TYPE_CHAT_LINE_V1 => {
-                        let line =
-                            guild_chat::decode_line(delta.payload, &self.selected_capabilities)?;
-                        SessionEvent::ChatLine(applied(
-                            server_sequence,
-                            base_revision,
-                            new_revision,
-                            line,
-                        ))
+                        match chat_extended::decode_line(delta.payload, &self.selected_capabilities)?
+                        {
+                            chat_extended::Decoded::Line { line, extra } => {
+                                line_extra = Some(extra);
+                                SessionEvent::ChatLine(applied(
+                                    server_sequence,
+                                    base_revision,
+                                    new_revision,
+                                    line,
+                                ))
+                            }
+                            chat_extended::Decoded::Notice(notice) => {
+                                SessionEvent::ChatNotice(applied(
+                                    server_sequence,
+                                    base_revision,
+                                    new_revision,
+                                    notice,
+                                ))
+                            }
+                        }
                     }
                     oteryn_protocol_oteryn::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1 => {
                         use oteryn_protocol_oteryn::vip_presence as wire;
@@ -262,8 +275,9 @@ impl<S: SessionStream> Session<S> {
                         ))
                     }
                     chat::private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1 => {
-                        let list =
-                            private_channels::decode(delta.payload, &self.selected_capabilities)?;
+                        let (list, extension) =
+                            chat_extended::decode_list(delta.payload, &self.selected_capabilities)?;
+                        list_extension = extension;
                         SessionEvent::ChatChannelList(applied(
                             server_sequence,
                             base_revision,
@@ -290,10 +304,14 @@ impl<S: SessionStream> Session<S> {
                 };
                 if let Some(log) = self.chat.as_mut() {
                     match &event {
-                        SessionEvent::ChatLine(line) => log.push(line.value.clone()),
+                        SessionEvent::ChatLine(line) => {
+                            log.push(line.value.clone(), line_extra.take().unwrap_or_default())
+                        }
+                        SessionEvent::ChatNotice(notice) => log.push_notice(notice.value.clone()),
                         SessionEvent::ChatRooms(rooms) => log.rooms = rooms.value,
                         SessionEvent::ChatChannelList(list) => {
-                            log.private_channels = Some(list.value.clone())
+                            log.private_channels = Some(list.value.clone());
+                            log.channel_extension = list_extension.take();
                         }
                         _ => {}
                     }

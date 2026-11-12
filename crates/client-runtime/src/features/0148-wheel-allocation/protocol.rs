@@ -28,6 +28,26 @@ impl WheelCommand {
                 atelier::decode_mutate(&payload).ok()?;
                 true
             }
+            atelier::v2::COMMAND_TYPE_ATELIER_V2_QUERY => {
+                atelier::v2::decode_query(&payload).ok()?;
+                false
+            }
+            atelier::v2::COMMAND_TYPE_ATELIER_V2_SET_LOCK => {
+                atelier::v2::decode_set_lock(&payload).ok()?;
+                true
+            }
+            atelier::v2::COMMAND_TYPE_ATELIER_V2_MUTATE => {
+                atelier::v2::decode_mutate(&payload).ok()?;
+                true
+            }
+            atelier::v2::COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL => {
+                atelier::v2::decode_replace_vessel(&payload).ok()?;
+                true
+            }
+            atelier::v2::COMMAND_TYPE_ATELIER_V2_RESHAPE => {
+                atelier::v2::decode_reshape(&payload).ok()?;
+                true
+            }
             _ => return None,
         };
         Some(Self {
@@ -69,12 +89,16 @@ pub async fn send<S: SessionStream>(
             capability: wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
         });
     }
+    let v2 = (atelier::v2::COMMAND_TYPE_ATELIER_V2_QUERY
+        ..=atelier::v2::COMMAND_TYPE_ATELIER_V2_RESHAPE)
+        .contains(&request.kind);
+    let request_capability = if v2 {
+        atelier::v2::CAPABILITY_GEM_ATELIER_V2
+    } else {
+        wheel::CAPABILITY_WHEEL_ALLOCATION_V1
+    };
     let result = session
-        .gated_command(
-            wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
-            request.kind,
-            &request.payload,
-        )
+        .gated_command(request_capability, request.kind, &request.payload)
         .await?;
     let wheel = session
         .gated_command(
@@ -83,13 +107,24 @@ pub async fn send<S: SessionStream>(
             &[8, 0],
         )
         .await?;
-    let atelier = session
-        .gated_command(
-            wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
-            atelier::COMMAND_TYPE_ATELIER_QUERY,
-            &[],
-        )
-        .await?;
+    // With 483 the live Atelier view is the v2 reply; its commands are gated on 483.
+    let atelier = if session.is_selected(atelier::v2::CAPABILITY_GEM_ATELIER_V2) {
+        session
+            .gated_command(
+                atelier::v2::CAPABILITY_GEM_ATELIER_V2,
+                atelier::v2::COMMAND_TYPE_ATELIER_V2_QUERY,
+                &atelier::v2::encode_query(),
+            )
+            .await?
+    } else {
+        session
+            .gated_command(
+                wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+                atelier::COMMAND_TYPE_ATELIER_QUERY,
+                &[],
+            )
+            .await?
+    };
     let resources = if session.is_selected(atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1) {
         accepted_payload(
             session

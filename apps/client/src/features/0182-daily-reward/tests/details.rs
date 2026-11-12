@@ -84,7 +84,7 @@ fn daily_reward_catalogue_and_account_history_cross_real_session_caller() -> Res
                 assert!(!panel.pending);
                 assert!(panel.wall.is_none());
                 let text = panel_text(&panel);
-                assert!(text.contains("Day 30"));
+                assert!(text.contains("day 30"));
                 assert!(text.contains("another account character"));
                 assert!(text.contains("streak 60"));
                 assert!(panel.claim_receipts.iter().all(Option::is_none));

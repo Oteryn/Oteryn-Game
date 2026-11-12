@@ -12,7 +12,10 @@ mod protection;
 pub use protection::Protection;
 #[path = "view/protection.rs"]
 mod protection_view;
-pub use protection_view::{PROTECTION_NOTE, protection_cards, protection_heading};
+pub use protection_view::{
+    PROTECTION_NOTE, PromotionView, promotion_text, promotion_view, protection_cards,
+    protection_heading,
+};
 #[path = "view/augments.rs"]
 mod augment_view;
 #[path = "protocol/augments.rs"]
@@ -29,7 +32,7 @@ pub use achievements::{next_request as achievement_next_request, request as achi
 pub use input::{blessings_key, open_key, set_target};
 pub use profile::{ProfileRow, profile_heading, profile_rows};
 pub use protocol::{BlessingsPanel, Intent, apply_result, request, request_blessings};
-pub use state::{BadgeFilter, BadgeRow, CyclopediaCharacterPanel, HistoryRow};
+pub use state::{BadgeFilter, BadgeRow, CyclopediaCharacterPanel, HistoryRow, TabExtensions};
 pub use view::{
     CombatRow, badge_rows, badge_text, blessings_text, combat_detail, combat_rows, history_rows,
     misc_bars, misc_cards, overview_bars, overview_cards, panel_text, store_blessings, store_cards,

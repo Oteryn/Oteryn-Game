@@ -248,7 +248,7 @@ pub mod player_typing;
 pub use oteryn_session::{CommandStatus, WorldSpatialEntity, player_typing::TypingUpdate};
 pub use oteryn_session::{
     arena, boss_difficulty, character_info, creature_push, cyclopedia_character,
-    cyclopedia_tracker, weapon_proficiency,
+    cyclopedia_tracker, sanction_record, weapon_proficiency,
 };
 /// Prey command execution through the admitted session.
 #[path = "features/0140-prey/protocol.rs"]

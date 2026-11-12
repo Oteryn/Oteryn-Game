@@ -127,6 +127,7 @@ impl Stepper for Peer {
             imbuement::encode_imbuement_reply(&reply).map_err(|_| SessionError::SessionUnusable)?;
         Ok(ImbueResponse {
             status: CommandStatus::Accepted,
+            success: Vec::new(),
             reply: Some(
                 imbuement::decode_imbuement_reply(&encoded)
                     .map_err(|_| SessionError::SessionUnusable)?,

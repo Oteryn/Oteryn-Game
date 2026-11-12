@@ -1,4 +1,4 @@
-//! Server-confirmed 30-day reward wall and one-click claim.
+//! Server-confirmed seven-day reward wall and one-click claim.
 pub use oteryn_client_runtime::daily_reward::{
     CommandStatus, DailyRewardCommand, DailyRewardReply, DailyRewardResponse, daily_reward,
     decode_reply,
@@ -10,7 +10,7 @@ mod view;
 pub use input::open_key;
 pub use protocol::{Intent, apply_result, request, request_details};
 pub use state::DailyRewardPanel;
-pub use view::panel_text;
+pub use view::{CYCLE_DAYS, cycle_day, panel_text, streak_bonus_percent};
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
@@ -22,14 +22,6 @@ pub use returner::{ReturnerOffer, ReturnerRewardPanel};
 #[path = "state/details.rs"]
 mod details;
 pub use details::{apply_details, details_text};
-
-#[path = "state/picker.rs"]
-mod picker;
-pub use picker::{apply_picker, picker_text};
-pub use protocol::request_picker;
-
-#[path = "state/picker_names.rs"]
-mod picker_names;
 
 #[path = "state/returner_wire.rs"]
 mod returner_wire;

@@ -20,7 +20,12 @@ pub(super) unsafe fn handle(
     unsafe {
         for (id, note) in actions {
             if id == 17 && note == 0 {
-                let tokens = !link.store_panel().catalogue.as_ref().and_then(|p| p.offers.first()).is_some_and(|o| o.currency == "COSMETIC_TOKEN");
+                let tokens = !link
+                    .store_panel()
+                    .catalogue
+                    .as_ref()
+                    .and_then(|p| p.offers.first())
+                    .is_some_and(|o| o.currency == "COSMETIC_TOKEN");
                 link.store_payment(tokens);
                 continue;
             }
@@ -31,6 +36,16 @@ pub(super) unsafe fn handle(
             if id == 9 && note == 0 {
                 if let Some(launcher) = lock(&link.mailbox).coin_shop.clone() {
                     launcher.start();
+                }
+                continue;
+            }
+            if (id == 24 || id == 25) && note == 0 {
+                if let Some(launcher) = lock(&link.mailbox).coin_shop.clone() {
+                    launcher.open_web(if id == 24 {
+                        crate::web_links::WebLink::CoinHistory
+                    } else {
+                        crate::web_links::WebLink::CoinTransfer
+                    });
                 }
                 continue;
             }
@@ -79,12 +94,7 @@ pub(super) unsafe fn handle(
                     ) == IDYES
                     && let Some(quote) = &quote
                 {
-                    link.store_confirm_purchase(
-                        quote,
-                        &text(name),
-                        &text(sex),
-                        &text(identity),
-                    );
+                    link.store_confirm_purchase(quote, &text(name), &text(sex), &text(identity));
                 }
                 continue;
             }

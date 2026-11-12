@@ -229,7 +229,7 @@ fn now_us() -> i64 {
         .unwrap_or(0)
 }
 
-fn jitter() -> f64 {
+pub(crate) fn jitter() -> f64 {
     let mut byte = [0u8; 2];
     let filled = rustls::crypto::aws_lc_rs::default_provider()
         .secure_random

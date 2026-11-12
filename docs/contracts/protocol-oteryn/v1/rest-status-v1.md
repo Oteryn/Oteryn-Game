@@ -21,7 +21,11 @@ Exactly 11 bytes, little endian: flags u8 (bit 0 inside resting area, bit 1
 stamina bonus, bit 2 soul bonus; other bits forbidden), daily streak u32,
 food remaining milliseconds i32 (0 absent, -1 infinite; a live finite
 condition with less than 1 ms left is represented as 1), health multiplier u8,
-mana multiplier u8 (each 0 inactive, 1 normal, 2 double). These describe
+mana multiplier u8 (each 0 inactive, 1 normal, 2 double). Since Winter Update 2026
+(thread 565) the bonuses no longer depend on the streak: inside a resting area a Free
+character has health and mana multiplier 1 and no stamina or soul bonus; a Premium
+character has multipliers 2 plus the stamina and soul bonuses. The streak field stays
+informational. These describe
 resting-area bonus tiers, not total health/mana regeneration: a zero resting
 bonus does not imply that the always-on native regeneration clock has stopped. Failure has rejected
 command status with empty payload. Client clears the old snapshot on refusal,

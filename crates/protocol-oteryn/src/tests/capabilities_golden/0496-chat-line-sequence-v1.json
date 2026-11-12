@@ -1,0 +1,17 @@
+{
+  "id": 496,
+  "name": "CHAT_LINE_SEQUENCE_V1",
+  "constant": "chat::line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1",
+  "requires": [
+    7
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

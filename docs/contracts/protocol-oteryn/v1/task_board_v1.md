@@ -115,7 +115,12 @@ records arithmetic-overflow refusal atomically and returns that refusal on repla
 
 The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
 durable owner, through `i64::MAX`. The free daily token is granted only by Daily Reward; completed
-bounties retain their earned token reward. Every bounty offer reroll consumes exactly one
+bounties retain their earned token reward. The Winter Update 2026 client stores at most 10
+tokens: every credit (daily claim or completed bounty) adds `min(requested, 10 - balance)`.
+A completed bounty claimed at 10 or more pays its XP and points and grants 0 tokens (the
+receipt's `reroll_tokens_granted` is 0); a daily claim at the cap writes a zero ledger
+entry. A historical balance above 10 is kept and only spending lowers it (migration 2760).
+Every bounty offer reroll consumes exactly one
 token; a zero balance is refusal 4 (insufficient resources), regardless of elapsed time.
 The retired free-reroll deadline in saved board JSON is ignored when loading old boards.
 The maximum talisman level remains 355, following the accepted
@@ -182,10 +187,14 @@ that owner's damage. The generated bounty XP reward doubles. Silver, Gold and
 Platinum multiply the usual task rewards by 2, 4 and 8, respectively.
 
 The single bounded content table `content/combat/bounty_elite_v1.json` is
-`PARITY_PENDING`: its numeric values are owner-approved provisional values, not
-assertions of measured Global probabilities. Dust by difficulty is 1/2/3/4.
-Silver/Gold/Platinum base weights are 500/100/0 basis points, each unchosen offer
-adds 100/50/10, and caps are 2500/1000/200. A single 1..10000 draw partitions
+`PARITY_PENDING`. The Winter Update 2026 test server (thread 560) publishes the
+caps 75%/20%/5% and the Elite dust examples Beginner 5, Silver Adept 30 and
+Platinum Master 560, so dust by difficulty is 5/15/3/70 and the caps are
+7500/2000/500 basis points (sum 10000: a creature at the caps always rolls at
+least Silver). Expert dust (3), the base weights 500/100/0 and the per-miss
+increments 100/50/10 are unpublished owner-approved provisional values, not
+assertions of measured Global probabilities. Platinum base 0 means a creature
+must have been passed over at least once before it can roll Platinum. A single 1..10000 draw partitions
 Platinum, Gold, Silver, then ordinary outcomes. Selecting an improved offer resets
 that race's history; selecting an ordinary task retains its history. Other offers
 advance once on selection, or all offers advance once when rerolled. Counters

@@ -10,7 +10,7 @@ use oteryn_client_ui::boss_difficulty::Intent;
 fn difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopened_windows()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut incoming, outbox) = play_channel();
-    outbox.boss_difficulty_initialize(true);
+    outbox.boss_difficulty_initialize(true, false);
     lock(&link.mailbox).boss_difficulty.boss_key = "oteryn:dragon".into();
     link.boss_difficulty_request(Intent::Open);
     let Ok(PlayCommand::Feature(command)) = incoming.try_recv() else {
@@ -86,7 +86,7 @@ fn difficulty_real_caller_uses_server_context_and_invalidates_refused_or_reopene
 fn difficulty_unlock_state_reaches_play_queue_and_archfoe_view()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut incoming, outbox) = play_channel();
-    outbox.boss_difficulty_initialize(true);
+    outbox.boss_difficulty_initialize(true, false);
     lock(&link.mailbox).boss_difficulty.boss_key = "oteryn:boss.mimar_haffar".into();
     link.boss_difficulty_request(Intent::Open);
     assert!(matches!(incoming.try_recv(), Ok(PlayCommand::Feature(_))));
@@ -132,5 +132,57 @@ fn difficulty_unlock_state_reaches_play_queue_and_archfoe_view()
     assert!(
         matches!(incoming.try_recv(), Ok(PlayCommand::Feature(c)) if decode_request(&c.payload) == Ok(Request::Start { context: [7;16], difficulty: 1 }))
     );
+    Ok(())
+}
+
+#[test]
+fn c0492_pity_window_through_the_boss_caller_reaches_the_window_and_clears_on_a_plain_window()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::boss_difficulty::{PityTracker, encode_reply_with_pity};
+    let (link, _incoming, outbox) = play_channel();
+    outbox.boss_encounter_initialize(true);
+    outbox.boss_difficulty_initialize(true, true);
+    let window = Reply::Window {
+        context: [3; 16],
+        boss_key: "oteryn:moonsilver".into(),
+        boss_creature_key: "oteryn:moonsilver_creature".into(),
+        content_revision: "r1".into(),
+        selected_difficulty: 1,
+        personal_highest: 0,
+        unlocked_max: 1,
+        maximum_difficulty: 25,
+    };
+    let result = |payload| GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload,
+    };
+    let tracker = PityTracker {
+        kills_without_drop: 40,
+        bonus_permille: 200,
+        tracker_active: true,
+    };
+    outbox.boss_encounter_result(&result(encode_reply_with_pity(&window, Some(&tracker)).map_err(|_| "encode")?));
+    {
+        let mailbox = lock(&link.mailbox);
+        assert_eq!(mailbox.boss_difficulty.pity, Some(tracker));
+        assert_eq!(
+            mailbox.boss_encounter.pity_windows.get("oteryn:moonsilver"),
+            Some(&tracker)
+        );
+        assert_eq!(
+            mailbox
+                .boss_encounter
+                .pity_windows
+                .get("oteryn:moonsilver_creature"),
+            Some(&tracker)
+        );
+        assert!(!mailbox.boss_encounter.pending);
+    }
+    outbox.boss_encounter_result(&result(encode_reply(&window).map_err(|_| "encode")?));
+    let mailbox = lock(&link.mailbox);
+    assert_eq!(mailbox.boss_difficulty.pity, None);
+    assert!(mailbox.boss_encounter.pity_windows.is_empty());
     Ok(())
 }

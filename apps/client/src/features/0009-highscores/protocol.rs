@@ -1,7 +1,9 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
-    pub(in crate::play) fn highscores_initialize(&self, selected: bool) {
-        lock(&self.0).highscores.selected = selected;
+    pub(in crate::play) fn highscores_initialize(&self, selected: bool, loyalty: bool) {
+        let mut mailbox = lock(&self.0);
+        mailbox.highscores.selected = selected;
+        mailbox.highscores.loyalty_selected = loyalty;
     }
     pub(in crate::play) fn highscores_result(
         &self,

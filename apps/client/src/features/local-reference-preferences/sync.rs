@@ -13,6 +13,7 @@ pub use pages::{SettingsPage, WINDOW_ACTIONS};
 
 pub struct SettingsState {
     pub(super) native_sign_out: bool,
+    pub(super) web_link: Option<crate::web_links::WebLink>,
     pub(super) minimap_transfer: Option<(bool, PathBuf)>,
     pub(super) help_report: Option<super::help::Report>,
     pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,

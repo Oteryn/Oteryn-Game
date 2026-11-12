@@ -1,0 +1,95 @@
+[
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "handlers",
+    "id": "0483-gem-atelier-mutate",
+    "status": "supported",
+    "commands": [
+      6212
+    ],
+    "direction": "client_to_server",
+    "capability": 483,
+    "entry": "protocol.rs::mutate",
+    "not_applicable": {
+      "input": "Replace Vessel is chosen with the Wheel panel's existing vessel and gem selection.",
+      "settings": "The Gem Atelier has no client settings."
+    }
+  },
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "handlers",
+    "id": "0483-gem-atelier-query",
+    "status": "supported",
+    "commands": [
+      6210
+    ],
+    "direction": "client_to_server",
+    "capability": 483,
+    "entry": "protocol.rs::query",
+    "not_applicable": {
+      "input": "Replace Vessel is chosen with the Wheel panel's existing vessel and gem selection.",
+      "settings": "The Gem Atelier has no client settings."
+    }
+  },
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "handlers",
+    "id": "0483-gem-atelier-replace-vessel",
+    "status": "supported",
+    "commands": [
+      6213
+    ],
+    "direction": "client_to_server",
+    "capability": 483,
+    "entry": "protocol.rs::replace_vessel",
+    "not_applicable": {
+      "input": "Replace Vessel is chosen with the Wheel panel's existing vessel and gem selection.",
+      "settings": "The Gem Atelier has no client settings."
+    }
+  },
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "handlers",
+    "id": "0483-gem-atelier-reshape",
+    "status": "supported",
+    "commands": [
+      6214
+    ],
+    "direction": "client_to_server",
+    "capability": 483,
+    "entry": "protocol.rs::reshape",
+    "not_applicable": {
+      "input": "Reshape uses the Wheel panel's selected gem and modifier, then review and confirm.",
+      "settings": "The Gem Atelier has no client settings."
+    }
+  },
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "handlers",
+    "id": "0483-gem-atelier-set-lock",
+    "status": "supported",
+    "commands": [
+      6211
+    ],
+    "direction": "client_to_server",
+    "capability": 483,
+    "entry": "protocol.rs::set_lock",
+    "not_applicable": {
+      "input": "Replace Vessel is chosen with the Wheel panel's existing vessel and gem selection.",
+      "settings": "The Gem Atelier has no client settings."
+    }
+  },
+  {
+    "mechanic": "0483-gem-atelier",
+    "kind": "panels",
+    "id": "0483-gem-atelier-vessels",
+    "status": "supported",
+    "entry": "view.rs::vessel_lines",
+    "not_applicable": {
+      "input": "The Wheel panel owns the controls.",
+      "settings": "The Gem Atelier has no client settings.",
+      "protocol": "The panel renders the confirmed Gem Atelier reply.",
+      "state": "The Wheel panel stores the confirmed reply."
+    }
+  }
+]

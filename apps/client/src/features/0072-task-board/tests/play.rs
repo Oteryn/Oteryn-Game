@@ -201,8 +201,8 @@ fn full_task_board_reply_reaches_the_play_panel() -> Result<(), Error> {
                     let text = panel_text(&panel);
                     assert!(text.contains("3031: 75/100"));
                     assert!(text.contains("1907"));
-                    assert!(text.contains("Reroll Tokens 3"));
-                    assert!(text.contains("each reroll costs 1 token"));
+                    assert!(text.contains("Bounty Reroll Token: 3 / 10"));
+                    assert!(text.contains("Tasks can be re-rolled using Reroll Tokens"));
                     assert!(!text.contains("free offer reroll"));
                 }
                 {

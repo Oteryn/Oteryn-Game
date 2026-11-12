@@ -1,0 +1,35 @@
+[
+  {
+    "mechanic": "0490-server-modal-input",
+    "kind": "handlers",
+    "id": "0490-server-modal-input-commands736-737-extension",
+    "status": "supported",
+    "commands": [],
+    "shared_commands": [
+      736,
+      737
+    ],
+    "direction": "server_to_client",
+    "capability": 490,
+    "entry": "protocol.rs::answer_payload",
+    "push_messages": [
+      "ServerModalInputExchange"
+    ],
+    "reducer": "protocol.rs::answer_payload",
+    "test": "tests.rs::c0490_selected_dialog_exposes_its_input_and_answers_with_the_value",
+    "not_applicable": {
+      "state": "The existing 0450 server modal panel holds the dialog input.",
+      "protocol": "The shared server modal codec in oteryn-protocol-oteryn encodes the input block and answer value.",
+      "settings": "The don't-show-again choice is per answer, not a client setting.",
+      "input": "The native dialog window collects the value; the session driver sends the answer.",
+      "view": "The owning panel view and the native window show the result; this capability adds no view of its own."
+    }
+  },
+  {
+    "mechanic": "0490-server-modal-input",
+    "kind": "panels",
+    "id": "0490-server-modal-input-panel",
+    "status": "supported",
+    "entry": "protocol.rs::prompt"
+  }
+]

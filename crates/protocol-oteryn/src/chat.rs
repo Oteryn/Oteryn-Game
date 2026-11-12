@@ -17,8 +17,10 @@ use std::num::NonZeroU64;
 
 pub mod console;
 pub mod guild_room;
+pub mod line_extended;
 pub mod party_room;
 pub mod private_channel;
+pub mod private_channel_extended;
 pub mod public_channels;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;

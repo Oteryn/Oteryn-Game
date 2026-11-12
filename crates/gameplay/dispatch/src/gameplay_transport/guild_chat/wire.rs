@@ -2,6 +2,7 @@
 use super::super::connection::FreshAdmissionAuthority;
 use super::*;
 use oteryn_protocol_oteryn::chat::guild_room::{self, GuildChatSnapshot};
+use oteryn_protocol_oteryn::chat::line_extended::CAPABILITY_CHAT_PRIVATE_ECHO_V1;
 use oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1;
 use oteryn_protocol_oteryn::chat::{self, ChatIntent, ChatRoomSet};
 
@@ -101,8 +102,34 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
             .chat_private_intent(admitted, command_id, intent)
             .await
             .map(|result| (result, None))),
-        intent => Ok(authority
-            .chat_intent_completion(actor, admitted.game_session_id, command_id, intent)
-            .await),
+        intent => {
+            // Capability 493: an accepted private line echoes to its sender with the recipient.
+            let echo = match &intent {
+                ChatIntent::Private {
+                    recipient_name,
+                    text,
+                } if admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(CAPABILITY_CHAT_PRIVATE_ECHO_V1) =>
+                {
+                    Some((recipient_name.clone(), text.clone()))
+                }
+                _ => None,
+            };
+            let completion = authority
+                .chat_intent_completion(actor, admitted.game_session_id, command_id, intent)
+                .await;
+            if let Some((recipient_name, text)) = echo
+                && completion
+                    .as_ref()
+                    .is_some_and(|(result, _)| result.disposition == ChatDisposition::Ok)
+            {
+                authority
+                    .chat_private_echo(admitted, recipient_name, text)
+                    .await;
+            }
+            Ok(completion)
+        }
     }
 }
