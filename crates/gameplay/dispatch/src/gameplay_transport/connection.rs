@@ -71,7 +71,8 @@ async fn with_connection_trace_state<F: Future>(
                 trace,
                 enabled: std::cell::Cell::new(enabled),
             },
-            future,
+            // LOGDBG-C: the durable passes this connection issues carry its trace.
+            crate::durability::with_holder_trace(trace, future),
         )
         .await
 }
@@ -802,31 +803,31 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let activity_scope =
-                authority
-                    .activity_scope_snapshot(resumed)
-                    .await
-                    .map_err(|_| {
-                        super::operator_event("event=resume_bootstrap_failed phase=activity_scope");
-                        ConnectionEnd::AdmittedThenDisconnected(resumed)
-                    })?;
-            let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
+            let Ok(activity_scope) = authority.activity_scope_snapshot(resumed).await else {
+                super::operator_event(&format!(
+                    "event=resume_bootstrap_failed phase=activity_scope code={}",
+                    FoundationProtocolError::SessionJoinUnavailable.code()
+                ));
+                return Err(join_unavailable(stream, resumed, 0).await);
+            };
+            let Ok(accepted) = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,
                 current_server_sequence: continuity.server_sequence,
                 next_command_id: continuity.next_command_id,
                 schema_revision: SERVER_SCHEMA_REVISION,
                 selected_capabilities: continuity.selected_capabilities.as_slice(),
-            })
-            .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            }) else {
+                return Err(join_unavailable(stream, resumed, 0).await);
+            };
             write_frame(stream, &accepted)
                 .await
                 .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
-            if let Some((command, payload)) = authority
-                .house_scope_ack(resumed)
-                .await
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?
-            {
+            let generation = continuity.connection_generation;
+            let Ok(house_ack) = authority.house_scope_ack(resumed).await else {
+                return Err(join_unavailable(stream, resumed, generation).await);
+            };
+            if let Some((command, payload)) = house_ack {
                 if command == 0 {
                     // The native owner admits zero only for an authenticated
                     // fresh House restoration. It is server provenance, not a
@@ -834,17 +835,17 @@ where
                     // existing domain-51 join/resync snapshot instead.
                     return Ok(resumed);
                 }
-                let ack = encode_command_result(
-                    continuity.connection_generation,
-                    continuity
-                        .server_sequence
-                        .checked_add(1)
-                        .ok_or(ConnectionEnd::AdmittedThenDisconnected(resumed))?,
-                    command,
-                    CommandStatus::Accepted,
-                    &payload,
-                )
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                let Some(Ok(ack)) = continuity.server_sequence.checked_add(1).map(|sequence| {
+                    encode_command_result(
+                        generation,
+                        sequence,
+                        command,
+                        CommandStatus::Accepted,
+                        &payload,
+                    )
+                }) else {
+                    return Err(join_unavailable(stream, resumed, generation).await);
+                };
                 write_frame(stream, &ack)
                     .await
                     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
@@ -939,13 +940,14 @@ where
         schema_revision: SERVER_SCHEMA_REVISION,
         selected_capabilities: selected.as_slice(),
     };
-    let accepted = match connection_trace().filter(|_| {
+    let Ok(accepted) = (match connection_trace().filter(|_| {
         selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
     }) {
         Some(trace) => encode_server_accepted_with_trace(&accepted_value, &trace),
         None => encode_server_accepted(&accepted_value),
-    }
-    .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
+    }) else {
+        return Err(join_unavailable(stream, admitted, 0).await);
+    };
     let accepted = if let Some(document) = authority.client_bulletin().await {
         oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
             .unwrap_or(accepted)
@@ -1509,6 +1511,32 @@ async fn close_admitted<S: AsyncWrite + Unpin>(
 ) -> ConnectionEnd {
     let _ = send_error(stream, error, admitted.continuity.connection_generation).await;
     ConnectionEnd::AdmittedThenClosed(admitted, error)
+}
+
+/// FND-04C §4.1 (owner 2026-11-10): an admitted or resumed session whose join could not be
+/// prepared or sent reports `SESSION_JOIN_UNAVAILABLE` once before the transport closes, at
+/// `generation` (0 before the client was told it was admitted). A slow or failed write changes
+/// nothing: the end stays the same.
+async fn send_join_unavailable<S: AsyncWrite + Unpin>(stream: &mut S, generation: u64) {
+    let _ = tokio::time::timeout(
+        ADMISSION_REFUSAL_WRITE_BOUND,
+        send_error(
+            stream,
+            FoundationProtocolError::SessionJoinUnavailable,
+            generation,
+        ),
+    )
+    .await;
+}
+
+/// `AdmittedThenDisconnected` after [`send_join_unavailable`].
+async fn join_unavailable<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    generation: u64,
+) -> ConnectionEnd {
+    send_join_unavailable(stream, generation).await;
+    ConnectionEnd::AdmittedThenDisconnected(admitted)
 }
 
 async fn reject<S: AsyncWrite + Unpin>(

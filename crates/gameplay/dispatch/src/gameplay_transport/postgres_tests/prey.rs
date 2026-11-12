@@ -37,6 +37,13 @@ fn scenario() -> TestResult {
         ))
         .execute(&h.pool)
         .await?;
+        // Reapplication must preserve the current Task Board and capped-credit
+        // branches that later migrations added to v2's token guard.
+        let token_guard: String = sqlx::query_scalar(
+            "SELECT pg_get_functiondef('game_bounty_reroll_token_guard()'::regprocedure)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
         // Reapply the current daily successor too: v2 adds two-card grants to
         // PREY's sole Account/World ledger and preserves its spend proof.
         sqlx::raw_sql(include_str!(
@@ -44,6 +51,9 @@ fn scenario() -> TestResult {
         ))
         .execute(&h.pool)
         .await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(token_guard))
+            .execute(&h.pool)
+            .await?;
         // Restore the current delivery successor after reapplying v2: 0547's
         // guard intentionally still describes the old pending temple scroll.
         sqlx::raw_sql(include_str!(

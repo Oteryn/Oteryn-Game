@@ -101,6 +101,10 @@ crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recover
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | Owner
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoveryCompletion
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoverySource
+# Private cfg(test) movement fixtures remain in entities, the source-step seal
+# owner. Register exact sites; retain the guard's multiplicity and stale checks.
+crates/gameplay/entities/src/carrier/runtime_actor_source_step.rs | source_step_seal::Sealed | Proof
+crates/gameplay/entities/src/carrier/tests/scene_move_batch.rs | source_step_seal::Sealed | SceneMoves
 crates/gameplay/entities/src/carrier/continuity.rs | owner_cycle_grant_seal::Sealed | CommittedAssignmentOwnerCycle
 # House custody owns instance cycles after independently fenced committed transfer/recovery;
 # same owner-grant boundary as CommittedAssignmentOwnerCycle (CP review required).
@@ -124,9 +128,14 @@ crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | S
 # frozen identity. This adds no arbitrary Item or actor mint authority.
 crates/gameplay/world/src/movement/cake_extraction.rs | source_reservation_seal::Sealed | CakeMachineEntry
 crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
+# World constructs private-field movement proofs from current map, actor and
+# landing observations; entities retains carrier mutation and rollback.
+crates/gameplay/world/src/map/floor/door_displacement.rs | source_step_seal::Sealed | DoorDisplacement<'_>
+crates/gameplay/world/src/map/floor/door_displacement.rs | source_step_seal::Sealed | DoorOpening<'_>
 crates/gameplay/world/src/map/floor/quest_callback.rs | source_step_seal::Sealed | CallbackTeleport<'_>
 # World qualifies rope origin and landing and revalidates them at commit;
 # same Movement proof boundary as BundleStepProof and SourceStepProof (CP review required).
 crates/gameplay/world/src/map/floor/rope.rs | source_step_seal::Sealed | RopeProof<'_>
+crates/gameplay/world/src/map/floor/source_scene.rs | source_step_seal::Sealed | SourceSceneRelocation<'_>
 crates/gameplay/world/src/movement/source_floor_change.rs | source_step_seal::Sealed | SourceStepProof<'_>
 crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_fixture/summer_handoff.rs | fresh_source_sealed::Sealed | Ready

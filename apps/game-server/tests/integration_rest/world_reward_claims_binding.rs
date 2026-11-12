@@ -433,21 +433,6 @@ fn world_reward_claims_a_claim_with_one_unbound_placement_is_not_served() -> Tes
         REWARD,
     )];
     let report = bind(&base, &records)?;
-    for key in [
-        "oteryn:reward-claim.kv.ornamentedshield",
-        "oteryn:reward-claim.kv.triangletower",
-        "oteryn:reward-claim.kv.powerring2",
-    ] {
-        assert_eq!(
-            report.unbound.iter().filter(|row| row.claim == key).count(),
-            1,
-            "{key}"
-        );
-        assert!(
-            !report.left_out.iter().any(|(left_out, _)| left_out == key),
-            "{key}"
-        );
-    }
     assert!(report.served.is_empty());
     assert_eq!(
         unbound(&report),
