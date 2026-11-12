@@ -3385,6 +3385,7 @@ async fn boot_and_serve(
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
+        native_pre_admission_enabled: config.native_pre_admission_enabled,
         bulletin_source: std::env::var_os("OTERYN_BULLETIN_FILE").map(|path| {
             std::sync::Arc::new(crate::gameplay_transport::bulletin::BulletinSource::new(
                 path.into(),

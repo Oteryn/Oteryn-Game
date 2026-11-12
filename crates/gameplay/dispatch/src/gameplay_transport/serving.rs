@@ -70,6 +70,7 @@ pub async fn serve_gameplay(
         test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
+            native_pre_admission_disabled: !config.native_pre_admission_enabled,
             casts,
             bulletin_source: config.bulletin_source,
             gameplay_idle_policy: owners.gameplay_idle_policy,
