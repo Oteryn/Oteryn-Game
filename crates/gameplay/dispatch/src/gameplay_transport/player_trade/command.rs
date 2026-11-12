@@ -23,7 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && let Some(intent) = label
         {
             super::super::operator_event(&format!(
-                "player_trade_refused intent={intent} code=rejected cause={}",
+                "event=player_trade_refused intent={intent} code=rejected cause={}",
                 outcome.cause
             ));
         }
@@ -485,7 +485,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             if matches!(
                                 error,
                                 crate::durability::DurabilityError::RootUnavailable
-                                    | crate::durability::DurabilityError::RootPassDeadlineExceeded
                                     | crate::durability::DurabilityError::Database(
                                         crate::durability::SqlxFailureClass::RetryableStatement
                                     )

@@ -41,8 +41,10 @@ impl From<ResultCode> for CheckError {
 impl From<crate::durability::DurabilityError> for CheckError {
     fn from(error: crate::durability::DurabilityError) -> Self {
         match error {
-            crate::durability::DurabilityError::RootUnavailable => Self::Unavailable,
-            crate::durability::DurabilityError::RootPassDeadlineExceeded
+            // A semantic pass deadline (DB_PASS_DEADLINE) outlasts the foreground
+            // command window, so a timed-out read cannot be retried in budget: it keeps
+            // its own named cause instead of reading as retry_budget_exhausted.
+            crate::durability::DurabilityError::RootUnavailable
             | crate::durability::DurabilityError::Database(
                 crate::durability::SqlxFailureClass::RetryableStatement,
             ) => Self::Unavailable,
