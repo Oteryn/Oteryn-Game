@@ -1537,6 +1537,10 @@ mod clock_tests {
 mod clock_epoch_tests;
 
 #[cfg(test)]
+#[path = "full_e2ef7_hunt_corpse_tests.rs"]
+mod hunt_corpse_tests;
+
+#[cfg(test)]
 #[path = "full_e2ef7_logout_cleanup_tests.rs"]
 mod logout_cleanup_tests;
 
@@ -3617,15 +3621,98 @@ fn hunt_kill_proven(alive: bool, corpse_proof: bool) -> bool {
 }
 
 fn hunt_corpse_matches(
-    player: ActorPosition,
+    last_position: ActorPosition,
     corpse: ActorPosition,
     fresh: bool,
     earned_xp: bool,
 ) -> bool {
     fresh
         && earned_xp
-        && player.floor == corpse.floor
-        && player.x.abs_diff(corpse.x).max(player.y.abs_diff(corpse.y)) <= 1
+        && last_position.floor == corpse.floor
+        && last_position.x.abs_diff(corpse.x).max(last_position.y.abs_diff(corpse.y)) <= 1
+}
+
+// Observe spatial frames in wire order, including frames serviced by commands.
+// A corpse first seen before this target's removal cannot prove its kill.
+struct HuntCorpseEvidence {
+    target: spatial::EntityRef,
+    last_position: ActorPosition,
+    removed: bool,
+    excluded_corpses: BTreeSet<spatial::EntityRef>,
+}
+
+impl HuntCorpseEvidence {
+    fn new(
+        target: spatial::WorldSpatialEntity,
+        corpses_before: BTreeSet<spatial::EntityRef>,
+    ) -> Self {
+        Self {
+            target: target.entity,
+            last_position: target.position,
+            removed: false,
+            excluded_corpses: corpses_before,
+        }
+    }
+
+    fn observe(&mut self, delta: &spatial::WorldSpatialEntitiesDelta) {
+        if let Some(live) = delta
+            .update
+            .iter()
+            .chain(&delta.enter)
+            .find(|e| e.entity == self.target)
+        {
+            self.last_position = live.position;
+            self.removed = false;
+        }
+        if delta.leave.contains(&self.target) {
+            self.removed = true;
+        }
+        if !self.removed {
+            self.excluded_corpses.extend(
+                delta
+                    .enter
+                    .iter()
+                    .filter(|e| e.kind == spatial::EntityKind::Corpse)
+                    .map(|e| e.entity),
+            );
+        }
+    }
+
+    fn corpse<'a>(
+        &self,
+        entities: impl Iterator<Item = &'a spatial::WorldSpatialEntity>,
+        earned_xp: bool,
+    ) -> Option<spatial::WorldSpatialEntity> {
+        if !self.removed {
+            return None;
+        }
+        let mut nearest = None;
+        let mut distance = u32::MAX;
+        let mut ambiguous = false;
+        for entity in entities.filter(|e| {
+            e.kind == spatial::EntityKind::Corpse
+                && hunt_corpse_matches(
+                    self.last_position,
+                    e.position,
+                    !self.excluded_corpses.contains(&e.entity),
+                    earned_xp,
+                )
+        }) {
+            let candidate_distance = self
+                .last_position
+                .x
+                .abs_diff(entity.position.x)
+                .max(self.last_position.y.abs_diff(entity.position.y));
+            if candidate_distance < distance {
+                nearest = Some(*entity);
+                distance = candidate_distance;
+                ambiguous = false;
+            } else if candidate_distance == distance {
+                ambiguous = true;
+            }
+        }
+        if ambiguous { None } else { nearest }
+    }
 }
 
 async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
@@ -3707,13 +3794,13 @@ async fn hunt_one_inner(
     if reply.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("starter chase mode refused: {reply:?}").into());
     }
+    let xp_before = player_experience(client).await?;
     // The mode command can service movement updates before the attack starts.
     let target = client
         .world_entities()
         .and_then(|entities| entities.get(&target.entity))
         .copied()
         .ok_or("ordinary hunt target left visibility before attack")?;
-    let xp_before = player_experience(client).await?;
     let corpses_before: BTreeSet<_> = client
         .world_entities()
         .into_iter()
@@ -3721,6 +3808,7 @@ async fn hunt_one_inner(
         .filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse)
         .map(|entity| entity.entity)
         .collect();
+    let mut corpse_evidence = HuntCorpseEvidence::new(target, corpses_before);
     let mut last_position = target.position;
     let mut last_health_percent = match target.detail {
         oteryn_dev_client::EntityDetail::Actor { health_percent, .. } => health_percent,
@@ -3746,8 +3834,16 @@ async fn hunt_one_inner(
     let mut xp_checked_at = tokio::time::Instant::now();
     let corpse = loop {
         client.service_liveness(Duration::from_millis(50)).await?;
+        let alive = client
+            .world_entities()
+            .is_some_and(|es| es.get(&target.entity).is_some());
+        if !alive && !earned_xp && xp_checked_at.elapsed() >= Duration::from_millis(250) {
+            earned_xp = player_experience(client).await? > xp_before;
+            xp_checked_at = tokio::time::Instant::now();
+        }
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
+                corpse_evidence.observe(&delta.value);
                 for updated in delta.value.update.iter().chain(&delta.value.enter) {
                     if updated.entity != target.entity {
                         continue;
@@ -3765,31 +3861,11 @@ async fn hunt_one_inner(
         let alive = client
             .world_entities()
             .is_some_and(|es| es.get(&target.entity).is_some());
-        if !alive && !earned_xp && xp_checked_at.elapsed() >= Duration::from_millis(250) {
-            earned_xp = player_experience(client).await? > xp_before;
-            xp_checked_at = tokio::time::Instant::now();
-        }
-        let alive = client
-            .world_entities()
-            .is_some_and(|es| es.get(&target.entity).is_some());
-        // Visibility is sampled, not a combat receipt: movement and lethal damage
-        // may occur between refreshes, and the durable corpse binds afterwards.
-        // Require earned XP plus a fresh, usable nearby corpse, never removal alone
-        // or an old corpse on the target's last live tile.
+        // Removal alone is not a combat receipt. Require XP and a uniquely
+        // nearest fresh corpse first seen in or after the target's leave frame.
         let corpse = client
             .world_entities()
-            .and_then(|es| {
-                es.iter().find(|e| {
-                    e.kind == oteryn_dev_client::EntityKind::Corpse
-                        && hunt_corpse_matches(
-                            client.world_spatial().actor_position,
-                            e.position,
-                            !corpses_before.contains(&e.entity),
-                            earned_xp,
-                        )
-                })
-            })
-            .copied();
+            .and_then(|es| corpse_evidence.corpse(es.iter(), earned_xp));
         if hunt_kill_proven(alive, corpse.is_some())
             && let Some(corpse) = corpse
         {
@@ -5642,6 +5718,7 @@ struct ForgeClient {
     content: [u8; 32],
     map_header: native::world_map::MapViewHeader,
     entities: Vec<spatial::WorldSpatialEntity>,
+    hunt: Option<HuntCorpseEvidence>,
     bindings: Vec<native::appearance::Binding>,
     inventory: native::item_view::CharacterInventory,
     container: native::item_view::OpenContainer,
@@ -5816,6 +5893,7 @@ impl ForgeClient {
             content: view.content_generation,
             map_header,
             entities: view.entities,
+            hunt: None,
             bindings: appearance.bindings,
             inventory,
             container,
@@ -5903,6 +5981,9 @@ impl ForgeClient {
                 };
                 if view.content_generation != self.content {
                     return Err("Forge content generation changed".into());
+                }
+                if let Some(hunt) = self.hunt.as_mut() {
+                    hunt.observe(&view);
                 }
                 self.position = view.actor_position;
                 self.entities.retain(|e| !view.leave.contains(&e.entity));
@@ -6307,6 +6388,78 @@ async fn forge_hunt(
     .await
 }
 
+// Keep the combat observer callable independently of spawn routing so frame replays
+// exercise the same attack, receive and corpse selection path as the journey.
+async fn forge_attack_corpse(
+    client: &mut ForgeClient,
+    entity: spatial::WorldSpatialEntity,
+    stacks: u8,
+) -> TestResult<(native::item_view::ItemHandle, u64)> {
+    let xp_before = client.experience().await?;
+    let corpses_before: BTreeSet<_> = client
+        .entities
+        .iter()
+        .filter(|e| e.kind == spatial::EntityKind::Corpse)
+        .map(|e| e.entity)
+        .collect();
+    let observed = client
+        .entities
+        .iter()
+        .find(|e| e.entity == entity.entity)
+        .copied()
+        .ok_or("forge target left visibility before attack")?;
+    client.hunt = Some(HuntCorpseEvidence::new(observed, corpses_before));
+    let attack = client.attack_target(Some(&entity.entity)).await?;
+    if attack.disposition != attacks::AttackIntentDisposition::Ok {
+        return Err(format!(
+            "forge ordinary combat blocked:stacks={stacks};attack={attack:?};vitals={:?}",
+            client.vitals
+        )
+        .into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    let mut damaged = false;
+    let corpse = loop {
+        client.barrier().await?;
+        if let Some(live) = client.entities.iter().find(|e| e.entity == entity.entity) {
+            if let (
+                spatial::EntityDetail::Actor {
+                    health_percent: before,
+                    ..
+                },
+                spatial::EntityDetail::Actor {
+                    health_percent: now,
+                    ..
+                },
+            ) = (entity.detail, live.detail)
+            {
+                damaged |= now < before;
+            }
+        } else if client.experience().await? > xp_before
+            && !client.entities.iter().any(|e| e.entity == entity.entity)
+            && let Some(corpse) = client
+                .hunt
+                .as_ref()
+                .and_then(|hunt| hunt.corpse(client.entities.iter(), true))
+            && let spatial::EntityDetail::Object {
+                item_handle: Some(handle),
+                ..
+            } = corpse.detail
+        {
+            break handle;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "forge ordinary kill blocked:stacks={stacks};damage-frame={damaged};vitals={:?}",
+                client.vitals
+            )
+            .into());
+        }
+    };
+    client.hunt = None;
+    Ok((corpse, xp_before))
+}
+
 async fn forge_hunt_inner(
     client: &mut ForgeClient,
     world: &BundleWorld,
@@ -6390,66 +6543,7 @@ async fn forge_hunt_inner(
     })
     .ok_or("observed forge creature has no reachable unprotected melee approach")?;
     client.walk(world, &path).await?;
-    let corpses_before: BTreeSet<_> = client
-        .entities
-        .iter()
-        .filter(|e| e.kind == spatial::EntityKind::Corpse)
-        .map(|e| e.entity)
-        .collect();
-    let xp_before = client.experience().await?;
-    let attack = client.attack_target(Some(&entity.entity)).await?;
-    if attack.disposition != attacks::AttackIntentDisposition::Ok {
-        return Err(format!(
-            "forge ordinary combat blocked:stacks={stacks};attack={attack:?};vitals={:?}",
-            client.vitals
-        )
-        .into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
-    let mut damaged = false;
-    let corpse = loop {
-        client.barrier().await?;
-        if let Some(live) = client.entities.iter().find(|e| e.entity == entity.entity) {
-            if let (
-                spatial::EntityDetail::Actor {
-                    health_percent: before,
-                    ..
-                },
-                spatial::EntityDetail::Actor {
-                    health_percent: now,
-                    ..
-                },
-            ) = (entity.detail, live.detail)
-            {
-                damaged |= now < before;
-            }
-        } else if client.experience().await? > xp_before
-            && !client.entities.iter().any(|e| e.entity == entity.entity)
-            && let Some(handle) = client.entities.iter().find_map(|e| {
-                if e.kind == spatial::EntityKind::Corpse
-                    && hunt_corpse_matches(
-                        client.position,
-                        e.position,
-                        !corpses_before.contains(&e.entity),
-                        true,
-                    )
-                    && let spatial::EntityDetail::Object { item_handle, .. } = e.detail
-                {
-                    return item_handle;
-                }
-                None
-            })
-        {
-            break handle;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "forge ordinary kill blocked:stacks={stacks};damage-frame={damaged};vitals={:?}",
-                client.vitals
-            )
-            .into());
-        }
-    };
+    let (corpse, xp_before) = forge_attack_corpse(client, entity, stacks).await?;
     client.attack_target(None).await?;
     client.barrier().await?;
     if client.experience().await? <= xp_before {
