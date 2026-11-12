@@ -1,0 +1,148 @@
+{
+  "contract_id": "native-characters-v1",
+  "base_commit": "f73244933228f399f1a5e9174ef064d7ffe70785",
+  "client_id": "019a5f4a-1000-7000-8000-000000000001",
+  "synthetic_access_token": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+  "world_id": "019a5f4a-3000-7000-8000-000000000004",
+  "files": [
+    {
+      "file": "characters-response.json",
+      "bytes": 337,
+      "sha256": "6ba38b3afdbf9702fc0dfe0871af14c8d5c50af0a3bbb8553920cc4812c571c1"
+    },
+    {
+      "file": "characters-empty.json",
+      "bytes": 38,
+      "sha256": "4cb178de04b406c46ea50db9c6b9674d79d6ba9ce660cb9c7d9d23eac9820923"
+    },
+    {
+      "file": "characters-unauthenticated.json",
+      "bytes": 27,
+      "sha256": "ab4fd90076db1102a7ec6ff9212732f51c7ba6cb43e63eb94d9c5d6f26d8270a"
+    }
+  ],
+  "cases": [
+    {
+      "case": "characters-success",
+      "setup": "live feed (epoch 1, watermark within 30 s); the account snapshot lists Aldric AVAILABLE and Brenna UNAVAILABLE",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A"
+      },
+      "request": null,
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "characters-response.json",
+      "normalized": []
+    },
+    {
+      "case": "characters-no-snapshot",
+      "setup": "live feed; no snapshot for the account",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A"
+      },
+      "request": null,
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "characters-empty.json",
+      "normalized": []
+    },
+    {
+      "case": "characters-missing-bearer",
+      "setup": "",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {},
+      "request": null,
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "characters-unauthenticated.json",
+      "normalized": []
+    },
+    {
+      "case": "characters-unknown-bearer",
+      "setup": "no token has this access hash",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {
+        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "request": null,
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "characters-unauthenticated.json",
+      "normalized": []
+    },
+    {
+      "case": "characters-rate-limited",
+      "setup": "the 11th read with the same bearer inside 60 seconds",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A"
+      },
+      "request": null,
+      "status": 429,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "retry-after": "30"
+      },
+      "response": null,
+      "normalized": []
+    },
+    {
+      "case": "characters-feed-stale",
+      "setup": "no projection watermark has been received",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A"
+      },
+      "request": null,
+      "status": 503,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache"
+      },
+      "response": null,
+      "normalized": []
+    },
+    {
+      "case": "characters-flag-off",
+      "setup": "PORTAL_GAME_TICKETS_ENABLED is not true or OTERYN_ENV is not testing/preprod",
+      "method": "GET",
+      "path": "/api/v1/game-auth/native-characters",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A"
+      },
+      "request": null,
+      "status": 503,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache"
+      },
+      "response": null,
+      "normalized": []
+    }
+  ]
+}
