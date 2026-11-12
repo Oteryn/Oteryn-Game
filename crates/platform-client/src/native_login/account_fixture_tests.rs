@@ -217,10 +217,7 @@ fn metadata<'a>(manifest: &'a Manifest, key: &str) -> Result<&'a str, Box<dyn st
 fn run_fixture(test: fn() -> TestResult) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(move || {
-            TICKET_DELAY.with(|clock| clock.set(Some(Duration::ZERO)));
-            test().map_err(|e| e.to_string())
-        })?
+        .spawn(move || test().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "fixture thread panicked")?
         .map_err(Into::into)
@@ -319,7 +316,7 @@ fn oauth_token_matches_platform_native_oauth_ticket_v1() -> TestResult {
                 .into_owned()
                 .collect();
             let client_id = form.get("client_id").ok_or("client_id")?;
-            let server = spawn_server_with_headers(&runtime, vec![case.response(suite)?])?;
+            let server = spawn_fixture_server(&runtime, vec![case.response(suite)?])?;
             let client = client(&server, client_id)?;
             let result = runtime.block_on(client.exchange_code_challenged(
                 metadata(&manifest, "synthetic_authorization_code")?,
@@ -373,20 +370,20 @@ fn ticket_issuance_matches_platform_native_oauth_ticket_v1() -> TestResult {
             .iter()
             .filter(|c| c.path == "/api/v1/game-auth/tickets")
         {
-            TICKET_DELAY.with(|clock| clock.set(Some(Duration::ZERO)));
             let mut responses = vec![case.response(suite)?];
             if case.status == 429 {
-                responses.push((
-                    200,
-                    String::new(),
-                    suite.file("ticket-response.json")?.to_owned(),
-                ));
+                responses.push(
+                    manifest
+                        .cases
+                        .iter()
+                        .find(|c| c.name == "ticket-success")
+                        .ok_or("ticket success")?
+                        .response(suite)?,
+                );
             }
-            let server = spawn_server_with_headers(&runtime, responses)?;
-            let result = runtime.block_on(
-                client(&server, &manifest.client_id)?
-                    .issue_native_ticket(case.bearer(&manifest), CancellationToken::new()),
-            );
+            let server = spawn_fixture_server(&runtime, responses)?;
+            let (result, elapsed) =
+                issue_with_paused_clock(&runtime, &server, &manifest, case, case.status == 429)?;
             assert_redacted(&format!("{result:?}"), &manifest)?;
             if case.status == 200 || case.status == 429 {
                 let ticket = result?;
@@ -397,10 +394,7 @@ fn ticket_issuance_matches_platform_native_oauth_ticket_v1() -> TestResult {
                     expected["ticket"].as_str().ok_or("ticket")?
                 );
                 if case.status == 429 {
-                    assert_eq!(
-                        TICKET_DELAY.with(|clock| clock.get()),
-                        Some(Duration::from_secs(30))
-                    );
+                    assert_eq!(elapsed, Duration::from_millis(30_001));
                 } else {
                     assert_eq!(case.normalized, ["ticket"]);
                 }
@@ -440,16 +434,13 @@ fn ticket_issuance_matches_platform_native_oauth_ticket_v1() -> TestResult {
             (
                 vec![limited.response(suite)?, limited.response(suite)?],
                 2,
-                Duration::from_secs(30),
+                Duration::from_millis(30_001),
             ),
         ];
         for (responses, count, elapsed) in scenarios {
-            TICKET_DELAY.with(|clock| clock.set(Some(Duration::ZERO)));
-            let server = spawn_server_with_headers(&runtime, responses)?;
-            let result = runtime.block_on(
-                client(&server, &manifest.client_id)?
-                    .issue_native_ticket(limited.bearer(&manifest), CancellationToken::new()),
-            );
+            let server = spawn_fixture_server(&runtime, responses)?;
+            let (result, actual_elapsed) =
+                issue_with_paused_clock(&runtime, &server, &manifest, limited, count == 2)?;
             assert_eq!(
                 result.err(),
                 Some(NativeLoginError::TicketRefused(
@@ -457,7 +448,7 @@ fn ticket_issuance_matches_platform_native_oauth_ticket_v1() -> TestResult {
                 ))
             );
             assert_request(&server, limited, suite.file("ticket-request.json")?, count)?;
-            assert_eq!(TICKET_DELAY.with(|clock| clock.get()), Some(elapsed));
+            assert_eq!(actual_elapsed, elapsed);
         }
         // The acceptance criterion also names HTTP 400 (the manifest uses 422).
         let case = manifest
@@ -466,7 +457,7 @@ fn ticket_issuance_matches_platform_native_oauth_ticket_v1() -> TestResult {
             .find(|c| c.name == "ticket-unsupported-version")
             .ok_or("invalid ticket case")?;
         let (_, headers, body) = case.response(suite)?;
-        let server = spawn_server_with_headers(&runtime, vec![(400, headers, body)])?;
+        let server = spawn_fixture_server(&runtime, vec![(400, headers, body)])?;
         assert_eq!(
             runtime
                 .block_on(
@@ -489,7 +480,7 @@ fn native_characters_match_platform_native_characters_v1() -> TestResult {
         let manifest = suite.manifest()?;
         let runtime = runtime()?;
         for case in &manifest.cases {
-            let server = spawn_server_with_headers(&runtime, vec![case.response(suite)?])?;
+            let server = spawn_fixture_server(&runtime, vec![case.response(suite)?])?;
             let token = case.bearer(&manifest);
             let result = runtime.block_on(
                 client(&server, &manifest.client_id)?
@@ -547,7 +538,7 @@ fn native_characters_match_platform_native_characters_v1() -> TestResult {
                 .collect();
             let body = serde_json::to_string(&response)?;
             assert!(body.len() <= 16_384);
-            let server = spawn_server_with_headers(&runtime, vec![(200, String::new(), body)])?;
+            let server = spawn_fixture_server(&runtime, vec![(200, String::new(), body)])?;
             let result = runtime.block_on(
                 client(&server, &manifest.client_id)?
                     .owner_characters(&case.bearer(&manifest), CancellationToken::new()),
@@ -565,7 +556,7 @@ fn native_characters_match_platform_native_characters_v1() -> TestResult {
         }
         let mut oversized = suite.file("characters-response.json")?.to_owned();
         oversized.push_str(&" ".repeat(16_385 - oversized.len()));
-        let server = spawn_server_with_headers(&runtime, vec![(200, String::new(), oversized)])?;
+        let server = spawn_fixture_server(&runtime, vec![(200, String::new(), oversized)])?;
         assert_eq!(
             runtime
                 .block_on(
@@ -654,4 +645,231 @@ fn platform_native_manifests_cover_every_case() -> TestResult {
         }
     }
     Ok(())
+}
+
+#[test]
+fn platform_account_mock_responses_match_fixture_headers() -> TestResult {
+    run_fixture(|| {
+        let runtime = runtime()?;
+        for suite in [Suite::Oauth, Suite::Characters] {
+            let manifest = suite.manifest()?;
+            for case in &manifest.cases {
+                let server = spawn_fixture_server(&runtime, vec![case.response(suite)?])?;
+                let (status, headers, body) = runtime.block_on(async {
+                    let response = reqwest::Client::builder()
+                        .no_proxy()
+                        .build()?
+                        .get(&server.base)
+                        .send()
+                        .await?;
+                    let status = response.status().as_u16();
+                    assert_eq!(
+                        response.headers().len(),
+                        case.response_headers.len(),
+                        "{}",
+                        case.name
+                    );
+                    let headers: BTreeMap<String, String> = response
+                        .headers()
+                        .iter()
+                        .map(|(key, value)| {
+                            Ok((key.as_str().to_owned(), value.to_str()?.to_owned()))
+                        })
+                        .collect::<Result<_, reqwest::header::ToStrError>>()?;
+                    Ok::<_, Box<dyn std::error::Error>>((status, headers, response.text().await?))
+                })?;
+                assert_eq!(status, case.status, "{}", case.name);
+                assert_eq!(headers, case.response_headers, "{}", case.name);
+                assert_eq!(
+                    body.as_bytes(),
+                    case.response(suite)?.2.as_bytes(),
+                    "{}",
+                    case.name
+                );
+            }
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn ticket_refuses_missing_or_malformed_retry_after() -> TestResult {
+    run_fixture(|| {
+        let suite = Suite::Oauth;
+        let manifest = suite.manifest()?;
+        let limited = manifest
+            .cases
+            .iter()
+            .find(|case| case.name == "ticket-rate-limited")
+            .ok_or("rate-limit fixture")?;
+        let runtime = runtime()?;
+        for value in [
+            None,
+            Some("abc"),
+            Some("-1"),
+            Some("1.5"),
+            Some("Wed, 21 Oct 2015 07:28:00 GMT"),
+        ] {
+            let mut headers = limited.response_headers.clone();
+            headers.remove("retry-after");
+            if let Some(value) = value {
+                headers.insert("retry-after".to_owned(), value.to_owned());
+            }
+            let headers = headers
+                .iter()
+                .map(|(k, v)| format!("{k}: {v}\r\n"))
+                .collect();
+            let server = spawn_fixture_server(
+                &runtime,
+                vec![(limited.status, headers, limited.response(suite)?.2)],
+            )?;
+            let (result, elapsed) =
+                issue_with_paused_clock(&runtime, &server, &manifest, limited, false)?;
+            assert_eq!(
+                result.err(),
+                Some(NativeLoginError::TicketRefused(
+                    PublicClass::TemporarilyUnavailable
+                )),
+                "{value:?}"
+            );
+            assert_request(&server, limited, suite.file("ticket-request.json")?, 1)?;
+            assert_eq!(elapsed, Duration::ZERO);
+        }
+        Ok(())
+    })
+}
+
+// Keep I/O progressing without Tokio auto-advancing a pending HTTP deadline.
+async fn paused_io<F: std::future::Future>(future: F) -> F::Output {
+    tokio::time::pause();
+    TICKET_WAIT.with(|clock| clock.set((None, None)));
+    let heartbeat = tokio::spawn(async {
+        loop {
+            tokio::task::yield_now().await;
+        }
+    });
+    let result = future.await;
+    heartbeat.abort();
+    tokio::time::resume();
+    result
+}
+
+async fn poll_ticket<T>(
+    mut future: std::pin::Pin<&mut impl std::future::Future<Output = T>>,
+    stop_at_wait: bool,
+) -> Result<Option<T>, Box<dyn std::error::Error>> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if let std::task::Poll::Ready(result) = futures::poll!(future.as_mut()) {
+            return Ok(Some(result));
+        }
+        if stop_at_wait && TICKET_WAIT.with(|clock| clock.get().0.is_some()) {
+            return Ok(None);
+        }
+        if Instant::now() >= deadline {
+            return Err("ticket HTTP exchange did not progress".into());
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+fn issue_with_paused_clock(
+    runtime: &tokio::runtime::Runtime,
+    server: &MockServer,
+    manifest: &Manifest,
+    case: &Case,
+    expect_wait: bool,
+) -> Result<(Result<NativeTicket, NativeLoginError>, Duration), Box<dyn std::error::Error>> {
+    let client = client(server, &manifest.client_id)?;
+    runtime.block_on(paused_io(async {
+        let started = tokio::time::Instant::now();
+        let mut call =
+            Box::pin(client.issue_native_ticket(case.bearer(manifest), CancellationToken::new()));
+        let initial = poll_ticket(call.as_mut(), true).await?;
+        let result = if expect_wait {
+            assert!(initial.is_none(), "ticket never entered retry wait");
+            assert_eq!(server.requests.lock().map_err(|_| "request lock")?.len(), 1);
+            // Pre-register barriers so completion proves Tokio processed the timer wheel.
+            // The 1 ms margin accommodates Tokio's documented timer granularity.
+            let early = tokio::time::sleep(Duration::from_millis(29_998));
+            let late = tokio::time::sleep(Duration::from_millis(30_000));
+            let mut early = Box::pin(early);
+            let mut late = Box::pin(late);
+            assert!(futures::poll!(early.as_mut()).is_pending());
+            assert!(futures::poll!(late.as_mut()).is_pending());
+            tokio::time::advance(Duration::from_millis(29_999)).await;
+            early.await;
+            assert!(futures::poll!(call.as_mut()).is_pending());
+            assert!(
+                TICKET_WAIT.with(|clock| clock.get().1.is_none()),
+                "retry wait ended before 30 seconds"
+            );
+            assert_eq!(server.requests.lock().map_err(|_| "request lock")?.len(), 1);
+            tokio::time::advance(Duration::from_millis(2)).await;
+            late.await;
+            let result = poll_ticket(call.as_mut(), false)
+                .await?
+                .ok_or("ticket result")?;
+            let (start, end) = TICKET_WAIT.with(|clock| clock.get());
+            assert!(
+                end.ok_or("sleep did not finish")? - start.ok_or("sleep did not start")?
+                    >= Duration::from_secs(30)
+            );
+            let times = server.request_times.lock().map_err(|_| "timestamps lock")?;
+            assert_eq!(times.len(), 2);
+            assert!(times[1] - times[0] >= Duration::from_secs(30));
+            result
+        } else {
+            initial.ok_or("ticket unexpectedly entered retry wait")?
+        };
+        Ok((result, tokio::time::Instant::now() - started))
+    }))
+}
+
+#[test]
+fn ticket_cancellation_interrupts_platform_retry_wait() -> TestResult {
+    run_fixture(|| {
+        let suite = Suite::Oauth;
+        let manifest = suite.manifest()?;
+        let case = manifest
+            .cases
+            .iter()
+            .find(|c| c.name == "ticket-rate-limited")
+            .ok_or("rate limit fixture")?;
+        let success = manifest
+            .cases
+            .iter()
+            .find(|c| c.name == "ticket-success")
+            .ok_or("ticket success")?;
+        let runtime = runtime()?;
+        let server = spawn_fixture_server(
+            &runtime,
+            vec![case.response(suite)?, success.response(suite)?],
+        )?;
+        let client = client(&server, &manifest.client_id)?;
+        runtime.block_on(paused_io(async {
+            let cancellation = CancellationToken::new();
+            let mut call =
+                Box::pin(client.issue_native_ticket(case.bearer(&manifest), cancellation.clone()));
+            assert!(poll_ticket(call.as_mut(), true).await?.is_none());
+            tokio::time::advance(Duration::from_secs(5)).await;
+            let cancelled_at = tokio::time::Instant::now();
+            let wait_started = TICKET_WAIT
+                .with(|clock| clock.get().0)
+                .ok_or("retry wait did not start")?;
+            assert_eq!(cancelled_at - wait_started, Duration::from_secs(5));
+            cancellation.cancel();
+            let std::task::Poll::Ready(result) = futures::poll!(call.as_mut()) else {
+                return Err("cancellation did not promptly interrupt retry wait".into());
+            };
+            assert_eq!(
+                result.err(),
+                Some(NativeLoginError::Platform(PlatformClientError::Cancelled))
+            );
+            assert_eq!(tokio::time::Instant::now(), cancelled_at);
+            assert!(TICKET_WAIT.with(|clock| clock.get().1.is_none()));
+            assert_request(&server, case, suite.file("ticket-request.json")?, 1)?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        }))
+    })
 }
