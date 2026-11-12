@@ -2,9 +2,12 @@
 
 Task: `OTV2-20261112-global-test-server-static`
 
-This draft collects owner-authorized observations from the visible Global Tibia
-Test Server client and compares them with Oteryn. It is a research workspace,
-not an accepted parity baseline or an instruction to change runtime data.
+This research workspace collects owner-authorized observations from the visible
+Global Tibia Test Server client and compares them with Oteryn. The owner selected
+the new Winter Update as the target on 2026-11-12; the observed build is
+15.33.ad0955. [PLAN.md](PLAN.md) records the decision, predecessor targets,
+coverage and later phases. Individual observations do not certify runtime parity
+or authorize automatic content changes.
 
 ## Scope and collection order
 
@@ -26,10 +29,9 @@ than pushing each observation separately.
 ## Files
 
 - `observations.json`: session metadata, evidence references and field-level
-  transcriptions. Initially empty; no observation has been collected for this
-  dataset yet.
+  transcriptions. Pilot batch 001 contains 114 field observations for 10 items.
 - `comparisons.csv`: field-level comparisons against exact Oteryn revisions.
-  Initially a header only. It is not a completion or parity manifest.
+  Pilot batch 001 contains 114 comparison rows. It is not a completion or parity manifest.
 
 Canonical records live in these files, not in PR comments. Comments summarize
 batch results and questions. This PR collects evidence only; confirmed runtime
@@ -88,11 +90,15 @@ Use one comparison status:
 
 Every row also records `baseline_relevance`: `UNKNOWN`,
 `TEST_SERVER_CHANGE_CANDIDATE`, `CONTINUITY_EVIDENCED` or
-`ACCEPTED_DIFFERENCE`, with supporting references in `notes`.
+`ACCEPTED_DIFFERENCE`, with supporting references in `notes`. The owner-selected
+current build additionally uses `TARGET_BUILD_OBSERVATION`: direct evidence from
+15.33.ad0955, without a claim about historical continuity or production release.
 `MATCH` is a field-level observation, not `PARITY_CONFIRMED`. A current Test
 Server value does not establish production or historical-baseline behavior.
-Review differences against the accepted target and source hierarchy before
-proposing a correction. Never rewrite an accepted baseline from this draft.
+Review differences against the owner-selected target and source hierarchy before
+proposing a correction. The explicit target decision is recorded in PLAN.md;
+historical observations and old target documents are preserved as history, and
+repository-wide target-reference reconciliation remains separate follow-up work.
 
 ## Batch acceptance
 
@@ -112,3 +118,14 @@ proposing a correction. Never rewrite an accepted baseline from this draft.
 
 This capture format is local to this investigation; it does not amend those
 documents or promote evidence automatically.
+
+## Pilot batch 001 — 2026-11-12
+
+See [BATCH-001.md](BATCH-001.md) and [batch-summary.json](batch-summary.json).
+Ten items, 114 observations/comparisons: 81 MATCH, one DIFFERENCE, 18 UNKNOWN,
+and 14 PENDING. Twenty retained screenshots include 18 item panels, Info and
+Character context. The specific world name remains unknown; this is a recorded
+pilot with partial session metadata, not full dataset acceptance. No runtime,
+content, pins or production state were changed. Field matches do not establish
+admission: all ten inspected family definitions have materializable=false.
+

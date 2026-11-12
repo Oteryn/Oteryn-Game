@@ -5,14 +5,2972 @@
     "session_id": "global-test-server-2026-11-12-static-01",
     "source_kind": "CONTROLLED_GLOBAL_OBSERVATION",
     "environment": "TEST_SERVER",
-    "client_build": null,
+    "client_build": "15.33.ad0955",
     "server_name": null,
-    "client_language": null,
-    "observed_at": null,
-    "character_context": null,
-    "accepted_target_reference": null,
-    "baseline_continuity": "UNKNOWN"
+    "server_label": "Tibia Test Server",
+    "client_language": "English (observed UI text; locale setting not inspected)",
+    "observed_at": "2026-11-12T18:53:15.790390+01:00",
+    "build_evidence_ids": [
+      "GTS-E008"
+    ],
+    "character_context": {
+      "name": "Invalid Monk",
+      "level": 757,
+      "vocation": "Exalted Monk",
+      "displayed_hp": 8400,
+      "displayed_hp_max": 8400,
+      "displayed_mana": 8305,
+      "displayed_mana_max": 8305,
+      "loyalty_title": "Keeper of Tibia",
+      "outfit": "Rascoohan (Addon 1, Addon 2)",
+      "active_prey": {
+        "creature": "Ghoul",
+        "bonus": "Bonus XP +13%",
+        "remaining_display": "2:00h"
+      },
+      "skills": null,
+      "equipment_item_names": null,
+      "complete_active_modifiers": null,
+      "evidence_ids": [
+        "GTS-E002"
+      ]
+    },
+    "accepted_target_reference": "PLAN.md#owner-target-decision--2026-11-12",
+    "selected_target_build": "15.33.ad0955",
+    "baseline_continuity": "UNKNOWN",
+    "limitations": [
+      "Specific world name was not displayed in the inspected panels.",
+      "Catalogue observations do not establish equipped/tier-specific effects or runtime execution.",
+      "Character skills/equipment names/full modifiers were not transcribed; they are not inputs to these base catalogue field comparisons.",
+      "Capture timestamps are local file capture completion timestamps with UTC offset.",
+      "Historical continuity and production release timing are not asserted."
+    ]
   },
-  "evidence": [],
-  "observations": []
+  "evidence_archive": {
+    "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+    "sha256": "6bf3c3141e31a2ba9694d4a287626d121a10a6989a384e019bed54b6a2236186",
+    "file_name": "OTERYN-Global-Winter-Update-static-pilot-20261112.zip",
+    "screenshots": 20
+  },
+  "evidence": [
+    {
+      "evidence_id": "GTS-E001",
+      "captured_at": "2026-11-12T18:58:25.002827+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-01d9a024e0c64f06a3309c6de04df0ab.png",
+      "sha256": "7bee52a5df8fcaa1daf14d18d668a2d747048ac195624a8b7d6c0333fd6be448",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E002",
+      "captured_at": "2026-11-12T19:04:59.137205+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-059ef75ea0bc43449d67b7e21ae2f74d.png",
+      "sha256": "ab431abde36046a5baca7f03c5f97268f285dbcede9abb221141c7309c1aee70",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E003",
+      "captured_at": "2026-11-12T19:01:45.688058+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-081185d0199042ebb12263abecb17007.png",
+      "sha256": "0e371cf0ecdbee3bd7a46621bba39a6b4459e609905db2834e97476ab29060c6",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E004",
+      "captured_at": "2026-11-12T19:01:03.587590+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-13c80f01d3634f2ca87d86e29056328d.png",
+      "sha256": "4f51bcaecbd361e1694e147b0275e3545ccf49a4a6f90ecb1ff0eb3451527459",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E005",
+      "captured_at": "2026-11-12T18:59:02.864248+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-1b84a3f995be45e4a6d8cba617c334bc.png",
+      "sha256": "d5aaf7cb3b31b6f723f34388a5518057dfb0ba9bff41e02df67e0f147b4e3d70",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E006",
+      "captured_at": "2026-11-12T19:00:50.438444+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-292ea2a9fc88435c82aaf9e637368242.png",
+      "sha256": "b3c66995c54a172a9fafd3a17da3061c7aeb2a99a38c0b2295e57098de7320a5",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E007",
+      "captured_at": "2026-11-12T19:04:13.044696+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-35f08999f59e48d99a39c22076fc49cd.png",
+      "sha256": "d5aa635cfdada61501f1c1e7213f5326616a0bc4c0a6fc5fdc0e7d997d27ea45",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E008",
+      "captured_at": "2026-11-12T18:53:15.790390+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-41f8aa16f7754e29810f2866ad379665.png",
+      "sha256": "dbfb38f19fc2ac0441d60bc9e0909dbf175a28d486124134b8594bbef9136856",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E009",
+      "captured_at": "2026-11-12T19:01:57.444189+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-45bd1553dccd49d1804cfc9860b94019.png",
+      "sha256": "add84882d5e5c377078cb8343e0e972dc7dbef586fcf54b0f644b617a00f925f",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E010",
+      "captured_at": "2026-11-12T18:58:39.570989+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-57013f0fbb6940e8aa7a6ffc02083357.png",
+      "sha256": "f721a84a1dbe91df92d9c936ed6992a51c746474bf01f54f94ac3b67d16b4bef",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E011",
+      "captured_at": "2026-11-12T18:59:42.172685+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-60408075b9d849f1b294b9103d4fe990.png",
+      "sha256": "8ca4598d476e6195cccadf3241da445fff811c8eee9f3309c562634e6e2ed024",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E012",
+      "captured_at": "2026-11-12T19:00:20.534112+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-90113e1669264e62984a36ad39929511.png",
+      "sha256": "5f0b36bf62d6374ed16fb780d3822d12cf600979fc9a98e2a736640fcf2110ad",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E013",
+      "captured_at": "2026-11-12T19:00:39.908327+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-a83ca5a2ac524c288c1b691a7082cf4c.png",
+      "sha256": "705314eaccad2d7cf940731712abb49d6724e9f7f8966afbf8dada7fb14bef0e",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E014",
+      "captured_at": "2026-11-12T18:58:52.120129+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-b444303593cb4c39a01721f33f3dc175.png",
+      "sha256": "39fcf6b45575821f793d6f86f854d515fb29924ca8c32e2df0521a2d2867597b",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E015",
+      "captured_at": "2026-11-12T18:57:33.886259+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-b9ab63b8069543a3914bb599c02c0633.png",
+      "sha256": "ea2b658ae3d54da415ede94034a364fbf4d6a7a0cd38402500b1ad353d14532a",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E016",
+      "captured_at": "2026-11-12T19:01:16.929739+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-local-c2bbebd5935c4cd1839f8750f8897ca9.png",
+      "sha256": "7505d77950b6db43ba2e640515b8e0e4dbd76d714a844d1f0286bd15ec23d8d2",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E017",
+      "captured_at": "2026-11-12T19:03:06.887961+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-static-stoic-robe-bottom.png",
+      "sha256": "7127663d20debe4878be8e2e47bca290e8e42db6844356a93cf43bf32ca5ca3b",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E018",
+      "captured_at": "2026-11-12T19:03:39.575324+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-static-stoic-robe-middle.png",
+      "sha256": "27b64dc14d501f1aee20c8b36bc87593bf9ac35edb5997d2de18e364596b0f40",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E019",
+      "captured_at": "2026-11-12T19:03:06.063952+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-static-stoic-robe-top.png",
+      "sha256": "ce021f7368105e59e34c856c3948d799b1b8eb369ffc13ce4d485fa3fe5f9280",
+      "retention_status": "RETAINED"
+    },
+    {
+      "evidence_id": "GTS-E020",
+      "captured_at": "2026-11-12T19:03:07.701970+01:00",
+      "artifact_uri": "https://chatgpt.com/library?file_id=libfile_e568a2958ed881918924267d33c5ed6f&account_id=personal",
+      "archive_member": "evidence/frame-static-studded-armor-top.png",
+      "sha256": "3c6ad5bd055da39e52975315081b266ac39a6c2cf438fe8e347625cf68c17088",
+      "retention_status": "RETAINED"
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "gts-static-albino-plate-armor",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 11",
+      "value": 11,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-imbuement_slots",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 2",
+      "value": 2,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-weight",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 84.00 oz",
+      "value": 84,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-marketable",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-body_position",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-classification",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 3",
+      "value": 3,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-armor",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 13",
+      "value": 13,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-imbuement_slots",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 2",
+      "value": 2,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-weight",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 45.00 oz",
+      "value": 45,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-marketable",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-body_position",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-classification",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-required_level",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 60",
+      "value": 60,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-vocations",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: paladins",
+      "value": [
+        "PALADIN"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-amazon-armor-SKILL_DISTANCE",
+      "observed_at": "2026-11-12T18:58:25.002827+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "amazon armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "SKILL_DISTANCE",
+      "raw_text": "Skill Boost: distance fighting +3",
+      "value": 3,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E001",
+        "GTS-E010"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-armor",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 15",
+      "value": 15,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-imbuement_slots",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 1",
+      "value": 1,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-weight",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 43.00 oz",
+      "value": 43,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-marketable",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-body_position",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-classification",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-required_level",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 300",
+      "value": 300,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-vocations",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: sorcerers",
+      "value": [
+        "SORCERER"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-ENERGY_MAGIC_LEVEL_POINTS",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "ENERGY_MAGIC_LEVEL_POINTS",
+      "raw_text": "energy magic level +1",
+      "value": 1,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-MAGIC_LEVEL_POINTS",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "MAGIC_LEVEL_POINTS",
+      "raw_text": "magic level +3",
+      "value": 3,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-protection-fire",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.fire",
+      "raw_text": "Protection: ice +12%, fire -6%",
+      "value": -6,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-protection-ice",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.ice",
+      "raw_text": "Protection: ice +12%, fire -6%",
+      "value": 12,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-arcane-dragon-robe-augment-life_leech",
+      "observed_at": "2026-11-12T18:58:52.120129+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "arcane dragon robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "augment.life_leech",
+      "raw_text": "Augments: Energy Wave -> +5% life leech",
+      "value": {
+        "spell": "energy wave",
+        "kind": "life_leech",
+        "percent": 5
+      },
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E014",
+        "GTS-E005"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-armor",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 17",
+      "value": 17,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-imbuement_slots",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 2",
+      "value": 2,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-weight",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 130.00 oz",
+      "value": 130,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-marketable",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-body_position",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-classification",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-required_level",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 350",
+      "value": 350,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-vocations",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: paladins",
+      "value": [
+        "PALADIN"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-SKILL_DISTANCE",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "SKILL_DISTANCE",
+      "raw_text": "Skill Boost: distance fighting +3, shielding +3",
+      "value": 3,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-SKILL_SHIELD",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "SKILL_SHIELD",
+      "raw_text": "Skill Boost: distance fighting +3, shielding +3",
+      "value": 3,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-protection-ice",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.ice",
+      "raw_text": "Protection: physical +3%, ice +8%",
+      "value": 8,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-protection-physical",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.physical",
+      "raw_text": "Protection: physical +3%, ice +8%",
+      "value": 3,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-plate-augment-critical_hit_chance",
+      "observed_at": "2026-11-12T18:59:42.172685+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "augment.critical_hit_chance",
+      "raw_text": "Augments: Divine Grenade -> +1% critical hit chance",
+      "value": {
+        "spell": "divine grenade",
+        "kind": "critical_hit_chance",
+        "percent": 1
+      },
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E011",
+        "GTS-E012"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-armor",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 10",
+      "value": 10,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-imbuement_slots",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 2",
+      "value": 2,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-weight",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 80.00 oz",
+      "value": 80,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-marketable",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-body_position",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-classification",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-required_level",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 350",
+      "value": 350,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-vocations",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: monks",
+      "value": [
+        "MONK"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-MANTRA",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "MANTRA",
+      "raw_text": "Mantra: 17",
+      "value": 17,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-SKILL_FIST",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "SKILL_FIST",
+      "raw_text": "Skill Boost: fist fighting +4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-protection-physical",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.physical",
+      "raw_text": "Protection: physical+4%",
+      "value": 4,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stag-robe-augment-critical_hit_chance",
+      "observed_at": "2026-11-12T19:00:39.908327+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stag robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "augment.critical_hit_chance",
+      "raw_text": "Augments: Spiritual Outburst -> +1% critical hit chance",
+      "value": {
+        "spell": "spiritual outburst",
+        "kind": "critical_hit_chance",
+        "percent": 1
+      },
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E013",
+        "GTS-E006"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-armor",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 16",
+      "value": 16,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-imbuement_slots",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 2",
+      "value": 2,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-weight",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 142.00 oz",
+      "value": 142,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-marketable",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-body_position",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-classification",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-required_level",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 250",
+      "value": 250,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-vocations",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: knights",
+      "value": [
+        "KNIGHT"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-SKILL_SHIELD",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "SKILL_SHIELD",
+      "raw_text": "Skill Boost: shielding +3",
+      "value": 3,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-protection-physical",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.physical",
+      "raw_text": "Protection: physical+8%",
+      "value": 8,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-chestplate-augment-cooldown",
+      "observed_at": "2026-11-12T19:01:03.587590+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks chestplate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "augment.cooldown",
+      "raw_text": "Augments: Intense Wound Cleansing -> -24s cooldown",
+      "value": {
+        "spell": "intense wound cleansing",
+        "kind": "cooldown",
+        "seconds": -24
+      },
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E004",
+        "GTS-E016"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-armor",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 15",
+      "value": 15,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-imbuement_slots",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 1",
+      "value": 1,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-weight",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 44.00 oz",
+      "value": 44,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-marketable",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-body_position",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-classification",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-required_level",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 250",
+      "value": 250,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-vocations",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: druids",
+      "value": [
+        "DRUID"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-MAGIC_LEVEL_POINTS",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "MAGIC_LEVEL_POINTS",
+      "raw_text": "Skill Boost: magic level +4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-protection-death",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.death",
+      "raw_text": "Protection: death+5%",
+      "value": 5,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-cuirass-augment-base_damage",
+      "observed_at": "2026-11-12T19:01:45.688058+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks cuirass",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "augment.base_damage",
+      "raw_text": "Augments: Wrath of Nature -> +8% base damage",
+      "value": {
+        "spell": "wrath of nature",
+        "kind": "base_damage",
+        "percent": 8
+      },
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E003",
+        "GTS-E009"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-armor",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 9",
+      "value": 9,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-imbuement_slots",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "imbuement_slots",
+      "raw_text": "Imbuement Slots: 2",
+      "value": 2,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-weight",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 128.00 oz",
+      "value": 128,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-marketable",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-body_position",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-classification",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-required_level",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "required_level",
+      "raw_text": "Required Level: 250",
+      "value": 250,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-vocations",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "vocations",
+      "raw_text": "Vocations: monks",
+      "value": [
+        "MONK"
+      ],
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-MANTRA",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "MANTRA",
+      "raw_text": "Mantra: 16",
+      "value": 16,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-SKILL_FIST",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "SKILL_FIST",
+      "raw_text": "Skill Boost: fist fighting +4",
+      "value": 4,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-protection-energy",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.energy",
+      "raw_text": "Protection: physical +2%, energy +5%",
+      "value": 5,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-protection-physical",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.physical",
+      "raw_text": "Protection: physical +2%, energy +5%",
+      "value": 2,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-description",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "description",
+      "raw_text": "Description: A robe worn by a separatist caste of the ancient Iks",
+      "value": "A robe worn by a separatist caste of the ancient Iks",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-stoic-iks-robe-augment-base_healing",
+      "observed_at": "2026-11-12T19:03:06.063952+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "stoic iks robe",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "augment.base_healing",
+      "raw_text": "Augments: Spirit Mend -> +8% base healing",
+      "value": {
+        "spell": "spirit mend",
+        "kind": "base_healing",
+        "percent": 8
+      },
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E019",
+        "GTS-E018",
+        "GTS-E017"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-armor",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": "Armor: 5",
+      "value": 5,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-weight",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 71.00 oz",
+      "value": 71,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-marketable",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-body_position",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-classification",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": "Classification: 1",
+      "value": 1,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-weight",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "weight",
+      "raw_text": "Weight: 10.00 oz",
+      "value": 10,
+      "unit": "oz",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-marketable",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "marketable",
+      "raw_text": "Tradeable In Market: yes",
+      "value": true,
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-body_position",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "body_position",
+      "raw_text": "Body Position: body",
+      "value": "body",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-protection-death",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "protection.death",
+      "raw_text": "Protection: death+5%",
+      "value": 5,
+      "unit": "percent",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-armor",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "armor",
+      "raw_text": null,
+      "value": null,
+      "unit": null,
+      "availability": "NOT_DISPLAYED",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-classification",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "classification",
+      "raw_text": null,
+      "value": null,
+      "unit": null,
+      "availability": "NOT_DISPLAYED",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": null
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-sell_to-Rashid-price_gp",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Rashid.price_gp",
+      "raw_text": "1,500 gp, Rashid",
+      "value": 1500,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-albino-plate-sell_to-Rashid-residence",
+      "observed_at": "2026-11-12T18:57:33.886259+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "albino plate",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Rashid.residence",
+      "raw_text": "Residence: Various Locations",
+      "value": "Various Locations",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E015"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-sell_to-Shanar-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Shanar.price_gp",
+      "raw_text": "25 gp, Shanar",
+      "value": 25,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-buy_from-Shanar-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "buy_from.Shanar.price_gp",
+      "raw_text": "90 gp, Shanar",
+      "value": 90,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-sell_to-Memech-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Memech.price_gp",
+      "raw_text": "25 gp, Memech",
+      "value": 25,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-buy_from-Memech-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "buy_from.Memech.price_gp",
+      "raw_text": "90 gp, Memech",
+      "value": 90,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-sell_to-Wes-the-Blacksmith-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Wes the Blacksmith.price_gp",
+      "raw_text": "25 gp, Wes the Blacksmith",
+      "value": 25,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-buy_from-Wes-the-Blacksmith-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "buy_from.Wes the Blacksmith.price_gp",
+      "raw_text": "90 gp, Wes the Blacksmith",
+      "value": 90,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-sell_to-Cornelia-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Cornelia.price_gp",
+      "raw_text": "25 gp, Cornelia",
+      "value": 25,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-studded-armor-buy_from-Cornelia-price_gp",
+      "observed_at": "2026-11-12T19:03:07.701970+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "studded armor",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "buy_from.Cornelia.price_gp",
+      "raw_text": "90 gp, Cornelia",
+      "value": 90,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E020"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-sell_to-Ialia-price_gp",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Ialia.price_gp",
+      "raw_text": "1,500 gp, Ialia",
+      "value": 1500,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-sell_to-Ialia-residence",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Ialia.residence",
+      "raw_text": "Residence: Fae Village",
+      "value": "Fae Village",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-sell_to-Valindara-price_gp",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Valindara.price_gp",
+      "raw_text": "1,500 gp, Valindara",
+      "value": 1500,
+      "unit": "gp",
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    },
+    {
+      "observation_id": "gts-static-summer-dress-sell_to-Valindara-residence",
+      "observed_at": "2026-11-12T19:04:13.044696+01:00",
+      "domain": "ITEM",
+      "panel": "Cyclopedia > Items > Armors",
+      "entity_name": "summer dress",
+      "entity_variant": "Base catalogue entry; tier/instance not selected",
+      "displayed_id": null,
+      "field": "sell_to.Valindara.residence",
+      "raw_text": "Residence: Fae Village",
+      "value": "Fae Village",
+      "unit": null,
+      "availability": "VISIBLE",
+      "context": {
+        "session_id": "global-test-server-2026-11-12-static-01",
+        "catalogue_values": true,
+        "vendor_list_complete": false
+      },
+      "evidence_ids": [
+        "GTS-E007"
+      ],
+      "verification": "VISUALLY_RECHECKED"
+    }
+  ]
 }

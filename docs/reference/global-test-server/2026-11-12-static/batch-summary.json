@@ -1,0 +1,15 @@
+{
+  "items": 10,
+  "observations": 114,
+  "comparison_status": {
+    "MATCH": 81,
+    "UNKNOWN": 18,
+    "DIFFERENCE": 1,
+    "PENDING": 14
+  },
+  "screenshots": 20,
+  "oteryn_commit": "3ce2305da05228e4f690e6195b01e921fe0274bf",
+  "materializable": {
+    "False": 10
+  }
+}
