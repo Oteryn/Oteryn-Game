@@ -687,7 +687,7 @@ struct BootstrapIngressView<'a> {
     last_applied_sequence: u64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ClientBootstrapView<'a> {
     pub protocol_major: u32,
     pub transport_profile: u32,
@@ -696,6 +696,21 @@ pub struct ClientBootstrapView<'a> {
     pub admission_material: &'a [u8],
     pub client_build_id: &'a str,
     pub supported_capabilities: &'a [u32],
+}
+
+impl std::fmt::Debug for ClientBootstrapView<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ClientBootstrapView")
+            .field("protocol_major", &self.protocol_major)
+            .field("transport_profile", &self.transport_profile)
+            .field("schema_revision", &self.schema_revision)
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("client_build_id", &self.client_build_id)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -747,13 +762,26 @@ pub struct ServerResumeAcceptedValue<'a> {
 /// `protocol_major`/`transport_profile` are not fields here: `encode_client_bootstrap` always
 /// sends this crate's own pinned `PROTOCOL_MAJOR_V1`/`TRANSPORT_PROFILE_TCP_TLS13_V1`, so a
 /// caller cannot send anything else.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ClientBootstrapValue<'a> {
     pub schema_revision: u32,
     pub character_id: CharacterId,
     pub admission_material: &'a [u8],
     pub client_build_id: &'a str,
     pub supported_capabilities: &'a [u32],
+}
+
+impl std::fmt::Debug for ClientBootstrapValue<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ClientBootstrapValue")
+            .field("schema_revision", &self.schema_revision)
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("client_build_id", &self.client_build_id)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .finish()
+    }
 }
 
 /// Encodes one framed-message-ready `ClientBootstrap` envelope (FND-02 §9): the wire format

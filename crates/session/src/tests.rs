@@ -210,3 +210,12 @@ mod gem_presentation_gated;
 
 #[path = "tests/wheel_presentation_gated.rs"]
 mod wheel_presentation_gated;
+
+#[test]
+fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {
+    let value = admission()?;
+    let debug = format!("{value:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains(&format!("{:?}", value.admission_material)));
+    Ok(())
+}

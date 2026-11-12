@@ -3,8 +3,11 @@ use super::{
     TestResult,
     fixture::{debug, id},
 };
+use crate::foundation::FoundationProtocolError;
 use crate::foundation::{AuthenticatedTransportRefV1, CharacterId, GameSessionId};
-use crate::gameplay_transport::connection::FreshAdmissionAttempt;
+use crate::gameplay_transport::connection::{
+    AdmissionRefusal, ConnectionEnd, FreshAdmissionAttempt,
+};
 
 #[test]
 fn preadm_attempt_debug_never_exposes_grant_material() -> TestResult {
@@ -42,8 +45,9 @@ fn preadm_handshake_has_one_concurrent_winner_and_rejects_consumed_grant_replay(
                 use tokio::io::AsyncReadExt;
                 let h = super::fixture::Harness::create_with_admission_seed(admin, "preadm_handshake", true, false).await?;
                 let result: TestResult = async {
-                    let source = super::house_transfer::RecoverySource::start(&h).await?;
                     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
+                    let _clock = FrozenAdmissionClock::install(&h, i64::try_from(now)?).await?;
+                    let source = super::house_transfer::RecoverySource::start_at(&h, Some(now)).await?;
                     let mut runtime = super::fresh_fixture::fresh::Source::new(i64::try_from(now)?)?;
                     runtime.rows.retain(|row| matches!(row.key, crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(_)));
                     let publication = crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1::prepare(&runtime, i64::try_from(now)?).map_err(debug)?;
@@ -63,7 +67,7 @@ fn preadm_handshake_has_one_concurrent_winner_and_rejects_consumed_grant_replay(
                     )?;
                     let mut owner = deps.owner(&h, &authority);
                     owner.evidence = &source.evidence;
-                    let token = race_grant()?;
+                    let token = race_grant(now)?;
                     let frame = oteryn_protocol_oteryn::encode_client_bootstrap(&oteryn_protocol_oteryn::ClientBootstrapValue {
                         schema_revision: 1, character_id: CharacterId::decode(&id(41)).map_err(debug)?,
                         admission_material: token.as_bytes(), client_build_id: "preadm-contract", supported_capabilities: &[],
@@ -79,11 +83,19 @@ fn preadm_handshake_has_one_concurrent_winner_and_rejects_consumed_grant_replay(
                     let mut bytes_a = Vec::new(); let mut bytes_b = Vec::new();
                     client_a.read_to_end(&mut bytes_a).await?;
                     client_b.read_to_end(&mut bytes_b).await?;
-                    let (admitted, accepted) = match (a, b) {
-                        (Ok(admitted), Err(_)) => (admitted, bytes_a),
-                        (Err(_), Ok(admitted)) => (admitted, bytes_b),
+                    let (admitted, accepted, refused, refusal_bytes) = match (a, b) {
+                        (Ok(admitted), Err(refused)) => (admitted, bytes_a, refused, bytes_b),
+                        (Err(refused), Ok(admitted)) => (admitted, bytes_b, refused, bytes_a),
                         _ => return Err("one grant must have exactly one successful handshake".into()),
                     };
+                    // A loser that reaches the consume transaction sees the durable nonce;
+                    // one that observes the committed owner first fails the ownership guard.
+                    let refusal_code = match refused {
+                        ConnectionEnd::AdmissionRefused(AdmissionRefusal::Classified(FoundationProtocolError::AdmissionGrantReplayed)) => FoundationProtocolError::AdmissionGrantReplayed,
+                        ConnectionEnd::AdmissionRefused(AdmissionRefusal::Classified(FoundationProtocolError::AdmissionAccountCharacterConflict)) => FoundationProtocolError::AdmissionAccountCharacterConflict,
+                        other => return Err(format!("unexpected concurrent refusal: {other:?}").into()),
+                    };
+                    assert_refusal_frame(&refusal_bytes, refusal_code)?;
                     assert!(matches!(admitted.first_entry, FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled), "the winner must be positioned for gameplay");
                     let length = usize::try_from(u32::from_be_bytes(accepted.get(..4).ok_or("acceptance length")?.try_into()?))?;
                     let envelope = crate::foundation::decode_wire_envelope(accepted.get(4..4+length).ok_or("acceptance body")?).map_err(debug)?;
@@ -93,15 +105,14 @@ fn preadm_handshake_has_one_concurrent_winner_and_rejects_consumed_grant_replay(
                     assert_eq!(count, 1, "concurrent connections must consume once durably");
                     assert_eq!(owner.logout_session(admitted).await,
                         crate::gameplay_transport::connection::LogoutReply::Result(oteryn_protocol_oteryn::logout::LogoutResult::Accepted));
-                    let payload = token.split('.').nth(1).ok_or("grant payload")?;
-                    use base64::Engine as _;
-                    let claims: serde_json::Value = serde_json::from_slice(&base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(payload)?)?;
-                    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
-                    assert!(now < claims["exp"].as_u64().ok_or("grant expiry")?, "the replay case must test an unexpired consumed grant");
                     *stage.lock().map_err(|_| "stage lock")? = "consumed grant replay";
-                    let (mut server, client) = tokio::io::duplex(1 << 20);
-                    assert!(admit_frame(&mut server, &frame, &owner, &Identifiers(93)).await.is_err());
-                    drop(server); drop(client);
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let replay = admit_frame(&mut server, &frame, &owner, &Identifiers(93)).await;
+                    assert!(matches!(replay, Err(ConnectionEnd::AdmissionRefused(AdmissionRefusal::Classified(FoundationProtocolError::AdmissionGrantReplayed)))), "replay must be rejected by durable consumption");
+                    drop(server);
+                    let mut refusal = Vec::new();
+                    client.read_to_end(&mut refusal).await?;
+                    assert_refusal_frame(&refusal, FoundationProtocolError::AdmissionGrantReplayed)?;
                     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts").fetch_one(&h.pool).await?;
                     assert_eq!(count, 1);
                     Ok(())
@@ -135,7 +146,7 @@ impl crate::gameplay_transport::connection::ConnectionIdentifiers for Identifier
 }
 
 // The same fixture issuer and exact profile, with its accepted 30-second TTL.
-fn race_grant() -> TestResult<String> {
+fn race_grant(now: u64) -> TestResult<String> {
     use base64::Engine as _;
     use ed25519_dalek::Signer as _;
     let token = super::house_transfer::RecoverySource::fresh_token(91)?;
@@ -144,8 +155,64 @@ fn race_grant() -> TestResult<String> {
     let payload = parts.next().ok_or("grant payload")?;
     let codec = base64::engine::general_purpose::URL_SAFE_NO_PAD;
     let mut claims: serde_json::Value = serde_json::from_slice(&codec.decode(payload)?)?;
-    claims["exp"] = serde_json::Value::from(claims["iat"].as_u64().ok_or("grant issuance")? + 30);
+    claims["iat"] = now.into();
+    claims["nbf"] = now.into();
+    claims["exp"] = (now + 30).into();
     let input = format!("{header}.{}", codec.encode(serde_json::to_vec(&claims)?));
     let signature = ed25519_dalek::SigningKey::from_bytes(&[31; 32]).sign(input.as_bytes());
     Ok(format!("{input}.{}", codec.encode(signature.to_bytes())))
+}
+
+fn assert_refusal_frame(bytes: &[u8], error: FoundationProtocolError) -> TestResult {
+    let expected = oteryn_protocol_oteryn::encode_protocol_error(error, 0).map_err(debug)?;
+    let mut framed = u32::try_from(expected.len())?.to_be_bytes().to_vec();
+    framed.extend(expected);
+    assert_eq!(
+        bytes, framed,
+        "exactly one classified refusal frame, no acceptance"
+    );
+    Ok(())
+}
+
+// The existing verifier host-clock hook, the fake Platform's timestamps, and
+// the commit query all use one fixed instant in this disposable test database.
+struct FrozenAdmissionClock(Option<i64>);
+impl FrozenAdmissionClock {
+    async fn install(h: &super::fixture::Harness, now: i64) -> TestResult<Self> {
+        sqlx::query("CREATE SCHEMA preadm_clock")
+            .execute(&h.pool)
+            .await?;
+        sqlx::query("CREATE TABLE preadm_clock.instant(singleton BOOLEAN PRIMARY KEY CHECK(singleton), value BIGINT NOT NULL)").execute(&h.pool).await?;
+        sqlx::query("INSERT INTO preadm_clock.instant VALUES(true,$1)")
+            .bind(now)
+            .execute(&h.pool)
+            .await?;
+        sqlx::query("CREATE FUNCTION preadm_clock.clock_timestamp() RETURNS timestamptz LANGUAGE sql STABLE AS 'SELECT pg_catalog.to_timestamp(value::double precision) FROM preadm_clock.instant WHERE singleton'").execute(&h.pool).await?;
+        sqlx::query("CREATE FUNCTION preadm_clock.statement_timestamp() RETURNS timestamptz LANGUAGE sql STABLE AS 'SELECT pg_catalog.to_timestamp(value::double precision) FROM preadm_clock.instant WHERE singleton'").execute(&h.pool).await?;
+        sqlx::query("GRANT USAGE ON SCHEMA preadm_clock TO oteryn_game_runtime")
+            .execute(&h.pool)
+            .await?;
+        sqlx::query("GRANT SELECT ON preadm_clock.instant TO oteryn_game_runtime")
+            .execute(&h.pool)
+            .await?;
+        let mut connection = h.root.try_acquire_ready()?;
+        sqlx::query("SET search_path=preadm_clock,pg_catalog,public")
+            .execute(&mut *connection)
+            .await?;
+        let returned = connection
+            .return_to_pool_observed_until(
+                std::time::Instant::now() + std::time::Duration::from_secs(5),
+            )
+            .await;
+        assert!(matches!(
+            returned,
+            sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+        ));
+        Ok(Self(super::HOST_NOW.replace(Some(now))))
+    }
+}
+impl Drop for FrozenAdmissionClock {
+    fn drop(&mut self) {
+        super::HOST_NOW.set(self.0);
+    }
 }
