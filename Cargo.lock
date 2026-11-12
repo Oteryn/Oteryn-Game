@@ -3596,6 +3596,8 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-identity",
  "oteryn-platform-client",
+ "oteryn-session",
+ "oteryn-session-tcp",
  "rcgen",
  "reqwest",
  "rustls",

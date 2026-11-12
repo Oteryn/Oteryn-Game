@@ -43,6 +43,7 @@ invented. The optional formats remain {"SAN":["world/channel"]} and
 {"SAN":"node_identity"}, defined in gameauth/src/locator.rs:29-33 and documented
 in portal-rs/README.md:32-33.
 
+The test-only package is `oteryn-security-auth-tests` under tests/security/auth.
 The lane runs, in order, web_identity_pkce_isolation (60s),
 native_ticket_and_gateway_fail_closed (60s), native_device_rotation_replay (120s).
 At this pin the two-member remembered enrollment and proofless rotation must
@@ -60,6 +61,38 @@ The device phase asserts four rotations, account/ticket ownership, exact 401
 replay/revoke/generation refusals, disabled OAuth and offline local sign-out via
 shipping DeviceLogin/DeviceAttempt. U23 restart recovery remains excluded.
 
+The node remains alive awaiting assignment during those zero-admission proofs.
+Then node_boot proves an
+ungranted assignment is refused and content activation exits 6. Its shared
+`node_deployment_grants` helper then performs the accepted database-owner
+administration (§4 step 3 of the node-boot composition decision): exact seeded
+WorldId/ChannelId, control login nb_control, operations 1 (assign) and 4 (content
+activation). It also provisions the existing world field-policy grant; nb_control
+writes the corresponding control-owned policy through its existing privilege.
+Both Game roles remain unable to write the scope-grant table. The helper reads
+back the permitted operations before emitting deployment evidence.
+
+Assignment is issued by real oteryn-game-ops with its purpose-separated report
+identity. Game publishes runtime readiness and LCFA using their own harness
+certificates. The fresh deployment installs the external LCFA epoch fence as
+0, mode 0600 owned by the service UID; an existing fence is refused, never reset.
+node_identity is exactly `runtime-status.game.e2e.oteryn.test`, the
+certificate's single DNS SAN; the subject is never an identity. The optional
+`platform.bootstrap_intents` credential section uses the existing intent issuer
+and compiled endpoint with the harness's bootstrap-intents identity, retaining
+legacy configuration behavior when absent. No new issuer or grant API is added.
+A real Platform testing seed issues the bootstrap intent for account B, and
+real ops bootstrap/replay calls create the Character through the node socket.
+
+`native_ticket_gateway_admits` (60s, same ticket test target) waits with a deadline
+for the actual Game projection and fresh ready report, requests a new OAuth
+ticket and real Gateway grant, and uses shipping session-tcp for TLS admission.
+Independent psql reads require exactly one Platform admission and one Game
+receipt, bound to the expected account/Character/World/Channel. The wire join
+session must equal that receipt. PASS additionally requires clean node shutdown.
+No admission, Character, runtime report or projection row is inserted by this
+positive driver. No migration or protocol-oteryn wire change is used.
+
 Accept JSON/English remains explicit. Native routes are still mounted inside
 web/src/lib.rs:495-500 security_headers; surface.rs:244-268 renders 400 envelopes
 and ratelimit.rs:356-389 renders API 503 envelopes. Thus DeviceRefusal retains the
@@ -72,12 +105,13 @@ Expected evidence:
 NODE_BOOT_EVIDENCE flow=web_identity result=pass account_isolation=1
 NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0
 NODE_BOOT_EVIDENCE flow=native_device_rotation result=pass rotations=4 replay_refused=1 signout_offline=1
-GAME_PLATFORM_EVIDENCE blocker=tools/qualification/node_boot/run.sh:999 pending=control_scope_grant_issuer
-GAME_PLATFORM_RESULT=BLOCKED owner=Game what=tools/qualification/node_boot/run.sh:999
+NODE_BOOT_EVIDENCE flow=deployment_administration issuer=database_owner scope=seeded_world_channel operations=1,4 game_roles_can_issue=0
+NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=pass game_admissions=1 identity_character_scope=exact
+GAME_PLATFORM_RESULT=PASS
 ```
 
-FAIL overrides BLOCKED; one terminal result is printed. No old custody/device
-blocker is emitted. Failed journey logs are retained after substring redaction,
+Every failed assertion or Platform/contract deviation is FAIL; one terminal
+result is printed. No custody, device or grant-issuer blocker is emitted. Failed journey logs are retained after substring redaction,
 including panic/assertion/compiler output; explicit evidence digests are exempt,
 never arbitrary log values. Diagnostics are private; generated credentials,
 custody and databases are removed on exit. Local full-lane preflight cannot run

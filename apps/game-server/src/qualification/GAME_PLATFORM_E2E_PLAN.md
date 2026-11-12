@@ -202,13 +202,16 @@ issuer files; it does not synthesize signing snapshots or grants. The refusal
 journey still has no owner LCFA snapshot, so Gateway must return exact
 NATIVE_LOGIN_ROUTE_UNAVAILABLE and roll back redemption with zero admissions.
 
-**Coverage today.** Not covered by node_boot/seam: its signer is
-`G:apps/game-server/src/qualification.rs:346` and no ticket is obtained.
-Related manual harness `G:tools/qualification/login_local/run.sh:4` uses mode 33a/34a,
-a different Platform pin (`:32`) and the Go gateway. Its `:649` prints
-`LOGIN_LOCAL_EVIDENCE node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured`;
-`:660` prints projection acceptance. These are not NODE_BOOT_EVIDENCE, not automated
-web-login proof, and not evidence for portal-rs main.
+**GPE2E-3 coverage.** `tests/security/auth/tests/native_ticket_and_gateway_fail_closed.rs`
+keeps the zero-admission refusal before owner grants. Its additional
+`native_ticket_gateway_admits` journey obtains a real Gateway grant and enters
+the shipping TLS session client after the accepted deployment-administration
+step. It requires exactly one Game receipt bound to account, Character, World
+and Channel, and the wire join's session ID, plus exactly one Platform admission.
+The lane invokes real ops assignment, readiness, bootstrap/replay and Game's
+own runtime/LCFA producers; it never inserts those authority/projection rows.
+Focused observer/transport tests pass; a sudo-host live rerun remains required
+before recording live PASS for this new positive stage.
 
 **Current pinned refusal slice.** **Runnable subtest:**
 `native_ticket_and_gateway_fail_closed` exercises actual OAuth → ticket → real
@@ -229,10 +232,12 @@ movement; same-attempt retry byte identity; conflicting attempt, spent/expired
 new authority. Budget 60–120 s including one real ticket expiry. Mount the runnable
 refusal subtest in the wrapper first; do not treat its pass as this positive test.
 
-Repin5: lane Platform pin is `a85b5da4de23f3e8633cfb25a2db1ad7f6133acd`.
-Real signing-custody seed now provisions private per-run issuer files; the old
-custody blocker is removed. Missing control-scope grant issuer at
-`tools/qualification/node_boot/run.sh:999` remains the sole expected terminal blocker.
+GPE2E-3: Platform stays `a85b5da4de23f3e8633cfb25a2db1ad7f6133acd`.
+Real signing custody and database-owner deployment administration remove both
+former blockers. `node_deployment_grants` reuses node_boot's SQL with operations
+1/4 only for this lane; no Game role can issue grants. The current expected
+terminal result is PASS only after the negative stages, device journey, exact
+positive admission and graceful shutdown all pass. Any deviation is FAIL.
 
 ## 2a. Remembered native-device enrollment, rotation and sign-out
 
@@ -926,8 +931,8 @@ refusal belongs first in this phase and runs even while success stays blocked.
 | Account web login + PKCE | RUNNABLE NOW; GPE2E-2b repairs root-owned state base and fail-fast operator setup; callback state uses shipping IdentityFlow | Live rerun required; no PASS evidence | `web_identity_pkce_isolation` |
 | MFA-protected web login success | RUNNABLE NOW | N #1828: testing-only `seed account-mfa` returns `totpSecret` + recovery codes; web TOTP exists | `web_identity_pkce_isolation` (MFA extension) |
 | Native OAuth for an MFA account | RUNNABLE NOW | N #1826: proven web MFA accepted; unproven required MFA refused (`oauth.rs:230`); lane pin now includes #1833 | `native_login_mfa_account` |
-| Ticket + Gateway refusal slice | DRIVER IMPLEMENTED at a85b5da4; custody provisioned with real signing-custody seed | Exact ROUTE_UNAVAILABLE until real owner projection/control grant; zero admissions and ticket rollback required | `native_ticket_and_gateway_fail_closed` |
-| Remembered native-device session | DRIVER IMPLEMENTED at a85b5da4; PASS required for two-member enrollment and proofless rotation; U23 excluded | Live rerun required; no Platform device blocker accepted; exact ownership/replay/revoke/generation and zero-admission checks | `native_device_rotation_replay` |
+| Ticket + Gateway refusal and admitted slice | RUNNABLE; focused checks PASS; a85b5da4 | Live rerun required: pre-grant zero admissions, then exactly one identity/Character/scope-bound admission after DB-owner grants | `native_ticket_and_gateway_fail_closed` + `native_ticket_gateway_admits` |
+| Remembered native-device session | RUNNABLE; focused checks PASS; two-member enrollment and proofless rotation; U23 excluded | No blocker accepted; exact ownership/replay/revoke/generation and zero-admission checks remain before deployment grants | `native_device_rotation_replay` |
 | Native Gateway mode 34a preprod success | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `native_login_34a_preprod` |
 | Fresh admission from Platform grant | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `platform_grant_commit_fences` |
 | Reauthenticated recovery | BLOCKED | Platform: recovery issuer follows T19c; CANDIDATE §19, default off; contract decision | `platform_reauth_recovery` |

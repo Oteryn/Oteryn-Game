@@ -295,20 +295,6 @@ impl Browser {
     }
     pub async fn csrf(&mut self, path: &str) -> TestResult<String> {
         let response = self.request(path, None).await?;
-        if response.status() == 404 {
-            let source = if path.starts_with("/oauth/") {
-                "portal-rs/crates/gameauth/src/oauth/oauth_http.rs:31"
-            } else {
-                "portal-rs/crates/identity/src/login_http.rs:35"
-            };
-            if let Ok(file) = std::env::var("GAME_PLATFORM_RESULT_FILE") {
-                fs::write(
-                    file,
-                    format!("GAME_PLATFORM_RESULT=BLOCKED owner=Platform what={source}\n"),
-                )
-                .map_err(|_| "result_write_failed")?;
-            }
-        }
         check(response.status() == 200, "form_handler_missing_or_refused")?;
         let body = response.text().await.map_err(|_| "form_read_failed")?;
         let token = body
@@ -643,26 +629,6 @@ impl Topology {
     }
 }
 
-pub fn record_blocker(source: &'static str) -> TestResult {
-    if let Ok(path) = std::env::var("GAME_PLATFORM_RESULT_FILE") {
-        // FAIL > BLOCKED > PASS. Preserve existing failures/blockers; an
-        // explicitly recorded PASS cannot suppress this later blocker.
-        let replace = if std::path::Path::new(&path).exists() {
-            fs::read_to_string(&path).map_err(|_| "result_read_failed")?
-                == "GAME_PLATFORM_RESULT=PASS\n"
-        } else {
-            true
-        };
-        if replace {
-            fs::write(
-                path,
-                format!("GAME_PLATFORM_RESULT=BLOCKED owner=Platform what={source}\n"),
-            )
-            .map_err(|_| "result_write_failed")?;
-        }
-    }
-    Ok(())
-}
 pub fn run<F, Fut>(flow: &'static str, seconds: u64, action: F) -> TestResult
 where
     F: FnOnce(Topology) -> Fut + Send + 'static,
