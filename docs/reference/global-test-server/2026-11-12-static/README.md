@@ -129,3 +129,12 @@ pilot with partial session metadata, not full dataset acceptance. No runtime,
 content, pins or production state were changed. Field matches do not establish
 admission: all ten inspected family definitions have materializable=false.
 
+
+## Batch002 — alphabetic collection
+
+See [BATCH-002.md](BATCH-002.md). Twelve further entries add147field rows.
+Cumulative:22items,261rows,158MATCH,3DIFFERENCE,31UNKNOWN,69PENDING.
+Both retained archives are listed in observations.json;45screenshots total.
+Further UI collection is paused because the owner requested built-in Computer Use,
+whose current inventory exposes browsers but no native Ubuntu applications.
+The existing screenshot/command bridge is not represented as built-in Computer Use.

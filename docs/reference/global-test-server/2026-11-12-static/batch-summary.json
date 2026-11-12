@@ -1,15 +1,30 @@
 {
-  "items": 10,
-  "observations": 114,
+  "scope": "Cumulative static batches001\u2013002",
+  "items": 22,
+  "observations": 261,
   "comparison_status": {
-    "MATCH": 81,
-    "UNKNOWN": 18,
-    "DIFFERENCE": 1,
-    "PENDING": 14
+    "MATCH": 158,
+    "UNKNOWN": 31,
+    "DIFFERENCE": 3,
+    "PENDING": 69
   },
-  "screenshots": 20,
+  "screenshots": 45,
   "oteryn_commit": "3ce2305da05228e4f690e6195b01e921fe0274bf",
-  "materializable": {
-    "False": 10
-  }
+  "batches": [
+    {
+      "batch_id": "B001",
+      "items": 10,
+      "rows": 114
+    },
+    {
+      "batch_id": "B002",
+      "items": 12,
+      "rows": 147
+    }
+  ],
+  "limits": [
+    "Field comparison only; effective native profiles and vendor service records remain unqualified.",
+    "No dynamic runtime parity claim.",
+    "Further UI collection paused: requested built-in Computer Use exposes browsers but no Ubuntu native apps."
+  ]
 }
