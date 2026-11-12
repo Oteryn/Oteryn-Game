@@ -13,6 +13,7 @@ async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> Tes
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
     // Existing loss qualification allows 60s for detection and 100s for release.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(160);
+    verdict::Harness::global().bounded_wait(deadline, "fixture-release");
     let mut connection =
         tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url))
             .await

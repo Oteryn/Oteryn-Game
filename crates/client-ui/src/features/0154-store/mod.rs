@@ -22,3 +22,6 @@ pub use protocol::browse_request as browse;
 #[path = "state/gift.rs"]
 mod gift;
 pub use gift::{GiftPanel, gift_control, gift_result};
+#[cfg(test)]
+#[path = "tests/e2e_e10.rs"]
+mod e2e_e10;

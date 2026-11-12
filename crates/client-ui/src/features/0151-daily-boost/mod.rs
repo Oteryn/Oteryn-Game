@@ -7,3 +7,6 @@ pub use input::open_key;
 pub use protocol::{Intent, apply_result, request};
 pub use state::DailyBoostPanel;
 pub use view::{SpotlightCard, panel_text, spotlight_cards, xp_boost_lines};
+#[cfg(test)]
+#[path = "tests/e2e_w13.rs"]
+mod e2e_w13;

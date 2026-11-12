@@ -66,3 +66,7 @@ mod chat_context;
 
 #[path = "character_scope.rs"]
 mod character_scope;
+
+#[cfg(test)]
+#[path = "tests/e2e_n05.rs"]
+mod e2e_n05;

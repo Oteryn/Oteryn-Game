@@ -430,6 +430,10 @@ mod transfer_tests;
 mod play_persistence;
 
 #[cfg(test)]
+#[path = "tests/e2e_n07d.rs"]
+mod e2e_n07d;
+
+#[cfg(test)]
 mod quest_mark_tests {
     use super::*;
     use oteryn_client_ui::personal_map_marks::{PersonalMapMark, PersonalMapMarks};

@@ -247,3 +247,7 @@ mod tracker_cases;
 #[cfg(test)]
 #[path = "tests/slots.rs"]
 mod slot_cases;
+
+#[cfg(test)]
+#[path = "tests/e2e_p21.rs"]
+mod e2e_p21;

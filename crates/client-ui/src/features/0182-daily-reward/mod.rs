@@ -27,3 +27,7 @@ pub use details::{apply_details, details_text};
 mod returner_wire;
 pub use protocol::request_returner;
 pub use returner_wire::apply_returner;
+
+#[cfg(test)]
+#[path = "tests/e2e_p09.rs"]
+mod e2e_p09;

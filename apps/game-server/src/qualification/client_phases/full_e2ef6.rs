@@ -184,8 +184,8 @@ const RESTING_BONUSES: &[&str] = &[
     "resting-area-classification",
 ];
 
-fn resting_stamina(payload: &[u8]) -> TestResult<u16> {
-    progress_frame(payload)?;
+fn resting_stamina(payload: &[u8], vocation_selected: bool) -> TestResult<u16> {
+    progress_frame(payload, vocation_selected)?;
     let minutes = u16::from_le_bytes(payload[29..31].try_into()?);
     if minutes > 2520 {
         return Err(format!("native stamina exceeds 2520: {minutes}").into());
@@ -439,7 +439,7 @@ async fn resting_deficits(
     }
     resting_walk(client, world, outside).await?;
     relog(client, clients, 0xf3).await?; // Clears the unrelated kill-triggered soul window.
-    let stamina = resting_stamina(&tab(client, 1).await?)?;
+    let stamina = resting_stamina(&tab(client, 1).await?, general_stats::selected(client))?;
     if stamina >= 2520 {
         return Err(format!("P10 stamina deficit blocked after earned kill and fresh admission: observed={stamina}, need <2520").into());
     }
@@ -550,12 +550,12 @@ async fn resting_bonuses(
             return Err(format!("P10 ordinary knight prerequisite blocked: native build={look}").into());
         }
         let initial_vitals = client.actor_vitals().copied().ok_or("P10 deficit vitals missing")?;
-        row.pass("player-earned-deficits", (initial_vitals, resting_stamina(&tab(&mut client, 1).await?)?));
+        row.pass("player-earned-deficits", (initial_vitals, resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?));
         resting_walk(&mut client, world, inside).await?;
         daily_wall(&mut client).await?; // Install the saved streak; do not reset cadence during observation.
         client.take_events();
         let mut previous = client.actor_vitals().copied().ok_or("P10 resting vitals missing")?;
-        let stamina_before = resting_stamina(&tab(&mut client, 1).await?)?;
+        let stamina_before = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
         let soul_before = previous.soul;
         let mut health = false;
         let mut mana = false;
@@ -599,7 +599,7 @@ async fn resting_bonuses(
                 }
             }
             if tokio::time::Instant::now() >= next_stamina_read {
-                stamina = resting_stamina(&tab(&mut client, 1).await?)?;
+                stamina = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
                 next_stamina_read = tokio::time::Instant::now() + Duration::from_secs(1);
             }
             if stamina < stamina_before {
@@ -622,7 +622,7 @@ async fn resting_bonuses(
         row.pass("resting-double-health-mana", previous);
         row.pass("resting-soul-and-stamina", (soul_before, previous.soul, stamina_before, stamina_after));
         relog(&mut client, clients, 0xf3).await?;
-        if daily_wall(&mut client).await? != claimed || resting_stamina(&tab(&mut client, 1).await?)? != stamina_after
+        if daily_wall(&mut client).await? != claimed || resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))? != stamina_after
             || client.actor_vitals().is_none_or(|v| v.soul != previous.soul || v.health < previous.health || v.mana < previous.mana) {
             return Err("P10 earned bonuses/streak did not persist through fresh admission".into());
         }
@@ -632,7 +632,7 @@ async fn resting_bonuses(
         let mut base_health = false;
         let mut base_mana = false;
         let outside_soul = client.actor_vitals().ok_or("P10 outside vitals absent")?.soul;
-        let outside_stamina = resting_stamina(&tab(&mut client, 1).await?)?;
+        let outside_stamina = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
         if outside_stamina >= 2520 {
             return Err("P10 outside negative-path stamina prerequisite capped; absence of a gain would be vacuous".into());
         }
@@ -665,7 +665,7 @@ async fn resting_bonuses(
                 }
             }
             if tokio::time::Instant::now() >= next_stamina_read {
-                observed_stamina = resting_stamina(&tab(&mut client, 1).await?)?;
+                observed_stamina = resting_stamina(&tab(&mut client, 1).await?, general_stats::selected(&client))?;
                 next_stamina_read = tokio::time::Instant::now() + Duration::from_secs(1);
             }
             if tile(client.world_spatial().actor_position)? != outside
@@ -744,8 +744,8 @@ mod resting_tests {
             })
             .encode()
             .map_err(|error| format!("stats encode: {error:?}"))?;
-            assert_eq!(resting_stamina(&payload)?, minutes);
-            assert!(resting_stamina(&payload[..41]).is_err());
+            assert_eq!(resting_stamina(&payload, false)?, minutes);
+            assert!(resting_stamina(&payload[..41], false).is_err());
         }
         let payload = TabView::GeneralStats(GeneralStats {
             level: 8,
@@ -754,7 +754,7 @@ mod resting_tests {
         })
         .encode()
         .map_err(|error| format!("stats encode: {error:?}"))?;
-        assert!(resting_stamina(&payload).is_err());
+        assert!(resting_stamina(&payload, false).is_err());
         Ok(())
     }
 }
@@ -976,8 +976,8 @@ async fn temple_respawn(
 
 /// GeneralStats has a fixed native layout. Do not substitute a ranking snapshot:
 /// its scheduled cut can predate the kill or the vocation confirmation.
-fn progress_frame(payload: &[u8]) -> TestResult<(u64, u32)> {
-    if payload.len() != 42 || payload[0] != 1 || payload[33] > 1 {
+fn progress_frame(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u32)> {
+    if general_stats::validate(payload, vocation_selected).is_err() || payload[0] != 1 || payload[33] > 1 {
         return Err("malformed native GeneralStats frame".into());
     }
     let xp = u64::from_le_bytes(payload[1..9].try_into()?);
@@ -1001,7 +1001,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("current progression query refused: {reply:?}").into());
     }
-    progress_frame(&reply.payload)
+    progress_frame(&reply.payload, general_stats::selected(client))
 }
 
 async fn self_look(client: &mut DevClientSession) -> TestResult<String> {
@@ -2876,16 +2876,16 @@ mod tests {
         })
         .encode()
         .map_err(|error| format!("stats encode: {error:?}"))?;
-        assert_eq!(progress_frame(&payload)?, (4200, 8));
-        assert!(progress_frame(&payload[..41]).is_err());
+        assert_eq!(progress_frame(&payload, false)?, (4200, 8));
+        assert!(progress_frame(&payload[..41], false).is_err());
         payload[0] = 2;
-        assert!(progress_frame(&payload).is_err());
+        assert!(progress_frame(&payload, false).is_err());
         payload[0] = 1;
         payload[33] = 2;
-        assert!(progress_frame(&payload).is_err());
+        assert!(progress_frame(&payload, false).is_err());
         payload[33] = 0;
         payload[9..13].fill(0);
-        assert!(progress_frame(&payload).is_err());
+        assert!(progress_frame(&payload, false).is_err());
         Ok(())
     }
 

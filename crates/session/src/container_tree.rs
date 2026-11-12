@@ -3,6 +3,10 @@ use super::*;
 use oteryn_protocol_oteryn::container_tree as wire;
 pub use oteryn_protocol_oteryn::container_tree::*;
 
+#[cfg(test)]
+#[path = "features/0014-container-tree/tests/e2e_i01.rs"]
+mod e2e_i01;
+
 pub(super) fn initial(
     selected: &[u32],
     snapshots: &[GatedSnapshot],

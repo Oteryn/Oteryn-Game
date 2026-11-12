@@ -192,6 +192,14 @@ pub async fn send<S: SessionStream>(
 }
 
 #[cfg(test)]
+#[path = "tests/e2e_i03.rs"]
+mod e2e_i03;
+
+#[cfg(test)]
+#[path = "tests/e2e_s07.rs"]
+mod e2e_s07;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

@@ -87,3 +87,7 @@ pub(in crate::play) fn task_progress(mailbox: &mut crate::play::mailbox::Mailbox
         ));
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n07c.rs"]
+mod e2e_n07c;

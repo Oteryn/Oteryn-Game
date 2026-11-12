@@ -398,7 +398,27 @@ pub struct Session<S> {
 }
 
 #[cfg(test)]
+#[path = "tests/e2e_m11b.rs"]
+mod e2e_m11b;
+
+#[cfg(test)]
+#[path = "tests/e2e_i11.rs"]
+mod e2e_i11;
+
+#[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_m10.rs"]
+mod e2e_m10;
+
+#[cfg(test)]
+#[path = "tests/e2e_c10.rs"]
+mod e2e_c10;
+
+#[cfg(test)]
+#[path = "tests/e2e_c06.rs"]
+mod e2e_c06;
 
 /// VIP request and result codec used by session-layer clients.
 pub use oteryn_protocol_oteryn::vip;

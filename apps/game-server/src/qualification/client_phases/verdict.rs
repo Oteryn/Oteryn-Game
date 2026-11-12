@@ -14,6 +14,16 @@ use std::error::Error;
 use std::fmt;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
+#[path = "indexed_verdict.rs"]
+mod indexed;
+pub(super) use indexed::indexed;
+pub(crate) use indexed::indexed_evidence;
+#[path = "indexed_result.rs"]
+mod indexed_result;
+pub(crate) use indexed_result::{
+    IndexedError, context, indexed_timeout, observe, record_assertion, record_error,
+};
+
 /// Why a row failed; `kind` is the wire token.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Cause {
@@ -125,6 +135,9 @@ pub(crate) fn classify(error: &(dyn Error + 'static)) -> Cause {
         if let Some(harness) = current.downcast_ref::<HarnessError>() {
             return harness.cause.clone();
         }
+        if let Some(session) = current.downcast_ref::<oteryn_dev_client::SessionError>() {
+            return session_cause(&session.to_string(), context);
+        }
         if let Some(client) = current.downcast_ref::<DevClientError>() {
             match client {
                 DevClientError::Context {
@@ -209,6 +222,11 @@ struct Tracker {
     phase: &'static str,
     stall: Option<Cause>,
     not_run: bool,
+    root: Option<String>,
+    pending: Vec<String>,
+    idle_until: Option<tokio::time::Instant>,
+    failed_exit: bool,
+    wakeup: Arc<tokio::sync::Notify>,
 }
 
 /// Progress and stall state of a running row, shared with its watchdog.
@@ -218,6 +236,7 @@ pub(super) struct Watch {
     needs: Vec<Need>,
     harness: &'static Harness,
     tracker: Arc<Mutex<Tracker>>,
+    scenario: Option<&'static str>,
 }
 
 impl Watch {
@@ -226,11 +245,17 @@ impl Watch {
             row,
             needs: Vec::new(),
             harness,
+            scenario: None,
             tracker: Arc::new(Mutex::new(Tracker {
                 last: tokio::time::Instant::now(),
                 phase: "start",
                 stall: None,
                 not_run: false,
+                root: None,
+                pending: Vec::new(),
+                idle_until: None,
+                failed_exit: false,
+                wakeup: Arc::new(tokio::sync::Notify::new()),
             })),
         }
     }
@@ -243,10 +268,18 @@ impl Watch {
         let mut state = self.state();
         state.last = tokio::time::Instant::now();
         state.phase = phase;
+        state.idle_until = None;
+        state.wakeup.notify_one();
     }
 
     fn stall(&self, cause: Cause, message: String) -> Box<dyn Error> {
-        self.state().stall = Some(cause.clone());
+        let mut state = self.state();
+        if self.scenario.is_none() || state.stall.is_none() {
+            state.stall = Some(cause.clone());
+            if self.scenario.is_some() {
+                state.root = Some(format!("{}/{}", self.row, state.phase));
+            }
+        }
         HarnessError::boxed(cause, message)
     }
 
@@ -260,6 +293,15 @@ impl Watch {
     pub(super) async fn bound<T>(
         &self,
         budget: Duration,
+        deadline: impl Into<String>,
+        journey: impl Future<Output = TestResult<T>>,
+    ) -> TestResult<T> {
+        self.run(Some(budget), deadline, journey).await
+    }
+
+    async fn run<T>(
+        &self,
+        budget: Option<Duration>,
         deadline: impl Into<String>,
         journey: impl Future<Output = TestResult<T>>,
     ) -> TestResult<T> {
@@ -279,20 +321,44 @@ impl Watch {
                 return std::future::pending().await;
             };
             loop {
-                let (last, phase) = {
+                let (last, phase, idle_until, wakeup) = {
                     let state = self.state();
-                    (state.last, state.phase)
+                    (
+                        state.last,
+                        state.phase,
+                        state.idle_until,
+                        Arc::clone(&state.wakeup),
+                    )
                 };
-                let idle = last.elapsed();
+                if let Some(until) = idle_until.filter(|until| *until > tokio::time::Instant::now())
+                {
+                    tokio::select! {
+                        _ = tokio::time::sleep_until(until) => {},
+                        _ = wakeup.notified() => {},
+                    }
+                    continue;
+                }
+                // The permitted interval is excluded from idle time even after
+                // expiry, leaving the bounded operation's diagnostics/transition
+                // to finish under the unchanged outer wall-clock deadline.
+                let idle = idle_until.map_or(last, |until| last.max(until)).elapsed();
                 if idle >= limit {
                     return (idle, phase);
                 }
-                tokio::time::sleep(limit - idle).await;
+                tokio::select! {
+                    _ = tokio::time::sleep(limit - idle) => {},
+                    _ = wakeup.notified() => {},
+                }
             }
         };
         tokio::select! {
             biased;
-            result = tokio::time::timeout(budget, journey) => match result {
+            result = async {
+                match budget {
+                    Some(budget) => tokio::time::timeout(budget, journey).await,
+                    None => Ok(journey.await),
+                }
+            } => match result {
                 Ok(result) => result,
                 Err(_) => {
                     let phase = self.state().phase;
@@ -681,6 +747,7 @@ const GROUPS: &[(&str, &[&str])] = &[
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
+    ("rows", &[]),
 ];
 
 /// The selected journey groups; `None` runs every group.
@@ -1021,6 +1088,9 @@ mod verdict_tests {
         assert!(some.runs("f6") && some.runs("f7run"));
         assert!(!some.runs("core") && !some.runs("f7clock"));
         assert!(Groups::parse(Some("f6,nope"), GROUPS).is_err());
+        let rows = Groups::parse(Some("rows"), GROUPS)?;
+        assert!(rows.runs("rows") && !rows.runs("core") && !rows.runs("f6"));
+        assert!(!some.runs("rows"));
         const CHAIN: &[(&str, &[&str])] = &[("a", &["b"]), ("b", &["c"]), ("c", &[]), ("d", &[])];
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));

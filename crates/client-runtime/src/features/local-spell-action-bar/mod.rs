@@ -7,3 +7,6 @@ pub use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldowns, Actor
 pub(crate) use protocol::run_cast;
 pub use protocol::{cast_aimed, cast_selected, feedback_text};
 pub use state::SpellFeedback;
+#[cfg(test)]
+#[path = "tests/e2e_c04.rs"]
+mod e2e_c04;
