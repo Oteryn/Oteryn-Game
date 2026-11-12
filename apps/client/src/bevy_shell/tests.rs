@@ -290,7 +290,9 @@ fn existing_input_owners_turn_before_walk_and_clear_all_held_mappings_on_modal_r
     };
     host.route_input(&[key(Modifiers::one(Modifier::Control))], false);
     let play = host.play.as_mut().ok_or("play")?;
-    play.view.tick(&play.link)?;
+    play.view
+        .tick(&play.link)
+        .map_err(|end| format!("play ended unexpectedly: {end:?}"))?;
     // With the target-move capability absent the turn is consumed, never converted to a walk.
     while let Ok(command) = commands.try_recv() {
         assert!(!matches!(command, PlayCommand::Step(_)));
@@ -300,7 +302,9 @@ fn existing_input_owners_turn_before_walk_and_clear_all_held_mappings_on_modal_r
     host.cancel();
     host.route_input(&[key(Modifiers::NONE)], false);
     let play = host.play.as_mut().ok_or("play")?;
-    play.view.tick(&play.link)?;
+    play.view
+        .tick(&play.link)
+        .map_err(|end| format!("play ended unexpectedly: {end:?}"))?;
     let mut walked = false;
     while let Ok(command) = commands.try_recv() {
         if let PlayCommand::Step(direction) = command {
