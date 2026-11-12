@@ -6,6 +6,28 @@ use crate::spell::cast::PlayerSpellState;
 use crate::spell::{Carrier, ManaCost, SpellBook};
 use oteryn_protocol_oteryn::actor_spell_catalog::{self as wire, SpellCatalogEntry};
 
+// Keep source identities intact while displaying the agreed conjuration label.
+// A conflicting source alias is conservative even when that alias is inactive.
+fn display_name<'a>(book: &'a SpellBook, spell: &'a crate::spell::SpellDefinition) -> &'a str {
+    let Carrier::Rune { item, .. } = spell.carrier else {
+        return &spell.name;
+    };
+    let mut label = None;
+    for creator in &book.spells {
+        if !matches!(creator.carrier, Carrier::Instant { .. })
+            || !matches!(creator.execution, crate::spell::Execution::Conjure { result, .. } if result == item)
+        {
+            continue;
+        }
+        match label {
+            Some(previous) if previous != creator.name => return &spell.name,
+            None => label = Some(creator.name.as_str()),
+            _ => {}
+        }
+    }
+    label.unwrap_or(&spell.name)
+}
+
 pub(super) fn catalog(
     book: &SpellBook,
     state: &PlayerSpellState,
@@ -56,7 +78,7 @@ pub(super) fn catalog_with_visibility(
         cooldown_groups.dedup();
         entries.push(SpellCatalogEntry {
             cast_index: u32::try_from(index.checked_add(1)?).ok()?,
-            name: spell.name.clone(),
+            name: display_name(book, spell).to_owned(),
             words,
             level: spell.level,
             mana,
@@ -171,4 +193,137 @@ pub(super) async fn observe<A: super::connection::FreshAdmissionAuthority>(
     session: GameSessionId,
 ) -> Option<Vec<u8>> {
     wire::encode_catalog(&authority.observe_spell_catalog(actor, session).await?).ok()
+}
+
+#[cfg(test)]
+mod display_name_tests {
+    use super::*;
+    use crate::spell::{Execution, SpellDefinition};
+
+    fn rune_and_creator(
+        item: u32,
+        legacy: &str,
+        current: &str,
+    ) -> Result<(SpellDefinition, SpellDefinition), String> {
+        let template = crate::spell::cast::v1_spell_book()?
+            .spells
+            .into_iter()
+            .next()
+            .ok_or("missing template")?;
+        let mut rune = template.clone();
+        rune.key = format!("test:rune/{item}");
+        rune.name = legacy.into();
+        rune.carrier = Carrier::Rune {
+            item,
+            charges: 1,
+            magic_level: 0,
+        };
+        let mut creator = template;
+        creator.key = format!("test:conjure/{item}");
+        creator.name = current.into();
+        creator.carrier = Carrier::Instant {
+            words: format!("test conjure {item}"),
+            takes_parameter: false,
+        };
+        creator.execution = Execution::Conjure {
+            reagent: None,
+            result: item,
+            count: 1,
+        };
+        Ok((rune, creator))
+    }
+
+    fn project(book: &SpellBook) -> Result<Vec<SpellCatalogEntry>, String> {
+        let state =
+            PlayerSpellState::new(crate::gameplay_transport::actor_spell::tests::FACTS, 0, 0)
+                .ok_or("state")?;
+        catalog_with_visibility(book, &state, 0, true).ok_or("catalog".into())
+    }
+
+    #[test]
+    fn rune_display_names_use_agreed_conjuration_without_changing_cast_identity()
+    -> Result<(), String> {
+        for (item, legacy, current) in [
+            (3153, "antidote rune", "Cure Poison Rune"),
+            (3197, "desintegrate rune", "Disintegrate Rune"),
+            (3149, "energybomb rune", "Energy Bomb Rune"),
+            (3192, "firebomb rune", "Fire Bomb Rune"),
+            (3203, "animate dead rune", "Animate Dead Rune"),
+        ] {
+            let (rune, creator) = rune_and_creator(item, legacy, current)?;
+            let mut second = creator.clone();
+            second.key.push_str("/second");
+            second.carrier = Carrier::Instant {
+                words: "test second creator".into(),
+                takes_parameter: false,
+            };
+            let mut book =
+                SpellBook::new(vec![rune, creator, second]).map_err(|e| e.to_string())?;
+            let before = book.spells.clone();
+            let entries = project(&book)?;
+            let rune_entry = entries
+                .iter()
+                .find(|entry| entry.rune_item == Some(item))
+                .ok_or("rune entry")?;
+            assert_eq!(rune_entry.name, current);
+            for entry in &entries {
+                let source = &book.spells[entry.cast_index as usize - 1];
+                assert_eq!(
+                    entry.mana,
+                    match source.mana {
+                        ManaCost::Fixed(mana) => mana,
+                        ManaCost::PercentOfMaximum(mana) => mana,
+                    }
+                );
+                if entry.rune_item.is_none() {
+                    assert_eq!(entry.name, source.name);
+                }
+            }
+            assert_eq!(book.spells, before);
+            assert_eq!(
+                book.rune(item).map(|spell| &spell.key),
+                Some(&before[rune_entry.cast_index as usize - 1].key)
+            );
+            let inactive = book
+                .spells
+                .iter()
+                .position(|spell| matches!(spell.carrier, Carrier::Instant { .. }))
+                .ok_or("creator")?;
+            book.spells[inactive].name = "inactive conflicting creator".into();
+            book.inactive_aliases.insert(inactive);
+            assert_eq!(
+                project(&book)?
+                    .iter()
+                    .find(|entry| entry.rune_item == Some(item))
+                    .ok_or("rune entry")?
+                    .name,
+                legacy
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn rune_display_names_keep_source_when_no_creator_or_creators_conflict() -> Result<(), String> {
+        let (rune, creator) = rune_and_creator(3153, "antidote rune", "Cure Poison Rune")?;
+        let book = SpellBook::new(vec![rune.clone()]).map_err(|e| e.to_string())?;
+        assert_eq!(project(&book)?[0].name, "antidote rune");
+        let mut conflicting = creator.clone();
+        conflicting.key.push_str("/conflict");
+        conflicting.name = "Different creator".into();
+        conflicting.carrier = Carrier::Instant {
+            words: "test conflicting creator".into(),
+            takes_parameter: false,
+        };
+        let book = SpellBook::new(vec![rune, creator, conflicting]).map_err(|e| e.to_string())?;
+        assert_eq!(
+            project(&book)?
+                .iter()
+                .find(|entry| entry.rune_item == Some(3153))
+                .ok_or("rune entry")?
+                .name,
+            "antidote rune"
+        );
+        Ok(())
+    }
 }
