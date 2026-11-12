@@ -22,7 +22,15 @@ pub fn validate_resolved_world(
             }
         }
     }
-    if callbacks.len() > world_callbacks::MAX_CALLBACKS {
+    // The published cohorts share the boot bound; only additional resolved
+    // owners consume the closed per-source admission bound.
+    if callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
+        || callbacks
+            .iter()
+            .filter(|callback| !published.owners.contains_key(&callback.key))
+            .count()
+            > world_callbacks::MAX_CALLBACKS
+    {
         return Err("resolved World source bounds".into());
     }
     let mut owned = None;
@@ -69,6 +77,48 @@ pub fn validate_resolved_world(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn published_registry_does_not_exhaust_the_resolved_source_bound() -> Result<(), String> {
+        let source = super::super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        assert!(callbacks.len() > world_callbacks::MAX_CALLBACKS);
+        let transition = catalogue
+            .transition("oteryn:quest-transition/kv/bear_chest3/chest")
+            .ok_or("bear claim transition")?;
+        validate_resolved_world(catalogue, transition, false, &callbacks)
+    }
+
+    #[test]
+    fn resolved_source_and_combined_registry_keep_their_separate_bounds() -> Result<(), String> {
+        let source = super::super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        let transition = catalogue
+            .transition("oteryn:quest-transition/kv/bear_chest3/chest")
+            .ok_or("bear claim transition")?;
+        let callback = callbacks.first().ok_or("published callback")?;
+        let additional: Vec<_> = (0..=world_callbacks::MAX_CALLBACKS)
+            .map(|index| {
+                let mut callback = callback.clone();
+                callback.key = format!("oteryn:quest-callback/resolved-bound-{index}");
+                callback
+            })
+            .collect();
+        assert_eq!(
+            validate_resolved_world(catalogue, transition, false, &additional),
+            Err("resolved World source bounds".into())
+        );
+        let oversized = vec![callback.clone(); world_callbacks::MAX_RUNTIME_CALLBACKS + 1];
+        assert_eq!(
+            validate_resolved_world(catalogue, transition, false, &oversized),
+            Err("resolved World source bounds".into())
+        );
+        Ok(())
+    }
+
     #[test]
     fn resolved_world_owner_preserves_exact_binding_and_rejects_weaker_aliases()
     -> Result<(), String> {

@@ -601,15 +601,26 @@ fn scenario(case: Case) -> TestResult {
                     )
             })
             .ok_or("a second actual qualified walkable cell")?;
-        runtime
-            .install_companion_policies(
-                crate::foundation::CompiledCreaturePolicies::from_active_artifact(
-                    pin.server_artifact_digest(),
-                    vec![policy.clone()],
+        if endgame_creature.is_some() {
+            // Native bosses require their source health/death callbacks as well
+            // as the base policy; a one-row fixture drops that admission proof.
+            owner
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .ok_or("native endgame generation")?
+                .install_companion_policies(&mut runtime)
+                .map_err(debug)?;
+        } else {
+            runtime
+                .install_companion_policies(
+                    crate::foundation::CompiledCreaturePolicies::from_active_artifact(
+                        pin.server_artifact_digest(),
+                        vec![policy.clone()],
+                    )
+                    .map_err(debug)?,
                 )
-                .map_err(debug)?,
-            )
-            .map_err(debug)?;
+                .map_err(debug)?;
+        }
         runtime
             .realize_native_qualification_spawn(pin, &policy.definition_key, boss_cell)
             .map_err(debug)?;

@@ -178,6 +178,8 @@ fn resume_protocol_error_preserves_session_join_unavailable() -> Result<(), BoxE
             client,
             RecoveryState {
                 game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: uuid_v7(2),
+                activity_scope: None,
                 connection_generation: 1,
                 next_command_id: 7,
                 last_server_sequence: 40,

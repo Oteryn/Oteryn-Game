@@ -5,7 +5,7 @@ fn position(x: i32) -> ActorPosition {
     ActorPosition {
         x: x - 98,
         y: 0,
-        floor: 8,
+        floor: -8,
     }
 }
 
@@ -332,7 +332,7 @@ async fn replay(scenario: Replay) -> TestResult {
             bundle_digest: [2; 32],
             reset_epoch: 0,
             origin: position(100),
-            first_visible_floor: 8,
+            first_visible_floor: -8,
         },
         // An old corpse at the death tile must never satisfy the hunt.
         entities: vec![creature(), corpse(11, 104)],

@@ -2126,8 +2126,9 @@ mod tests {
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
                 "oteryn:quest.the_ice_islands_quest",
-                // M47 binds four source counters plus the durable roll; absence stays -1.
-                "80dc73861594fa37edd7c46c38a7734cc9c84889fa2bcc89e9af08a49ff002f0",
+                // M47 counters retain -1; distinct native seals also bind their
+                // separately owned painted-target counter and source callbacks.
+                "299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",

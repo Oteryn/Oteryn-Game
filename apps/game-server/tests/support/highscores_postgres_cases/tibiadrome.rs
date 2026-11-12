@@ -600,7 +600,7 @@ fn tibiadrome_highscores_publish_lifetime_current_rotation_and_private_own_row()
     })
 }
 
-/// Preserve real main 14/17 data across the branch highscore DDL and cleanup.
+/// Preserve real main Loyalty and Drome data across the branch highscore DDL.
 #[test]
 fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
     run("hsdromeupgrade", async |h| {
@@ -613,7 +613,7 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
             .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
             .map_err(debug)?;
-        for category in [14, 16, 17] {
+        for category in [13, 14, 16, 17] {
             assert!(
                 published
                     .snapshots
@@ -629,7 +629,7 @@ fn tibiadrome_main_snapshots_survive_branch_upgrade_postgres() -> TestResult {
                 "game_public_highscores",
             ] {
                 let rows: String = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
-                    "SELECT COALESCE(jsonb_agg(body ORDER BY body::text),'[]'::jsonb)::text FROM (SELECT to_jsonb(t) AS body FROM {table} t WHERE world_id=encode($1,'hex')::uuid AND category IN(14,16,17)) captured"
+                    "SELECT COALESCE(jsonb_agg(body ORDER BY body::text),'[]'::jsonb)::text FROM (SELECT to_jsonb(t) AS body FROM {table} t WHERE world_id=encode($1,'hex')::uuid AND category IN(13,14,16,17)) captured"
                 ))).bind(world().as_bytes().as_slice()).fetch_one(&h.pool).await?;
                 assert_ne!(
                     rows, "[]",
