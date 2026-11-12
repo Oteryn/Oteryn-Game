@@ -361,14 +361,19 @@ mod tests {
             disposition: 1,
             transaction_id: Some(id),
         };
-        let payload = claimed.encode()?;
+        let payload = claimed
+            .encode()
+            .map_err(|error| format!("claim encode: {error:?}"))?;
         assert_eq!(payload.first(), Some(&0x08));
         assert_eq!(claim_result(&payload)?, claimed);
         let duplicate = daily::DailyRewardResult {
             disposition: 2,
             transaction_id: None,
         };
-        assert_eq!(claim_result(&duplicate.encode()?)?, duplicate);
+        let payload = duplicate
+            .encode()
+            .map_err(|error| format!("duplicate encode: {error:?}"))?;
+        assert_eq!(claim_result(&payload)?, duplicate);
         assert!(claim_result(&[1]).is_err());
         assert!(claim_result(&[0x08, 1]).is_err());
         Ok(())
