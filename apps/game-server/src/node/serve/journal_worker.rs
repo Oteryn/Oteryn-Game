@@ -113,7 +113,15 @@ pub(super) async fn run(
     let mut publishers = match configured(config) {
         Ok(value) => value,
         Err(_) => {
-            eprintln!("event=game_journal_configuration reason=invalid");
+            super::emit(
+                super::PROCESS,
+                &oteryn_error_codes::Line::new(
+                    oteryn_error_codes::Level::Error,
+                    "node",
+                    "game_journal_configuration",
+                )
+                .field("reason", oteryn_error_codes::FieldValue::Token("invalid")),
+            );
             None
         }
     };

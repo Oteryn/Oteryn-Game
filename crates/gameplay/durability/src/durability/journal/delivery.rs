@@ -257,7 +257,18 @@ impl ProducerStore<'_, '_, '_> {
                         .await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     if stalled {
-                        eprintln!("event=game_journal_stalled reason=no_progress");
+                        oteryn_error_codes::emit(
+                            "oteryn-game-server",
+                            &oteryn_error_codes::Line::new(
+                                oteryn_error_codes::Level::Warn,
+                                "durability",
+                                "game_journal_stalled",
+                            )
+                            .field(
+                                "reason",
+                                oteryn_error_codes::FieldValue::Token("no_progress"),
+                            ),
+                        );
                     }
                     Ok(())
                 })

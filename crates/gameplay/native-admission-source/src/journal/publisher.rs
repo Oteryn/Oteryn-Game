@@ -248,7 +248,18 @@ impl<P: JournalPeer> Publisher<P> {
         if now.duration_since(self.last_progress) >= Duration::from_secs(60)
             && now.duration_since(self.last_diagnostic) >= Duration::from_secs(60)
         {
-            eprintln!("event=game_journal_stalled reason=no_progress");
+            oteryn_error_codes::emit(
+                "oteryn-game-server",
+                &oteryn_error_codes::Line::new(
+                    oteryn_error_codes::Level::Warn,
+                    "admission",
+                    "game_journal_stalled",
+                )
+                .field(
+                    "reason",
+                    oteryn_error_codes::FieldValue::Token("no_progress"),
+                ),
+            );
             self.last_diagnostic = now;
         }
         Step::RetryAfter(specified.map_or(jitter, |delay| delay.max(jitter)))

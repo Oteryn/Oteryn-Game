@@ -162,7 +162,18 @@ impl ProducerStore<'_, '_, '_> {
                 Step::RetryAfter(delay) => (delay, false, false),
                 Step::Disabled => (Duration::from_secs(28), false, false),
                 Step::Quarantined => {
-                    eprintln!("event=game_journal_quarantined reason=authority_or_protocol");
+                    oteryn_error_codes::emit(
+                        "oteryn-game-server",
+                        &oteryn_error_codes::Line::new(
+                            oteryn_error_codes::Level::Error,
+                            "durability",
+                            "game_journal_quarantined",
+                        )
+                        .field(
+                            "reason",
+                            oteryn_error_codes::FieldValue::Token("authority_or_protocol"),
+                        ),
+                    );
                     (Duration::ZERO, false, true)
                 }
             };
