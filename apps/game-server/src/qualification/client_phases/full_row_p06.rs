@@ -169,7 +169,7 @@ async fn own_level(client: &mut DevClientSession) -> TestResult<u32> {
             &[1, 0, 0, 1],
         )
         .await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() != 42 || reply.payload[0] != 1
+    if reply.status != CommandStatus::Accepted || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err() || reply.payload[0] != 1
     {
         return Err(format!("Wheel progression query observed reply={reply:?}").into());
     }

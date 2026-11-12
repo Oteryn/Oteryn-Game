@@ -4,6 +4,9 @@
 //! (`request` + `SkillProgressPanel::finish`). The expected numbers are the server-observed
 //! values the capture phase wrote to `s16b-expected.txt`, never the client's own rendering.
 
+#[path = "general_stats_selection.rs"]
+mod selection;
+
 use super::{CyclopediaCharacterPanel, Intent, apply_result, panel_text, request};
 use crate::skill_progress::{self, SkillProgress, SkillProgressPanel, SkillProgressSnapshot};
 use oteryn_client_runtime::{
@@ -90,17 +93,19 @@ fn reply(payload: Vec<u8>) -> GatedCommandResult {
 
 #[test]
 fn e2e_s16b_changed_vocation_statistics_replay() -> TestResult {
-    let (stats, skills, expected) = if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-    {
-        let directory = std::path::Path::new(&directory);
-        (
-            std::fs::read(directory.join("s16b-stats.bin"))?,
-            std::fs::read(directory.join("s16b-skills.bin"))?,
-            std::fs::read_to_string(directory.join("s16b-expected.txt"))?,
-        )
-    } else {
-        fixture()?
-    };
+    let (stats, skills, expected, selected) =
+        if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            let directory = std::path::Path::new(&directory);
+            (
+                std::fs::read(directory.join("s16b-stats.bin"))?,
+                std::fs::read(directory.join("s16b-skills.bin"))?,
+                std::fs::read_to_string(directory.join("s16b-expected.txt"))?,
+                selection::read(directory, "s16b-stats.bin")?,
+            )
+        } else {
+            let (stats, skills, expected) = fixture()?;
+            (stats, skills, expected, selection::legacy())
+        };
     let value = |key: &str| -> TestResult<&str> {
         expected
             .lines()
@@ -115,10 +120,12 @@ fn e2e_s16b_changed_vocation_statistics_replay() -> TestResult {
     let mut panel = CyclopediaCharacterPanel {
         selected: true,
         tab: CharacterTab::GeneralStats,
+        extensions: selected.extensions,
         ..Default::default()
     };
     request(&mut panel, Intent::Tab).ok_or("general stats request")?;
     assert!(apply_result(&mut panel, &reply(stats.clone())));
+    selection::check(&panel, selected);
     let minutes: u16 = value("stamina")?.parse()?;
     let mut lines = vec![
         "GeneralStats".to_owned(),
@@ -151,6 +158,11 @@ fn e2e_s16b_changed_vocation_statistics_replay() -> TestResult {
         value("health")?,
         value("mana")?
     ));
+    if let Some(id) = selected.vocation {
+        let title = crate::cyclopedia_character_vocation::vocation_title(id)
+            .ok_or("invalid captured vocation")?;
+        lines.push(format!("Vocation: {title}"));
+    }
     assert_eq!(value("known")?, "1");
     assert_eq!(panel.result.as_deref(), Some(lines.join("\n").as_str()));
     assert!(panel_text(&panel).ends_with(&lines.join("\n")));

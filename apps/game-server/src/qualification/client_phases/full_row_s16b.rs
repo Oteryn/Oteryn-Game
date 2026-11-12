@@ -80,8 +80,8 @@ struct Stats {
     skills: [u16; 7],
 }
 
-fn decode_stats(payload: &[u8]) -> TestResult<Stats> {
-    if payload.len() != 42 || payload[0] != 1 || payload[33] > 1 {
+fn decode_stats(payload: &[u8], vocation_selected: bool) -> TestResult<Stats> {
+    if general_stats::validate(payload, vocation_selected).is_err() || payload[0] != 1 || payload[33] > 1 {
         return Err(format!("GeneralStats malformed: len={} tab={:?}", payload.len(), payload.first()).into());
     }
     Ok(Stats {
@@ -102,7 +102,7 @@ async fn stats(client: &mut DevClientSession) -> TestResult<Stats> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("GeneralStats query status={:?} payload={:?}", reply.status, reply.payload).into());
     }
-    decode_stats(&reply.payload)
+    decode_stats(&reply.payload, general_stats::selected(client))
 }
 
 async fn trained(client: &mut DevClientSession) -> TestResult<SkillProgressSnapshot> {
@@ -329,8 +329,8 @@ mod tests {
         payload[9..13].copy_from_slice(&8u32.to_le_bytes());
         payload[13..15].copy_from_slice(&4u16.to_le_bytes());
         for i in 0..7 { payload[15 + i * 2..17 + i * 2].copy_from_slice(&(10 + i as u16).to_le_bytes()); }
-        assert_eq!(decode_stats(&payload)?, Stats { xp: 123, level: 8, magic: 4, skills: [10, 11, 12, 13, 14, 15, 16] });
-        assert!(decode_stats(&payload[..41]).is_err());
+        assert_eq!(decode_stats(&payload, false)?, Stats { xp: 123, level: 8, magic: 4, skills: [10, 11, 12, 13, 14, 15, 16] });
+        assert!(decode_stats(&payload[..41], false).is_err());
         Ok(())
     }
 }

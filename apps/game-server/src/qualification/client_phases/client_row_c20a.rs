@@ -44,8 +44,8 @@ async fn stats(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     Ok(reply.payload)
 }
 
-fn progress(payload: &[u8]) -> TestResult<(u64, u32)> {
-    if payload.len() != 42 || payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8)) {
+fn progress(payload: &[u8], vocation_selected: bool) -> TestResult<(u64, u32)> {
+    if general_stats::validate(payload, vocation_selected).is_err() || payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8)) {
         return Err("C20a malformed GeneralStats reply".into());
     }
     Ok((
@@ -61,7 +61,7 @@ async fn capture_journey(
 ) -> TestResult {
     let mut client = connect_world(clients, 0xca).await?;
     let before_payload = stats(&mut client).await?;
-    let before = progress(&before_payload)?;
+    let before = progress(&before_payload, general_stats::selected(&client))?;
     travel_to_spawn(
         &mut client,
         world,
@@ -100,10 +100,12 @@ async fn capture_journey(
         }
     }
     let after_payload = stats(&mut client).await?;
-    let after = progress(&after_payload)?;
+    let after = progress(&after_payload, general_stats::selected(&client))?;
     if after.0 >= before.0 {
         return Err(format!("C20a death did not reduce experience: {before:?} -> {after:?}").into());
     }
+    general_stats::record_selection("c20a-before.bin", &before_payload, general_stats::selected(&client))?;
+    general_stats::record_selection("c20a-after.bin", &after_payload, general_stats::selected(&client))?;
     write_capture(&before_payload, &after_payload, before, after);
     Ok(())
 }

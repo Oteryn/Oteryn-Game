@@ -16,6 +16,7 @@ fn capture(name: &str, bytes: &[u8]) {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0x47, 0).await?;
+    let vocation_selected = general_stats::selected(&client);
     let stats = client
         .session_mut()
         .gated_command(
@@ -34,7 +35,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await?;
     let vitals = client.actor_vitals().copied();
     let _ = client.session_mut().logout().await;
-    if stats.status != CommandStatus::Accepted || stats.payload.len() != 42 || stats.payload[0] != 1
+    if stats.status != CommandStatus::Accepted || general_stats::validate(&stats.payload, vocation_selected).is_err() || stats.payload[0] != 1
     {
         return Err(format!("step=general-stats status={:?} len={}", stats.status, stats.payload.len()).into());
     }
@@ -46,6 +47,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if level != 8 || vitals.max_health != 185 || vitals.max_mana != 90 {
         return Err(format!("step=changed-stats level={level} vitals={vitals:?}; expected level-8 knight 185/90").into());
     }
+    let vocation = general_stats::validate(&stats.payload, vocation_selected)?;
+    if vocation_selected && vocation != general::vocation_id("knight") {
+        return Err(format!("step=changed-vocation observed={vocation:?} needed=knight").into());
+    }
+    general_stats::record_selection("s16b-stats.bin", &stats.payload, vocation_selected)?;
     capture("s16b-stats.bin", &stats.payload);
     capture("s16b-skills.bin", &skills.payload);
     let mut expected = format!(

@@ -129,7 +129,7 @@ async fn observed_level(client: &mut DevClientSession) -> TestResult<u32> {
         .gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, 388, &request)
         .await?;
     if reply.status != CommandStatus::Accepted
-        || reply.payload.len() != 42
+        || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
         || reply.payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8))
         || reply.payload[33] > 1
     {

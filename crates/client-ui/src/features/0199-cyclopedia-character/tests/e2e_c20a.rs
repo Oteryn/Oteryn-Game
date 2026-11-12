@@ -7,6 +7,9 @@
 //! `crates/session/src/domain_dispatch.rs::Session::apply_delta` consumes state deltas rather
 //! than this command-result payload.
 
+#[path = "general_stats_selection.rs"]
+mod selection;
+
 use super::*;
 use oteryn_client_runtime::{
     CommandStatus,
@@ -16,34 +19,40 @@ use oteryn_client_runtime::{
 
 #[test]
 fn e2e_c20a_replays_death_experience_payloads() -> Result<(), Box<dyn std::error::Error>> {
-    let (before, after, expected) = if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        (
-            std::fs::read(path.join("c20a-before.bin"))?,
-            std::fs::read(path.join("c20a-after.bin"))?,
-            std::fs::read_to_string(path.join("c20a-expected.txt"))?,
-        )
-    } else {
-        let before = GeneralStats {
-            experience: 18_400,
-            level: 20,
-            ..Default::default()
+    let (before, after, expected, selections) =
+        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            let path = std::path::Path::new(&path);
+            (
+                std::fs::read(path.join("c20a-before.bin"))?,
+                std::fs::read(path.join("c20a-after.bin"))?,
+                std::fs::read_to_string(path.join("c20a-expected.txt"))?,
+                [
+                    selection::read(path, "c20a-before.bin")?,
+                    selection::read(path, "c20a-after.bin")?,
+                ],
+            )
+        } else {
+            let before = GeneralStats {
+                experience: 18_400,
+                level: 20,
+                ..Default::default()
+            };
+            let after = GeneralStats {
+                experience: 17_700,
+                level: 19,
+                ..Default::default()
+            };
+            (
+                TabView::GeneralStats(before)
+                    .encode()
+                    .map_err(|_| "before fixture encoding failed")?,
+                TabView::GeneralStats(after)
+                    .encode()
+                    .map_err(|_| "after fixture encoding failed")?,
+                "18400 20\n17700 19\n".into(),
+                [selection::legacy(); 2],
+            )
         };
-        let after = GeneralStats {
-            experience: 17_700,
-            level: 19,
-            ..Default::default()
-        };
-        (
-            TabView::GeneralStats(before)
-                .encode()
-                .map_err(|_| "before fixture encoding failed")?,
-            TabView::GeneralStats(after)
-                .encode()
-                .map_err(|_| "after fixture encoding failed")?,
-            "18400 20\n17700 19\n".into(),
-        )
-    };
     let values = expected
         .split_whitespace()
         .map(str::parse::<u64>)
@@ -55,13 +64,17 @@ fn e2e_c20a_replays_death_experience_payloads() -> Result<(), Box<dyn std::error
     let mut panel = CyclopediaCharacterPanel {
         selected: true,
         tab: CharacterTab::GeneralStats,
+        extensions: selections[0].extensions,
         ..Default::default()
     };
     apply(&mut panel, before, 1)?;
+    selection::check(&panel, selections[0]);
     let visible = panel.result.as_deref().ok_or("missing before view")?;
     assert!(visible.contains(&format!("Experience: {before_xp}")));
     assert!(visible.contains(&format!("Level: {before_level}")));
+    panel.extensions = selections[1].extensions;
     apply(&mut panel, after, 2)?;
+    selection::check(&panel, selections[1]);
     let visible = panel.result.as_deref().ok_or("missing after view")?;
     assert!(visible.contains(&format!("Experience: {after_xp}")));
     assert!(visible.contains(&format!("Level: {after_level}")));

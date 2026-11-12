@@ -203,7 +203,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
         wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
         &[1, 0, 0, 1],
     ).await?;
-    if reply.status != CommandStatus::Accepted || reply.payload.len() != 42 || reply.payload[0] != 1 {
+    if reply.status != CommandStatus::Accepted || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err() || reply.payload[0] != 1 {
         return Err(format!("step kill window: progression reply={reply:?}").into());
     }
     Ok((u64::from_le_bytes(reply.payload[1..9].try_into()?), u32::from_le_bytes(reply.payload[9..13].try_into()?)))

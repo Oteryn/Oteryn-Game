@@ -313,11 +313,11 @@ async fn general_stats(client: &mut DevClientSession) -> TestResult<u16> {
         )
         .await?;
     if reply.status != CommandStatus::Accepted
-        || reply.payload.len() != 42
+        || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
         || reply.payload[0] != CharacterTab::GeneralStats as u8
     {
         return Err(format!(
-            "step=general-stats observed=status:{:?},payload-len:{} need=accepted-42-byte-general-stats",
+            "step=general-stats observed=status:{:?},payload-len:{} need=accepted-negotiated-general-stats",
             reply.status,
             reply.payload.len()
         )

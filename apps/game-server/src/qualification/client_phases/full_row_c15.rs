@@ -38,11 +38,11 @@ async fn progress(client: &mut DevClientSession) -> TestResult<Progress> {
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step-1 GeneralStats refused: {reply:?}").into());
     }
-    decode_progress(&reply.payload)
+    decode_progress(&reply.payload, general_stats::selected(client))
 }
 
-fn decode_progress(payload: &[u8]) -> TestResult<Progress> {
-    if payload.len() != 42
+fn decode_progress(payload: &[u8], vocation_selected: bool) -> TestResult<Progress> {
+    if general_stats::validate(payload, vocation_selected).is_err()
         || payload.first() != Some(&(character::CharacterTab::GeneralStats as u8))
         || payload[33] > 1
     {
@@ -238,8 +238,8 @@ mod tests {
         })
         .encode()
         .map_err(|error| format!("encode fixture: {error:?}"))?;
-        assert_eq!(decode_progress(&payload)?, Progress { xp: 123, level: 7, stamina: 2_519 });
-        assert!(decode_progress(&payload[..41]).is_err());
+        assert_eq!(decode_progress(&payload, false)?, Progress { xp: 123, level: 7, stamina: 2_519 });
+        assert!(decode_progress(&payload[..41], false).is_err());
         Ok(())
     }
 }

@@ -23,7 +23,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(Progress, Vec<u8
     if reply.status != CommandStatus::Accepted {
         return Err(format!("C15 client GeneralStats refused: {reply:?}").into());
     }
-    if reply.payload.len() != 42
+    if general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
         || reply.payload.first() != Some(&(character::CharacterTab::GeneralStats as u8))
         || reply.payload[33] > 1
     {
@@ -134,6 +134,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_world(clients, 0xc7).await?;
     let (before, before_payload) = progress(&mut client).await?;
+    general_stats::record_selection("c15-before.bin", &before_payload, general_stats::selected(&client))?;
     capture("c15-before.bin", &before_payload);
 
     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -150,6 +151,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if after.xp <= before.xp || after.level < before.level || after.stamina + 1 != before.stamina {
         return Err(format!("C15 client kill mismatch: before={before:?} after={after:?}").into());
     }
+    general_stats::record_selection("c15-after.bin", &after_payload, general_stats::selected(&client))?;
     capture("c15-after.bin", &after_payload);
     logout(&mut client).await?;
     drop(client);
@@ -164,6 +166,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("C15 client recovery mismatch: saved={after:?} fresh={recovered:?}").into());
     }
+    general_stats::record_selection("c15-recovered.bin", &recovered_payload, general_stats::selected(&fresh))?;
     capture("c15-recovered.bin", &recovered_payload);
     capture(
         "c15-expected.txt",
