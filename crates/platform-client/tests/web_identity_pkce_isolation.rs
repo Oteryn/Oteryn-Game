@@ -46,13 +46,146 @@ fn digest(value: &str) -> String {
         .map(|b| format!("{b:02x}"))
         .collect()
 }
+// Decode URI components without interpreting literal '+' as a form-space.
+fn pg_component(value: &str) -> String {
+    url::form_urlencoded::parse(format!("v={}", value.replace('+', "%2B")).as_bytes())
+        .next()
+        .map(|(_, value)| value.into_owned())
+        .unwrap_or_default()
+}
+fn postgres_env(database: &str) -> TestResult<Vec<(&'static str, String)>> {
+    let url = Url::parse(database).map_err(|_| "postgres_url_invalid")?;
+    check(
+        matches!(url.scheme(), "postgres" | "postgresql"),
+        "postgres_scheme_invalid",
+    )?;
+    Ok(vec![
+        (
+            "PGHOST",
+            url.host_str()
+                .ok_or("postgres_host_missing")?
+                .trim_matches(['[', ']'])
+                .to_owned(),
+        ),
+        ("PGPORT", url.port().unwrap_or(5432).to_string()),
+        ("PGUSER", pg_component(url.username())),
+        (
+            "PGPASSWORD",
+            pg_component(url.password().unwrap_or_default()),
+        ),
+        (
+            "PGDATABASE",
+            pg_component(
+                url.path()
+                    .strip_prefix('/')
+                    .ok_or("postgres_database_missing")?,
+            ),
+        ),
+        (
+            "PGSSLMODE",
+            url.query_pairs()
+                .find(|(key, _)| key == "sslmode")
+                .map(|(_, value)| value.into_owned())
+                .unwrap_or_else(|| "prefer".into()),
+        ),
+    ])
+}
+fn postgres_failure(label: &'static str, stderr: &[u8]) -> String {
+    // LC_ALL=C and VERBOSITY=sqlstate produce ERROR/FATAL: <five-character code>.
+    // Never forward message text, connection details, queries or arbitrary words.
+    let state = std::str::from_utf8(stderr).ok().and_then(|text| {
+        text.lines().find_map(|line| {
+            let (_, rest) = line
+                .split_once("ERROR:")
+                .or_else(|| line.split_once("FATAL:"))?;
+            let code = rest.trim();
+            (code.len() == 5
+                && code
+                    .bytes()
+                    .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit()))
+            .then_some(code)
+        })
+    });
+    let mut reason = format!("postgres_assertion_query_failed:{label}");
+    if let Some(state) = state {
+        reason.push(':');
+        reason.push_str(state);
+    }
+    reason
+}
+#[test]
+fn postgres_observer_connection_fields() -> TestResult {
+    let fields = postgres_env(
+        "postgresql://observer:p%40ss%3A%2F%25+word@127.0.0.1:15435/game%20db?sslmode=require",
+    )?;
+    for (key, expected) in [
+        ("PGHOST", "127.0.0.1"),
+        ("PGPORT", "15435"),
+        ("PGUSER", "observer"),
+        ("PGPASSWORD", "p@ss:/%+word"),
+        ("PGDATABASE", "game db"),
+        ("PGSSLMODE", "require"),
+    ] {
+        check(
+            fields
+                .iter()
+                .any(|(name, value)| *name == key && value == expected),
+            "postgres_field_mismatch",
+        )?;
+    }
+    check(
+        postgres_env("postgresql://observer@localhost/game")?
+            .iter()
+            .any(|(name, value)| *name == "PGSSLMODE" && value == "prefer"),
+        "postgres_default_sslmode_invalid",
+    )?;
+    check(
+        postgres_failure("probe", b"ERROR:  42P01\n")
+            == "postgres_assertion_query_failed:probe:42P01",
+        "postgres_sqlstate_missing",
+    )?;
+    check(
+        postgres_failure("probe", b"connection failed: private connection details")
+            == "postgres_assertion_query_failed:probe",
+        "postgres_error_text_leaked",
+    )
+}
+#[test]
+fn postgres_observer_round_trip() -> TestResult {
+    let Ok(database) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    check(
+        sql(&database, "round_trip", "SELECT 1;")? == "1",
+        "postgres_round_trip_failed",
+    )?;
+    let error = sql(
+        &database,
+        "invalid_query",
+        "SELECT missing_observer_column;",
+    )
+    .err()
+    .ok_or("postgres_invalid_query_accepted")?;
+    check(
+        error.to_string() == "postgres_assertion_query_failed:invalid_query:42703",
+        "postgres_sqlstate_invalid",
+    )
+}
 // psql is an independent read-only observer. SQL and database URLs never appear
 // in argv, diagnostics, assertions, or returned errors.
-fn sql(database: &str, query: &str) -> TestResult<String> {
+fn sql(database: &str, label: &'static str, query: &str) -> TestResult<String> {
     use std::{io::Write, process::Stdio};
     let mut child = Command::new("psql")
-        .args(["-X", "-qAt", "-v", "ON_ERROR_STOP=1"])
-        .env("PGDATABASE", database)
+        .args([
+            "-X",
+            "-qAt",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-v",
+            "VERBOSITY=sqlstate",
+        ])
+        .envs(postgres_env(database)?)
+        .env("LC_ALL", "C")
         .env("PGCONNECT_TIMEOUT", "5")
         .env(
             "PGOPTIONS",
@@ -60,21 +193,23 @@ fn sql(database: &str, query: &str) -> TestResult<String> {
         )
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
-        .map_err(|_| "postgres_observer_unavailable")?;
+        .map_err(|_| postgres_failure(label, &[]))?;
     child
         .stdin
         .take()
-        .ok_or("postgres_stdin_missing")?
+        .ok_or_else(|| postgres_failure(label, &[]))?
         .write_all(query.as_bytes())
-        .map_err(|_| "postgres_query_write_failed")?;
+        .map_err(|_| postgres_failure(label, &[]))?;
     let output = child
         .wait_with_output()
-        .map_err(|_| "postgres_observer_failed")?;
-    check(output.status.success(), "postgres_assertion_query_failed")?;
+        .map_err(|_| postgres_failure(label, &[]))?;
+    if !output.status.success() {
+        return Err(postgres_failure(label, &output.stderr).into());
+    }
     Ok(String::from_utf8(output.stdout)
-        .map_err(|_| "postgres_output_invalid")?
+        .map_err(|_| postgres_failure(label, &[]))?
         .trim()
         .to_owned())
 }
@@ -205,6 +340,7 @@ fn cookie_hash(browser: &Browser) -> TestResult<String> {
 fn session_owner(database: &str, browser: &Browser) -> TestResult<String> {
     sql(
         database,
+        "session_owner",
         &format!(
             "SELECT COALESCE(account_id::text,'anonymous') FROM web_sessions WHERE id_hash=decode('{}','hex') AND idle_expires_at>now() AND absolute_expires_at>now();",
             cookie_hash(browser)?
@@ -453,6 +589,7 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
     check(
         sql(
             database,
+            "old_session",
             &format!(
                 "SELECT count(*) FROM web_sessions WHERE id_hash=decode('{anonymous}','hex');"
             ),
@@ -473,6 +610,7 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
     check(
         sql(
             database,
+            "unused_code",
             &format!(
                 "SELECT count(*) FROM oauth_authorization_codes WHERE code_hash=decode('{}','hex') AND used_at IS NULL;",
                 digest(&code)
@@ -481,7 +619,11 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
         "negative_case_consumed_code",
     )?;
     check(
-        sql(database, "SELECT count(*) FROM oauth_tokens;")? == "0",
+        sql(
+            database,
+            "negative_tokens",
+            "SELECT count(*) FROM oauth_tokens;",
+        )? == "0",
         "negative_case_issued_token",
     )?;
     let _token = native
@@ -500,6 +642,7 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
     check(
         sql(
             database,
+            "account_a_tokens",
             &format!(
                 "SELECT count(*) FROM oauth_tokens t JOIN oauth_token_families f ON f.id=t.family_id WHERE f.account_id='{}';",
                 input.accounts[0].account_id
@@ -510,6 +653,7 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
     check(
         sql(
             database,
+            "account_b_families",
             &format!(
                 "SELECT count(*) FROM oauth_token_families WHERE account_id='{}';",
                 input.accounts[1].account_id
@@ -569,6 +713,7 @@ async fn journey(input: Input, report: Value, game_database: String) -> TestResu
     check(
         sql(
             &game_database,
+            "game_admissions",
             "SELECT count(*) FROM game_durability_fresh_admission_receipts;",
         )? == "0",
         "identity_admitted_to_game",
@@ -630,7 +775,10 @@ fn web_identity_pkce_isolation() -> TestResult {
     {
         let reason = error.to_string();
         check(
-            reason.len() <= 128 && reason.bytes().all(|b| b.is_ascii_lowercase() || b == b'_'),
+            reason.len() <= 128
+                && reason
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b':'),
             "invalid_failure_reason",
         )?;
         fs::write(
