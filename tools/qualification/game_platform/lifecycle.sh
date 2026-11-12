@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sourced only by node_boot's fixed-path lifecycle hook. No Platform boot copy.
 set +x
-readonly GAME_PLATFORM_SHA=f73244933228f399f1a5e9174ef064d7ffe70785
+readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_fail() {
@@ -85,6 +85,9 @@ game_platform_start() {
     sleep 0.2
   done
   [[ "$ready" == 1 ]] || game_platform_fail platform harness_not_ready
+  python3 "$GAME_SOURCE/tools/qualification/game_platform/route_check.py" "$WORK" \
+    || game_platform_fail platform route_seed_conflict_failed
+  evidence "flow=route_seed result=pass revision_format=1 idempotent=1 conflict_exit=2"
   # node_boot's unassigned identity phase needs only NativeEvidence credentials.
   # Do not combine the harness's other fifteen purpose identities with this leaf.
   cp "$PORTAL_E2E_OUT/certs/ca.pem" "$WP5_PKI/server-ca.crt"
@@ -121,10 +124,10 @@ game_platform_identity() {
   kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_identity
   grep -Fx 'NODE_BOOT_EVIDENCE flow=web_identity result=pass account_isolation=1' "$WORK/identity.log" \
     || game_platform_fail web_identity evidence_missing
-  if [[ -f "$WORK/route-pending" ]]; then
-    printf 'GAME_PLATFORM_EVIDENCE blocker=portal-rs/bin/oteryn-portal/src/seed.rs:148 pending=channel,route\n'
-    printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=T19c\n' > "$GAME_PLATFORM_RESULT_FILE"
-    exit 2
-  fi
-  printf 'GAME_PLATFORM_RESULT=PASS\n' > "$GAME_PLATFORM_RESULT_FILE"
+  evidence "blocker=portal-rs/crates/gameauth/src/admission/grant.rs:24 pending=encrypted_signing_custody"
+  # Assignment requires control-owned scope grants. The default node_boot stage
+  # inserts them directly; this lane must not invent those authority records.
+  printf 'GAME_PLATFORM_EVIDENCE blocker=tools/qualification/node_boot/run.sh:999 pending=control_scope_grant_issuer\n'
+  printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Game what=tools/qualification/node_boot/run.sh:999\n' > "$GAME_PLATFORM_RESULT_FILE"
+  exit 2
 }

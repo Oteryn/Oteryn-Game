@@ -9,7 +9,7 @@ PLATFORM_SOURCE=/absolute/path/to/Oteryn-Platform bash tools/qualification/game_
 ```
 
 The checkout must be clean and exactly
-`f73244933228f399f1a5e9174ef064d7ffe70785`. The readonly pin is independent of
+`ed9b33729865a77051566182a17aaf8577abf347`. The readonly pin is independent of
 node_boot's unchanged `3bc2d0e9` pin. There is no PHP or mock-server fallback.
 No tool is installed by this lane. Platform's unchanged `e2e/start.sh` owns
 preparation of its locked Node `pg` library when absent; provision that library
@@ -58,22 +58,30 @@ success line is emitted only after every live assertion:
 NODE_BOOT_EVIDENCE flow=web_identity result=pass account_isolation=1
 ```
 
-At this Platform pin, channel and route seed explicitly return pending
-(`portal-rs/bin/oteryn-portal/src/seed.rs:148`). After identity qualification the
-lane therefore exits nonzero with:
+At this pin (#1833), the real harness seeds World `Entry`, the node_boot World/Channel
+pair and a localhost route matching the Game TLS SAN and port. Channel accepts only
+`worldId`/`channelId`; route uses `tlsServerName`, `version: 1`, and defaults
+`nativeLoginEnabled` to true (`seed.rs:397`, `:406`, `:436`). Same-version changes
+conflict (exit 2); identical input returns the same deterministic revision (`:454`).
+The harness seeds the route twice; report validation requires equal records and
+`rt.1.<32 lowercase hex>` revisions. `route_check.py` invokes the real seed binary
+with the harness database environment and asserts changed-port conflict exit 2.
+Only then is this line emitted:
 
 ```text
-GAME_PLATFORM_EVIDENCE blocker=portal-rs/bin/oteryn-portal/src/seed.rs:148 pending=channel,route
-GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=T19c
+NODE_BOOT_EVIDENCE flow=route_seed result=pass revision_format=1 idempotent=1 conflict_exit=2
 ```
 
-No assignment, Character bootstrap, Game admission or downstream seam success
-is claimed while T19c is absent. The original seam functions stay reusable in
-node_boot; enabling downstream stages requires a separately reviewed Platform
-pin with genuine route/channel provisioning. There are no manually seeded
-routes, grants, sessions or projections. A missing login/OAuth handler produces
-an exact Platform source blocker. Other assertions produce FAIL and nonzero
-exit. PASS is reserved for a complete run with no pending Platform steps.
+Identity runs with the real unassigned node. The next boundary is Game's missing
+control-scope grant issuer: the default node_boot assignment stage inserts grants
+with SQL (`tools/qualification/node_boot/run.sh:999`), which this lane does not copy.
+It ends BLOCKED owner=Game with that source coordinate, rather than claiming assignment
+or admission. Platform admission issuance now exists, but enabling its flag alone is
+insufficient: `portal-rs/crates/gameauth/src/admission/grant.rs:24` requires encrypted
+key custody and wrapping-key files, beyond the public `signing-trust` seed. This lane
+does not manufacture that custody snapshot or claim a grant/admission PASS.
+No route/channel pending mapping remains at this pin; any unexpected pending seed
+fails validation. PASS remains reserved for a run with no pending work.
 
 Generated inputs, credentials and the JSON report are removed on exit. On failure,
 node-boot.log, node.log and portal-harness.log (when created) are retained in a

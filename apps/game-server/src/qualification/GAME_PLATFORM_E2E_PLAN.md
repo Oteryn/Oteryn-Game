@@ -1,14 +1,25 @@
 # GPE2E-1 — Game ↔ Platform end-to-end qualification plan
 
-Documentation snapshot: 2026-11-12. Platform main verified: `732505d37ae65d0da4f66ab506964d11c0eeb8b0` (#1828; includes #1827 and #1826). Game base: `aee3f57a5697eea525cd8109b3ae8cc93691216e`.
+Documentation snapshot: 2026-11-12. Platform main verified: `ed9b33729865a77051566182a17aaf8577abf347` (#1833; includes #1828, #1827 and #1826). Game base: `aee3f57a5697eea525cd8109b3ae8cc93691216e`.
 No implementation, schema, flag, pin or deployment change is part of this task.
+
+
+GPE2E-2e current-pin correction: Platform #1833 supplies channel/route CLI seeds
+(`N:portal-rs/bin/oteryn-portal/src/seed.rs:397`, `:406`); #1825 supplies native
+admission grants (`N:portal-rs/crates/gameauth/src/admission/grant.rs:20`, `:85`).
+Earlier M observations below remain historical evidence, not current Platform blockers.
+The live ac3bb477 run proved web identity and account isolation before the old T19c
+blocker. The new lane validates route format/replay/conflict, then remains BLOCKED
+on Game control-scope grant issuance (`G:tools/qualification/node_boot/run.sh:999`);
+no manual grants, assignment or admission success are claimed. Grant integration also
+requires encrypted custody/wrapping files (`N:portal-rs/crates/gameauth/src/admission/grant.rs:24`).
 
 ## Evidence coordinates and interpretation
 
 - `G:path:line` means Oteryn/Oteryn-Game at the base above.
 - `P:path:line` means Oteryn/Oteryn-Platform at node-boot's pin,
   `3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05` (#1665).
-- `N:path:line` means the newly verified Platform main in the snapshot line; cloned read-only for source inspection. The lane pin remains unchanged.
+- `N:path:line` means the newly verified Platform main in the snapshot line; cloned read-only for source inspection. The lane now pins this revision (#1833).
 - `M:path:line` means the earlier Platform main as inspected,
   `24bdde3f1fd727d51a3d61a32e85d80b45757c52` (#1817).
   Throughout, proposed `client_phases/<file>.rs` means
@@ -57,9 +68,9 @@ PostgreSQL database; roles are at `M:portal-rs/bin/oteryn-portal/src/main.rs:9`,
 `:60`. Delegate Platform boot to `M:portal-rs/e2e/start.sh` and parse its JSON
 report (listeners, TLS paths, seed outputs and pending steps), never its logs.
 Use `oteryn-portal seed account|world|oauth-native-client|signing-trust|bootstrap-intent`
-for testing-only provisioning. Channel/route seeds return pending at
-`M:portal-rs/bin/oteryn-portal/src/seed.rs:148`; report
-`GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=T19c`, never manual route rows.
+for testing-only provisioning. Channel/route seeds were pending at M; N #1833 supplies them at
+`N:portal-rs/bin/oteryn-portal/src/seed.rs:397`, `:406`. Use the real seeds and
+verify revision/replay/conflict; never insert manual route rows.
 Fresh account evidence uses purpose `platform_security`, scope `fresh_admission`
 (`M:portal-rs/e2e/test.env:15`). Keep Game and Platform database roles isolated. Do not copy the boot script,
 keep PHP SQL against PostgreSQL, bypass the exact-pin check, or replace missing
@@ -136,7 +147,7 @@ login at `M:portal-rs/crates/identity/src/mfa_http.rs:90` and completes it at `:
 The old password-only adapter comment is stale for this composed web flow.
 The web MFA extension is **RUNNABLE NOW against N**: testing-only
 `oteryn-portal seed account-mfa` returns `totpSecret` and `recoveryCodes`
-(`N:portal-rs/bin/oteryn-portal/src/seed.rs:116`, `:160`, `:578`, `:582`; #1828).
+(`N:portal-rs/bin/oteryn-portal/src/seed.rs:120`, `:164`, `:727`, `:731`; #1828).
 Use those private outputs to complete the real web TOTP challenge; never log them.
 
 **Separate native MFA test — `native_login_mfa_account`: RUNNABLE NOW against N.**
@@ -200,7 +211,7 @@ a different Platform pin (`:32`) and the Go gateway. Its `:649` prints
 `:660` prints projection acceptance. These are not NODE_BOOT_EVIDENCE, not automated
 web-login proof, and not evidence for portal-rs main.
 
-**Status: BLOCKED — Platform:** complete the real T19c signer, Registry route binding
+**Historical M status: BLOCKED — Platform:** complete the real T19c signer, Registry route binding
 and runtime selection; reconcile preprod/preproduction gates. **Runnable subtest:**
 `native_ticket_and_gateway_fail_closed` exercises actual OAuth → ticket → real
 Gateway and asserts the current unavailable response, zero Game admissions and no
@@ -302,7 +313,7 @@ Game-only reconnect proofs should not have a Platform issuing route.
 
 **Statuses and tests to add.** Mount separate phases, never collapse all three credentials:
 
-1. **Fresh: BLOCKED — Platform T19c.** `platform_grant_commit_fences` in
+1. **Fresh: RUNNABLE NOW at N (#1825/#1833); historical M was BLOCKED — Platform T19c.** `platform_grant_commit_fences` in
    `client_phases/platform_admission.rs`, sharing the real caller from section 2.
    Admit with Platform's grant, race two real sockets, expire a real grant, revoke
    trust/change authoritative binding between PREPARE and COMMIT, restart and replay.
@@ -479,19 +490,19 @@ its separate producer flags differ from the exchange flags. M bootstrap HTTP is 
 The governing producer contract is
 `M:docs/contracts/OTERYN_V2_CHARACTER_BOOTSTRAP_INTENT_PRODUCER_CONTRACT.md:5`
 (contract version 3; the test name need not encode its version).
-N supplies the production `oteryn-portal bootstrap-intent issue [--input file]`
+N supplies the production `oteryn-portal bootstrap-intent issue --actor <uuidv7> [--input file]`
 command (#1828), dispatched at `N:portal-rs/bin/oteryn-portal/src/main.rs:32`.
 Input is JSON (stdin by default) with `identityId` and the other required intent
-fields (`N:portal-rs/bin/oteryn-portal/src/bootstrap_intent.rs:93`, `:159`).
+fields (`N:portal-rs/bin/oteryn-portal/src/bootstrap_intent.rs:104`, `:196`).
 `GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_ENABLED` is default off; enable it only
 inside the lane's disposable harness, with explicit
-`GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS` in 1..=300 (`:105`, `:127`).
-Canonical intent bytes go to stdout, structured errors to stderr (`:210`).
+`GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS` in 1..=300 (`:138`, `:165`).
+Canonical intent bytes go to stdout, structured errors to stderr (`:257`).
 **RUNNABLE NOW against N**: `operator_bootstrap_replay` must cover exit 2 bad input,
-3 conflict, 4 unavailable (`:49`–`:51`), exact issuance replay returning the same
+3 conflict, 4 unavailable (`:52`–`:54`), exact issuance replay returning the same
 canonical bytes, and Game consumption/receipt replay without duplicate effects.
-This is planned harness enablement against N; this documentation change does not
-enable the flag or alter the lane pin.
+This is planned harness enablement against N; the audited staff actor must hold `game.player.manage` (#1831); the lane does not
+enable the issuer flag.
 
 **Coverage today.** Real P bootstrap is covered: node_boot `character_bootstrap`
 prints `NODE_BOOT_EVIDENCE characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent`
@@ -887,8 +898,8 @@ refusal belongs first in this phase and runs even while success stays blocked.
    `public_projection_privacy_floor`,
    `catalog_real_export_cache_fidelity`, `store_default_off_no_effect`.
    Keep disabled/proposed families separate from accepted positive slices.
-5. Unblock Platform T19c (code reported ready, PR pending; route/channel seeds
-   after merge) + environment gates; add
+5. Use N #1833 route seeds and #1825 admission signer; qualify Game assignment,
+   encrypted signing custody and environment gates; add
    `runtime_route_fencing` → `native_login_34a_preprod` →
    `platform_grant_commit_fences`, then the full client/gold test
    `coins_transfer_market_exactly_once` and live Premium/public gameplay assertions.
@@ -911,15 +922,15 @@ refusal belongs first in this phase and runs even while success stays blocked.
 |---|---|---|---|
 | Account web login + PKCE | RUNNABLE NOW; GPE2E-2b repairs root-owned state base and fail-fast operator setup; callback state uses shipping IdentityFlow | Live rerun required; no PASS evidence | `web_identity_pkce_isolation` |
 | MFA-protected web login success | RUNNABLE NOW | N #1828: testing-only `seed account-mfa` returns `totpSecret` + recovery codes; web TOTP exists | `web_identity_pkce_isolation` (MFA extension) |
-| Native OAuth for an MFA account | RUNNABLE NOW | N #1826: proven web MFA accepted; unproven required MFA refused (`oauth.rs:230`); older lane pin unchanged | `native_login_mfa_account` |
+| Native OAuth for an MFA account | RUNNABLE NOW | N #1826: proven web MFA accepted; unproven required MFA refused (`oauth.rs:230`); lane pin now includes #1833 | `native_login_mfa_account` |
 | Ticket + Gateway refusal slice | RUNNABLE NOW | — | `native_ticket_and_gateway_fail_closed` |
 | Remembered native-device session | RUNNABLE NOW | —; U23 recovery excluded | `native_device_rotation_replay` |
-| Native Gateway mode 34a preprod success | BLOCKED | Platform: T19c code reported ready, PR pending; route/channel seeds after merge; environment gates | `native_login_34a_preprod` |
-| Fresh admission from Platform grant | BLOCKED | Platform: T19c code reported ready, PR pending; route/channel seeds after merge | `platform_grant_commit_fences` |
+| Native Gateway mode 34a preprod success | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `native_login_34a_preprod` |
+| Fresh admission from Platform grant | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `platform_grant_commit_fences` |
 | Reauthenticated recovery | BLOCKED | Platform: recovery issuer follows T19c; CANDIDATE §19, default off; contract decision | `platform_reauth_recovery` |
 | Game fast reconnect proof | BLOCKED | Game server + Game client: issuance/delivery/rotation | `game_fast_reconnect_rotation` |
 | Runtime/assignment/revocation reporting | RUNNABLE NOW | — (existing identity rules) | `runtime_reports_owner_fences` |
-| Runtime/assignment/revocation → route | BLOCKED | Platform: T19c code reported ready, PR pending; route/channel seeds after merge; contract decision (§16.2) | `runtime_route_fencing` |
+| Runtime/assignment/revocation → route | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `runtime_route_fencing` |
 | Security revocation/staff kick → Game | BLOCKED | Contract decision + Game server consumer | `security_revocation_terminal` |
 | LCFA owner list/internal isolation | RUNNABLE NOW | —; full preproduction gate discrepancy separate | `lcfa_owner_freshness_and_routes` |
 | Browser Character command/receipt | RUNNABLE NOW | — (testing slice) | `character_create_receipt_idempotency` |
@@ -928,13 +939,13 @@ refusal belongs first in this phase and runs even while success stays blocked.
 | Account closure saga | BLOCKED | Contract decision | `closure_cancel_finalize_race` |
 | Bazaar custody/settlement saga | BLOCKED | Contract decision | `bazaar_custody_settlement_replay` |
 | Coin transfer/market wire | RUNNABLE NOW | — (bounded service caller) | `coins_wire_transfer_replay` |
-| Coin market with Game gold/native client | BLOCKED | Platform: admission | `coins_transfer_market_exactly_once` |
+| Coin market with Game gold/native client | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `coins_transfer_market_exactly_once` |
 | Internal Premium snapshot | RUNNABLE NOW | — (service/coordinator slice) | `premium_snapshot_fail_closed` |
-| Premium-gated live action | BLOCKED | Platform: admission | `premium_snapshot_fail_closed` (gameplay extension) |
+| Premium-gated live action | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `premium_snapshot_fail_closed` (gameplay extension) |
 | Loyalty live ingestion | BLOCKED | Contract decision + Game server consumer | `loyalty_stream_converges` |
 | Native Premium overview | RUNNABLE NOW | Game side; real harness snapshot → existing Game fence; admitted-session prerequisite | `native_premium_overview_refresh` |
 | Public profile/highscores/privacy watermark | RUNNABLE NOW | — (authority/ops source) | `public_projection_privacy_floor` |
-| Public live death/online-session assertions | BLOCKED | Platform: admission | `public_projection_privacy_floor` (gameplay extension) |
+| Public live death/online-session assertions | RUNNABLE NOW | N #1833 route seeds + #1825 admission signer; Game assignment/custody and environment qualification still required | `public_projection_privacy_floor` (gameplay extension) |
 | Public online/daily/totals extensions | BLOCKED | Contract decision: acceptance UNKNOWN | `public_online_daily_totals` |
 | T94 event/season feed | BLOCKED | Contract decision; source qualification UNKNOWN | `league_outcome_correction_fences` |
 | Private journal T72 | BLOCKED | Game server + Platform; depends on T72 rev 4 (Platform #1827): `result: accepted\|refused`, sole refusal reason `CHARACTER_SCOPE_DELETED` | `journal_t72_owner_replay_privacy` |

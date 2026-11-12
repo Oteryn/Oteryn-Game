@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate the upstream JSON report. Logs are never used as service discovery."""
 import json
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -40,11 +41,16 @@ def validate(report, work):
     for name in ["accountA", "accountB", "world", "nativeClient", "freshTrust", "recoveryTrust"]:
         if "error" in report["seed"][name]:
             raise ValueError("seed_failed")
-    for item in report["pending"]:
-        if item.get("entity") not in {"channel", "route"} or item.get("error") != "pending":
-            raise ValueError("unexpected_pending_seed")
     if report["pending"]:
-        (work / "route-pending").touch(mode=0o600)
+        raise ValueError("unexpected_pending_seed")
+    route = report["seed"]["route"]
+    expected = json.loads((work / "route-input.json").read_text())
+    if any(route.get(key) != value for key, value in expected.items()):
+        raise ValueError("route_scope_or_endpoint_mismatch")
+    if not re.fullmatch(r"rt\.1\.[0-9a-f]{32}", route["routeRevision"]):
+        raise ValueError("route_revision_invalid")
+    if report["seed"]["routeReplay"] != route:
+        raise ValueError("route_replay_changed")
 
 
 def main():

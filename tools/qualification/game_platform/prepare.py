@@ -26,13 +26,15 @@ def main():
     ]
     steps = [{"name": name, "entity": "account", "args": args} for name, args in zip(["accountA", "accountB"], accounts)]
     steps += [
-        {"name": "world", "entity": "world", "args": {"worldId": world, "name": "Game Platform Qualification", "region": "local"}},
+        {"name": "world", "entity": "world", "args": {"worldId": world, "name": "Entry", "region": "local"}},
         {"name": "nativeClient", "entity": "oauth-native-client", "args": {"clientId": client}},
         {"name": "freshTrust", "entity": "signing-trust", "args": {"purpose": "fresh_admission", "keyId": fresh_id, "publicKeyHex": fresh}},
         {"name": "recoveryTrust", "entity": "signing-trust", "args": {"issuer": "urn:oteryn:platform:game-recovery", "purpose": "existing_actor_recovery", "keyId": recovery_id, "publicKeyHex": recovery}},
-        {"name": "channel", "entity": "channel", "args": {"worldId": world, "channelId": channel, "channelKey": "qualification"}},
-        {"name": "route", "entity": "route", "args": {"worldId": world, "channelId": channel, "channelKey": "qualification", "host": "127.0.0.1", "port": int(os.environ["NODE_BOOT_GAME_PORT"]), "serverName": "localhost", "enabled": True}},
+        {"name": "channel", "entity": "channel", "args": {"worldId": world, "channelId": channel}},
+        {"name": "route", "entity": "route", "args": {"worldId": world, "channelId": channel, "host": "127.0.0.1", "port": int(os.environ["NODE_BOOT_GAME_PORT"]), "tlsServerName": "localhost", "version": 1}},
     ]
+    steps.append({"name": "routeReplay", "entity": "route", "args": steps[-1]["args"].copy()})
+    (work / "route-input.json").write_text(json.dumps(steps[-1]["args"]))
     (work / "seed-plan.json").write_text(json.dumps({"steps": steps}))
     (work / "identity.json").write_text(json.dumps({"accounts": accounts, "callback": callback, "client": client}))
     (work / "oauth.json").write_text(json.dumps({"enabled": True, "clients": [{"client_id": client, "redirect_uris": [callback]}]}))

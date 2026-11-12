@@ -46,12 +46,23 @@ fn digest(value: &str) -> String {
         .map(|b| format!("{b:02x}"))
         .collect()
 }
-// Decode URI components without interpreting literal '+' as a form-space.
-fn pg_component(value: &str) -> String {
-    url::form_urlencoded::parse(format!("v={}", value.replace('+', "%2B")).as_bytes())
-        .next()
-        .map(|(_, value)| value.into_owned())
-        .unwrap_or_default()
+// URI components are not form data: literal '&' and '+' must survive.
+fn pg_component(value: &str) -> TestResult<String> {
+    let mut decoded = Vec::new();
+    let mut bytes = value.bytes();
+    while let Some(byte) = bytes.next() {
+        if byte == b'%' {
+            let high = bytes.next().and_then(|b| char::from(b).to_digit(16));
+            let low = bytes.next().and_then(|b| char::from(b).to_digit(16));
+            let (Some(high), Some(low)) = (high, low) else {
+                return Err("postgres_component_invalid".into());
+            };
+            decoded.push((high * 16 + low) as u8);
+        } else {
+            decoded.push(byte);
+        }
+    }
+    String::from_utf8(decoded).map_err(|_| "postgres_component_invalid".into())
 }
 fn postgres_env(database: &str) -> TestResult<Vec<(&'static str, String)>> {
     let url = Url::parse(database).map_err(|_| "postgres_url_invalid")?;
@@ -68,10 +79,10 @@ fn postgres_env(database: &str) -> TestResult<Vec<(&'static str, String)>> {
                 .to_owned(),
         ),
         ("PGPORT", url.port().unwrap_or(5432).to_string()),
-        ("PGUSER", pg_component(url.username())),
+        ("PGUSER", pg_component(url.username())?),
         (
             "PGPASSWORD",
-            pg_component(url.password().unwrap_or_default()),
+            pg_component(url.password().unwrap_or_default())?,
         ),
         (
             "PGDATABASE",
@@ -79,7 +90,7 @@ fn postgres_env(database: &str) -> TestResult<Vec<(&'static str, String)>> {
                 url.path()
                     .strip_prefix('/')
                     .ok_or("postgres_database_missing")?,
-            ),
+            )?,
         ),
         (
             "PGSSLMODE",
@@ -116,14 +127,14 @@ fn postgres_failure(label: &'static str, stderr: &[u8]) -> String {
 #[test]
 fn postgres_observer_connection_fields() -> TestResult {
     let fields = postgres_env(
-        "postgresql://observer:p%40ss%3A%2F%25+word@127.0.0.1:15435/game%20db?sslmode=require",
+        "postgresql://obs&erver:p%40ss%3A%2F%25+wo&rd@127.0.0.1:15435/game%20d&b?sslmode=require",
     )?;
     for (key, expected) in [
         ("PGHOST", "127.0.0.1"),
         ("PGPORT", "15435"),
-        ("PGUSER", "observer"),
-        ("PGPASSWORD", "p@ss:/%+word"),
-        ("PGDATABASE", "game db"),
+        ("PGUSER", "obs&erver"),
+        ("PGPASSWORD", "p@ss:/%+wo&rd"),
+        ("PGDATABASE", "game d&b"),
         ("PGSSLMODE", "require"),
     ] {
         check(
@@ -283,7 +294,7 @@ impl Browser {
         let response = self.request(path, None).await?;
         if response.status() == 404 {
             let source = if path.starts_with("/oauth/") {
-                "portal-rs/crates/gameauth/src/oauth/oauth_http.rs:27"
+                "portal-rs/crates/gameauth/src/oauth/oauth_http.rs:31"
             } else {
                 "portal-rs/crates/identity/src/login_http.rs:35"
             };

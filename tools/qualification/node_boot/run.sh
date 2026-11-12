@@ -76,6 +76,7 @@ esac
 NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
 NODE_BOOT_TOPOLOGY="$TOPOLOGY_REVISION"
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+  # portal-rs pin is owned by game_platform/lifecycle.sh (includes Platform #1833).
   NODE_BOOT_PLATFORM_PIN="$GAME_PLATFORM_SHA"
   NODE_BOOT_TOPOLOGY=portal-rs-game-platform-v1
 fi
