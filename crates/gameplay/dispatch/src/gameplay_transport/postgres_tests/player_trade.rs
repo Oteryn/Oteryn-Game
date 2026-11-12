@@ -27,10 +27,21 @@ fn player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation() -> T
 fn player_trade_postgres_offer_waits_for_busy_holder() -> TestResult {
     run_scenario_with_offer_contention(false, true)
 }
+#[test]
+fn player_trade_postgres_counter_look_and_accept_retain_foreground_priority() -> TestResult {
+    run_scenario_with_read_priority(false, false, true)
+}
 pub(super) fn run_scenario(inspection: bool) -> TestResult {
     run_scenario_with_offer_contention(inspection, false)
 }
 fn run_scenario_with_offer_contention(inspection: bool, offer_contention: bool) -> TestResult {
+    run_scenario_with_read_priority(inspection, offer_contention, false)
+}
+fn run_scenario_with_read_priority(
+    inspection: bool,
+    offer_contention: bool,
+    read_priority: bool,
+) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -41,7 +52,9 @@ fn run_scenario_with_offer_contention(inspection: bool, offer_contention: bool) 
                 let h = Harness::create(admin, "player_trade_wire", true)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, inspection, offer_contention).await.map_err(|e| e.to_string());
+                let result = scenario(&h, inspection, offer_contention, read_priority)
+                    .await
+                    .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
                 result
             })
@@ -67,7 +80,12 @@ async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) ->
     tx.commit().await?;
     Ok(())
 }
-async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    inspection: bool,
+    offer_contention: bool,
+    read_priority: bool,
+) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -291,6 +309,10 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
         assert!(a.continuity.selected_capabilities.contains(60));
     }
 
+    if read_priority {
+        return read_priority_case(h, &owner, &admitted, &targets).await;
+    }
+
     let (mut server_a, client_a) = tokio::io::duplex(1 << 20);
     let (mut server_b, client_b) = tokio::io::duplex(1 << 20);
     let (start_b, ready_b) = tokio::sync::oneshot::channel();
@@ -319,12 +341,17 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
         };
         let offered = if offer_contention {
             use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
-            let held = read_retry(&h.root, async || h.root.try_acquire_ready().map_err(CheckError::from)).await.map_err(debug)?;
+            let held = read_retry(&h.root, async || {
+                h.root.try_acquire_ready().map_err(CheckError::from)
+            })
+            .await
+            .map_err(debug)?;
             let (offered, ()) = join_two(a.trade(offer_a), async move {
                 // Model an in-flight background read returning the sole ready holder.
                 tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                 drop(held);
-            }).await;
+            })
+            .await;
             offered?
         } else {
             a.trade(offer_a).await?
@@ -424,8 +451,11 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
             {
                 use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
                 let permit = owner.spell_lane_permit().await.ok_or("inspection lane")?;
-                let held = read_retry(&h.root, async || h.root.try_acquire_ready().map_err(CheckError::from))
-                    .await.map_err(debug)?;
+                let held = read_retry(&h.root, async || {
+                    h.root.try_acquire_ready().map_err(CheckError::from)
+                })
+                .await
+                .map_err(debug)?;
                 // On this current-thread runtime both locks are free before the
                 // first poll. Only the deliberately borrowed DB holder can wait.
                 {
@@ -434,15 +464,21 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
                     drop(states);
                     drop(runtime);
                 }
-                let mut read = std::pin::pin!(owner.inspection_trade_item(
-                    &permit, a_admitted, a.next, true, 0,
-                ));
-                let first = std::future::poll_fn(|cx| std::task::Poll::Ready(
-                    std::future::Future::poll(read.as_mut(), cx),
-                )).await;
-                assert!(first.is_pending(), "busy holder must wait, not hide the current offer: {first:?}");
+                let mut read = std::pin::pin!(
+                    owner.inspection_trade_item(&permit, a_admitted, a.next, true, 0,)
+                );
+                let first = std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(read.as_mut(), cx))
+                })
+                .await;
+                assert!(
+                    first.is_pending(),
+                    "busy holder must wait, not hide the current offer: {first:?}"
+                );
                 drop(held);
-                let (instance, definition, count) = read.await.ok_or("current counteroffer after holder return")?;
+                let (instance, definition, count) = read
+                    .await
+                    .ok_or("current counteroffer after holder return")?;
                 assert_eq!(instance, id(93));
                 assert_eq!(definition.production_key, "oteryn:item.tibia.i3604");
                 assert_eq!(count, 3);
@@ -455,10 +491,14 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
                 let (refresh, reply) = super::fixture::join_two(
                     owner.refresh_staff(b_admitted),
                     a.command(inspect::COMMAND_TYPE_INSPECTION, &payload),
-                ).await;
+                )
+                .await;
                 assert!(refresh, "trade inspection peer refresh");
                 let reply = inspect::decode_reply(&reply?).map_err(debug)?;
-                assert_eq!(reply.status, expected, "counter={counter} index={index}: {reply:?}");
+                assert_eq!(
+                    reply.status, expected,
+                    "counter={counter} index={index}: {reply:?}"
+                );
                 if expected == 1 {
                     assert_eq!(reply.items[0].count, 3);
                     assert!(reply.items[0].attributes.iter().any(|(k, _)| k == "Weight"));
@@ -785,8 +825,12 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
                 .await
                 .map_err(|_| "fixture lane unresolved")?;
             crate::gameplay_transport::player_trade::preflight::read_retry(&h.root, async || {
-                h.root.try_issue_semantic_pass().map_err(crate::gameplay_transport::player_trade::CheckError::from)
-            }).await.map_err(debug)
+                h.root
+                    .try_issue_semantic_pass()
+                    .map_err(crate::gameplay_transport::player_trade::CheckError::from)
+            })
+            .await
+            .map_err(debug)
         })
         .await;
         assert!(refreshed);
@@ -868,6 +912,185 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_audit_outbox a JOIN game_player_trades t ON t.event_id=a.event_id").fetch_one(&h.pool).await?,1);
     Ok(())
 }
+// Exercise the real read-only owner under ordinary command reservations. The existing
+// scenario above also runs the full TCP ingress, replay and durable exchange path.
+async fn read_priority_case(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &[AdmittedSession],
+    targets: &[EntityRef],
+) -> TestResult {
+    use crate::gameplay_transport::session_ingress::SessionCommandStream;
+    for session in admitted {
+        owner.trade_open(*session).await.ok_or("open trade owner")?;
+    }
+    let mut streams = [
+        SessionCommandStream::open(Some(&owner.states.command_ingress), &admitted[0])
+            .ok_or("first command stream")?,
+        SessionCommandStream::open(Some(&owner.states.command_ingress), &admitted[1])
+            .ok_or("second command stream")?,
+    ];
+    assert_eq!(
+        reserved_trade_command(
+            owner,
+            admitted[0],
+            &mut streams[0],
+            1,
+            Intent::Offer {
+                partner: targets[1],
+                item: 2
+            },
+            Some(id(91))
+        )
+        .await?,
+        ResultCode::Offered,
+    );
+    assert_eq!(
+        trade_command_handoff(
+            &h.root,
+            reserved_trade_command(
+                owner,
+                admitted[1],
+                &mut streams[1],
+                1,
+                Intent::Offer {
+                    partner: targets[0],
+                    item: 2
+                },
+                Some(id(93)),
+            )
+        )
+        .await?,
+        ResultCode::Offered,
+    );
+    let (_, state, _) = owner
+        .trade_observation(admitted[0].game_session_id)
+        .await
+        .ok_or("ready trade")?;
+    assert_eq!(state.phase, 2);
+    let trade_id = state.trade_id.ok_or("trade id")?;
+    assert_eq!(
+        trade_command_handoff(
+            &h.root,
+            reserved_trade_command(
+                owner,
+                admitted[0],
+                &mut streams[0],
+                2,
+                Intent::Look {
+                    trade_id,
+                    counter_offer: true
+                },
+                None,
+            )
+        )
+        .await?,
+        ResultCode::Offered,
+    );
+    let (_, looked, _) = owner
+        .trade_observation(admitted[0].game_session_id)
+        .await
+        .ok_or("looked trade")?;
+    assert_eq!(looked.phase, 2, "a busy Look must keep the READY dialog");
+    assert!(!looked.look.is_empty());
+    assert_eq!(
+        reserved_trade_command(
+            owner,
+            admitted[0],
+            &mut streams[0],
+            3,
+            Intent::Accept { trade_id },
+            None
+        )
+        .await?,
+        ResultCode::Accepted,
+    );
+    assert_eq!(
+        trade_command_handoff(
+            &h.root,
+            reserved_trade_command(
+                owner,
+                admitted[1],
+                &mut streams[1],
+                2,
+                Intent::Accept { trade_id },
+                None,
+            )
+        )
+        .await?,
+        ResultCode::Completed,
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_player_trades")
+            .fetch_one(&h.pool)
+            .await?,
+        1,
+        "one atomic exchange"
+    );
+    Ok(())
+}
+
+async fn reserved_trade_command(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    stream: &mut crate::gameplay_transport::session_ingress::SessionCommandStream,
+    id: u64,
+    intent: Intent,
+    item: Option<[u8; 16]>,
+) -> TestResult<ResultCode> {
+    use crate::gameplay_transport::{item_view::ItemKey, session_ingress::CommandAction};
+    assert!(matches!(
+        stream.begin(id, 1, id - 1, false),
+        Ok(CommandAction::Execute)
+    ));
+    let result = owner
+        .trade_command(admitted, id, intent, item.map(ItemKey::Instance))
+        .await
+        .ok_or("trade command ended without a result")?;
+    let frame = oteryn_protocol_oteryn::encode_command_result(
+        1,
+        id,
+        id,
+        CommandStatus::Accepted,
+        &result.payload(),
+    )
+    .map_err(debug)?;
+    stream
+        .terminalize_with(id, &frame, || {
+            owner.player_trade_terminalized(admitted.game_session_id, id);
+        })
+        .ok_or("terminalize trade command")?;
+    Ok(result)
+}
+
+async fn trade_command_handoff(
+    root: &crate::durability::DurabilityRoot,
+    command: impl std::future::Future<Output = TestResult<ResultCode>>,
+) -> TestResult<ResultCode> {
+    use std::{future::Future, task::Poll};
+    let held = root.try_issue_background_semantic_pass().map_err(debug)?;
+    let command = crate::durability::DurabilityRoot::with_holder_owner(command);
+    let mut command = std::pin::pin!(command);
+    let first = std::future::poll_fn(|cx| Poll::Ready(command.as_mut().poll(cx))).await;
+    assert!(
+        first.is_pending(),
+        "a busy trade read must await the holder"
+    );
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    // The waiting command has not been repolled since the holder returned.
+    for _ in 0..16 {
+        assert!(matches!(
+            root.try_issue_background_semantic_pass(),
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ));
+    }
+    let result = command.await?;
+    root.try_issue_background_semantic_pass()?
+        .run(|_, _| Box::pin(async { Ok(()) }))
+        .await?;
+    Ok(result)
+}
+
 struct Peer {
     writer: std::sync::Arc<Mutex<tokio::io::WriteHalf<tokio::io::DuplexStream>>>,
     frames: tokio::sync::mpsc::Receiver<std::io::Result<Vec<u8>>>,
