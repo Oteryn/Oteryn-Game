@@ -13,13 +13,16 @@ pub(super) struct Widgets {
     pub price: Entity,
     pub balance: Entity,
     pub trade_caption: Entity,
+    pub trade: Entity,
+    pub shop_controls: Entity,
+    pub conversation: conversation::Widgets,
 }
 #[derive(Component)]
 pub(super) struct OptionCaption(pub Kind);
 
 pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> Widgets {
     // NpcDialog.qml: width600/minHeight350; NpcTrade.qml: addonWidth180 and35px offer rows.
-    // Only the trade slice is mounted here; the wider left area holds real Look/refusal text.
+    // The transcript and optional trade addon share this one retained NPC dialog.
     let panel = commands
         .spawn((
             Panel,
@@ -51,7 +54,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             },
         ))
         .id();
-    source::dialog_caption(commands, panel, "NPC Trade", skin.font.clone());
+    source::dialog_caption(commands, panel, "NPC", skin.font.clone());
     let content = commands
         .spawn(Node {
             width: percent(100.),
@@ -89,6 +92,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         ))
         .id();
     commands.entity(details).add_child(details_scroll);
+    let conversation = conversation::build(commands, skin, details, details_scroll, generation);
     let status = label(commands, skin, details_scroll, "");
     commands.entity(status).insert((
         TextLayout::default(),
@@ -97,12 +101,28 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             ..default()
         },
     ));
+    let shop_controls = commands
+        .spawn(Node {
+            flex_direction: FlexDirection::Column,
+            row_gap: px(5.),
+            ..default()
+        })
+        .id();
+    commands.entity(details).add_child(shop_controls);
     for (kind, caption) in [
         (Kind::IgnoreCapacity, "Ignore capacity"),
         (Kind::IgnoreEquipped, "Ignore equipped"),
         (Kind::OnlyOwned, "Only owned"),
     ] {
-        let button = action(commands, skin, details, generation, kind, caption, 180.);
+        let button = action(
+            commands,
+            skin,
+            shop_controls,
+            generation,
+            kind,
+            caption,
+            180.,
+        );
         commands.entity(button).with_children(|parent| {
             parent.spawn((
                 OptionCaption(kind),
@@ -113,7 +133,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     action(
         commands,
         skin,
-        details,
+        shop_controls,
         generation,
         Kind::OpenBackpack,
         "Open backpack",
@@ -205,6 +225,9 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         price,
         balance,
         trade_caption,
+        trade,
+        shop_controls,
+        conversation,
     }
 }
 pub(super) fn rows(
@@ -264,13 +287,15 @@ pub(super) fn rows(
             .spawn((
                 Node {
                     min_width: px(0.),
+                    width: px(0.),
+                    flex_grow: 1.,
                     flex_direction: FlexDirection::Column,
                     ..default()
                 },
                 Pickable::IGNORE,
             ))
             .id();
-        label(commands, skin, caption, "Item details unavailable");
+        label(commands, skin, caption, "Unknown item");
         label(
             commands,
             skin,
@@ -304,6 +329,7 @@ fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> E
                 ..default()
             },
         ))
+        .insert(TextLayout::default())
         .id();
     commands.entity(parent).add_child(label);
     label

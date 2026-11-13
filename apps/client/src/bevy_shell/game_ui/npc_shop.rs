@@ -7,6 +7,7 @@ use super::{
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
 use oteryn_client_ui::npc_shop::{NpcTradeSide, Quote};
 use oteryn_client_ui_bevy as source;
+mod conversation;
 mod submission;
 #[cfg(test)]
 mod tests;
@@ -46,10 +47,12 @@ struct State {
     widgets: Option<widgets::Widgets>,
     rendered: Option<(Vec<Quote>, Option<Quote>)>,
     pending: Option<submission::Pending>,
+    conversation: conversation::Ui,
 }
 pub(super) fn install(app: &mut App) {
+    conversation::install(app);
     app.init_resource::<State>()
-        .add_systems(Update, project)
+        .add_systems(Update, (project, conversation::project).chain())
         .add_systems(
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
@@ -62,17 +65,20 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
     let Some(play) = &owner.play else {
         return false;
     };
+    if matches!(action.kind, Kind::Close) {
+        let visible = play.link.npc_shop_is_open() || play.link.npc_dialogue_is_visible();
+        play.link.npc_shop_close();
+        play.link.npc_dialogue_close();
+        state.selection = None;
+        state.conversation = conversation::Ui::default();
+        return visible;
+    }
     if !play.link.npc_shop_is_open() {
         return false;
     }
     let panel = play.link.npc_shop_panel();
     if !panel.live.selected && !panel.selected {
         return false;
-    }
-    if matches!(action.kind, Kind::Close) {
-        play.link.npc_shop_close();
-        state.selection = None;
-        return true;
     }
     if panel.pending || panel.live.pending {
         return false;
@@ -189,7 +195,7 @@ fn project(
     let current = owner
         .play
         .as_ref()
-        .filter(|play| play.link.npc_shop_is_open());
+        .filter(|play| play.link.npc_shop_is_open() || play.link.npc_dialogue_is_visible());
     let Some(play) = current else {
         for panel in &panels {
             clear_focus(panel, &mut focus, &ancestry);
@@ -199,7 +205,7 @@ fn project(
         return;
     };
     let panel = play.link.npc_shop_panel();
-    if !panel.live.selected && !panel.selected {
+    if !panel.live.selected && !panel.selected && !play.link.npc_dialogue_is_visible() {
         for panel in &panels {
             clear_focus(panel, &mut focus, &ancestry);
             commands.entity(panel).despawn();
@@ -299,7 +305,9 @@ fn project(
         );
         state.rendered = Some(snapshot);
     }
-    let status = if !state.feedback.is_empty() {
+    let status = if !play.link.npc_shop_is_open() {
+        String::new()
+    } else if !state.feedback.is_empty() {
         state.feedback.clone()
     } else if panel.selected
         && (panel.pending || panel.feedback.is_some() || panel.result.is_some())
@@ -321,7 +329,14 @@ fn project(
             oteryn_client_ui::npc_shop::parse_amount(&amount)
                 .map(|amount| panel.live.total(quote, amount))
         })
-        .unwrap_or_else(|| "Select goods and enter an amount (1–100).".into());
+        .unwrap_or_else(|| {
+            if state.selection.is_some() {
+                "Enter 1–100"
+            } else {
+                "Select goods"
+            }
+            .into()
+        });
     if let Ok(mut caption) = text.get_mut(widgets.price) {
         caption.0 = price;
     }

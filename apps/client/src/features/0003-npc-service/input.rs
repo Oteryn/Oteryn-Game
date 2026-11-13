@@ -22,21 +22,43 @@ impl PlayView {
 }
 impl PlayLink {
     pub fn talk_to_npc(&self, npc: EntityRef, text: &str) {
-        let mut mailbox = lock(&self.mailbox);
-        if let Some(intent) =
-            oteryn_client_ui::npc_dialogue::request(&mut mailbox.dialogue, npc, text)
-            && self
-                .commands
-                .send(crate::combat_input::PlayCommand::NpcTalk(intent))
-                .is_err()
-        {
-            mailbox.dialogue = Default::default();
-        }
-        drop(mailbox);
+        self.npc_dialogue_submit(npc, text);
         #[cfg(windows)]
         if !self.uses_shared_frontend() {
             super::view::open_window(self);
         }
+    }
+    /// Returns whether the retained NPC owner enqueued this exact talk request.
+    pub fn npc_dialogue_submit(&self, npc: EntityRef, text: &str) -> bool {
+        self.npc_dialogue_enqueue(npc, text, None)
+    }
+    /// A displayed reply must still address the same actor and server conversation atomically.
+    pub fn npc_dialogue_reply(&self, npc: EntityRef, lines: &[String], text: &str) -> bool {
+        self.npc_dialogue_enqueue(npc, text, Some(lines))
+    }
+    fn npc_dialogue_enqueue(&self, npc: EntityRef, text: &str, context: Option<&[String]>) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if context.is_some_and(|lines| {
+            !mailbox.dialogue.open
+                || mailbox.dialogue.target != Some(npc)
+                || mailbox.dialogue.lines.as_slice() != lines
+        }) {
+            return false;
+        }
+        let Some(intent) =
+            oteryn_client_ui::npc_dialogue::request(&mut mailbox.dialogue, npc, text)
+        else {
+            return false;
+        };
+        if self
+            .commands
+            .send(crate::combat_input::PlayCommand::NpcTalk(intent))
+            .is_err()
+        {
+            mailbox.dialogue = Default::default();
+            return false;
+        }
+        true
     }
     pub fn npc_dialogue_input(
         &self,

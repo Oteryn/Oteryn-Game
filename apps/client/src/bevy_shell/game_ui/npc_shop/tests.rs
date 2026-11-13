@@ -16,6 +16,7 @@ fn fixture() -> std::result::Result<
 > {
     let mut host = HostOwner::new(None)?;
     let (link, commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.bevy_npc_shop_supported();
     host.play = Some(crate::bevy_shell::owner::ActivePlay {
         view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
@@ -211,5 +212,7 @@ fn floating_shop_remains_nonmodal_and_actual_controls_respect_higher_modal() -> 
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+#[path = "conversation_tests.rs"]
+mod conversation_tests;
 #[path = "text_tests.rs"]
 mod text_tests;
