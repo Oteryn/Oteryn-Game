@@ -1,0 +1,111 @@
+{
+  "schema": "OTERYN_PUBLICATION_REVIEW_NPC_COHORT_COMPUTATIONAL_SUMMARY/v1",
+  "created_utc": "2026-11-13T10:53:59.789760+00:00",
+  "sources": {
+    "raw": {
+      "relative_key": "outputs/items-reader-cloud-20261113/client1533-flags40-direct-raw-tuples-private.json",
+      "sha256": "8220257a595dd320e36e533268b0e8bc390fc78eb95193ef54878d0661002bd7"
+    },
+    "coverage": {
+      "relative_key": "outputs/items-reader-cloud-20261113/client1533-cyclopedia-6470-appearances-6228-types-coverage-private.json",
+      "sha256": "e133de5368af7688e0a57f66911bd32507e2d236e7f22f3b0eb02ed4ef69aaec"
+    },
+    "join": {
+      "relative_key": "outputs/items-full-6470-comparison-20261113/full-6470-appearance-name-candidate-join-private.json",
+      "sha256": "b0f212aef192769cbfeb2c07fdcbb9d0b773499395548087af86c1847d466f33"
+    },
+    "model": {
+      "relative_key": "outputs/items-reader-cloud-20261113/freshmain-3e168ce6-npc-trade-source-model-private.json",
+      "sha256": "21ea93d0e46ca7514807c9c4e9d9f174a94f59afbc7aff7725b4eaf02520303a"
+    }
+  },
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "scope": {
+    "cohort_appearances": 6470,
+    "cohort_cyclopedia_types": 6228,
+    "cohort_NPC_tuples": 14235,
+    "raw_global_NPC_tuples": 15350,
+    "axes": 28470,
+    "layers_independent": true,
+    "all_zero_axes_retained": true
+  },
+  "method": "All item-name candidates from independent casefold-only layer joins; all NPC casefold matches to actual npc_display_name route; no firstpick/no fallback. Direction candidate route game SellToPlayer for raw sale_price, BuyFromPlayer for raw buy_price based bounded prior UI fixtures only. All raw axes including zero are numeric candidates, not offer-presence policy.",
+  "qualification": "NOT_SAFE_FOR_FULL_SEMANTIC_EQUALITY_OR_BUG_CLASSIFICATION: item/NPC identities, currency refs/defaults, quantity/count/subtype and residence remain held. Absence of candidate offer does not prove missing retail offer.",
+  "counts": {
+    "canonical": {
+      "axes": 28470,
+      "SOME_NUMERIC_PRICE_EQUAL_CANDIDATE_ONLY": 11609,
+      "raw_zero_axes": 12432,
+      "ambiguous_item_axes": 3884,
+      "ambiguous_NPC_axes": 0,
+      "offer_candidates": 12798,
+      "offer_candidates_explicit_count": 439,
+      "offer_candidates_explicit_currency": 31,
+      "NO_SAME_ITEM_NPC_DIRECTION_OFFER_CANDIDATE": 14290,
+      "NO_NPC_PROJECTED_NAME_CANDIDATE": 1230,
+      "ALL_CANDIDATE_NUMERIC_PRICES_DIFFERENT_ONLY": 541,
+      "NO_ITEM_NAME_CANDIDATE": 800
+    },
+    "selected": {
+      "axes": 28470,
+      "NO_SAME_ITEM_NPC_DIRECTION_OFFER_CANDIDATE": 13113,
+      "raw_zero_axes": 12432,
+      "ambiguous_item_axes": 1322,
+      "ambiguous_NPC_axes": 0,
+      "offer_candidates": 11954,
+      "offer_candidates_explicit_count": 439,
+      "offer_candidates_explicit_currency": 1,
+      "NO_ITEM_NAME_CANDIDATE": 2666,
+      "SOME_NUMERIC_PRICE_EQUAL_CANDIDATE_ONLY": 10981,
+      "NO_NPC_PROJECTED_NAME_CANDIDATE": 1166,
+      "ALL_CANDIDATE_NUMERIC_PRICES_DIFFERENT_ONLY": 544
+    }
+  },
+  "client_inputs": 0,
+  "repo_writes": 0,
+  "matrix": {
+    "relative_key": "outputs/items-reader-cloud-20261113/client1533-cohort14235-NPC-28470axes-source-candidate-fieldmatrix-private.json",
+    "sha256": "735e3f80959d4ad45fa30a7758c3a2aa91198857ba12e6a1be3cb484a52782ef",
+    "bytes": 39839746,
+    "unique_native_tuple_axis_keys": 28470
+  },
+  "source_model_counts": {
+    "NPC_declarations": 1282,
+    "NPCs_with_service_links": 426,
+    "trade_services": 324,
+    "trade_services_offers_field_absent": 8,
+    "offers": 12234,
+    "direction_counts": {
+      "BuyFromPlayer": 5202,
+      "SellToPlayer": 7032
+    },
+    "explicit_count": 459,
+    "explicit_currency": 31,
+    "currency_field_absent": 12203,
+    "explicit_price_zero": 0
+  },
+  "field_scope": {
+    "NPC_name": "All rawname fields checked against exact implemented npc_display_name(keyslug) then casefold candidateindex; noNPCidentitypromotion. ZeroambiguousNPC axes observed doesnotproveidentity.",
+    "item_reference": "All canonical/selected casefoldnamecandidate sets retained; nofirstpick/no layerfallback/clientIDpromotion.",
+    "sale_price": "All14235rawunsignedvalues retained. Numeric candidatecomparison with gameSellToPlayer only; global client directionpolicy held.",
+    "buy_price": "All14235rawunsignedvalues retained. Numeric candidatecomparison with gameBuyFromPlayer only; global client directionpolicy held.",
+    "location": "Rawlocation preserved in source8220. Game model lacks normalized residentlocation displayfield; UNPROJECTED, not N/A/noresidence. No geographyguess from key/wiki/placements.",
+    "currency": "Rawcurrencyobject refclientnamespace unqualifiedserver/display. Game currency Option definitionref independent; bothabsent not gpqualification. Questdisplaylabelhashcustody only.",
+    "quantity": "Game unit_price/count/subtype needs unitsqualification; equal numericvalues do notprove quantity/currency factidentity.",
+    "zero": "All12432rawzeroaxes retained. No0-to-absence conversion; sourceoffers explicitzero0 is censusonly.",
+    "completeness": "Full cohort computationalscope, not full semanticcomparison/UI/runtime parity orverifiedbug"
+  },
+  "route_pins": {
+    "crates/gameplay/content/src/content/project/v2.rs": "95916cff0e0a8943c97ed6458766732bbfe472fb800e1e056bf3bf43da7e5072",
+    "crates/gameplay/content/src/content/npc_catalogue/replies.rs": "385b617791e9d199d83eb95380a05da3b264c9e86c97cece06bb5e3ee53703b9",
+    "crates/gameplay/content/src/content/npc_catalogue/service.rs": "cdfcb51643505c325f6937075418be6e49be35a02a70d08c88bb488b38973703",
+    "crates/gameplay/npc/src/npc_command.rs": "8e535dfe16ff2ffd641c19300eb7738c5110cb8b85aafc28c450ed60e124fcdc"
+  },
+  "classification": "DERIVED_CANDIDATE_DIAGNOSTICS_NOT_BUGS_OR_IDENTITY",
+  "original_summary_sha256": "e188d8fdc6c108ca9a4ce2462eb5bf902863452d774756610cdcbcd901c0e325",
+  "thin_axis_matrix": {
+    "relative_key": "outputs/items-reader-cloud-20261113/client1533-NPC-cohort-thin-axis-publication-review.json",
+    "sha256": "bacbfef6e093e37195bc5e90a49aff9432bae37f2bc1a3cdc022d97f706e02e6",
+    "bytes": 593676
+  }
+}

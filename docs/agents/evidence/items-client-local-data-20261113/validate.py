@@ -16,6 +16,11 @@ PINS = {
     "alias-taxonomy-matrix.json": "d53e36c8b6303e48351b60c0e0d762f1cd903cb79e3bd143449936b38da80c12",
     "static-dataset-readiness.json": "5a57afd9040cc3392f84975c3bdb137a8cd4251e3e2b36fc04d513488502c76c",
     "weapon-comparison-supplement.json": "5165efcef1901170d5ad6f76e2a950879d5d84dfee932e038d2f2840bc57703f",
+    "whole-cohort-name-candidates.json": "43e28845dd027b8d9a40dc5fdb71393ef02ebb773d9ef41ad48b2712f1b02af9",
+    "whole-cohort-description-status.json": "0834c2f9eede67ea259f655d404069c3098103c2aeb78ed874fcda0862419f98",
+    "whole-cohort-npc-axes.json": "bacbfef6e093e37195bc5e90a49aff9432bae37f2bc1a3cdc022d97f706e02e6",
+    "whole-cohort-description-summary.json": "20556660859e1cbae1a5f999d7385fa67f70e14f6ed1a42aca2b008c78f51835",
+    "whole-cohort-npc-summary.json": "991b1ff2e8ca64355f9f7b9fa6a6dd73dc71ff5509b354843864d570d65d725d",
 }
 NPC_FIELDS = ["appearance_object_id", "flags_message_ordinal1", "flags40_entry_ordinal1",
               "raw_tuple_sha256", "field_presence_bits", "npc_name", "location",
@@ -352,6 +357,128 @@ def validate_weapons(doc):
     return {"observed_fields": 12, "counts": {k: dict(v) for k, v in counts.items()}}
 
 
+def validate_whole_names(doc, names, coverage):
+    source_pin = "3e168ce6afe374485da20ee0ac13d3749558e2f8"
+    require(doc["source_commit"] == source_pin, "whole-cohort source pin")
+    source = doc["source_record_equivalence"]
+    aggregate = hashlib.sha256("".join(k + ":" + source["sources"][k] + "\n"
+                                      for k in sorted(source["sources"])).encode()).hexdigest()
+    require(len(source["sources"]) == 72 and source["changed_files"] == [] and
+            aggregate == source["old_aggregate_sha256"] == source["fresh_main_aggregate_sha256"] ==
+            "b43968d3cf9e611b40fd672d805703867c101390c09eb7ab2477e2b5cced37c1",
+            "fresh/historical source record equivalence")
+    require(doc["selected_comparison_view"]["final_records"] == 6090 and
+            sum(doc["source_name_terminal_states"]["canonical"].values()) == 34111 and
+            sum(doc["source_name_terminal_states"]["selected"].values()) == 6090,
+            "source name path states")
+    keys = doc["candidate_key_dictionary"]
+    require(keys == sorted(set(keys)), "candidate key dictionary")
+    sets = doc["candidate_sets"]
+    for indices in sets:
+        require(all(type(i) is int and 0 <= i < len(keys) for i in indices) and
+                indices == sorted(set(indices)), "candidate set indices")
+    require([r[0] for r in doc["rows"]] ==
+            [r["appearance_object_id"] for r in decode_names(names)], "whole name row identity/order")
+    result, counts = {}, {k: collections.Counter() for k in ("canonical", "selected")}
+    for row in doc["rows"]:
+        require(len(row) == 3 and all(type(i) is int and 0 <= i < len(sets) for i in row[1:]),
+                "whole name row shape")
+        result[row[0]] = {}
+        for layer, index in zip(("canonical", "selected"), row[1:]):
+            candidates = [keys[i] for i in sets[index]]
+            state = ("NO_NAME_CANDIDATE" if not candidates else "UNIQUE_NAME_CANDIDATE"
+                     if len(candidates) == 1 else "AMBIGUOUS_NAME_CANDIDATES")
+            counts[layer][state] += 1
+            result[row[0]][layer] = candidates
+    require({k: dict(v) for k, v in counts.items()} == doc["counts"], "whole name status census")
+    require(doc["coverage"]["market_category_absent_appearances_included"] == 1288 and
+            doc["aliases"] == decode_table(coverage["alias_columns"], coverage["alias_arrays"]),
+            "whole name alias/nonmarket preservation")
+    return result
+
+
+def validate_whole_descriptions(doc, summary, joins, names):
+    require(doc["header"]["name_candidate_matrix"]["sha256"] ==
+            PINS["whole-cohort-name-candidates.json"], "Description/name matrix binding")
+    name_rows = decode_names(names)
+    require([r[0] for r in doc["rows"]] == [r["appearance_object_id"] for r in name_rows],
+            "Description row order")
+    states, results, sources = (doc["client_description_state_codes"], doc["comparison_result_codes"],
+                               doc["source_state_codes"])
+    totals = {k: collections.Counter() for k in ("canonical", "selected")}
+    unique = {k: collections.Counter() for k in totals}
+    source_counts = {k: collections.Counter() for k in totals}
+    for row, original in zip(doc["rows"], name_rows):
+        require(len(row) == 6 and type(row[1]) is int and 0 <= row[1] < len(states) and
+                states[row[1]] == original["description_state"], "Description client state")
+        for layer, offset in (("canonical", 2), ("selected", 4)):
+            outcomes, raw_states = row[offset:offset + 2]
+            require(len(outcomes) == len(raw_states) == len(joins[row[0]][layer]),
+                    "Description candidate alignment")
+            require(all(type(i) is int and 0 <= i < len(results) for i in outcomes) and
+                    all(type(i) is int and 0 <= i < len(sources) for i in raw_states),
+                    "Description code indices")
+            for code, source_code in zip(outcomes, raw_states):
+                outcome, state = results[code], sources[source_code]["source_state"]
+                if original["description_state"] == "FIELD_PRESENT_ENCODING_UNKNOWN":
+                    require(outcome == "CLIENT_ENCODING_UNKNOWN_NO_TEXT_COMPARISON",
+                            "unknown encoding acquired text equality")
+                totals[layer][outcome] += 1
+                source_counts[layer][state] += 1
+                if len(outcomes) == 1:
+                    unique[layer][original["description_state"] + "|" + outcome] += 1
+    require({k: dict(v) for k, v in totals.items()} == summary["all_candidate_evaluations"] ==
+            doc["header"]["coverage"]["candidate_field_evaluation_counts"], "Description outcome census")
+    require({k: dict(v) for k, v in unique.items()} ==
+            summary["unique_name_candidate_appearance_outcomes"] and
+            {k: dict(v) for k, v in source_counts.items()} ==
+            doc["header"]["coverage"]["source_state_counts"], "Description state/unique census")
+    require(sum(sum(v.values()) for v in totals.values()) == 17373,
+            "all Description candidate evaluations retained")
+    return {"appearances": 6470, "ordered_candidate_evaluations": 17373,
+            "normalization": "NONE", "Description_literals_exported": False}
+
+
+def validate_whole_npc(doc, summary, joins, raw_rows):
+    columns = doc["tuple_columns"]
+    indices = columns["raw_global_tuple_index0"]
+    require(indices == [i for i, r in enumerate(raw_rows) if r["appearance_object_id"] in joins]
+            and len(indices) == 14235, "NPC cohort occurrence ancestry")
+    require(all(len(v) == 14235 for v in columns.values()), "NPC tuple column lengths")
+    for i, source_index in enumerate(indices):
+        raw = raw_rows[source_index]
+        require(columns["sale_price_raw"][i] == raw["sale_price_raw"] and
+                columns["buy_price_raw"][i] == raw["buy_price_raw"], "raw NPC price/zero changed")
+        for layer in ("canonical", "selected"):
+            require(columns[layer + "_item_candidate_count"][i] ==
+                    len(joins[raw["appearance_object_id"]][layer]), "NPC/name candidate alignment")
+    zero_axes = sum(v == 0 for field in ("sale_price_raw", "buy_price_raw") for v in columns[field])
+    require(zero_axes == doc["counts"]["raw_zero_axes"] == 12432, "NPC zero axes dropped")
+    codes = doc["layout"]["status_codes"]
+    for layer in ("canonical", "selected"):
+        arrays = doc["axis_columns"][layer]
+        require(set(arrays) == {"status_code", "offer_candidate_count", "numeric_equal_candidate_count"}
+                and all(len(v) == 28470 for v in arrays.values()), "NPC both-axis coverage")
+        counts = collections.Counter()
+        for axis, (code, offers, equal) in enumerate(zip(arrays["status_code"],
+                arrays["offer_candidate_count"], arrays["numeric_equal_candidate_count"])):
+            require(type(code) is int and 0 <= code < len(codes) and
+                    type(offers) is int and type(equal) is int and 0 <= equal <= offers,
+                    "NPC numeric status fields")
+            i = axis // 2
+            expected = (0 if columns[layer + "_item_candidate_count"][i] == 0 else
+                        1 if columns["NPC_candidate_count"][i] == 0 else
+                        2 if offers == 0 else 3 if equal else 4)
+            require(code == expected and (expected > 1 or offers == 0), "NPC status precedence")
+            counts[codes[code]] += 1
+        require(dict(counts) == doc["status_counts"][layer] and all(
+            summary["counts"][layer][key] == count for key, count in counts.items()), "NPC status census")
+        require(summary["counts"][layer]["axes"] == 28470 and
+                summary["counts"][layer]["raw_zero_axes"] == zero_axes, "NPC summary scope")
+    return {"tuples": 14235, "axes_per_layer": 28470, "raw_zero_axes_per_layer": 12432,
+            "numeric_candidate_only": True}
+
+
 def validate(root=HERE):
     documents = {}
     for name, expected in PINS.items():
@@ -364,7 +491,8 @@ def validate(root=HERE):
            decode_table(coverage_doc["record_columns"], coverage_doc["record_arrays"])}
     populations = validate_populations(ids, decode_columns(documents["client-npc-tuples.json"]))
     names = documents["item-names-description-custody.json"]
-    return {"members": 8, "coverage": validate_coverage(coverage_doc),
+    joins = validate_whole_names(documents["whole-cohort-name-candidates.json"], names, coverage_doc)
+    return {"members": 13, "coverage": validate_coverage(coverage_doc),
             "npc": validate_npc(documents["client-npc-tuples.json"]),
             "NPC_populations": populations,
             "candidates": validate_candidates(documents["field-comparison-candidates.json"]),
@@ -374,6 +502,13 @@ def validate(root=HERE):
                                                    coverage_doc),
             "static_readiness": validate_static(documents["static-dataset-readiness.json"]),
             "weapons": validate_weapons(documents["weapon-comparison-supplement.json"]),
+            "whole_cohort_names": documents["whole-cohort-name-candidates.json"]["counts"],
+            "whole_cohort_descriptions": validate_whole_descriptions(
+                documents["whole-cohort-description-status.json"],
+                documents["whole-cohort-description-summary.json"], joins, names),
+            "whole_cohort_NPC": validate_whole_npc(documents["whole-cohort-npc-axes.json"],
+                documents["whole-cohort-npc-summary.json"], joins,
+                decode_columns(documents["client-npc-tuples.json"])),
             "private_originals_rechecked_here": False, "overall_static_audit": "PARTIAL",
             "server_id_bindings": 0}
 

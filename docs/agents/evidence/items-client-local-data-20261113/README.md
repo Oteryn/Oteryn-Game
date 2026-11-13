@@ -4,7 +4,9 @@ This snapshot makes prepared local-data evidence reviewable:6,470 Cyclopedia-bea
 client appearance records and exact item names representing6,228 client types;
 Description hash/count/state custody;157 alias/taxonomy groups;15,350 raw NPC tuple
 occurrences;115 candidate comparison rows;9 correction records/8groups; static-data
-readiness and a12-field weapon comparison supplement. Eight data files total3,923,138B.
+readiness and a12-field weapon comparison supplement. Complete available-field
+comparison tables cover the whole6,470 appearance cohort. Thirteen data files
+total5,082,415B; this is not full item-stat or runtime parity.
 It changes no runtime or source definitions.
 
 These populations differ: the Cyclopedia-bearing subset contains14,235 NPC tuples
@@ -48,6 +50,26 @@ not a claim that the old data equals current main or the running client.
   unqualified label differences; selected has6/3 plus3 NOT_SELECTED comparisons.
   Source axe/sword versus retail cutting/stabbing labels remain candidate-only.
   Secondary UNKNOWN fields retain raw state even when the formatter uses a fallback.
+- `whole-cohort-name-candidates.json`: all6,470 appearances, including all1,288
+  lacking market category, with complete independently indexed candidate keysets.
+  Canonical:4,876 unique candidates/1,179 ambiguous/415 none; selected source view:
+  3,244/327/2,899. All157 aliases and exact-name references stay separate.
+- `whole-cohort-description-status.json` and its summary: all6,470 client states
+  and17,373 ordered candidate evaluations. Arrays align every candidate in the
+  name matrix; no first/best candidate is selected. Comparison uses exact UTF8
+  custody versus source text hashes, normalization NONE; Description text stays
+  private. Source KNOWN_EMPTY, UNKNOWN/N/A and ancestor ABSENT remain distinct.
+- `whole-cohort-npc-axes.json` and its summary:14,235 tuple occurrences with both
+  raw sale/buy axes per layer (28,470), including12,432 known-zero axes. Numeric
+  equality is candidate-only; quantity, currency, residence, direction, eligibility
+  and executable offers are not established by that equality.
+
+The five thin table/summary blobs retain their original custody filenames inside
+metadata; `validate.py` resolves the explicit filename aliases through their fixed
+SHA256 pins. All candidate sets, array positions, price axes and source states
+are preserved, not merged. Fresh main3e168ce6 has72 item-source blobs and four
+selection-route files byte-equivalent to5efd67da. The6,090-record selected layer
+is the provider/update/disjoint-starter comparison view, not deployed admission.
 
 Names, images, appearance IDs, Cyclopedia types, source candidate keys and server
 IDs are distinct namespaces. No name/icon/ordinal equality promotes identity.
@@ -86,3 +108,4 @@ modal handling, anti-logout or collector/supervisor restarts remains binding.
 
 Allocation: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6849833911
 Material append/reopen: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6850459977
+Final current-batch reopen: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6851110135

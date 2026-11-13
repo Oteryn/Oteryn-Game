@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Cloud /root/mantra_resume
 created_at: 2026-11-13T10:17:46Z
-updated_at: 2026-11-13T10:43:15Z
+updated_at: 2026-11-13T11:16:12Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/items-client-local-data-20261113/**
@@ -48,11 +48,11 @@ authority, session, persistence, production, GUI or controller mutation.
 
 ## Acceptance criteria
 
-- [x] Eight exact prepared member hashes,3,923,138B total, imported to owned prefix.
+- [x] Thirteen exact prepared member hashes,5,082,415B total, imported to owned prefix.
 - [x] Lossless structure/coverage/privacy validator and meaningful negative tests.
 - [x] Preserve all raw tuples/order/presence/zero/UNKNOWN and namespace boundaries.
 - [x] Governance,129 governance tests and diff check pass before grouped push.
-- [ ] Authorized new draft publication; exact-head CI/review remain pending.
+- [x] Authorized draft3170 published; successor exact-head CI/review remain pending.
 
 ## Reference parity
 
@@ -66,7 +66,7 @@ GUI/network collection, server item/currency binding, paid review, merge or depl
 
 ## Implementation / findings
 
-AUTHORING successor to82bb3bd54a87b7b124e3f8b71b23fec902b65277. Eight data blobs;
+AUTHORING final batch successor tobf678d27bfe66eeb03c58331ac13e8bb4124a835. Thirteen data blobs;
 coverage6470/6228/157aliases; NPC15350/2679; candidate115rows;
 9correction records/8groups. Potions36PARTIAL; Others547UNKNOWN; allItems incomplete.
 Every empty correction quote array is scoped OBSERVED_INITIAL_PANEL_ONLY.
@@ -75,12 +75,12 @@ Every empty correction quote array is scoped OBSERVED_INITIAL_PANEL_ONLY.
 
 - python3 docs/agents/evidence/items-client-local-data-20261113/validate.py: PASS exit0;
  6470/6228/157aliases,globalNPC15350/subset14235/outside1115,115/116/30known0,9records/8groups.
-- python3 -m unittest discover -s docs/agents/evidence/items-client-local-data-20261113 -p test_validate.py: PASS14tests/0fail exit0.
+- python3 -m unittest discover -s docs/agents/evidence/items-client-local-data-20261113 -p test_validate.py: PASS19tests/0fail exit0.
 - python3 tools/agents/validate_governance.py: PASS22documents/9lanes exit0.
 - python3 -m unittest discover -s tools/agents/tests: PASS129tests/0fail exit0.
 - git diff --check: PASS before grouped commit; owned-file scope checked.
 - Integration/E2E: NOT_APPLICABLE, auxiliary evidence only.
-- Exact-head CI: predecessor82bb game-gate SUCCESS; successor pending after grouped push.
+- Exact-head CI: predecessor82bb game-gate SUCCESS; final successor pending after grouped push.
 
 ## Self-review
 
@@ -99,6 +99,16 @@ Append6470exactnames/Descriptioncustody,157aliasmatrix,rawstaticreadiness and
 4-card12-fieldweaponprojection. No Description text, assets or runtime admission.
 Names encoding UNKNOWN2 retain null counts; no guessed decoding.
 ZERO client input, anti-logout and collector/supervisor restarts.
+
+## Final available-field whole-cohort comparison
+
+Reopened by6851110135; all8prior data blobs unchanged. Complete6470perappearance
+namecandidate sets,6470Description states/17373ordered comparisons,14235NPCtuples
+and28470priceaxes perlayer including12432knownzeros. Tables/summary crosslinks
+validate against existing publiccustody data; no bestcandidate or alias collapse.
+Fresh3e168 item72blobs+4selection routes equal5efd; selected6090 is a comparison
+record view, not deployment/admission. Availablefields complete for this cohort,
+not full stats/UI/runtime parity. No further scope in this batch.
 
 ## PR and closeout
 

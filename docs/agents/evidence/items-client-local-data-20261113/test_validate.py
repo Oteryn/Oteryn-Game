@@ -22,6 +22,12 @@ class EvidenceBoundaries(unittest.TestCase):
         cls.aliases = json.loads((HERE / "alias-taxonomy-matrix.json").read_text())
         cls.static = json.loads((HERE / "static-dataset-readiness.json").read_text())
         cls.weapons = json.loads((HERE / "weapon-comparison-supplement.json").read_text())
+        cls.whole_names = json.loads((HERE / "whole-cohort-name-candidates.json").read_text())
+        cls.whole_desc = json.loads((HERE / "whole-cohort-description-status.json").read_text())
+        cls.desc_summary = json.loads((HERE / "whole-cohort-description-summary.json").read_text())
+        cls.whole_npc = json.loads((HERE / "whole-cohort-npc-axes.json").read_text())
+        cls.npc_summary = json.loads((HERE / "whole-cohort-npc-summary.json").read_text())
+        cls.joins = validator.validate_whole_names(cls.whole_names, cls.names, cls.coverage)
 
     def test_dictionary_index_must_not_wrap_negative(self):
         doc = copy.deepcopy(self.npc)
@@ -125,6 +131,49 @@ class EvidenceBoundaries(unittest.TestCase):
         field["status"] = "LITERAL_EQUAL_CANDIDATE_ONLY"
         with self.assertRaisesRegex(ValueError, "exact bounded source projection"):
             validator.validate_weapons(doc)
+
+    def test_whole_cohort_cannot_drop_nonmarket_appearance(self):
+        doc = copy.deepcopy(self.whole_names)
+        absent = {row["appearance_object_id"] for row in validator.decode_table(
+            self.coverage["record_columns"], self.coverage["record_arrays"])
+            if row["market_category"] is None}
+        index = next(i for i, row in enumerate(doc["rows"]) if row[0] in absent)
+        doc["rows"].pop(index)
+        with self.assertRaisesRegex(ValueError, "whole name row identity"):
+            validator.validate_whole_names(doc, self.names, self.coverage)
+
+    def test_description_cannot_drop_ambiguous_candidate(self):
+        doc = copy.deepcopy(self.whole_desc)
+        row = next(row for row in doc["rows"] if len(row[2]) > 1)
+        row[2].pop()
+        row[3].pop()
+        with self.assertRaisesRegex(ValueError, "Description candidate alignment"):
+            validator.validate_whole_descriptions(doc, self.desc_summary, self.joins, self.names)
+
+    def test_description_unknown_encoding_cannot_claim_equality(self):
+        doc = copy.deepcopy(self.whole_desc)
+        row = next(row for row in doc["rows"] if
+                   doc["client_description_state_codes"][row[1]] ==
+                   "FIELD_PRESENT_ENCODING_UNKNOWN" and row[2])
+        row[2][0] = doc["comparison_result_codes"].index(
+            "EXACT_UTF8_BYTES_AND_TEXT_EQUAL_CANDIDATE_ONLY")
+        with self.assertRaisesRegex(ValueError, "unknown encoding acquired text equality"):
+            validator.validate_whole_descriptions(doc, self.desc_summary, self.joins, self.names)
+
+    def test_npc_zero_price_cannot_disappear(self):
+        doc = copy.deepcopy(self.whole_npc)
+        prices = doc["tuple_columns"]["sale_price_raw"]
+        prices[prices.index(0)] = 1
+        with self.assertRaisesRegex(ValueError, "raw NPC price/zero changed"):
+            validator.validate_whole_npc(doc, self.npc_summary, self.joins,
+                                         validator.decode_columns(self.npc))
+
+    def test_npc_second_price_axis_cannot_be_dropped(self):
+        doc = copy.deepcopy(self.whole_npc)
+        doc["axis_columns"]["canonical"]["status_code"].pop()
+        with self.assertRaisesRegex(ValueError, "NPC both-axis coverage"):
+            validator.validate_whole_npc(doc, self.npc_summary, self.joins,
+                                         validator.decode_columns(self.npc))
 
 
 if __name__ == "__main__":
