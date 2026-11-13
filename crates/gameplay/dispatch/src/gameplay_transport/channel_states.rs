@@ -95,6 +95,8 @@ pub struct ChannelSessionStates {
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     pub(super) quest_callbacks: super::quest_callbacks::PendingCallbacks,
     pub(super) resting_areas: super::resting_area::RestingAreaSessions,
+    /// P1-a: only reconnect requires the successful revocation-stream read floor.
+    pub(super) security_revocation_stream_enabled: bool,
     /// RAIDS-GLOBAL: the Channel and its Activity scopes share current recipients.
     pub(super) server_messages: std::sync::Arc<super::raid_notices::ServerMessageHub>,
     pub(super) server_modals: std::sync::Arc<super::server_modal::ModalHub>,
