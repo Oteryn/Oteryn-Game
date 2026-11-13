@@ -66,7 +66,6 @@ impl Ledger {
         self.current = None;
         self.presses.clear();
     }
-    #[allow(clippy::too_many_arguments)]
     pub(super) fn press(
         &mut self,
         frame: u32,
@@ -92,6 +91,20 @@ impl Ledger {
         };
         self.current = Some(press);
         self.presses.push(press);
+    }
+    pub(super) fn revoke_world_press(&mut self, frame: u32, generation: u64, point: Vec2) {
+        let matches = |press: &Press| {
+            press.frame == frame
+                && press.generation == generation
+                && press.point.round() == point.round()
+                && matches!(press.source, Source::World)
+        };
+        self.presses.retain(|press| !matches(press));
+        if self.current.as_ref().is_some_and(matches)
+            && let Some(press) = self.current.take()
+        {
+            self.drops.retain(|(token, _, _)| *token != press.token);
+        }
     }
     pub(super) fn claim(&mut self, frame: u32, generation: u64, point: Vec2) -> Option<Press> {
         let index = self.presses.iter().position(|press| {
@@ -127,6 +140,8 @@ impl Ledger {
         Some(self.drops.remove(index).2)
     }
 }
+// Upstream pointer ownership, node geometry and retained state are separate Bevy parameters.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn press(
     event: On<PointerPress>,
     owner: NonSend<HostOwner>,

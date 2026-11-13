@@ -37,7 +37,7 @@ pub(super) fn world_input_allowed(owner: &HostOwner) -> bool {
     owner
         .play
         .as_ref()
-        .is_some_and(|play| !play.view.gameplay_input_blocked(&play.link))
+        .is_some_and(|play| play.view.item_world_gesture_eligible(&play.link))
 }
 fn same_binding(a: GroundItem, b: GroundItem) -> bool {
     match (a, b) {
@@ -263,6 +263,23 @@ fn before(
     allowed: bool,
 ) -> bool {
     let captured = gesture.active || ui.dragged.is_some() || gesture.completed == Some(frame);
+    // The ordinary press may consume a cursor spell before after_press runs.
+    // Revoke its world token while the existing mode still owns this exact click.
+    if matches!(
+        event,
+        NormalizedInputEvent::MouseButton {
+            button: MouseButton::PRIMARY,
+            state: ButtonState::Pressed,
+            ..
+        }
+    ) && !world_input_allowed(owner)
+        && let Some(point) = point.filter(|point| point.is_finite())
+    {
+        gesture
+            .picking
+            .revoke_world_press(frame, owner.generation(), point);
+    }
+
     let reset_event = matches!(
         event,
         NormalizedInputEvent::DeviceLost

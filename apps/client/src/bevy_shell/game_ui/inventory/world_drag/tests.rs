@@ -383,3 +383,6 @@ mod hit_boundary_tests;
 
 #[path = "tests/fences.rs"]
 mod fence_tests;
+
+#[path = "tests/modes.rs"]
+mod mode_tests;

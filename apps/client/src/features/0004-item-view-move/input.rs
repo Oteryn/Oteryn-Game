@@ -75,6 +75,14 @@ pub(in crate::play) fn send_move(
 }
 
 impl crate::play::PlayView {
+    /// Match the existing world gesture priority: targeting and cursor spells own the click.
+    pub fn item_world_gesture_eligible(&self, link: &PlayLink) -> bool {
+        if self.gameplay_input_blocked(link) || self.cursor_spell.is_some() {
+            return false;
+        }
+        let mailbox = lock(&link.mailbox);
+        !mailbox.world_context.pending && mailbox.world_context.targeting.is_none()
+    }
     pub fn item_floor(&self) -> i16 {
         self.floor
     }
