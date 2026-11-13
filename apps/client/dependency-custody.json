@@ -14,6 +14,33 @@
   },
   "packages": [
     {
+      "name": "alsa",
+      "version": "0.9.1",
+      "license": "Apache-2.0/MIT",
+      "repository": "https://github.com/diwic/alsa-rs",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "ed7572b7ba83a31e20d1b48970ee402d2e3e0537dcfe0a3ff4d6eb7508617d43",
+      "vcs": {
+        "git": {
+          "sha1": "3e3195cada635a73685066ec97315cfebd6e3bca"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "alsa-sys",
+      "version": "0.3.1",
+      "license": "MIT",
+      "repository": "https://github.com/diwic/alsa-sys",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "db8fee663d06c4e303404ef5f40488a53e062f89ba8bfed81f42325aafad1527",
+      "vcs": {
+        "git": {
+          "sha1": "f0fadd70b94fdc7482bbe383d4ac72025d54efda"
+        }
+      }
+    },
+    {
       "name": "arboard",
       "version": "3.7.0",
       "license": "MIT OR Apache-2.0",
@@ -37,6 +64,20 @@
       "vcs": {
         "git": {
           "sha1": "ed27008ae5d1f10cfbb266de039f0fb35fd05a56"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "cpal",
+      "version": "0.16.0",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/rustaudio/cpal",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "cbd307f43cc2a697e2d1f8bc7a1d824b5269e052209e28883e5bc04d095aaa3f",
+      "vcs": {
+        "git": {
+          "sha1": "36b9fed079e3d3066acaa58b1ae935caf5c2bfb1"
         },
         "path_in_vcs": ""
       }
@@ -68,6 +109,28 @@
         },
         "path_in_vcs": "framework-crates/objc2-app-kit"
       }
+    },
+    {
+      "name": "rodio",
+      "version": "0.21.1",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/RustAudio/rodio",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "e40ecf59e742e03336be6a3d53755e789fd05a059fa22dfa0ed624722319e183",
+      "vcs": {
+        "git": {
+          "sha1": "7f10fcc57c9f1a7bbefb0c371a73d1224f8b5855"
+        },
+        "path_in_vcs": ""
+      }
+    }
+  ],
+  "additional_purposes": [
+    {
+      "purpose": "Portable native audio playback through the existing manifest-pinned SoundCatalog",
+      "feature": "bevy-shell/rodio",
+      "no_upstream_fork": true,
+      "existing_lockfile_versions_only": true
     }
   ]
 }
