@@ -227,3 +227,38 @@ fn raising_the_same_top_also_tightens_its_retained_frame_layer() -> TestResult {
     assert!(permits(&mut app, middle)?);
     Ok(())
 }
+
+#[test]
+fn equal_global_nested_panels_win_independently_of_archetype_iteration_order() -> TestResult {
+    let mut app = App::new();
+    let unrelated = app
+        .world_mut()
+        .spawn((GameModal, Node::default(), GlobalZIndex(80)))
+        .id();
+    let scrim = app
+        .world_mut()
+        .spawn((GameModal, Node::default(), GlobalZIndex(80)))
+        .id();
+    let panel = app
+        .world_mut()
+        .spawn((GameModal, Node::default(), GlobalZIndex(80), ChildOf(scrim)))
+        .id();
+    let outside_panel = app
+        .world_mut()
+        .spawn((Node::default(), ChildOf(scrim)))
+        .id();
+    let inside = app
+        .world_mut()
+        .spawn((Node::default(), ChildOf(panel)))
+        .id();
+    // Move the scrim to an archetype visited after the nested panel. UI ordering
+    // must still follow the hierarchy, not ECS query iteration order.
+    app.world_mut()
+        .entity_mut(scrim)
+        .insert(Name::new("context scrim"));
+    assert!(permits(&mut app, inside)?);
+    assert!(permits(&mut app, scrim)?);
+    assert!(!permits(&mut app, outside_panel)?);
+    assert!(!permits(&mut app, unrelated)?);
+    Ok(())
+}

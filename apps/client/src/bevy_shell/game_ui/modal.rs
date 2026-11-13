@@ -100,26 +100,12 @@ impl ModalTree<'_, '_> {
             .max_by(|left, right| self.compare(left, right))
     }
     fn compare(&self, left: &Snapshot, right: &Snapshot) -> Ordering {
-        left.layer.global.cmp(&right.layer.global).then_with(|| {
-            if left.entity == right.entity {
-                return left
-                    .layer
-                    .path
-                    .cmp(&right.layer.path)
-                    .then(left.layer.depth.cmp(&right.layer.depth));
-            }
-            if self.descends_from(left.entity, right.entity) {
-                Ordering::Greater
-            } else if self.descends_from(right.entity, left.entity) {
-                Ordering::Less
-            } else {
-                left.layer
-                    .path
-                    .cmp(&right.layer.path)
-                    .then(left.layer.depth.cmp(&right.layer.depth))
-                    .then(left.entity.to_bits().cmp(&right.entity.to_bits()))
-            }
-        })
+        left.layer
+            .global
+            .cmp(&right.layer.global)
+            .then(left.layer.path.cmp(&right.layer.path))
+            .then(left.layer.depth.cmp(&right.layer.depth))
+            .then(left.entity.to_bits().cmp(&right.entity.to_bits()))
     }
     fn layer(&self, entity: Entity) -> Option<Layer> {
         if !self.visible(entity) || self.tree.get(entity).ok()?.0.is_none() {
@@ -139,14 +125,17 @@ impl ModalTree<'_, '_> {
         }
         // GlobalZIndex escapes its ancestors' draw ordering; descendants inherit the
         // nearest explicit global layer. Local siblings retain their hierarchy order.
+        let global = chain
+            .iter()
+            .find_map(|(_, _, global, _)| *global)
+            .unwrap_or(0);
+        // Repeated GlobalZIndex on a nested panel must retain the same ancestry prefix
+        // as its scrim. Resetting at every explicit component would make comparisons
+        // between a nested pair and an unrelated equal-layer modal non-transitive.
         let context = chain
             .iter()
-            .position(|(_, _, global, _)| global.is_some())
+            .rposition(|(_, _, candidate, _)| *candidate == Some(global))
             .unwrap_or(chain.len().saturating_sub(1));
-        let global = chain
-            .get(context)
-            .and_then(|(_, _, global, _)| *global)
-            .unwrap_or(0);
         let path = chain[..=context]
             .iter()
             .rev()
