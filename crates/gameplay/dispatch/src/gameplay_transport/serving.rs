@@ -177,14 +177,20 @@ pub async fn serve_gameplay(
             shutdown,
             Some(drain),
         ),
-        quest_retries,
+        DurabilityRoot::with_background_holder(quest_retries),
     );
     let mut serving = pin!(serving);
     let cycles_stop = CancellationToken::new();
-    let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
-    let mut activities = pin!(authority.run_activity_owner_cycles(&cycles_stop));
+    let mut cycles = pin!(DurabilityRoot::with_background_holder(
+        authority.run_source_owner_cycles(&cycles_stop)
+    ));
+    let mut activities = pin!(DurabilityRoot::with_background_holder(
+        authority.run_activity_owner_cycles(&cycles_stop)
+    ));
     let mut activities_done = false;
-    let mut respawns = Box::pin(authority.run_world_respawns(shutdown));
+    let mut respawns = Box::pin(DurabilityRoot::with_background_holder(
+        authority.run_world_respawns(shutdown),
+    ));
     let mut respawns_done = false;
     let mut owner_failed = false;
     let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
@@ -196,7 +202,9 @@ pub async fn serve_gameplay(
     let mut quiesced = false;
     // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
     // deadlines, so no other cadence work delays them.
-    let mut positions = pin!(authority.run_last_position_writes(shutdown));
+    let mut positions = pin!(DurabilityRoot::with_background_holder(
+        authority.run_last_position_writes(shutdown)
+    ));
     // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
     let mut flush = pin!(async {
         match owners.last_position_flush {

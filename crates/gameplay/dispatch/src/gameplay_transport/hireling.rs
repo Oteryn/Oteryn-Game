@@ -192,16 +192,16 @@ async fn return_to_lamp_input(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:Exac
 /// Runs on the existing House disposition/recovery pass, including while the former owner is offline.
 pub(super) async fn recall_lost_houses(owner:&ComposedFreshAdmission<'_,'_,'_>)->Option<()> {
     use crate::durability::character_inbox::{RewardClaimInboxMintRequest,RewardClaimInboxMintOutput};
-    loop {
-        let pending=owner.root.pending_hireling_recalls(owner.character,owner.holder,owner.world_id).await.ok()?;
-        if pending.is_empty(){return Some(())}
-        let definition=lamp_definition(owner).await?;
-        let native=owner.active_generation?.native_gameplay()?;
-        let item=super::item_ref_admission::generation_inbox_item_facts(native,&definition).ok()?;
-        for pending in pending {
-            let mint=RewardClaimInboxMintRequest{claim:definition.clone(),content_revision:pending.content_revision,ruleset_revision:pending.ruleset_revision,
-                sim_revision:crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),outputs:vec![RewardClaimInboxMintOutput{source_line:0,item:item.clone(),quantity:1,key_number:None}]};
-            owner.root.recall_hireling_to_lamp(owner.character,owner.holder,pending.authority,HirelingLampReturn{hireling:pending.hireling.id,input:HirelingReturnInput::Management,source:pending.source,mint}).await.ok()?;
-        }
-    }
+    let pending=owner.root.pending_hireling_recalls(owner.character,owner.holder,owner.world_id).await.ok()?;
+    if pending.is_empty(){return Some(())}
+    let start = owner.background_start("hireling-recall", pending.len());
+    let pending = pending.into_iter().nth(start)?;
+    let definition=lamp_definition(owner).await?;
+    let native=owner.active_generation?.native_gameplay()?;
+    let item=super::item_ref_admission::generation_inbox_item_facts(native,&definition).ok()?;
+    let mint=RewardClaimInboxMintRequest{claim:definition,content_revision:pending.content_revision,ruleset_revision:pending.ruleset_revision,
+        sim_revision:crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),outputs:vec![RewardClaimInboxMintOutput{source_line:0,item,quantity:1,key_number:None}]};
+    owner.root.recall_hireling_to_lamp(owner.character,owner.holder,pending.authority,HirelingLampReturn{hireling:pending.hireling.id,input:HirelingReturnInput::Management,source:pending.source,mint}).await.ok()?;
+    if let Ok(mut cursors) = owner.states.background_cursors.lock() { cursors.insert("hireling-recall", start + 1); }
+    Some(())
 }

@@ -224,14 +224,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// unknown, so an empty ready Instance must explicitly publish known zero.
     /// The caller polls this pass alongside the existing autonomous room jobs.
     pub(super) async fn publish_activity_raid_presence(&self) -> Result<(), ()> {
-        let owners = self.activity_runtimes.activity_owners()?;
+        let mut owners = self.activity_runtimes.activity_owners()?;
+        owners.sort_by_key(|owner| {
+            super::activity_runtime::ScopeKey::new(owner.scope, owner.generation)
+        });
+        let start = self.background_start("activity-presence", owners.len());
+        let count = owners.len();
         let mut complete = true;
-        for owner in owners {
-            let view = self.runtime_view(&owner);
+        for index in (start..count).chain(0..start) {
+            let owner = &owners[index];
+            let view = self.runtime_view(owner);
             let now_ms = crate::world_clock::now_utc_ms()
                 .and_then(|now| i64::try_from(now).ok())
                 .ok_or(())?;
-            complete &= view.publish_raid_activity(now_ms).await.is_ok();
+            complete &= self
+                .background_unit(
+                    "activity-presence",
+                    index + 1,
+                    view.publish_raid_activity(now_ms),
+                )
+                .await
+                .is_ok();
         }
         if complete { Ok(()) } else { Err(()) }
     }

@@ -561,8 +561,12 @@ where
     A: FreshAdmissionAuthority,
 {
     sounds(stream, authority, session).await?;
+    let inventory_refresh_pending = session
+        .item_view
+        .as_ref()
+        .is_some_and(|view| view.inventory_refresh_pending);
     if let Some(view) = session.item_view.as_mut()
-        && view.inventory_refresh_pending
+        && inventory_refresh_pending
     {
         item_use_view_refresh::refresh(
             stream,
@@ -591,9 +595,11 @@ where
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.
     // Use the same bounded connection refresh already used after local item commits.
-    if session
-        .selected_capabilities
-        .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+    // The pending inventory retry already observes these containers this tick.
+    if !inventory_refresh_pending
+        && session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
         && let (Some(views), Some(view)) =
             (session.container_views.as_mut(), session.item_view.as_mut())
     {

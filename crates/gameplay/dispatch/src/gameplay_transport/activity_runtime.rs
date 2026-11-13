@@ -138,6 +138,11 @@ pub struct ActivityConnectionSwitch {
 
 #[derive(Default)]
 pub struct ActivityRuntimeRegistry<'a> {
+    pub(super) boss_rooms_after: Mutex<Option<[u8; 16]>>,
+    pub(super) departed_after:
+        Mutex<Option<crate::durability::activity_handoff::DepartedActivityCursor>>,
+    pub(super) departed_retirement_after: Mutex<Option<[u8; 16]>>,
+    pub(super) soulpit_after: std::sync::Mutex<Option<[u8; 16]>>,
     pub(super) soulpit_transitions: tokio::sync::Mutex<()>,
     soulpit_template:
         Mutex<Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>>,

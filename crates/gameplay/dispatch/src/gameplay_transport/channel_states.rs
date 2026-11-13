@@ -19,6 +19,9 @@ pub struct ChannelSessionStates {
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub attack: Mutex<attack::ChannelAttackStates>,
+    /// Leaf cursor map: scheduler positions only, never durable authority.
+    pub(super) background_cursors:
+        std::sync::Mutex<std::collections::BTreeMap<&'static str, usize>>,
     /// Shared activity owner installed by the boss instance composition root.
     pub boss_activity_handoff: super::BossActivityHandoffSlot,
     /// Shared weak browse containers live only while a connection holds a view.

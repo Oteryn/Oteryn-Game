@@ -21,6 +21,29 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if matches!(
+        next,
+        Next::Serene | Next::QuestLog | Next::Chat | Next::Visibility | Next::Combat | Next::Npc
+    ) {
+        crate::durability::DurabilityRoot::with_background_holder(
+            authority.background_operation(receive_inner(stream, authority, session, next)),
+        )
+        .await
+    } else {
+        receive_inner(stream, authority, session, next).await
+    }
+}
+
+async fn receive_inner<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    next: Next,
+) -> Result<Option<Input>, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     let buffered_original = matches!(&next, Next::StepDue);
     let (frame, arrived_while_buffered, received_at) = match next {
         // SPEED-1: the buffered step is due; its frame runs now, before any frame held

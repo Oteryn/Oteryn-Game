@@ -7,6 +7,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The complete bounded read also recovers missed/partial drains after a restart. Each
     /// retirement re-proves the deadline and current scope authority inside the existing writer.
     pub(super) async fn drain_corpse_deadlines(&self) {
+        self.root
+            .with_background_operation(self.drain_corpse_deadline_unit())
+            .await;
+    }
+
+    async fn drain_corpse_deadline_unit(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
@@ -39,10 +45,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|corpse| corpse.corpse_item_instance_id)
             .collect();
-        for corpse in &schedule.corpses {
-            if corpse.decay_at_unix_ms > schedule.database_now_unix_ms {
-                continue;
-            }
+        let due: Vec<_> = schedule
+            .corpses
+            .iter()
+            .filter(|corpse| corpse.decay_at_unix_ms <= schedule.database_now_unix_ms)
+            .collect();
+        let start = self.background_start("corpse", due.len());
+        if let Some(corpse) = due.get(start) {
             match self
                 .root
                 .retire_decayed_corpse(
@@ -54,7 +63,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             {
-                Ok(_) => live.retain(|item| *item != corpse.corpse_item_instance_id),
+                Ok(_) => {
+                    live.retain(|item| *item != corpse.corpse_item_instance_id);
+                    if let Ok(mut cursors) = self.states.background_cursors.lock() {
+                        cursors.insert("corpse", start + 1);
+                    }
+                }
                 Err(error) => {
                     super::operator_event(&format!("corpse_decay_retire_deferred reason={error}"));
                 }
