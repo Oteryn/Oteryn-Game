@@ -212,6 +212,24 @@ async fn exchange_status(
             .await?;
             return Ok((status, raw, retry_after));
         }
+        if let Some(max) = super::character_services_consumer_limits(operation) {
+            let mut retry = None;
+            let (status, raw) = read_response_impl(
+                &mut tls,
+                false,
+                max,
+                true,
+                &[],
+                operation == Operation::ReadCharacterCommandIntentV2,
+                Some(&mut retry),
+                false,
+                super::character_commands::MAX_BACKOFF,
+                false,
+                true,
+            )
+            .await?;
+            return Ok((status, raw, retry));
+        }
         if super::world_event_outcomes::is_operation(operation) {
             return read_t94_response(&mut tls).await;
         }

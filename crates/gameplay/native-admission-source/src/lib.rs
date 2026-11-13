@@ -15,6 +15,19 @@ pub mod runtime_status;
 pub mod scope_assignment;
 pub mod store;
 pub mod world_event_outcomes;
+pub(crate) fn character_services_consumer_limits(
+    operation: descriptor::Operation,
+) -> Option<usize> {
+    use descriptor::Operation::*;
+    match operation {
+        ListPendingCharacterCommandsV2 => Some(8192),
+        ReadCharacterCommandIntentV2 => Some(4096),
+        PublishCharacterCommandReceiptV2
+        | PublishCharacterServiceStateV2
+        | PublishCharacterServiceWatermarkV2 => Some(256),
+        _ => None,
+    }
+}
 pub const HANDSHAKE_INBOUND_BYTES: usize = 65_536;
 pub const PIPELINE_SLOTS: usize = 2;
 pub const QUEUED_REQUESTS: usize = 8;

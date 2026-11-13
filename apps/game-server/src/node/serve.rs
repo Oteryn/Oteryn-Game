@@ -482,6 +482,7 @@ struct Material {
             CommandDescriptor,
             String,
             crate::durability::character_command::account_deletion::Config,
+            bool,
         )>,
     >,
     bazaar: std::sync::Mutex<Option<BazaarTransportMaterial>>,
@@ -707,6 +708,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 descriptor,
                 commands.source_authority.clone(),
                 commands.account_deletion.clone(),
+                platform.services_v2_enabled,
             ))
         }
     };
@@ -728,7 +730,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     MAX_GAMEPLAY_KEY_BYTES,
                 )?,
             )?;
-            let Some((receipt, receipt_source, _)) = &character_commands else {
+            let Some((receipt, receipt_source, ..)) = &character_commands else {
                 return Err(invalid("platform.bazaar.character_receipt_identity"));
             };
             let mut others = vec![client.clone()];
@@ -1355,6 +1357,66 @@ struct CommandDecider<'a, 'r, 'c> {
 }
 
 impl Decider for CommandDecider<'_, '_, '_> {
+    async fn stop_services_receipt(&mut self, operation: &str, receipt: &[u8]) {
+        if self
+            .root
+            .stop_character_service_receipt(self.authority, self.proof, operation, receipt)
+            .await
+            .is_err()
+        {
+            event("event=character_services state=pending reason=receipt_stop_dependency");
+        }
+    }
+
+    async fn decide_services(
+        &mut self,
+        command: &str,
+        operation_id: &str,
+        input: Input<'_>,
+    ) -> Decision {
+        let account=match input {
+            Input::Intent(raw)=>crate::native_admission_source::character_services_v2::CharacterCommandIntentV2::decode(raw).ok().and_then(|i|i.field("account_id").and_then(serde_json::Value::as_str).map(str::to_owned)),
+            Input::ReadConflict=>return Decision::Conflict,
+            _=>None,
+        };
+        let held = if let Some(account) = account {
+            match self
+                .evidence
+                .refresh_account_held(self.root, self.proof, &account)
+                .await
+            {
+                Ok(held) => Some(held),
+                Err(_) => return Decision::Transient,
+            }
+        } else {
+            None
+        };
+        let decision = self
+            .root
+            .decide_character_service(
+                self.authority,
+                self.proof,
+                &self.source_authority,
+                (command, operation_id),
+                input,
+            )
+            .await;
+        if let Some(held) = held {
+            let _ = held.release().await;
+        }
+        decision
+    }
+    async fn maintain_services(&mut self) {
+        if self
+            .root
+            .finalize_character_service_deletion(self.authority, self.proof)
+            .await
+            .is_err()
+        {
+            event("event=character_services state=pending reason=finalization_dependency");
+        }
+    }
+
     async fn begin_closure_lifecycle_read(
         &mut self,
         request: &crate::native_admission_source::account_closure::LifecycleRequest,
@@ -1521,10 +1583,11 @@ async fn character_commands_loop(
         CommandDescriptor,
         String,
         crate::durability::character_command::account_deletion::Config,
+        bool,
     )>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority, deletion)) = commands else {
+    let Some((descriptor, source_authority, deletion, services_enabled)) = commands else {
         return;
     };
     event("event=character_commands state=started");
@@ -1551,7 +1614,8 @@ async fn character_commands_loop(
         make_decider(),
         source_authority.clone(),
         event,
-    );
+    )
+    .with_services(services_enabled);
     first(both(consumer.run(), publisher), stop.cancelled()).await;
 }
 

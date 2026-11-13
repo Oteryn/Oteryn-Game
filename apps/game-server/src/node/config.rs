@@ -137,6 +137,9 @@ pub struct PlatformConfig {
     /// character command consumer does not run. Endpoint, peer name and trust roots are
     /// those above.
     pub character_commands: Option<CharacterCommandsConfig>,
+    /// New G-3 surface only. Missing configuration and environment both leave it off.
+    #[serde(default)]
+    pub services_v2_enabled: bool,
     /// Dedicated Bazaar transport credentials. An omitted table is an
     /// unconfigured deployment dependency, not a feature-off decision.
     /// A configured producer defaults enabled; explicit false pauses new work.
@@ -525,8 +528,30 @@ fn missing_required_capabilities(document: &[u8]) -> Option<ConfigError> {
 impl NodeConfig {
     /// Parse and validate one node configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
-        let config: Self = parse(document)
+        let flag = std::env::var_os("OTERYN_CHARACTER_COMMANDS_V2_ENABLED");
+        let flag = flag
+            .as_deref()
+            .map(|v| {
+                v.to_str().ok_or(ConfigError {
+                    key: "OTERYN_CHARACTER_COMMANDS_V2_ENABLED",
+                })
+            })
+            .transpose()?;
+        Self::parse_with_services_flag(document, flag)
+    }
+    fn parse_with_services_flag(document: &[u8], flag: Option<&str>) -> Result<Self, ConfigError> {
+        let mut config: Self = parse(document)
             .map_err(|error| missing_required_capabilities(document).unwrap_or(error))?;
+        if let Some(flag) = flag {
+            config.platform.services_v2_enabled = match flag {
+                "true" => true,
+                "false" => false,
+                _ => return reject("OTERYN_CHARACTER_COMMANDS_V2_ENABLED"),
+            };
+        }
+        if config.platform.services_v2_enabled && config.platform.character_commands.is_none() {
+            return reject("platform.character_commands");
+        }
         config.validate()?;
         Ok(config)
     }
@@ -1829,6 +1854,30 @@ source_authority = "oteryn:game:primary"
         assert!(NodeConfig::parse(shared_fence.as_bytes()).is_err());
     }
 
+    #[test]
+    fn character_services_v2_real_config_defaults_off_and_parses_environment() {
+        assert!(
+            !NodeConfig::parse_with_services_flag(NODE.as_bytes(), None)
+                .expect("base")
+                .platform
+                .services_v2_enabled
+        );
+        let all = NODE.replace("\n[launch]", COMMANDS);
+        assert!(
+            NodeConfig::parse_with_services_flag(all.as_bytes(), Some("true"))
+                .expect("v2")
+                .platform
+                .services_v2_enabled
+        );
+        assert!(
+            !NodeConfig::parse_with_services_flag(all.as_bytes(), Some("false"))
+                .expect("off")
+                .platform
+                .services_v2_enabled
+        );
+        assert!(NodeConfig::parse_with_services_flag(all.as_bytes(), Some("TRUE")).is_err());
+        assert!(NodeConfig::parse_with_services_flag(NODE.as_bytes(), Some("true")).is_err());
+    }
     #[test]
     fn character_commands_section_is_optional_off_by_default_and_separate() {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");

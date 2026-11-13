@@ -382,7 +382,12 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                         (2, "ReadRecoveryAccountSecurityV2")
                     }
                     Operation::ReadRecoverySigningTrustV2 => (2, "ReadRecoverySigningTrustV2"),
-                    Operation::ReadCharacterBootstrapIntentV1
+                    Operation::ListPendingCharacterCommandsV2
+                    | Operation::ReadCharacterCommandIntentV2
+                    | Operation::PublishCharacterCommandReceiptV2
+                    | Operation::PublishCharacterServiceStateV2
+                    | Operation::PublishCharacterServiceWatermarkV2
+                    | Operation::ReadCharacterBootstrapIntentV1
                     | Operation::ReadPremiumSnapshotV1
                     | Operation::ReportRuntimeStatusV1
                     | Operation::PublishAccountCharactersV1
@@ -471,7 +476,12 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     key_id: "key-1",
                     key_purpose: "existing_actor_recovery",
                 },
-                Operation::ReadCharacterBootstrapIntentV1
+                Operation::ListPendingCharacterCommandsV2
+                | Operation::ReadCharacterCommandIntentV2
+                | Operation::PublishCharacterCommandReceiptV2
+                | Operation::PublishCharacterServiceStateV2
+                | Operation::PublishCharacterServiceWatermarkV2
+                | Operation::ReadCharacterBootstrapIntentV1
                 | Operation::ReadPremiumSnapshotV1
                 | Operation::ReportRuntimeStatusV1
                 | Operation::PublishAccountCharactersV1

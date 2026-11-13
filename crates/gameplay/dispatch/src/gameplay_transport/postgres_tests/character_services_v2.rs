@@ -42,10 +42,13 @@ fn scenario(race: bool) -> TestResult {
             let original_name: String = root.try_get("name")?;
             let revision: u64 = root.try_get::<String,_>("character_revision")?.parse()?;
             let raw = intent("rename",1,revision,now,&account,&character,None)?;
+            let original_intent=raw.clone();
             stage.set("rename and immutable replay");
             let first = h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter", &operation(1)),Input::Intent(&raw)).await;
             let receipt = committed(first)?;
             assert_eq!(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(1)),Input::Intent(&raw)).await,Decision::Publish { receipt: receipt.clone(),result_code:"CHAR_CMD_OK".into() });
+            let changed=std::str::from_utf8(&raw)?.replace("Aldric Vale","Aldric View").into_bytes();
+            assert_eq!(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(1)),Input::Intent(&changed)).await,Decision::Conflict);
             let held: (String,i64,i64) = sqlx::query_as("SELECT name_key,released_at,available_at FROM game_character_service_name_holds WHERE character_id=$1::uuid").bind(&character).fetch_one(&h.pool).await?;
             assert_eq!(held.0,original_name.to_ascii_lowercase().replace(' ',"")); assert_eq!(held.2-held.1,30*86400);
             sqlx::query("SELECT game_character_service_release_name($1)").bind(&held.0).execute(&h.pool).await?;
@@ -55,6 +58,10 @@ fn scenario(race: bool) -> TestResult {
             source.evidence.refresh_account(&h.root,&h.node,&other_account).await.map_err(debug)?;
             let create=create_intent(201,now,&other_account,&world,&original_name)?;
             rejected(h.root.decide_character_command(&authority,&h.node,"oteryn:character-authority:primary","CreateCharacter",&operation(201),Input::Intent(&create)).await,"CHAR_CMD_NAME_UNAVAILABLE")?;
+            let collision=std::str::from_utf8(&create_intent(203,now,&other_account,&world,&original_name)?)?.replace(&operation(203),&operation(1)).into_bytes();
+            assert_eq!(h.root.decide_character_command(&authority,&h.node,"oteryn:character-authority:primary","CreateCharacter",&operation(1),Input::Intent(&collision)).await,Decision::Conflict);
+            let collision=std::str::from_utf8(&intent("rename",12,revision+1,now,&account,&character,None)?)?.replace(&operation(12),&operation(201)).into_bytes();
+            assert_eq!(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(201)),Input::Intent(&collision)).await,Decision::Conflict);
             let noop = intent("rename",2,revision+1,now,&account,&character,None)?;
             rejected(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(2)),Input::Intent(&noop)).await,"CHAR_CMD_NAME_UNAVAILABLE")?;
             let second = std::str::from_utf8(&intent("rename",3,revision+1,now,&account,&character,None)?)?.replace("Aldric Vale","Aldric Moor").into_bytes();
@@ -125,6 +132,12 @@ fn scenario(race: bool) -> TestResult {
             let create=create_intent(202,reuse_time,&other_account,&world,&original_name)?;
             committed(h.root.decide_character_command(&authority,&h.node,"oteryn:character-authority:primary","CreateCharacter",&operation(202),Input::Intent(&create)).await)?;
 
+            stage.set("durable refusal survives restart");
+            h.root.stop_character_service_receipt(&authority,&h.node,&operation(1),&receipt).await.map_err(debug)?;
+            let restarted=h.independent_root()?;
+            assert!(restarted.maintain_ready_once().await?);
+            let restarted_authority=restarted.open_character_authority(&seal).await.map_err(debug)?;
+            assert_eq!(restarted.decide_character_service(&restarted_authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(1)),Input::Intent(&original_intent)).await,Decision::Conflict);
             Ok(())
         }.await;
             stage.set("cleanup");

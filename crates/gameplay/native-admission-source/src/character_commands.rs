@@ -471,6 +471,28 @@ pub enum Decision {
 
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
+    /// Legacy implementations have no v2 receipt to stop.
+    fn stop_services_receipt(
+        &mut self,
+        _operation: &str,
+        _receipt: &[u8],
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    /// V2 has a separate decision entry: no downgrade through a v1 writer.
+    fn decide_services(
+        &mut self,
+        _command: &str,
+        _operation_id: &str,
+        _input: Input<'_>,
+    ) -> impl Future<Output = Decision> + Send {
+        async { Decision::Transient }
+    }
+    fn maintain_services(&mut self) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
     fn begin_closure_lifecycle_read(
         &mut self,
         _request: &super::account_closure::LifecycleRequest,
@@ -699,7 +721,12 @@ impl Cursor {
 }
 
 /// The consumer loop (§4.1): list, read, decide, publish, one exchange at a time.
+#[path = "character_services_consumer.rs"]
+mod services;
 pub struct Consumer<C, S, D> {
+    services_enabled: bool,
+    services_wire: bool,
+    other_cursor: Cursor,
     clock: C,
     source: S,
     decider: D,
@@ -719,6 +746,9 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
     pub fn new(clock: C, source: S, decider: D, source_authority: String, event: fn(&str)) -> Self {
         let cursor = Cursor::new(clock.elapsed());
         Self {
+            services_enabled: false,
+            services_wire: false,
+            other_cursor: cursor.clone(),
             clock,
             source,
             decider,
@@ -732,18 +762,23 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
     pub async fn run(mut self) {
         let mut backoff = POLL;
         loop {
+            self.next_wire();
+            if self.services_wire {
+                self.decider.maintain_services().await;
+            }
             let after = self.cursor.next_request(self.clock.elapsed());
-            let Ok(body) = encode_list(&self.source_authority, after.as_ref()) else {
+            let Ok(body) = self.list_body(after.as_ref()) else {
                 (self.event)("event=character_commands state=refused reason=request");
                 return;
             };
             let started = self.clock.elapsed();
             let page = self
                 .source
-                .exchange(Operation::ListPendingCharacterCommandsV1, &body)
+                .exchange(self.list_operation(), &body)
                 .await
                 .and_then(|raw| {
-                    decode_pending(&raw, after.as_ref()).map_err(|_| Failure::InvalidResponse)
+                    self.pending_page(&raw, after.as_ref())
+                        .map_err(|_| Failure::InvalidResponse)
                 });
             let entries = match page {
                 Ok(entries) => entries,
@@ -790,13 +825,19 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             backoff = POLL;
             let short = entries.len() < MAX_ENTRIES;
             self.cursor.advance(&entries);
-            if short {
+            if short && (!self.services_enabled || self.services_wire) {
                 self.clock.sleep(POLL).await;
             }
         }
     }
 
     fn log(&self, operation: &str, command: Option<&str>, result: &str, started: Duration) {
+        let operation = match (self.services_wire, operation) {
+            (true, "ListPendingCharacterCommandsV1") => "ListPendingCharacterCommandsV2",
+            (true, "ReadCharacterCommandIntentV1") => "ReadCharacterCommandIntentV2",
+            (true, "PublishCharacterCommandReceiptV1") => "PublishCharacterCommandReceiptV2",
+            _ => operation,
+        };
         let elapsed = self.clock.elapsed().saturating_sub(started).as_millis();
         (self.event)(&format!(
             "event=character_commands operation={operation} command={} result={result} elapsed_ms={elapsed}",
@@ -809,17 +850,14 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let operation_id = entry.key.operation_id.as_str();
         let started = self.clock.elapsed();
         let intent;
-        let input = if matches!(command, CREATE_COMMAND | "TransferCharacterOwnership")
+        let input = if self.services_wire
+            || matches!(command, CREATE_COMMAND | "TransferCharacterOwnership")
             || account_deletion_command(command)
         {
-            let Ok(body) = encode_read(&self.source_authority, command, operation_id) else {
+            let Ok(body) = self.read_body(command, operation_id) else {
                 return Step::Settled(Settle::Done);
             };
-            match self
-                .source
-                .exchange(Operation::ReadCharacterCommandIntentV1, &body)
-                .await
-            {
+            match self.source.exchange(self.read_operation(), &body).await {
                 Ok(raw) => {
                     intent = raw;
                     Input::Intent(&intent)
@@ -869,7 +907,13 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                     .await;
             }
         }
-        let decision = self.decider.decide(command, operation_id, input).await;
+        let decision = if self.services_wire {
+            self.decider
+                .decide_services(command, operation_id, input)
+                .await
+        } else {
+            self.decider.decide(command, operation_id, input).await
+        };
         let (receipt, result_code) = match decision {
             Decision::Publish {
                 receipt,
@@ -892,7 +936,9 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let Ok(body) = std::str::from_utf8(&receipt) else {
             return Step::Settled(Settle::Done);
         };
-        let publication_operation = if account_deletion_command(command) {
+        let publication_operation = if self.services_wire {
+            Operation::PublishCharacterCommandReceiptV2
+        } else if account_deletion_command(command) {
             Operation::PublishAccountClosureCommandReceiptV2
         } else {
             Operation::PublishCharacterCommandReceiptV1
@@ -902,13 +948,20 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             .exchange(publication_operation, body)
             .await
             .and_then(|raw| {
-                if account_deletion_command(command) {
+                if self.services_wire {
+                    super::character_services_v2::ReceiptAcknowledgementV2::decode(&raw).map(|_| ())
+                } else if account_deletion_command(command) {
                     super::account_closure::decode_receipt_ack(&raw)
                 } else {
                     decode_receipt_response(&raw)
                 }
                 .map_err(|_| Failure::InvalidResponse)
             });
+        if self.services_wire && matches!(published, Err(Failure::NotFound | Failure::Conflict)) {
+            self.decider
+                .stop_services_receipt(operation_id, &receipt)
+                .await;
+        }
         if published.is_ok() {
             self.decider
                 .acknowledge_receipt(command, operation_id)

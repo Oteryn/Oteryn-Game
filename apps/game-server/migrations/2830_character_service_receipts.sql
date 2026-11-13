@@ -36,3 +36,13 @@ REVOKE ALL ON game_character_service_receipts FROM PUBLIC;
 GRANT SELECT,INSERT ON game_character_service_receipts TO oteryn_game_runtime;
 GRANT SELECT ON game_character_service_receipts TO oteryn_game_control;
 REVOKE ALL ON FUNCTION game_character_service_operation_guard() FROM PUBLIC;
+-- Publication quarantine is separate from immutable receipt evidence.
+CREATE TABLE game_character_service_receipt_stops (
+ operation_id UUID NOT NULL REFERENCES game_character_service_receipts,
+ receipt_sha256 BYTEA NOT NULL CHECK(octet_length(receipt_sha256)=32),
+ recovery_generation NUMERIC(20,0) NOT NULL CHECK(recovery_generation>0),
+ stopped_at BIGINT NOT NULL CHECK(stopped_at>0), PRIMARY KEY(operation_id,recovery_generation)
+);
+REVOKE ALL ON game_character_service_receipt_stops FROM PUBLIC;
+GRANT SELECT,INSERT ON game_character_service_receipt_stops TO oteryn_game_runtime;
+GRANT SELECT,DELETE ON game_character_service_receipt_stops TO oteryn_game_control;

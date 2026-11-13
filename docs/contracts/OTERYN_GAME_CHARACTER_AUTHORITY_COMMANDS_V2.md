@@ -22,9 +22,10 @@ The already-locked Unicode implementations are reused, without a new version.
 
 Bounds are 512/8192 for list, 512/4096 for read, 1024/256 for receipt,
 2048/256 for state, 512/256 for watermark. The paths are the proposal's five
-compiled `/internal/v2/game-auth/` paths. No listener or HTTP caller is added.
-Transport, peer binding and header validation belong to the consumer/publisher
-parts, which are not implemented by this wire slice.
+compiled `/internal/v2/game-auth/` paths. No listener is added. Command calls reuse the existing command mTLS identity,
+HTTP/1.1/TLS 1.3 transport and deadline/capacity conventions. V2 responses
+reject chunked framing, non-identity encoding and nonempty failures, and
+require no-store. Dedicated service-state delivery is described below.
 
 `MAX_INTENT_TTL_SECONDS` is 300 and `MAX_FUTURE_SKEW_SECONDS` is 5.
 `CharacterCommandIntentV2::valid_at` requires a trusted clock and exclusive
@@ -75,6 +76,30 @@ Detailed bindings are retained while financial/restore resolution is unknown;
 no automatic premature GC is introduced. As required by §8, the configured
 backup retention/restore horizon must be pinned before activation. No production
 activation or certificate allocation is authorized.
+
+## Consumer and configuration
+
+`OTERYN_CHARACTER_COMMANDS_V2_ENABLED` is false when absent. Only exact `true`
+and `false` are accepted. It overrides the default-false Game setting
+`platform.services_v2_enabled`; enabling requires the configured existing
+character-command identity. Neither setting is enabled by this change.
+
+The existing consumer alternates its v1 and v2 routes on one command source,
+with independent cursors and the existing key retry, receipt quarantine,
+short-page rescan, eight-page/30-second rescan and 1–10-second backoff rules.
+V1 encoders and successful fixtures are unchanged. With v2 off, its source
+performs only the original v1 requests. The existing command worker drives
+the new deciding entry and a bounded automatic-finalization pass; finalization
+is attempted even when the Platform read is unavailable. Account security is
+refreshed through the existing held-evidence path immediately before deciding.
+
+Both profiles use the issuer-wide operation advisory lock. Legacy creation,
+bootstrap, Bazaar and services detect an operation already decided by another
+profile before attempting a mutation. The shared 40-operation issuance backlog
+and 256 pending ceiling remain obligations of the one Platform issuer, not two
+separate version-specific issuance capacities. Game issues no operations and
+uses one serialized consumer/deciding writer; reading a key never authorizes it.
+Receipts refused with 404/409 remain durable and automatic publication stops.
 
 ## Resolved interpretation, pending Platform wording confirmation
 

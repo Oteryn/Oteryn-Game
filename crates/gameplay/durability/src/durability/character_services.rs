@@ -78,6 +78,30 @@ impl DurabilityRoot {
         }
     }
 
+    /// A refused publication stops this exact immutable receipt across restarts.
+    pub async fn stop_character_service_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        proof: &NodeIncarnationProof,
+        operation: &str,
+        receipt: &[u8],
+    ) -> Result<(), DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let proof = proof.clone();
+        let operation = operation.to_owned();
+        let receipt = receipt.to_vec();
+        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            assert_recovery_fence(&mut tx,&recovery).await?;
+            if !prove_current_incarnation(&mut tx,&proof).await? {return Err(DurabilityError::Unavailable);}
+            sqlx::query("INSERT INTO game_character_service_receipt_stops(operation_id,receipt_sha256,recovery_generation,stopped_at) SELECT operation_id,sha256(receipt),$3::numeric,game_character_service_now() FROM game_character_service_receipts WHERE operation_id=$1::uuid AND receipt=$2 ON CONFLICT DO NOTHING")
+                .bind(operation).bind(receipt).bind(recovery.recovery_generation.to_string()).execute(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await
+        })).await
+    }
+
     /// One bounded finalization pass. It competes with cancel under the same portfolio/root locks.
     pub async fn finalize_character_service_deletion(
         &self,
@@ -160,6 +184,8 @@ async fn decide(
         .bind(operation).execute(&mut **tx).await?;
     if let Some(stored) = sqlx::query("SELECT command,intent,receipt,result_code FROM game_character_service_receipts WHERE operation_id=$1::uuid")
         .bind(operation).fetch_optional(&mut **tx).await? {
+        let stopped:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_service_receipt_stops WHERE operation_id=$1::uuid AND recovery_generation>=$2::numeric)").bind(operation).bind(recovery.to_string()).fetch_one(&mut **tx).await?;
+        if stopped {return Ok(Decision::Conflict);}
         return Ok(if stored.try_get::<String,_>("command")? == command && stored.try_get::<Vec<u8>,_>("intent")? == raw {
             Decision::Publish { receipt: stored.try_get("receipt")?, result_code: stored.try_get("result_code")? }
         } else { Decision::Conflict });

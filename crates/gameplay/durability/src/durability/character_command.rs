@@ -494,7 +494,7 @@ async fn decide(
             result_code: row.try_get("result_code")?,
         })));
     }
-    if sqlx::query("SELECT 1 FROM game_character_operation_receipts WHERE operation_id = encode($1, 'hex')::uuid")
+    if sqlx::query("SELECT 1 FROM game_character_operation_receipts WHERE operation_id = encode($1, 'hex')::uuid UNION ALL SELECT 1 FROM game_character_service_receipts WHERE operation_id=encode($1,'hex')::uuid LIMIT 1")
         .bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some() {
         return Ok(Some(None));
     }
