@@ -1,0 +1,94 @@
+{
+  "schema": "OTERYN_STATIC_CREATURE_CLASS_BOSS_SMALL_WHITELIST/v2",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "raw_source_sha256": "bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02",
+  "parser_sha256": "be04de9a913c004bb262f4ba111439e89e28590c5edabe1328fce7f3f07262e3",
+  "source_projection_sha256": "a48283b13a7de56a86a0067fef9209b5da215048bcff63bf0945a881d9214ad9",
+  "counts": {
+    "creatures": {
+      "AMBIGUOUS_NAME_CANDIDATES": 21,
+      "UNIQUE_NAME_CANDIDATE": 798,
+      "NO_NAME_CANDIDATE": 26,
+      "candidate_entry_occurrences_with_bestiary": 847,
+      "client_records_with_any_candidate_bestiary": 819,
+      "client_records_with_candidates_but_no_bestiary": 0
+    },
+    "classes": {
+      "CLASS_LABEL_SET_COMPARISON_ONLY": 21,
+      "EXACT_LABEL_PRESENT_IN_SOURCE_CLASS_SET": 21
+    },
+    "bosses": {
+      "UNIQUE_NAME_CANDIDATE": 386,
+      "NO_NAME_CANDIDATE": 59,
+      "AMBIGUOUS_NAME_CANDIDATES": 8,
+      "candidate_entry_occurrences_with_bosstiary": 291,
+      "client_records_with_any_candidate_bosstiary": 289,
+      "client_records_with_candidates_but_no_bosstiary": 105
+    }
+  },
+  "source_counts": {
+    "source_creature_records": 1865,
+    "source_bestiary_records": 824,
+    "source_bosstiary_records": 291,
+    "source_distinct_class_labels": 21
+  },
+  "raw_field_distributions": {
+    "creatures": {
+      "f4": {
+        "3": 310,
+        "2": 173,
+        "1": 50,
+        "0": 20,
+        "4": 222,
+        "5": 70
+      },
+      "f5": {
+        "0": 680,
+        "1": 72,
+        "2": 55,
+        "3": 38
+      },
+      "f6": {
+        "1": 845
+      },
+      "f7": {
+        "1": 641,
+        "0": 204
+      }
+    },
+    "classes": {},
+    "bosses": {
+      "f4": {
+        "0": 439,
+        "1": 14
+      }
+    }
+  },
+  "field_scope": {
+    "field1": "Encoded client dataset ID only; no serverID or source-key binding",
+    "field2": "ExactUTF8 source-label candidatecomparison only, casefoldjoin/no normalizationbeyondcasefold/allcandidates",
+    "field3": "Strictlook protobuf wireonly; rawbyteshash+length, no outfit/render interpretation",
+    "creature_f4_f5_f6_f7": "UNKNOWN semantics. Existing README explicitlyinferred; no difficulty/occurrence/class/boolean promotion",
+    "boss_f4": "UNKNOWN semantics, no category inference",
+    "class_relationship": "Exact21labelset comparison available; numeric creature\u2192class reference notproven",
+    "source_bestiary": "Canonical profile typed difficulty,occurrence,killthresholds,charmpoints and detailsclass/stars available but no rawclientmappingqualified",
+    "source_bosstiary": "Typedcategory/prowess/expertise/mastery sourcefields present; no clientf4meaningqualified",
+    "player_progress": "Excluded; no kills/unlocks/login/playerstate"
+  },
+  "profile_admission": "OLD_15_30_PROFILE_GATES_NOT_MET",
+  "gates_modified": false,
+  "runtime_admitted": false,
+  "UI_tab_complete": false,
+  "client_inputs": 0,
+  "repo_writes": 0,
+  "supersedes_metadata_only": {
+    "original_sha256": "a708726c76c2a62d6d16a73407f3e52c2bba718cab3c21e50022dc5f0db2dff3",
+    "reason": "Class labels compare sourceclassset, not creature-nameindex: replace unattempted NO_NAME_CANDIDATE with CLASS_LABEL_SET_COMPARISON_ONLY. Candidate totals847/291 count occurrences, not unique rows."
+  },
+  "full_private_comparison": {
+    "relative_key": "outputs/items-reader-cloud-20261113/client1533-creatures845-classes21-bosses453-source-comparison-v2-private.json",
+    "sha256": "a11fe14b92f9356952abc4ebcb018a9efc7d8128fda606c6356686aa604ecaf6"
+  },
+  "exact_class_label_sets_equal": true,
+  "names_narratives_lookbytes_exported": false
+}

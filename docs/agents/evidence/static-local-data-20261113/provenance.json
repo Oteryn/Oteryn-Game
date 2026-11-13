@@ -1,0 +1,46 @@
+{
+  "schema": "STATIC_LOCAL_DATA_PUBLICATION_PROVENANCE/v1",
+  "classification": "DERIVED",
+  "authoring_base_sha": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "private_prepared_manifest_sha256": "fb1cd4089e581e0aa3a80917228e86185af7b4d01613558d4b3f4b60d6d9a816",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6853408185",
+  "members": [
+    {
+      "file": "achievements378-metadata.json",
+      "bytes": 239968,
+      "sha256": "982274568551ef5ae0ce4321300c69221b1ad44932d7e99e47e431f36bcfdb76",
+      "scope": "Achievements378"
+    },
+    {
+      "file": "creatures845-classes21-bosses453-summary.json",
+      "bytes": 3662,
+      "sha256": "fc5860f648520f1d39f41479470ade073b7f764d88e950c717876c79d958029a",
+      "scope": "Creatures845_Classes21_Bosses453"
+    },
+    {
+      "file": "quests104-title-custody.json",
+      "bytes": 25653,
+      "sha256": "d6da9d45b893a21f74e7b5842809727826291114cf30964123da2cb8c6f470b6",
+      "scope": "Quests104"
+    },
+    {
+      "file": "houses995-source-metadata-columns.json",
+      "bytes": 279106,
+      "sha256": "2173775fd705b8a6754f9625f159995c60586a713f5c8ed30f062d06a04687d3",
+      "scope": "Houses995"
+    },
+    {
+      "file": "maps473-structure-summary.json",
+      "bytes": 2537,
+      "sha256": "3731869e639d80e54216d45093c2dacb43ddc3b1cc844f672ab718edb258c51b",
+      "scope": "Maps473"
+    }
+  ],
+  "total_payload_bytes": 550926,
+  "private_paths_removed_from_manifest": true,
+  "raw_private_sources_rechecked_in_Cloud": false,
+  "runtime_admitted": false,
+  "overall_static_audit": "PARTIAL",
+  "formal_independent_review": "PENDING",
+  "existing_Items_branches_modified": false
+}
