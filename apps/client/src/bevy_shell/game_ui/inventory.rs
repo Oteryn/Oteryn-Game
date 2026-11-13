@@ -7,6 +7,9 @@ use oteryn_session::{ItemEntry, ItemMoveDestination, item_movement::EquipmentSlo
 
 mod actions;
 mod amount;
+mod bulk;
+#[cfg(test)]
+mod bulk_tests;
 mod dialogs;
 #[cfg(test)]
 mod tests;
@@ -156,6 +159,7 @@ pub(super) fn install(app: &mut App) {
             .chain(),
     );
     amount::install(app);
+    bulk::install(app);
     world_drag::install(app);
 }
 /// Minimal real state for raw-input caller fixtures; production always installs the full module.

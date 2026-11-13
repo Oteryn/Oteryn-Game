@@ -20,6 +20,11 @@ pub(in crate::play) struct SharedModal {
     entry: Option<Arc<Mutex<Entry>>>,
     queued: bool,
 }
+impl SharedModal {
+    pub(in crate::play) fn is_active(&self) -> bool {
+        self.panel.active.is_some()
+    }
+}
 impl Driver {
     pub(in crate::play) fn with_outbox(mut self, outbox: &Outbox) -> Self {
         self.shared = Some(Arc::clone(&outbox.0));
@@ -75,7 +80,7 @@ impl Drop for Driver {
 impl PlayLink {
     #[must_use]
     pub fn server_modal_active(&self) -> bool {
-        lock(&self.mailbox).server_modal.panel.active.is_some()
+        lock(&self.mailbox).server_modal.is_active()
     }
 
     #[must_use]

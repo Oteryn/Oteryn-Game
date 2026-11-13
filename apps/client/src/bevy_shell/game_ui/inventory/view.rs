@@ -400,6 +400,7 @@ fn container(
         },
         42.,
     );
+    super::bulk::header(commands, skins, row, snapshot.generation, view);
     grid(
         commands,
         skins,
