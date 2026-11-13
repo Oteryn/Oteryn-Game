@@ -121,7 +121,7 @@ if __name__=='__main__':
             'private_narrative_receipts':sum('description_receipt'in item for packet in packets for item in packet['items']),
             'boundary':'These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim.'}
         (HERE/'uncompared-field-backlog.json').write_text(json.dumps(backlog,indent=2)+'\n')
-        paths=sorted(HERE.glob('observations-*.json'))+[HERE/'uncompared-field-backlog.json',path,HERE/'source-route-backlog.json']
+        paths=sorted(HERE.glob('observations-*.json'))+[HERE/'uncompared-field-backlog.json',path,HERE/'source-route-backlog.json',HERE/'trade-initial-panel-coverage.json']
         paths += [HERE/name for name in ('category-end-receipt.json','reader-coverage-union.json')if(HERE/name).exists()]
         integrity={'files':{p.name:{'bytes':len(p.read_bytes()),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}for p in paths}}
         (HERE/'packet-integrity.json').write_text(json.dumps(integrity,indent=2)+'\n')

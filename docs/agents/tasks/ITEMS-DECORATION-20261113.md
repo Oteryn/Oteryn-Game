@@ -8,14 +8,14 @@ status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-decoration-evidence-cloud-20261113
-pr: null
+pr: 3155
 base_sha: 5efd67da164ac9dc33c8c066434b228cebb86c2b
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root/evidence_comparison
 created_at: 2026-11-13T03:54:46.923237+00:00
-updated_at: 2026-11-13T03:54:46.923237+00:00
+updated_at: 2026-11-13T04:20:59.349253+00:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/items-decoration-20261113/**
@@ -29,74 +29,84 @@ external_repositories: []
 
 ## Outcome
 
-AUTHORING/PARTIAL:224 ordered Decoration Basic cards1–224 retained compactly,
-225 saved Basic pages and897 private proof receipts. Category end, later cards,
-trade, animation and the overall static Cyclopedia audit remain unqualified or
-incomplete. This active task stays waiting, not archived/completed overall.
+AUTHORING/PARTIAL overall: ordered Decoration Basic capture/native reading is
+complete at462 cards,463 Basic pages and1849 card-proof references.135 observed
+Description values and135 display layouts remain private with custody receipts.
+Trade/NPC lists, animation, source semantic parity, other Items/categories and
+the overall static Cyclopedia goal remain ACTIVE_NOT_COMPLETE. Task stays waiting.
 
 ## Architecture and source of truth
 
-PROVEN: native reader inputs148fc064cb276b1b74189cc85a9f8efb5d3e0157da523f8ba5e23a0897145fc6
-and7430c341ed574887af6d4094a5185a6c323b98fae9637864a49744c8bfed533d,
-897 original private PNG hashes freshly checked on Ubuntu, all non-narrative
-Basic literals preserved.81 descriptions and81 display layouts remain private
-with observed-private hash/length receipts, not UNKNOWN/absent substitutions.
+PROVEN: immutable final reader union1b2581b2b7d727c68ab9a69c03d0d04f7138d2af78fd98479f9630fd8e19b18c;
+all462 ordered cards,1849 freshly verified private proof references,463 Basic PNGs.
+Original source packets and historical pending-reader completion remain unchanged.
+A separate one-frame witness qualifies pillows458/459 as distinct physical rows.
 DERIVED: unqualified name-candidate comparisons at pinned5efd67da.
-UNKNOWN: numeric client/server binding, later physical coverage, semantic parity.
-Authority: coordinator explicitly allocated this isolated branch, sole writer
-and owned prefix; compact whitelist export and draft push were authorized.
+UNKNOWN: client/server numeric binding, complete NPC lists and semantic parity.
+Authority: coordinator allocated the isolated branch, sole writer and owned
+prefix and approved compact whitelist export and this grouped draft update.
+Raw narrative/PNGs/private audit/configuration remain on Ubuntu; no full repo
+literal-text parity claim. Observed private values are not replaced by UNKNOWN.
 
 ## High-risk authority/recovery qualification
 
-NOT_APPLICABLE: documentation and read-only source comparisons. No production,
-runtime authority, protocol, identity, persistence or recovery mutation.
+NOT_APPLICABLE: retained factual evidence and read-only source comparisons.
+The private collector recovery is documented as evidence only; this PR changes
+no controller, protocol, runtime authority, persistence or production behavior.
 
 ## Acceptance criteria
 
-- [x]224 physical cards1–224 and897 verified private proof receipts.
-- [x]225 Basic pages;81 private Description and81 layout receipts.
-- [x] All non-narrative Basic literals preserved, including Augments208–212.
-- [x] Same-name physical cards remain separate; no name-to-ID promotion.
-- [x] Weight/Market candidates reproducible; all other fields explicit backlog.
-- [ ] Remaining Decoration/category end, trade, animation and semantic parity.
-- [ ] Other Items and overall static Cyclopedia audit.
+- [x]462 contiguous ordered Basic cards,463 pages,1849 card-proof hashes.
+- [x]135 observed-private descriptions and135 layout receipts; other literals exact.
+- [x] Distinct same-name cards and independent pillows458/459 row witness.
+- [x] Two stable end checks before/after final capture; qualified offline finalization.
+- [x] Initial trade panes1–50 separately partial, vertical retake46 explicit.
+- [x] Reproducible Weight/Market candidates; all other fields explicit backlog.
+- [ ] Complete NPC/trade panels, animation and semantic parity.
+- [ ] Other Items and the overall static Cyclopedia audit.
 
 ## Reference parity
 
-NOT_APPLICABLE as a mechanic gate: no gameplay implementation. Basic observation,
+NOT_APPLICABLE as a mechanic gate: no gameplay implementation. Basic observations,
 private narrative custody, source state and runtime/identity admission stay distinct.
 
 ## Excluded scope
 
-No raw PNG/narrative/private audit/access configuration export, GUI/helper edits,
+No raw PNG/narrative/private audit/configuration export, GUI/helper edits,
 source-only game fixes, ID binding, NAS, merge/deploy or paid review trigger.
 Frozen PR3150/3152/3153 remain unchanged.
 
 ## Implementation / findings
 
-Immutable1–180 combined source reuses five reader batches;181–224 is a separate
-immutable reader input. Fresh proof hashing is distinct from a second native read.
-Same-name7/8,130–136 and170–172 remain separate.208–212 actually contain Augments;
-an earlier worker narrative was wrong, not the private packet.
-154 single-name,65 multiple-name and5 unmatched observations yield761 equal,
-5 different and382 unknown/unqualified candidate field comparisons. No proven
-Item defect or qualified serverID follows. Other fields are literal backlog.
+Final union reuses five immutable inputs383/37/36/5/1; assembly is not a new native
+reread of every card. Earlier1–224 compact facts are unchanged. Final GUI capture
+succeeded before a stale Creature Products ordinal assertion prevented completion
+write. Root retained script/error, verified exact trace/index/end images offline
+and finalized without repeated GUI input. Historical pending-reader evidence is
+preserved; newer native reading separately qualifies final462 yellow tapestry.
+No claim that the original tail script exited cleanly.
+
+Trade initial1–50 audit:100 panes,73 observed empty,27 nonempty,32 visible NPC
+rows including one partial; Buy From46 lower location/rows UNKNOWN, retake needed.
+No global NPC absence, full-list completion, transaction or GUI-input claim.
+309 single-name/144 multi-name/9 unmatched rows yield1324 equal,14 different and
+670 unknown/unqualified candidate field comparisons. These are not proven bugs.
 
 ## Validation
 
 - compare_sources.py --check: pass;73 immutable source receipts.
-- validate.py: pass;224 rows,897 proofs,225 Basic,81 private texts/layouts.
+- validate.py: pass;462 rows,1849 proofs,463 Basic,135 private texts/layouts.
 - python tools/agents/validate_governance.py: pass.
 - python -m unittest discover -s tools/agents/tests: pass;129 tests.
 - git diff --check: pass.
-Cloud verifies compact integrity/source reproduction; private PNG hash results
-are Ubuntu custody evidence, not a fresh Cloud visual read. CI not claimed green.
+Private proof hashing/native reading is Ubuntu custody evidence; Cloud checks
+compact integrity and exact source reproduction. CI not claimed green.
 
 ## Self-review
 
-Checked whitelisted field coverage, private text/layout states, duplicate-name
-separation, ordered scope and unqualified candidate classification. No renderer,
-source identity or whole-category correctness claim follows value equality.
+Checked whitelist coverage, private text/layout states, preserved first224 facts,
+same-name separation, native witness, trace-qualified end finalization and bounded
+trade status. Value equality does not prove rendered behavior or source identity.
 
 ## Independent review
 
@@ -105,6 +115,6 @@ this worker does not trigger paid review or claim independent cleanliness.
 
 ## PR and continuation
 
-One ongoing draft for this category; AUTHORING continues as later qualified
-batches arrive. Task remains waiting/PARTIAL; no archive/completed overall claim.
-No paid review, merge, deployment or frozen-branch write authorization.
+Draft https://github.com/Oteryn/Oteryn-Game/pull/3155 remains AUTHORING until
+coordinator exact-head verification/freeze. Overall task waiting/PARTIAL, no
+archive/completed goal claim. No merge, deployment or paid review authorization.
