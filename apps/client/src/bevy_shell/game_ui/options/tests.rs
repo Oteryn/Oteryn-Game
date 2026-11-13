@@ -26,8 +26,9 @@ fn native_checkbox_edits_only_the_draft_and_cancel_discards_it() -> TestResult {
         .observe(toggle)
         .id();
     app.world_mut().trigger(ValueChange {
-        entity: checkbox,
+        source: checkbox,
         value: false,
+        is_final: true,
     });
     let owner = app.world().non_send::<HostOwner>();
     assert!(!owner.preferences_draft().ok_or("draft")?.console.visible[0]);
@@ -58,8 +59,9 @@ fn native_slider_apply_reaches_the_existing_persistence_owner() -> TestResult {
             .observe(slide)
             .id();
         app.world_mut().trigger(ValueChange {
-            entity: slider,
+            source: slider,
             value: 37.0f32,
+            is_final: true,
         });
         let owner = app.world().non_send::<HostOwner>();
         assert_eq!(
@@ -132,8 +134,9 @@ fn closed_or_stale_options_controls_do_not_write_into_the_current_owner() -> Tes
         .observe(slide)
         .id();
     app.world_mut().trigger(ValueChange {
-        entity: slider,
+        source: slider,
         value: 0.0f32,
+        is_final: true,
     });
     assert_eq!(
         app.world()
@@ -147,8 +150,9 @@ fn closed_or_stale_options_controls_do_not_write_into_the_current_owner() -> Tes
     app.world_mut().resource_mut::<OptionsState>().generation = Some(generation);
     app.world_mut().non_send_mut::<HostOwner>().cancel();
     app.world_mut().trigger(ValueChange {
-        entity: slider,
+        source: slider,
         value: 0.0f32,
+        is_final: true,
     });
     assert_eq!(
         app.world()
@@ -203,8 +207,9 @@ fn foreground_game_modal_blocks_background_options_value_changes() -> TestResult
         .observe(slide)
         .id();
     app.world_mut().trigger(ValueChange {
-        entity: slider,
+        source: slider,
         value: 0.0f32,
+        is_final: true,
     });
     let owner = app.world().non_send::<HostOwner>();
     assert_eq!(

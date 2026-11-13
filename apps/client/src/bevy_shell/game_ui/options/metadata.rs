@@ -128,18 +128,18 @@ impl Row {
 }
 macro_rules! check {
     ($id:literal,$label:literal,$($field:tt)+) => {
-        Row { id:$id,label:$label,editor:Editor::Check {read:|p|p.$($field)+,write:|p,v|p.$($field)+=v} }
+        Row { id:$id,label:$label,editor:Editor::Check {read:|p|p.$($field)+,write:|p,v|{p.$($field)+ = v;}} }
     };
 }
 macro_rules! number {
     ($id:literal,$label:literal,$min:literal,$max:literal,u16,$($field:tt)+) => {
         Row { id:$id,label:$label,editor:Editor::Number {read:|p|p.$($field)+,
-            write:|p,v|p.$($field)+=v,min:$min,max:$max} }
+            write:|p,v|{p.$($field)+ = v;},min:$min,max:$max} }
     };
     ($id:literal,$label:literal,$min:literal,$max:literal,u8,$($field:tt)+) => {
         Row { id:$id,label:$label,editor:Editor::Number {read:|p|u16::from(p.$($field)+),
             // Row::set checks the declared 0..=100 range before this bounded conversion.
-            write:|p,v|p.$($field)+=v as u8,min:$min,max:$max} }
+            write:|p,v|{p.$($field)+ = v as u8;},min:$min,max:$max} }
     };
 }
 

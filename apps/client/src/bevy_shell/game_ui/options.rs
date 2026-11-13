@@ -159,14 +159,14 @@ fn toggle(
     mut state: ResMut<OptionsState>,
     guard: ModalGuard,
 ) {
-    if !guard.allows(event.entity)
+    if !guard.allows(event.source)
         || owner.preferences_draft().is_none()
         || state.generation != Some(owner.generation())
         || top_server_dialog(&owner)
     {
         return;
     }
-    let Ok(control) = controls.get(event.entity) else {
+    let Ok(control) = controls.get(event.source) else {
         return;
     };
     match *control {
@@ -199,7 +199,7 @@ fn slide(
     state: Res<OptionsState>,
     guard: ModalGuard,
 ) {
-    if !guard.allows(event.entity)
+    if !guard.allows(event.source)
         || owner.preferences_draft().is_none()
         || state.generation != Some(owner.generation())
         || top_server_dialog(&owner)
@@ -207,7 +207,7 @@ fn slide(
     {
         return;
     }
-    let Ok(Control::Number(id)) = controls.get(event.entity) else {
+    let Ok(Control::Number(id)) = controls.get(event.source) else {
         return;
     };
     let Some(row) = metadata::find(state.page, id) else {
