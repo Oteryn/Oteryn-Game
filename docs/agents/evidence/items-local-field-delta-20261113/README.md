@@ -1,6 +1,16 @@
 # All-category local item field delta
 
-**Current result:2216 complete,664 partial,27 unreconciled =2907 scoped observation records.**
+**Latest offline batch:2232 complete,648 partial,27 unreconciled =2907 scoped records.**
+`offline408-batch1.json`, `all-visible-after-offline-batch1.csv` and
+`remaining648-summary.json` supersede the seven-potion counts below. Sixteen Amulets
+NPC panes were recovered from existing hash-verified native images with calibrated
+no-overflow geometry, manual literal reading and paired raw corroboration. Corrections
+include Fadil/Fedil, Rashid/Reshid, Haroun/Ashta'daramai, Gray Beach and Enpa-Deia Pema.
+The UI's Various Locations remains literal; no daily raw town is substituted. There
+were no new game inputs or screenshots.392 literal-first,180 geometry and76 combined
+tail/literal cases remain offline review pending; all earlier values/proofs remain.
+
+**Previous seven-potion result:2216 complete,664 partial,27 unreconciled =2907 scoped observation records.**
 `seven-potions-summary.json`, `seven-potions-live.json` and
 `all-visible-after-seven-potions.csv` supersede previous counts. Exactly the seven
 previously missing1853 potion NPC tails were read in the live client under

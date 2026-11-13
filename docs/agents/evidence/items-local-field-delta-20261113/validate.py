@@ -325,6 +325,36 @@ def routing664(packet=None):
             assert all(u["fields_to_qualify"] and u["absence_not_asserted"] for u in panel["missing_or_unqualified_fields"])
 
 
+def offline_batch1(source_path=None, packet=None):
+    p = packet or load(HERE,"offline408-batch1.json")
+    assert p["current_counts"] == dict(COMPLETE=2232,PARTIAL=648,UNRECONCILED=27,total=2907)
+    assert len(p["records"]) == 16 and not p["UI_inputs"] and not p["new_screenshots"] and not p["fuzzy_OCR_promotion"]
+    source = None
+    if source_path:
+        raw = json.loads(source_path.read_text(encoding="utf8"))
+        cols = [c["values"] if c["encoding"] == "LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        source = [dict(zip(raw["field_order"],v)) for v in zip(*cols)]
+    for r in p["records"]:
+        q = r["closed_fields"]
+        assert r["current_state"] == "COMPLETE" and r["previous_state"] == "PARTIAL" and not r["remaining_reasons"]
+        assert q["currency_literal"] == "gp" and r["paired_raw_tuple_indices0"]
+        if q["NPC"] == "Rashid":
+            assert q["UI_location_literal"] == "Various Locations"
+        if source:
+            for i,h in zip(r["paired_raw_tuple_indices0"],r["paired_raw_tuple_sha256"]):
+                s = source[i]
+                assert s["raw_tuple_sha256"] == h and s["npc_name"] == q["NPC"]
+                assert s["buy_price_raw" if q["panel"] == "Sell To" else "sale_price_raw"] == q["price"]
+                assert q["UI_location_literal"] == "Various Locations" or s["location"] == q["UI_location_literal"]
+    before = {r["observation_key"]:r for r in csv.DictReader((HERE/"all-visible-after-seven-potions.csv").open(encoding="utf8",newline=""))}
+    current = list(csv.DictReader((HERE/"all-visible-after-offline-batch1.csv").open(encoding="utf8",newline="")))
+    assert len(current) == len(before) == 2907
+    assert {r["observation_key"] for r in current if r != before[r["observation_key"]]} == {r["observation_key"] for r in p["records"]}
+    assert {k:sum(r["ALL_VISIBLE_state"] == k for r in current) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]} == dict(COMPLETE=2232,PARTIAL=648,UNRECONCILED=27)
+    left = load(HERE,"remaining648-summary.json")
+    assert len(left["remaining_keys"]) == 648 and not set(left["closed_keys"]) & set(left["remaining_keys"])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -345,6 +375,15 @@ def main():
     followup1260(args.npc_source)
     seven_potions(args.npc_source)
     routing664()
+    offline_batch1(args.npc_source)
+    badtown = copy.deepcopy(load(HERE,"offline408-batch1.json"))
+    next(r for r in badtown["records"] if r["closed_fields"]["NPC"] == "Rashid")["closed_fields"]["UI_location_literal"] = "One guessed daily town"
+    try:
+        offline_batch1(args.npc_source,badtown)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Various Locations replaced by guessed daily town")
     badroute = copy.deepcopy(load(HERE, "remaining664-routing.json"))
     badroute["records"][0]["confirmed_live_needed"] = True
     try:
@@ -384,7 +423,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;current ALL2216/664/27;178 quotes;664 per-panel routes;8 negative controls"
+    print("PASS:6470 appearances/6228 types;current ALL2232/648/27;offline16 native recoveries;9 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

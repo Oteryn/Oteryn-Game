@@ -70,6 +70,11 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING extended under allocation6866296521 for bounded offline recoveries.
+First16 Amulets recovered by native literal reading, exact source/crop receipts,
+calibrated no-overflow and paired raw corroboration. Current2232/648/27.
+Various Locations preserved without choosing a daily town. No new GUI/capture.
+
 AUTHORING extended under allocation6866204394 after verified seven-card head
 8d9c4a5960acfd636f7ce9c4b6e9fa3300c9eec7. Offline routing664 retains actual
 per-panel unresolved fields and all known values;664 private bitmaps hash-match.
