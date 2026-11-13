@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20261113-charms-client-evidence
-title: Retain static charm descriptions and bounded reset/restore evidence
+title: Retain charm UI, reset/restore and bounded public research evidence
 mode: AUDIT
 status: waiting
 repository: Oteryn/Oteryn-Game
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: codex-charms-evidence-publication
 created_at: 2026-11-13T10:44:41Z
-updated_at: 2026-11-13T11:13:17Z
+updated_at: 2026-11-13T11:36:11Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/charms-client-evidence-20261113/
@@ -78,6 +78,14 @@ original image/asset redistribution, deployment and merge.
 
 ## Implementation / findings
 
+AUTHORING resumed for the owner-authorized bounded public-source research
+successor, after live OPEN/draft PR readback at
+`f9ebce83c0540948b7e456170716e7e8ef952aec` and unchanged main
+`3e168ce6afe374485da20ee0ac13d3749558e2f8`. Allocation remains this worker's
+two owned documentation paths; the live open-PR inventory shows no other Charms
+publication branch. This successor retains a five-topic source matrix, explicit
+unknowns, immutable source receipts and no runtime changes/status promotions.
+
 The publication branch starts at fresh main and has one writer. The prior
 Bestiary head remains unchanged. The final immutable static reader checkpoint
 was consumed before first publication. The active successor consumes a separate
@@ -93,6 +101,8 @@ for this worker.
 
 - Focused validator with private-image and source-blob verification: PASS.
 - Sixteen evidence control/negative tests: PASS on successor authoring tree.
+- Public-source matrix:17 locators, five comparisons, nine source blobs rehashed;
+  four research boundary tests PASS. No mechanic authority/status promotion.
 - `python tools/agents/validate_governance.py`: PASS.
 - `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
 - `git diff --check`: PASS.
@@ -100,3 +110,8 @@ for this worker.
 - Exact-head CI: predecessor2f91f9c9 passed; successor checks pending. Independent
   review was not completed because the dispatched reviewer could not execute
   terminal reads (zero files reviewed). No review/mergeability claim.
+
+The public-research successor is frozen after its local checks; publication
+readback and exact Git head are retained in the coordinator's external report.
+The historical/current evidence distinction and unresolved interaction fields
+remain explicit. Return to AUTHORING is required before any further update.

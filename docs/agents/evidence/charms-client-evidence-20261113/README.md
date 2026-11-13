@@ -101,6 +101,14 @@ runtime proof. These priorities are not new runtime findings.
 
 ## Private evidence and validation
 
+The successor [public research comparison](public-research-comparison.md) and
+`public-research-source-matrix.json` add17 public/owner-supplied source locators,
+five bounded mechanic comparisons and nine current-main source receipts.
+Official Agony/Hex constraints, historical creator evidence and unresolved
+ordering/rounding/chain claims remain separated. No runtime status is promoted.
+Run `validate_public_research.py --repository .` and its `--test` mode in
+addition to the original packet checks below.
+
 Original screenshots/assets remain private. The original25 card proofs total
 5,724,422 bytes; the complete private manifest has 39 PNGs including navigation
 and supporting views. `qualified-card-index.json` identifies the 25 card
