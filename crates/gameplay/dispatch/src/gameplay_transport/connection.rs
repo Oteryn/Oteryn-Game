@@ -222,7 +222,7 @@ pub mod quest_log;
 pub const SERVER_SCHEMA_REVISION: u32 = 1;
 
 /// Validated fresh-admission input handed to the owning authority.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct FreshAdmissionAttempt<'a> {
     pub character_id: CharacterId,
     pub admission_material: &'a [u8],
@@ -231,6 +231,19 @@ pub struct FreshAdmissionAttempt<'a> {
     /// The bootstrap's supported capabilities, untrusted. ADMIT0 §4: the owner checks them
     /// against the Channel's required set only after authenticating the grant.
     pub supported_capabilities: &'a [u32],
+}
+
+impl std::fmt::Debug for FreshAdmissionAttempt<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("FreshAdmissionAttempt")
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("game_session_id", &self.game_session_id)
+            .field("transport", &self.transport)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .finish()
+    }
 }
 
 /// One `ClientResume` attempt: the GameSession to resume, the untrusted reauthenticated
