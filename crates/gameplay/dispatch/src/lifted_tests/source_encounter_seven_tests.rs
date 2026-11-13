@@ -182,12 +182,10 @@ fn policies(r: &ChannelRuntimeV1) -> CompiledCreaturePolicies {
         .get_or_init(|| {
             let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../../content/spells.manifest.json");
-            crate::content::native_gameplay::retained_callback_native_fixture_at(
-                r.binding().world_id(),
-                &manifest,
-            )
-            .policies()
-            .clone()
+            crate::content::native_gameplay::callback_native_policy_fixture_at(&manifest)
+                .expect("actual manifest-pinned native policy fixture")
+                .policies()
+                .clone()
         })
         .clone();
     policies

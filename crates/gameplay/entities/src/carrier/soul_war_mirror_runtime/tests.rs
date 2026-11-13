@@ -16,14 +16,9 @@ pub(in crate::carrier) fn policies() -> runtime_actor_companion::CompiledCreatur
     static POLICIES: std::sync::OnceLock<runtime_actor_companion::CompiledCreaturePolicies> =
         std::sync::OnceLock::new();
     POLICIES.get_or_init(|| {
-        let world=WorldId::decode(&id(1)).expect("world");
         let path=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
-        let native=oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(world,&path);
-        let digest=native.catalog().artifact_digest();
-        let mut catalog=[0;32];
-        for (index,byte) in catalog.iter_mut().enumerate() {
-            *byte=u8::from_str_radix(&digest[index*2..index*2+2],16).expect("actual native catalog digest");
-        }
+        let native=oteryn_gameplay_content::content::native_gameplay::callback_native_policy_fixture_at(&path).expect("actual manifest-pinned native policy fixture");
+        let catalog=native.catalog_digest();
         NATIVE_CATALOG.set(catalog).expect("single immutable fixture source catalog");
         let mut policies=native.policies().clone();
         policies.bind_qualified_outer_artifact([1;32]).expect("unit outer pin retains exact decoded native bodies");

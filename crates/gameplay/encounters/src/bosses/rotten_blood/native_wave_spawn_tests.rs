@@ -24,9 +24,10 @@ fn setup(
         .get_or_init(|| {
             let path =
                 Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
-            oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(
-                world, &path,
+            oteryn_gameplay_content::content::native_gameplay::callback_native_policy_fixture_at(
+                &path,
             )
+            .expect("actual manifest-pinned native policy fixture")
             .policies()
             .clone()
         })

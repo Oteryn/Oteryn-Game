@@ -1082,9 +1082,9 @@ mod tests {
                     .map_err(|error| format!("{error:?}"))?;
                 let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                     .join("../../../content/spells.manifest.json");
-                let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
-                    world, &manifest,
-                );
+                let native =
+                    crate::content::native_gameplay::callback_native_policy_fixture_at(&manifest)
+                        .map_err(|error| format!("{error:?}"))?;
                 let id = |tag| {
                     let mut bytes = [tag; 16];
                     bytes[6] = 0x70;

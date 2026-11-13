@@ -1,6 +1,5 @@
 //! Literal attached HealthForgotten event through canonical native HP owners.
 use super::*;
-use crate::content_adapters::NativeGameplayRuntimeExt;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 fn debug(value: impl std::fmt::Debug) -> String {
     format!("{value:?}")
@@ -30,10 +29,10 @@ fn run_source(
     std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(),String> {
         let world=oteryn_gameplay_content::content::native_gameplay_test_world_id().map_err(debug)?;
         let manifest=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
-        let native=oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(world,&manifest);
+        let native=oteryn_gameplay_content::content::native_gameplay::callback_native_policy_fixture_at(&manifest).map_err(debug)?;
         let mut runtime=ChannelRuntimeV1::from_committed_assignment(world,ChannelId::decode(&id(71)).map_err(debug)?,NodeId::decode(&id(72)).map_err(debug)?,1,1,1,"runtime-scope-assignment:1",8,
             ChannelContentPin::from_activation(world,1,native.source_digest(),[2;32],[3;32],[4;32],(100,100,7))).map_err(debug)?;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
+        runtime.install_companion_policies(native.policies().clone()).map_err(debug)?;
         let session=GameSessionId::decode(&id(73)).map_err(debug)?;
         let reserved=runtime.reserve_fresh_session(session).map_err(debug)?;
         let player=runtime.commit_fresh_session(reserved).map_err(debug)?;

@@ -154,7 +154,7 @@ fn fixture_with_source_kind(
         static NATIVE: std::sync::OnceLock<CompiledCreaturePolicies> = std::sync::OnceLock::new();
         NATIVE.get_or_init(|| {
             let path=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
-            let native=oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(world,&path);
+            let native=oteryn_gameplay_content::content::native_gameplay::callback_native_policy_fixture_at(&path).expect("actual manifest-pinned native policy fixture");
             assert!(native.qualifies_soul_war_callbacks(native.source_digest()),"actual complete bounded source body closure");
             let mut policies=native.policies().clone();
             policies.bind_qualified_outer_artifact(runtime.content_pin().server_artifact_digest())

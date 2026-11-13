@@ -4991,6 +4991,81 @@ pub fn callback_source_native_test_policies(
     .map_err(|_| invalid("callback native source fixture policy pin"))
 }
 
+/// Actual manifest-pinned policy data for tests which do not exercise World,
+/// Item, spell execution or artifact activation. This projection is not a native
+/// generation and cannot supply their authority. The complete source documents
+/// retain name ambiguity and every callback witness's required source cohort.
+#[cfg(any(test, feature = "test-support"))]
+pub struct CallbackNativePolicyFixture {
+    policies: CompiledCreaturePolicies,
+    catalog_digest: [u8; 32],
+    soul_war_callbacks: bool,
+}
+#[cfg(any(test, feature = "test-support"))]
+impl CallbackNativePolicyFixture {
+    pub fn source_digest(&self) -> [u8; 32] {
+        self.policies.source_digest()
+    }
+    pub fn policies(&self) -> &CompiledCreaturePolicies {
+        &self.policies
+    }
+    pub fn catalog_digest(&self) -> [u8; 32] {
+        self.catalog_digest
+    }
+    pub fn qualifies_soul_war_callbacks(&self, digest: [u8; 32]) -> bool {
+        digest == self.source_digest() && self.soul_war_callbacks
+    }
+}
+
+/// Load authentic source policy and event data without compiling/staging an
+/// unrelated server/client World generation. All manifest input validation is
+/// retained; the ordinary policy decoder and witness binders are shared with
+/// native artifact decoding. Its digest identifies only this test projection.
+#[cfg(any(test, feature = "test-support"))]
+pub fn callback_native_policy_fixture_at(
+    path: &Path,
+) -> Result<CallbackNativePolicyFixture, ContentError> {
+    let input = NativeGameplayInput::from_manifest(path)?;
+    let creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&input.creature_profiles.bytes)
+            .map_err(|_| invalid("callback source Creature fixture"))?;
+    let presentations: PresentationProfilesDocument =
+        serde_json::from_slice(&input.presentation_profiles.bytes)
+            .map_err(|_| invalid("callback source Presentation fixture"))?;
+    if creatures.schema != "OTERYN_NATIVE_CREATURE_PROFILES/v1"
+        || presentations.schema != "OTERYN_NATIVE_PRESENTATION_PROFILES/v1"
+        || creatures.records.len() > MAX_RECORDS
+        || presentations.records.len() > MAX_RECORDS
+    {
+        return Err(invalid("native gameplay profile discriminator or bounds"));
+    }
+    let catalog = executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)
+        .map_err(|_| invalid("callback source catalogue fixture"))?;
+    let catalog_digest = sha256(&input.catalog.bytes);
+    if catalog.artifact_digest() != hex(catalog_digest) {
+        return Err(invalid("callback source catalogue digest"));
+    }
+    let mut binding = b"OTERYN_CALLBACK_NATIVE_POLICY_TEST_PROJECTION/v1\0".to_vec();
+    for bytes in [
+        input.creature_profiles.bytes.as_slice(),
+        input.presentation_profiles.bytes.as_slice(),
+        input.catalog.bytes.as_slice(),
+    ] {
+        binding.extend_from_slice(&sha256(bytes));
+    }
+    let mut policies = CompiledCreaturePolicies::from_active_artifact(
+        sha256(&binding),
+        creature_policies(&creatures, &presentations)?,
+    )
+    .map_err(|_| invalid("callback native source fixture policy pin"))?;
+    policies.bind_soul_war_health_callbacks(&creatures);
+    Ok(CallbackNativePolicyFixture {
+        policies,
+        catalog_digest,
+        soul_war_callbacks: super::native_soul_war_callbacks::qualifies_document(&creatures),
+    })
+}
+
 #[cfg(any(test, feature = "test-support"))]
 #[allow(clippy::expect_used)]
 pub fn retained_callback_native_fixture(

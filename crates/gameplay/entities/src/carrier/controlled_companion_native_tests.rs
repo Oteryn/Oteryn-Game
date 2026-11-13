@@ -1,7 +1,6 @@
 //! Actual activated policies at the existing C13 name-to-physical-birth boundary.
 //! Geometry/casting/lifecycle are not authorized or simulated by this focused case.
 use super::*;
-use crate::content_adapters::NativeGameplayRuntimeExt;
 
 fn debug(value: impl std::fmt::Debug) -> String {
     format!("{value:?}")
@@ -18,12 +17,12 @@ fn srx3_actual_native_familiar_acquisition_name_reaches_physical_birth()
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| -> Result<(), String> {
         let world = oteryn_gameplay_content::content::native_gameplay_test_world_id().map_err(debug)?;
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json");
-        let native = oteryn_gameplay_content::content::native_gameplay::retained_callback_native_fixture_at(world, &path);
+        let native = oteryn_gameplay_content::content::native_gameplay::callback_native_policy_fixture_at(&path).map_err(debug)?;
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(world,
             ChannelId::decode(&id(131)).map_err(debug)?, NodeId::decode(&id(132)).map_err(debug)?,
             1, 1, 1, "runtime-scope-assignment:1", 8,
             ChannelContentPin::from_activation(world, 1, native.source_digest(), [2;32], [3;32], [4;32], (100,100,7))).map_err(debug)?;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
+        runtime.install_companion_policies(native.policies().clone()).map_err(debug)?;
         let session = GameSessionId::decode(&id(133)).map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let master = runtime.commit_fresh_session(reservation).map_err(debug)?;
