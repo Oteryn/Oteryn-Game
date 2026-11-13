@@ -52,13 +52,32 @@ fn server_input_fields_preserve_multiline_and_source_font_on_first_mount() -> Re
             Startup,
             (crate::bevy_shell::ui::setup, notices::setup).chain(),
         );
+    // Independent feature windows can also register the shared modal marker.
+    app.world_mut().spawn((
+        GameModal,
+        Node {
+            display: Display::None,
+            ..default()
+        },
+    ));
     app.update();
+    let death = app
+        .world_mut()
+        .query_filtered::<&Node, (With<GameModal>, With<notices::DeathOverlay>)>()
+        .iter(app.world())
+        .map(|node| node.display)
+        .collect::<Vec<_>>();
+    let notices = app
+        .world_mut()
+        .query_filtered::<&Node, (With<GameModal>, With<notices::NoticeOverlay>)>()
+        .iter(app.world())
+        .map(|node| node.display)
+        .collect::<Vec<_>>();
+    assert_eq!(death, [Display::None], "one initially hidden death overlay");
     assert_eq!(
-        app.world_mut()
-            .query::<&GameModal>()
-            .iter(app.world())
-            .count(),
-        2
+        notices,
+        [Display::None],
+        "one initially hidden notice overlay"
     );
     let skin = app.world_mut().remove_resource::<Skins>().ok_or("skins")?;
     let model = oteryn_client_ui::server_modal::Panel {
