@@ -428,3 +428,32 @@ fn accepted_and_refused_settlement_replies_release_pending_and_display_actual_fe
     }
     Ok(())
 }
+
+#[test]
+fn atomic_market_purchase_rejects_server_modal_published_after_the_ui_snapshot() -> TestResult {
+    let (app, mut commands, _, _) = ready("2")?;
+    let expected = panel(&app)?;
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(!link.server_modal_active());
+    // The real driver publishes after the UI read, before the helper's owner lock.
+    let modal = link.bevy_server_modal_fixture();
+    assert!(link.server_modal_active());
+    assert!(
+        !link.market_buy_bound(&expected, &offer(), 2),
+        "the atomic owner must recheck the current server modal"
+    );
+    assert!(commands.try_recv().is_err());
+    assert_eq!(
+        link.market_panel(),
+        expected,
+        "blocked consent must have no retained side effects"
+    );
+    drop(modal);
+    Ok(())
+}

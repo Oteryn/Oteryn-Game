@@ -13,6 +13,7 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.market_shutdown
             || mailbox.depot_shutdown
+            || mailbox.server_modal.is_active()
             || mailbox.world_input_blocked()
             || self.commands.is_closed()
             || mailbox.market != *expected
