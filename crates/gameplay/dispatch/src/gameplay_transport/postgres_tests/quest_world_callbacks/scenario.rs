@@ -1706,6 +1706,23 @@ fn scenario_case(
             .await
             .map_err(|()| "fence")?
             .ok_or("fence")?;
+        // Level refresh consumes the current actor lease installed by normal first entry.
+        // This fixture uses its freshly read SQL fence, never the level-8 spell-state default.
+        owner
+            .runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
         admitted.item_fence = Some(fence.item_fence());
         sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;

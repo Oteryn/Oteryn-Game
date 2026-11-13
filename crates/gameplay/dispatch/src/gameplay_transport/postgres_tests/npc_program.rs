@@ -120,9 +120,23 @@ pub(super) async fn exercise(
         .await
         .map_err(|()| "XP fence")?
         .ok_or("XP fence")?;
+    let binding = owner
+        .progression_binding(admitted.game_session_id)
+        .ok_or("current progression binding")?;
+    let request = crate::durability::character_progression::ExperienceAwardRequest {
+        occurrence: crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes(
+            super::fixture::id(91),
+        )
+        .map_err(debug)?,
+        amount: oteryn_simulation_determinism::ExactI64::new(5),
+        context: binding.context.clone(),
+        policy_revision: binding.policy_revision.clone(),
+        reward_revision: binding.reward_revision.clone(),
+        policy: binding.policy.clone(),
+    };
     let award = h
         .root
-        .commit_character_experience(authority, &h.node, before, super::fixture::xp_request(91)?)
+        .commit_character_experience(authority, &h.node, before, request)
         .await
         .map_err(debug)?;
     let crate::durability::character_progression::ExperienceCommitOutcome::Committed(award) = award

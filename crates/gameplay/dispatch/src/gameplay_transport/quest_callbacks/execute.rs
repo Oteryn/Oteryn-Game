@@ -1419,6 +1419,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = deadline;
             }
+            // A per-character gift does not consume or revise its shared source object.
+            // Real scene changes and shared-world progress still publish their original CAS,
+            // including the revision consumed by the post-publication removal below.
+            let personal_gift_preserves_object = callback.item_reward().is_some()
+                && callback.effects.item_reward_cycle.is_none()
+                && !callback.effects.item_reward_per_use
+                && callback.world_change.is_none()
+                && oteryn_gameplay_quests::quest::shared_world_progress::binding(&callback.key)
+                    .is_none()
+                && callback.lever.is_none()
+                && callback.teleport.is_none()
+                && callback.remote_teleport.is_none()
+                && !callback.reversible
+                && !close
+                && before == after
+                && passages.is_empty()
+                && replacements.is_empty()
+                && projection.is_none()
+                && scene_moves.is_none();
             let apply_scene = || {
                 map.facts.apply_quest_callback(
                     key,
@@ -1465,7 +1484,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !apply_scene() {
+            } else if !callback.is_read_only() && !personal_gift_preserves_object && !apply_scene()
+            {
                 return UseDisposition::Rejected;
             }
         }

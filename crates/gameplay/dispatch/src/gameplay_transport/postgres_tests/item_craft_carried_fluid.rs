@@ -242,11 +242,23 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 return Err("backpack capacity".into());
             };
             assert_eq!(*capacity, 20);
-            for _ in 0..usize::from(*capacity - 3) {
+            while entries.len() < usize::from(*capacity) {
                 entries.push(("oteryn:item.tibia.i3031", 1));
             }
         }
         super::item_look::seed_main_backpack(&harness, &entries).await?;
+        if matches!(case, Case::Full) {
+            assert_eq!(entries.len(), 20);
+            let occupied: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .bind(id(42).as_slice())
+            .bind(id(70).as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(occupied, i64::try_from(entries.len())?);
+        }
         if case.moves() {
             let mut tx=harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
