@@ -112,6 +112,7 @@ pub(super) fn drag_start(
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
+    capture: super::world_drag::DropCapture,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -120,6 +121,7 @@ pub(super) fn drag_start(
         && ui.prompt.is_none()
         && ui.menu.is_none()
         && let Ok(slot) = slots.get(event.entity)
+        && capture.admits_source(*slot, event.pointer.id, event.original_event_target())
     {
         begin_slot(*slot, &owner, &mut ui);
     }
@@ -130,15 +132,22 @@ pub(super) fn drag_drop(
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
+    mut capture: super::world_drag::DropCapture,
 ) {
     if !guard.allows(event.entity) {
         return;
     }
-    if event.button != bevy::picking::pointer::PointerButton::Primary {
+    if event.button != bevy::picking::pointer::PointerButton::Primary
+        || !capture.matches_pointer(event.pointer.id)
+    {
         return;
     }
-    if let (Ok(source), Ok(target)) = (slots.get(event.dropped), slots.get(event.entity)) {
-        drop_slot(*source, *target, &owner, &mut ui);
+    if let Ok(target) = slots.get(event.entity) {
+        capture.slot(&event, &owner, *target);
+        if let Ok(source) = slots.get(event.dropped) {
+            drop_slot(*source, *target, &owner, &mut ui);
+            capture.completed();
+        }
     }
 }
 
@@ -240,6 +249,7 @@ fn begin_slot(slot: Slot, owner: &HostOwner, ui: &mut InventoryUi) {
         && let Some(play) = &owner.play
         && play.link.item_drag_begin(item)
     {
+        ui.ground_source = None;
         ui.dragged = Some(slot);
         ui.menu = None;
     }

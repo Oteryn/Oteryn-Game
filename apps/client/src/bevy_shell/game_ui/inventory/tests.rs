@@ -2,7 +2,7 @@ use super::*;
 use crate::play::{PlayLink, play_channel};
 use oteryn_session::{AppliedDelta, CharacterInventory, SessionEvent};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-fn entry(handle: u64, count: u32) -> Result<ItemEntry, Box<dyn std::error::Error>> {
+pub(super) fn entry(handle: u64, count: u32) -> Result<ItemEntry, Box<dyn std::error::Error>> {
     Ok(ItemEntry {
         handle: handle.try_into()?,
         item_definition_ref: 42.try_into()?,
@@ -10,7 +10,7 @@ fn entry(handle: u64, count: u32) -> Result<ItemEntry, Box<dyn std::error::Error
         sub_type: 0,
     })
 }
-fn host(link: PlayLink) -> Result<HostOwner, Box<dyn std::error::Error>> {
+pub(super) fn host(link: PlayLink) -> Result<HostOwner, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
     let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -96,7 +96,7 @@ fn pointer_drag_uses_latest_stack_and_stale_session_sends_nothing() -> TestResul
     assert!(commands.try_recv().is_err());
     Ok(())
 }
-fn pointer() -> bevy::picking::events::Pointer {
+pub(super) fn pointer() -> bevy::picking::events::Pointer {
     bevy::picking::events::Pointer::new(
         bevy::picking::pointer::PointerId::Mouse,
         bevy::picking::pointer::Location {

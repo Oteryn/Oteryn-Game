@@ -65,6 +65,9 @@ fn maximum(owner: &HostOwner, ui: &InventoryUi, prompt: Prompt) -> Option<u32> {
     if !super::actions::prompt_current(prompt, owner, ui) {
         return None;
     }
+    if ui.ground_source.is_some() {
+        return super::world_drag::prompt_maximum(owner, ui, prompt);
+    }
     let expected = ui.split_entry.or_else(|| source_entry(owner, prompt))?;
     if expected.handle != prompt.item.handle {
         return None;

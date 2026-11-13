@@ -57,6 +57,9 @@ pub(super) fn project(
         ui.menu = None;
     }
     let movement = play.link.item_movement();
+    if movement.prompt.is_none() && movement.dragged.is_none() {
+        ui.ground_source = None;
+    }
     let prompt = movement.prompt.map(|(item, destination)| Prompt {
         generation: owner.generation(),
         item,

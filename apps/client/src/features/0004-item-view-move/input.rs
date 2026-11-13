@@ -82,6 +82,20 @@ impl crate::play::PlayView {
         &self,
         tile: oteryn_renderer::TileCoord,
     ) -> Option<oteryn_client_ui::inventory::movement::DragItem> {
+        let item = self.item_drag_binding(tile)?;
+        super::super::feature_0014_container_tree::input::ground_handle(item).map(|handle| {
+            oteryn_client_ui::inventory::movement::DragItem {
+                equipped: false,
+                handle,
+                count: item.quantity(),
+            }
+        })
+    }
+    /// The exact existing visible source, retained by portable drag prompts for revalidation.
+    pub fn item_drag_binding(
+        &self,
+        tile: oteryn_renderer::TileCoord,
+    ) -> Option<crate::play::GroundItem> {
         // The shell already captured the drawn actor; do not also drag an item underneath it.
         if self
             .creature_drag
@@ -107,14 +121,8 @@ impl crate::play::PlayView {
                     })
                     .filter_map(super::state::entity_item),
             )
-            .find_map(|item| {
-                super::super::feature_0014_container_tree::input::ground_handle(item).map(
-                    |handle| oteryn_client_ui::inventory::movement::DragItem {
-                        equipped: false,
-                        handle,
-                        count: item.quantity(),
-                    },
-                )
+            .find(|item| {
+                super::super::feature_0014_container_tree::input::ground_handle(*item).is_some()
             })
     }
 }

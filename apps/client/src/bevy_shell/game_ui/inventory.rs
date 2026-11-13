@@ -11,6 +11,8 @@ mod dialogs;
 #[cfg(test)]
 mod tests;
 mod view;
+mod world_drag;
+pub(in crate::bevy_shell) use world_drag::ItemPointerCapture;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Location {
@@ -119,6 +121,7 @@ struct InventoryUi {
     pending_amount_confirm: Option<Prompt>,
     dragged: Option<Slot>,
     prompt: Option<Prompt>,
+    ground_source: Option<world_drag::GroundSource>,
 }
 #[derive(Component, Clone, Copy)]
 enum Control {
@@ -144,10 +147,25 @@ enum Control {
 }
 
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<InventoryUi>()
-        .add_systems(Update, (actions::escape, view::project).chain());
+    app.init_resource::<InventoryUi>().add_systems(
+        Update,
+        (
+            actions::escape.after(crate::bevy_shell::input::route),
+            view::project,
+        )
+            .chain(),
+    );
     amount::install(app);
+    world_drag::install(app);
 }
+/// Minimal real state for raw-input caller fixtures; production always installs the full module.
+#[cfg(test)]
+pub(in crate::bevy_shell) fn initialize_item_pointer_test_state(app: &mut App) {
+    app.init_resource::<InventoryUi>()
+        .init_resource::<world_drag::Gesture>()
+        .init_resource::<bevy::diagnostic::FrameCount>();
+}
+
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
