@@ -64,6 +64,7 @@ winit.workspace = true
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 rcgen.workspace = true
 tokio-rustls.workspace = true
+winit = { workspace = true, features = ["x11"] }
 
 [build-dependencies]
 serde_json.workspace = true
