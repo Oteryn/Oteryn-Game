@@ -504,7 +504,7 @@ pub(super) async fn issue_successor(
         .bind(if active {None} else {Some("1")}).bind(if active {None} else {Some(grace)}).bind(if active {None} else {Some("1")})
         .bind(initial.as_slice()).bind(if kind == 2 { Some(decision.as_slice()) } else { None })
         .bind(if kind == 1 { Some(decision.as_slice()) } else { None })
-        .bind(protection).bind(admission_generation.to_string()).bind(security_revoked)
+        .bind(protection).bind(admission_generation.map(|g| g.to_string())).bind(security_revoked)
         .execute(&mut **tx).await?;
     if let Some(transport) = transport {
         sqlx::query("INSERT INTO game_durability_transport_ref_reservations(transport_ref,game_session_id,reconnect_attempt_ref,reservation_owner,fresh_replay_key,activity_handoff_id,activity_return_id) VALUES($1,encode($2,'hex')::uuid,NULL,3,NULL,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")

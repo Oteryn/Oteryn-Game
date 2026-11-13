@@ -145,7 +145,7 @@ async fn known(
 pub(crate) async fn session_security_lineage(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     session: crate::foundation::GameSessionId,
-) -> Result<(u64, bool), DurabilityError> {
+) -> Result<(Option<u64>, bool), DurabilityError> {
     security_revocation::lineage(tx, session).await
 }
 

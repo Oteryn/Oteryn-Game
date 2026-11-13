@@ -1197,7 +1197,7 @@ pub async fn commit_house_entry_in_transaction(
     .bind(grace_deadline)
     .bind(destination_lease.to_string())
     .bind(house_generation.to_string())
-    .bind(admission_generation.to_string()).bind(security_revoked)
+    .bind(admission_generation.map(|g| g.to_string())).bind(security_revoked)
     .execute(&mut **tx)
     .await?;
     let committed = sqlx::query(

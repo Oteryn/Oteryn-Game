@@ -38,39 +38,45 @@ pub(super) async fn apply(
     }
     for row in rows {
         let generation = admission_generation(&row)?;
-        let revoked =
-            item.cause == 3 || u128::from(generation) < item.native_security_generation as u128;
+        let revoked = item.cause == 3
+            || generation.is_none_or(|g| u128::from(g) < item.native_security_generation as u128);
         sqlx::query("UPDATE game_durability_reconnect_sessions SET admission_security_generation=$2::text::numeric,security_revoked=security_revoked OR $3 WHERE game_session_id=$1::text::uuid")
-            .bind(row.try_get::<String,_>("game_session_id")?).bind(generation.to_string()).bind(revoked).execute(&mut **tx).await?;
+            .bind(row.try_get::<String,_>("game_session_id")?).bind(generation.map(|g| g.to_string())).bind(revoked).execute(&mut **tx).await?;
     }
     Ok(1)
 }
 
-fn admission_generation(row: &sqlx::postgres::PgRow) -> Result<u64, DurabilityError> {
+/// `None` when the session carries no admission-generation evidence (a session written before
+/// this consumer existed, or a successor of one). Such a session cannot prove it is newer than
+/// any streamed generation, so `apply` revokes it (fail closed) and successors inherit `None`.
+fn admission_generation(row: &sqlx::postgres::PgRow) -> Result<Option<u64>, DurabilityError> {
     Ok(
         if let Some(generation) = row.try_get::<Option<String>, _>("generation")? {
-            generation
-                .parse::<u64>()
-                .map_err(|_| DurabilityError::InvalidStoredState)?
+            Some(
+                generation
+                    .parse::<u64>()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            )
         } else if let Some(encoded) = row.try_get::<Option<String>, _>("operation_json")? {
-            super::super::fresh_admission::decode_operation(
-                &encoded,
-                super::super::MAX_FRESH_OPERATION_BYTES,
-            )?
-            .authorization
-            .signed_security_generation
-        } else {
-            let encoded: Option<String> = row.try_get("record_json")?;
-            let record: serde_json::Value = serde_json::from_str(
-                encoded
-                    .as_deref()
+            Some(
+                super::super::fresh_admission::decode_operation(
+                    &encoded,
+                    super::super::MAX_FRESH_OPERATION_BYTES,
+                )?
+                .authorization
+                .signed_security_generation,
+            )
+        } else if let Some(encoded) = row.try_get::<Option<String>, _>("record_json")? {
+            let record: serde_json::Value =
+                serde_json::from_str(&encoded).map_err(|_| DurabilityError::InvalidStoredState)?;
+            Some(
+                record["compatibility"]["account_security_generation"]
+                    .as_u64()
+                    .filter(|g| *g > 0)
                     .ok_or(DurabilityError::InvalidStoredState)?,
             )
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-            record["compatibility"]["account_security_generation"]
-                .as_u64()
-                .filter(|g| *g > 0)
-                .ok_or(DurabilityError::InvalidStoredState)?
+        } else {
+            None
         },
     )
 }
@@ -78,7 +84,7 @@ fn admission_generation(row: &sqlx::postgres::PgRow) -> Result<u64, DurabilityEr
 pub(super) async fn lineage(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     session: crate::foundation::GameSessionId,
-) -> Result<(u64, bool), DurabilityError> {
+) -> Result<(Option<u64>, bool), DurabilityError> {
     let row = sqlx::query("SELECT s.admission_security_generation::text AS generation,game_security_session_revoked(s.game_session_id) AS revoked,r.operation_json,(SELECT a.record_json FROM game_durability_reconnect_attempts a WHERE a.game_session_id=s.game_session_id ORDER BY a.control_loss_epoch DESC,a.reconnect_attempt_ref DESC LIMIT 1) AS record_json FROM game_durability_reconnect_sessions s LEFT JOIN game_durability_fresh_admission_receipts r ON r.replay_key=COALESCE(s.initial_fresh_replay_key,s.fresh_replay_key) WHERE s.game_session_id=encode($1,'hex')::uuid FOR UPDATE OF s")
         .bind(session.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     Ok((admission_generation(&row)?, row.try_get("revoked")?))
