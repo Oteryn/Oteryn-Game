@@ -60,6 +60,14 @@ reused. Forty-three wealth-duplex Basic panes are pixel-identical despite list
 scrolling; do not promote other visible names to selected-card observations.
 No GUI input or new screenshots. Current session/copy capability remains held.
 
+AUTHORING extended under allocation6863075429 to measurable completeness:
+31 exact open PR heads /6804 complete paths;2632 current scoped Basic cards,
+701 field-closed and1931 requiring offline metadata qualification. Reused126
+accepted Hats client namespace bindings yield49 complete+77 incomplete Basic
+types, with6102 identity-held, totaling6228; variant partition separately totals
+6470. Canonical/server binding remains a separate import hold. No candidate
+Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
+
 ## Validation
 
 Packet/source verifier with negative controls, governance validator,

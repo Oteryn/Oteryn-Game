@@ -17,6 +17,43 @@ source comparisons, including their candidate-only limitations.
 
 ## What is added
 
+The completion matrix separates physical display evidence, accepted client
+identity and canonical import authority:
+
+| Scope | Complete Basic | Incomplete Basic | Identity held | Total |
+|---|---:|---:|---:|---:|
+| Current scoped physical cards |701|1931 needing offline closure metadata|0 within physical scope|2632 observations|
+| Cyclopedia types, all retained variants required |49|77|6102|6228 types|
+| Appearance variants |49|77|6344|6470 appearances|
+
+The126 Hats client singletons were explicitly accepted in PR3173's receipt.
+Their49 closed Basic cards and77 partial cards remain usable for Cyclopedia
+despite zero qualified canonical/server bindings. Legs/Others candidates are
+not promoted without equivalent acceptance. All applicable panels remain
+unclosed (0 complete;126 client-bound incomplete); canonical import readiness
+is separately held for all6228 types. These figures do not mean all data is absent.
+
+`completion-criteria.json` defines category-specific visible-field closure,
+known absence and held applicability. It never requires every item to have
+all20 observed labels. The701 include50 Hats,603 Others,36 Potions, the new9
+scoped cards, and3 Gold cards with qualified display absences. The compass
+clipboard resolves its prior glyph hold. The1931 partial cards first need
+**offline metadata qualification**, not automatic recapture.
+
+`physical-card-completeness.json/.csv`, `appearance-qualification-gaps.json`,
+`appearance-completeness.csv` and `item-completeness.json/.csv` retain every
+record/variant and field-specific qualification reason. Known values remain
+at their pinned sources; thin dictionaries avoid duplicating fact tables.
+All31 open PRs were inventoried at exact heads:6804 complete file paths,
+including oversized PRs beyond GitHub REST's3000-file cap. Unmerged canonical
+changes remain overlays, not protected-main truth. PR3143's22 older pilot
+label groups /261 observations remain version/identity held, separately from
+314 overlapping legacy observations. Its batch003 is the same1853 archive,
+counted once. Earlier category PRs and Basic110 also overlap existing sources.
+
+Machine counts, reason totals and variant policy are in
+`completeness-summary.json`; the source inventory is `all-open-PR-inventory.json`.
+
 | Member | Added qualification |
 |---|---|
 | `compiled-enum-delta.json` |Static executable descriptor for all27 ITEM_CATEGORY values,9 WEAPON_TYPE values and8 VOCATION values; qualifies tags60–64 through the exact PR3179 field map |

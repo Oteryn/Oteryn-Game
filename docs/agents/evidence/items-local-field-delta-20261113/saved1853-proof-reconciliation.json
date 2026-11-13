@@ -973,7 +973,13 @@
           "currency_literal": "gp"
         }
       ],
-      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference."
+      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "superior mana potion",
@@ -1028,7 +1034,13 @@
           "currency_literal": "gp"
         }
       ],
-      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference."
+      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "supreme health potion",
@@ -1081,7 +1093,13 @@
           "currency_literal": "gp"
         }
       ],
-      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference."
+      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "transcendence potion",
@@ -1116,7 +1134,18 @@
         }
       ],
       "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
-      "Description_UI_state": "VISIBLE; literal prose not republished. Existing local appearance Description custody is reusable; no exact OCR transcription asserted."
+      "Description_UI_state": "VISIBLE; literal prose not republished. Existing local appearance Description custody is reusable; no exact OCR transcription asserted.",
+      "Description_UI_custody": {
+        "utf8_sha256": "8f673f1fefb2d7aac7b081be0efeef093cf884ab310201e56f75e837035e6fe0",
+        "utf8_bytes": 77,
+        "qualification": "Exact literal independently visually read on saved panel, matches retained local UTF8 text after display line wrapping; no narrative republished and no item-ID binding inferred."
+      },
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "OBSERVED_VALUE_CUSTODY",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "ultimate health potion",
@@ -1168,7 +1197,13 @@
           "currency_literal": "gp"
         }
       ],
-      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference."
+      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "ultimate mana potion",
@@ -1222,7 +1257,13 @@
           "currency_literal": "gp"
         }
       ],
-      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference."
+      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "ultimate spirit potion",
@@ -1275,7 +1316,13 @@
           "currency_literal": "gp"
         }
       ],
-      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference."
+      "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     },
     {
       "selected_name_exact": "wealth duplex",
@@ -1344,7 +1391,18 @@
       "new_vs_existing_evidence": "New physical-card observations beyond retained Potions36; Weight not available in compiled Appearance schema. Local level/vocation raw fields were already published and are corroborated, not newly discovered.",
       "visible_complete_quote_rows": [],
       "quote_scope": "First visible panel only; clipped fourth rows excluded. Empty panels are OBSERVED_INITIAL_PANEL_ONLY, never no vendor. Raw paired NPC source remains3170; no canonical binding/currency inference.",
-      "Description_UI_state": "VISIBLE; literal prose not republished. Existing local appearance Description custody is reusable; no exact OCR transcription asserted."
+      "Description_UI_state": "VISIBLE; literal prose not republished. Existing local appearance Description custody is reusable; no exact OCR transcription asserted.",
+      "Description_UI_custody": {
+        "utf8_sha256": "ecb1aab6a2babd5d3108c97c67f290f3c5b7f64020b806ed4437806f21b5df39",
+        "utf8_bytes": 85,
+        "qualification": "Exact literal independently visually read on saved panel, matches retained local UTF8 text after display line wrapping; no narrative republished and no item-ID binding inferred."
+      },
+      "Basic_panel_closure": {
+        "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+        "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+        "Description_display_state": "OBSERVED_VALUE_CUSTODY",
+        "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+      }
     }
   ],
   "new_scoped_basic_observation": {
@@ -1377,7 +1435,13 @@
       55433
     ],
     "ID_binding": "CANDIDATE_ONLY",
-    "retained_selection_correction": "Image84 shows mariner search results but still rat claws stats; do not transfer64.00oz to the compass."
+    "retained_selection_correction": "Image84 shows mariner search results but still rat claws stats; do not transfer64.00oz to the compass.",
+    "Basic_panel_closure": {
+      "status": "ALL_VISIBLE_BASIC_PAGES_REVIEWED",
+      "proof_scope": "Saved1853 original images referenced on this card; top/bottom for rat claws, entire pane for potions.",
+      "Description_display_state": "ABSENT_FROM_REVIEWED_BASIC_PANE",
+      "other_not_shown_fields": "ABSENT_FROM_REVIEWED_BASIC_PANE_NOT_INTRINSIC_NA_ZERO_OR_FALSE"
+    }
   },
   "existing_card_reuse": {
     "selected_name_exact": "the mariner's compass from the Antoinette",

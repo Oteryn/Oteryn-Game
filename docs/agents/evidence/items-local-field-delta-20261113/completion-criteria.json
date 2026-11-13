@@ -1,0 +1,105 @@
+{
+  "schema": "ITEMS_COMPLETENESS_CRITERIA/v1",
+  "classification": "DERIVED",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6863075429",
+  "closed_definitions": {
+    "BASIC_CARD_COMPLETE": "At the physical/scoped card level: verified name/card proof plus read Basic pane pages and a closed category-specific display-field-state inventory: each declared field has an observed value/custody or explicit absence from all observed Basic pages. No unresolved literal. New1853 cards use visually reviewed top/bottom pane coverage. This is display completeness only; no fixed20-field requirement or intrinsic absence inferred.",
+    "BASIC_CARD_PARTIAL": "Basic properties/proofs exist, but explicit display absence/applicability/closure metadata is not qualified. Next action NEEDS_OFFLINE_QUALIFICATION, not automatic GUI recapture.",
+    "ALL_APPLICABLE_PANELS_COMPLETE": "Basic complete plus qualified applicable-panel inventory and complete independently scrolling trade lists, or actual proof of inapplicability. A first panel, raw NPC export or empty visible viewport alone is insufficient.",
+    "OTERYN_IMPORT_READY": "Qualified physical-card to canonical variant/server identity, qualified field applicability, accepted lossless unit conversion and source/version provenance; no unresolved variant conflict. Name-only and icon-only candidates cannot satisfy this.",
+    "COHORT_IDENTITY_UNRESOLVED": "Current-client physical-card to appearance binding is not qualified. This is separate from canonical/server import authority; accepted Hats singletons are not held merely because server IDs remain unqualified.",
+    "CLIENT_BASIC_COMPLETE": "Basic-card-complete physical record plus explicitly accepted current-client appearance namespace binding. Canonical/server-ID authority is not required for this Cyclopedia display scope."
+  },
+  "states": {
+    "OBSERVED_VALUE": "Known display value, including known zero.",
+    "ABSENT_IN_ALL_OBSERVED_BASIC_PAGES": "Known absence from observed complete Basic panel; not intrinsic false/zero/NA.",
+    "FIELD_ABSENT_IN_LOCAL_RECORD": "Known static source absence, not an uncollected GUI requirement.",
+    "APPLICABILITY_NOT_QUALIFIED": "Held; no invented default or forced field requirement.",
+    "NEEDS_OFFLINE_QUALIFICATION": "Recover metadata/proof/custody from existing files first.",
+    "NEEDS_IDENTITY_QUALIFICATION": "Resolve explicit identity/variant relationships, not a request for arbitrary new screenshots."
+  },
+  "category_field_schemas": {
+    "Helmets and Hats": {
+      "fields": [
+        "Armor",
+        "Augments",
+        "Body Position",
+        "Classification",
+        "Description",
+        "Imbuement Slots",
+        "Mantra",
+        "Protection",
+        "Required Level",
+        "Skill Boost",
+        "Tradeable In Market",
+        "Vocations",
+        "Weight"
+      ],
+      "authority": "Explicit per-row source_property_states_exact in pinned3173 ui2623-observations; non-emitted fields outside this schema are not universally required."
+    },
+    "Others": {
+      "fields": [
+        "Armor",
+        "Augments",
+        "Body Position",
+        "Classification",
+        "Description",
+        "Imbuement Effect",
+        "Imbuement Slots",
+        "Mantra",
+        "Protection",
+        "Required Level",
+        "Skill Boost",
+        "Total Expire Time",
+        "Tradeable In Market",
+        "Vocations",
+        "Weight"
+      ],
+      "authority": "Explicit per-row source_property_states_exact in pinned3173 ui2623-observations; non-emitted fields outside this schema are not universally required."
+    },
+    "Potions": {
+      "fields": [
+        "Body Position",
+        "Charges",
+        "Classification",
+        "Description",
+        "Potion Effect",
+        "Remaining Uses",
+        "Required Level",
+        "Total Expire Time",
+        "Tradeable In Market",
+        "Use Effect",
+        "Vocations",
+        "Weight"
+      ],
+      "authority": "Explicit per-row source_property_states_exact in pinned3173 ui2623-observations; non-emitted fields outside this schema are not universally required."
+    },
+    "Gold": {
+      "fields": [
+        "Weight",
+        "Tradeable In Market",
+        "Description"
+      ],
+      "authority": "Pinned3159 field-presence-and-display-coverage.json explicitly qualifies three Gold rows: Weight observed; Market and Description absent from observed Basic fields.",
+      "head": "894eddccb3890f82d14cab487988136c5288dd60"
+    }
+  },
+  "known_count_denominators": {
+    "appearance_objects": 6470,
+    "cyclopedia_types": 6228,
+    "physical_UI_base_rows": 2623,
+    "new1853_scoped_Basic_rows": 9,
+    "legacy_observation_records": 314,
+    "historical3143_label_groups": 22
+  },
+  "variants": "Retain every6470 appearance under its6228 Cyclopedia types. No representative/first alias selection. Type complete requires every retained variant qualified;157 multi-appearance types remain explicitly grouped.",
+  "no_automatic_GUI_count_from_missing_source_fields": true,
+  "no_name_candidate_promotion": true,
+  "accepted_client_namespace_authority": {
+    "source": "3173 gaps.json/client_namespace_bindings/summary/Helmets and Hats/root_explicit_accepted_current_client_singletons",
+    "accepted_singletons": 126,
+    "raw_relation_labels_preserved": "Original unique_client_appearance_candidate label retained in source; explicit root acceptance qualifies only these126 current-client singletons.",
+    "Legs66_and_Others561": "Candidate-only, no equivalent explicit acceptance.",
+    "server_bindings": 0
+  }
+}

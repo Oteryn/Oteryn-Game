@@ -2,9 +2,24 @@
   "classification": "DERIVED",
   "members": [
     {
+      "file": "accepted-client-binding-overlay.json",
+      "bytes": 96510,
+      "sha256": "956264720d6addfa2398a66dcc3d38dd92760326f0e5d3da4f0b94206cf0fe83"
+    },
+    {
+      "file": "all-open-PR-inventory.json",
+      "bytes": 534246,
+      "sha256": "c2cbd64024f83361f3ea1c19b23cf4be79fc625e480acc5aa629ae9c7c0ac373"
+    },
+    {
       "file": "appearance-field-coverage.json",
       "bytes": 941440,
       "sha256": "0bb7c836ef54bd86a00433c4bc94374b2ec174497edc91665151d10909998b98"
+    },
+    {
+      "file": "appearance-qualification-gaps.json",
+      "bytes": 520100,
+      "sha256": "1d1b50bcfd83f96a8a0277d53951eaf17e2738e6b2d0dc860827829d73402114"
     },
     {
       "file": "category-field-coverage.json",
@@ -17,14 +32,34 @@
       "sha256": "8b76060e9626cef1cbdd9e30d03f7f5e33a1d685cdcd913700e7bc9594e636c7"
     },
     {
+      "file": "completeness-summary.json",
+      "bytes": 7197,
+      "sha256": "639f368871e943c6df39e0efbfb117ca4a92aadeed048c8f1dcd1295cd9325ad"
+    },
+    {
+      "file": "completion-criteria.json",
+      "bytes": 5602,
+      "sha256": "07326ccbe3c0466ad584358c39c038d49a557399f1ac917f506d06ce9622a5b2"
+    },
+    {
       "file": "current-proficiency-delta.json",
       "bytes": 4077,
       "sha256": "f1bca0dd52d33fc91e4dad3fdb9ecd5e7eaf72a521e370effb71a4f54e33dffe"
     },
     {
+      "file": "item-completeness.json",
+      "bytes": 1361669,
+      "sha256": "0dc4fe60d4d1d2133284011640f8af4995a09add7ba28117f80d8b102c921333"
+    },
+    {
+      "file": "physical-card-completeness.json",
+      "bytes": 137505,
+      "sha256": "9691c554c7602513e771c1a138bc7ec399e2020095b9b0f0ee8b1481971ef0fa"
+    },
+    {
       "file": "saved1853-proof-reconciliation.json",
-      "bytes": 62544,
-      "sha256": "9a97b61bc4a4de6d14b60060e7bedc22b37e2011c1b11032ba5abb075b9a7d63"
+      "bytes": 66781,
+      "sha256": "5c18111d9d2f15cb49d705e3d43e677694a436442861aaa04ba0f1a646cd27cf"
     },
     {
       "file": "source-receipts.json",

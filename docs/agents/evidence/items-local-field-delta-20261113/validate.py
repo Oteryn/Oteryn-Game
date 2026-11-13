@@ -73,6 +73,24 @@ def sources(root, a, q):
     assert len({r[1] for r in f["rows"]}) == 6228
     # Presence is independent of truthiness: all raw zero values remain upstream.
     assert any(v == 0 and not isinstance(v, bool) for pairs in f["known_flag_sets"] for k,v in pairs)
+    rel = load(root, "3173-client-ui-relations.json")
+    accepted = {r[3][0]:r for r in rel["rows"] if rel["category_codes"][r[0]] == "Helmets and Hats" and r[2] == 0}
+    overlay = load(HERE, "accepted-client-binding-overlay.json")
+    assert {r["appearance_id"] for r in overlay["rows"]} == set(accepted)
+    physical = load(HERE, "physical-card-completeness.json")
+    for r in overlay["rows"]:
+        old = accepted[r["appearance_id"]]
+        assert old[1] == r["physical_ordinal1"] and old[4] == r["icon_proof_sha256"]
+    for r in physical["current_card_rows"]:
+        if r[0] == 1:
+            assert r[5] == 0
+            continue
+        old = u["rows"][r[1]]
+        states = old[5]
+        closed = bool(states) and all(v in ["OBSERVED_VALUE","ABSENT_IN_ALL_OBSERVED_BASIC_PAGES"] for v in states.values())
+        if r[1] == 2354 or u["category_dictionary"][old[0]] == "Gold":
+            closed = True
+        assert (r[5] == 0) == closed
 
 
 def reconcile(r):
@@ -94,6 +112,39 @@ def reconcile(r):
     assert proofs[84]["selected_card_name"] == "rat claws"
 
 
+def completeness():
+    s = load(HERE, "completeness-summary.json")
+    p = load(HERE, "physical-card-completeness.json")
+    i = load(HERE, "item-completeness.json")
+    b = load(HERE, "accepted-client-binding-overlay.json")
+    inv = load(HERE, "all-open-PR-inventory.json")
+    assert len(p["current_card_rows"]) == 2632
+    assert sum(r[5] == 0 for r in p["current_card_rows"]) == 701
+    assert sum(r[5] == 1 for r in p["current_card_rows"]) == 1931
+    assert len(p["legacy_rows"]) == 314 and len(p["historical_pilot_label_groups"]) == 22
+    assert len(b["rows"]) == b["accepted_client_namespace_binding_count"] == 126
+    assert sum(r["client_Basic_status"] == "COMPLETE" for r in b["rows"]) == 49
+    assert b["canonical_server_binding_count"] == 0
+    assert len(i["appearance_rows"]) == 6470 and len(i["type_rows"]) == 6228
+    all_variants = [a for r in i["type_rows"] for a in r[1]]
+    assert len(all_variants) == len(set(all_variants)) == 6470
+    assert set(all_variants) == {r[0] for r in i["appearance_rows"]}
+    for scope, rows in [("appearance_disjoint_partitions",i["appearance_rows"]), ("type_disjoint_partitions",i["type_rows"])]:
+        for key, col in [("Basic",3),("all_applicable_panels",4),("Oteryn_import_ready",5)]:
+            part = s["counts"][scope][key]
+            assert part["total"] == len(rows) == sum(part[k] for k in ["complete","incomplete_after_resolved_identity","identity_unresolved"])
+            assert part["complete"] == sum(r[col] == "COMPLETE" for r in rows)
+            assert part["incomplete_after_resolved_identity"] == sum(r[col] == "INCOMPLETE" for r in rows)
+    assert s["counts"]["type_disjoint_partitions"]["Basic"] == {"complete":49,"incomplete_after_resolved_identity":77,"identity_unresolved":6102,"total":6228}
+    assert inv["open_PR_count"] == len(inv["PRs"]) == 31
+    assert sum(len(r["complete_file_paths"]) for r in inv["PRs"]) == 6804
+    assert inv["all_paths_complete_and_head_revalidated"]
+    # A server admission hold must not erase the126 accepted current-client joins.
+    assert sum(r[9] for r in i["appearance_rows"]) == 126
+    assert not any(r[10] for r in i["appearance_rows"])
+    assert all(r[3] == "IDENTITY_UNRESOLVED" for r in i["appearance_rows"] if not r[9])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -107,6 +158,7 @@ def main():
     validate(*data)
     rec = load(HERE, "saved1853-proof-reconciliation.json")
     reconcile(rec)
+    completeness()
     stale = copy.deepcopy(rec)
     stale["image_receipts"][24]["selected_card_name"] = "empty potion flask"
     try:
