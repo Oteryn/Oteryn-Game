@@ -2,6 +2,13 @@ use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::market::{Intent, request};
 impl PlayLink {
+    pub fn market_set_open(&self, open: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.market_shutdown {
+            mailbox.market.open = open;
+        }
+    }
+
     pub fn market_filter_side(&self, side: u8) -> bool {
         if side > 2 {
             return false;

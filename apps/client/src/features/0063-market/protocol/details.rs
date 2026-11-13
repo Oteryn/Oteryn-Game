@@ -68,3 +68,17 @@ pub(in crate::play) fn enqueue_book(
     let definition = mailbox.market.definition;
     enqueue(mailbox, commands, Query::Book { definition, page })
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_market_initialize(&self, selected: bool) {
+        self.market_initialize(selected);
+    }
+    pub(crate) fn bevy_market_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_session::GatedCommandResult,
+    ) {
+        self.market_details_result(command, result);
+    }
+}
