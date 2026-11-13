@@ -1,6 +1,16 @@
 # All-category local item field delta
 
-**Latest offline batch:2232 complete,648 partial,27 unreconciled =2907 scoped records.**
+**Latest result:2239 complete,641 partial,27 unreconciled =2907 scoped records.**
+`offline408-batch2.json`, `all-visible-after-offline-batch2.csv` and
+`remaining641-summary.json` add seven more offline closures. Every full price+gp,
+NPC and residence glyph block exactly matches a unique independently reviewed
+batch1 seed; native contact-sheet review confirms all seven proposals and exact
+paired raw values. No fuzzy OCR, new game input or capture.23 records have now been
+closed offline after the seven live potions.385 literal-first,180 geometry and76
+combined cases remain pending; the per-record664 routing is filtered by both
+offline closure overlays rather than duplicated or silently discarded.
+
+**Previous offline batch:2232 complete,648 partial,27 unreconciled =2907 scoped records.**
 `offline408-batch1.json`, `all-visible-after-offline-batch1.csv` and
 `remaining648-summary.json` supersede the seven-potion counts below. Sixteen Amulets
 NPC panes were recovered from existing hash-verified native images with calibrated

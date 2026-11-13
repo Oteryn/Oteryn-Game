@@ -70,6 +70,11 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING continued under6866296521: second offline batch closes seven further
+panes with exact full price+gp/name/residence glyph hashes from reviewed seeds,
+paired raw corroboration and independent native contact-sheet confirmation.
+Current2239/641/27;23 total offline closures. No game input/new capture/fuzzyOCR.
+
 AUTHORING extended under allocation6866296521 for bounded offline recoveries.
 First16 Amulets recovered by native literal reading, exact source/crop receipts,
 calibrated no-overflow and paired raw corroboration. Current2232/648/27.

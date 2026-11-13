@@ -355,6 +355,41 @@ def offline_batch1(source_path=None, packet=None):
     assert len(left["remaining_keys"]) == 648 and not set(left["closed_keys"]) & set(left["remaining_keys"])
 
 
+def offline_batch2(source_path=None, packet=None):
+    p = packet or load(HERE,"offline408-batch2.json")
+    assert p["current_counts"] == dict(COMPLETE=2239,PARTIAL=641,UNRECONCILED=27,total=2907)
+    assert len(p["records"]) == 7 and not p["UI_inputs"] and not p["new_screenshots"] and not p["fuzzy_OCR_promotion"]
+    seeds = {r["observation_key"]:r for r in load(HERE,"offline408-batch1.json")["records"]}
+    source = None
+    if source_path:
+        raw = json.loads(source_path.read_text(encoding="utf8"))
+        cols = [c["values"] if c["encoding"] == "LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        source = [dict(zip(raw["field_order"],v)) for v in zip(*cols)]
+    for r in p["records"]:
+        assert r["current_state"] == "COMPLETE" and not r["remaining_reasons"]
+        for panel in r["panels"]:
+            assert panel["geometry_evidence"] == "CALIBRATED_NO_OVERFLOW" and panel["quotes"]
+            for q in panel["quotes"]:
+                assert q["currency_literal"] == "gp" and q["paired_raw_tuple_indices0"]
+                for kind,field in [("price_gp_bitmap","price"),("NPC_bitmap","NPC"),("location_bitmap","UI_location_literal")]:
+                    seed = q["native_seed_receipts"][kind]
+                    assert seed["seed_sha256"] == seeds[seed["seed_key"]]["source_bitmap"]["sha256"]
+                    assert seed["value"] == seeds[seed["seed_key"]]["closed_fields"][field]
+                    assert seed["value"] == q[{"price":"price","NPC":"NPC","UI_location_literal":"location_literal"}[field]]
+                    assert len(q["native_bitmap_keys"][kind].split(":")[-1]) == 64
+                if source:
+                    for i in q["paired_raw_tuple_indices0"]:
+                        s = source[i]
+                        assert s["npc_name"] == q["NPC"] and s["buy_price_raw" if panel["panel"] == "Sell To" else "sale_price_raw"] == q["price"]
+                        assert q["location_literal"] == "Various Locations" or s["location"] == q["location_literal"]
+    previous = {r["observation_key"]:r for r in csv.DictReader((HERE/"all-visible-after-offline-batch1.csv").open(encoding="utf8",newline=""))}
+    current = list(csv.DictReader((HERE/"all-visible-after-offline-batch2.csv").open(encoding="utf8",newline="")))
+    assert len(current) == len(previous) == 2907
+    assert {r["observation_key"] for r in current if r != previous[r["observation_key"]]} == {r["observation_key"] for r in p["records"]}
+    assert {k:sum(r["ALL_VISIBLE_state"] == k for r in current) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]} == dict(COMPLETE=2239,PARTIAL=641,UNRECONCILED=27)
+    assert len(load(HERE,"remaining641-summary.json")["remaining_keys"]) == 641
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -376,6 +411,15 @@ def main():
     seven_potions(args.npc_source)
     routing664()
     offline_batch1(args.npc_source)
+    offline_batch2(args.npc_source)
+    badprice = copy.deepcopy(load(HERE,"offline408-batch2.json"))
+    badprice["records"][0]["panels"][0]["quotes"][0]["price"] *= 10
+    try:
+        offline_batch2(args.npc_source,badprice)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Price not matching native seed was accepted")
     badtown = copy.deepcopy(load(HERE,"offline408-batch1.json"))
     next(r for r in badtown["records"] if r["closed_fields"]["NPC"] == "Rashid")["closed_fields"]["UI_location_literal"] = "One guessed daily town"
     try:
@@ -423,7 +467,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;current ALL2232/648/27;offline16 native recoveries;9 negative controls"
+    print("PASS:6470 appearances/6228 types;current ALL2239/641/27;offline23 native recoveries;10 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

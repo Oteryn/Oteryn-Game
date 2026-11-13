@@ -1,0 +1,757 @@
+{
+  "classification": "DERIVED_EXACT_NATIVE_BITMAP_RECOVERY_WITH_VISUAL_CONFIRMATION",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6866296521",
+  "publication_predecessor": "d95accd69631591128eb427b129ee7b7de21ddbe",
+  "records": [
+    {
+      "observation_key": "items-basic-amulets:60",
+      "name": "sacred tree amulet",
+      "category": "Amulets",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-amulets-60.png",
+        "bytes": 12166,
+        "sha256": "cb466190edd0a7bd30373f99ffdfb94b35e4f0143ea93367c7b2d5b1f2e6b0c1",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic-amulets",
+        "image": "cards/00060-basic-top.png",
+        "image_sha256": "25bef6264bae9c23961eedc4c601ec25bbdc97492e6fe30eb3eeffb1d1089721",
+        "index_sha256": "ed569483d9eade0c7bdaf8ded249e99c6ed617922c19a3c043fa8fb5ebe91685",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Rashid",
+              "location_literal": "Various Locations",
+              "price": 3000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 44):f9c654023c9bce90cfa945fb7ec8e30c09cacbb9716531101e2661728f547865",
+                "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 3000,
+                  "seed_key": "items-basic-amulets:49",
+                  "seed_sha256": "29a79a8f9ef8e1251a6e74d3a27d12dde918b536f417b2529e27d3bb4edaf8a4"
+                },
+                "NPC_bitmap": {
+                  "value": "Rashid",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                6009,
+                6010,
+                6011,
+                6012,
+                6013,
+                6014,
+                6015,
+                7201,
+                7202,
+                7203,
+                7204,
+                7205,
+                7206,
+                7207,
+                8057,
+                8058,
+                8059,
+                8060,
+                8061,
+                8062,
+                8063,
+                8217,
+                8218,
+                8219,
+                8220,
+                8221,
+                8222,
+                8223,
+                8493,
+                8494,
+                8495,
+                8496,
+                8497,
+                8498,
+                8499,
+                8806,
+                8807,
+                8808,
+                8809,
+                8810,
+                8811,
+                8812,
+                8813,
+                8814,
+                8815,
+                8816,
+                8817,
+                8818,
+                8819,
+                8820,
+                8821,
+                8822,
+                8823,
+                8824,
+                8825,
+                8826
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "items-basic-amulets:65",
+      "name": "shockwave amulet",
+      "category": "Amulets",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-amulets-65.png",
+        "bytes": 12166,
+        "sha256": "cb466190edd0a7bd30373f99ffdfb94b35e4f0143ea93367c7b2d5b1f2e6b0c1",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic-amulets",
+        "image": "cards/00065-basic-top.png",
+        "image_sha256": "0e81a9e46f3f45f1a9637511882b1b8bb1c2b4bf4008681fa10844eceb993c79",
+        "index_sha256": "ed569483d9eade0c7bdaf8ded249e99c6ed617922c19a3c043fa8fb5ebe91685",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Rashid",
+              "location_literal": "Various Locations",
+              "price": 3000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 44):f9c654023c9bce90cfa945fb7ec8e30c09cacbb9716531101e2661728f547865",
+                "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 3000,
+                  "seed_key": "items-basic-amulets:49",
+                  "seed_sha256": "29a79a8f9ef8e1251a6e74d3a27d12dde918b536f417b2529e27d3bb4edaf8a4"
+                },
+                "NPC_bitmap": {
+                  "value": "Rashid",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                6009,
+                6010,
+                6011,
+                6012,
+                6013,
+                6014,
+                6015,
+                7201,
+                7202,
+                7203,
+                7204,
+                7205,
+                7206,
+                7207,
+                8057,
+                8058,
+                8059,
+                8060,
+                8061,
+                8062,
+                8063,
+                8217,
+                8218,
+                8219,
+                8220,
+                8221,
+                8222,
+                8223,
+                8493,
+                8494,
+                8495,
+                8496,
+                8497,
+                8498,
+                8499,
+                8806,
+                8807,
+                8808,
+                8809,
+                8810,
+                8811,
+                8812,
+                8813,
+                8814,
+                8815,
+                8816,
+                8817,
+                8818,
+                8819,
+                8820,
+                8821,
+                8822,
+                8823,
+                8824,
+                8825,
+                8826
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "items-basic-amulets:75",
+      "name": "terra amulet",
+      "category": "Amulets",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-amulets-75.png",
+        "bytes": 12168,
+        "sha256": "5ca565b2fa0607a3faddb8463adb1e52dca1f150988013be7ee880b5d7ee0e5b",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic-amulets",
+        "image": "cards/00075-basic-top.png",
+        "image_sha256": "09c73d465028ff73c351e6b6777966ae23c2dc0991e5d394ca19e4309f9a34f5",
+        "index_sha256": "ed569483d9eade0c7bdaf8ded249e99c6ed617922c19a3c043fa8fb5ebe91685",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Rashid",
+              "location_literal": "Various Locations",
+              "price": 1500,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 43):7a008bb174f8a5cc9fb5007aed7c8fd4f8c83eff2493a194b9d90cc3c1fc4265",
+                "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 1500,
+                  "seed_key": "items-basic-amulets:5",
+                  "seed_sha256": "5ca565b2fa0607a3faddb8463adb1e52dca1f150988013be7ee880b5d7ee0e5b"
+                },
+                "NPC_bitmap": {
+                  "value": "Rashid",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                589,
+                590,
+                591,
+                592,
+                593,
+                594,
+                595,
+                596,
+                597,
+                598,
+                599,
+                600,
+                601,
+                602,
+                603,
+                604,
+                605,
+                606,
+                607,
+                608,
+                609,
+                610,
+                611,
+                612,
+                613,
+                614,
+                615,
+                616,
+                5069,
+                5070,
+                5071,
+                5072,
+                5073,
+                5074,
+                5075,
+                8005,
+                8006,
+                8007,
+                8008,
+                8009,
+                8010,
+                8011,
+                8131,
+                8132,
+                8133,
+                8134,
+                8135,
+                8136,
+                8137,
+                8295,
+                8296,
+                8297,
+                8298,
+                8299,
+                8300,
+                8301,
+                9377,
+                9378,
+                9379,
+                9380,
+                9381,
+                9382,
+                9383,
+                10530,
+                10531,
+                10532,
+                10533,
+                10534,
+                10535,
+                10536
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "items-basic:48",
+      "name": "flower dress",
+      "category": "Armors",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-48.png",
+        "bytes": 12167,
+        "sha256": "fb2caeaa5d21e282784d29fcee654dacafd23ca51edf899b831c426f333e29a8",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic",
+        "image": "cards/00048-basic-top.png",
+        "image_sha256": "c2486f7a016617357341381e3a6d6bf12c7960717f8bfdab9cda573efa9a7729",
+        "index_sha256": "7afe39671100df273ae8631d144ed20630add0ce3486107df788bf1510257f4f",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Rashid",
+              "location_literal": "Various Locations",
+              "price": 1000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 43):33bcaa29ce312eeb2ecb911a7172d785cdd9652c95bc5e79786175e308af74c3",
+                "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 1000,
+                  "seed_key": "items-basic-amulets:41",
+                  "seed_sha256": "51e303765aa88f05151542111e8ae7e172ad149c1993bac91e687cf43029c875"
+                },
+                "NPC_bitmap": {
+                  "value": "Rashid",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                2577,
+                2578,
+                2579,
+                2580,
+                2581,
+                2582,
+                2583,
+                4935,
+                4936,
+                4937,
+                4938,
+                4939,
+                4940,
+                4941,
+                5290,
+                5291,
+                5292,
+                5293,
+                5294,
+                5295,
+                5296,
+                5718,
+                5719,
+                5720,
+                5721,
+                5722,
+                5723,
+                5724,
+                6636,
+                6637,
+                6638,
+                6639,
+                6640,
+                6641,
+                6642,
+                7550,
+                7551,
+                7552,
+                7553,
+                7554,
+                7555,
+                7556,
+                7612,
+                7613,
+                7614,
+                7615,
+                7616,
+                7617,
+                7618,
+                8224,
+                8225,
+                8226,
+                8227,
+                8228,
+                8229,
+                8230,
+                8710,
+                8711,
+                8712,
+                8713,
+                8714,
+                8715,
+                8716,
+                9727,
+                9728,
+                9729,
+                9730,
+                9731,
+                9732,
+                9733
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "items-basic:89",
+      "name": "mammoth fur cape",
+      "category": "Armors",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-89.png",
+        "bytes": 12167,
+        "sha256": "495ba8bb47998909422b4377d9dc5a6db589ac63d8a48122253d4114ce7d7a00",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic",
+        "image": "cards/00089-basic-top.png",
+        "image_sha256": "ce0c33330a679094054bcd4a7d91f66653759cbf171344dab6f84729af810264",
+        "index_sha256": "7afe39671100df273ae8631d144ed20630add0ce3486107df788bf1510257f4f",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Rashid",
+              "location_literal": "Various Locations",
+              "price": 6000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 44):8e9386f62e81f319bde369dcc2061aa56b0d7b954c327dfd9e01d15c76dec6df",
+                "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 6000,
+                  "seed_key": "items-basic-amulets:14",
+                  "seed_sha256": "f7e5458db53eae700c4ed2ddbfe5b934666e224bddff42f92711e94caaab08b5"
+                },
+                "NPC_bitmap": {
+                  "value": "Rashid",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "items-basic-amulets:50",
+                  "seed_sha256": "3983a3f87c68b09e75cac196c58f8fbc7aa441de0562c0ee77e113fde9097b24"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                8012,
+                8013,
+                8014,
+                8015,
+                8016,
+                8017,
+                8018,
+                8086,
+                8087,
+                8088,
+                8089,
+                8090,
+                8091,
+                8092,
+                8123,
+                8124,
+                8125,
+                8126,
+                8127,
+                8128,
+                8129,
+                8316,
+                8317,
+                8318,
+                8319,
+                8320,
+                8321,
+                8322
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "items-basic:97",
+      "name": "mooh'tah plate",
+      "category": "Armors",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-97.png",
+        "bytes": 12090,
+        "sha256": "fa51ea5b9ff170a60b34e46d0991181343706b0597cf0c72b06d2fcf55e0e021",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic",
+        "image": "cards/00097-basic-top.png",
+        "image_sha256": "7eed0ec6e7b08094538cf77dc9e52a4b21eeb7162d83c3d6746b88b0e892e86b",
+        "index_sha256": "7afe39671100df273ae8631d144ed20630add0ce3486107df788bf1510257f4f",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Flint",
+              "location_literal": "Rathleton City",
+              "price": 6000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 44):8e9386f62e81f319bde369dcc2061aa56b0d7b954c327dfd9e01d15c76dec6df",
+                "NPC_bitmap": "(8, 22):361bf77506700c0479843127df948cb0aeeaa261caa1529ac473c7e7701f586f",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 6000,
+                  "seed_key": "items-basic-amulets:14",
+                  "seed_sha256": "f7e5458db53eae700c4ed2ddbfe5b934666e224bddff42f92711e94caaab08b5"
+                },
+                "NPC_bitmap": {
+                  "value": "Flint",
+                  "seed_key": "items-basic-amulets:36",
+                  "seed_sha256": "62c17865e218fe38453f0e6eb44242a30063113e9aa96ab5b67c91ca2d4bccad"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "items-basic-amulets:36",
+                  "seed_sha256": "62c17865e218fe38453f0e6eb44242a30063113e9aa96ab5b67c91ca2d4bccad"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10615
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:2481",
+      "name": "metal spats",
+      "category": "Boots",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/boots-35.png",
+        "bytes": 12088,
+        "sha256": "62c17865e218fe38453f0e6eb44242a30063113e9aa96ab5b67c91ca2d4bccad",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-boots",
+        "image": "cards/00035-basic-top.png",
+        "image_sha256": "9e4ca7299ae1bf62df4b94e874e94dbb6dea3aca46dcc054064956502d4841ca",
+        "index_sha256": "dbd77dac9becb75c6beb8ad0a169db1d4e518d779eda0354f1fb3d4ee8c6d9a5",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Flint",
+              "location_literal": "Rathleton City",
+              "price": 2000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 44):237848f0c5a9389934e89f038a49dd8445609fc7653a59c9f526beaf99a59e21",
+                "NPC_bitmap": "(8, 22):361bf77506700c0479843127df948cb0aeeaa261caa1529ac473c7e7701f586f",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 2000,
+                  "seed_key": "items-basic-amulets:36",
+                  "seed_sha256": "62c17865e218fe38453f0e6eb44242a30063113e9aa96ab5b67c91ca2d4bccad"
+                },
+                "NPC_bitmap": {
+                  "value": "Flint",
+                  "seed_key": "items-basic-amulets:36",
+                  "seed_sha256": "62c17865e218fe38453f0e6eb44242a30063113e9aa96ab5b67c91ca2d4bccad"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "items-basic-amulets:36",
+                  "seed_sha256": "62c17865e218fe38453f0e6eb44242a30063113e9aa96ab5b67c91ca2d4bccad"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10618,
+                10631
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    }
+  ],
+  "current_counts": {
+    "COMPLETE": 2239,
+    "PARTIAL": 641,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "previous_counts": {
+    "COMPLETE": 2232,
+    "PARTIAL": 648,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "bank_sizes": {
+    "price_gp_bitmap": 9,
+    "NPC_bitmap": 7,
+    "location_bitmap": 7
+  },
+  "qualified_seed_packet": "offline408-batch1.json",
+  "native_visual_confirmation": {
+    "records": 7,
+    "private_contact_sheet": "outputs/items-all-local-first-20261113/offline408-batch2/native-confirmation.png",
+    "sha256": "dfb59d99b64b04d328e8bb013c021a08877da6edee9889bc1ad72c79978605ef",
+    "qualification": "Every proposed panel independently read after exact bitmap/source comparison. No OCR-fuzzy acceptance."
+  },
+  "method": "Threshold original native RGB glyphs at minRGB>140. Exact trimmed binary price+gp, NPC and residence block hashes must each match one unique independently reviewed batch1 seed value. Include full numeric glyph height, account all visible gp rows, reject unaccounted leading text, require calibrated no-overflow, crosscheck exact paired raw literals. OCR output does not select values.",
+  "script_receipt": {
+    "path": "work/tools-local-first/offline408_exact_bitmap_batch2.py",
+    "sha256": "f201fd2a85cbceb12396419ee8ffd2065d3d07c58de3900feb8cb0ea62ad8692"
+  },
+  "UI_inputs": 0,
+  "new_screenshots": 0,
+  "fuzzy_OCR_promotion": false,
+  "source_media_published": false
+}
