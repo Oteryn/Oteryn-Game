@@ -121,3 +121,28 @@ impl PlayLink {
         true
     }
 }
+
+/// Keeps the real driver's mailbox projection alive for frontend caller tests.
+#[cfg(test)]
+#[must_use]
+pub(crate) struct BevyServerModalFixture {
+    _driver: Driver,
+}
+#[cfg(test)]
+impl PlayLink {
+    pub(crate) fn bevy_server_modal_fixture(&self) -> BevyServerModalFixture {
+        self.use_shared_frontend();
+        let mut driver = Driver::new(true).with_outbox(&Outbox(Arc::clone(&self.mailbox)));
+        driver.panel.active = Some(oteryn_client_ui::server_modal::Dialog {
+            id: 1,
+            title: "Test server dialog".into(),
+            message: "Frontend modal gating fixture".into(),
+            choices: Vec::new(),
+            buttons: vec![(1, "Close".into())],
+            cancel_button: Some(1),
+            image: None,
+        });
+        driver.publish(false);
+        BevyServerModalFixture { _driver: driver }
+    }
+}
