@@ -166,3 +166,8 @@ narrow numerical reset-fee candidate from a closed already-correct Agony trace,
 the remaining Hex representation trace and
 historical/unresolved interaction evidence. Its successor directly reads
 official8140 and8960 and follows actual Cleanse context on both Discords.
+
+The [current action triage](current-action-triage.md) classifies all12 questions
+by practical action, including the separately published reset fix and already-
+correct eligibility. A newer Carnage-model author correction prevents patching
+weapon pierce from an obsolete claim. Search scope remains bounded and explicit.

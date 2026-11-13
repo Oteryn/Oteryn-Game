@@ -46,6 +46,17 @@ def validate_qualification(data):
                for r in data['new_source_reads'])
 
 
+def validate_triage(data):
+    assert len(data['topics']) == 12 and not data['runtime_changes_in_evidence_branch']
+    assert not data['game_actions'] and not data['all_discord_research_complete']
+    assert data['implementation_pr']['draft'] is True
+    assert data['implementation_pr']['merged_or_deployed'] is False
+    states = [r['status'] for r in data['topics']]
+    assert states.count('FIXED') == 1 and states.count('ALREADY_CORRECT') == 2
+    assert states.count('HISTORICAL_ONLY') == 2 and states.count('NO_ACTION_SUPPORTED') == 2
+    assert states.count('CONCRETE_OPEN') == 5
+
+
 def validate(data, repository=None):
     v = data['venice']
     assert v['current_global_rule_verified'] is False
@@ -69,6 +80,12 @@ def validate(data, repository=None):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_draft_is_not_deployed_fix(self):
+        data = json.loads((HERE / 'current-action-triage.json').read_text(encoding='utf-8'))
+        data['implementation_pr']['merged_or_deployed'] = True
+        with self.assertRaises(AssertionError):
+            validate_triage(data)
+
     def test_historical_runtime_promotion(self):
         data = json.loads((HERE / 'fix-qualification-matrix.json').read_text(encoding='utf-8'))
         data['rows'][4]['decision'] = 'NARROW_FIX_ELIGIBLE'
@@ -105,4 +122,5 @@ if __name__ == '__main__':
         validate(load(), args.repository)
         validate_gabriel(json.loads((HERE / 'gabriel-video-cases.json').read_text(encoding='utf-8')))
         validate_qualification(json.loads((HERE / 'fix-qualification-matrix.json').read_text(encoding='utf-8')))
+        validate_triage(json.loads((HERE / 'current-action-triage.json').read_text(encoding='utf-8')))
         print('PASS: two creator samples, projection arithmetic, six query windows and source receipts')

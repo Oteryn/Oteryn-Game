@@ -201,3 +201,14 @@ is attributed to the implementation worker, not rerun by this evidence worker.
 Direct official8140/8960 route and bounded both-server query scope retained.
 No runtime edits, review/merge or game actions; later source fixes remain on
 the separately allocated implementation branch.
+
+AUTHORING resumed for owner-directed current-action triage and bounded asset
+follow-up after fresh3172 head6022488f9/main3e168ce6/open-overlap checks. The
+separate3174 reset patch/head0550cc3e was read, not changed or merged. Current
+triage closes unsupported/redundant work and retains concrete material questions.
+
+Current-action successor frozen after5 asset controls,16 packet controls,
+all source/Discord/primary validators, governance and129 tests PASS; diff PASS.
+Twelve statuses distinguish a draft-only published fix, already-correct seams,
+historical-only cases and specific open questions without labeling unknowns bugs.
+New Carnage-model author correction and bounded both-server queries retained.
