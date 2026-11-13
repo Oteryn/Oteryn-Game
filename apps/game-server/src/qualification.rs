@@ -1483,9 +1483,14 @@ fn node_boot_seam_against_running_node() -> TestResult {
                         uuid_text(&pair.characters[1]),
                     ));
                 }
-                client_world::journeys(&clients, &packet_clients, std::path::Path::new(&path)).await
+                Box::pin(client_world::journeys(
+                    &clients,
+                    &packet_clients,
+                    std::path::Path::new(&path),
+                ))
+                .await
             } else {
-                seam_clients(clients).await
+                Box::pin(seam_clients(clients)).await
             }
 
         })

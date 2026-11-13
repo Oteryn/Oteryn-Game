@@ -1047,6 +1047,9 @@ impl Drop for RecoverySource {
 }
 impl RecoverySource {
     pub(super) async fn start(h: &Harness) -> TestResult<Self> {
+        Self::start_at(h, None).await
+    }
+    pub(super) async fn start_at(h: &Harness, fixed_now: Option<u64>) -> TestResult<Self> {
         use crate::durability::native_admission_source::{
             DescriptorRegistration, FreshStoreProvenance,
         };
@@ -1122,10 +1125,12 @@ impl RecoverySource {
                 let Ok(input) = serde_json::from_slice::<serde_json::Value>(&body) else {
                     return;
                 };
-                let now = std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|v| v.as_secs())
-                    .unwrap_or(0);
+                let now = fixed_now.unwrap_or_else(|| {
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|v| v.as_secs())
+                        .unwrap_or(0)
+                });
                 revision += 1;
                 let recovery = input["operation"]
                     .as_str()
