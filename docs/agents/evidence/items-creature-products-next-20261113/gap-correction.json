@@ -1,0 +1,30 @@
+{
+  "schema": "OTERYN_COMPACT_CAPTURE_GAP_CORRECTION/v1",
+  "classification": "PROVEN_CAPTURE_MAPPING_CORRECTION",
+  "private_review_receipt": {
+    "key": "items-reader-cloud-20261113/creature-products-gap197-237-repair-reviewed-20261113.json",
+    "sha256": "4c46158e0932e96c533c1554167c62753a1d41033943dd797fe214ccffd45791"
+  },
+  "repairs": [
+    {
+      "ui_entry_ordinal": 197,
+      "capture_id": 246,
+      "fullName": "crown",
+      "properties": {
+        "Weight": "0.90 oz",
+        "Tradeable In Market": "yes"
+      }
+    },
+    {
+      "ui_entry_ordinal": 237,
+      "capture_id": 247,
+      "fullName": "deepling breaktime snack",
+      "properties": {
+        "Weight": "2.40 oz",
+        "Tradeable In Market": "yes"
+      }
+    }
+  ],
+  "mechanism": "The resumable collector applied an inherited complete-text flag to row selection: ordinal197 used6 scanlines (<7), and237 reached horizontal crop edge146 (>=145), although both rows were vertically centered. These text-shape checks did not qualify safe row selection. Original observations were not relabeled; the missing physical rows received separate native Basic captures.",
+  "local_collector_boundary": "New local collector uses the observed safe vertical band580..650 and retains post-capture list-layout guard. No game/runtime code changed."
+}

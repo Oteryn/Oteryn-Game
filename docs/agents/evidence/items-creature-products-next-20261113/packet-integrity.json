@@ -1,0 +1,36 @@
+{
+  "files": {
+    "observations-135-247.json": {
+      "bytes": 149464,
+      "sha256": "fec73502d676d7c14ed19052efea5c54b2837c026442e2b243e46d19b9576820"
+    },
+    "observations-248-500.json": {
+      "bytes": 354302,
+      "sha256": "1b9859738b6e368f87ad7362f70b9fb0c88cc22269c6e1ed5b57742f7778d8ae"
+    },
+    "observations-501-980.json": {
+      "bytes": 659175,
+      "sha256": "0453a0911f75b18603cfbe047b272b41148f4767ed99b4a68a6b0b86e44d9776"
+    },
+    "gap-correction.json": {
+      "bytes": 1322,
+      "sha256": "03552afa3d8b6736a84cd465c5a786be941969298d1450b1792826b793bebba8"
+    },
+    "uncompared-field-backlog.json": {
+      "bytes": 1809,
+      "sha256": "1da9b3a9a842d59523aaf069a90d7d5c1725cdeda531b3657646635efc31199c"
+    },
+    "source-candidate-comparison.json": {
+      "bytes": 1847786,
+      "sha256": "568c61d808d543b86fa8c722780b189c8b3238420b87477d905e5779aa6a12e6"
+    },
+    "category-end-receipt.json": {
+      "bytes": 1360,
+      "sha256": "882ae3b806a939c323427809326388793aaa029a9cb7dad407056dec344a489e"
+    },
+    "reader-coverage-union.json": {
+      "bytes": 3685,
+      "sha256": "09c956c7cfe90757b80787b7efeda201b299d56aa802cde57efe01d38e02f202"
+    }
+  }
+}

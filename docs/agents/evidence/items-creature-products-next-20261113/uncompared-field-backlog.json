@@ -1,0 +1,79 @@
+{
+  "classification": "UNCOMPARED_OBSERVED_FIELDS",
+  "fields": [
+    {
+      "field": "Armor",
+      "observations": 3,
+      "physical_ordinals": [
+        315,
+        624,
+        673
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Attack",
+      "observations": 2,
+      "physical_ordinals": [
+        725,
+        729
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Body Position",
+      "observations": 10,
+      "physical_ordinals": [
+        315,
+        352,
+        393,
+        572,
+        624,
+        673,
+        725,
+        729,
+        872,
+        873
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Classification",
+      "observations": 3,
+      "physical_ordinals": [
+        315,
+        673,
+        729
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Defence",
+      "observations": 2,
+      "physical_ordinals": [
+        725,
+        729
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Protection",
+      "observations": 1,
+      "physical_ordinals": [
+        673
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Weapon Type",
+      "observations": 2,
+      "physical_ordinals": [
+        725,
+        729
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    }
+  ],
+  "private_narrative_receipts": 113,
+  "boundary": "These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim."
+}
