@@ -7,6 +7,7 @@ mod game_ui;
 mod gameplay_dialogs;
 mod hints;
 mod input;
+mod live_assets;
 mod login;
 mod owner;
 mod scene;

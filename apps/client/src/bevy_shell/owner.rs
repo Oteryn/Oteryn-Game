@@ -217,6 +217,12 @@ impl HostOwner {
         self.login.show();
     }
     pub fn submit_login(&mut self) {
+        self.submit_login_with_assets(|| std::env::var_os(crate::map::ASSET_DIR_ENV));
+    }
+    pub(super) fn submit_login_with_assets(
+        &mut self,
+        lookup: impl FnOnce() -> Option<std::ffi::OsString>,
+    ) {
         if self.phase != Phase::Offline || !self.login.visible {
             return;
         }
@@ -224,6 +230,14 @@ impl HostOwner {
             Ok(config) => config,
             Err(_) => return,
         };
+        if let Err(message) = super::live_assets::preflight(lookup()) {
+            self.login
+                .form
+                .finish(Err(crate::GameplayEntryError::InvalidConfiguration));
+            self.login.form.offline();
+            self.login.form.feedback(message);
+            return;
+        }
         config.preference_path.clone_from(&self.preferences_path);
         config.select_character = self.selector.clone();
         // These account presenters have not migrated; the picker exposes no such actions.
@@ -345,3 +359,7 @@ fn offline_message() -> &'static str {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "live_assets/tests.rs"]
+mod live_asset_tests;
