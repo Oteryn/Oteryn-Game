@@ -138,3 +138,7 @@ Both retained archives are listed in observations.json;45screenshots total.
 Further UI collection is paused because the owner requested built-in Computer Use,
 whose current inventory exposes browsers but no native Ubuntu applications.
 The existing screenshot/command bridge is not represented as built-in Computer Use.
+
+## 2026-11-13 capture continuation
+
+[Batch 003](BATCH-003.md) preserves 89 new original screenshots and one raw Basic-panel clipboard extract with individual SHA-256 checksums. Original media is held in a **draft-only GitHub release asset**, not in Git history. This is a research checkpoint, **not** a completed catalogue/parity comparison. See batch-003-evidence/EVIDENCE-MANIFEST.json and batch-003-evidence/SESSION-RESULTS.md.
