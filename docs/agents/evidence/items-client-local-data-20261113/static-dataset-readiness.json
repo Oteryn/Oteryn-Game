@@ -1,0 +1,239 @@
+{
+  "schema": "OTERYN_CURRENT_LOCAL_STATIC_DATA_MINIMAL_REVIEW_WHITELIST/v1",
+  "classification": "OBSERVED_FILE_METADATA_AND_STRUCTURAL_COMPATIBILITY_ONLY",
+  "source_readiness": {
+    "provenance_key": "outputs/items-reader-cloud-20261113/client1533-staticdata-catalog-additional-tabs-readiness-private.json",
+    "sha256": "3a4b9a558fb6db5717c1f9f7ef1dcf5a2c2c9f62c66bf4cc1a89ada6939d4078"
+  },
+  "fieldmap_receipt": {
+    "provenance_key": "outputs/items-reader-cloud-20261113/client1533-staticdata-fieldmap-strictshape-textcustody-private.json",
+    "sha256": "e16978b46b21e0838566128894506466c74bb09e6dfddc31901dc1eac658bf9e"
+  },
+  "catalog": {
+    "provenance_key": "client-package/TibiaExternal/assets/catalog-content.json",
+    "sha256": "db6c8fe38f8433f655efc831003c2581c367cbde3d0596850f3e02abeaaa144e",
+    "records": 5164,
+    "kind_counts": {
+      "appearances": 1,
+      "staticdata": 1,
+      "staticmapdata": 1,
+      "fullmap": 1,
+      "map": 1,
+      "proficiencies": 1,
+      "sprite": 5158
+    }
+  },
+  "referenced_files": [
+    {
+      "kind": "appearances",
+      "provenance_key": "client-package/TibiaExternal/assets/appearances-aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e.dat",
+      "bytes": 5104343,
+      "sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+      "filename_hash_matches": true
+    },
+    {
+      "kind": "staticdata",
+      "provenance_key": "client-package/TibiaExternal/assets/staticdata-bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02.dat",
+      "bytes": 180818,
+      "sha256": "bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02",
+      "filename_hash_matches": true
+    },
+    {
+      "kind": "staticmapdata",
+      "provenance_key": "client-package/TibiaExternal/assets/staticmapdata-e6bc9632978dbecdfa8276cd6c7f7ad686bcdfa27a21331bb4fab20672876e20.dat",
+      "bytes": 1469263,
+      "sha256": "e6bc9632978dbecdfa8276cd6c7f7ad686bcdfa27a21331bb4fab20672876e20",
+      "filename_hash_matches": true
+    },
+    {
+      "kind": "fullmap",
+      "provenance_key": "client-package/TibiaExternal/assets/backdrop_map-649adb373b38a8b5d3e6f7d1d51edd6047013caf9cd8cc4f67492064cd85c735.jpg",
+      "bytes": 4278198,
+      "sha256": "649adb373b38a8b5d3e6f7d1d51edd6047013caf9cd8cc4f67492064cd85c735",
+      "filename_hash_matches": true
+    },
+    {
+      "kind": "map",
+      "provenance_key": "client-package/TibiaExternal/assets/map-6fa58c950e17a48095d935c82ea93b98d3363bc8f8c86d12f3511cfcec053745.dat",
+      "bytes": 201692,
+      "sha256": "6fa58c950e17a48095d935c82ea93b98d3363bc8f8c86d12f3511cfcec053745",
+      "filename_hash_matches": true
+    },
+    {
+      "kind": "proficiencies",
+      "provenance_key": "client-package/TibiaExternal/assets/proficiencies-9fecbbddf2b51e45c0498ee97cc01dc3d9070c54d4cc7b900d0a142c51fb004c.json",
+      "bytes": 511849,
+      "sha256": "9fecbbddf2b51e45c0498ee97cc01dc3d9070c54d4cc7b900d0a142c51fb004c",
+      "filename_hash_matches": true
+    }
+  ],
+  "parser_pins": [
+    {
+      "provenance_key": "outputs/items-client-assets-audit/sources/tools/content-census/stage_staticdata_houses_achievements.py",
+      "sha256": "9aad75c873435a3fc681edcedc4c849ec17e1402ae782d73e40f86115fbe6e67"
+    },
+    {
+      "provenance_key": "outputs/items-client-assets-audit/sources/tools/content-census/stage_staticdata_creatures_bosses_quests.py",
+      "sha256": "be04de9a913c004bb262f4ba111439e89e28590c5edabe1328fce7f3f07262e3"
+    },
+    {
+      "provenance_key": "outputs/items-client-assets-audit/sources/tools/content-schema/world-authoring/client_map_reader.py",
+      "sha256": "85b1f510ef818139a9f3d96bbfd6f0178b0fdd0b97af6819995d3b9892061c07"
+    }
+  ],
+  "raw_current_counts": {
+    "creatures": 845,
+    "bestiary_classes": 21,
+    "bosses": 453,
+    "quest_lines": 104,
+    "achievements": 378,
+    "houses": 995
+  },
+  "profile_admission": {
+    "status": "OLD_15_30_PROFILE_GATES_NOT_MET",
+    "old_staticdata_sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128",
+    "actual_staticdata_sha256": "bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02",
+    "count_differences": {
+      "creatures": [
+        833,
+        845
+      ],
+      "achievements": [
+        368,
+        378
+      ],
+      "bosses": [
+        447,
+        453
+      ],
+      "quest_lines": [
+        102,
+        104
+      ]
+    },
+    "gates_modified": false,
+    "build_not_run": true,
+    "runtime_admitted": false
+  },
+  "strict_record_field_maps": {
+    "1": {
+      "1": "client_creature_source_id",
+      "2": "name_bytes",
+      "3": "look_message_bytes_UNKNOWN_SEMANTICS",
+      "4": "f4_UNKNOWN",
+      "5": "f5_UNKNOWN",
+      "6": "f6_UNKNOWN",
+      "7": "f7_UNKNOWN"
+    },
+    "2": {
+      "1": "client_bestiary_class_source_id",
+      "2": "name_bytes"
+    },
+    "3": {
+      "1": "client_achievement_source_id",
+      "2": "name_bytes",
+      "3": "description_bytes_PRIVATE",
+      "4": "grade_INFERRED_OLD_PARSER"
+    },
+    "4": {
+      "1": "client_house_source_id",
+      "2": "name_bytes",
+      "3": "restrictions_bytes_PRIVATE",
+      "4": "rent_gold_INFERRED_OLD_PARSER",
+      "5": "beds_INFERRED_OLD_PARSER",
+      "6": "entrance_xyz_INFERRED_OLD_PARSER",
+      "7": "size_sqm_INFERRED_OLD_PARSER",
+      "8": "guildhall_bool_INFERRED_OLD_PARSER",
+      "9": "town_bytes",
+      "10": "shop_bool_INFERRED_OLD_PARSER"
+    },
+    "5": {
+      "1": "client_boss_source_id",
+      "2": "name_bytes",
+      "3": "look_message_bytes_UNKNOWN_SEMANTICS",
+      "4": "f4_UNKNOWN"
+    },
+    "6": {
+      "1": "client_quest_line_source_id",
+      "2": "name_bytes"
+    }
+  },
+  "fieldmap_semantic_boundary": "Labels inherited from strict15.30parser inference; currentrawshape match does not upgrade semantic/schema/UI authority.",
+  "staticmapdata": {
+    "house_records": 995,
+    "strict_shape_layout_ID_set_equal": true,
+    "layout_cells": 117716
+  },
+  "map_metadata": {
+    "areas": 473,
+    "subarea_image_references": 212,
+    "marker_records": 1297,
+    "other_image_kind_counts": {
+      "satellite": 748,
+      "minimap": 207
+    },
+    "raw_area_kind_counts": {
+      "1": 28,
+      "2": 445
+    },
+    "unique_area_ids": true,
+    "existing_reader_shape_decode_pass": true,
+    "mask_pixels_or_UI_parity_qualified": false
+  },
+  "proficiency_metadata": {
+    "records": 444,
+    "unique_proficiency_ids": 444,
+    "top_fields_types": {
+      "Levels": "list",
+      "Name": "str",
+      "ProficiencyId": "int",
+      "Version": "int"
+    },
+    "levels": 2216,
+    "perks": 3680,
+    "perk_field_occurrences": {
+      "SkillId": 793,
+      "Type": 3680,
+      "Value": 3658,
+      "AugmentType": 680,
+      "SpellId": 680,
+      "Range": 64,
+      "ElementId": 240,
+      "DamageType": 88,
+      "BestiaryId": 272,
+      "BestiaryName": 272,
+      "MissileId": 22,
+      "Multiplier": 22,
+      "Probability": 22
+    },
+    "appearance_explicit_proficiency_ref_occurrences": 667,
+    "distinct_appearance_proficiency_refs": 431,
+    "matched_ref_occurrences": 667,
+    "missing_profile_ids": [],
+    "profiles_not_referenced_by_currentobjects": 13,
+    "semantics": "NativeJSON structuralvalues only; Type/SkillId/AugmentType/SpellId/ElementId/DamageType enumsemantics UNKNOWN until existing verifiedconsumerroute identified; no descriptions/name strings re-exported."
+  },
+  "next_offline_scopes": [
+    "Bestiary-creature metadata and class references",
+    "Bosstiary-boss metadata",
+    "Achievement source observations",
+    "House source observations+layouts",
+    "Quest-line source names",
+    "Map area/subarea structure",
+    "Weapon-proficiency profile rawJSON+explicit appearance references"
+  ],
+  "remaining_scope": [
+    "Exact15.33schema/profileadmission and updatedcountgates",
+    "Numericsemanticlabels forunknownrawfields/enums",
+    "Map marker fieldpayloads and subarea-mask pixels notdecodedinaudit",
+    "ClientUIordering,visibility,playerprogress,statefulunlock/status and completeness notproven",
+    "Serveridentity/runtimestats notpromoted fromclientIDs",
+    "No UI actions required for thesefilecomputations"
+  ],
+  "identity_boundary": "All source IDs scoped to their originalclientdataset; not serveritemID or gameplayauthority.",
+  "Description_names_and_quest_narratives_excluded": true,
+  "source_profile_admitted": false,
+  "any_UI_tab_complete": false,
+  "client_inputs": 0,
+  "repo_writes": 0
+}

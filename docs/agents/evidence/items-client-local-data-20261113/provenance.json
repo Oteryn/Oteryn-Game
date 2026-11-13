@@ -1,0 +1,142 @@
+{
+  "schema": "ITEMS_CLIENT_LOCAL_DATA_PUBLICATION_PROVENANCE/v1",
+  "classification": "DERIVED",
+  "authoring_base_sha": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "historical_comparison_data_pin": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+  "prepared_manifest_sha256": "968570840801b3e3326068bb30771d50c5b7a4edd33538ef4e7b226ba3d84e1b",
+  "data_members": [
+    {
+      "file": "client-cyclopedia-coverage.json",
+      "bytes": 1021748,
+      "sha256": "1eab503e0f1ded5c828fb8a424278458fe83c6146ea7794d2e0c9f8f42c9a8cc"
+    },
+    {
+      "file": "client-npc-tuples.json",
+      "bytes": 1106991,
+      "sha256": "dbb9a784bcb6d4dd654cce06db665fe547ccf89c516f14b2d9c0d6903d8bb811"
+    },
+    {
+      "file": "field-comparison-candidates.json",
+      "bytes": 170878,
+      "sha256": "ba6d7be6d8aaaac0ef629e05aa6c46561822251a443153869c8df5805fe01378"
+    },
+    {
+      "file": "qualified-correction-deltas.json",
+      "bytes": 3145,
+      "sha256": "3e3c25922175c3cd662b9b05345ec4fcd00fa14521d685521ce8bc46c929c919"
+    },
+    {
+      "file": "item-names-description-custody.json",
+      "bytes": 1299469,
+      "sha256": "213fa25696b34b6aa0ebf4d7e48318861b1d72da53f1127c4799f695611de262"
+    },
+    {
+      "file": "alias-taxonomy-matrix.json",
+      "bytes": 280195,
+      "sha256": "d53e36c8b6303e48351b60c0e0d762f1cd903cb79e3bd143449936b38da80c12"
+    },
+    {
+      "file": "static-dataset-readiness.json",
+      "bytes": 8446,
+      "sha256": "5a57afd9040cc3392f84975c3bdb137a8cd4251e3e2b36fc04d513488502c76c"
+    },
+    {
+      "file": "weapon-comparison-supplement.json",
+      "bytes": 32266,
+      "sha256": "5165efcef1901170d5ad6f76e2a950879d5d84dfee932e038d2f2840bc57703f"
+    },
+    {
+      "file": "whole-cohort-name-candidates.json",
+      "bytes": 348258,
+      "sha256": "43e28845dd027b8d9a40dc5fdb71393ef02ebb773d9ef41ad48b2712f1b02af9"
+    },
+    {
+      "file": "whole-cohort-description-status.json",
+      "bytes": 208046,
+      "sha256": "0834c2f9eede67ea259f655d404069c3098103c2aeb78ed874fcda0862419f98"
+    },
+    {
+      "file": "whole-cohort-npc-axes.json",
+      "bytes": 593676,
+      "sha256": "bacbfef6e093e37195bc5e90a49aff9432bae37f2bc1a3cdc022d97f706e02e6"
+    },
+    {
+      "file": "whole-cohort-description-summary.json",
+      "bytes": 3133,
+      "sha256": "20556660859e1cbae1a5f999d7385fa67f70e14f6ed1a42aca2b008c78f51835"
+    },
+    {
+      "file": "whole-cohort-npc-summary.json",
+      "bytes": 6164,
+      "sha256": "991b1ff2e8ca64355f9f7b9fa6a6dd73dc71ff5509b354843864d570d65d725d"
+    }
+  ],
+  "total_data_bytes": 5082415,
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6849833911",
+  "independent_private_packet_checks": {
+    "privacy_format_audit_sha256": "cd6d46e0054a80e3e16b2543e823874173732250e09ff07984277995bd3d6a51",
+    "NPC_disk_roundtrip_manifest_sha256": "3ed9b10ad9e8f615da96b884396c958db8da7c20ac878728d417f2e4ec9b1aca",
+    "scope": "Pre-publication packet integrity/semantic spot checks, not formal PR review",
+    "three_lane_thin_projection_privacy_roundtrip_sha256": "f8adfc57abb8bba4b55e497d09e44f74cc3543ea6698aa4a579758ae9aba960a"
+  },
+  "population_scope": {
+    "Cyclopedia_bearing_appearances": 6470,
+    "Cyclopedia_types": 6228,
+    "global_NPC_appearances": 2679,
+    "global_NPC_tuples": 15350,
+    "Cyclopedia_subset_NPC_appearances": 2571,
+    "Cyclopedia_subset_NPC_tuples": 14235,
+    "outside_Cyclopedia_NPC_tuples": 1115
+  },
+  "boundaries": {
+    "all_empty_correction_quote_arrays": "OBSERVED_INITIAL_PANEL_ONLY",
+    "raw_NPC_currency": "No missing currency inferred as gp; present client refs remain unbound",
+    "appearance_Cyclopedia_source_server_namespaces": "DISTINCT",
+    "serverID_bindings": 0,
+    "overall_static_audit": "PARTIAL",
+    "private_originals_rechecked_in_Cloud": false,
+    "formal_independent_review": "PENDING",
+    "runtime_changes": false,
+    "existing_PR_or_source_mutations": false
+  },
+  "append_authority": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6850459977",
+  "append_predecessor_sha": "82bb3bd54a87b7b124e3f8b71b23fec902b65277",
+  "original_four_members_byte_unchanged": true,
+  "append_scope": {
+    "exact_UTF8_names": 6470,
+    "Description_custody_states": {
+      "FIELD_ABSENT": 3697,
+      "FIELD_PRESENT_UTF8_QUALIFIED": 2771,
+      "FIELD_PRESENT_ENCODING_UNKNOWN": 2
+    },
+    "alias_groups": 157,
+    "static_data_runtime_admitted": false,
+    "weapon_observed_fields": 12,
+    "weapon_comparison": "CANDIDATE_ONLY",
+    "zero_client_input": true
+  },
+  "final_batch_authority": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6851110135",
+  "final_batch_predecessor_sha": "bf678d27bfe66eeb03c58331ac13e8bb4124a835",
+  "original_eight_members_byte_unchanged": true,
+  "whole_cohort_scope": {
+    "appearance_rows": 6470,
+    "client_types": 6228,
+    "alias_groups": 157,
+    "nonmarket_appearance_rows_retained": 1288,
+    "Description_candidate_evaluations": 17373,
+    "NPC_tuple_occurrences": 14235,
+    "NPC_price_axes_per_layer": 28470,
+    "raw_zero_axes_per_layer": 12432,
+    "fresh_source_main": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "historical_72_source_blobs_and_4_selection_routes_equal": true,
+    "runtime_selected_membership_qualified": false,
+    "full_item_stat_or_UI_runtime_parity": false
+  },
+  "filename_aliases": {
+    "client6470-name-candidate-join-thin-publication-review.json": "whole-cohort-name-candidates.json",
+    "client6470-description-status-thin-publication-review.json": "whole-cohort-description-status.json",
+    "client1533-NPC-cohort-thin-axis-publication-review.json": "whole-cohort-npc-axes.json",
+    "description-whole-cohort-summary-private.json": "whole-cohort-description-summary.json",
+    "client1533-NPC-cohort-computational-summary-publication-review.json": "whole-cohort-npc-summary.json"
+  }
+}
