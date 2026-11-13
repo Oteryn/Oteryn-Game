@@ -24,6 +24,8 @@ public_contracts: []
 
 PARTIAL:128 ordered Basic observations,268 BasicPNG,652 private card-proof references,899 non-narrative literals and28 private text receipts. Correction brass helmet7→3 is independently receipted. Canonical/selected source candidates are reproduced without client/serverID claims. Formal review pending with root.
 
+Lead reopened AUTHORING before the first formal review solely for a whitelist current-client appearance receipt. It adds126 unique client-namespace candidates and two sets, server_id=null for all128 rows,56 verified sheets and272 unique known sprites/299 recomputed slot metrics. Raw assets, descriptions and source/collector code remain private. Historical authoring head58f1d1ef93a2be4e23c8a5c60ea634487a67c3d7 is superseded by the new externally recorded final freeze.
+
 ## Authority and boundaries
 
 Allocation: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6846579722 .
@@ -37,6 +39,7 @@ Whole Items audit, NPC/trade/animation, runtime admission and qualified server i
 - `python tools/agents/validate_governance.py`: pass.
 - `python -m unittest discover -s tools/agents/tests`: OK,129 tests.
 - `git diff --check`: pass; staged blob bytes match every packet-integrity receipt.
+- Private projection verification: pass,135 input hashes/8 decoder hashes+Git blobs/56 sheet hashes/299 recomputed metrics; strict nested whitelist and Description seals checked against the128 Basic observations. OpaqueRGB/static-icon coverage does not certify animation1:1 or server identity.
 
 No game compilation or runtime/E2E test: evidence-only documentation. Final exact FREEZE_SHA is recorded externally after the final commit, never self-referentially here.
 

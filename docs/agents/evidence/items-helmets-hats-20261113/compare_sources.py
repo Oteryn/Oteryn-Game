@@ -199,7 +199,7 @@ if __name__=='__main__':
             'boundary':'These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim. Raw source semantics and renderer projection are separate.'}
         (HERE/'uncompared-field-backlog.json').write_text(json.dumps(backlog,indent=2)+'\n',encoding='utf-8',newline='\n')
         paths=sorted(HERE.glob('observations-*.json'))+[HERE/'uncompared-field-backlog.json',path]
-        paths += [HERE/name for name in ('category-end-receipt.json','reader-coverage-union.json','tail-journal-receipt.json','field-presence-and-display-coverage.json','reader-correction-receipt.json','compare_sources.py','validate.py','README.md')if(HERE/name).exists()]
+        paths += [HERE/name for name in ('category-end-receipt.json','reader-coverage-union.json','tail-journal-receipt.json','field-presence-and-display-coverage.json','reader-correction-receipt.json','client-appearance-receipt.json','compare_sources.py','validate.py','README.md')if(HERE/name).exists()]
         integrity={'files':{p.name:{'bytes':len(p.read_bytes()),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}for p in paths}}
         (HERE/'packet-integrity.json').write_text(json.dumps(integrity,indent=2)+'\n',encoding='utf-8',newline='\n')
     print(json.dumps(result['counts']))

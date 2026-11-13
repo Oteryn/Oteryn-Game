@@ -22,11 +22,19 @@ The comparison has115 one-name candidates,7 multiple-name candidates and6 withou
 
 Raw source-semantic Skill Boost includes elemental magic-level components. It is not a retail absence assertion or an emulation of renderer formatting. In particular pinned inspection.rs shifts Speed right by1. An extra component in a source aggregate is a targeted reread queue, not proof of absent retail ability.
 
+## Current-client appearance receipt
+
+`client-appearance-receipt.json` is an explicit-key whitelist projection of private receipt `6add45e583f17fd6e6a1f75a32a882bf6791fbd291e585e84d7eefca8913d6ea`, using current DAT `aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e`. It retains126 unique client-namespace candidates and two sets: UI29 depth galea `{13995,14258}` and UI55 helmet of the deep `{5460,11585}`. Both mining-helmet observations remain separate: UI79→139 and UI80→875. Every `server_id` is null; appearance, Cyclopedia and market trade/show IDs remain distinct namespaces.
+
+The author independently verified135 private input-file hashes and8 decoder-file hashes, matched all8 decoder Git blobs to their exact83be source receipts, reconciled128 named-candidate sets to the private census, verified56 packed manifest/decoded BMP hashes, and recomputed all299 known sprite-slot metrics representing272 unique sprite IDs. The appended receipt has a strict nested-key validator and integrity receipt. All observed/source descriptions are hash/length seals only; no original sprite, PNG, DAT, copied decoder or collector code is included.
+
+The metric checks exact RGB only at fully opaque pixels of a static captured icon, across all known groups/slots in this parsed packet. It excludes transparency/semitransparent compositing and temporal playback, animation timing, unknown-field semantics, parser completeness and animation1:1 certification. A unique retained client candidate is not a qualified native/serverID binding or runtime admission.
+
 ## Remaining scope
 
 `uncompared-field-backlog.json` lists retained Augments that have no qualified comparison route here. Field presence/non-emission is separate from display observation; omission never means zero, false, UNKNOWN or N/A. Attack/Defence and other fields not observed in these128 cards have no parity claim. Charges/type maxima are never compared with remaining instance charges; expiry is likewise not inferred.
 
-NPC/trade/currency/residence, market-value currentness, animation/compositing, full appearance binding, native/serverID, runtime admission and whole static semantic parity remain PARTIAL. The separate ongoing client-appearance audit is not a server binding and is not included in this bounded PR.
+NPC/trade/currency/residence, market-value currentness, animation/compositing, full appearance binding, native/serverID, runtime admission and whole static semantic parity remain PARTIAL. The appended client-namespace candidates do not narrow those boundaries.
 
 ## Reproduction
 
