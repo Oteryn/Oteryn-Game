@@ -326,3 +326,76 @@ fn foreground_game_modal_blocks_background_chat_activate() -> Result<(), Box<dyn
     );
     Ok(())
 }
+
+#[test]
+fn foreground_game_modal_blocks_enter_from_previous_composer_focus()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::{ChatState, Field, HostOwner, keyboard};
+    use bevy::{
+        input::keyboard::{Key, KeyboardInput},
+        input_focus::{FocusCause, InputFocus},
+        prelude::*,
+        text::EditableText,
+    };
+    let (link, mut commands, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        Vec::new(),
+    );
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let generation = host.generation();
+    let mut app = App::new();
+    app.init_resource::<InputFocus>()
+        .add_message::<KeyboardInput>()
+        .insert_non_send(host)
+        .insert_resource(ChatState {
+            generation: Some(generation),
+            ..default()
+        })
+        .add_systems(Update, keyboard);
+    let editor = app
+        .world_mut()
+        .spawn((Field::Message, EditableText::new("must not send on Enter")))
+        .id();
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(editor, FocusCause::Navigated);
+    app.world_mut().spawn((
+        crate::bevy_shell::game_ui::GameModal,
+        GlobalZIndex(200),
+        Node::default(),
+    ));
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Enter,
+        logical_key: Key::Enter,
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.update();
+    assert!(commands.try_recv().is_err());
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .pending
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "must not send on Enter"
+    );
+    Ok(())
+}

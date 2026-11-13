@@ -11,6 +11,7 @@ use bevy::{
 use metadata::{Editor, Page, Row, Value};
 use oteryn_client_ui_bevy as source;
 
+mod audio_feedback;
 mod commands;
 mod metadata;
 mod projection;
@@ -68,7 +69,8 @@ pub(super) fn install(app: &mut App) {
     app.insert_resource(Installed)
         .init_resource::<OptionsState>()
         .add_systems(Startup, widgets::setup.after(super::super::ui::setup))
-        .add_systems(Update, (keyboard, projection::project).chain());
+        .add_systems(Update, (keyboard, projection::project).chain())
+        .add_systems(Update, audio_feedback::project.after(projection::project));
 }
 fn top_server_dialog(owner: &HostOwner) -> bool {
     owner
@@ -78,12 +80,12 @@ fn top_server_dialog(owner: &HostOwner) -> bool {
 }
 fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    focus: Res<InputFocus>,
+    dialogs: Query<Entity, With<OptionsDialog>>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<OptionsState>,
     guard: ModalGuard,
 ) {
-    if !guard.allows_focus(focus.get())
+    if !dialogs.iter().any(|entity| guard.allows(entity))
         || owner.preferences_draft().is_none()
         || top_server_dialog(&owner)
     {

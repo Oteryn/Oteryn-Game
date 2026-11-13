@@ -268,6 +268,23 @@ pub(super) fn page(
     checks: &CheckSkins,
     draft: &crate::play::ReferencePreferences,
 ) {
+    if matches!(page, Page::Sound | Page::BattleSounds | Page::UiSounds) {
+        let status = commands
+            .spawn((
+                audio_feedback::Status,
+                source::text("", source::font(skins.font.clone(), true)),
+                Node {
+                    width: percent(100.),
+                    min_height: px(0.),
+                    flex_shrink: 0.,
+                    display: Display::None,
+                    ..default()
+                },
+            ))
+            .insert(TextLayout::default())
+            .id();
+        commands.entity(parent).add_child(status);
+    }
     for row in metadata::rows(page) {
         let entity = match row.editor {
             Editor::Check { read, .. } => checkbox(

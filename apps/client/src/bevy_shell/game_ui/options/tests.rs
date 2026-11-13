@@ -218,3 +218,30 @@ fn foreground_game_modal_blocks_background_options_value_changes() -> TestResult
     assert_eq!(owner.settings.preferences.audio.master_volume, 100);
     Ok(())
 }
+
+#[test]
+fn active_options_escape_does_not_require_a_focused_child() -> TestResult {
+    use bevy::input::keyboard::{Key, KeyboardInput};
+    let mut app = app(Page::Sound, None)?;
+    app.init_resource::<InputFocus>()
+        .add_message::<KeyboardInput>()
+        .add_systems(Update, keyboard);
+    app.world_mut()
+        .spawn((OptionsDialog, GameModal, GlobalZIndex(100), Node::default()));
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .preferences_draft()
+            .is_none()
+    );
+    Ok(())
+}
