@@ -86,6 +86,12 @@ the raw text/source association. If not copyable, capture only material missing
 fields. Desktop-reader coordination and the current session must be respected.
 This PR completes the **local metadata slice**, not the complete Tools UI audit.
 
+At18:09UTC the coordinator freshly observed Connection lost / remote host
+closed the game session. The planned Tools copy test therefore remains blocked.
+This worker's earlier CUA claim was also refused by the existing browser lease;
+no game input, clipboard action or relogin was sent. The GUI queue awaits a
+working owner-provided session; no unavailable Weight was substituted.
+
 ## Reproduction and validation
 
 `extract.py` takes private appearance bytes plus the existing private census,

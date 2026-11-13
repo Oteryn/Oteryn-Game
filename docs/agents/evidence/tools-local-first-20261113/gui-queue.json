@@ -1,7 +1,8 @@
 {
   "schema": "OTERYN_TOOLS_GUI_QUEUE/v1",
   "tools_count": 82,
-  "copy_test_status": "NOT_YET_TESTED_ON_TOOLS_CURRENT_SESSION",
+  "copy_test_status": "BLOCKED_CONNECTION_LOST_COORDINATOR_VISUAL_2026-11-13T18:09Z",
+  "current_session_blocker": "Coordinator freshly observed Connection lost / remote host closed the session. No input or relogin attempted. Earlier CUA claim was also blocked by another browser lease. Await owner-provided working login; no weight values promoted.",
   "items": [
     {
       "appearance_object_id": 646,

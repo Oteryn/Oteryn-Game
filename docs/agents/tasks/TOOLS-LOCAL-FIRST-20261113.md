@@ -4,11 +4,11 @@
 task_id: TOOLS-LOCAL-FIRST-20261113
 title: Retain local Tools metadata and qualify remaining UI fields
 mode: AUDIT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/tools-local-first-20261113
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/3179
 base_sha: ce45063507c22a11e0db7e9c0ff86dacbe6ff834
 head_sha: null
 final_head_sha: null
@@ -62,3 +62,10 @@ Local metadata candidate frozen after private-source reproduction of all82rows,
 3 negative controls, governance validator and129 governance tests PASS, plus
 diff check. Maince4506350 and PR3173head657e3bf49 freshly unchanged. Original
 assets remain private; public packet only contains derived metadata/receipts.
+
+AUTHORING resumed after live3179 head3778cd16b readback to retain a material UI
+blocker: coordinator visual18:09UTC shows Connection lost / remotehost closed.
+Earlier worker CUA claim was refused by another session lease; no input sent.
+GUI continuation waits for an owner-provided working login; no relogin attempted.
+No further field values changed. This successor freezes after packet validation
+and documentation checks; local metadata slice remains complete, UI audit partial.
