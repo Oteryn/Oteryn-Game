@@ -82,3 +82,13 @@ impl Outbox {
         self.market_details_result(command, result);
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_market_response(
+        &self,
+        response: &oteryn_client_runtime::market::MarketResponse,
+    ) {
+        self.market_result(response);
+    }
+}

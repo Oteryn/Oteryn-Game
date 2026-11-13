@@ -185,6 +185,9 @@ pub(super) fn render(
                             u128::from(offer.amount) * u128::from(offer.price)
                         ),
                     );
+                    if offer.side == 2 {
+                        purchase::row(commands, skin, offers, key, offer);
+                    }
                     count += 1;
                 }
                 if count == 0 {

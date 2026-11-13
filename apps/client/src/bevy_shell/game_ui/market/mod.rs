@@ -1,5 +1,6 @@
-//! Read-only named catalogue and offer books over the retained MARKET_V1 owner.
+//! Named catalogue, offer books and confirmed purchases over the retained MARKET_V1 owner.
 mod actions;
+mod purchase;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -48,6 +49,7 @@ struct State {
     pending: Option<(Action, Entity, Entity)>,
 }
 pub(super) fn install(app: &mut App) {
+    purchase::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (keyboard, project).chain())
