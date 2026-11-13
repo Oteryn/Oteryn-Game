@@ -8,13 +8,25 @@
 
 use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SpellGroundTarget {
     pub spatial_position: Vec<u8>,
     pub map_revision: String,
     pub content_revision: String,
     pub placement_context: Vec<u8>,
+    /// Read-only, artifact-bound DATA. This is not serialized into placement or
+    /// intent and never substitutes for current SQL scope/custody authority.
+    pub item_profile_source: Option<crate::content::native_gameplay::NativeItemProfileSource>,
 }
+impl PartialEq for SpellGroundTarget {
+    fn eq(&self, other: &Self) -> bool {
+        self.spatial_position == other.spatial_position
+            && self.map_revision == other.map_revision
+            && self.content_revision == other.content_revision
+            && self.placement_context == other.placement_context
+    }
+}
+impl Eq for SpellGroundTarget {}
 
 /// A source-qualified definition from the compatible content generation. The
 /// durable corpse cause is checked separately; appearance membership cannot

@@ -2899,7 +2899,11 @@ async fn drive_player_field(
                 .spell_lane_permit()
                 .await
                 .ok_or("contended field lane")?;
-            let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
+            let pass = owner
+                .root
+                .issue_ready_semantic_pass()
+                .await
+                .map_err(debug)?;
             {
                 let step =
                     owner.ordinary_paced_step(target, session, StepDirection::West, None, None);

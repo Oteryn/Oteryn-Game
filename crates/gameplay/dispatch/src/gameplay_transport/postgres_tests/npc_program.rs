@@ -113,6 +113,27 @@ pub(super) async fn exercise(
     super::classic_quests::talk(owner, admitted, kesar, 2400, "hi").await?;
     // An unfinished Lion prerequisite cannot create a Stag receipt or source stage.
     super::classic_quests::talk(owner, admitted, kesar, 2401, "help").await?;
+    // This historical track requires an actual committed Character revision >=2.
+    // Advance through the existing XP owner before capturing the unchanged-state baseline.
+    let before = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "XP fence")?
+        .ok_or("XP fence")?;
+    let award = h
+        .root
+        .commit_character_experience(authority, &h.node, before, super::fixture::xp_request(91)?)
+        .await
+        .map_err(debug)?;
+    let crate::durability::character_progression::ExperienceCommitOutcome::Committed(award) = award
+    else {
+        return Err("fixture XP history was not committed".into());
+    };
+    assert_eq!(
+        award.committed_character_revision.get(),
+        before.expected_character_revision.get() + 1
+    );
+    assert_eq!(award.level_after, award.level_before);
     let mut fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await

@@ -333,6 +333,88 @@ impl SourceActorReservationProof for PendingSourceUse {
         self.current_for(runtime)
     }
 }
+#[cfg(test)]
+fn source_use_diagnostic(
+    pending: &PendingSourceUse,
+    phase: &'static str,
+    outcome: &'static str,
+    receipt: &'static str,
+) {
+    use crate::durability::item_use::soul_war_source::SourceUse;
+    let family = match pending.input.target.source_use() {
+        SourceUse::MortalEssence => "maw",
+        SourceUse::CleansedSanity => "sanity",
+        SourceUse::Sorrow => "sorrow",
+    };
+    let state = match pending.phase {
+        SourceUsePhase::Preparing => "preparing",
+        SourceUsePhase::WriteIssued => "write_issued",
+        SourceUsePhase::Completed(_) => "completed",
+    };
+    eprintln!(
+        "PR3056_SOURCE_USE family={family} phase={phase} state={state} outcome={outcome} receipt={receipt}"
+    );
+}
+
+#[cfg(test)]
+fn source_use_durability_error(error: &crate::durability::DurabilityError) -> &'static str {
+    use crate::durability::{DurabilityError as D, SqlxFailureClass as S};
+    match error {
+        D::RootUnavailable => "root_unavailable",
+        D::RootPassDeadlineExceeded => "pass_deadline",
+        D::CommitOutcomeUnknown => "commit_unknown",
+        D::CommitRejected => "commit_rejected",
+        D::InvalidStoredState => "invalid_stored_state",
+        D::RootTaskFailed => "root_task_failed",
+        D::SessionUseAuthorization(_) => "session_use_authorization",
+        D::AdmissionGameSessionLedgerExhausted => "session_ledger_exhausted",
+        D::Unavailable => "durability_unavailable",
+        D::InvalidConfiguration => "invalid_configuration",
+        D::SchemaIncompatible(_) => "schema_incompatible",
+        D::Migration(_) => "migration",
+        D::Database(S::RetryableStatement) => "database_retryable",
+        D::Database(S::Database(Some(_))) => "database_registered",
+        D::Database(S::Database(None)) => "database_unregistered",
+        D::Database(S::Transport) => "database_transport",
+        D::Database(S::Tls) => "database_tls",
+        D::Database(S::Protocol) => "database_protocol",
+        D::Database(S::Data) => "database_data",
+        D::Database(S::Pool) => "database_pool",
+        D::Database(S::Configuration) => "database_configuration",
+        D::Database(S::Runtime) => "database_runtime",
+        D::Database(S::Migration) => "database_migration",
+        D::Database(S::Transaction) => "database_transaction",
+        D::Database(S::Other) => "database_other",
+    }
+}
+
+#[cfg(test)]
+fn source_use_progression_error(
+    error: &crate::durability::character_progression::CharacterProgressionError,
+) -> &'static str {
+    use crate::durability::DurabilityError as D;
+    use crate::durability::character_progression::CharacterProgressionError as E;
+    match error {
+        E::Unavailable(D::RootUnavailable) => "root_unavailable",
+        E::Unavailable(D::RootPassDeadlineExceeded) => "pass_deadline",
+        E::Unavailable(D::CommitOutcomeUnknown) => "commit_unknown",
+        E::Unavailable(D::Database(_)) => "database",
+        E::Unavailable(_) => "durability_other",
+        E::InvalidInput => "invalid_input",
+        E::AuthorityRejected => "authority_rejected",
+        E::MissingProgressionState => "missing_progression",
+        E::CharacterRevisionMismatch => "character_revision",
+        E::ProgressionContextMismatch => "progression_context",
+        E::ConflictingOccurrence => "conflicting_occurrence",
+        E::RespawnPending => "respawn_pending",
+        E::HeldBlessingsMismatch => "held_blessings",
+        E::BuildStateMismatch => "build_state",
+        E::StanceStateMismatch => "stance_state",
+        E::FamiliarStateMismatch => "familiar_state",
+        E::Calculation(_) => "calculation",
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn dispatch_soul_war_source_use(
         &self,
@@ -575,18 +657,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Keep that fact if ingress cannot take the original result, so retry
         // never repeats the volatile effect or fabricates a second command.
         retained.phase = SourceUsePhase::Completed(disposition);
+        #[cfg(test)]
+        source_use_diagnostic(retained, "handoff", "entered", "unobserved");
         let reference = CommandRef::new(
             pending.command.game_session_id,
             CommandId::new(pending.command.command_id).map_err(|_| ())?,
         );
         #[cfg(test)]
         if test_pause::refuse_handoff(reference) {
+            source_use_diagnostic(retained, "handoff", "injected_refusal", "unobserved");
             return Err(());
         }
-        self.states
+        let handoff = self
+            .states
             .command_ingress
-            .complete_item_use(reference, disposition)
-            .ok_or(())?;
+            .complete_item_use(reference, disposition);
+        #[cfg(test)]
+        source_use_diagnostic(
+            retained,
+            "handoff",
+            if handoff.is_some() {
+                "published"
+            } else {
+                "unavailable"
+            },
+            "unobserved",
+        );
+        handoff.ok_or(())?;
         // Handoff and marker removal are one synchronous owner turn.
         held.source_pending = None;
         held.source_last = Some((pending.command.command_id, pending.wire, disposition));
@@ -673,6 +770,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(());
             }
             let retained = retained.clone();
+            #[cfg(test)]
+            source_use_diagnostic(&retained, "settle_entry", "selected", "unobserved");
             if let SourceUsePhase::Completed(disposition) = retained.phase {
                 return self.finish_soul_war_source_use(
                     &runtime,
@@ -682,6 +781,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
             if retained.phase == SourceUsePhase::Preparing && !retained.current_for(&runtime) {
+                #[cfg(test)]
+                source_use_diagnostic(&retained, "prewrite_current", "not_current", "unobserved");
                 if retained.reservation.is_some() {
                     return Err(());
                 }
@@ -711,17 +812,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !pending.current_for(&runtime) {
                         return Err(());
                     }
-                    self.prepare_source_names(&runtime, &["Goshnar's Cruelty"])?
+                    self.prepare_source_names(&runtime, &["Goshnar's Cruelty"])
+                        .inspect_err(|_| {
+                            #[cfg(test)]
+                            source_use_diagnostic(
+                                &pending,
+                                "names_plan",
+                                "unavailable",
+                                "unobserved",
+                            );
+                        })?
                 };
                 #[cfg(test)]
                 test_pause::at(test_pause::Point::BeforeNames, command).await;
-                let read = self.read_source_names(permit, &plan).await?;
+                let read = self
+                    .read_source_names(permit, &plan)
+                    .await
+                    .inspect_err(|_| {
+                        #[cfg(test)]
+                        source_use_diagnostic(&pending, "names_read", "unavailable", "unobserved");
+                    })?;
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
                 if !pending.current_for(&runtime) {
                     return Err(());
                 }
-                let names = self.seal_source_names(&runtime, read)?;
+                let names = self.seal_source_names(&runtime, read).inspect_err(|_| {
+                    #[cfg(test)]
+                    source_use_diagnostic(&pending, "names_seal", "not_current", "unobserved");
+                })?;
                 let Ok(named) = crate::gameplay_transport::source_names::creature_named(
                     &names,
                     "Goshnar's Cruelty",
@@ -789,17 +908,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !pending.current_for(&runtime) {
                         return Err(());
                     }
-                    self.prepare_source_names(&runtime, &["Goshnar's Megalomania"])?
+                    self.prepare_source_names(&runtime, &["Goshnar's Megalomania"])
+                        .inspect_err(|_| {
+                            #[cfg(test)]
+                            source_use_diagnostic(
+                                &pending,
+                                "names_plan",
+                                "unavailable",
+                                "unobserved",
+                            );
+                        })?
                 };
                 #[cfg(test)]
                 test_pause::at(test_pause::Point::BeforeNames, command).await;
-                let read = self.read_source_names(permit, &plan).await?;
+                let read = self
+                    .read_source_names(permit, &plan)
+                    .await
+                    .inspect_err(|_| {
+                        #[cfg(test)]
+                        source_use_diagnostic(&pending, "names_read", "unavailable", "unobserved");
+                    })?;
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
                 if !pending.current_for(&runtime) {
                     return Err(());
                 }
-                let names = self.seal_source_names(&runtime, read)?;
+                let names = self.seal_source_names(&runtime, read).inspect_err(|_| {
+                    #[cfg(test)]
+                    source_use_diagnostic(&pending, "names_seal", "not_current", "unobserved");
+                })?;
                 let Ok(named) = crate::gameplay_transport::source_names::creature_named(
                     &names,
                     "Goshnar's Megalomania",
@@ -873,9 +1010,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         #[cfg(test)]
         test_pause::at(test_pause::Point::BeforeWrite, command).await;
-        if let Some(outcome) = self.start_soul_war_source_write(&mut pending).await? {
+        if let Some(outcome) = self
+            .start_soul_war_source_write(&mut pending)
+            .await
+            .inspect_err(|_| {
+                #[cfg(test)]
+                source_use_diagnostic(&pending, "start_write", "unavailable", "unobserved");
+            })?
+        {
             return Ok(outcome);
         }
+        #[cfg(test)]
+        source_use_diagnostic(&pending, "quest_writer", "issued", "unobserved");
         let result = slot
             .commit_soul_war_source_action(
                 self.root,
@@ -890,6 +1036,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         test_pause::at(test_pause::Point::AfterWrite, command).await;
         drop(slot);
+        #[cfg(test)]
+        {
+            let (outcome, receipt) = match &result {
+                Ok(QuestTransitionOutcome::Committed(_)) => ("committed", "present"),
+                Ok(QuestTransitionOutcome::AlreadyCommitted(_)) => ("already_committed", "present"),
+                Ok(QuestTransitionOutcome::Refused(_)) => ("refused", "unobserved"),
+                Ok(QuestTransitionOutcome::ObligationClosed) => ("obligation_closed", "unobserved"),
+                Err(error) => (source_use_progression_error(error), "unobserved"),
+            };
+            source_use_diagnostic(&pending, "quest_writer", outcome, receipt);
+        }
         let committed = match &result {
             Ok(
                 QuestTransitionOutcome::Committed(receipt)
@@ -1085,9 +1242,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         #[cfg(test)]
         test_pause::at(test_pause::Point::BeforeWrite, command).await;
-        if let Some(outcome) = self.start_soul_war_source_write(&mut pending).await? {
+        if let Some(outcome) = self
+            .start_soul_war_source_write(&mut pending)
+            .await
+            .inspect_err(|_| {
+                #[cfg(test)]
+                source_use_diagnostic(&pending, "start_write", "unavailable", "unobserved");
+            })?
+        {
             return Ok(outcome);
         }
+        #[cfg(test)]
+        source_use_diagnostic(&pending, "sorrow_writer", "issued", "unobserved");
         let result = self
             .root
             .commit_soul_war_sorrow_use(
@@ -1100,6 +1266,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         #[cfg(test)]
         test_pause::at(test_pause::Point::AfterWrite, command).await;
+        #[cfg(test)]
+        {
+            let (outcome, receipt) = match &result {
+                Ok(ItemUseOutcome::Written { .. }) => ("written", "present"),
+                Ok(ItemUseOutcome::AlreadyCommitted { .. }) => ("already_committed", "present"),
+                Err(ItemUseError::Unavailable(error)) => {
+                    (source_use_durability_error(error), "unobserved")
+                }
+                Err(ItemUseError::StaleState) => ("stale_state", "unobserved"),
+                Err(ItemUseError::AuthorityRejected) => ("authority_rejected", "unobserved"),
+                Err(ItemUseError::Cooldown) => ("cooldown", "unobserved"),
+                Err(_) => ("item_refusal", "unobserved"),
+            };
+            source_use_diagnostic(&pending, "sorrow_writer", outcome, receipt);
+        }
         let (committed, disposition) = match result {
             Ok(ItemUseOutcome::Written { .. } | ItemUseOutcome::AlreadyCommitted { .. }) => {
                 (true, UseDisposition::Committed)

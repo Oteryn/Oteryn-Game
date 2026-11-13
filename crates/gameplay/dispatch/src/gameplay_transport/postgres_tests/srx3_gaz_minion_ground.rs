@@ -180,6 +180,15 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
                 }
                 owner.drain_monster_melee().await;
                 let death_at = owner.owner_now().get();
+                // A committed copied Item is not yet the death FIFO's terminal
+                // completion. Finish those exact stages at this fixed clock
+                // before a later expiry may pass the older lethal boundary.
+                super::srx3_native_source_cast::drain_source_death(
+                    &owner,
+                    image,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(death_at),
+                )
+                .await?;
                 death_times.push(death_at);
                 if death_index == 0 {
                     let minted:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) JOIN game_spell_item_receipts r ON r.transaction_id=i.minted_transaction_id WHERE g.scope_kind=1 AND g.channel_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2 AND r.cause_kind=3 AND ($3 OR convert_from(r.intent,'UTF8')::jsonb->'source_event'->>'action_id'='33542')")

@@ -652,6 +652,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 scope,
                 generation,
                 selected.source,
+                self.active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                    .and_then(|native| native.item_profile_source())
+                    .ok_or(())?,
             )
             .await
             .map_err(|_| ())?

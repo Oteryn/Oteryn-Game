@@ -173,6 +173,17 @@
       "note": "Node boot diagnostics (NBDIAG, #3057)."
     },
     {
+      "event": "native_owner_turn",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "phase",
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3056 test-only (cfg(test)): finite native profile boundary observations for actual pinned Primal/Bakragore rooms. Phase and class are static source tokens only; no identifiers, numeric clocks, payloads or raw errors. No production logging or authority is added."
+    },
+    {
       "event": "rotten_wave_refused",
       "level": "warn",
       "span": false,

@@ -123,6 +123,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     ));
     drop(permit);
     let target = SpellGroundTarget {
+        item_profile_source: None,
         spatial_position: spatial,
         map_revision: "map-1".into(),
         content_revision: "content-1".into(),

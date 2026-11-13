@@ -909,6 +909,7 @@ impl NativeCallbackState {
                 self.vortex.next_due(),
                 self.outburst_events.next_due(),
                 self.death_items.next_due(),
+                self.gaz.next_due(),
             ];
             let Some((family, through)) = pending
                 .into_iter()
@@ -997,6 +998,9 @@ impl NativeCallbackState {
                         .await?;
                 }
                 9 => return Err(()),
+                10 => self
+                    .gaz
+                    .drive_due_through(runtime, room, native, through, now)?,
                 _ => return Err(()),
             }
             let after = match family {
@@ -1009,6 +1013,7 @@ impl NativeCallbackState {
                 6 => self.spawns.next_due(),
                 7 => self.vortex.next_due(),
                 8 => self.outburst_events.next_due(),
+                10 => self.gaz.next_due(),
                 _ => return Err(()),
             };
             if after.is_some_and(|due| due <= through) {

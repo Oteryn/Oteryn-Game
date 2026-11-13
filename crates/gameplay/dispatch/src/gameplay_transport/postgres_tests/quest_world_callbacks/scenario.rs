@@ -1749,6 +1749,23 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
+        if let Some(initial_level) = initial_level {
+            // Initialization uses common cast fixtures; project the actually seeded
+            // durable level before evaluating source NPC eligibility.
+            owner.states.level_refresh.mark([fence.character_id]);
+            Box::pin(owner.refresh_level_up_vitals(deps.actor, admitted.game_session_id)).await;
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                states
+                    .get(&runtime, deps.actor, admitted.game_session_id)
+                    .ok_or("seeded live character facts")?
+                    .character_facts()
+                    .level,
+                initial_level,
+                "source eligibility uses the actual durable starting level"
+            );
+        }
         if name == "nx6-wayfarer"
             || qm03
             || m07_too_hot

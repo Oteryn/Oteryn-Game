@@ -301,6 +301,13 @@ fn source_cast_case_inner(
             let mut owner = deps.owner(&h,&authority);
             owner.active_generation = Some(active);
             owner.movement_cells = (&cells).into();
+            // The actual admission owner initializes progression before any
+            // copied Heart recipient reaches the fenced Quest writer.
+            let mut admitted = deps.admitted;
+            owner.admit_progression_session(&mut admitted).await;
+            owner
+                .progression_binding(admitted.game_session_id)
+                .ok_or("actual native callback progression admission")?;
             if slug == "charging_outburst" {
                 let quests = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
                 owner.quest_catalogue = Some(std::sync::Arc::new(quests.catalogue().clone()));

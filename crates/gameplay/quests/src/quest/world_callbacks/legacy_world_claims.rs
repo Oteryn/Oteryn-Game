@@ -53,6 +53,7 @@ const PAIRS: &[(&str, &str)] = &[
 struct Binding {
     callback: Callback,
     claim: NativeClaimBinding,
+    source_unique: u16,
 }
 
 fn only(value: &Value, fields: &[&str]) -> bool {
@@ -184,6 +185,7 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
                 .collect();
         bindings.push(Binding {
             callback: callback.clone(),
+            source_unique: u16::try_from(uid).map_err(|_| "legacy World source id")?,
             claim: NativeClaimBinding {
                 key: claim_key,
                 revision: "reward-claim-r1".into(),
@@ -199,6 +201,16 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
 pub fn legacy_world_claim(
     callback: &Callback,
 ) -> Result<Option<&'static NativeClaimBinding>, String> {
+    legacy_world_binding(callback).map(|binding| binding.map(|binding| &binding.claim))
+}
+
+/// Retained Crystal UID from the same fully checked immutable claim authority.
+/// A changed callback cannot borrow this source or bypass its legacy owner.
+pub fn legacy_world_source_unique(callback: &Callback) -> Result<Option<u16>, String> {
+    legacy_world_binding(callback).map(|binding| binding.map(|binding| binding.source_unique))
+}
+
+fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>, String> {
     static BINDINGS: OnceLock<Result<Vec<Binding>, String>> = OnceLock::new();
     let bindings = BINDINGS
         .get_or_init(|| bind(CALLBACKS, CLAIMS))
@@ -213,7 +225,7 @@ pub fn legacy_world_claim(
                 })
         });
     match bound {
-        Some(binding) if callback == &binding.callback => Ok(Some(&binding.claim)),
+        Some(binding) if callback == &binding.callback => Ok(Some(binding)),
         Some(_) => Err("legacy World claim callback changed".into()),
         None => Ok(None),
     }
@@ -251,6 +263,31 @@ mod tests {
             .find(|callback| callback.key == "oteryn:quest-callback/l2-tome-container")
             .ok_or("independent tenth book")?;
         assert!(legacy_world_claim(tenth)?.is_none());
+        assert!(legacy_world_source_unique(tenth)?.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn exact_world_sources_retain_the_canonical_crystal_uids() -> Result<(), String> {
+        let callbacks = super::super::load()?;
+        for (suffix, unique) in [
+            ("children-1", 6289),
+            ("children-2", 6291),
+            ("frontier-1", 6287),
+            ("frontier-2", 6288),
+            ("knowledge-1", 6292),
+            ("knowledge-2", 6293),
+            ("knowledge-3", 6294),
+            ("knowledge-4", 6295),
+            ("top-tower", 6104),
+        ] {
+            let key = format!("oteryn:quest-callback/l2-tome-{suffix}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            assert_eq!(legacy_world_source_unique(callback)?, Some(unique));
+        }
         Ok(())
     }
 
@@ -279,6 +316,10 @@ mod tests {
                     _ => changed.effects.item_reward = None,
                 }
                 assert!(legacy_world_claim(&changed).is_err(), "mutation {mutation}");
+                assert!(
+                    legacy_world_source_unique(&changed).is_err(),
+                    "source mutation {mutation}"
+                );
             }
         }
         Ok(())

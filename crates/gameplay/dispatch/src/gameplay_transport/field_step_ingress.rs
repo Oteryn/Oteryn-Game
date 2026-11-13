@@ -491,9 +491,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let room=owner.rooms().gate_field_step_ingress().ok_or(crate::durability::DurabilityError::Unavailable)?;
             let objects=owner.door.lock().await;
             let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells()) {
-                Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
+                match crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await {
+                    Ok(prepared)=>Some(prepared),
+                    Err(error)=>{
+                        *outcome=Some(Err(error));
+                        drop(objects);
+                        tx.into_inner().rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                        return Ok(());
+                    }
+                }
             } else {None};
-            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells(),actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
+            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {match destination(runtime,owner.movement_cells(),actor,session,origin,direction,*blocking) {
+                Ok(destination)=>destination,
+                Err(error)=>{
+                    *outcome=Some(Err(error));
+                    drop(objects);
+                    tx.into_inner().rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    return Ok(());
+                }
+            }};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=crate::durability::spell_item_transaction::read_player_step_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target,runtime,actor).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let player_fields_current = if read.items().iter().any(|item| item.field_origin.is_some() && source.item_policy(&item.definition.production_key, &item.definition.revision_ref).is_none_or(|policy| {

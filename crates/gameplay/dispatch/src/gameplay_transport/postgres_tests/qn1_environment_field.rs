@@ -127,6 +127,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     .await
     .map_err(f::debug)?;
     let target = SpellGroundTarget {
+        item_profile_source: None,
         spatial_position: ground.spatial_position,
         map_revision: ground.map_revision,
         content_revision: ground.content_revision,

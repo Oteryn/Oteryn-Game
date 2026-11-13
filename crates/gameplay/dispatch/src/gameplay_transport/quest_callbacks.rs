@@ -347,7 +347,17 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         && selector.action.is_none()
         && map.facts.quest_callback_source_bound(key)
     {
-        return false;
+        // Only the exact immutable World/legacy claim pair can share this UID.
+        // Position and current appearance are still checked below.
+        let Ok(Some(unique)) = world_callbacks::legacy_world_source_unique(callback) else {
+            return false;
+        };
+        if !map
+            .facts
+            .quest_callback_matches(key, Some(unique), None, selector.appearance)
+        {
+            return false;
+        }
     }
     if selector.ordinal.is_some()
         && selector.unique.is_none()
@@ -1253,10 +1263,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             entered
         };
-        let entered = self.step_arena_exit(actor, session, entered).await;
         let entered = self
             .step_arena_portal(permit, actor, session, origin, entered)
             .await;
+        let entered = self.step_arena_exit(actor, session, entered).await;
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;

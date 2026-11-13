@@ -408,6 +408,7 @@ where
         };
         if let Some(r) = reserved {
             let target = SpellGroundTarget {
+                item_profile_source: None,
                 spatial_position: r.placement.spatial_position.clone(),
                 map_revision: r.placement.map_revision.clone(),
                 content_revision: r.placement.content_revision.clone(),

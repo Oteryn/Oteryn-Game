@@ -95,7 +95,7 @@ async fn exercise(h: &f::Harness, respawn: bool) -> f::TestResult {
         },
     };
     let quest = "oteryn:quest.authored.the_colours_of_magic";
-    let track = "oteryn:quest-progress/chosen/colours/colour";
+    let track = "oteryn:quest-progress/test/peer-yellow/colour";
     let setup_key = "oteryn:quest-test/peer-yellow/setup";
     let catalogue = Arc::new(
         QuestStateCatalogue::new(

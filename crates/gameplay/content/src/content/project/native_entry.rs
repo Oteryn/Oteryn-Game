@@ -571,6 +571,7 @@ impl NativeEntryProject {
     ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
         let movement_cells = self.movement_cells(compiled.server_digest())?;
         Ok(QualifiedNativeEntryRoom {
+            item_profiles: qualified_item_profile_source(&compiled)?,
             compiled: compiled.into(),
             frame_binding: self.frame_binding(),
             entry_start: self.entry_start()?,
@@ -627,6 +628,20 @@ impl NativeEntryProject {
     }
 }
 
+fn qualified_item_profile_source(
+    compiled: &crate::content::CompiledFirstProductionContent,
+) -> Result<Option<crate::content::native_gameplay::NativeItemProfileSource>, ProjectError> {
+    let (_, runtime) = crate::content::StagedGeneration::stage(
+        &compiled.server_artifact,
+        &compiled.client_artifact,
+        compiled.expectation(),
+    )?
+    .into_parts();
+    Ok(runtime
+        .native_gameplay()
+        .and_then(|native| native.item_profile_source()))
+}
+
 const NATIVE_ENTRY_FRAME_BINDING_DOMAIN: &[u8] =
     b"OTERYN_NATIVE_ENTRY_FRAME_BINDING/v1;axes=east,south,up\0";
 
@@ -654,6 +669,7 @@ impl NativeEntryFrameBinding {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedNativeEntryRoom {
     compiled: std::sync::Arc<crate::content::CompiledFirstProductionContent>,
+    item_profiles: Option<crate::content::native_gameplay::NativeItemProfileSource>,
     frame_binding: NativeEntryFrameBinding,
     entry_start: NativeEntryStart,
     map_revision_digest: [u8; 32],
@@ -981,6 +997,7 @@ impl QualifiedNativeEntryRoom {
             return None;
         }
         Some(Self {
+            item_profiles: self.item_profiles.clone(),
             compiled: self.compiled.clone(),
             frame_binding: NativeEntryFrameBinding {
                 frame: self.frame_binding.frame.clone(),
@@ -1049,6 +1066,13 @@ impl QualifiedNativeEntryRoom {
     }
     pub fn source_world(&self) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
         self.movement_cells.source_world()
+    }
+    /// Immutable Item DATA of the same qualified artifact. Current runtime and
+    /// durable Item custody are independently checked by every read owner.
+    pub fn item_profile_source(
+        &self,
+    ) -> Option<crate::content::native_gameplay::NativeItemProfileSource> {
+        self.item_profiles.clone()
     }
     pub fn compiled(&self) -> &crate::content::CompiledFirstProductionContent {
         &self.compiled
@@ -2817,6 +2841,7 @@ pub fn qualify_native_source_spell_world_with_gameplay(
         digest: crate::content::digest::sha256(&binding),
     };
     Ok(QualifiedNativeEntryRoom {
+        item_profiles: qualified_item_profile_source(&compiled)?,
         compiled: compiled.into(),
         frame_binding,
         entry_start,

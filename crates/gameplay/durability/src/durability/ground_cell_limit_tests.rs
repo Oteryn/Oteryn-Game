@@ -30,6 +30,7 @@ fn channel(n: u8) -> ChannelId {
 
 fn target() -> SpellGroundTarget {
     SpellGroundTarget {
+        item_profile_source: None,
         spatial_position: [
             120_i32.to_be_bytes().as_slice(),
             (-5_i32).to_be_bytes().as_slice(),
@@ -362,6 +363,7 @@ mod postgres {
     }
     pub(super) fn target() -> SpellGroundTarget {
         SpellGroundTarget {
+            item_profile_source: None,
             spatial_position: [
                 120_i32.to_be_bytes().as_slice(),
                 5_i32.to_be_bytes().as_slice(),
@@ -1239,6 +1241,7 @@ mod postgres {
             };
             let digest = [0xd1; 32];
             let at = SpellGroundTarget {
+                item_profile_source: None,
                 spatial_position: map_item_spatial_position(120, 5, -7),
                 map_revision: map_revision_of(&digest),
                 content_revision: "content-1".into(),
