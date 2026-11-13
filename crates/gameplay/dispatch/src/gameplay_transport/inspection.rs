@@ -544,6 +544,12 @@ fn details(
             let Known(parameter) = &modifier.parameter else {
                 continue;
             };
+            if modifier.kind == Kind::Mantra {
+                if let Parameter::SignedPoints(points) = parameter {
+                    add("Mantra", points.0.to_string());
+                }
+                continue;
+            }
             let value = match parameter {
                 Parameter::SignedPoints(p) => format!("{:+}", p.0),
                 Parameter::RationalPercent(p) => {
@@ -949,6 +955,144 @@ mod tests {
     use crate::content::native_gameplay::test_support::activated_with_loot_tables;
     use crate::content::{ReferenceItemField, ReferenceItemImbuement};
     use crate::durability::imbuement::StoredImbuement;
+    #[test]
+    fn inspection_current_profiles_project_literal_mantra_and_preserve_other_details()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::native_gameplay::ItemProfilesDocument;
+        let profiles: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        for (key, expected) in [
+            ("oteryn:item.tibia.i50195", "2"),
+            ("oteryn:item.tibia.i50263", "13"),
+            ("oteryn:item.tibia.i50268", "15"),
+            ("oteryn:item.tibia.i50274", "4"),
+        ] {
+            let record = profiles
+                .records
+                .iter()
+                .find(|r| r.production_definition.production_key == key)
+                .ok_or("current Mantra profile")?;
+            assert!(record.admission.materializable);
+            let original = record.clone();
+            let template = details(record, 0, 1, 1, None, None).ok_or("type details")?;
+            let mantra = |item: &InspectedItem| {
+                item.attributes
+                    .iter()
+                    .filter(|(k, _)| k == "Mantra")
+                    .map(|(_, v)| v.clone())
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(mantra(&template), vec![expected.to_owned()], "{key}");
+            let metadata = ItemMetadata {
+                definition: TypedDefinitionRef {
+                    family: record.production_definition.family.clone(),
+                    production_key: key.into(),
+                    revision_ref: record.production_definition.revision_ref.clone(),
+                },
+                quantity: 1,
+                tier: 3,
+                imbuements: Vec::new(),
+                contents: Vec::new(),
+                charges: None,
+                remaining_ms: None,
+            };
+            let instance =
+                details(record, 0, 1, 1, Some(&metadata), None).ok_or("instance details")?;
+            assert_eq!(mantra(&instance), vec![expected.to_owned()]);
+            assert_eq!(instance.tier, 3);
+            let reply = Reply {
+                status: 1,
+                items: vec![template.clone(), instance],
+                requests: Vec::new(),
+                catalogue: None,
+            };
+            let bytes = oteryn_protocol_oteryn::inspection::encode_reply(&reply)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                oteryn_protocol_oteryn::inspection::decode_reply(&bytes)
+                    .map_err(|e| format!("{e:?}"))?,
+                reply
+            );
+            let mut without = record.clone();
+            if let Known(group) = &mut without.semantics.skill_modifiers
+                && let Known(modifiers) = &mut group.modifiers
+            {
+                modifiers.retain(|m| m.kind != crate::content::ReferenceSkillModifierKind::Mantra);
+            }
+            let baseline = details(&without, 0, 1, 1, None, None).ok_or("other details")?;
+            let retained = template
+                .attributes
+                .iter()
+                .filter(|(k, _)| k != "Mantra")
+                .cloned()
+                .collect::<Vec<_>>();
+            assert_eq!(retained, baseline.attributes, "unrelated fields for {key}");
+            assert_eq!(*record, original, "projection must not mutate source");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn inspection_mantra_keeps_zero_and_signed_points_distinct_from_unknown()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{
+            ReferenceItemField as F, ReferenceModifierParameter as P, ReferenceSignedPoints,
+            ReferenceSkillModifierKind as K,
+        };
+        let profiles: crate::content::native_gameplay::ItemProfilesDocument =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../content/items/definitions/spell-native-profiles.json"
+            ))?;
+        let source = profiles
+            .records
+            .iter()
+            .find(|r| r.production_definition.production_key == "oteryn:item.tibia.i50195")
+            .ok_or("current profile")?;
+        for (parameter, expected) in [
+            (
+                Known(P::SignedPoints(ReferenceSignedPoints(16))),
+                Some("16"),
+            ),
+            (Known(P::SignedPoints(ReferenceSignedPoints(0))), Some("0")),
+            (
+                Known(P::SignedPoints(ReferenceSignedPoints(-2))),
+                Some("-2"),
+            ),
+            (F::Unknown, None),
+            (F::NotApplicable, None),
+            (Known(P::Boolean(true)), None),
+        ] {
+            let mut record = source.clone();
+            let Known(group) = &mut record.semantics.skill_modifiers else {
+                return Err("known group".into());
+            };
+            let Known(modifiers) = &mut group.modifiers else {
+                return Err("known modifiers".into());
+            };
+            modifiers
+                .iter_mut()
+                .find(|m| m.kind == K::Mantra)
+                .ok_or("Mantra")?
+                .parameter = parameter;
+            let item = details(&record, 0, 1, 1, None, None).ok_or("details")?;
+            assert_eq!(
+                item.attributes
+                    .iter()
+                    .find(|(k, _)| k == "Mantra")
+                    .map(|(_, v)| v.as_str()),
+                expected
+            );
+        }
+        for absent in [F::Unknown, F::NotApplicable] {
+            let mut record = source.clone();
+            record.semantics.skill_modifiers = absent;
+            let item = details(&record, 0, 1, 1, None, None).ok_or("details")?;
+            assert!(!item.attributes.iter().any(|(k, _)| k == "Mantra"));
+        }
+        Ok(())
+    }
+
     #[test]
     fn inspection_permissions_bind_both_actor_generations_and_forget() -> Result<(), &'static str> {
         let permissions = Permissions::default();
