@@ -135,9 +135,7 @@ fn stale_offer_and_previous_generation_controls_cannot_accept_a_replacement() ->
     assert!(commands.try_recv().is_err());
     app.update();
     let old_generation = control(&mut app, Kind::Accept)?;
-    let mut host = app.world_mut().non_send_mut::<HostOwner>();
-    host.close();
-    drop(host);
+    app.world_mut().non_send_mut::<HostOwner>().close();
     app.world_mut().trigger(Activate {
         entity: old_generation,
     });
