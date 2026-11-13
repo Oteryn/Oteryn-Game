@@ -181,32 +181,21 @@ pub(super) fn world_drop(
     event: On<PointerDragDrop>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
-    tree: Tree,
-    mut gesture: ResMut<Gesture>,
-    frame: Res<FrameCount>,
+    mut capture: DropCapture,
 ) {
-    if guard.allows(event.entity)
-        && matches!(
-            source(event.original_event_target(), &tree),
-            Some((Source::World, _))
-        )
-        && event.pointer.id == PointerId::Mouse
-        && event.button == PointerButton::Primary
-    {
-        gesture.picking.drop_on(
-            frame.0,
-            owner.generation(),
-            event.dropped,
-            Destination::World,
-        );
+    if guard.allows(event.entity) {
+        capture.world(&event, &owner);
     }
 }
 #[derive(SystemParam)]
-pub(in crate::bevy_shell::game_ui::inventory) struct DropCapture<'w> {
+pub(in crate::bevy_shell::game_ui::inventory) struct DropCapture<'w, 's> {
     gesture: Option<ResMut<'w, Gesture>>,
     frame: Option<Res<'w, FrameCount>>,
+    hits: Option<WorldPointerHits<'w, 's>>,
+    windows: Query<'w, 's, (Entity, &'static Window), With<PrimaryWindow>>,
+    tree: Tree<'w, 's>,
 }
-impl DropCapture<'_> {
+impl DropCapture<'_, '_> {
     pub(in crate::bevy_shell::game_ui::inventory) fn admits_source(
         &self,
         slot: Slot,
@@ -227,23 +216,82 @@ impl DropCapture<'_> {
     ) -> bool {
         self.gesture.is_none() || pointer == PointerId::Mouse
     }
-    pub(in crate::bevy_shell::game_ui::inventory) fn slot(
-        &mut self,
-        event: &PointerDragDrop,
-        owner: &HostOwner,
-        target: Slot,
-    ) {
-        if event.pointer.id == PointerId::Mouse && event.button == PointerButton::Primary {
-            let (Some(gesture), Some(frame)) = (&mut self.gesture, &self.frame) else {
-                return;
-            };
+    fn release_point(&self, event: &PointerDragDrop) -> Option<Vec2> {
+        if event.pointer.id != PointerId::Mouse || event.button != PointerButton::Primary {
+            return None;
+        }
+        let (entity, window) = self.windows.single().ok()?;
+        if !window.focused
+            || bevy::window::WindowRef::Entity(entity)
+                .normalize(None)
+                .map(bevy::camera::NormalizedRenderTarget::Window)
+                .as_ref()
+                != Some(&event.pointer.target)
+        {
+            return None;
+        }
+        let point = event.pointer.position * window.scale_factor();
+        self.hits
+            .as_ref()?
+            .matches_primary_pointer(point)
+            .then_some(point)
+    }
+    fn world(&mut self, event: &On<PointerDragDrop>, owner: &HostOwner) {
+        if !super::world_input_allowed(owner) {
+            return;
+        }
+        let Some((Source::World, world)) = source(event.original_event_target(), &self.tree) else {
+            return;
+        };
+        let Some(point) = self.release_point(event) else {
+            return;
+        };
+        if !self
+            .hits
+            .as_ref()
+            .is_some_and(|hits| hits.allows_world_start(world, point))
+        {
+            return;
+        }
+        if let (Some(gesture), Some(frame)) = (&mut self.gesture, &self.frame) {
             gesture.picking.drop_on(
                 frame.0,
                 owner.generation(),
                 event.dropped,
-                Destination::Slot(target),
+                Destination::World,
             );
         }
+    }
+    pub(in crate::bevy_shell::game_ui::inventory) fn slot(
+        &mut self,
+        event: &On<PointerDragDrop>,
+        owner: &HostOwner,
+        target: Slot,
+    ) -> bool {
+        // Retained-only callers without an installed native bridge keep their original contract.
+        if self.gesture.is_none() {
+            return true;
+        }
+        if !matches!(source(event.original_event_target(),&self.tree),Some((Source::Carried(current),_))if current==target)
+            || self.release_point(event).is_none()
+        {
+            return false;
+        }
+        if matches!(target.destination, Some(ItemMoveDestination::Ground(_)))
+            && !super::world_input_allowed(owner)
+        {
+            return false;
+        }
+        let (Some(gesture), Some(frame)) = (&mut self.gesture, &self.frame) else {
+            return false;
+        };
+        gesture.picking.drop_on(
+            frame.0,
+            owner.generation(),
+            event.dropped,
+            Destination::Slot(target),
+        );
+        true
     }
     pub(in crate::bevy_shell::game_ui::inventory) fn completed(&mut self) {
         if let (Some(gesture), Some(frame)) = (&mut self.gesture, &self.frame) {

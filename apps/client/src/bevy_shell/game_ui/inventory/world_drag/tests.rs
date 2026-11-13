@@ -380,3 +380,6 @@ mod binding_tests;
 
 #[path = "tests/hit_boundary.rs"]
 mod hit_boundary_tests;
+
+#[path = "tests/fences.rs"]
+mod fence_tests;

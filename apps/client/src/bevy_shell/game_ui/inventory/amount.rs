@@ -65,6 +65,11 @@ fn maximum(owner: &HostOwner, ui: &InventoryUi, prompt: Prompt) -> Option<u32> {
     if !super::actions::prompt_current(prompt, owner, ui) {
         return None;
     }
+    if matches!(prompt.destination, ItemMoveDestination::Ground(_))
+        && !super::world_drag::world_input_allowed(owner)
+    {
+        return None;
+    }
     if ui.ground_source.is_some() {
         return super::world_drag::prompt_maximum(owner, ui, prompt);
     }

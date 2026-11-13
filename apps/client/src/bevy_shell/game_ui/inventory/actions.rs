@@ -143,7 +143,9 @@ pub(super) fn drag_drop(
         return;
     }
     if let Ok(target) = slots.get(event.entity) {
-        capture.slot(&event, &owner, *target);
+        if !capture.slot(&event, &owner, *target) {
+            return;
+        }
         if let Ok(source) = slots.get(event.dropped) {
             drop_slot(*source, *target, &owner, &mut ui);
             capture.completed();
@@ -262,7 +264,13 @@ fn drop_slot(source: Slot, target: Slot, owner: &HostOwner, ui: &mut InventoryUi
     let Some(play) = &owner.play else {
         return;
     };
-    let destination = target.current(owner).and(target.destination);
+    let destination = target
+        .current(owner)
+        .and(target.destination)
+        .filter(|destination| {
+            !matches!(destination, ItemMoveDestination::Ground(_))
+                || super::world_drag::world_input_allowed(owner)
+        });
     if let Some(item) = source.drag(owner)
         && destination.is_some()
         && play.link.item_drag_begin(item)

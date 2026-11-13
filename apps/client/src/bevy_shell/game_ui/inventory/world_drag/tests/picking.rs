@@ -52,7 +52,7 @@ fn native(
         mapped.is_some(),
     );
 }
-fn route(
+pub(super) fn route(
     app: &mut App,
     viewport: WorldViewport,
     point: Vec2,
@@ -133,6 +133,8 @@ fn bevy_press_and_drop_supply_bound_container_target_then_normalized_release_que
     route(&mut app, viewport, point, button(ButtonState::Pressed))?;
     let end = Vec2::new(20., 20.);
     route(&mut app, viewport, end, motion(end)?)?;
+    current_pointer(&mut app, window, end, 2.);
+    hover(&mut app, target);
     app.world_mut().trigger(PointerDragDrop {
         entity: target,
         dropped: child,
@@ -208,6 +210,8 @@ fn bevy_carried_drag_to_world_uses_physical_letterboxed_tile_and_unmatched_overl
                     .entity_mut(target)
                     .insert(bevy::ui_widgets::Button);
             }
+            current_pointer(&mut app, window, point, 1.);
+            hover(&mut app, target);
             app.world_mut().trigger(PointerDragDrop {
                 entity: target,
                 dropped: source,
@@ -359,11 +363,27 @@ pub(super) fn current_pointer(app: &mut App, window: Entity, physical: Vec2, dpi
     app.init_resource::<bevy::picking::hover::HoverMap>()
         .init_resource::<bevy::picking::pointer::PointerMap>();
     let pointer = pointer(window, physical, dpi);
-    app.world_mut().spawn((
-        PointerId::Mouse,
-        bevy::picking::pointer::PointerLocation::new(PointerLocation {
-            target: pointer.target,
-            position: pointer.position,
-        }),
-    ));
+    let existing = app
+        .world_mut()
+        .query::<(Entity, &PointerId)>()
+        .iter(app.world())
+        .find_map(|(entity, id)| (*id == PointerId::Mouse).then_some(entity));
+    let location = bevy::picking::pointer::PointerLocation::new(PointerLocation {
+        target: pointer.target,
+        position: pointer.position,
+    });
+    if let Some(entity) = existing {
+        app.world_mut().entity_mut(entity).insert(location);
+    } else {
+        app.world_mut().spawn((PointerId::Mouse, location));
+    }
+}
+
+fn hover(app: &mut App, target: Entity) {
+    let mut hover = app
+        .world_mut()
+        .resource_mut::<bevy::picking::hover::HoverMap>();
+    let hits = hover.entry(PointerId::Mouse).or_default();
+    hits.clear();
+    hits.insert(target, HitData::new(Entity::PLACEHOLDER, 0., None, None));
 }

@@ -19,6 +19,9 @@ impl GroundSource {
         if self.generation != owner.generation() || owner.modal_active() {
             return None;
         }
+        if !world_input_allowed(owner) {
+            return None;
+        }
         let play = owner.play.as_ref()?;
         let current = play.view.item_drag_binding(self.tile)?;
         if !same_binding(self.binding, current) {
@@ -28,6 +31,13 @@ impl GroundSource {
             .item_drag_source(self.tile)
             .filter(|item| item.handle == self.item.handle)
     }
+}
+/// Use the existing world gameplay policy without restricting ordinary inventory capabilities.
+pub(super) fn world_input_allowed(owner: &HostOwner) -> bool {
+    owner
+        .play
+        .as_ref()
+        .is_some_and(|play| !play.view.gameplay_input_blocked(&play.link))
 }
 fn same_binding(a: GroundItem, b: GroundItem) -> bool {
     match (a, b) {
@@ -203,7 +213,7 @@ fn after_press(
         gesture.carried_token = Some((press.token, slot));
         return;
     }
-    if !allowed_world_start || ui.dragged.is_some() {
+    if !allowed_world_start || !world_input_allowed(owner) || ui.dragged.is_some() {
         return;
     }
     let Some(play) = &owner.play else {
@@ -319,6 +329,9 @@ fn before(
                         })
                     }),
                 });
+            let destination = destination.filter(|destination| {
+                !matches!(destination, ItemMoveDestination::Ground(_)) || world_input_allowed(owner)
+            });
             let item = if gesture.active {
                 gesture
                     .candidate
