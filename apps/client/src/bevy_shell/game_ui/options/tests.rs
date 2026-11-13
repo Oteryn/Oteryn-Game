@@ -191,3 +191,30 @@ fn supported_field_ranges_round_trip_without_truncation_and_ids_are_unique() {
         }
     }
 }
+
+#[test]
+fn foreground_game_modal_blocks_background_options_value_changes() -> TestResult {
+    let mut app = app(Page::Sound, None)?;
+    app.world_mut()
+        .spawn((GameModal, GlobalZIndex(200), Node::default()));
+    let slider = app
+        .world_mut()
+        .spawn(Control::Number("sound.master"))
+        .observe(slide)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        entity: slider,
+        value: 0.0f32,
+    });
+    let owner = app.world().non_send::<HostOwner>();
+    assert_eq!(
+        owner
+            .preferences_draft()
+            .ok_or("draft")?
+            .audio
+            .master_volume,
+        100
+    );
+    assert_eq!(owner.settings.preferences.audio.master_volume, 100);
+    Ok(())
+}

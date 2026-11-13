@@ -260,3 +260,69 @@ fn native_composer_mode_button_cycles_the_existing_console_owner()
     );
     Ok(())
 }
+
+#[test]
+fn foreground_game_modal_blocks_background_chat_activate() -> Result<(), Box<dyn std::error::Error>>
+{
+    use super::{Action, ChatState, Control, Field, HostOwner, widgets};
+    use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
+    let (link, mut commands, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        Vec::new(),
+    );
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let generation = host.generation();
+    let mut app = App::new();
+    app.init_resource::<InputFocus>()
+        .insert_non_send(host)
+        .insert_resource(ChatState {
+            generation: Some(generation),
+            ..default()
+        });
+    app.world_mut().spawn((
+        crate::bevy_shell::game_ui::GameModal,
+        GlobalZIndex(200),
+        Node::default(),
+    ));
+    let editor = app
+        .world_mut()
+        .spawn((
+            Field::Message,
+            EditableText::new("must not send behind modal"),
+        ))
+        .id();
+    let send = app
+        .world_mut()
+        .spawn(Control {
+            action: Action::Send,
+            generation,
+        })
+        .observe(widgets::activate)
+        .id();
+    app.world_mut().trigger(Activate { entity: send });
+    assert!(commands.try_recv().is_err());
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .pending
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "must not send behind modal"
+    );
+    Ok(())
+}
