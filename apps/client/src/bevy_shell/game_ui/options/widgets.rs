@@ -1,6 +1,8 @@
 use super::*;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::ui_widgets::ScrollArea;
+#[cfg(test)]
+mod layout_tests;
 mod rows;
 
 pub(super) fn setup(
@@ -183,13 +185,7 @@ pub(super) fn setup(
         false,
         state.advanced,
     );
-    let spacer = commands
-        .spawn(Node {
-            flex_grow: 1.,
-            ..default()
-        })
-        .id();
-    commands.entity(footer).add_children(&[advanced, spacer]);
+    commands.entity(footer).add_child(advanced);
     for (caption, control, id) in [
         ("OK", Control::Ok, "options.ok"),
         ("Apply", Control::Apply, "options.apply"),
@@ -238,6 +234,12 @@ fn checkbox(
     let mut node = source::checkbox_row(framed);
     if framed {
         node.width = percent(100.);
+    } else {
+        // The footer label owns the space before its fixed-width action buttons.
+        node.min_width = px(0.);
+        node.flex_grow = 1.;
+        node.flex_shrink = 1.;
+        node.flex_basis = px(0.);
     }
     let entity = commands
         .spawn((source::checkbox(node), control, Name::new(id.to_owned())))
@@ -266,8 +268,11 @@ fn checkbox(
         .insert((
             TextLayout::default(),
             Node {
+                // Fill the row after the indicator instead of using min-content width.
                 min_width: px(0.),
+                flex_grow: 1.,
                 flex_shrink: 1.,
+                flex_basis: px(0.),
                 ..default()
             },
         ))
