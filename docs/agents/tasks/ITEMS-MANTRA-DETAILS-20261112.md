@@ -8,14 +8,14 @@ status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-mantra-details-20261112
-pr: null
+pr: 3154
 base_sha: 5efd67da164ac9dc33c8c066434b228cebb86c2b
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root/mantra_resume
 created_at: 2026-11-12T22:57:37Z
-updated_at: 2026-11-13T02:15:15Z
+updated_at: 2026-11-13T02:26:01Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/inspection.rs
@@ -63,7 +63,7 @@ their existing owners. Independent review remains REVIEW_PENDING.
 - [x] Preserve known zero and negative values; omit Unknown, NotApplicable and invalid parameter kinds.
 - [x] Cover shared instance projection, codec round trip and unrelated attributes/source preservation.
 - [ ] Complete normal unit qualification after the executor memory failure.
-- [ ] Publish the bounded PARTIAL draft and retain its exact head.
+- [x] Publish the bounded PARTIAL draft; final head is reported by remote readback.
 - [ ] Obtain coordinator-routed independent review and exact-head CI.
 
 ## Reference parity
@@ -139,9 +139,16 @@ to turn this attempt green. The detached runner retained explicit command exit
 receipts and the unchanged inspection source hash
 bb0e75881d3d468cc78e67f59ef1d1e1fb4c28e255230b6d6cc1ff017e0e7917.
 
-Normal unit qualification remains pending CI or an adequate executor. The
-completed PostgreSQL baseline checks above are separate counterevidence, not
-a candidate PG pass. Fast route-less unit evidence, if run, must be identified separately
+One coordinator-authorized infrastructure retry ran the identical fast unit
+command/profile/cache with only CARGO_BUILD_JOBS=1. It was bound to committed
+head159412f4eced4c8430c6019629f59949f5ada2d0 and the unchanged inspection hash.
+The retry also exited101 before tests, with rustc SIGKILL9; the cgroup OOM-kill
+counter increased from1 to2. No further local retries are authorized or planned.
+The final task-record commit changes metadata only, after the retry terminated.
+
+FAST_UNIT_UNQUALIFIED_OOM: normal unit qualification remains pending CI or an
+adequate executor. The completed PostgreSQL baseline checks above are separate
+counterevidence, not a candidate PG pass. Fast route-less unit evidence, if run, must be identified separately
 from actual PostgreSQL execution. No full PG, CI-green or mergeability claim.
 
 ## Self-review
@@ -159,5 +166,8 @@ and owns the applicable review route. No ready or merge claim.
 
 ## PR and closeout
 
-Draft PR pending. Active record status is waiting/PARTIAL; no completed/archive
-state is asserted. No merge or deployment authority.
+Draft PR: https://github.com/Oteryn/Oteryn-Game/pull/3154. Active record status
+is waiting/PARTIAL; no completed/archive state is asserted. The source-only
+repair is reviewable, while normal unit execution is unqualified after two
+compilation OOMs. Exact-head CI and independent review remain pending. No merge
+or deployment authority.
