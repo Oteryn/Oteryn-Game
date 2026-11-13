@@ -14,6 +14,23 @@ pub(super) fn configure(
         generation: 2,
     };
     match panel.to_str() {
+        Some("vip") => {
+            use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+            outbox.bevy_vip_fixture(
+                r#"{"entries":[{"entry":73,"name":"Fixture contact","description":"Friend","icon":2,"notify":true,"groups":[]}],"groups":[],"next_entry":0}"#,
+                1,
+                oteryn_session::VipPresenceBatch::default(),
+            );
+            if !link.vip_input(&[NormalizedInputEvent::Key {
+                code: KeyCode::new(25)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control),
+                repeat: false,
+            }]) {
+                return Err("native VIP fixture shortcut refused".into());
+            }
+            Ok(Some("Fixture contact"))
+        }
         Some("quick-loot") => {
             outbox.bevy_quick_loot_selected(true);
             link.discovery_open(98);
