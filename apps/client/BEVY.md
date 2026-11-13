@@ -63,6 +63,19 @@ Optional executable arguments:
 | `--login-settings <path>` | Override the existing login-settings path. |
 | `--ui-audit <path>` | Write diagnostic UI state; F12 also writes a rendered PNG beside it. Keep captures containing private assets/session UI private. |
 
+## Gameplay UI entry points
+
+With no text field focused, the existing gameplay shortcuts open:
+
+- **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
+  text input share one window with the trade addon when the server opens a shop.
+- **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
+- **Ctrl+V:** VIP contacts. Add/Edit/Remove use the existing server requests.
+
+Ctrl+V in a focused text field remains the native paste action. Click an exposed
+world area to leave a text field before using a gameplay shortcut. Map/item drag
+currently supports the desktop primary mouse pointer; touch qualification is later.
+
 ## Qualification boundary
 
 The shared host has been exercised through native Linux rendering and OS input,
