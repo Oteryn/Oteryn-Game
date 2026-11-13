@@ -1,0 +1,3228 @@
+{
+  "schema": "OTERYN_COMPACT_PRIVATE_ITEMS_OBSERVATIONS/v1",
+  "classification": "PROVEN",
+  "category": "Legs",
+  "client": "Tibia Test Server 15.33.dd0955",
+  "noSourceID": true,
+  "source_receipt": {
+    "filename": "legs-union-1-66-end-observed-private.json",
+    "bytes": 132684,
+    "sha256": "94b060dab5ef0836264eb8a45855926d54e6ac6abe3ed9e5f059aeb6fc6f2996"
+  },
+  "coverage": {
+    "first_physical_ui_ordinal": 1,
+    "last_physical_ui_ordinal": 66,
+    "records": 66,
+    "saved_basic_pages": 153,
+    "missing_physical_ordinals_in_cutoff": [],
+    "category_end_observed": true,
+    "trade_panels_qualified": false,
+    "animation_qualified": false
+  },
+  "identity_boundary": "Name,physical ordinal,capture,graphics and fingerprints are evidence addresses, not client/server ItemID. Do not merge same-name cards.",
+  "field_export_policy": {
+    "non_narrative_basic_literals": "EXPORTED_EXACTLY",
+    "Description": "OBSERVED_VALUE_RETAINED_PRIVATELY_WHEN_PRESENT",
+    "description_display_lines": "OBSERVED_LAYOUT_RETAINED_PRIVATELY_WHEN_PRESENT",
+    "private_text_receipts": 6,
+    "private_display_layout_receipts": 6,
+    "no_full_repository_text_parity_claim": true
+  },
+  "private_png_hash_checks": 351,
+  "immutable_reader_inputs": [
+    {
+      "filename": "legs-basic-1-20-reviewed-private.json",
+      "bytes": 36713,
+      "sha256": "6d0a0c690542e0eb96506d1cef3108d8e3baa71dbd2a5f05a322cd01248698e8",
+      "records": 20
+    },
+    {
+      "filename": "legs-basic-21-40-reviewed-private.json",
+      "bytes": 39095,
+      "sha256": "50ef5492fd7a7c0bdca7ca2c6f395e1151ecc9f29c2ac49cad65a5207bf3bec6",
+      "records": 20
+    },
+    {
+      "filename": "legs-basic-41-60-reviewed-private.json",
+      "bytes": 43027,
+      "sha256": "fb7917e9dea643a2e5abb38eea80b8a1c79b15dc564a2ff2f515ea52303489bc",
+      "records": 20
+    },
+    {
+      "filename": "legs-basic-61-65-reviewed-private.json",
+      "bytes": 10430,
+      "sha256": "cb6fe35530903773370a93b68d59b2f0d75050cc009fabca3b5e2be834938d3b",
+      "records": 5
+    },
+    {
+      "filename": "legs-basic-66-66-reviewed-private.json",
+      "bytes": 2442,
+      "sha256": "35150d6f0a153c839fad742de331207e8eef6bf90e94d42b6f19f4c75a4e3278",
+      "records": 1
+    }
+  ],
+  "items": [
+    {
+      "capture_key": "items-sequence-legs:1",
+      "capture_id": 1,
+      "ui_entry_ordinal": 1,
+      "fullName": "alloy legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "6",
+        "Skill Boost": "speed +10",
+        "Weight": "45.00 oz",
+        "Required Level": "60",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00001-name.png",
+          "sha256": "eb1ecf6abbc236037e517523e90187a0ab4928a2c40a4e4404ee908fd5db8334"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00001-name-hover.png",
+          "sha256": "b6fec39b46e39182f9cdc271c014ba4c9f43f394bdf844b856475e56cfffd13b"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00001-basic-top.png",
+          "sha256": "b96c027ec8bd457503f34ddc399c3b80eb1492fda95db0b87c41059e32332699"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00001-icon.png",
+          "sha256": "4b02e99537451799b5ee97d77746e7b69fb99825abe8aea2311f9141abb961c9"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00001-basic-001.png",
+          "sha256": "bf0a1d381010f7d9f2a81dbf0aad3e649fa44f38c4b37c61fdb8ca6cb60b9394"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:2",
+      "capture_id": 2,
+      "ui_entry_ordinal": 2,
+      "fullName": "bast legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "energy +4%",
+        "Skill Boost": "distance fighting +2",
+        "Weight": "64.00 oz",
+        "Required Level": "150",
+        "Vocations": "paladins",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00002-name.png",
+          "sha256": "6144ec969628c2790d1d78f6b906ea001fe6bef9d1745feaca0084abd755ad3b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00002-name-hover.png",
+          "sha256": "2f50e5c43b32910a52841ba7c3add6c630249f634426b56ed4406ca4fc682caf"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00002-basic-top.png",
+          "sha256": "75d964cdd6c24c8cdf7b84a494c6f6d0b19cb430fb3cccb7b935427e6ecd4bb9"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00002-icon.png",
+          "sha256": "2e1ede5b1df55696c104048d3d31c87546b79b4ce4b13bcfe6aa8046594c4bce"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00002-basic-001.png",
+          "sha256": "a56b472d136c525d6a6036419ebda94904758e89989458bd1a923ea27c8af7fc"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00002-basic-002.png",
+          "sha256": "180cf10e20450c2b8e6a4827740c4bfbf202108888f852d35393c2eb3d52ce6d"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:3",
+      "capture_id": 3,
+      "ui_entry_ordinal": 3,
+      "fullName": "bast skirt",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "3.50 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00003-name.png",
+          "sha256": "51f7e0d328066fb12c4a356446c84bc28790c4908a16aebe2c09bf4e88fa4c75"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00003-name-hover.png",
+          "sha256": "6f383207693175385b032bf9635bb87c4286e94b6a1024e751cd1c2611df7a90"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00003-basic-top.png",
+          "sha256": "f9e4bbc82dd55a57472d05e392fab042e2d4a4eb732e8b546b3a0c9c7bb9d9a1"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00003-icon.png",
+          "sha256": "412369e9da41c1d7ba53462b092c738d8f15d4139cffc312fd4479079284177a"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:4",
+      "capture_id": 4,
+      "ui_entry_ordinal": 4,
+      "fullName": "blue legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Weight": "18.00 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00004-name.png",
+          "sha256": "b1ed15324462655e77ea738defa103c2fe8b58e8dd3cd1b4d30aea6ede554956"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00004-name-hover.png",
+          "sha256": "3b47793cd10d157b52b4788d059227a6ac363fb89e93ca7f219ac01f59e29fab"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00004-basic-top.png",
+          "sha256": "cc461c5489690cd9e6070c07c3c2f1412ed4ebd956ec9ad51601e495d262b3e5"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00004-icon.png",
+          "sha256": "e7de57bc3bdeae0fbcb25809dd499658bc0d99d6233b67bf0585aa3d96c584a1"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:5",
+      "capture_id": 5,
+      "ui_entry_ordinal": 5,
+      "fullName": "brass legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "5",
+        "Weight": "38.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00005-name.png",
+          "sha256": "b4981280ec83a348875cca9f3037d5e62d6e046737f3e008d5a84bce3b8c3ea7"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00005-name-hover.png",
+          "sha256": "18ce7cb37ee3a40e3fed132a4ceeeb559f35ae7f6f20c4deae36a2761d3c0443"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00005-basic-top.png",
+          "sha256": "a6db98a090bef06fbaf033695559f90485b092a4599e8bdce811e0ec8deb39c1"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00005-icon.png",
+          "sha256": "a152c2b58f3546fdf00958d4a110e1361797b4dd7a1bd2c965f0b9049fc0d98e"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:6",
+      "capture_id": 6,
+      "ui_entry_ordinal": 6,
+      "fullName": "chain legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "3",
+        "Weight": "35.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00006-name.png",
+          "sha256": "5b3b1f46e6977456781d5cb33646a8a28034214567dba389f628d8116f662732"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00006-name-hover.png",
+          "sha256": "25522cba41e8c3b048e9b3fc38d8978f7e91355eb7461900870edfad2b7a6af5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00006-basic-top.png",
+          "sha256": "77efe532466aa8ba039bf1c18c5ee941a72867f40ddb9ee6707fc683b723d85e"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00006-icon.png",
+          "sha256": "2b168008cd5c2134ae7bdfd13f4fd081db14c5687a211768f6bbd2f03dfcd60e"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:7",
+      "capture_id": 7,
+      "ui_entry_ordinal": 7,
+      "fullName": "chocolatey dragon scale legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "2",
+        "Weight": "18.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00007-name.png",
+          "sha256": "c8172d92d2975ecef77d8e1d23e8a8cf0f9376dbe0e5172756e6b3cc5751f2b2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00007-name-hover.png",
+          "sha256": "cc342e57644d7e629823a5acf16eb078d9368ea65cdf194ca81f201fae2a3d81"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00007-basic-top.png",
+          "sha256": "8c40aa80ad5ec3bc3e7cbf74a07bc6b27aac8d5ab035866473ba4327f4d37801"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00007-icon.png",
+          "sha256": "90b3c1b2fc683508fac4c7d65d1aec8dc86ba06d4ddcd1227764779ec7db05c8"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00007-basic-001.png",
+          "sha256": "8635bb46414a6c749d0424198a9a1f250150334721b1b5fd608d0a2cf2ba6231"
+        }
+      ],
+      "saved_basic_pages": 2,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "8e7fad8e88b90acd93f825a9a9baf3a7b365a3c2ce9e9ffc78c226754c2fb887",
+        "bytes": 59,
+        "characters": 59
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "c8d2a1c14a7e7ae27cd8bca6846a08ad39515a3add5a789498fcd1703aebb80f",
+        "canonical_utf8_bytes": 65,
+        "line_count": 2,
+        "line_character_lengths": [
+          48,
+          10
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-legs:8",
+      "capture_id": 8,
+      "ui_entry_ordinal": 8,
+      "fullName": "corrupted moonsilver ashstrider",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "12",
+        "Protection": "earth +9%, holy +2%",
+        "Skill Boost": "magic level +4",
+        "Augments": "Forked Glacier -> +8% critical extra damage",
+        "Weight": "35.80 oz",
+        "Required Level": "700",
+        "Vocations": "druids",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00008-name.png",
+          "sha256": "c542a79065b334600557b66ad5a12a1d65fd66168a85bde3865a66f39b75af68"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00008-name-hover.png",
+          "sha256": "c8f154e32abf2c8db50336308165d020a911debbca460b52ec76bffcc644d233"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00008-basic-top.png",
+          "sha256": "392cc9f28d421a848443bfcc68d242dca6a5f2015d8d11a2bbaa1225e43cb94c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00008-icon.png",
+          "sha256": "c1aea90a8fc81481d098256f213b6a53d4271d1ea8dbb046c9342c7689770090"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00008-basic-001.png",
+          "sha256": "8bd3552ced57f92972ea9404c17f8c668e16a2603cdf099edc450c05e18c0360"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00008-basic-002.png",
+          "sha256": "aca339b0dfdc931d7bcaf40980248e6cbe6ca0509ab6cf2e4583aa7f33ed1507"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:9",
+      "capture_id": 9,
+      "ui_entry_ordinal": 9,
+      "fullName": "corrupted moonsilver flamestrider",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "12",
+        "Protection": "ice +9%, holy +2%",
+        "Skill Boost": "magic level +4",
+        "Augments": "Death Echo -> +8% critical extra damage",
+        "Weight": "35.20 oz",
+        "Required Level": "700",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00009-name.png",
+          "sha256": "449cb16d7128aed53158cfd0408bc21355b3a67e724768e1e525a13996300291"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00009-name-hover.png",
+          "sha256": "cd0b80d59d8b0acb94a1581aefc57095e72a54d09d4362521e2b6e19abc4955a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00009-basic-top.png",
+          "sha256": "94276f5fef0dda736cf29ae3f68098614cd65b32383e2c4f95b86eb83768dd73"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00009-icon.png",
+          "sha256": "158e98c8899c0ac697db2a51216b4ea8f9ae599dcd9b42f87cecff9ffbb33d62"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00009-basic-001.png",
+          "sha256": "b8763628c659cd8904d5ae1d00f3d1a3dfa17b25dcdab100835e9274d9fee946"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00009-basic-002.png",
+          "sha256": "1b73e4928345fac85a8a8426a214118e5bee3cbdd97ae39e6c19e659b60526d7"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:10",
+      "capture_id": 10,
+      "ui_entry_ordinal": 10,
+      "fullName": "crown legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Weight": "65.00 oz",
+        "Vocations": "paladins, knights",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00010-name.png",
+          "sha256": "7b29c0bb083d5c02609811fcef5ac3cbe7cf4d6c5ed2702bca53d9cb32eb079d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00010-name-hover.png",
+          "sha256": "d68142a2b02bfecfb159b88245250acfb768b46a3ef45e58858b1d6266fb2044"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00010-basic-top.png",
+          "sha256": "95656a6cb086bdc1f99ef456f173fc3ff43f0f4c081ae75018c1984d26d9d08c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00010-icon.png",
+          "sha256": "8e12651948a775ba1a6974f84a44c486e7d36cdf0f0ad9b909177dc4401d0745"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:11",
+      "capture_id": 11,
+      "ui_entry_ordinal": 11,
+      "fullName": "dawnfire pantaloons",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "physical +3%",
+        "Skill Boost": "magic level +2",
+        "Weight": "30.00 oz",
+        "Required Level": "300",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00011-name.png",
+          "sha256": "03539a5ab1dc6dfafb99a086a0f7e725de98419d583450a05ad9722de0c40d74"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00011-name-hover.png",
+          "sha256": "f9d427230f63840033b91d7c07288a3c3c12e6b7a2fc41a3f99602d033c3b54f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00011-basic-top.png",
+          "sha256": "09965a53dfb62e90a120dbbb94443ba69bb11208a9367c24d3d5394dcab31b7b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00011-icon.png",
+          "sha256": "5f158df84095f65c3b75d2efad50a5b6398da78b2ed8e4c48f72fc5df1434d8f"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00011-basic-001.png",
+          "sha256": "2cb5c5f6373e690238d7bcea875fd6bb94b4d26c88868aab397c4a3bb05631db"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00011-basic-002.png",
+          "sha256": "7a19b12bad7e7a464a6547765b62fb3ac9ed4811e51fb4b743b1e2caf57df0a2"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:12",
+      "capture_id": 12,
+      "ui_entry_ordinal": 12,
+      "fullName": "demon legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Weight": "70.00 oz",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00012-name.png",
+          "sha256": "dcff86de12223f7d47af251a96aa320cc1d1ed11b72758c4985e6415db51ca9d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00012-name-hover.png",
+          "sha256": "bdaf2440a7f6904aa6aea9f3ecb83cd284f9139719b05878a3c9111c9e9ce47f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00012-basic-top.png",
+          "sha256": "1f2a599b8aee1e1f9f05823da5ee0e2d8577efa951f696057493317fa84ad6e8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00012-icon.png",
+          "sha256": "42a58a6a32297e23973e98d1da60c27f3e776f09d2ebb138c3cbfe4633653db0"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:13",
+      "capture_id": 13,
+      "ui_entry_ordinal": 13,
+      "fullName": "depth ocrea",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "mana drain +15%",
+        "Weight": "48.00 oz",
+        "Required Level": "130",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00013-name.png",
+          "sha256": "be8f507b4335c1a761cb6d80365ba92a71a9572143497fa0f0afaedd225e9391"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00013-name-hover.png",
+          "sha256": "10a369c941a871b4514efce2ed705bf6843ac3d0d928476c131a6a44abfaae55"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00013-basic-top.png",
+          "sha256": "5a591fe84c1243234b51f84996c667a421d4cb9210c1adea28bde35c0a04fbba"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00013-icon.png",
+          "sha256": "54a4bd2f44b52689fa88cb6ed3a6b63f4d2acd2f7afed98c36305e5ec28e3ba6"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00013-basic-001.png",
+          "sha256": "9e01a4d151b5a9e96576a6111f588a753adf1a21105e6dadbd15b0200fe4adf4"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:14",
+      "capture_id": 14,
+      "ui_entry_ordinal": 14,
+      "fullName": "dragon scale legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "10",
+        "Weight": "48.00 oz",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00014-name.png",
+          "sha256": "593a6a724f8c46c88bf281b7ed88a92629687903982f0c65445a066bc9b860e0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00014-name-hover.png",
+          "sha256": "5ced4a3bbf281a8756f57c79074a8144487eda8653f83d38f9b4ee997442aecd"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00014-basic-top.png",
+          "sha256": "f2f9d2e943eff43b9091eba5037a89b1c012a3ba2fdcbf0992b4ac1fd80a2338"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00014-icon.png",
+          "sha256": "79646aca1a6d841375f307334729e8684b1e21a462c5851aec468c494e9ce849"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:15",
+      "capture_id": 15,
+      "ui_entry_ordinal": 15,
+      "fullName": "dwarven legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "7",
+        "Protection": "physical +3%",
+        "Weight": "49.00 oz",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00015-name.png",
+          "sha256": "38ccd685d4586dc5aed41bcacecc9391b368af091a5292dafa503a07cd886fad"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00015-name-hover.png",
+          "sha256": "ee6e8a8e79b0564b38c8058bd384a072d8f61f6079dda7e9fae2b97a33d2f40f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00015-basic-top.png",
+          "sha256": "ea5c49f3e15a1425256864f96dc8ed413f7be823ac5f904f113f530e6ef5955c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00015-icon.png",
+          "sha256": "94f8321f7cedf3c333f5da214927f117d5857d40e71da01c16804db84473a6ca"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:16",
+      "capture_id": 16,
+      "ui_entry_ordinal": 16,
+      "fullName": "eldritch breeches",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "physical +2%, holy +7%",
+        "Skill Boost": "distance fighting +2",
+        "Weight": "69.00 oz",
+        "Required Level": "250",
+        "Vocations": "paladins",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00016-name.png",
+          "sha256": "70f8a48f4fe3f1a01a90564169bdc4f646882cff2ce06bf0a840e131b0abb1c1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00016-name-hover.png",
+          "sha256": "70afcc7737749b0f417a3df4f13a823e697703ee00da6710c76c1ed63747a22f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00016-basic-top.png",
+          "sha256": "322b815d2543a746ff1e1f214b7f8b0d8266678df7f95cac1d52fd6d36ab7b98"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00016-icon.png",
+          "sha256": "0ddedcc0e44abe18aba0b138f60c934e37af6f9091041ec7022ad70b16879598"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00016-basic-001.png",
+          "sha256": "a90d0f455280068b3ace51523ed0680dc0db796b801fc712b2cd86c8cc02485a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00016-basic-002.png",
+          "sha256": "44339090629dfe71e635b92a795e384ec19eedd50965c3d6b46a084e6aa9ad59"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:17",
+      "capture_id": 17,
+      "ui_entry_ordinal": 17,
+      "fullName": "elven legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "4",
+        "Weight": "33.00 oz",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00017-name.png",
+          "sha256": "1292aab7bbd74e18c9683e3e16bbf6132dcfa31d017ac081ce6e3690d3b38040"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00017-name-hover.png",
+          "sha256": "9c7638b54b37e83205c35215202388f153933448792a443665a2e6106aad0271"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00017-basic-top.png",
+          "sha256": "2f8fed1ce15306b42002891bed5a7f117e2c96107c337aa9b3f193df6b15f626"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00017-icon.png",
+          "sha256": "c0a17fd66b569584fd9e3e350b932471748a04e9790f1222ea9c52d6bf16eb33"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:18",
+      "capture_id": 18,
+      "ui_entry_ordinal": 18,
+      "fullName": "exotic legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "physical +4%",
+        "Weight": "72.00 oz",
+        "Required Level": "130",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00018-name.png",
+          "sha256": "3f500f39f2c4c77a1ba0b236ff953d7e66f0a088ed534001e6f65de52c7c3511"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00018-name-hover.png",
+          "sha256": "f97d35629fc78508a584c66e477df0c04a241b862cd8df989c8a0fc42cfaf4f4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00018-basic-top.png",
+          "sha256": "ccd7e0f630d2eb56d8975db0d1df1fd162ad136179f499ce8d304122be1def06"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00018-icon.png",
+          "sha256": "e47a16c4a5d482f9dcec2ceead974589ef0561c70f444b77eab87c8910b4a720"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00018-basic-001.png",
+          "sha256": "e136df0ececf2a542467f5c330120ecc4c137eed986c832e8e224ebe2fc78e9c"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:19",
+      "capture_id": 19,
+      "ui_entry_ordinal": 19,
+      "fullName": "fabulous legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "physical +4%, fire +2%",
+        "Skill Boost": "distance fighting +2, sword fighting +2, axe fighting +2, club fighting +2",
+        "Weight": "55.00 oz",
+        "Required Level": "225",
+        "Vocations": "paladins, knights",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00019-name.png",
+          "sha256": "9cbf9d007f7fd06897957048f9f4d91290533301debe0bf963ed85478f58dde8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00019-name-hover.png",
+          "sha256": "b0f6364e905d7f80ba17d07fbfb4c1f7f0b42d07ba092f994bb318f629b6be17"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00019-basic-top.png",
+          "sha256": "1f6815581345327d4ab5c6a2f8d9b92337d5ee454b829fd212f9893a032e15ca"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00019-icon.png",
+          "sha256": "d50f053889b41de2e934a3c26eedfb81c6fbda3ede06de635c6766c71ed4dcea"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00019-basic-001.png",
+          "sha256": "6124b660045e9fe720f8a218a1f9371ca44dae357eb606d14919d035b01d8e20"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00019-basic-002.png",
+          "sha256": "e08909f67bef8f8ae314b2f0a4167293f7b9974fdc0c0e755eea927a89680b04"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:20",
+      "capture_id": 20,
+      "ui_entry_ordinal": 20,
+      "fullName": "falcon greaves",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "10",
+        "Protection": "physical +7%, ice +7%",
+        "Skill Boost": "distance fighting +3, sword fighting +3, club fighting +3, axe fighting +3",
+        "Weight": "36.00 oz",
+        "Required Level": "300",
+        "Vocations": "paladins, knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00020-name.png",
+          "sha256": "9d44ac3a3f676baac3c8d68925a5058104fc51eafb672d05e576edf3eda4a425"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00020-name-hover.png",
+          "sha256": "030135692bbd08c8dcd9b42f2bcd98f0fde0c7c25707000cd2d02ac943d708cc"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00020-basic-top.png",
+          "sha256": "bc8a45aa897546dc28df3c21e456c62ed7ee691210208064307c09db30c8a897"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00020-icon.png",
+          "sha256": "4c12e36bc283df86d17e38466d9fce21b4fd1e38a2c980885af4691807650663"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00020-basic-001.png",
+          "sha256": "32847c86b80d9c6890f1c25a331b898d7aaf836f6da123dcc2b90d5fac4fda88"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00020-basic-002.png",
+          "sha256": "d115305ccafdb171495a10d37ed46f5735309616b3b4b7058d92129b63388d62"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:21",
+      "capture_id": 21,
+      "ui_entry_ordinal": 21,
+      "fullName": "gill legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "7",
+        "Protection": "earth +8%, fire -8%",
+        "Skill Boost": "magic level +1",
+        "Weight": "28.00 oz",
+        "Required Level": "150",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00021-name.png",
+          "sha256": "abe56837d1662a5ace1f4a5611d58898fc39bbafe2e3ee2dbb8dce7a3a9633f8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00021-name-hover.png",
+          "sha256": "555c7bd04964fa3879973d7a6fe402948ead24dc0cb6362564f0710431d20a57"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00021-basic-top.png",
+          "sha256": "c7fc4f7211b5fa80e296e79caee25c64bb3881496f0ed8503c4dddd610c53794"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00021-icon.png",
+          "sha256": "2b2d46e293afdcd5bcf676115f6d143d6a4d0722fe112d0ed49f2a5c48df51d4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00021-basic-001.png",
+          "sha256": "fb79a953f44ce14cdcc447ecc417d2411b6e7bd23cf2e6a1fdaeec7a44b938f9"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00021-basic-002.png",
+          "sha256": "f7944aa669a4511c739f9db0b6358ad1741053e7e24d5dfe407abc404aca1b77"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:22",
+      "capture_id": 22,
+      "ui_entry_ordinal": 22,
+      "fullName": "glacier kilt",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "ice +6%, energy -6%",
+        "Weight": "19.00 oz",
+        "Required Level": "40",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00022-name.png",
+          "sha256": "c42773e157ed688ab75d905e64ccb6dd49b9395444b308c9faad399949c1d348"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00022-name-hover.png",
+          "sha256": "f0afd133347804d2a32ede7c579e89520b451a669e0cb56f627db7b5f8e99d65"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00022-basic-top.png",
+          "sha256": "f0e36afe4c8dc76d09563937a8e467ecf60331499590ea1a11f809fd27e94a99"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00022-icon.png",
+          "sha256": "4475a962ddfebf1a926fd1fff88f3187d0ae8a6cd7833082f722545d47521aee"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00022-basic-001.png",
+          "sha256": "dfa95993affd7fc7df7795a231f4958dc9156ac89ac7e5136652fe6c3596fc2f"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:23",
+      "capture_id": 23,
+      "ui_entry_ordinal": 23,
+      "fullName": "gnome legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "energy +7%, ice -2%",
+        "Skill Boost": "magic level +2",
+        "Weight": "25.00 oz",
+        "Required Level": "200",
+        "Vocations": "druids, sorcerers",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00023-name.png",
+          "sha256": "fb1c7003826ba731c4701617a13f68bf44a44b70c2d8de3a44127b6f244dbffc"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00023-name-hover.png",
+          "sha256": "ea6ba9ca04272908bb1f763521de0bd4976e8c687f3f1f8ae431b18edfe021b7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00023-basic-top.png",
+          "sha256": "2eb1b43d71740774130830d59430308193832ef788fcb825be9f971538a93375"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00023-icon.png",
+          "sha256": "23f04484633da9c7be04126ca01b949263956712d4b224479f33a8a371e8f446"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00023-basic-001.png",
+          "sha256": "1a27ec42de42ec83cb9ab64c04abd5da39ccf64b049a0491fbd952c5de31e7a7"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00023-basic-002.png",
+          "sha256": "8b0d0fa535b72b5ec4b88a9970a05d591cc4c4efbe7382362aaa40d7fd134bb9"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:24",
+      "capture_id": 24,
+      "ui_entry_ordinal": 24,
+      "fullName": "golden legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Weight": "56.00 oz",
+        "Vocations": "paladins, knights",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00024-name.png",
+          "sha256": "ea07f390773ba34f54660597026e025634a784a357a1a2898cba41ad46fbd033"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00024-name-hover.png",
+          "sha256": "961e05abeb598a52fec835b8fdd5f8838fcda3fd9623e3cfb56a92af7efb58e7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00024-basic-top.png",
+          "sha256": "d1f8232852506e4bed9fa0f809f729e497a5c552aab5ef71a6d6ba3210ef1f85"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00024-icon.png",
+          "sha256": "c15c8100c8085f2af74a4b35ab324ab2def2bfb6d52850e6b4daa3c53c3f5b59"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:25",
+      "capture_id": 25,
+      "ui_entry_ordinal": 25,
+      "fullName": "grasshopper legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "7",
+        "Skill Boost": "speed +10",
+        "Weight": "32.00 oz",
+        "Required Level": "75",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00025-name.png",
+          "sha256": "75d66b9ace510edcc88b5bcef0343c80550ea4172735c9dcee1608193d7fecd9"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00025-name-hover.png",
+          "sha256": "6402c011c7cbb292e7bd69bf115e954dea2a14b43ff1ac139fa9666262be8501"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00025-basic-top.png",
+          "sha256": "a84513117997e3d331212e08e933e08499c652d300219a95ecc7cd338736e100"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00025-icon.png",
+          "sha256": "146a81b9c5718a384c78ca674fe499ca82600a1fed97bd232490adff8b4d1dc4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00025-basic-001.png",
+          "sha256": "8ce89d57bbadf34b4a04b0cf4610e35c56d48dc92809b1b78320ed881fa3526e"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:26",
+      "capture_id": 26,
+      "ui_entry_ordinal": 26,
+      "fullName": "green demon legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Weight": "70.00 oz",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00026-name.png",
+          "sha256": "d89db9f1d5c9b7e419a7cc493b3feba62335167de3feed3e7c4609a8a9d113df"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00026-name-hover.png",
+          "sha256": "a14ce572645390b543d14d7010fd9be29a0179ebeeb9c26878e083ccf736967e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00026-basic-top.png",
+          "sha256": "4e14eb815e27ef1a6667a37672b735c3e52b0094f22a7a8ebc4a1383fe80e3b6"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00026-icon.png",
+          "sha256": "ce8914f2d15a82e7254449d4e54150876dddd36a1b71afed79182261ca784999"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:27",
+      "capture_id": 27,
+      "ui_entry_ordinal": 27,
+      "fullName": "icy culottes",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "ice +8%",
+        "Weight": "15.00 oz",
+        "Vocations": "druids, sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00027-name.png",
+          "sha256": "475a04fbf4cf309c99c8459298d2461d844c2e07dcc2016b23a95416607e6c07"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00027-name-hover.png",
+          "sha256": "301c37bd663dd8aa7eb9f7f26197f00de8f55186ebef3c2f363bf217f1b5ccfc"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00027-basic-top.png",
+          "sha256": "9b8d502f27d6e5007395c713c4950aa3e0263ea1d9e1a146100664f990ac6a1b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00027-icon.png",
+          "sha256": "63492a1f616ba9e9eaa69abeff6bf8e3bfe348d933c8b1c675951ae20c76c65a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00027-basic-001.png",
+          "sha256": "b0c2e27bbe09cd7e38a4d421781370cff01992022a0cf58fd288adb7069f39cf"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:28",
+      "capture_id": 28,
+      "ui_entry_ordinal": 28,
+      "fullName": "jade legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "5",
+        "Protection": "ice +4%",
+        "Skill Boost": "fist fighting +1, magic level +1",
+        "Weight": "37.00 oz",
+        "Required Level": "210",
+        "Vocations": "monks",
+        "Classification": "3",
+        "Mantra": "6",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00028-name.png",
+          "sha256": "fce2f10372637d409c93aae6d32ca6b50db95d256b3bed3e188009dfb9abc229"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00028-name-hover.png",
+          "sha256": "c70fc255b98b460a78572aed2139a624cdac9994d168490d430517fa311cc874"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00028-basic-top.png",
+          "sha256": "150adb00888ab5cfa660edae609a2cc1be344775a0ecaddfdea3b3c3e36cfc17"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00028-icon.png",
+          "sha256": "44e0e3e5a73f353826f50bdf92913622a34efabd9f7a2594ac2c33a390594a47"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00028-basic-001.png",
+          "sha256": "b3588e84a3710eb6880fa262c896aaf618c7860408152b32704005da281d5039"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00028-basic-002.png",
+          "sha256": "1c6bb1e8ac094a7f785a355a80cdc207015486e137d414c845ad833a355d5c79"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:29",
+      "capture_id": 29,
+      "ui_entry_ordinal": 29,
+      "fullName": "jungle survivor legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "6",
+        "Protection": "fire +4%",
+        "Skill Boost": "fist fighting +1",
+        "Weight": "51.00 oz",
+        "Required Level": "130",
+        "Vocations": "monks",
+        "Classification": "4",
+        "Mantra": "5",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00029-name.png",
+          "sha256": "465169dcd73c3f3c40e325b918b0ebca347888e1356acecd0f82e24d06418445"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00029-name-hover.png",
+          "sha256": "9b3b9b83295b8d62089ce8853d8856da7e509b2bd1e7cb5fa5926a7efee6a1a0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00029-basic-top.png",
+          "sha256": "573d41625a846e4cab3bb71473b936165b1c9232769280177092c748bb7cd3e1"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00029-icon.png",
+          "sha256": "8047f7e55911837ddbbba670910fbbace936dbad60fdeb8922ba4a8be5102f58"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00029-basic-001.png",
+          "sha256": "03362c63f044f145f770c288eaa941b0183b65f7c2d86f1669cf92737348a289"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00029-basic-002.png",
+          "sha256": "c2571caee7af6a6bccd6cd76711286f3aa77dac52ba1eca5dc9f032d295bd95a"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:30",
+      "capture_id": 30,
+      "ui_entry_ordinal": 30,
+      "fullName": "knight legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Weight": "70.00 oz",
+        "Vocations": "paladins, knights",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00030-name.png",
+          "sha256": "e2022d7034ab17a2b4709d9b78e95d5f21512173c11a6bf0ff71a3e30c68b675"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00030-name-hover.png",
+          "sha256": "4adfab1c2d1ea9ca0f00b592b64639d3a49905bc039951bfbde69432def2eb08"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00030-basic-top.png",
+          "sha256": "aab6ceaa030d81dae049dbec569b0d3d43d643c1c882fc748f222664c85e739f"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00030-icon.png",
+          "sha256": "5d286d9462304a57a9d7c86f69836e186d9d578d0ca2e3c1986157b98c1ced77"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:31",
+      "capture_id": 31,
+      "ui_entry_ordinal": 31,
+      "fullName": "leaf legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "0",
+        "Weight": "12.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00031-name.png",
+          "sha256": "e6c11c411a4703ffccf1a37beb4bdda3e3e63fb70901b37abc5680b7eadf0670"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00031-name-hover.png",
+          "sha256": "b9ceb1e91399cf7c6f7a1237eaf7c360f019a7db6cfc9975b9f64b0f6f45e102"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00031-basic-top.png",
+          "sha256": "2bd9e9e70bdf46ffbbd58f09bbc850688ba80b3e130a28a3d2cb0ce149177c18"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00031-icon.png",
+          "sha256": "db8cdf51fdae615476d149311418272b31207a9cf197755425dfedcd06636226"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:32",
+      "capture_id": 32,
+      "ui_entry_ordinal": 32,
+      "fullName": "leather legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "1",
+        "Weight": "18.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00032-name.png",
+          "sha256": "cb42554ce8b18bf0ab631e224f320dd3d8fd8066cd87fc2c6b029a412b49225e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00032-name-hover.png",
+          "sha256": "43375e2f5cfccae5f9da628c0167e0339ff821538e3bdd1abf62f50192ffe18a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00032-basic-top.png",
+          "sha256": "fe63b493983493e186759ec3482d4f0e367722d4337ef6f94528b3527b4b41bc"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00032-icon.png",
+          "sha256": "021a02ff893f9bfeb1dc567fbb080d3e2b27968f1669dc437f94c43fdbc4baf3"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:33",
+      "capture_id": 33,
+      "ui_entry_ordinal": 33,
+      "fullName": "legs of enlightenment",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "4",
+        "Protection": "earth +3%",
+        "Skill Boost": "fist fighting +1",
+        "Augments": "Double Jab -> +12% base damage",
+        "Weight": "21.00 oz",
+        "Required Level": "40",
+        "Vocations": "monks",
+        "Classification": "1",
+        "Mantra": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00033-name.png",
+          "sha256": "06287318dc3cc286a5ce8e47a14c40099386a6fdbbde3e894592a8b7d0c3aaab"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00033-name-hover.png",
+          "sha256": "9fcd751d11bf30839c1050a93f10e2470ab8e3e95810207b4a8062826b41fc94"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00033-basic-top.png",
+          "sha256": "db3f759c14856c5441bbda3d4525efd732d9bdc92c89d7787e5c0eb44824d944"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00033-icon.png",
+          "sha256": "409999a33c22b8ff47359caf4d587b4d9baf4311aebecfe74a90c81c3cf1c67b"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00033-basic-001.png",
+          "sha256": "21e3c968a703f88069d8dd7ad3f87456e59238235596a514f38e0e108136ccc7"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00033-basic-002.png",
+          "sha256": "12e9931ae713f55299b6ed3567ff1222c0a8da4561fda7268e8c77cf33e3cafe"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00033-basic-003.png",
+          "sha256": "a132be7d6a80ad06ee081cb46b33ef6c503d14b41571e74bd88c209351777beb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00033-basic-004.png",
+          "sha256": "3826703efaf6ac5e7214ba0d00e414813f6155b3d0a0588ae9d88c837a72e851"
+        }
+      ],
+      "saved_basic_pages": 5,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "e953e06c4281224b1694aaa33049edc0d70ea142018171fe556c110afb90ef09",
+        "bytes": 121,
+        "characters": 121
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "a67d77b6dbcd2e9f67cda91c49985697a8fb11c52880ad85bc908fec9e31244c",
+        "canonical_utf8_bytes": 130,
+        "line_count": 3,
+        "line_character_lengths": [
+          47,
+          46,
+          27
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-legs:34",
+      "capture_id": 34,
+      "ui_entry_ordinal": 34,
+      "fullName": "legs of wisdom",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "4",
+        "Protection": "energy +3%",
+        "Skill Boost": "fist fighting +1",
+        "Weight": "26.00 oz",
+        "Required Level": "80",
+        "Vocations": "monks",
+        "Classification": "2",
+        "Mantra": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00034-name.png",
+          "sha256": "6eb5a469aeb3dbc16d667274713a0edb06716f027c0d6d930aaf095fe8c53691"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00034-name-hover.png",
+          "sha256": "5a3a9e2fc72ce5c1a136258e2fed2ab64e9b419bf79a4d57b03278ff062b776f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00034-basic-top.png",
+          "sha256": "1e42e351d42d3fb358af7e51224955232c2bd9c80c9af26171d1b2c88ee9d482"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00034-icon.png",
+          "sha256": "adc467ef4084239a7a7bf09c35c3649f5860e98ac4723d012194a305c09ba345"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00034-basic-001.png",
+          "sha256": "1e386d36baff54bd765754c7531bdcd5b5fb8fafd4b7d90956e55dea6cd564eb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00034-basic-002.png",
+          "sha256": "1f66c8cd3aacc1b67658e98568027d9ccc7ddcfe720366d277cf34b2653b7e3e"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:35",
+      "capture_id": 35,
+      "ui_entry_ordinal": 35,
+      "fullName": "lightning legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "energy +6%, earth -6%",
+        "Weight": "19.00 oz",
+        "Required Level": "40",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00035-name.png",
+          "sha256": "1515efdbfa0439211d7fc580e02c10d4dd396eea09b032f44dc2891835e65b22"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00035-name-hover.png",
+          "sha256": "de7c16abb7d059a71e0515ce35cf02a4e54b00ce4e72ec3bdb3475cb67952e98"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00035-basic-top.png",
+          "sha256": "7fef1798e6d816e22cb97f6460e449e7f498aacddfb76de9b7da045269673f42"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00035-icon.png",
+          "sha256": "b8f8aa95e28dbc8ba0b57a1d38a4dc4e19d32a18cbfc3990165a8d4230c6f4e5"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00035-basic-001.png",
+          "sha256": "863a68c847a0bcb9e99f4c79a4864ca9260bc295252d9f23249a9a4ab268fc03"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:36",
+      "capture_id": 36,
+      "ui_entry_ordinal": 36,
+      "fullName": "magma legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "fire +6%, ice -6%",
+        "Weight": "19.00 oz",
+        "Required Level": "40",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00036-name.png",
+          "sha256": "f48968105535e2e4942b476095404cd05b49cc5818c89611fab1aaeb502b7a38"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00036-name-hover.png",
+          "sha256": "931b0686281028f160aeaa1f97eec86baa17c597690d274f4df49235ea9a8c32"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00036-basic-top.png",
+          "sha256": "0b684b0c0195fe3d11abacfe8da94334b6343633eabb91ada755dc5c57787aa6"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00036-icon.png",
+          "sha256": "9b504ab0a0897aa55afb894ab04f1a5eded3be58097c9cbebc713560aac9cfc8"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00036-basic-001.png",
+          "sha256": "8814cd5fe414c13843c8001803e538865c533c7ee9cdd7b8fc251d4cd0bdb9b9"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:37",
+      "capture_id": 37,
+      "ui_entry_ordinal": 37,
+      "fullName": "mammoth fur shorts",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "1.50 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00037-name.png",
+          "sha256": "76576d39e1e1c5ba04c345601c7ee7cee16dc65fae962dd30fde50e2d788a652"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00037-name-hover.png",
+          "sha256": "e78882ae904c203799c267294a72abe8a2e6575c01bb84c5c3f404c80bb7eaf8"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00037-basic-top.png",
+          "sha256": "011f0b4b94813d611a3a7219b9a5e7db294535d71e014bfb64af6ab56b6b6ef7"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00037-icon.png",
+          "sha256": "1cfa298383ece1f69a34072ea4dda88f7297d3eebeb1f42174ed7640f8b4f1de"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "8268af6623fca19eacacdd0f763f7799a2c0409e0046dc9c20e71b907bb6128e",
+        "bytes": 78,
+        "characters": 78
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "1fcb6612183b3fea298b219fc90dde0fcc872f748b6414148e076b16773faa90",
+        "canonical_utf8_bytes": 84,
+        "line_count": 2,
+        "line_character_lengths": [
+          46,
+          31
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-legs:38",
+      "capture_id": 38,
+      "ui_entry_ordinal": 38,
+      "fullName": "midnight sarong",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "ice +7%",
+        "Skill Boost": "magic level +2",
+        "Weight": "31.00 oz",
+        "Required Level": "250",
+        "Vocations": "druids",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00038-name.png",
+          "sha256": "8309c2acd9ca0ccf98db930e86f1db8c956040208fe06823560dc56d2b58c983"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00038-name-hover.png",
+          "sha256": "57e2d055b7b61c24ed9880d851cb2be12e2b12563e2462dc8d1fc24ef4066223"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00038-basic-top.png",
+          "sha256": "4bc2bca10d23b92ad0d3f9ecc212752a28bfc4fb4eced0289f8d946e3ce92457"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00038-icon.png",
+          "sha256": "98a63470bb5db46dc93880c7bf0bc473fa83c46814d987b3a09da7629e283523"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00038-basic-001.png",
+          "sha256": "c32d8960e06b1e6fc7f0429a9a94591ca65cd7ad3bd0e02dd1b6ef5ac3e25dcb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00038-basic-002.png",
+          "sha256": "c43720a5eb3ba864b30d133128d287852eddaaf433be1a51583b9a84c0e3764f"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:39",
+      "capture_id": 39,
+      "ui_entry_ordinal": 39,
+      "fullName": "mutant bone kilt",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "physical +3%",
+        "Skill Boost": "magic level +2",
+        "Weight": "35.00 oz",
+        "Required Level": "300",
+        "Vocations": "druids",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00039-name.png",
+          "sha256": "5736906af0ad758a8770b091bd393ec3f1777f0a7f2ad485b7845537258d470c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00039-name-hover.png",
+          "sha256": "1af2de36edc01254c915837e4fc1d287cc5b3cc49e0e2d85d3b499694f08b86a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00039-basic-top.png",
+          "sha256": "013438d0cc5815566c64d2c764399e28c189611c0f53da0f9b8dabe87df0d72a"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00039-icon.png",
+          "sha256": "dd8e9e9cc940923f03c1590f07945c1d1572e92a1f475e0e6b9ba94086a622c8"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00039-basic-001.png",
+          "sha256": "236e19be1f24702b9614fa8123e451de10113d5e3d91b6d1c1b71b8a4792e2e0"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00039-basic-002.png",
+          "sha256": "225c64e207d5e3dff71359505be72f34897be9aaf92517b72f20164ff73cd06d"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:40",
+      "capture_id": 40,
+      "ui_entry_ordinal": 40,
+      "fullName": "mutant hide trousers",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "6",
+        "Protection": "physical +2%, earth +5%",
+        "Skill Boost": "fist fighting +2, magic level +1",
+        "Weight": "33.00 oz",
+        "Required Level": "300",
+        "Vocations": "monks",
+        "Classification": "4",
+        "Mantra": "8",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00040-name.png",
+          "sha256": "78f8b372688d75a3895b1f8780b4b22ccf2ad064e34c4888d9e94977c201d2d0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00040-name-hover.png",
+          "sha256": "3e0a03332797f435d762f2962c0bf916179b6147b851631a258a4b2da346262d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00040-basic-top.png",
+          "sha256": "c2ddbe4a8e8d50fab905eb919ea797313b65bf86215082efdd538f35d919bab7"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00040-icon.png",
+          "sha256": "ba229c1e7f7d1a20f0f05accd0af6f12ada1b5a07624e68acf63664a64b17838"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00040-basic-001.png",
+          "sha256": "7573b652d21ed5c6c02f233596b909e58a0b7f33502defa154e5a785c5c6c547"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00040-basic-002.png",
+          "sha256": "f3a92a8ea2c836c23d5b1ec2c97236bbd6cbeea587d94e95af99f867d9827cdb"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:41",
+      "capture_id": 41,
+      "ui_entry_ordinal": 41,
+      "fullName": "mutated skin legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "physical +4%, earth +4%",
+        "Skill Boost": "distance fighting +2",
+        "Weight": "52.00 oz",
+        "Required Level": "270",
+        "Vocations": "paladins",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00041-name.png",
+          "sha256": "0784c19403d9f95daafefa281095317ec75bfba52dd5ad8ba8b1bf04f96a32b9"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00041-name-hover.png",
+          "sha256": "25024ec33796a14f4de1e6093e31571c16eae3d060527a51b8160fb24827a587"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00041-basic-top.png",
+          "sha256": "0866cc4d35be8ff42b3835fb6ae7a7027275f371698fdfc628e8b7a7670d2adb"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00041-icon.png",
+          "sha256": "fb7a92d8df2f22da1a812db8e041bf901684b35a3c5eb9bc10d218b05983fcc6"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00041-basic-001.png",
+          "sha256": "6afb1bb8dd9afdcd80aed97f99660fbeb0b0aeccbe7149f9849cf48f3de2e075"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00041-basic-002.png",
+          "sha256": "f512da80516cc2da5cb5b4afeed91b3cb71b94905bc013d3701f52d17ac6ba9a"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:42",
+      "capture_id": 42,
+      "ui_entry_ordinal": 42,
+      "fullName": "norcferatu bloodstrider",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "death +4%",
+        "Skill Boost": "magic level +2",
+        "Augments": "Ultimate Terra Strike -> +33% base damage",
+        "Weight": "11.50 oz",
+        "Required Level": "270",
+        "Vocations": "druids",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00042-name.png",
+          "sha256": "27fc5f422bbe766dd10d8f722aa70dc16bf29fd8a3e872a344d23f5327eb055e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00042-name-hover.png",
+          "sha256": "ab785c54277ee0d107b7b7ea38f4c834ee64f28a2142ded845fcea77d7da0d46"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00042-basic-top.png",
+          "sha256": "6617d9e8f018ccedf9140a448e599eb116d719e667f379163bdb3fae866634c1"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00042-icon.png",
+          "sha256": "1bf994d870a4d3a3f2da55ed18cfbc48384bc6a4b03a32c2e297b53aa61cd4ce"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00042-basic-001.png",
+          "sha256": "44fce282a3fd0f85417a393f944dbfe43ad12c42b34d03fb8b5b036a354de6af"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00042-basic-002.png",
+          "sha256": "5da720532c53d676f55b9c4d4f5a325e2a6084f6304de3422ffd68f11817bac4"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:43",
+      "capture_id": 43,
+      "ui_entry_ordinal": 43,
+      "fullName": "norcferatu fleshguards",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "5",
+        "Protection": "death +4%",
+        "Skill Boost": "fist fighting +2",
+        "Augments": "Greater Tiger Clash -> +2.5% critical hit chance, Greater Tiger Clash -> +10% critical extra damage",
+        "Weight": "11.50 oz",
+        "Required Level": "230",
+        "Vocations": "monks",
+        "Classification": "4",
+        "Mantra": "6",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00043-name.png",
+          "sha256": "1cbc0e1eb5fa1722418ba67ea54a793339721217418153c6d32532b7fe21e9b8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00043-name-hover.png",
+          "sha256": "8e7451cdad0dfcd8b1cd35b3c61dd637dfd74f4fc095f44728628aa331977bd8"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00043-basic-top.png",
+          "sha256": "9f1b4a75b518e53e367e5ed1b8a77221b5522919bff21308717036c7471f6368"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00043-icon.png",
+          "sha256": "254810d0da1a012de8723aafedaa7bc0a482ca4553579e75d861cfe20e38dda1"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00043-basic-001.png",
+          "sha256": "d16ce86f64058d2e67fa5245548ff016a02b29045c309a5ba1b16ae8c97eb48b"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00043-basic-002.png",
+          "sha256": "2f5035c2b10c5d5041d3ed8d900220e3fc930fef021991f5a13cc2406301c827"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00043-basic-003.png",
+          "sha256": "b7157073e3dbb73bd3af5662ec9f96885c4c771f1f6c6cb2a705c6f03dae7c8a"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:44",
+      "capture_id": 44,
+      "ui_entry_ordinal": 44,
+      "fullName": "norcferatu thornwraps",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "physical +4%, death +4%",
+        "Skill Boost": "distance fighting +2",
+        "Augments": "Ethereal Spear -> +40% base damage, Ethereal Spear -> +8% critical extra damage",
+        "Weight": "11.50 oz",
+        "Required Level": "270",
+        "Vocations": "paladins",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00044-name.png",
+          "sha256": "ebb7aa0d893fbe6a0eb90aecb5232914d477d4ae0bde374f9c7c2003c901965c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00044-name-hover.png",
+          "sha256": "23934c8e7144d0c48cfcf3d83d0c9319c1bf675b65fa44257baa85518b83f8c1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00044-basic-top.png",
+          "sha256": "356699a155dda185b177cf5b9919f9f2fcc4ae205c86aab338b76b34e56ac058"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00044-icon.png",
+          "sha256": "1a61b682b0879d4952212dc8353c3519a51d9325bf34a59bd9b4824fd8419b0d"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00044-basic-001.png",
+          "sha256": "d490c40c0877bd4e47c637f38662ba445cd3d2e9af39d7425e3aff0091fbd353"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00044-basic-002.png",
+          "sha256": "916774b8f404c4185c77b8bbbfc66adc08f39059a9e777e0b41bcecb5da2925d"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00044-basic-003.png",
+          "sha256": "5ed11b33a84895b07720dc0c01a4e5e9bc5db6222aaef4de59e7c27fa88f8e82"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:45",
+      "capture_id": 45,
+      "ui_entry_ordinal": 45,
+      "fullName": "ornate legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "physical +5%",
+        "Weight": "77.00 oz",
+        "Required Level": "185",
+        "Vocations": "knights",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00045-name.png",
+          "sha256": "3bf814d9051d5edd21f8cae4335182182732aa516071c82f54cb36a7055021c6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00045-name-hover.png",
+          "sha256": "be2e3b69e4284aa8108280e38344802e010361890e66e1a053b3e13fb67850d8"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00045-basic-top.png",
+          "sha256": "18f93353c217d245945d0e5c285c1fc089dfc748fd275908410c0f619edf90cf"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00045-icon.png",
+          "sha256": "3dcf6d3340d56ab61d1ba7cb637acd63bd3ec208624f07d91b543cb3e42441eb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00045-basic-001.png",
+          "sha256": "80962a19c85b39045cc9c94519201b1cf18d9a8385e81cc10c1a3dd83c86c3da"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:46",
+      "capture_id": 46,
+      "ui_entry_ordinal": 46,
+      "fullName": "pirate knee breeches",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "1",
+        "Weight": "12.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00046-name.png",
+          "sha256": "bb882e588e62d3afdcc13be618f75292f726a1253e38d43a77505c0686ca0bf4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00046-name-hover.png",
+          "sha256": "cd045f61628211169f05f89a3e3f8638f72a34ec1c13b55d60ac25660e71d078"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00046-basic-top.png",
+          "sha256": "14a4a3d3587d3628c08e20ec3c2589dbced0eacdf4e29d7354c886b7a5904782"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00046-icon.png",
+          "sha256": "9a5d069d8ea3d03ccec4aa6d894503bd2e171c4499ab13bc4d786e65495d0a69"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:47",
+      "capture_id": 47,
+      "ui_entry_ordinal": 47,
+      "fullName": "plate legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "7",
+        "Weight": "50.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00047-name.png",
+          "sha256": "dc4ff28991f12a22391b954cd390dc81a40660d41d161e9d823eaade6137d246"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00047-name-hover.png",
+          "sha256": "66e02c08a339eb36d77bb4a640aba58eda2223d5fcdef3c19606327be324e234"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00047-basic-top.png",
+          "sha256": "078258afa884171dfdd6193d13d1b602a0836c66a3ebfadacd30715e09411f2d"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00047-icon.png",
+          "sha256": "184888490eed50aae460e5596550d4aa523d56df9b527fec279d6e547ea49de0"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:48",
+      "capture_id": 48,
+      "ui_entry_ordinal": 48,
+      "fullName": "prismatic legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "physical +3%",
+        "Skill Boost": "distance fighting +2",
+        "Weight": "71.00 oz",
+        "Required Level": "150",
+        "Vocations": "paladins",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00048-name.png",
+          "sha256": "043462f5ef9ec28c14a4e6360f3986aa79483c860764828f1a74f7956b4fb9b2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00048-name-hover.png",
+          "sha256": "9558525fb09c267418179a77218492384271d71289a4f6628c4d5175c43e3010"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00048-basic-top.png",
+          "sha256": "176d1e65c78d1d0dbbc3b9fb5014fac77bb7e588c791c472cadd00abc70a04e8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00048-icon.png",
+          "sha256": "550350cc764e879f01f30e466cc5f024c2664520bc455e5839fdf9e92272d441"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00048-basic-001.png",
+          "sha256": "f7e8838327bc31d08cb21a1537d36d787a9610d6141d8e195214e6c1a87d193c"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00048-basic-002.png",
+          "sha256": "d565f90b39f17ad82228c6940a7e638d1d34e0f3f8f2c878cf4cfc58d79c7534"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:49",
+      "capture_id": 49,
+      "ui_entry_ordinal": 49,
+      "fullName": "ranger legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "4",
+        "Weight": "35.00 oz",
+        "Vocations": "paladins",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00049-name.png",
+          "sha256": "28860ff8b35d0b27cf8099e33e09b88feee0f8e4c90df839b2984b11c601f902"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00049-name-hover.png",
+          "sha256": "32138a6e2b37c931ab8db4dd9f265679a7e143aa6a9d8db07b9b9f8e1d558f53"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00049-basic-top.png",
+          "sha256": "28e039b9679204c4fdbef487225c05189f7a0540825119064780a8d14eb370d8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00049-icon.png",
+          "sha256": "36e2183989f3300f0300668cfe7d8e000c63f57fb6d8fb8bc871cd52a84f7203"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:50",
+      "capture_id": 50,
+      "ui_entry_ordinal": 50,
+      "fullName": "sanguine greaves",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "11",
+        "Protection": "physical +7%, energy +9%",
+        "Skill Boost": "distance fighting +4, holy magic level +1",
+        "Augments": "Avatar of Light -> -900s cooldown, Divine Caldera -> +8% critical extra damage",
+        "Weight": "32.00 oz",
+        "Required Level": "500",
+        "Vocations": "paladins",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00050-name.png",
+          "sha256": "5f52feda0745eb336f78820531a8911a6ed697682f52ae28cc23fd274296d311"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00050-name-hover.png",
+          "sha256": "5ac7d5a1d08e35811d2c3e7ec047e020810de026d76bf3ef4322ab0276830441"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00050-basic-top.png",
+          "sha256": "8b233d016a773527aad904497a7a78f3c956ff21029e6ae3204925204b9b8668"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00050-icon.png",
+          "sha256": "96094efb8d520d3049c587591b369e272075c90a2a6cbf53533cb0a8f0953157"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00050-basic-001.png",
+          "sha256": "d9a4f2fd829d4edb6bda0c024328603dd4a7869affdfadb77a04038b46406046"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00050-basic-002.png",
+          "sha256": "0cf8a5d72866022359442631fab81851b650e521b5682dab22ff717df58a7c97"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00050-basic-003.png",
+          "sha256": "3bc7d5ebeaea0c6fe80e2b763002f62489ab5f4f9d999e456ae561c5a628b4fe"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:51",
+      "capture_id": 51,
+      "ui_entry_ordinal": 51,
+      "fullName": "sanguine legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "12",
+        "Protection": "physical +9%, death +6%",
+        "Skill Boost": "sword fighting +4, axe fighting +4, club fighting +4",
+        "Augments": "Avatar of Steel -> -900s cooldown, Fierce Berserk -> +8% critical extra damage",
+        "Weight": "38.00 oz",
+        "Required Level": "500",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00051-name.png",
+          "sha256": "e01bea42714d6d3721b179b496ff8292de3cb80a80e262405dbbebda6b8c1608"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00051-name-hover.png",
+          "sha256": "952c4fa5fe557ee7afe1c2c130a5dd94fc6487a287abf4d581eb86b5c2688484"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00051-basic-top.png",
+          "sha256": "b5b6ac12cd9d6ec96bf53063e2b180086abf892bddeb1a419d903c8378e9ba69"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00051-icon.png",
+          "sha256": "6a8ab80b71bc3eb9c367fa8823f91f9b78ec5972d17dcbc31fd59f01a759c80e"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00051-basic-001.png",
+          "sha256": "b3e939fc9d2daeafcc0acc4304db43a1c2a73de9f361447fa1af25b51f12c763"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00051-basic-002.png",
+          "sha256": "86b78e80d2f6ec5dcc123cb11415510ee01a35e353f1d8ad4c60142e96b44bcb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00051-basic-003.png",
+          "sha256": "741cc20ec68ba80db19d2c8752bb46f24a6cfdac4095b36461c4f71dcec113bc"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:52",
+      "capture_id": 52,
+      "ui_entry_ordinal": 52,
+      "fullName": "sanguine trousers",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "6",
+        "Protection": "physical +4%, energy +8%",
+        "Skill Boost": "fist fighting +4, magic level +2",
+        "Augments": "Avatar of Balance -> -900s cooldown, Chained Penance -> +8% critical extra damage",
+        "Weight": "35.00 oz",
+        "Required Level": "500",
+        "Vocations": "monks",
+        "Classification": "4",
+        "Mantra": "10",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00052-name.png",
+          "sha256": "1408135f5a3bf78549b19415801159a33dd0f09154299865019211b00d86352e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00052-name-hover.png",
+          "sha256": "31e065b47d7059f6aa58d7659011b883e18e19a8565283d69503a55b5e9b0c3a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00052-basic-top.png",
+          "sha256": "61d9a6b1a1cfbf3b99aa6e648f50f0288a019fa294b4a1e4c9cc72be0a12a05b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00052-icon.png",
+          "sha256": "b5175b4b517220375de358107d7b1db93b5d564ff374fe60e3490d4f586cba8c"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00052-basic-001.png",
+          "sha256": "5c81472f3552d34d3ce7f2169c41dd297f5c1782d9b8f45af6cfcad8e2f4b0aa"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00052-basic-002.png",
+          "sha256": "7fe1bea35437f26f4df8b895182791bfdb58cd47cf2d887ad2cf43c6f1351c8f"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00052-basic-003.png",
+          "sha256": "41a225a3ab7dae0cfa4f1f48a833fa6ee9343f5b249d3a7e752e9907c1d67620"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:53",
+      "capture_id": 53,
+      "ui_entry_ordinal": 53,
+      "fullName": "soulful legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "holy +8%",
+        "Skill Boost": "magic level +1",
+        "Weight": "38.00 oz",
+        "Required Level": "180",
+        "Vocations": "druids, sorcerers",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00053-name.png",
+          "sha256": "ade39d102766381ba1557a39e45aca76bd6772c81af67b431e2d5b2ac6c08994"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00053-name-hover.png",
+          "sha256": "0cd45ec005c91bfa048b1eee14b41f554409e0feccd777531c2b864b4600a95a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00053-basic-top.png",
+          "sha256": "891c8532e440bd8ed00ab3ebd5f67f2124c2933dc4107ec74a6500815ef0060b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00053-icon.png",
+          "sha256": "25749254081a41b86527bf46dfd5714e4a9bc3dab9b265b6675bba7deedf1723"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00053-basic-001.png",
+          "sha256": "fd5f4cf0b6e18e45334b36545a6177230b66b55e3814552775c9249edb78862e"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00053-basic-002.png",
+          "sha256": "c7c51c1bf5df3df628dec8b36d562216ae38830c3e0a623523e393e0a2fe6cb7"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:54",
+      "capture_id": 54,
+      "ui_entry_ordinal": 54,
+      "fullName": "soulshanks",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "10",
+        "Protection": "death +10%",
+        "Skill Boost": "magic level +3",
+        "Weight": "38.00 oz",
+        "Required Level": "400",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00054-name.png",
+          "sha256": "c89d8941227fb5d9b28a8759823dfe069c24448856b4ff0cbff4239c021401e8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00054-name-hover.png",
+          "sha256": "3446174f31842cbf17ee8058d8f8632873363ab5754331b1c6516738b653eb81"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00054-basic-top.png",
+          "sha256": "e759b99f8639ca5f7be26de2397799f1d71d09502e3b08e9696a54906c59c289"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00054-icon.png",
+          "sha256": "0408a91c181f890a9232debde9a80db99f0b1c2b246b32affc8f5c6f39957898"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00054-basic-001.png",
+          "sha256": "cb45c0df251180c264c4d358f47869636af19620be324c4fff5869d6590dd35f"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00054-basic-002.png",
+          "sha256": "b46bdfa99cfccf1f366149c14906d7e2dc4c32c83ebed23594b475f89d7a4a8e"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:55",
+      "capture_id": 55,
+      "ui_entry_ordinal": 55,
+      "fullName": "soulstrider",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "10",
+        "Protection": "fire +10%",
+        "Skill Boost": "magic level +3",
+        "Weight": "38.00 oz",
+        "Required Level": "400",
+        "Vocations": "druids",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00055-name.png",
+          "sha256": "4eb4f68afc893c7a4b01a3a7081a23573a858ee0e832220763879085585f0347"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00055-name-hover.png",
+          "sha256": "fe9d04b0fc30eeae8399787da62526b662e96fff0e95949fffa353c1832f932a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00055-basic-top.png",
+          "sha256": "d28dc0abbff187502ec8b84f06830a635fce6f47391b1d8d94150554c1966d8b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00055-icon.png",
+          "sha256": "b752ed87d6bc3cb837f9b9a6ed6146c2dd9b056c6edaa5626a908c62111f502f"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00055-basic-001.png",
+          "sha256": "cc03d796b76d006ecd9b7bc9b6ac749dff670e26758f700dc9e17bcbee021f1a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00055-basic-002.png",
+          "sha256": "d161b53b073950324c92ec48f56d49ff724ca00b0b988f2a6d95da5c8251be8b"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:56",
+      "capture_id": 56,
+      "ui_entry_ordinal": 56,
+      "fullName": "stag legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "10",
+        "Protection": "physical +7%, fire +7%",
+        "Skill Boost": "sword fighting +3, club fighting +3, axe fighting +3, shielding +2",
+        "Augments": "Berserk -> +10% critical extra damage",
+        "Weight": "11.50 oz",
+        "Required Level": "350",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00056-name.png",
+          "sha256": "5874913abcf099d18ea20a68da8382879699582708a8a0e9fdb7e6ebae2d58b0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00056-name-hover.png",
+          "sha256": "f8cec64a3c5b28810675c5bb3b68128f235e03d2aa1a734a0051d83147df3726"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00056-basic-top.png",
+          "sha256": "983427344e398d7d849346974294865cab5db493a00cd392876e494b02154b2a"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00056-icon.png",
+          "sha256": "684349dbb1d01948d9caabf2716f3a9249893124420812e3eadd4b36f8482dac"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00056-basic-001.png",
+          "sha256": "c85698b3ecf2ca7adf910b58e6cdcae81edc0fe3b42191a33b8c078d3092865b"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00056-basic-002.png",
+          "sha256": "0fe2d707e0db5ee38b8805b213f060a38136c291e9469cf664d64eba7dff4bc9"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00056-basic-003.png",
+          "sha256": "483d379e5c61de4a6475940100b0f3440d030ea648cd241e746e9e917edb1166"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:57",
+      "capture_id": 57,
+      "ui_entry_ordinal": 57,
+      "fullName": "stitched mutant hide legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "physical +5%, earth +5%",
+        "Skill Boost": "sword fighting +2, axe fighting +2, club fighting +2",
+        "Weight": "34.00 oz",
+        "Required Level": "270",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00057-name.png",
+          "sha256": "076f8d3cc962d1168a42d05301239f750342cdbdd29532406ce48456e6a07050"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00057-name-hover.png",
+          "sha256": "3b2b04310d4655b786685de7da3515e393c5420884c32cb25d482ae73ee4c288"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00057-basic-top.png",
+          "sha256": "f72dde9991e87011aefd6537106ed0880630135333421790e31ef2ca090e0a1d"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00057-icon.png",
+          "sha256": "4194a7737089031b9fccabf7fdaeadd01ee9bf506dbefd77c6d45feacfc5af52"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00057-basic-001.png",
+          "sha256": "ecd9efdd2bfdda7721f8127529bf4ff672b2d254a761cfe03c94e1956a2f5af1"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00057-basic-002.png",
+          "sha256": "31a496ef6cc9c9a833a99a16f6efcf87d74b95c1ee956283faff2736a81fe7fa"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:58",
+      "capture_id": 58,
+      "ui_entry_ordinal": 58,
+      "fullName": "stoic iks culet",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "9",
+        "Protection": "physical +4%, energy +2%",
+        "Skill Boost": "sword fighting +2, axe fighting +2, club fighting +2",
+        "Augments": "Intense Wound Cleansing -> +50% base healing",
+        "Weight": "51.00 oz",
+        "Required Level": "250",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00058-name.png",
+          "sha256": "f4bc026c44ac39b47b45687f0a5ca27aa02252589cbfdf19b7722ca98249065d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00058-name-hover.png",
+          "sha256": "7cf1d0e724beeb5dbf683f2d6e9f750cf18e07fcc5865d5b3f5ffa0c42d0a2e5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00058-basic-top.png",
+          "sha256": "94537bef8b6dbc870ca7ae89fd4eb755b6f50043b3a6a7428c6e4862770f148a"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00058-icon.png",
+          "sha256": "a6611aef108c8d832a2854d11ad94ab7ffdfeeb48e7ac7f89d4daaebc5e59a6b"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00058-basic-001.png",
+          "sha256": "1b9b1666eb5c1ee7640834a854d691c03b17cec155f3c7ad73b06a64e6bc12e7"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00058-basic-002.png",
+          "sha256": "10b78857b09ef59df72bc8badf91da1791f58e9b3c6c868c0feb173784122813"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00058-basic-003.png",
+          "sha256": "59a708ff82a59542b284a10d302e3947b4d5975443ebb50c489dadc57d1314ea"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:59",
+      "capture_id": 59,
+      "ui_entry_ordinal": 59,
+      "fullName": "stoic iks faulds",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "fire +6%",
+        "Skill Boost": "magic level +2",
+        "Augments": "Great Energy Beam -> +7% base damage, Great Death Beam -> +7% base damage",
+        "Weight": "34.00 oz",
+        "Required Level": "250",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00059-name.png",
+          "sha256": "f579ea4bb74cc870ebec47f6e36bd86042dee529bccb7a2498ac87e0f1d56205"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00059-name-hover.png",
+          "sha256": "75d57fb78d12530474362a61cd9c221b6d8c6f7a00b1938770847efbb38633a1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00059-basic-top.png",
+          "sha256": "27bfe01a58b0e1f48d42882b06f5fd293a729484030c1c84dee8854f21fe6d01"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00059-icon.png",
+          "sha256": "daee367563857afc25d9a8d93558d5997171ef860b066f38a95729c312cec376"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00059-basic-001.png",
+          "sha256": "e324b08cc869de5c38871e4a265502102da3e35bf661721075dda33c775141c3"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00059-basic-002.png",
+          "sha256": "081eea57a7e5272f17071057b1859f02fa09c415cb58b2f5b0c4abf2542f8f53"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00059-basic-003.png",
+          "sha256": "8e31888b3c5296461b13e96e10e0a81891862f2cb4d6dd996891fa2f93b6826a"
+        }
+      ],
+      "saved_basic_pages": 4
+    },
+    {
+      "capture_key": "items-sequence-legs:60",
+      "capture_id": 60,
+      "ui_entry_ordinal": 60,
+      "fullName": "studded legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "2",
+        "Weight": "26.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00060-name.png",
+          "sha256": "5ba614825cb4bf55dfc33a12515d397344df6443ceb7bda1b374c7080ffb8005"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00060-name-hover.png",
+          "sha256": "ba437fec997eebd999a95d70e04d6738c4c25da020bb366575e0855e9c4804d5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00060-basic-top.png",
+          "sha256": "8618b311b6ed74a25448e303d0570c9c9786abd8fa53ddeaef1bcaec0161ca1d"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00060-icon.png",
+          "sha256": "c86f74cff7d35f0028818316ca1f3b30a12e838102ac9e8386d5258f094b9ad4"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-legs:61",
+      "capture_id": 61,
+      "ui_entry_ordinal": 61,
+      "fullName": "tatty dragon scale legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "2",
+        "Weight": "38.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00061-name.png",
+          "sha256": "ed139412a27a61809e5c22663dd2e08e66da6958489220f7504058bce77ecff1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00061-name-hover.png",
+          "sha256": "0ee5f117386b88cca35adb81f36a21a9e918c62c3052e2d51803bf050ef8c40c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00061-basic-top.png",
+          "sha256": "c01fc57344713738eff7153a3d26227f75af2b927fcbd204a1f2668d9c3db3a0"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00061-icon.png",
+          "sha256": "d0060515453fd97fbf299a2f391c0a1b337e811477d86733310e3e713d304225"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "16db1cbdd6f720d416d8cae8bd394d83a8ccb57654338c2c20a614e01b5d2378",
+        "bytes": 34,
+        "characters": 34
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "f32419d18a51e9251c7fab8ed33c244945cfc3e3bceaa80578a085c7dc2452a0",
+        "canonical_utf8_bytes": 38,
+        "line_count": 1,
+        "line_character_lengths": [
+          34
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-legs:62",
+      "capture_id": 62,
+      "ui_entry_ordinal": 62,
+      "fullName": "terra legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "earth +6%, fire -6%",
+        "Weight": "19.00 oz",
+        "Required Level": "40",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00062-name.png",
+          "sha256": "8455e1797fd9c949488052a65ceb7bb353727dce10a349c78150e96c48268cc3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00062-name-hover.png",
+          "sha256": "55316d3b71a20f0abfcaf1b0f2ccb17e701fabbe2e154fa02a718b358a8e0181"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00062-basic-top.png",
+          "sha256": "79ece412b4d01a1f5a385ee382fa76024820f4229ea7dbcc7552ab5f8557b032"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00062-icon.png",
+          "sha256": "a4fd0bfbca1618f90cb2f6ea1e52d992f0d2b9eb2c6a095eb23bc357f7bc98f4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00062-basic-001.png",
+          "sha256": "5ba19dbf43f7de617f2df31b6e51e7de3fcf7a26b3294c2de605660fdfd7f95f"
+        }
+      ],
+      "saved_basic_pages": 2
+    },
+    {
+      "capture_key": "items-sequence-legs:63",
+      "capture_id": 63,
+      "ui_entry_ordinal": 63,
+      "fullName": "trousers of the ancients",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "2",
+        "Weight": "0.30 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00063-name.png",
+          "sha256": "20c24d735e1337e5adfc0ad1e4be24942e232f58c597236ffb9c1afe36ab2eb5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00063-name-hover.png",
+          "sha256": "c83e82b343ccd030922f41f93ac481c2263ac86b5437bbfe3c362c3757a49ad6"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00063-basic-top.png",
+          "sha256": "f74bcbe898d65527dddcb5b6be0f5ed1a862f694c9bf29af972bed3c524879d6"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00063-icon.png",
+          "sha256": "11a24bf5c6a54030ebe693a3056c1dcd887efda1f9811c3d740201a6b640c290"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00063-basic-001.png",
+          "sha256": "01587356d5c72c46677f13214a0c53070874716c3444fd6d58cb8a73bd072e04"
+        }
+      ],
+      "saved_basic_pages": 2,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "6ae10891ed35692f7c460319aa44e82e6cdab71d45f9695caa2dcfba8ff1f1b5",
+        "bytes": 66,
+        "characters": 66
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "5446abb0c06c6c00081fae9fe4ef0e14251be9a494ea8f3e669e1f2a0e0122be",
+        "canonical_utf8_bytes": 72,
+        "line_count": 2,
+        "line_character_lengths": [
+          43,
+          22
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-legs:64",
+      "capture_id": 64,
+      "ui_entry_ordinal": 64,
+      "fullName": "wereboar loincloth",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "6",
+        "Weight": "13.00 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00064-name.png",
+          "sha256": "e0cb8b8383255787d981e8c20a5541d88d06ee6d3b1e812dac0d51178b564f77"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00064-name-hover.png",
+          "sha256": "de80974d1aa20f1f269438ae288ad897f411fee70693bd09d181b6ad6c6fef28"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00064-basic-top.png",
+          "sha256": "e8248732288fa9ccb2e91aefe47b15829a7fe20c504a600ab721ffab20f316e3"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00064-icon.png",
+          "sha256": "e4450372211afc1a3f3a69e85fb2562d53a6b90192982bb6001f9fc4cd320806"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00064-basic-001.png",
+          "sha256": "e6ca4ed95b7cf3abf422de91a68e47e6b07f2b9727991a8ca225cce9b057acd9"
+        }
+      ],
+      "saved_basic_pages": 2,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "8268af6623fca19eacacdd0f763f7799a2c0409e0046dc9c20e71b907bb6128e",
+        "bytes": 78,
+        "characters": 78
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "1fcb6612183b3fea298b219fc90dde0fcc872f748b6414148e076b16773faa90",
+        "canonical_utf8_bytes": 84,
+        "line_count": 2,
+        "line_character_lengths": [
+          46,
+          31
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-legs:65",
+      "capture_id": 65,
+      "ui_entry_ordinal": 65,
+      "fullName": "yalahari leg piece",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "death +5%",
+        "Skill Boost": "distance fighting +2",
+        "Weight": "65.00 oz",
+        "Required Level": "80",
+        "Vocations": "paladins",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00065-name.png",
+          "sha256": "1e756f93b42216773737b2ea20942b3c41fc925ff690e89107011d8430babfa4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00065-name-hover.png",
+          "sha256": "7da6f282ab2202446c43edb926d1d363b1ee689526d1f5cf3eeb12737bc50b2a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00065-basic-top.png",
+          "sha256": "aa5095685c37aa0d4dabcf6c8fef78ffc7935fcfdfc3929990351d49e5a97c3c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00065-icon.png",
+          "sha256": "95040f8deed98d8a1c5c3c773df524b8ff72d55da226ee5e45f916954e3f85bb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00065-basic-001.png",
+          "sha256": "d5e5f972226d49ed802e0a44601b185a76205843c8b36677da1d2dd9c869cb3a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-legs/cards/00065-basic-002.png",
+          "sha256": "85583c001cfcb4baca387ac3b9b8b0c26a372f5cf3fb1e851e0b83ba4e2b44c6"
+        }
+      ],
+      "saved_basic_pages": 3
+    },
+    {
+      "capture_key": "items-sequence-legs:66",
+      "capture_id": 66,
+      "ui_entry_ordinal": 66,
+      "fullName": "Zaoan legs",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Armor": "8",
+        "Protection": "physical +2%",
+        "Weight": "66.00 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-legs/cards/00066-name.png",
+          "sha256": "058f59eca239e813def3fed0838e582178372d6bbef2028ca20983f75ed81356"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-legs/cards/00066-name-hover.png",
+          "sha256": "f2892fef033be6abdc339401afb71a5dbf584c9c3a74de5279ff0433c0a95013"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-legs/cards/00066-basic-top.png",
+          "sha256": "24f612cfe36c7a6161e014a4261358d18df44746ae5ee6761452b6b209d1deb3"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-legs/cards/00066-icon.png",
+          "sha256": "a89c88d85d9b51aa4968b7abfff6ff1897c92aa01c4cde6e8bd17ae64c96f361"
+        }
+      ],
+      "saved_basic_pages": 1
+    }
+  ]
+}

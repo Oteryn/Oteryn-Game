@@ -1,0 +1,136 @@
+{
+  "source_receipt": {
+    "filename": "category-completion.json",
+    "sha256": "a1f9c769df9b9d0c6f2daf897586aab0dbb36d083c31c2c2321872965f3beaff"
+  },
+  "receipt": {
+    "status": "list_end_observed_sequence",
+    "category": "Legs",
+    "cards": 66,
+    "ordinals": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66
+    ],
+    "time": 1794555308.9196432,
+    "end_stability_checks_before": 2,
+    "end_stability_checks_after": 2,
+    "final_entry_ui_ordinal": 66,
+    "final_capture_id": 66,
+    "end_proof_images": [
+      "tail-audit-1794555293489731327/end-before-2.png",
+      "tail-audit-1794555293489731327/end-after-2.png"
+    ],
+    "tail_journal_receipt": {
+      "path": "tail-audit-1794555293489731327/journal.json",
+      "sha256": "a3af96c51c7c4f1eb953d4de0b1fcacd4e701e89cc10d2b0122128395838819a"
+    },
+    "native_source_sha256": "5f90e5e5a1a972c1f05c10d2767541ba411db8b04054f06e455b548de109b8ae",
+    "restored_scope_proof": {
+      "geometry": [
+        698,
+        536
+      ],
+      "actual_fresh_frame_sha256": "f8a9aaf313e93c623fa05dfe3298eeb7af7ad381aaa3b77394bc100ec369784f",
+      "category_filters_sha256": "960b73ccf9b83e6f5c2387ae7a63ff217971547286832bd7acb79410bd19c7bb",
+      "list_text_sha256": "74b5668656347e64a52e1b1572cf7d86ee483df4ab28e51fd69265575a5bdd5d",
+      "raw_pane_sha256": "7d0f4d68e8b2fc028e6a8691aaae2623497ce5732ad626d609e7aef7b3f012aa",
+      "physical_offset_pixels": 2252,
+      "thumb_top": 335,
+      "stable_end_checks": 2,
+      "freshness_basis": "ItemsClient.fresh frame timestamp after last accepted input plus150ms",
+      "state": "QUALIFIED_RESTORED_SCOPE",
+      "native_source_sha256": "5f90e5e5a1a972c1f05c10d2767541ba411db8b04054f06e455b548de109b8ae",
+      "raw_full_frame_equal_not_required": true,
+      "comparison_ranges": {
+        "category_filters": [
+          15,
+          90,
+          199,
+          226
+        ],
+        "list_text_mask": [
+          50,
+          255,
+          199,
+          376
+        ],
+        "raw_pane_receipt_only": [
+          50,
+          255,
+          199,
+          376
+        ],
+        "geometry": [
+          698,
+          536
+        ],
+        "basis": "Exact category/filter pixels and exact text mask plus measured physical offset, thumb and two stable end checks. Selected Basic/cursor/fullraw pixels are not identity proof."
+      }
+    },
+    "reader_qualification": "PENDING native reading of newly captured final card; overall static audit remains PARTIAL"
+  }
+}
