@@ -57,6 +57,8 @@ enum Field {
     Minimum,
     Maximum,
 }
+type JournalControls = Or<(With<Field>, With<Action>)>;
+
 #[derive(Component)]
 struct Overlay;
 #[derive(Component)]
@@ -128,7 +130,7 @@ fn project(
     mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
     mut text: Query<(&mut Text, Has<Detail>, Has<Status>)>,
     mut focus: ResMut<InputFocus>,
-    controls: Query<(), Or<(With<Field>, With<Action>)>>,
+    controls: Query<(), JournalControls>,
 ) {
     let Some(play) = &owner.play else {
         hide(
@@ -257,7 +259,7 @@ fn hide(
     state: &mut State,
     overlays: &mut Query<(Entity, &mut Node), With<Overlay>>,
     focus: &mut InputFocus,
-    controls: &Query<(), Or<(With<Field>, With<Action>)>>,
+    controls: &Query<(), JournalControls>,
 ) {
     for (_, mut node) in overlays {
         node.display = Display::None;
