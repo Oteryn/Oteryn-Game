@@ -1,4 +1,5 @@
 //! Source-shaped options over the existing full preference draft and acceptance owner.
+use super::modal::ModalGuard;
 use super::{
     super::{owner::HostOwner, ui::Skins},
     GameModal,
@@ -77,10 +78,15 @@ fn top_server_dialog(owner: &HostOwner) -> bool {
 }
 fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    focus: Res<InputFocus>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
 ) {
-    if owner.preferences_draft().is_none() || top_server_dialog(&owner) {
+    if !guard.allows_focus(focus.get())
+        || owner.preferences_draft().is_none()
+        || top_server_dialog(&owner)
+    {
         keys.clear();
         return;
     }
@@ -101,8 +107,10 @@ fn activate(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
 ) {
-    if owner.preferences_draft().is_none()
+    if !guard.allows(event.entity)
+        || owner.preferences_draft().is_none()
         || state.generation != Some(owner.generation())
         || top_server_dialog(&owner)
     {
@@ -147,8 +155,10 @@ fn toggle(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
 ) {
-    if owner.preferences_draft().is_none()
+    if !guard.allows(event.entity)
+        || owner.preferences_draft().is_none()
         || state.generation != Some(owner.generation())
         || top_server_dialog(&owner)
     {
@@ -185,8 +195,10 @@ fn slide(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     state: Res<OptionsState>,
+    guard: ModalGuard,
 ) {
-    if owner.preferences_draft().is_none()
+    if !guard.allows(event.entity)
+        || owner.preferences_draft().is_none()
         || state.generation != Some(owner.generation())
         || top_server_dialog(&owner)
         || !event.value.is_finite()
