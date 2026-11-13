@@ -30,6 +30,22 @@ def validate_gabriel(data):
     assert round((d['supplies'] / b['supplies'] - 1) * 100, 4) == -61.9185
 
 
+def validate_qualification(data):
+    assert not data['runtime_edits_in_this_pr'] and not data['game_actions_in_this_batch']
+    assert not data['scope_exhaustive'] and len(data['rows']) == 12
+    candidates = [r['topic'] for r in data['rows'] if r['decision'] == 'NARROW_FIX_ELIGIBLE']
+    assert candidates == ['full_reset_fee']
+    assert data['rows'][1]['topic'] == 'Cleanse_Agony'
+    assert data['rows'][1]['decision'] == 'CLOSED_ALREADY_CORRECT'
+    examples = data['new_source_reads'][0]['examples']
+    fee = lambda level: 100000 + 11000 * max(level - 100, 0)
+    assert all(fee(r['level']) == r['gold'] for r in examples)
+    assert fee(100) == 100000 and fee(101) == 111000
+    assert fee(757) * 75 // 100 == 5495250
+    assert any(r['date'] == '2026-09-08' and r['method'] == 'DIRECT_OFFICIAL_BROWSER_UI'
+               for r in data['new_source_reads'])
+
+
 def validate(data, repository=None):
     v = data['venice']
     assert v['current_global_rule_verified'] is False
@@ -53,6 +69,12 @@ def validate(data, repository=None):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_historical_runtime_promotion(self):
+        data = json.loads((HERE / 'fix-qualification-matrix.json').read_text(encoding='utf-8'))
+        data['rows'][4]['decision'] = 'NARROW_FIX_ELIGIBLE'
+        with self.assertRaises(AssertionError):
+            validate_qualification(data)
+
     def test_prior_counter_substitution(self):
         data = json.loads((HERE / 'gabriel-video-cases.json').read_text(encoding='utf-8'))
         data['divine']['raw_xp'] = data['divine']['initial_analyser']['raw_xp']
@@ -82,4 +104,5 @@ if __name__ == '__main__':
     else:
         validate(load(), args.repository)
         validate_gabriel(json.loads((HERE / 'gabriel-video-cases.json').read_text(encoding='utf-8')))
+        validate_qualification(json.loads((HERE / 'fix-qualification-matrix.json').read_text(encoding='utf-8')))
         print('PASS: two creator samples, projection arithmetic, six query windows and source receipts')

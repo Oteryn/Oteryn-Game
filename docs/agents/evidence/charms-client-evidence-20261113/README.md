@@ -160,3 +160,9 @@ The [Gabriel video comparison](gabriel-video-comparison.md) now reads selected
 actual frames from both previously linked recordings. Structured counters,
 counter-reset provenance and unverified stages/assignments remain explicit in
 `gabriel-video-cases.json`. The asset validator also checks these derived deltas.
+
+The [fix qualification matrix](fix-qualification-matrix.md) distinguishes one
+narrow numerical reset-fee candidate from a closed already-correct Agony trace,
+the remaining Hex representation trace and
+historical/unresolved interaction evidence. Its successor directly reads
+official8140 and8960 and follows actual Cleanse context on both Discords.

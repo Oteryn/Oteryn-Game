@@ -185,3 +185,19 @@ and3 asset boundary controls PASS,16 packet controls PASS, public/Discord/primar
 source validators PASS, governance and129 governance tests PASS; diff check PASS.
 Original media remain outside the repo. CI/review status is read separately;
 no independent review, all-frame or isolated-mechanics claim is made.
+
+AUTHORING resumed for the owner's authorized evidence qualification and
+remaining Discord research after fresh3172 OPEN/draft headcdccee3b6, unchanged
+main3e168ce6 and relevant open-PR overlap check. Implementation is separately
+allocated by the lead; this writer owns only the same evidence/task paths.
+Official8140/8960 are now directly browser-read; both-Discord Cleanse follow-up
+includes the actual image answer and later official immunity correction.
+
+Qualification successor frozen after arithmetic/source validators,4 asset
+boundary controls,16 packet controls and129 governance tests PASS; diff PASS.
+Full domain is_negative trace independently read closes Agony ALREADY_CORRECT,
+superseding the incomplete prior selector candidate. Existing Agony test PASS
+is attributed to the implementation worker, not rerun by this evidence worker.
+Direct official8140/8960 route and bounded both-server query scope retained.
+No runtime edits, review/merge or game actions; later source fixes remain on
+the separately allocated implementation branch.
