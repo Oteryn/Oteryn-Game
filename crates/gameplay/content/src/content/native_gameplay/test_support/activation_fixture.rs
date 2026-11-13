@@ -288,6 +288,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     let mut admitted = Vec::new();
     let mut shared_body = Vec::new();
     let mut refreshed_body_loot_refusals = Vec::new();
+    let mut newly_materializable_body_loot_refusals = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -393,7 +394,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             && matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
-                    | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.bazir"
                     | "oteryn:creature.dharalion"
                     | "oteryn:creature.earth_overlord"
@@ -419,6 +419,35 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 Some(NoSettlementReason::LootItemInadmissible)
             );
             continue;
+        }
+        // A newly qualified physical body does not admit an incomplete private
+        // table. Derive these refusals from its complete exact source Item facts;
+        // the fixed cohort below rejects unexpected admission/refusal drift.
+        if materializable_corpse.is_some() {
+            let binding = loot
+                .creature_loot
+                .iter()
+                .find(|binding| binding.creature.key == policy.definition_key)
+                .ok_or("source newly materializable boss loot binding")?;
+            if let Some(reference) = &binding.loot {
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *reference)
+                    .ok_or("source newly materializable boss table")?;
+                let refused = source_loot_refusals::items(&table.entries, &loot.items);
+                if !refused.is_empty() {
+                    assert_eq!(
+                        source.reward_table().row(&policy.definition_key).err(),
+                        Some(NoSettlementReason::LootItemInadmissible),
+                        "{} retains unavailable private yields: {refused:?}",
+                        policy.definition_key
+                    );
+                    newly_materializable_body_loot_refusals.push(policy.definition_key.as_str());
+                    inadmissible_loot += 1;
+                    continue;
+                }
+            }
         }
         let expected = if let Some(corpse) = materializable_corpse {
             admitted.push(policy.definition_key.as_str());
@@ -562,14 +591,16 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 283, 20, 33)
+        (52, 262, 38, 36)
     );
     assert_eq!(
         admitted,
         [
             "oteryn:creature.ahau",
             "oteryn:creature.anomaly",
+            "oteryn:creature.apprentice_sheng",
             "oteryn:creature.armenius_creature",
+            "oteryn:creature.ascending_ferumbras",
             "oteryn:creature.bakragore",
             "oteryn:creature.chagorz",
             "oteryn:creature.chayenne",
@@ -596,10 +627,36 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.sugar_daddy",
             "oteryn:creature.tazhadur",
             "oteryn:creature.the_first_dragon",
+            "oteryn:creature.the_many",
             "oteryn:creature.the_percht_queen",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
             "oteryn:creature.vemiath",
+        ]
+    );
+    newly_materializable_body_loot_refusals.sort_unstable();
+    assert_eq!(
+        newly_materializable_body_loot_refusals,
+        [
+            "oteryn:creature.black_vixen",
+            "oteryn:creature.bloodback",
+            "oteryn:creature.count_vlarkorth",
+            "oteryn:creature.darkfang",
+            "oteryn:creature.duke_krule",
+            "oteryn:creature.earl_osam",
+            "oteryn:creature.ferumbras",
+            "oteryn:creature.ferumbras_mortal_shell",
+            "oteryn:creature.glooth_fairy",
+            "oteryn:creature.king_zelos",
+            "oteryn:creature.lord_azaram",
+            "oteryn:creature.lord_retro",
+            "oteryn:creature.professor_maxxen",
+            "oteryn:creature.scarlett_etzel",
+            "oteryn:creature.sharpclaw",
+            "oteryn:creature.sir_baeloc",
+            "oteryn:creature.the_blazing_time_guardian",
+            "oteryn:creature.the_freezing_time_guardian",
+            "oteryn:creature.the_time_guardian",
         ]
     );
     shared_body.sort_unstable();
