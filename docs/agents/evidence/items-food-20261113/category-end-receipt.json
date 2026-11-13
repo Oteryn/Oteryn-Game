@@ -1,0 +1,118 @@
+{
+  "classification": "PROVEN_DYNAMIC_TAIL_CAPTURE_AND_ROOT_WORLD_VERIFICATION",
+  "category": "Food",
+  "source_receipt": {
+    "filename": "category-completion.json",
+    "bytes": 3569,
+    "sha256": "eb121888770a35d0f863a0960d5cef5efe0a4601b26ae6bcfd9ade5181467540"
+  },
+  "captured_records": 169,
+  "captured_physical_ui_range": [
+    1,
+    169
+  ],
+  "category_end_observed": true,
+  "end_stability_checks_before": 2,
+  "end_stability_checks_after": 2,
+  "final_entry_ui_ordinal": 169,
+  "final_capture_id": 169,
+  "end_proof_receipts": [
+    {
+      "filename": "end-before-2.png",
+      "bytes": 154898,
+      "sha256": "a3b08d9382937413af1b7512b79623f2fec0d0b4cb8b8c3a0c563ae0a2e4ccdf",
+      "private_source_key": "items-sequence-food/tail-audit-1794545884445733654/end-before-2.png"
+    },
+    {
+      "filename": "end-after-2.png",
+      "bytes": 158287,
+      "sha256": "733f1247b29623d05b6af4d6239916f09ffa1d68a57dbb5ab8fd38c93ea41da0",
+      "private_source_key": "items-sequence-food/tail-audit-1794545884445733654/end-after-2.png"
+    }
+  ],
+  "dynamic_capture_journal": {
+    "source_receipt": {
+      "filename": "journal.json",
+      "bytes": 2454,
+      "sha256": "a34086ed34e7861448847ef9a78f0da8aaf91a58746348dc4c59c2c9190fe8a3"
+    },
+    "stage": "POST_END_CONFIRMED",
+    "capture_attempts": 1,
+    "expected_next": 169,
+    "source_index_sha_before": "04f696f861691f4f3c53815ee7a46120f52c9001bfc20f68c96cb896d33ae2bb",
+    "source_index_sha_after": "8d1fbe04399a87f7d6ad072e430843fdebad5415efe4d39e54518e8f3ddf4de5",
+    "native_source_sha256": "a67da64696153f1e3540d70706ff4b59c7ec3d87b46b9c4c7a8dfb742c9a2903",
+    "restored_scope": {
+      "actual_fresh_frame_sha256": "37a92a5c90969afb6c85f45e9b4309507fb4a0174a6f84d5b7587ac5547975d2",
+      "native_source_sha256": "a67da64696153f1e3540d70706ff4b59c7ec3d87b46b9c4c7a8dfb742c9a2903",
+      "category_filters_sha256": "54e904487c64ee4e2fc7abbe3d41b0efe5f9852a35bb01d46924eb23b1aef6ed",
+      "list_text_sha256": "9402f9b78a1be81a39d0f59b5e57f567e56fb17960d16a5e9c8fbc0c25f086fa",
+      "raw_pane_sha256": "df47f1e5bad4f8f5c25a5557d829cbb2d8775569607d7363901cd350cbb027db",
+      "geometry": [
+        698,
+        536
+      ],
+      "physical_offset_pixels": 5960,
+      "stable_end_checks": 2,
+      "raw_full_frame_equal_not_required": true,
+      "comparison_ranges": {
+        "basis": "Exact category/filter pixels and exact text mask plus measured physical offset, thumb and two stable end checks. Selected Basic/cursor/fullraw pixels are not identity proof.",
+        "category_filters": [
+          15,
+          90,
+          199,
+          226
+        ],
+        "geometry": [
+          698,
+          536
+        ],
+        "list_text_mask": [
+          50,
+          255,
+          199,
+          376
+        ],
+        "raw_pane_receipt_only": [
+          50,
+          255,
+          199,
+          376
+        ]
+      }
+    },
+    "boundary": "Immutable native raw source is separate from actual fresh restored scope; actual full-frame hashes need not match. Checkpoint complete written only after durable POST_END_CONFIRMED; one capture, no legacy fixed range."
+  },
+  "native_observation_receipt": {
+    "filename": "food-tail-native-observation-20261113.json",
+    "bytes": 1067,
+    "sha256": "ed13c52df2f581d417c3d85d37b995fea881ca5dae168e67fca1211a5ad0d25c"
+  },
+  "observed_final_row": {
+    "physical_ui_ordinal": 169,
+    "source_y": 660,
+    "source_offset_pixels": 5960,
+    "physical_row_pitch_pixels": 36,
+    "identity_claim": false
+  },
+  "root_closed_world_qualification": {
+    "source_receipt": {
+      "filename": "food-tail-root-qualification-20261113.json",
+      "bytes": 763,
+      "sha256": "149a58e9115b62e0de4f6b8cf6946860b2df4be1c65ec9bcfda4a176378210cf"
+    },
+    "status": "FOOD_CAPTURE_COMPLETE_KNOWN_WORLD_FRESHLY_VERIFIED",
+    "cards": 169,
+    "capture_attempts": 1,
+    "closed_world_proof_receipt": {
+      "filename": "food-tail-closed-world.png",
+      "bytes": 1505645,
+      "sha256": "82e27fab651fccbe3a606a1460051ac87bcea92955caafc870a6a6c828200530"
+    },
+    "actual_frame_ns": 63522051561477,
+    "historical_native_reader_final_pending": true,
+    "boundary": "Root independently read fresh fullframe after known modal close and world_guard passed; this receipt predates final native-reader union."
+  },
+  "historical_completion_reader_qualification": "PENDING_SNAPSHOT_PRESERVED_UNCHANGED",
+  "current_reader_qualification_receipt": "reader-coverage-union.json"
+}
