@@ -130,7 +130,24 @@ fn capture(
                 .image
                 .clone()
                 .try_into_dynamic()
-                .map_err(|error| error.to_string())
+                .map_err(|error| error.to_string());
+            // CPU layout can precede GPU pipeline compilation. Wait for both real vital
+            // bars in readback instead of accepting a cleared first frame as rendering proof.
+            if let Ok(image) = &result {
+                let rgba = image.to_rgba8();
+                let mut health = 0;
+                let mut mana = 0;
+                for pixel in rgba.pixels() {
+                    let [red, green, blue, _] = pixel.0.map(u16::from);
+                    health += usize::from(green > red + 50 && green > blue + 50);
+                    mana += usize::from(blue > red + 50 && blue > green + 20);
+                }
+                if health < 100 || mana < 100 {
+                    capture.requested = false;
+                    return;
+                }
+            }
+            let result = result
                 .and_then(|image| image.save(&capture.path).map_err(|error| error.to_string()));
             let succeeded = result.is_ok();
             capture.result = Some(result);
